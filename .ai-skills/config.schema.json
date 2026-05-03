@@ -97,7 +97,7 @@
 		},
 		"rules": {
 			"type": "object",
-			"description": "Rule selection. `universal` is the always-included set (10 universal rules ship with PRISM). Language- and framework-specific rules are generated per-codebase during onboarding (Phase 2), not opted into via this field. `optIn` is reserved for future non-language opt-in rules.",
+			"description": "Rule selection. `universal` is the always-included set (the universal rule set ships with PRISM). Language- and framework-specific rules are generated per-codebase during onboarding (Phase 2), not opted into via this field. `optIn` is reserved for future non-language opt-in rules.",
 			"properties": {
 				"universal": {
 					"type": "string",

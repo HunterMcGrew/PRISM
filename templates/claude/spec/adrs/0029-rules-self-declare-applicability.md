@@ -9,7 +9,7 @@ Date: 2026-05-03
 
 PRISM ships a static set of universal rules in `.claude/rules/` (always loaded into every conversation per Tier 2 of `.claude/SPEC.md`). Atlas (Phase 2) generates additional per-team rules during onboarding based on the team's `techStack` — `use-effect-guidelines.md` for React/Next teams, `code-standards-<language>.md` per language, etc.
 
-Phase 1 chunk 6 dropped the language- and framework-specific rules that previously shipped statically (`use-effect-guidelines.md`, `headless-architecture.md`, `component-props-decoupling.md`, `prop-ordering.md`, `code-standards-{ts,php}.md`, `data-layer-boundaries.md`, `plugins-manifest.md`) on the basis that Atlas would generate them per-team. But the canonical skill sources still cited them by name — five dangling references across `.ai-skills/skills/prism-debugger/`, `prism-code-review-pr/`, `prism-code-review-self/`, and `prism-code-dev/`. The generated `.claude/skills/<id>/SKILL.md` outputs inherited the dangling refs, so every skill running on the dogfood install pointed at files that didn't exist.
+Phase 1 chunk 6 dropped the language- and framework-specific rules that previously shipped statically (`use-effect-guidelines.md`, `headless-architecture.md`, `component-props-decoupling.md`, `prop-ordering.md`, `code-standards-{ts,php}.md`, `data-layer-boundaries.md`, `plugins-manifest.md`) on the basis that Atlas would generate them per-team. But the canonical skill sources still cited them by name — dangling references across `.ai-skills/skills/prism-debugger/`, `prism-code-review-pr/`, `prism-code-review-self/`, and `prism-code-dev/`. The generated `.claude/skills/<id>/SKILL.md` outputs inherited the dangling refs, so every skill running on the dogfood install pointed at files that didn't exist.
 
 The deeper question this surfaced: how does a skill cite a per-team rule it can't statically know about — without coupling skill maintenance to the per-team rules surface, and without adding dead lines for teams that don't have a given rule?
 
@@ -28,7 +28,7 @@ The pattern that already works in PRISM (and that all six options were trying to
 
 Skills do not reference per-team rule files by name. Rules — universal or Atlas-generated — declare their own applicability and the agent applies them when relevant.
 
-The five dangling references in canonical skill sources are deleted with no replacement. Where the bullet containing the reference is itself a per-team-only concern (e.g. "Unnecessary useEffect — apply the full review checklist in use-effect-guidelines.md"), the whole bullet is deleted. Where the reference appears inside broader prose (e.g. inside a network-waterfall paragraph), the surrounding sentence is revised to drop the file pointer while keeping the generic guidance.
+The dangling references in canonical skill sources are deleted with no replacement. Where the bullet containing the reference is itself a per-team-only concern (e.g. "Unnecessary useEffect — apply the full review checklist in use-effect-guidelines.md"), the whole bullet is deleted. Where the reference appears inside broader prose (e.g. inside a network-waterfall paragraph), the surrounding sentence is revised to drop the file pointer while keeping the generic guidance.
 
 Atlas-generated rules (Phase 2) follow the existing convention: open with an applicability statement that names when the rule applies and, optionally, which personas it binds. The format mirrors `architect-doc-verification.md`'s "Who runs this rule" section when persona-specific binding matters.
 
@@ -45,5 +45,4 @@ Atlas-generated rules (Phase 2) follow the existing convention: open with an app
 - `.claude/rules/architect-doc-verification.md` — the model pattern. Has a "Who runs this rule" section binding the rule to Winston, Eric, and Briar.
 - `.claude/rules/accessibility.md`, `.claude/rules/code-standards.md`, `.claude/rules/code-comments.md` — additional examples of applicability declarations.
 - `.claude/SPEC.md` § Tier 2 — Durable Rules — the loading model that makes this convention work (rules in `.claude/rules/` are auto-loaded into every conversation).
-- `.claude/plans/epic-phase-1-foundation.md` — Phase 1 plan, originating context.
 - ADR-0001 (Plan Is Source of Truth) — the broader pattern of authoritative artifacts being read directly rather than enumerated by reference.

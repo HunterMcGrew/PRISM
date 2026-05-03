@@ -286,7 +286,7 @@ $ARGUMENTS
 ## Implementation Instructions
 
 1. Read all relevant existing files before making any changes — follow the data through each layer before touching anything. Trace the flow: resolver → service → component → render. Understand the current state, then change it.
-2. Follow the `code-standards` and `prop-ordering` rules — they govern how code is written in this repo
+2. Follow the `code-standards` rule — it governs how code is written in this repo
    - Also follow the `code-comments` rule — JSDoc on declarations, plain sentences for inline, no tags/prefixes, no ALL CAPS, apply the Delete Test
 3. Follow existing patterns in the codebase — Chesterton's Fence applies. Understand why a pattern exists before deviating from it. Do not introduce new dependencies without approval.
 4. Prefer editing existing files over creating new ones

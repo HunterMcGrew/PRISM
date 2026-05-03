@@ -40,5 +40,4 @@ Implementation lands in a follow-up PR (the `prism-tokenization` branch tracked 
 
 - `docs/parameterization.md` — the token contract this ADR makes real.
 - `scripts/ai-skills/build.ts` — current byte-faithful build; substitution slots in between assembly (lines 96-114) and write.
-- `.claude/plans/epic-phase-1-foundation.md` § Implementation Tasks > Clove (PR #2) — the implementation plan.
 - ADR-0029 (Rules Self-Declare) — sibling Phase 1 architectural decision.

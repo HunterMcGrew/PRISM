@@ -12,7 +12,7 @@ This file lives in `.claude/architect/` (not `.claude/rules/`) because it applie
 
 Every architecture doc opens with four beats, in order:
 
-1. **Need.** The business or operational reality the system answers to. Concrete facts, not abstractions. "400+ dealer sites deployed from one codebase, each a Cloudways backend and a Vercel frontend," not "a multi-tenant architecture."
+1. **Need.** The business or operational reality the system answers to. Concrete facts, not abstractions. Name the concrete shape — fleet size, deploy targets, request volumes — instead of collapsing it into a label like "a multi-tenant architecture."
 2. **Technical flows.** The requirements the need forces on any solution — what the system must do, regardless of how. This is where the architect translates the business need into technical primitives. Beat 2 is the bridge between domain language and tool language.
 3. **Natural fit.** The tool or approach that answers the requirements. Name it as the fit and move on — don't enumerate what you didn't pick unless an alternative is load-bearing (see shopping-list principle below).
 4. **Platform limits + custom layer.** The specific platform limits that forced custom work, and the layer you built on top. If the architecture is "platform plus custom," this beat explains why you couldn't stop at platform.
@@ -33,7 +33,7 @@ Open the doc with one sentence, before Beat 1, that names the system and what pr
 
 **Why:** The four-beat arc is a reasoning chain. A reader entering cold needs a referent before the chain starts — otherwise Beat 1's concrete facts read as context-free facts. The arc is the reasoning; the anchor is the doormat.
 
-**How to apply:** one sentence, before the first body paragraph. Name the system and the coordination problem in the most compressed form possible. `Thrive runs 400+ dealer sites from one codebase, and the CI pipeline is the system that coordinates how code reaches all of them` is the shape to match. The anchor is not a thesis and not a synthesis — if it starts naming tools or solutions, it's crossed into Beat 3's territory; pull it back.
+**How to apply:** one sentence, before the first body paragraph. Name the system and the coordination problem in the most compressed form possible. `A platform running 100+ retail sites from one codebase, and the CI pipeline is the system that coordinates how code reaches all of them` is the shape to match (illustrative — replace with your team's actual coordination problem). The anchor is not a thesis and not a synthesis — if it starts naming tools or solutions, it's crossed into Beat 3's territory; pull it back.
 
 ---
 
@@ -45,8 +45,6 @@ Don't enumerate tools you didn't pick. The architect does the research; the doc 
 
 - A reader would naturally assume you'd use it and would have to mentally dismiss otherwise, OR
 - The team actively considered and rejected it for a reason that generalizes beyond this ticket.
-
-The CI pipeline's "Cloudways Autonomous and Vercel both offer git-integration auto-deploy; we declined it for orchestration + selectivity + fan-out reasons" is the canonical example. Both platforms offer it natively, a reader will assume we used it unless told otherwise, and the rejection reason points back at real architectural constraints.
 
 **Why:** Tool-inventory bullets don't carry signal. But preempting an obvious question the reader will otherwise carry unanswered does — and the rejection itself often illuminates the architecture more than the selection does.
 
@@ -61,10 +59,9 @@ When the architecture is "platform plus custom layer," name the specific platfor
 Specific limits read like this:
 
 - "GitHub Actions caps jobs at 6 hours"
-- "Cloudways Autonomous rate-limits deploys"
-- "matrix strategies don't bind to GitHub Environments — we'd need to maintain a parallel dealer list"
+- "matrix strategies don't bind to GitHub Environments"
 
-**Corollary — when multiple constraints stack, name them all.** A single limit might not force custom work; it's the intersection that does. The CI pipeline names three stacked rate limits (GitHub 6h + CWA + Vercel) because any one alone wouldn't force resumability — it's their combination that does. Missing any one of the three would let the reader conclude "but we could just fix that one constraint" and miss the point.
+**Corollary — when multiple constraints stack, name them all.** A single limit might not force custom work; it's the intersection that does. When several stacked rate limits jointly force resumability, any one alone wouldn't be enough — it's their combination that does. Missing any one would let the reader conclude "but we could just fix that one constraint" and miss the point.
 
 **Why:** Specific limits make custom work feel inevitable. Vague framing lets the reader suspect the custom work was optional — which erodes trust in the rest of the architectural reasoning.
 
@@ -88,7 +85,7 @@ When an architecture has multiple layers or subsystems, the doc should show how 
 
 **Why:** If the architecture has more layers than the problem has modes, it's probably over-abstracted. If it has fewer, something's being compressed that shouldn't be. Either way, naming the match between problem-shape and solution-shape in the opening lets the layer descriptions land as inevitability rather than preference. A reader who can't see the match has to trust the architecture instead of understanding it.
 
-**How to apply:** before describing the layers, name the shape of the problem. For CI: two operational scopes (fleet-wide + single-site) × two deployment targets (backend + frontend) = four operational modes. For the block system: two editor contexts (backend edit + frontend view). For the headless architecture: two rendering surfaces (RSC + client). The layer descriptions then fall out naturally — "and here's which layer handles which shape."
+**How to apply:** before describing the layers, name the shape of the problem. For CI: two operational scopes (fleet-wide + single-site) × two deployment targets (backend + frontend) = four operational modes. For the block system: two editor contexts (backend edit + frontend view). The layer descriptions then fall out naturally — "and here's which layer handles which shape."
 
 ---
 
@@ -107,5 +104,4 @@ Beat 3 names the tool you picked as the _natural fit_ for the requirements you l
 - `.claude/rules/writing-voice.md` — onboarding voice over mandate voice; architecture docs follow the same voice rules as other spec content
 - `.claude/architect/documentation.md` — documentation conventions, Two-Reader Model, Doc-to-Doc Overlap tracking
 - `.claude/references/dev-doc-template.md` — dev doc template that architecture-category docs extend with this rule
-- `docs/content/dev/architecture/ci-pipeline.md` — canonical example of a doc written against this rule (paired with `docs/content/dev/operations/ci-operations.md`)
 - [ADR-0016](../spec/adrs/0016-explain-the-why.md) — explain the why (the parent principle behind this rule's insistence on reasoning over inventory)
