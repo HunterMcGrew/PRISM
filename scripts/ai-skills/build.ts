@@ -365,9 +365,11 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
-async function copyContentToPlatformDir(
+export async function copyContentToPlatformDir(
 	contentRoot: string,
-	platformDir: string
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const sourceArea = path.join(contentRoot, area);
@@ -383,20 +385,14 @@ async function copyContentToPlatformDir(
 			}
 			const sourcePath = path.join(sourceArea, entry.relativePath);
 			const targetPath = path.join(targetArea, entry.relativePath);
-			const sourceContent = await fs.readFile(sourcePath, "utf8");
-			await writeFileIfChanged(
-				targetPath,
-				sourceContent,
-				checkMode,
-				changedPaths
-			);
+			await copyFileIfChanged(sourcePath, targetPath, checkModeArg, changedPathsArg);
 		}
 
 		await writeFileIfChanged(
 			path.join(targetArea, MANAGED_MARKER),
 			"Managed by scripts/ai-skills/build.ts\n",
-			checkMode,
-			changedPaths
+			checkModeArg,
+			changedPathsArg
 		);
 	}
 
@@ -406,14 +402,34 @@ async function copyContentToPlatformDir(
 		if (!(await pathExists(sourcePath))) {
 			continue;
 		}
-		const sourceContent = await fs.readFile(sourcePath, "utf8");
-		await writeFileIfChanged(
-			targetPath,
-			sourceContent,
-			checkMode,
-			changedPaths
-		);
+		await copyFileIfChanged(sourcePath, targetPath, checkModeArg, changedPathsArg);
 	}
+}
+
+/**
+ * Byte-faithful copy that respects check mode and tracks drift via changedPaths.
+ * Used for the bifurcation's content-copy step so future binary content under a
+ * copied area doesn't get corrupted by a utf8 round-trip.
+ */
+async function copyFileIfChanged(
+	sourcePath: string,
+	targetPath: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
+): Promise<void> {
+	if (await pathExists(targetPath)) {
+		if (await filesAreEqual(sourcePath, targetPath)) {
+			return;
+		}
+	}
+
+	changedPathsArg.push(targetPath);
+	if (checkModeArg) {
+		return;
+	}
+
+	await ensureDirectory(path.dirname(targetPath));
+	await fs.copyFile(sourcePath, targetPath);
 }
 
 /**
@@ -422,9 +438,11 @@ async function copyContentToPlatformDir(
  * the area-level managed marker; refuses to delete files in directories that
  * lack the marker.
  */
-async function removeDeletedManagedContent(
+export async function removeDeletedManagedContent(
 	contentRoot: string,
-	platformDir: string
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const targetArea = path.join(platformDir, area);
@@ -447,16 +465,16 @@ async function removeDeletedManagedContent(
 				continue;
 			}
 			const targetPath = path.join(targetArea, entry.relativePath);
-			changedPaths.push(targetPath);
-			if (checkMode) {
+			changedPathsArg.push(targetPath);
+			if (checkModeArg) {
 				continue;
 			}
 			await fs.rm(targetPath, { force: true });
 		}
 
 		if (!(await pathExists(sourceArea))) {
-			changedPaths.push(targetArea);
-			if (!checkMode) {
+			changedPathsArg.push(targetArea);
+			if (!checkModeArg) {
 				await fs.rm(targetArea, { force: true, recursive: true });
 			}
 		}
@@ -681,8 +699,8 @@ async function main(): Promise<void> {
 			path.join(repoRoot, platformCopies.cursor),
 		];
 		for (const platformDir of platformDirs) {
-			await copyContentToPlatformDir(contentRoot, platformDir);
-			await removeDeletedManagedContent(contentRoot, platformDir);
+			await copyContentToPlatformDir(contentRoot, platformDir, checkMode, changedPaths);
+			await removeDeletedManagedContent(contentRoot, platformDir, checkMode, changedPaths);
 		}
 	}
 
@@ -730,7 +748,11 @@ async function main(): Promise<void> {
 	}
 }
 
-main().catch((error) => {
-	console.error(error instanceof Error ? error.message : String(error));
-	process.exit(1);
-});
+const invokedDirectly =
+	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (invokedDirectly) {
+	main().catch((error) => {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exit(1);
+	});
+}

@@ -93,6 +93,7 @@ Editing rules or architect docs follows a fixed loop:
 - **Two-step edit.** Every canonical change costs one rebuild. The check guards against forgetting; the cost is one command.
 - **More surface in `paths.json` and `build.ts`.** The bifurcation adds `canonical.contentRoot`, `generated.platformContentCopies`, and roughly 150 lines to `build.ts`. Worth it for symmetry across platforms.
 - **Reserved namespaces.** `.prism/` joins `.claude/`, `.codex/`, `.cursor/`, and `.agents/` as reserved at consumer repo roots. Consumers whose project happens to use `.prism/` for unrelated reasons would conflict — the same kind of conflict the existing platform-dir reservations already imply.
+- **Non-Claude platforms require a local build before first use.** In this repo, `.claude/` is committed (dogfood install) but `.codex/`, `.cursor/`, `.agents/`, and `.generated/` are gitignored as build outputs — the Codex and Cursor copies only exist after `pnpm prism:build`. A fresh clone needs the build before opening Codex or Cursor against the repo. Consumer teams choose per-platform whether to commit their copies or treat them as generated; the build copy is a function of canonical either way.
 
 ## Cross-references
 

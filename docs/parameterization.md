@@ -6,7 +6,7 @@ How team-specific values flow through PRISM into the consumer's installed skills
 
 PRISM uses both:
 
-- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/claude/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time. The consumer's installed files have substituted values, no tokens.
+- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/install/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time. The consumer's installed files have substituted values, no tokens.
 - **Runtime config (`.ai-skills/config.json`)** — the consumer's repo carries this file with their team's values. Skills branch on `techStack` flags at chat time when behavior depends on the stack. The config is also the source of truth that drives token substitution.
 
 Single source of truth: `.ai-skills/config.json`. Tokens are derived from it.

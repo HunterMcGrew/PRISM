@@ -21,6 +21,7 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 - 2026-05-03 [prism-install-layout]: Clove executed PR #2 Clove tasks 1-14. Created `.prism/` tree and `git mv`-ed all canonical content (rules, architect, spec, templates, references, plans, SPEC.md, lessons.md) — git rename detection clean across 50+ files. Updated `.prism/architect/manifest.json` keys to `.prism/<area>/**`. Wrote one-shot `scripts/ai-skills/migrate-paths.ts` (since deleted) and swept ~607 path references across `.prism/`, `.ai-skills/skills/`, top-level docs (README, AGENTS.md, CLAUDE.md, docs/parameterization.md), and `templates/install/` (after rename). Renamed `templates/claude/` → `templates/install/` and reorganized into bifurcated sub-layout (`templates/install/.claude/CLAUDE.md.tmpl`, `templates/install/.prism/<area>/`, `templates/install/.codex/.gitkeep`, `templates/install/.cursor/.gitkeep`, `AGENTS.md.tmpl` at root). Anchored `.gitignore` patterns (`.codex/`, `.cursor/`, `.agents/`, `.generated/`) to repo root so templates anchors stay tracked. Extended `paths.json` with `canonical.contentRoot` and `generated.platformContentCopies`; updated `PathDefinitions` interface in `utils.ts`. Extended `scripts/ai-skills/build.ts` with `copyContentToPlatformDir` and `removeDeletedManagedContent` — copies rules/architect/spec/templates/references/SPEC.md from `.prism/` into each platform dir, with managed markers and drift detection (skips agent-written plans/lessons). Authored `scripts/ai-skills/path-guard.ts` as standalone module — fails the build when canonical content cites `.claude/<area>/`, `.codex/<area>/`, or `.cursor/<area>/` paths in copied areas; skips fenced code blocks; allowlists ADR-0031 and `architect/install-layout.md`. Wrote `scripts/ai-skills/path-guard.test.ts` with 7 regression tests (positive flag, all three platform prefixes, fenced-block exclusion, non-copied-area exclusion, allowlist, loose SPEC.md, missing contentRoot). Authored ADR-0031 (bifurcated install layout) on both dogfood and templates surfaces — byte-identical except for plan-file reference dropped from templates per ADR-0029/0030 convention. Authored `.prism/architect/install-layout.md` agent-loaded doc on both surfaces. Updated manifest.json on both surfaces to route `.prism/**`, `scripts/ai-skills/build.ts`, `scripts/ai-skills/path-guard.ts`, and `.ai-skills/definitions/paths.json` to `install-layout.md`. `pnpm prism:build`, `prism:check`, `prism:check-types`, `prism:test` all pass; 14 total tests; path-guard injection sanity check confirmed (inject `.claude/rules/...` ref → check fails; revert → passes). Deleted the one-shot migrate-paths.ts after the sweep landed.
 - 2026-05-03 [prism-install-layout]: Eli executed Eli tasks 15-17 in-PR (override of "after PR #2 merges" framing — Hunter pulled the docs into PR #2 directly). Authored `docs/content/dev/architecture/install-layout.md` (new file, follows architecture-doc-shape four-beat arc: anchor → need → technical flows → natural fit → platform limits + custom layer; covers cross-reference convention, layout map, edit loop, trade-offs). Rewrote `docs/distribution.md` for the bifurcated layout — split the source-to-destination map into canonical content / build copies / platform-specific outputs / top-level anchors, updated state-file example to reference `.prism/<area>/` paths, updated team-control section for `.prism/plans/` and `.prism/lessons.md`, added frontmatter (was missing), confirmed Phase 1.5 sequencing in branching section. Rewrote README "Repo shape" to show the bifurcated layout (`.prism/` canonical with annotated subdirs, platform dirs as build copies, `templates/install/` as renamed distribution surface). Updated README Status banner to reflect Phase 1 shipped + Phase 1.5 in progress. `pnpm prism:check` still passes.
 - 2026-05-03 [prism-install-layout]: Clove fixed Briar's three open review issues. Major (allowlist count divergence) — updated install-layout.md § Build-time path guard on both dogfood and templates surfaces to read "two entries today" with both paths named, including the rationale for the second entry. Minor #1 (stale parenthetical) — dropped "(paired dev doc, lands after PR #2 merges)" qualifier on both surfaces; now reads simply "the longer human-readable companion." Minor #2 (missing test) — added `respects the file allowlist (architect/install-layout.md)` test in `path-guard.test.ts` covering all three platform-dir path patterns. `pnpm prism:build` regenerated platform copies; `pnpm prism:check` passes; 15 tests pass (was 14).
+- 2026-05-03 [prism-install-layout]: Clove fixed Eric's six open review issues. Two Majors (stale `templates/claude/` paths) — `docs/parameterization.md:9` updated to `templates/install/AGENTS.md.tmpl`; ADR-0030 line 10 quote re-anchored and line 12 rewritten on both dogfood and templates surfaces; `.claude/` build copy refreshed via `pnpm prism:build`. Minor #1 (path-guard scope undercount) — install-layout.md sentence on both surfaces now names the loose `SPEC.md` alongside copied-area `.md` files. Minor #2 (gitignored Codex/Cursor copies) — added bullet to dev doc § Trade-offs explaining that in the dogfood only `.claude/` is committed and `pnpm prism:build` is required on fresh clone for non-Claude platforms; consumers choose per-platform. Minor #3 (utf8 read) — extracted `copyFileIfChanged` using `fs.copyFile` for byte-faithful copy. Minor #4 (missing tests) — refactored `copyContentToPlatformDir` and `removeDeletedManagedContent` to accept `checkMode`/`changedPaths` as parameters and exported them; gated `main()` on direct-invocation check; added `scripts/ai-skills/content-copy.test.ts` (5 tests covering happy path, idempotence, check mode, orphan cleanup, marker protection). 20 total tests pass (was 15); types clean; `prism:check` passes.
 
 ---
 
@@ -254,7 +255,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### Stale `templates/claude/` paths in docs/parameterization.md
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `docs/parameterization.md:9` — `templates/claude/AGENTS.md.tmpl` → `templates/install/AGENTS.md.tmpl`.
 - **File:** `docs/parameterization.md:9`
 - **Problem:** Line 9 still reads `appear in canonical sources (..., templates/claude/AGENTS.md.tmpl, etc.)` after the rename to `templates/install/`. Path no longer exists; reader can't follow it. The plan's task 4 sweep regex `\.claude/(area)/` didn't match `templates/claude/` because of the missing leading dot.
 - **Suggested fix:** Replace `templates/claude/AGENTS.md.tmpl` with `templates/install/AGENTS.md.tmpl`. This is the source of the stale quotes in ADR-0030 — fix here first.
@@ -262,7 +264,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### Stale `templates/claude/` paths in ADR-0030 (3 surfaces)
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/spec/adrs/0030-token-substitution-at-build-time.md` lines 10 + 12 + templates mirror; line 10 quote re-anchored to `templates/install/AGENTS.md.tmpl`; line 12 rewritten to name `templates/install/AGENTS.md.tmpl` and `templates/install/.prism/SPEC.md.tmpl`. `pnpm prism:build` refreshed the `.claude/` build copy from canonical.
 - **File:** `.prism/spec/adrs/0030-token-substitution-at-build-time.md:10,12` plus mirrors at `templates/install/.prism/spec/adrs/0030-token-substitution-at-build-time.md:10,12` and `.claude/spec/adrs/0030-token-substitution-at-build-time.md:10,12` (build copy)
 - **Problem:** Line 10 quotes `docs/parameterization.md`'s stale `templates/claude/AGENTS.md.tmpl` reference; line 12 references `templates/claude/AGENTS.md.tmpl` and `templates/claude/SPEC.md.tmpl`. After the rename, paths are `templates/install/AGENTS.md.tmpl` and `templates/install/.prism/SPEC.md.tmpl`.
 - **Suggested fix:** Update parameterization.md first, then re-anchor the line 10 quote and rewrite line 12 to match the new paths. Update the canonical `.prism/` copy and the templates mirror; `pnpm prism:build` will refresh the `.claude/` build copy from canonical.
@@ -270,7 +273,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### install-layout.md undercounts what the path guard scans
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/architect/install-layout.md` § Build-time path guard + templates mirror — sentence now reads "every `.md` file under the copied areas of `.prism/`, plus the loose `SPEC.md`".
 - **File:** `.prism/architect/install-layout.md:47` plus templates mirror at `templates/install/.prism/architect/install-layout.md:47`
 - **Problem:** Says "It scans every `.md` file under the copied areas of `.prism/`" but the implementation also scans the loose `SPEC.md` (`PATH_GUARD_LOOSE_FILES` in `scripts/ai-skills/path-guard.ts:27`).
 - **Suggested fix:** Add ", plus the loose `SPEC.md`" to the sentence on both surfaces. Rebuild to refresh the `.claude/` copy.
@@ -278,7 +282,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### Codex/Cursor build copies gitignored — bifurcation contingent on local build
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `docs/content/dev/architecture/install-layout.md` § Trade-offs — added bullet calling out that in the dogfood install only `.claude/` is committed; `.codex/`/`.cursor/`/`.agents/`/`.generated/` are gitignored as build outputs and require `pnpm prism:build` on a fresh clone before opening those platforms. Consumer teams choose per-platform whether to commit. Architect doc kept terse; the trade-off lives in the dev-doc companion where it belongs.
 - **File:** `.gitignore` + `.prism/architect/install-layout.md` (or `docs/distribution.md`)
 - **Problem:** `/.codex/` and `/.cursor/` in `.gitignore` mean the dogfood content copies for those platforms are never committed. The architect doc claims "every platform sees the same rules and architect docs through its own auto-load mechanism" — practically true, but contingent on each developer running `pnpm prism:build` locally before opening Codex/Cursor on a fresh clone. `.claude/` build copies *are* committed, so the bifurcation is fully exercised only for Claude in this repo.
 - **Suggested fix:** Either add a sentence in `install-layout.md` or `docs/distribution.md` calling out the build-required step for non-Claude platforms, or relax the gitignore for content copies (only ignore the build outputs that aren't content copies).
@@ -286,7 +291,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### copyContentToPlatformDir reads files as utf8
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/build.ts` — extracted `copyFileIfChanged` helper that uses `fs.copyFile` for byte-faithful copy plus the existing `filesAreEqual` (Buffer-based) for the change-detection compare. No utf8 round-trip on the copy path.
 - **File:** `scripts/ai-skills/build.ts:386,409`
 - **Problem:** `fs.readFile(sourcePath, "utf8")` works for today's markdown/JSON content, but a future binary (image, etc.) under a copied area would be silently corrupted on copy.
 - **Suggested fix:** Use `Buffer`-based copy (`fs.copyFile` or `fs.readFile` without encoding then `fs.writeFile` with the buffer), or assert text-only files before copy.
@@ -294,7 +300,8 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 ### Missing tests for copy and cleanup logic
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/content-copy.test.ts` (new, 5 tests). Refactored `copyContentToPlatformDir` and `removeDeletedManagedContent` to take `checkMode` and `changedPaths` as parameters (formerly module-level state) and exported them. Made `main()` invocation conditional on direct script execution so the test can import without triggering the dogfood build. Tests cover: happy-path copy with marker, no-op on second pass, check-mode reports drift but writes nothing, orphan cleanup after canonical removal, refuses to delete from unmanaged directories. 20 total tests pass (was 15).
 - **File:** `scripts/ai-skills/build.ts:368-464` (no corresponding `*.test.ts`)
 - **Problem:** `copyContentToPlatformDir` and `removeDeletedManagedContent` aren't covered by the test suite. The path-guard tests are tight, but the copy and rename-handling logic only run via the manual `pnpm prism:build` smoke test.
 - **Suggested fix:** Add at least one regression test that creates a platform copy with a marker, removes the canonical source, and asserts the copy gets cleaned up. Also one that exercises the happy-path copy.
@@ -305,10 +312,10 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 
 Living checklist — updated when Briar self-reviews PR #2 or Eric reviews on GitHub.
 
-- [ ] No critical or major issues — **2 Major open from Eric's review (stale `templates/claude/` paths in parameterization.md and ADR-0030)**
+- [x] No critical or major issues
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — path-guard coverage is solid; `copyContentToPlatformDir` and `removeDeletedManagedContent` untested
+- [x] Tests written for new logic and edge cases — path-guard + content-copy + cleanup all covered (20 tests)
 - [x] All debugged issues resolved
 - [x] Build passes — `pnpm prism:check` passes after `pnpm prism:build`
 - [ ] PR description up to date
