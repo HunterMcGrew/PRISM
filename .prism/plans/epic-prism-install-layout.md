@@ -251,19 +251,67 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 - **Problem:** `path-guard.test.ts` tests the ADR-0031 allowlist entry but not the `architect/install-layout.md` entry. If someone removed the second entry from `PATH_GUARD_FILE_ALLOWLIST`, the build would fail silently in CI because `install-layout.md` references platform-dir paths in its example block.
 - **Suggested fix:** Add a test: write a fixture `architect/install-layout.md` with platform-dir path references, assert `runPathGuard` returns zero violations.
 
+### Stale `templates/claude/` paths in docs/parameterization.md
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `docs/parameterization.md:9`
+- **Problem:** Line 9 still reads `appear in canonical sources (..., templates/claude/AGENTS.md.tmpl, etc.)` after the rename to `templates/install/`. Path no longer exists; reader can't follow it. The plan's task 4 sweep regex `\.claude/(area)/` didn't match `templates/claude/` because of the missing leading dot.
+- **Suggested fix:** Replace `templates/claude/AGENTS.md.tmpl` with `templates/install/AGENTS.md.tmpl`. This is the source of the stale quotes in ADR-0030 — fix here first.
+
+### Stale `templates/claude/` paths in ADR-0030 (3 surfaces)
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/0030-token-substitution-at-build-time.md:10,12` plus mirrors at `templates/install/.prism/spec/adrs/0030-token-substitution-at-build-time.md:10,12` and `.claude/spec/adrs/0030-token-substitution-at-build-time.md:10,12` (build copy)
+- **Problem:** Line 10 quotes `docs/parameterization.md`'s stale `templates/claude/AGENTS.md.tmpl` reference; line 12 references `templates/claude/AGENTS.md.tmpl` and `templates/claude/SPEC.md.tmpl`. After the rename, paths are `templates/install/AGENTS.md.tmpl` and `templates/install/.prism/SPEC.md.tmpl`.
+- **Suggested fix:** Update parameterization.md first, then re-anchor the line 10 quote and rewrite line 12 to match the new paths. Update the canonical `.prism/` copy and the templates mirror; `pnpm prism:build` will refresh the `.claude/` build copy from canonical.
+
+### install-layout.md undercounts what the path guard scans
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/install-layout.md:47` plus templates mirror at `templates/install/.prism/architect/install-layout.md:47`
+- **Problem:** Says "It scans every `.md` file under the copied areas of `.prism/`" but the implementation also scans the loose `SPEC.md` (`PATH_GUARD_LOOSE_FILES` in `scripts/ai-skills/path-guard.ts:27`).
+- **Suggested fix:** Add ", plus the loose `SPEC.md`" to the sentence on both surfaces. Rebuild to refresh the `.claude/` copy.
+
+### Codex/Cursor build copies gitignored — bifurcation contingent on local build
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.gitignore` + `.prism/architect/install-layout.md` (or `docs/distribution.md`)
+- **Problem:** `/.codex/` and `/.cursor/` in `.gitignore` mean the dogfood content copies for those platforms are never committed. The architect doc claims "every platform sees the same rules and architect docs through its own auto-load mechanism" — practically true, but contingent on each developer running `pnpm prism:build` locally before opening Codex/Cursor on a fresh clone. `.claude/` build copies *are* committed, so the bifurcation is fully exercised only for Claude in this repo.
+- **Suggested fix:** Either add a sentence in `install-layout.md` or `docs/distribution.md` calling out the build-required step for non-Claude platforms, or relax the gitignore for content copies (only ignore the build outputs that aren't content copies).
+
+### copyContentToPlatformDir reads files as utf8
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/build.ts:386,409`
+- **Problem:** `fs.readFile(sourcePath, "utf8")` works for today's markdown/JSON content, but a future binary (image, etc.) under a copied area would be silently corrupted on copy.
+- **Suggested fix:** Use `Buffer`-based copy (`fs.copyFile` or `fs.readFile` without encoding then `fs.writeFile` with the buffer), or assert text-only files before copy.
+
+### Missing tests for copy and cleanup logic
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/build.ts:368-464` (no corresponding `*.test.ts`)
+- **Problem:** `copyContentToPlatformDir` and `removeDeletedManagedContent` aren't covered by the test suite. The path-guard tests are tight, but the copy and rename-handling logic only run via the manual `pnpm prism:build` smoke test.
+- **Suggested fix:** Add at least one regression test that creates a platform copy with a marker, removes the canonical source, and asserts the copy gets cleaned up. Also one that exercises the happy-path copy.
+
 ---
 
 ## PR Readiness
 
-Living checklist — updated when Briar self-reviews PR #2.
+Living checklist — updated when Briar self-reviews PR #2 or Eric reviews on GitHub.
 
-- [x] No critical or major issues
+- [ ] No critical or major issues — **2 Major open from Eric's review (stale `templates/claude/` paths in parameterization.md and ADR-0030)**
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (path-guard test, copy-logic regression test)
+- [ ] Tests written for new logic and edge cases — path-guard coverage is solid; `copyContentToPlatformDir` and `removeDeletedManagedContent` untested
 - [x] All debugged issues resolved
-- [x] Build passes — `pnpm prism:check` passes; build skipped — diff does not affect Next.js bundle
+- [x] Build passes — `pnpm prism:check` passes after `pnpm prism:build`
 - [ ] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0031 and `install-layout.md` are exactly this)
 
-**Last updated:** 2026-05-03
+**Last updated:** 2026-05-03 (Eric PR review)
