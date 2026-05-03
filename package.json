@@ -1,0 +1,22 @@
+{
+	"name": "prism",
+	"version": "0.1.0",
+	"description": "PRISM — multi-team distributable AI toolkit (Claude / Codex / Cursor skill personas, rules, templates).",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"prism:bootstrap": "tsx scripts/ai-skills/bootstrap-from-claude.ts",
+		"prism:build": "tsx scripts/ai-skills/build.ts && pnpm run prism:test",
+		"prism:check": "tsx scripts/ai-skills/build.ts --check && pnpm run prism:test",
+		"prism:check-types": "tsc --noEmit -p scripts/ai-skills/tsconfig.json",
+		"prism:test": "tsx --test scripts/ai-skills/*.test.ts"
+	},
+	"devDependencies": {
+		"@types/node": "^25.6.0",
+		"tsx": "^4.20.3",
+		"typescript": "^5.6.3"
+	},
+	"engines": {
+		"node": ">=20.10.0"
+	}
+}

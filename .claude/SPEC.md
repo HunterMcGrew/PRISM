@@ -44,7 +44,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 ### Tier 3 — Architectural Context (`.claude/architect/`)
 
-**What binds:** Agents working on files that match the patterns in `.claude/architect/manifest.json`. A skill touching `frontend/blocks/` loads `frontend-blocks.md`; a skill touching `docs/` loads `documentation.md`. A `**` wildcard loads `skills-ecosystem.md` for every skill.
+**What binds:** Agents working on files that match the patterns in `.claude/architect/manifest.json`. A skill touching a path loads the architect doc the manifest routes to (e.g. paths under `docs/` route to `documentation.md`); the catch-all `**` loads `skills-ecosystem.md` for every skill so the persona roster is always available. Each consumer team's manifest is populated during onboarding (Phase 3, when Winston scans the codebase).
 
 **Who can change:** Humans approve; agents draft after discovering a pattern worth codifying.
 

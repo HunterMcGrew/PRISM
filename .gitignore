@@ -4,3 +4,9 @@ node_modules/
 
 .claude/worktrees/
 .claude/settings.local.json
+
+# PRISM build outputs (generated from .ai-skills/)
+.agents/
+.codex/
+.generated/
+

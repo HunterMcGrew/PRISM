@@ -1,0 +1,120 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "PRISM team config",
+	"description": "Per-team config for token substitution and tech-stack-conditional content. Lives at .ai-skills/config.json in the consumer's repo. The onboarding flow (Atlas, Phase 2) writes this; agents read from it at chat time when behavior depends on tech stack. Derived tokens used at sync time but not stored as fields: ${PROJECT_LOWERCASE} (lowercase form of project, used for git-config namespaces), ${TICKET_PREFIX_LOWERCASE} (lowercase form of ticketPrefix). Add new derived tokens at the same seam in scripts/ai-skills/lib/tokens.ts (Phase 2).",
+	"type": "object",
+	"required": ["org", "project", "ticketPrefix", "ticketSystem"],
+	"properties": {
+		"org": {
+			"type": "string",
+			"description": "Display org name. Used in PR descriptions, changelog headers, etc.",
+			"examples": ["TracTru"]
+		},
+		"project": {
+			"type": "string",
+			"description": "Project display name.",
+			"examples": ["Thrive", "KTC", "KLC", "SPC"]
+		},
+		"ticketPrefix": {
+			"type": "string",
+			"description": "Ticket ID prefix used in branch names, commits, and PR titles.",
+			"pattern": "^[A-Z][A-Z0-9]+$",
+			"examples": ["THR", "KTC", "KLC", "SPC"]
+		},
+		"ticketSystem": {
+			"type": "object",
+			"description": "Ticket system configuration. Today only `kind: \"linear\"` is supported, but the object shape is the abstraction lever for future Jira/GitHub Issues.",
+			"required": ["kind"],
+			"properties": {
+				"kind": {
+					"type": "string",
+					"enum": ["linear"],
+					"description": "Ticket system provider. Linear is the only supported value today."
+				},
+				"workspace": {
+					"type": "string",
+					"description": "Linear workspace slug (the part before .linear.app).",
+					"examples": ["tractru"]
+				},
+				"projectId": {
+					"type": "string",
+					"description": "Linear project UUID, if scoped to a single project."
+				},
+				"teamKey": {
+					"type": "string",
+					"description": "Linear team key. Often matches ticketPrefix.",
+					"examples": ["THR", "KTC"]
+				}
+			}
+		},
+		"github": {
+			"type": "object",
+			"description": "GitHub repo info for Eric (PR review), Sage (changelog), Reese (QA plans), Lilac (standup).",
+			"properties": {
+				"owner": { "type": "string" },
+				"repo": { "type": "string" }
+			}
+		},
+		"defaultBranch": {
+			"type": "string",
+			"description": "Default branch name. Most teams use `main`.",
+			"default": "main"
+		},
+		"techStack": {
+			"type": "array",
+			"description": "Tech stack flags. Drives onboarding's per-codebase rule generation — for each language and framework listed, Atlas generates a corresponding rules file populated from patterns in the team's actual code (Phase 2). Validated against an enum so the set stays curated; add new values to the enum when a real team needs them.",
+			"items": {
+				"type": "string",
+				"enum": [
+					"typescript",
+					"javascript",
+					"react",
+					"nextjs",
+					"vue",
+					"nuxt",
+					"angular",
+					"svelte",
+					"node",
+					"php",
+					"python",
+					"ruby",
+					"go",
+					"rust",
+					"java",
+					"kotlin",
+					"swift",
+					"wordpress",
+					"gutenberg",
+					"tailwind",
+					"graphql",
+					"apollo",
+					"rest",
+					"prisma"
+				]
+			},
+			"uniqueItems": true,
+			"examples": [["nextjs", "react", "typescript", "tailwind"]]
+		},
+		"rules": {
+			"type": "object",
+			"description": "Rule selection. `universal` is the always-included set (the universal rule set ships with PRISM). Language- and framework-specific rules are generated per-codebase during onboarding (Phase 2), not opted into via this field. `optIn` is reserved for future non-language opt-in rules.",
+			"properties": {
+				"universal": {
+					"type": "string",
+					"enum": ["all"],
+					"default": "all"
+				},
+				"optIn": {
+					"type": "array",
+					"description": "Names of opt-in rule files (without .md extension).",
+					"items": { "type": "string" }
+				}
+			}
+		},
+		"slackChannel": {
+			"type": "string",
+			"description": "Optional Slack channel for Lilac standup posting.",
+			"examples": ["#tractru-dev"]
+		}
+	}
+}
