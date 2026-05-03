@@ -101,4 +101,4 @@ Editing rules or architect docs follows a fixed loop:
 - [ADR-0031](../../../../.prism/spec/adrs/0031-bifurcated-install-layout.md) — the decision and the alternatives considered
 - [`.prism/spec/adrs/0029-rules-self-declare-applicability.md`](../../../../.prism/spec/adrs/0029-rules-self-declare-applicability.md) — sibling pattern: canonical file is the source, platform copies are just the auto-load surface
 - [`.prism/spec/adrs/0030-token-substitution-at-build-time.md`](../../../../.prism/spec/adrs/0030-token-substitution-at-build-time.md) — parallel build-time mechanism (substitution at canonical-to-platform write)
-- [`docs/distribution.md`](../../../distribution.md) — how the bifurcated install reaches a consumer repo and how updates flow
+- [`docs/content/dev/operations/distribution.md`](../operations/distribution.md) — how the bifurcated install reaches a consumer repo and how updates flow

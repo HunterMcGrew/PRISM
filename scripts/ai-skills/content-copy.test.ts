@@ -142,6 +142,31 @@ test("removeDeletedManagedContent cleans up orphaned platform copies", async () 
 	);
 });
 
+test("copyContentToPlatformDir copies the loose SPEC.md file", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.writeFile(
+				path.join(contentRoot, "SPEC.md"),
+				"# PRISM Spec\n\nTier 0 meta-doc.\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths);
+
+			const copiedPath = path.join(platformDir, "SPEC.md");
+			const copied = await fs.readFile(copiedPath, "utf8");
+			assert.match(copied, /PRISM Spec/);
+			assert.ok(changedPaths.includes(copiedPath));
+
+			const idempotent: string[] = [];
+			await copyContentToPlatformDir(contentRoot, platformDir, false, idempotent);
+			assert.equal(idempotent.length, 0, "no changes on second pass");
+		}
+	);
+});
+
 test("removeDeletedManagedContent refuses to delete from a directory missing the marker", async () => {
 	await withTempRoots(
 		async (contentRoot, platformDir) => {

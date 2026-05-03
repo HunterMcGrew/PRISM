@@ -1,6 +1,6 @@
-# `.claude/` Spec
+# PRISM Spec
 
-This document defines the tier hierarchy for the `.claude/` ecosystem — what counts as spec, what binds whom, and how changes get proposed and promoted. If you're not sure whether something is "the spec" or "my branch," this is where to check.
+This document defines the tier hierarchy for the PRISM ecosystem — what counts as spec, what binds whom, and how changes get proposed and promoted. If you're not sure whether something is "the spec" or "my branch," this is where to check.
 
 See also: [`.prism/spec/adrs/`](./spec/adrs/) — the canonical decision log for durable, cross-cutting choices: skill ecosystem, codebase architecture, spec structure. Ticket-tactical decisions stay in the plan's `## Decisions`. When an entry here describes a decision with reasoning behind it (not just a structural fact), a corresponding ADR lives in that folder.
 

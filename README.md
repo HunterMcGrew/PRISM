@@ -80,9 +80,10 @@ prism/                            (currently named agent-crew/ on disk)
 │   └── path-guard.test.ts
 │
 ├── docs/
-│   ├── distribution.md           # how teams pull updates
 │   ├── parameterization.md       # config keys + token reference
-│   └── content/dev/architecture/ # paired dev docs (e.g. install-layout.md)
+│   └── content/dev/
+│       ├── architecture/         # paired dev docs (e.g. install-layout.md)
+│       └── operations/           # operational guides (e.g. distribution.md)
 │
 ├── package.json                  # pnpm prism:* scripts
 ├── tsconfig.json

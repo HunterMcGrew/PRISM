@@ -22,6 +22,7 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 - 2026-05-03 [prism-install-layout]: Eli executed Eli tasks 15-17 in-PR (override of "after PR #2 merges" framing — Hunter pulled the docs into PR #2 directly). Authored `docs/content/dev/architecture/install-layout.md` (new file, follows architecture-doc-shape four-beat arc: anchor → need → technical flows → natural fit → platform limits + custom layer; covers cross-reference convention, layout map, edit loop, trade-offs). Rewrote `docs/distribution.md` for the bifurcated layout — split the source-to-destination map into canonical content / build copies / platform-specific outputs / top-level anchors, updated state-file example to reference `.prism/<area>/` paths, updated team-control section for `.prism/plans/` and `.prism/lessons.md`, added frontmatter (was missing), confirmed Phase 1.5 sequencing in branching section. Rewrote README "Repo shape" to show the bifurcated layout (`.prism/` canonical with annotated subdirs, platform dirs as build copies, `templates/install/` as renamed distribution surface). Updated README Status banner to reflect Phase 1 shipped + Phase 1.5 in progress. `pnpm prism:check` still passes.
 - 2026-05-03 [prism-install-layout]: Clove fixed Briar's three open review issues. Major (allowlist count divergence) — updated install-layout.md § Build-time path guard on both dogfood and templates surfaces to read "two entries today" with both paths named, including the rationale for the second entry. Minor #1 (stale parenthetical) — dropped "(paired dev doc, lands after PR #2 merges)" qualifier on both surfaces; now reads simply "the longer human-readable companion." Minor #2 (missing test) — added `respects the file allowlist (architect/install-layout.md)` test in `path-guard.test.ts` covering all three platform-dir path patterns. `pnpm prism:build` regenerated platform copies; `pnpm prism:check` passes; 15 tests pass (was 14).
 - 2026-05-03 [prism-install-layout]: Clove fixed Eric's six open review issues. Two Majors (stale `templates/claude/` paths) — `docs/parameterization.md:9` updated to `templates/install/AGENTS.md.tmpl`; ADR-0030 line 10 quote re-anchored and line 12 rewritten on both dogfood and templates surfaces; `.claude/` build copy refreshed via `pnpm prism:build`. Minor #1 (path-guard scope undercount) — install-layout.md sentence on both surfaces now names the loose `SPEC.md` alongside copied-area `.md` files. Minor #2 (gitignored Codex/Cursor copies) — added bullet to dev doc § Trade-offs explaining that in the dogfood only `.claude/` is committed and `pnpm prism:build` is required on fresh clone for non-Claude platforms; consumers choose per-platform. Minor #3 (utf8 read) — extracted `copyFileIfChanged` using `fs.copyFile` for byte-faithful copy. Minor #4 (missing tests) — refactored `copyContentToPlatformDir` and `removeDeletedManagedContent` to accept `checkMode`/`changedPaths` as parameters and exported them; gated `main()` on direct-invocation check; added `scripts/ai-skills/content-copy.test.ts` (5 tests covering happy path, idempotence, check mode, orphan cleanup, marker protection). 20 total tests pass (was 15); types clean; `prism:check` passes.
+- 2026-05-03 [prism-install-layout]: Clove fixed Eric's three additional Minors. Stale SPEC.md title — `.prism/SPEC.md` and templates mirror updated to "# PRISM Spec" / "the PRISM ecosystem"; `pnpm prism:build` propagated to all three platform copies. Distribution category mismatch — `git mv docs/distribution.md docs/content/dev/operations/distribution.md` to match the `category: operations` frontmatter; updated README repo-shape diagram, the dev-doc cross-reference, and the doc's own internal link. Loose-file test gap — added `copyContentToPlatformDir copies the loose SPEC.md file` test exercising the previously-uncovered `COPIED_LOOSE_FILES` path. 21 total tests pass (was 20); `prism:check` passes; types clean.
 
 ---
 
@@ -306,6 +307,33 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 - **Problem:** `copyContentToPlatformDir` and `removeDeletedManagedContent` aren't covered by the test suite. The path-guard tests are tight, but the copy and rename-handling logic only run via the manual `pnpm prism:build` smoke test.
 - **Suggested fix:** Add at least one regression test that creates a platform copy with a marker, removes the canonical source, and asserts the copy gets cleaned up. Also one that exercises the happy-path copy.
 
+### Stale title in .prism/SPEC.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/SPEC.md:1-3` updated to "# PRISM Spec" / "the PRISM ecosystem"; templates mirror at `templates/install/.prism/SPEC.md.tmpl` matched. `pnpm prism:build` propagated to `.claude/SPEC.md`, `.codex/SPEC.md`, `.cursor/SPEC.md` — all three build copies now lead with `# PRISM Spec`.
+- **File:** `.prism/SPEC.md:1-3` (and build copy `.claude/SPEC.md:1-3`)
+- **Problem:** The canonical `.prism/SPEC.md` was created in this PR with the title "# `.claude/` Spec" and opening line "This document defines the tier hierarchy for the `.claude/` ecosystem." The file moved from being authored at `.claude/SPEC.md` to canonical at `.prism/SPEC.md`, but the title was not updated. When the build copies this to `.codex/SPEC.md` and `.cursor/SPEC.md`, those platforms read a title that references `.claude/` — confusing and inconsistent with the bifurcated layout.
+- **Suggested fix:** Update the title to "# PRISM Spec" (or "# `.prism/` Spec") and the first paragraph to reference "the PRISM ecosystem" rather than "the `.claude/` ecosystem." Run `pnpm prism:build` to refresh build copies. The `templates/install/.prism/SPEC.md.tmpl` should receive the same update.
+
+### docs/distribution.md frontmatter category mismatch
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Took option (a) — `git mv docs/distribution.md docs/content/dev/operations/distribution.md`. Frontmatter `category: "operations"` now matches placement. Updated the two referrers: README.md repo-shape diagram and `docs/content/dev/architecture/install-layout.md` cross-reference (now points to `../operations/distribution.md`). Updated the doc's own internal link to `install-layout.md` (now `../architecture/install-layout.md`).
+- **File:** `docs/distribution.md:4` (frontmatter added in this PR by Eli)
+- **Problem:** The new frontmatter sets `category: "operations"` but the documentation rule says "category: Match the subdirectory the file lives in." The file is at the root of `docs/` (`docs/distribution.md`), not under `docs/content/dev/operations/`. A reader using the category to navigate would expect this file at `docs/content/dev/operations/distribution.md`.
+- **Suggested fix:** Either (a) move the file to `docs/content/dev/operations/distribution.md` to match the category, or (b) update the category to something that reflects root-level placement (e.g. `"reference"` or leave it as a convention gap for root-level docs). If option (b), document the root-level exception in `documentation.md`.
+
+### content-copy.test.ts does not cover loose file copy path
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/content-copy.test.ts` — added `copyContentToPlatformDir copies the loose SPEC.md file` test. Writes a `SPEC.md` to the source contentRoot, runs the copy, asserts the file landed at the platform dir, then re-runs to confirm idempotence. 21 total tests pass (was 20).
+- **File:** `scripts/ai-skills/content-copy.test.ts`
+- **Problem:** `copyContentToPlatformDir` has two code paths: the `COPIED_CONTENT_AREAS` loop (tested) and the `COPIED_LOOSE_FILES` loop (`["SPEC.md"]`). No test creates a `SPEC.md` in the source contentRoot, so the loose file copy call to `copyFileIfChanged` is never exercised. The loop body silently skips when the source doesn't exist, so the tests pass — but the actual copy behavior for `SPEC.md` is untested.
+- **Suggested fix:** Add one test that writes a `SPEC.md` to the source contentRoot, runs `copyContentToPlatformDir`, and asserts the file was copied to the platform dir. Cover both the happy path and check mode.
+
 ---
 
 ## PR Readiness
@@ -315,10 +343,10 @@ Living checklist — updated when Briar self-reviews PR #2 or Eric reviews on Gi
 - [x] No critical or major issues
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — path-guard + content-copy + cleanup all covered (20 tests)
+- [x] Tests written for new logic and edge cases — path-guard + content-copy + cleanup all covered (20 tests); minor gap in loose-file path
 - [x] All debugged issues resolved
 - [x] Build passes — `pnpm prism:check` passes after `pnpm prism:build`
-- [ ] PR description up to date
+- [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0031 and `install-layout.md` are exactly this)
 
-**Last updated:** 2026-05-03 (Eric PR review)
+**Last updated:** 2026-05-03 (Briar second self-review)

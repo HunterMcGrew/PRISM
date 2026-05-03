@@ -8,7 +8,7 @@ last_updated: "2026-05-03"
 
 # Distribution
 
-How PRISM gets into a consumer team's codebase, how updates flow, and what stays under team control. The install layout is bifurcated — canonical platform-agnostic content at `.prism/`, build-time copies at each platform dir. See [Install Layout](./content/dev/architecture/install-layout.md) for why.
+How PRISM gets into a consumer team's codebase, how updates flow, and what stays under team control. The install layout is bifurcated — canonical platform-agnostic content at `.prism/`, build-time copies at each platform dir. See [Install Layout](../architecture/install-layout.md) for why.
 
 ## Model: sibling repo + script
 
