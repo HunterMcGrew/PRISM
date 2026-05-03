@@ -25,6 +25,7 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 - 2026-05-02 [phase-1-foundation]: Winston revised #3 architectural decision after Hunter pushback. Conditional file-existence references rejected as adding dead lines that couple skill maintenance to per-team rules surface. Inverted to "rules self-declare; skills don't reference per-team rule files" — matches existing pattern (`architect-doc-verification.md` "Who runs this rule" section). Skills delete the 5 dangling refs, no replacement. Atlas-generated rules MUST open with applicability declaration. PR #2 + PR #3 collapsed to a single follow-up PR.
 - 2026-05-03 [phase-1-foundation]: Winston resolved open questions. ADR numbering confirmed at 0029. Follow-up PR work tracked in this plan only (no GitHub issues — solo-shipping cost/benefit doesn't justify the duplication). Dogfood Project Context uses pretend Linear placeholder (`Linear team: PRISM (prefix: PRISM-####)`) — no actual Linear backing for the meta-project; the placeholder keeps doc shape consistent with what consumer teams receive.
 - 2026-05-03 [phase-1-foundation]: Clove executed PR #1 finalization tasks 1-12. Wrote ADR-0029 (rules self-declare) and ADR-0030 (token substitution at build time) to both dogfood and templates. Deleted 3 dangling useEffect bullets (prism-debugger, prism-code-review-pr, prism-code-review-self) and revised 2 paragraphs in prism-code-dev to drop `headless-architecture.md` and `component-props-decoupling.md` pointers. Reconfigured dogfood `.claude/architect/skills-ecosystem.md` to PRISM identity. Mirrored generic-prose edits (PR URL example, originating-PRs reframing, "this project squash-merges") to both dogfood and templates. Dropped dealership context block from `templates/claude/architect/qa-test-planning.md`. Dropped `$id` from config schema. Replaced Thrive anchor in architecture-doc-shape.md with fictional "100+ retail sites" example. Generalized THR-1634 ref in spec-editing.md and THR-1775 refs in ADR-0024 (both surfaces). Backfilled 7 chunk history entries above. `pnpm prism:build`, `prism:check`, `prism:check-types` all pass.
+- 2026-05-03 [phase-1-foundation]: Winston evaluated install layout asymmetry. Decision: bifurcate to `.prism/` canonical + platform-dir build copies (ADR-0031). PR ordering swapped — layout reorg becomes PR #2 (`prism-install-layout`), tokenization moves to PR #3 (`prism-tokenization`). New epic plan created at `.claude/plans/epic-prism-install-layout.md`.
 
 ---
 
@@ -57,6 +58,14 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 
 - **Follow-up PRs use the plan as the canonical tracker, not GitHub issues.** The plan's `## Implementation Tasks` already enumerates PR #2 work with persona ownership; every persona reads the plan at session start (ADR-0001). Adding GitHub issues for the follow-up tasks duplicates that record without earning anything while PRISM is solo-shipping. Revisit when Phase 2/3 brings contributors who need an external discovery surface; until then, the plan is sufficient.
 
+- **Bifurcated install layout: `.prism/` for platform-agnostic content, platform dirs for platform-specific.** Read-only canonical content (rules, ADRs, architect, templates, references) lives at `.prism/<area>/`. Platform dirs (`.claude/`, `.codex/`, `.cursor/`) get build-time copies of read-only content (preserves auto-load) plus their own platform-specific bits (skills, native config). Agent-written content (plans, lessons) lives only at `.prism/` — single source.
+  - **Root cause:** Phase 1 distribution map only writes shared content into `.claude/`. Codex/Cursor consumers never see rules or architect docs because their platforms don't auto-load `.claude/`. The asymmetry is structural and gets worse with each platform added.
+  - **Alternatives considered:** (a) `.prism/` only without platform copies — breaks Claude Code auto-load, costs 5–10 Read calls per session start. (b) Symlinks — Windows-broken. (c) Pure duplication with `.claude/` as canonical — privileges Claude, violates symmetry. (d) Top-level `rules/` / `spec/` (no leading dot) — pollutes consumer's repo root. (e) Status quo — Codex/Cursor stay second-class, defeats multi-platform value prop.
+  - **Chosen approach:** Bifurcated `.prism/` canonical + build-time copies into platform dirs. Preserves auto-load on every platform without privileging any one of them. Build's drift check (`prism:check`) catches out-of-band edits to platform copies. New architect doc and ADR-0031 codify the convention.
+  - **Implementation guidance:** Single follow-up PR `prism-install-layout` does the dogfood reorg (~50+ file moves), updates manifest paths, extends `build.ts` with copy logic, sweeps internal cross-references to `.prism/<area>/` form, renames `templates/claude/` → `templates/install/`, rewrites `docs/distribution.md`, authors ADR-0031 and `.prism/architect/install-layout.md`. Tracked in the new epic plan `epic-prism-install-layout.md`.
+
+- **PR ordering after PR #1: layout-reorg first, tokenization second.** Previously planned: PR #2 = tokenization. Revised: PR #2 = layout reorg (`prism-install-layout` branch), PR #3 = tokenization (`prism-tokenization` branch). Reorg first so the tokenization sweep touches the final canonical paths instead of the v1 `.claude/`-only paths.
+
 ---
 
 ## Implementation Tasks
@@ -84,20 +93,26 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 11. **Update PR Readiness checklist** — reflect the architectural decisions are now made, count of open issues drops to 1 critical + 1 major (both queued for follow-up PRs).
 12. **Run verification before commit** — `pnpm prism:check`, `pnpm prism:check-types`. Ship per shipping-flow.
 
-### Clove (PR #2 — follow-up branch, e.g. `prism-tokenization`)
+### Clove (PR #2 — `prism-install-layout` branch — bifurcated layout reorg)
 
-13. **Implement token substitution in `scripts/ai-skills/build.ts`** — load `.ai-skills/config.json`, derive token map per `docs/parameterization.md`, substitute in assembled markdown before write. Hook into `buildSkillMarkdown` (lines 96-114).
+Tracked separately in [`.claude/plans/epic-prism-install-layout.md`](./epic-prism-install-layout.md). 14 sequenced tasks moving content from `.claude/` to `.prism/`, extending the build with copy logic, sweeping cross-references, renaming `templates/claude/` → `templates/install/`, authoring ADR-0031 and `install-layout.md`.
+
+### Clove (PR #3 — `prism-tokenization` branch — sweeps at the post-reorg paths)
+
+Note: paths below assume PR #2 has landed and content lives at `.prism/<area>/`. Token map and approach unchanged from earlier; only the target paths shifted.
+
+13. **Implement token substitution in `scripts/ai-skills/build.ts`** — load `.ai-skills/config.json`, derive token map per `docs/parameterization.md`, substitute in assembled markdown before write. Hook into `buildSkillMarkdown` (lines 96-114). Token substitution applies to canonical content under `.prism/` AND to the build-time platform copies — same content, substituted once at build.
 14. **Extract derivation logic** into `scripts/ai-skills/lib/tokens.ts` — single seam for adding derived tokens later (PROJECT_LOWERCASE, TICKET_PREFIX_LOWERCASE).
 15. **Add substitution regression test** at `scripts/ai-skills/tokens.test.ts` — sample config in, expected output out. Cover edge cases: missing config keys, malformed token literals, derived-token cascades.
 16. **Add literal-Thrive build-time guard** — fail if assembled output contains `Thrive`/`tractru`/`TracTru/thrive`/`THR-[0-9]+` outside an explicit allowlist file. Allowlist seeds with frozen incident citations and fictional examples.
 17. **Tokenize `.ai-skills/skills/*/shared.md`** — sweep all 11 files with hardcoded Thrive references. Token map: `Thrive` → `${PROJECT}`, `tractru` → `${LINEAR_WORKSPACE}` or `${GITHUB_OWNER}` per context, `TracTru/thrive` → `${GITHUB_OWNER}/${GITHUB_REPO}`, `THR` (in ticket prefix usage) → `${TICKET_PREFIX}`, `thrive.<key>` → `${PROJECT_LOWERCASE}.<key>`, output paths like `.claude/docs/qa/thrive-*` → `.claude/docs/qa/${PROJECT_LOWERCASE}-*`. Skip frozen incident citations (`THR-1636`, `THR-1775`) inside Why/Originating-incident prose where the ticket is a stable historical reference.
-18. **Tokenize `templates/claude/**`** — sweep 16 files per Briar's catalog in Review Issues #1. Same token map as task #17. Verify the dealership context stayed out (already removed in PR #1 task #5).
+18. **Tokenize `templates/install/**`** — sweep the 16 files per Briar's catalog in Review Issues #1, but now under the renamed `templates/install/` directory tree. Same token map as task #17.
 19. **Verify dogfood install still builds correctly** — `pnpm prism:check` should pass with `.ai-skills/config.json` providing PRISM's own substitution values. Re-run the literal-Thrive guard against the full surface.
 20. **Update `docs/parameterization.md`** — replace "Phase 2" mentions of `scripts/ai-skills/lib/tokens.ts` with "implemented." Verify the schema and substitution table are accurate against the implementation.
 
-### Eli (after PR #1 merges)
+### Eli (after PR #2 merges)
 
-21. **Update README** — once Phase 1 chunks land cleanly, revise the "Phase 1 — Foundation" bullet to reflect what actually shipped (architectural decisions + small fixes), and clarify that token substitution is in the PR #2 follow-up still in progress.
+21. **Update README** — revise the "Phase 1 — Foundation" bullet to reflect what shipped, and call out that the PR #2 layout reorg landed before tokenization. Particular attention to the "Repo shape" section which needs to reflect the new `.prism/` layout. (Detailed scope tracked in `epic-prism-install-layout.md`.)
 
 ---
 
