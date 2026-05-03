@@ -2,7 +2,11 @@
 
 ## Ticket
 
-PRISM Phase 1.5 — bifurcated install layout. No Linear ticket; phase-bridge work between Phase 1 (foundation) and Phase 2 (Atlas onboarding). Tracked here so Atlas in Phase 2 writes the new layout from day one.
+PRISM Phase 1.5 (PR #2 of 2) — bifurcated install layout. No Linear ticket; phase-bridge work between Phase 1 (foundation) and Phase 2 (Atlas onboarding). Tracked here so Atlas in Phase 2 writes the new layout from day one.
+
+Phase 1.5 has two PRs:
+- **PR #2 — `prism-install-layout`** — this plan. Bifurcates the layout (`.prism/` canonical + platform-dir build copies).
+- **PR #3 — `prism-tokenization`** — tracked in [`epic-phase-1-foundation.md`](./epic-phase-1-foundation.md) under `## Implementation Tasks > Clove (PR #3)`. Implements ADR-0030 substitution layer at the post-reorg paths.
 
 ## Goal
 
