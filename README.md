@@ -6,7 +6,7 @@ A multi-team AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills
 
 ## What you get
 
-- **12 named personas** (Winston, Clove, Eric, Briar, Sasha, Eli, Sage, Pixel, Reese, Lilac, Nora, Mira) — each owns a domain (architecture, implementation, review, debugging, docs, design, QA, standups, ticket setup, user stories, changelog).
+- **Named personas** (Winston, Clove, Eric, Briar, Sasha, Eli, Sage, Pixel, Reese, Lilac, Nora, Mira) — each owns a domain (architecture, implementation, review, debugging, docs, design, QA, standups, ticket setup, user stories, changelog).
 - **Multi-platform skill generation** — author a skill once in `.ai-skills/`, generate platform-specific outputs for Claude Code (`.claude/skills/`), Codex (`.agents/skills/` + `.codex/agents/`), and Cursor (`.generated/cursor-skills/`).
 - **A tiered context system** — `.claude/rules/` for cross-cutting standards loaded into every conversation, `.claude/architect/` for path-scoped context loaded only when relevant files are touched, `.claude/spec/adrs/` for durable decisions.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, standup summaries, ticket types — shaped for cross-team consistency.
@@ -107,7 +107,7 @@ See [docs/parameterization.md](./docs/parameterization.md) for the full schema, 
 
 ## Phased roadmap
 
-- **Phase 1 — Foundation** (in progress on `phase-1-foundation` branch). Project tooling, multi-platform skill generator, canonical sources for 12 personas, parameterization layer, prune of source-codebase content, distribution surface populated.
+- **Phase 1 — Foundation** (in progress on `phase-1-foundation` branch). Project tooling, multi-platform skill generator, canonical sources for every named persona, parameterization layer, prune of source-codebase content, distribution surface populated.
 - **Phase 2 — Atlas onboarding skill** (next). Six-phase conversational install: identity → codebase context → rules selection → templates verification → architect handoff → final wiring. Resumable via `.claude/onboarding-state.json`.
 - **Phase 3 — Winston codebase-scan integration**. Winston scans the consumer's codebase, proposes 10–20 architect docs and a populated `manifest.json`, drafts a `verification-commands.md` from the team's actual tooling, and anchors a `0001-adopting-prism.md` ADR for the team's adoption.
 

@@ -7,7 +7,7 @@ Date: 2026-04-19
 
 ## Context
 
-The skill ecosystem has 11 workflow personas, each scoped to a specific domain. If the user always had to name the right persona before every interaction ("Clove, implement this"; "Winston, plan that"), routing overhead would dominate every exchange and the friction would push users back to a single-skill default.
+The skill ecosystem has a roster of workflow personas, each scoped to a specific domain. If the user always had to name the right persona before every interaction ("Clove, implement this"; "Winston, plan that"), routing overhead would dominate every exchange and the friction would push users back to a single-skill default.
 
 The alternative is for the agent to detect intent and route proactively. This requires a shared routing table that every skill (and the bare agent, when no skill is active) can read.
 
