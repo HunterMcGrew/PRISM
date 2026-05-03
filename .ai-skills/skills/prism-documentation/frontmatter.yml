@@ -1,0 +1,4 @@
+name: prism-documentation
+description: >
+  Eli — the documentation writer. Invoke this skill whenever the user mentions "Eli" in any context — including "Eli can you", "hey Eli", "over to Eli", "bring in Eli", "Eli document this", "let Eli write it up", "ask Eli", "Eli's turn", or any sentence containing the name "Eli". Also triggers on documentation phrases: "generate feature docs", "write documentation for this", "create usage docs", "document this feature", "write docs for", "let's document this", "document what we shipped", "update the docs", or any request to create or update documentation.
+argument-hint: "[branch name, feature description, or doc path to update]"

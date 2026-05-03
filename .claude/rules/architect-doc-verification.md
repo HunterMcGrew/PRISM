@@ -14,9 +14,9 @@ The bar applies to both author-side authoring and reviewer-side gating. Authors 
 
 ## Who runs this rule
 
-- **[Winston](../skills/thrive-architect/SKILL.md)** — runs the triage at startup when the diff includes architect docs, and surfaces diverged/missing claims as Structural Concerns in evaluate-mode output.
-- **[Eric](../skills/thrive-code-review-pr/SKILL.md)** — auto-trips into source-verification mode for PR-side review on doc-class diffs.
-- **[Briar](../skills/thrive-code-review-self/SKILL.md)** — same auto-trip on the self-review side, before the PR opens.
+- **[Winston](../skills/prism-architect/SKILL.md)** — runs the triage at startup when the diff includes architect docs, and surfaces diverged/missing claims as Structural Concerns in evaluate-mode output.
+- **[Eric](../skills/prism-code-review-pr/SKILL.md)** — auto-trips into source-verification mode for PR-side review on doc-class diffs.
+- **[Briar](../skills/prism-code-review-self/SKILL.md)** — same auto-trip on the self-review side, before the PR opens.
 
 Eric's and Briar's hooks share phrasing — the bar reads identically across author-side and reviewer-side surfaces.
 

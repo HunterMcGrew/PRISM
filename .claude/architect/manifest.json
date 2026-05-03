@@ -51,7 +51,7 @@
 	"backend/plugins-from-storage.txt": "plugin-management.md",
 	"backend/seeds/**": "dev-seeders.md",
 	"backend/scripts/seed-*.php": "dev-seeders.md",
-	".claude/skills/thrive-qa-test-plan/": "qa-test-planning.md",
+	".claude/skills/prism-qa-test-plan/": "qa-test-planning.md",
 	".claude/SPEC.md": "spec-editing.md",
 	".claude/skills/**": "spec-editing.md",
 	".claude/templates/**": "spec-editing.md",

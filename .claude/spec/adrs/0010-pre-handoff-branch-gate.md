@@ -32,4 +32,4 @@ This gate matters even when the user wants to move fast — a bad branch state c
 ## References
 
 - `.claude/architect/skills-ecosystem.md` § Rules for All Skills item 10
-- `.claude/skills/thrive-ticket-start/SKILL.md` — Nora's implementation of the gate
+- `.claude/skills/prism-ticket-start/SKILL.md` — Nora's implementation of the gate

@@ -42,5 +42,5 @@ Flag both directions: **missed abstractions** (duplicated logic across 3+ sites,
 
 - `.claude/lessons.md` 2026-04-08 (IDataAccessLayer) — the incident that surfaced the gap
 - `.claude/lessons.md` 2026-04-08 (3+ sites threshold for data duplication) — the calibration refinement
-- `.claude/skills/thrive-code-review-self/SKILL.md` § Justification Review
-- `.claude/skills/thrive-code-review-pr/SKILL.md` — Eric's matching Justification Review section
+- `.claude/skills/prism-code-review-self/SKILL.md` § Justification Review
+- `.claude/skills/prism-code-review-pr/SKILL.md` — Eric's matching Justification Review section

@@ -25,7 +25,7 @@ Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unr
 - **In scope:** the lines you're already modifying; the function or method containing those lines; helpers you extract from that code; files already in the diff for this ticket.
 - **Out of scope:** unmodified code elsewhere in the same file; sibling files; "while I'm here" cleanup of code the ticket doesn't otherwise touch.
 
-For the implementation-mode framing of the same rule, see `.claude/skills/thrive-code-dev/SKILL.md` § Scope discipline and `### Anti-pattern: Drive-by refactoring`.
+For the implementation-mode framing of the same rule, see `.claude/skills/prism-code-dev/SKILL.md` § Scope discipline and `### Anti-pattern: Drive-by refactoring`.
 
 ## Whitespace
 

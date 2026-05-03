@@ -31,4 +31,4 @@ This applies to Eric specifically because he's the only skill that touches GitHu
 ## References
 
 - `.claude/architect/skills-ecosystem.md` § Rules for All Skills item 11
-- `.claude/skills/thrive-code-review-pr/SKILL.md` — Eric's role boundary
+- `.claude/skills/prism-code-review-pr/SKILL.md` — Eric's role boundary

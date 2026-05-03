@@ -1,0 +1,52 @@
+{
+	"skills": [
+		{
+			"id": "prism-architect",
+			"persona": "Winston"
+		},
+		{
+			"id": "prism-changelog",
+			"persona": "Sage"
+		},
+		{
+			"id": "prism-code-dev",
+			"persona": "Clove"
+		},
+		{
+			"id": "prism-code-review-pr",
+			"persona": "Eric"
+		},
+		{
+			"id": "prism-code-review-self",
+			"persona": "Briar"
+		},
+		{
+			"id": "prism-debugger",
+			"persona": "Sasha"
+		},
+		{
+			"id": "prism-documentation",
+			"persona": "Eli"
+		},
+		{
+			"id": "prism-pixel",
+			"persona": "Pixel"
+		},
+		{
+			"id": "prism-qa-test-plan",
+			"persona": "Reese"
+		},
+		{
+			"id": "prism-standup-summary",
+			"persona": "Lilac"
+		},
+		{
+			"id": "prism-ticket-start",
+			"persona": "Nora"
+		},
+		{
+			"id": "prism-user-stories",
+			"persona": "Mira"
+		}
+	]
+}

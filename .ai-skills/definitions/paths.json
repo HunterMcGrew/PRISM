@@ -1,0 +1,12 @@
+{
+	"canonical": {
+		"skillsRoot": ".ai-skills/skills"
+	},
+	"generated": {
+		"claudeSkillsRoot": ".claude/skills",
+		"codexSkillsRoot": ".agents/skills",
+		"codexAgentsRoot": ".codex/agents",
+		"codexConfigFile": ".generated/codex-config.toml",
+		"cursorSkillsRoot": ".generated/cursor-skills"
+	}
+}
