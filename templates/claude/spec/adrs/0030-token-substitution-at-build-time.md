@@ -9,7 +9,7 @@ Date: 2026-05-03
 
 PRISM ships per-team customization via tokens — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, `${GITHUB_OWNER}`, etc. — that resolve to team-specific values when PRISM installs into a consumer repo. The token contract is documented in `docs/parameterization.md`, which states tokens "appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/claude/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time."
 
-The Phase 1 audit surfaced that the substitution layer described by the docs does not yet exist. `scripts/ai-skills/build.ts` is byte-faithful concatenation today (`buildSkillMarkdown` at lines 96-114 assembles frontmatter + shared body + platform body and writes the result verbatim). Of the templates the docs claim are tokenized, only `templates/claude/AGENTS.md.tmpl` line 33 and `templates/claude/SPEC.md.tmpl` carry actual `${TOKEN}` literals. The other 16 distribution files and 11 canonical skill sources contain hardcoded `Thrive`, `tractru`, `THR-NNNN`, `thrive.<key>` literals that would ship verbatim to any consumer team.
+The Phase 1 audit surfaced that the substitution layer described by the docs does not yet exist. `scripts/ai-skills/build.ts` is byte-faithful concatenation today (`buildSkillMarkdown` at lines 96-114 assembles frontmatter + shared body + platform body and writes the result verbatim). Of the templates the docs claim are tokenized, only `templates/claude/AGENTS.md.tmpl` line 33 and `templates/claude/SPEC.md.tmpl` carry actual `${TOKEN}` literals. The remaining distribution files and canonical skill sources contain hardcoded `Thrive`, `tractru`, `THR-NNNN`, `thrive.<key>` literals that would ship verbatim to any consumer team.
 
 Three approaches were considered:
 

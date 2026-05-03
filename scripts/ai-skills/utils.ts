@@ -101,6 +101,33 @@ export function stripSurroundingQuotes(value: string): string {
 }
 
 /**
+ * Escapes a string for embedding inside a TOML basic string (delimited by `"`).
+ *
+ * Backslashes and quotes get backslash-escaped. Raw newlines and carriage
+ * returns become `\n` and `\r` escape sequences — TOML basic strings forbid
+ * raw newline characters but interpret these escapes. Tabs are allowed
+ * unescaped per the TOML 1.0 spec.
+ */
+export function escapeToml(value: string): string {
+	return value
+		.replaceAll("\\", "\\\\")
+		.replaceAll('"', '\\"')
+		.replaceAll("\n", "\\n")
+		.replaceAll("\r", "\\r");
+}
+
+/**
+ * Escapes a string for embedding inside a TOML multiline basic string
+ * (delimited by `"""`).
+ *
+ * Backslashes and triple-quote sequences get backslash-escaped. Raw newlines
+ * pass through — multiline basic strings allow them by design.
+ */
+export function escapeTomlMultiline(value: string): string {
+	return value.replaceAll("\\", "\\\\").replaceAll('"""', '\\"\\"\\"');
+}
+
+/**
  * Parses a supported subset of YAML frontmatter into a key/value map.
  *
  * Supports flat `key: value` pairs and folded scalars (`key: >` followed by

@@ -166,7 +166,7 @@ This is the engineering knowledge that informs Clove's decisions. Not rules to f
 5. Should the user be able to bookmark or share it? → URL state.
 6. Does it come from the server? → RSC props via resolver. Not client state.
 
-**Single source of truth**: Every piece of state has exactly one owner. If a prop and local state represent the same value, one of them is wrong. Determine which is authoritative and delete the other. This is the core principle behind the `useEffect-guidelines.md` anti-pattern rules.
+**Single source of truth**: Every piece of state has exactly one owner. If a prop and local state represent the same value, one of them is wrong. Determine which is authoritative and delete the other.
 
 **State machine thinking**: Even without a library, think in states and transitions. A form is in one of: `idle | validating | submitting | success | error`. An `if/else` chain checking `isLoading && !isError && isSubmitted` is a state machine that doesn't know it — and it has implicit impossible states (`isLoading && isError`). Name the states explicitly as a union type.
 

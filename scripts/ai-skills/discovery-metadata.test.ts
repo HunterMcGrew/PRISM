@@ -16,6 +16,8 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 import {
+	escapeToml,
+	escapeTomlMultiline,
 	GENERATED_HEADER_LINE,
 	listDirectories,
 	loadPathDefinitions,
@@ -145,6 +147,21 @@ test("generated skill directories carry the managed marker", async () => {
 			);
 		}
 	}
+});
+
+test("escapeToml escapes backslash, quote, and newline characters", () => {
+	assert.equal(escapeToml("plain text"), "plain text");
+	assert.equal(escapeToml('quote: "x"'), 'quote: \\"x\\"');
+	assert.equal(escapeToml("backslash: \\"), "backslash: \\\\");
+	assert.equal(escapeToml("line one\nline two"), "line one\\nline two");
+	assert.equal(escapeToml("crlf: a\r\nb"), "crlf: a\\r\\nb");
+});
+
+test("escapeTomlMultiline escapes backslash and triple-quote but preserves newlines", () => {
+	assert.equal(escapeTomlMultiline("plain text"), "plain text");
+	assert.equal(escapeTomlMultiline("backslash: \\"), "backslash: \\\\");
+	assert.equal(escapeTomlMultiline('triple: """end'), 'triple: \\"\\"\\"end');
+	assert.equal(escapeTomlMultiline("line one\nline two"), "line one\nline two");
 });
 
 test("generated codex agent TOML files start with the managed header", async () => {

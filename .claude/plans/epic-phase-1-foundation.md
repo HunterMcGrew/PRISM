@@ -33,6 +33,9 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 - 2026-05-03 [phase-1-foundation]: Clove executed PR #1 second-pass finalization tasks 13-19. Dropped count claims from ADR-0029 (both surfaces, line 12 + line 31 — Decision section had matching count). Fixed prop-ordering miss at `.ai-skills/skills/prism-code-dev/shared.md:289`. Stripped Thrive-flavored content from `architecture-doc-shape.md` on both surfaces — generic Beat 1 framing, mirrored line-36 anchor fix to dogfood, dropped Cloudways/Vercel shopping-list example, generalized platform-limits and corollary, dropped headless-architecture clause from problem-shape section, deleted broken `ci-pipeline.md` cross-reference. Fixed schema count description at `.ai-skills/config.schema.json:100`. Dropped plan-file references from templates ADR-0029 and ADR-0030. Authored ADR-0032 (canonical content generic; onboarding writes specializations) on both surfaces. `pnpm prism:build`, `prism:check`, `prism:check-types`, `prism:test` all pass.
 - 2026-05-03 [phase-1-foundation]: Briar third-pass self-review on commit `9a2d885`. Caught one new Major: stale `Clove (PR #2)` references in ADR-0030 across both surfaces (Decision-body line 28 on both, References line 43 on dogfood). When ADR-0030 was authored, tokenization was planned as PR #2; the later layout/tokenization swap (commit ea0590e) made PR #2 the layout reorg and PR #3 the tokenization, but ADR-0030's citations weren't updated. Also one new Minor: architecture-doc-shape Problem-shape section examples remain Thrive-flavored — task 15 explicitly preserved them, but they don't meet ADR-0032's stub-anchor principle; routed to PR #4 sweep. Build / types / tests confirmed clean by Clove's prior pass.
 - 2026-05-03 [phase-1-foundation]: Clove fixed Briar's third-pass Major. Replaced `Clove (PR #2)` with `Clove (PR #3)` at three locations — `.claude/spec/adrs/0030-token-substitution-at-build-time.md:28,43` and `templates/claude/spec/adrs/0030-token-substitution-at-build-time.md:28`. Grep confirmed no other stale references outside the plan's own documentation of the issue. `prism:check` passes (drift + 5 tests).
+- 2026-05-03 [phase-1-foundation]: Briar fourth-pass self-review on commit `3b85250`. Clean — all third-pass fixes verified (ADR-0030 PR #3 citations on both surfaces, prop-ordering reference gone from code-dev/shared.md and generated SKILL.md, ADR-0029 count claims dropped on both surfaces, architecture-doc-shape Thrive content cleared, no remaining stale Clove PR #2 refs outside the plan). `prism:check`, `prism:check-types`, `prism:test` all pass. No new issues.
+- 2026-05-03 [phase-1-foundation]: Eric PR #1 review on commit `3b85250`. One Major (surviving `useEffect-guidelines.md` reference at `prism-code-dev/shared.md:169` — survived four passes due to camelCase mismatch with deleted kebab-case file) plus three Minors (count drift in ADR-0030 line 12 and ADR-0032 line 13 across both surfaces; `escapeToml` doesn't escape newlines, would break TOML on multiline descriptions). Doc-class triage: ADR-0030 source claims (`buildSkillMarkdown` lines, AGENTS.md.tmpl line 33, SPEC.md.tmpl tokens) all verified; one diverged claim (ADR-0029 dangling-refs cleanup) caught as the Major. Resolved existing count-drift thread (ADR-0002 templates) — fix verified in commit `dfe7702`. Inline comments + summary posted; no labels (Major present).
+- 2026-05-03 [phase-1-foundation]: Clove fixed all four Eric PR #1 review issues. Major: deleted trailing `useEffect-guidelines.md` sentence at `.ai-skills/skills/prism-code-dev/shared.md:169`, regenerated SKILL.md mirror via `prism:build`. Minor #1+#2: dropped counts from ADR-0030 line 12 and ADR-0032 line 13 on both surfaces. Minor #3: moved `escapeToml`/`escapeTomlMultiline` from `build.ts` to `utils.ts` (paired text helpers; no side effects on import), added `\n`/`\r` escaping to `escapeToml`, added two regression tests in `discovery-metadata.test.ts`. All 7 tests pass; types clean; `prism:check` confirms no drift. Plan updated; PR Readiness checkbox flipped back.
 
 ---
 
@@ -365,6 +368,42 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 - **Problem:** Plan task 15 explicitly preserved the CI and block-system examples in the Problem-shape section as "generic illustrations": `For CI: two operational scopes (fleet-wide + single-site) × two deployment targets (backend + frontend) = four operational modes. For the block system: two editor contexts (backend edit + frontend view).` These read as concrete and plausible but encode Thrive's specific architecture (fleet of dealer sites, WordPress + Next.js split, Gutenberg block system). A consumer team without a fleet-of-sites architecture or a Gutenberg-style block editor sees these as references that don't match their work. ADR-0032's principle says canonical content should be generic with stub anchors where Atlas writes specifics — these examples don't fully meet that bar.
 - **Suggested fix:** Re-evaluate during the PR #4 editorial sweep. Two options: (a) replace with stub anchor `<!-- atlas:problem-shape-examples -->` and let Atlas write per-team illustrations during onboarding; (b) keep the examples but explicitly label the section "Examples drawn from architectures with that shape — adapt for your team's reality." Option (a) aligns more cleanly with ADR-0032's stub-anchor convention.
 
+### Surviving useEffect-guidelines.md dangling reference (Eric PR #1 review)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-dev/shared.md:169` (and inherited generated `.claude/skills/prism-code-dev/SKILL.md:180`)
+- **Problem:** ADR-0029 promised all dangling rule references in canonical skill sources would be deleted. The second-pass finalization caught the matching `prop-ordering.md` miss at `shared.md:289`. This one survived four self-review passes — the reference uses camelCase (`useEffect-guidelines.md`) where the deleted file was kebab-case (`use-effect-guidelines.md`), so a strict-match grep wouldn't catch it. Sentence: "This is the core principle behind the `useEffect-guidelines.md` anti-pattern rules."
+- **Suggested fix:** Per ADR-0029's prose ("the surrounding sentence is revised to drop the file pointer while keeping the generic guidance"), delete the trailing sentence — the "single source of truth" principle stands without the file pointer. Then `pnpm prism:build` to regenerate the SKILL.md mirror.
+- **Fixed in:** phase-1-foundation, post-Eric-review cleanup. Trailing sentence deleted from canonical source; SKILL.md mirror regenerated via `pnpm prism:build`. `prism:check` confirms no drift.
+
+### Count drift in ADR-0030 line 12 (Eric PR #1 review)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.claude/spec/adrs/0030-token-substitution-at-build-time.md:12` and templates mirror at `templates/claude/spec/adrs/0030-token-substitution-at-build-time.md:12`
+- **Problem:** "16 distribution files and 11 canonical skill sources" violates `writing-voice.md § Count rules, not numbers`. ADR-0029 had the same fix applied during second-pass cleanup; ADR-0030 didn't get the same pass.
+- **Suggested fix:** Reframe to point at the patterns instead of counting them — e.g. "many of the distribution files and canonical skill sources contain hardcoded `Thrive`, `tractru`, `THR-NNNN`, `thrive.<key>` literals" or "the remaining distribution files and canonical skill sources..."
+- **Fixed in:** phase-1-foundation, post-Eric-review cleanup. "The other 16 distribution files and 11 canonical skill sources" → "The remaining distribution files and canonical skill sources" on both surfaces.
+
+### Count drift in ADR-0032 line 13 (Eric PR #1 review)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.claude/spec/adrs/0032-canonical-skill-content-is-generic.md:13` and templates mirror at `templates/claude/spec/adrs/0032-canonical-skill-content-is-generic.md:13`
+- **Problem:** "across at least seven persona sources" — same count-drift pattern as ADR-0030 line 12, hedged with "at least" but still risks staleness.
+- **Suggested fix:** Drop the count and lean on the categorical claim — e.g. "Equipment dealership domain context blocks across multiple persona sources" carries the same signal without the specific number.
+- **Fixed in:** phase-1-foundation, post-Eric-review cleanup. "across at least seven persona sources" → "across multiple persona sources" on both surfaces.
+
+### escapeToml gap on newline-containing descriptions (Eric PR #1 review)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:88`
+- **Problem:** `escapeToml` only escapes `\` and `"`. The value flows into a TOML basic string at line 139 (`description = "${escapeToml(description)}"`). TOML basic strings forbid raw newlines — a description containing `\n` would produce invalid TOML and silently break Codex agent discovery. The discovery test caps description length at 1000 chars but doesn't enforce single-line.
+- **Suggested fix:** Two options: (a) escape `\n` → `\\n` and `\r` → `\\r` inside `escapeToml` (basic strings interpret escape sequences), or (b) switch the description to a triple-quoted multiline form at the call site (newlines pass through, only `"""` needs escaping). Low real-world risk today (descriptions are conventionally single-line) but worth tightening before Phase 2 contributors pass through multiline descriptions.
+- **Fixed in:** phase-1-foundation, post-Eric-review cleanup. Took option (a). Moved `escapeToml` and `escapeTomlMultiline` from `build.ts` to `utils.ts` (paired text-manipulation helpers, no side effects on import — letting tests import them without triggering `build.ts` `main()`). Added `\n` → `\\n` and `\r` → `\\r` escaping. Two regression tests added to `discovery-metadata.test.ts` covering basic-string and multiline forms. All 7 tests pass; types clean; `prism:check` passes.
+
 ---
 
 ## Cleanup Items
@@ -375,7 +414,7 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 
 ## PR Readiness
 
-- [x] No critical or major issues remaining for PR #1 — Briar's third-pass Major (stale `Clove (PR #2)` references in ADR-0030) fixed at three citation locations. The remaining open Major and Critical issues (Briar's first-pass Issues #1, #2 plus the second-pass language/framework framing, dealership context, originating-incident THR-* generalization) are all routed to PR #4 (`prism-content-cleanup`).
+- [x] No critical or major issues remaining for PR #1 — Eric's PR review Major (surviving `useEffect-guidelines.md` reference) fixed; Eric's three Minors all fixed (count drift on both ADRs, `escapeToml` newline gap with regression tests). Briar's earlier passes all clean. Remaining open issues from Briar's first-pass (Issues #1, #2, second-pass language/framework framing, dealership context, originating-incident THR-* generalization) all routed to PR #4 (`prism-content-cleanup`).
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic — `pnpm prism:test` passes (5 tests covering canonical-source invariants)
@@ -384,4 +423,4 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 - [x] PR description up to date — body synced to reflect ADR-0032 + tasks 13–19 (commit `9a2d885` summary, second-pass narrative, PR #4 scope)
 - [x] Lasting decisions promoted to architect context — ADR-0029 (rules self-declare), ADR-0030 (token substitution at build time), ADR-0032 (canonical content generic) all authored in dogfood and templates
 
-**Last updated:** 2026-05-03 (Clove post-third-pass cleanup — Briar Major fixed)
+**Last updated:** 2026-05-03 (Clove post-Eric-review cleanup — Major + 3 Minors all fixed; build clean)

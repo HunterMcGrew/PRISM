@@ -21,6 +21,8 @@ import { fileURLToPath } from "node:url";
 
 import {
 	ensureDirectory,
+	escapeToml,
+	escapeTomlMultiline,
 	GENERATED_HEADER_LINE,
 	listDirectories,
 	loadPathDefinitions,
@@ -84,14 +86,6 @@ const optionalSkillPayloads: OptionalSkillPayload[] = [
 	{ kind: "directory", relativePath: "scripts" },
 	{ kind: "file", relativePath: path.join("agents", "openai.yaml") },
 ];
-
-function escapeToml(value: string): string {
-	return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-}
-
-function escapeTomlMultiline(value: string): string {
-	return value.replaceAll("\\", "\\\\").replaceAll('"""', '\\"\\"\\"');
-}
 
 function buildSkillMarkdown({
 	frontmatter,

@@ -10,7 +10,7 @@ Date: 2026-05-03
 Phase 1's audit of the distribution surface surfaced three categories of bleed in canonical skill sources (`.ai-skills/skills/<id>/shared.md`) and the templates copy that ships to consumer teams:
 
 - **Language and framework specializations** in every persona's "specializes in" intro and most workflow examples — `TypeScript / React`, `WordPress block (Gutenberg)`, `PHP class-based architecture`, `useEffect`, `RSC`, `Next.js`, `Pest PHP`, `Jest`, `Apollo`, `GraphQL`. A Python/Django consumer installing PRISM gets Briar telling them she specializes in WordPress block development.
-- **Equipment dealership domain context blocks** across at least seven persona sources — multi-tenant blast radius, complex inventory data, mobile field use by sales reps, B2B quote flows. A non-dealership consumer team gets every persona instructed to think about dealer sites.
+- **Equipment dealership domain context blocks** across multiple persona sources — multi-tenant blast radius, complex inventory data, mobile field use by sales reps, B2B quote flows. A non-dealership consumer team gets every persona instructed to think about dealer sites.
 - **Originating-incident citations** with hardcoded `THR-NNNN` IDs. A consumer team has no way to look up `THR-1636` — the citation lands as a broken pointer.
 
 ADR-0029 (rules self-declare) addresses how skills cite per-team rule files: they don't, the rules declare their own applicability and the agent picks them up. ADR-0030 (token substitution at build time) addresses identifier mapping: `Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`, etc. Together those two ADRs cover the mechanical bleed — file references and identifiers.
