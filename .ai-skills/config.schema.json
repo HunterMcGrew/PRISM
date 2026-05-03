@@ -63,7 +63,7 @@
 		},
 		"techStack": {
 			"type": "array",
-			"description": "Tech stack flags. Skills and rules branch on this — e.g. `use-effect-guidelines.md` only ships if `react` is present. Validated against an enum so the set stays curated; add new values to the enum when a real team needs them.",
+			"description": "Tech stack flags. Drives onboarding's per-codebase rule generation — for each language and framework listed, Atlas generates a corresponding rules file populated from patterns in the team's actual code (Phase 2). Validated against an enum so the set stays curated; add new values to the enum when a real team needs them.",
 			"items": {
 				"type": "string",
 				"enum": [
@@ -98,7 +98,7 @@
 		},
 		"rules": {
 			"type": "object",
-			"description": "Rule selection. `universal` is the always-included set; `optIn` adds tech-stack-specific rules.",
+			"description": "Rule selection. `universal` is the always-included set (10 universal rules ship with PRISM). Language- and framework-specific rules are generated per-codebase during onboarding (Phase 2), not opted into via this field. `optIn` is reserved for future non-language opt-in rules.",
 			"properties": {
 				"universal": {
 					"type": "string",

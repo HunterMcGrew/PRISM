@@ -76,14 +76,14 @@ Follow `.claude/rules/code-comments.md` — JSDoc on declarations, plain sentenc
 
 ## Dedicated Standards
 
-Opt-in based on the team's stack. Atlas selects which to include during onboarding based on the `techStack` answers; teams can also include rules manually.
+Universal rules ship with PRISM. Language- and framework-specific rules are **generated per-codebase during onboarding** (Phase 2) — Atlas asks about your stack, then writes the relevant files into `.claude/rules/` populated with patterns from your actual code, not pre-shipped templates.
 
-| Topic | File | Opt-in if |
-|-------|------|-----------|
+| Topic | Source | Loaded |
+|-------|--------|--------|
 | Comments | `.claude/rules/code-comments.md` | always (universal) |
 | Accessibility (WCAG 2.1 AA) | `.claude/rules/accessibility.md` | always (universal) |
-| TypeScript (types, data flow, naming, server/client, tests) | `.claude/rules/code-standards-ts.md` | `techStack` includes `typescript` |
-| PHP (architecture, naming, security, integration, tests) | `.claude/rules/code-standards-php.md` | `techStack` includes `php` |
-| useEffect (React) | `.claude/rules/use-effect-guidelines.md` | `techStack` includes `react` |
-| Prop / object key ordering | `.claude/rules/prop-ordering.md` | `techStack` includes `react` |
-| Component props decoupling | `.claude/rules/component-props-decoupling.md` | `techStack` includes `react` |
+| Language-specific code standards (TypeScript, PHP, Python, Go, etc.) | generated per-team during onboarding | per `techStack` |
+| Framework-specific guidelines (React useEffect, Vue composables, prop/arg ordering, component-props decoupling, etc.) | generated per-team during onboarding | per `techStack` |
+| Build / test / lint / format commands | `.claude/rules/verification-commands.md` | always (Winston populates per-team in Phase 3) |
+
+When the onboarding flow lands, an opt-in step asks: "Do you already have engineering standards (style guides, ESLint configs, Cursor/ChatGPT rules)?" If yes, Atlas reads them and decides — per the rule placement test in [`.claude/SPEC.md`](../SPEC.md) — whether each goes into `.claude/rules/` (loaded every chat), `.claude/architect/<topic>.md` (loaded contextually), or as an ADR (durable decision).

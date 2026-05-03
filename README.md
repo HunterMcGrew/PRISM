@@ -99,7 +99,7 @@ Teams configure PRISM via `.ai-skills/config.json` in their own repo:
   },
   "github": { "owner": "tractru", "repo": "ktc-frontend" },
   "techStack": ["nextjs", "react", "typescript", "tailwind"],
-  "rules": { "universal": "all", "optIn": ["use-effect-guidelines", "code-standards-ts"] }
+  "rules": { "universal": "all" }
 }
 ```
 

@@ -30,8 +30,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
   "defaultBranch": "main",
   "techStack": ["nextjs", "react", "typescript", "tailwind"],
   "rules": {
-    "universal": "all",
-    "optIn": ["use-effect-guidelines", "code-standards-ts", "prop-ordering"]
+    "universal": "all"
   },
   "slackChannel": "#ktc-dev"
 }
@@ -51,7 +50,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `github.owner` | string | yes | GitHub org/user. Substituted as `${GITHUB_OWNER}`. Used by Eric (PR review), Sage (changelog), Reese (QA), Lilac (standup). |
 | `github.repo` | string | yes | GitHub repo name. Substituted as `${GITHUB_REPO}`. |
 | `defaultBranch` | string | optional | Default branch name. Substituted as `${DEFAULT_BRANCH}`. Defaults to `main`. |
-| `techStack` | string[] | optional | Validated against an enum (see schema). Skills and rules branch on this — e.g. `code-standards-ts.md` ships only if `typescript` is present. |
+| `techStack` | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
