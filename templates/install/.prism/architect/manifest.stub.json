@@ -1,0 +1,14 @@
+{
+	".prism/SPEC.md": "spec-editing.md",
+	".claude/skills/**": "spec-editing.md",
+	".prism/templates/**": "spec-editing.md",
+	".prism/rules/**": "spec-editing.md",
+	".prism/spec/adrs/**": "spec-editing.md",
+	".prism/architect/**": "spec-editing.md",
+	".prism/references/**": "spec-editing.md",
+	".prism/plans/**": "spec-editing.md",
+	".prism/**": "install-layout.md",
+	"docs/": "documentation.md",
+	"docs/content/dev/architecture/": "architecture-doc-shape.md",
+	"**": "skills-ecosystem.md"
+}

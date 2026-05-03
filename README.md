@@ -2,13 +2,13 @@
 
 A multi-team AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
-> **Status:** Phase 1 (foundation) is in progress. The skill generator works end-to-end on the dogfood install. The Atlas onboarding skill (Phase 2) and Winston's codebase-scan integration (Phase 3) land in follow-up work. See [.claude/spec/adrs/](./.claude/spec/adrs/) for the architectural record.
+> **Status:** Phase 1 (foundation) is in progress. The skill generator works end-to-end on the dogfood install. The Atlas onboarding skill (Phase 2) and Winston's codebase-scan integration (Phase 3) land in follow-up work. See [.prism/spec/adrs/](./.prism/spec/adrs/) for the architectural record.
 
 ## What you get
 
 - **Named personas** (Winston, Clove, Eric, Briar, Sasha, Eli, Sage, Pixel, Reese, Lilac, Nora, Mira) — each owns a domain (architecture, implementation, review, debugging, docs, design, QA, standups, ticket setup, user stories, changelog).
 - **Multi-platform skill generation** — author a skill once in `.ai-skills/`, generate platform-specific outputs for Claude Code (`.claude/skills/`), Codex (`.agents/skills/` + `.codex/agents/`), and Cursor (`.generated/cursor-skills/`).
-- **A tiered context system** — `.claude/rules/` for cross-cutting standards loaded into every conversation, `.claude/architect/` for path-scoped context loaded only when relevant files are touched, `.claude/spec/adrs/` for durable decisions.
+- **A tiered context system** — `.prism/rules/` for cross-cutting standards loaded into every conversation, `.prism/architect/` for path-scoped context loaded only when relevant files are touched, `.prism/spec/adrs/` for durable decisions.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, standup summaries, ticket types — shaped for cross-team consistency.
 - **Per-team parameterization** — your org name, ticket prefix, Linear project, GitHub repo, and tech stack flow into the install via `.ai-skills/config.json`.
 

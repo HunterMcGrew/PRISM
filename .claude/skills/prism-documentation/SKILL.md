@@ -107,7 +107,7 @@ Eli writes documentation for equipment dealership websites. This shapes the audi
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards (see AGENTS.md § Project Engineering Standards). When you discover a gap, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards (see AGENTS.md § Project Engineering Standards). When you discover a gap, flag it and recommend an update.
 
 **Ownership & Handoff:** Eli produces documentation only — see AGENTS.md § Ownership & Handoff for the full routing table. If someone asks Eli to debug, start a ticket, write code, or plan architecture — just redirect. "Sasha handles diagnostics," "Nora handles ticket setup," "That's Clove's department," "That's Winston's territory." Keep it brief and friendly.
 
@@ -127,7 +127,7 @@ Run these steps in order. **Confirm context and audience before writing** — do
 
 ### Step 1 — Read documentation conventions
 
-Read `<repo-root>/.claude/architect/documentation.md`. This is the source of truth for:
+Read `<repo-root>/.prism/architect/documentation.md`. This is the source of truth for:
 
 - Naming conventions (topic-based, kebab-case)
 - Frontmatter schema (title, description, category, audience, last_updated)
@@ -167,13 +167,13 @@ Wait for the answer before continuing.
 
 **Resolving context by source:**
 
-- _Branch name_ → `git diff main...<branch>` + check for `.claude/plans/` file
+- _Branch name_ → `git diff main...<branch>` + check for `.prism/plans/` file
 - _PR number_ → `gh pr diff <number>` + `gh pr view <number>` for description
 - _Tag range_ → `git diff <old>..<new>`
 - _Existing doc path_ → read the file, understand current content, prepare to update
 - _Interview mode_ → skip the diff; use answers to interview questions below as the source of truth
 
-**Plan lookup** (branch context only) — read `<repo-root>/.claude/references/plan-lookup.md` and execute to find the plan. If a plan exists, **read it fully** — not just `## Goal` and `## Implementation Tasks`, but also `## Decisions` and `## History`. The plan is the source of truth for intent and constraints:
+**Plan lookup** (branch context only) — read `<repo-root>/.prism/references/plan-lookup.md` and execute to find the plan. If a plan exists, **read it fully** — not just `## Goal` and `## Implementation Tasks`, but also `## Decisions` and `## History`. The plan is the source of truth for intent and constraints:
 
 - `## Decisions` tells you what choices were made and why — these are implicit do-not-undo rules that apply to your writing (e.g. tone decisions, structural choices, language constraints).
 - `## History` tells you what already happened on this branch — what was written, what was restructured, what was consolidated. This prevents you from contradicting or undoing earlier work.
@@ -357,27 +357,27 @@ Set `last_updated` to today's date when creating or updating a doc.
 
 ## Doc templates
 
-Templates are in `.claude/references/` — the single source of truth for doc structure. Read the relevant template before writing:
+Templates are in `.prism/references/` — the single source of truth for doc structure. Read the relevant template before writing:
 
-- **User docs:** `.claude/references/user-doc-template.md`
-- **Dev docs:** `.claude/references/dev-doc-template.md`
-- **Callouts:** `.claude/references/doc-callouts.md`
+- **User docs:** `.prism/references/user-doc-template.md`
+- **Dev docs:** `.prism/references/dev-doc-template.md`
+- **Callouts:** `.prism/references/doc-callouts.md`
 
 Category-specific templates layer on top of the base when writing into a specialized category:
 
-- **User block docs** (`docs/content/user/blocks/`): `.claude/references/user-block-doc-template.md`
-- **Dev block docs** (`docs/content/dev/blocks/`): `.claude/references/dev-block-doc-template.md`
-- **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.claude/architect/architecture-doc-shape.md`
+- **User block docs** (`docs/content/user/blocks/`): `.prism/references/user-block-doc-template.md`
+- **Dev block docs** (`docs/content/dev/blocks/`): `.prism/references/dev-block-doc-template.md`
+- **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.prism/architect/architecture-doc-shape.md`
 
 Follow the template structure, writing rules, and image conventions defined there. Do not deviate from the template format unless the content genuinely doesn't fit (e.g. a customization guide doesn't need a Block Options section).
 
 ## Writing guidelines
 
-Writing rules live in the templates (`.claude/references/user-doc-template.md` and `.claude/references/dev-doc-template.md`). Key points:
+Writing rules live in the templates (`.prism/references/user-doc-template.md` and `.prism/references/dev-doc-template.md`). Key points:
 
 - **Image paths** use relative format: `../../../public/images/{audience}/{category}/{topic}/descriptive-name.png` — adjust `../` depth based on the doc's location under `docs/content/`
 - **Alt text** must describe what the screenshot shows, not just label it
-- **Callouts** — use GitHub alert syntax (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`). Read `.claude/references/doc-callouts.md` for when to use each type and examples. Aim for 0-2 per page.
+- **Callouts** — use GitHub alert syntax (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`). Read `.prism/references/doc-callouts.md` for when to use each type and examples. Aim for 0-2 per page.
 
 **When updating an existing doc:**
 
@@ -390,15 +390,15 @@ Writing rules live in the templates (`.claude/references/user-doc-template.md` a
 
 ### Conditional sub-flows (fire only when their trigger fires)
 
-**When creating a new template at `.claude/references/*-template.md`:**
+**When creating a new template at `.prism/references/*-template.md`:**
 
 1. Add a **Category-specific rules** bullet to the parent base template (`user-doc-template.md` or `dev-doc-template.md`) pointing down to the new specialization — this is the breadcrumb that routes future Eli sessions to the right template.
-2. Add an entry to `.claude/architect/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
+2. Add an entry to `.prism/architect/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
 3. Mention the new template in `SKILL.md § Doc templates § Category-specific templates` so the skill itself knows it exists.
 
 **When creating a doc collection (N ≥ 3 docs sharing a topic, not a single standalone page):**
 
-1. Add a `## Per-Block Documentation` section to the paired `.claude/architect/<topic>.md` file listing the collection — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
+1. Add a `## Per-Block Documentation` section to the paired `.prism/architect/<topic>.md` file listing the collection — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
 2. Add a Cross-Reference Map row in `documentation.md` per audience — if both user and dev per-block docs exist, add both rows.
 3. Add audience-parallel intros to `docs/content/index.mdx` — if both user and dev sides have a section for the category, both need a drill-down intro sentence, not just one.
 
@@ -424,7 +424,7 @@ If the doc is new and the audience section on `docs/content/index.mdx` doesn't h
 
 ### 3. Update the cross-reference map
 
-If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.claude/architect/documentation.md`.
+If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.prism/architect/documentation.md`.
 
 ### 4. Update the branch plan
 
@@ -440,13 +440,13 @@ If both audiences were selected, list both paths.
 
 ## Post-Docs Closing
 
-After the review prompt above, Eli ships the docs — no prompt before pushing. Follow the flow in [.claude/references/shipping-flow.md](../../references/shipping-flow.md), using the **Eli row** of the per-persona defaults (verification scope: prettier on changed Markdown only — skip TypeScript, tests, and build; commit subject template: `THR-NNNN: <imperative subject>`; two-path closing opening: "Docs are up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
+After the review prompt above, Eli ships the docs — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Eli row** of the per-persona defaults (verification scope: prettier on changed Markdown only — skip TypeScript, tests, and build; commit subject template: `THR-NNNN: <imperative subject>`; two-path closing opening: "Docs are up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
 ## Definition of Done
 
 - [ ] Documentation conventions read (`documentation.md`)
-- [ ] Doc templates read (`.claude/references/user-doc-template.md` and/or `.claude/references/dev-doc-template.md`)
-- [ ] Callout guide read (`.claude/references/doc-callouts.md`)
+- [ ] Doc templates read (`.prism/references/user-doc-template.md` and/or `.prism/references/dev-doc-template.md`)
+- [ ] Callout guide read (`.prism/references/doc-callouts.md`)
 - [ ] Branch plan read fully — decisions, history, and constraints absorbed before writing
 - [ ] Recent commits checked (`git log --oneline -10`) for tone, language, and structural decisions
 - [ ] Feature context confirmed (branch / PR / tag range / existing doc / interview)
@@ -465,19 +465,19 @@ After the review prompt above, Eli ships the docs — no prompt before pushing. 
 - [ ] Cross-reference map updated in `documentation.md` if applicable
 - [ ] Branch plan updated with History entry (if plan exists)
 - [ ] File path(s) presented to user with review prompt
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 ### Large-write checks (if applicable)
 
 Fire these only when the session triggered one of the conditions. Skip otherwise — the common single-doc path is already covered by the base checklist above.
 
-- [ ] **If a new template was created at `.claude/references/`:** parent base template (`user-doc-template.md` or `dev-doc-template.md`) has a Category-specific rules bullet pointing to it; `documentation.md § Doc Templates § Category-specific rules` lists it; `SKILL.md § Doc templates § Category-specific templates` mentions it.
-- [ ] **If a doc collection (N ≥ 3 docs sharing a topic) was created:** paired `.claude/architect/<topic>.md` file advertises the collection in a `## Per-Block Documentation` section so manifest-loading agents know it exists; Cross-Reference Map in `documentation.md` has a row per audience (user and dev where both exist); `docs/content/index.mdx` has audience-parallel intro sentences — not just one side.
+- [ ] **If a new template was created at `.prism/references/`:** parent base template (`user-doc-template.md` or `dev-doc-template.md`) has a Category-specific rules bullet pointing to it; `documentation.md § Doc Templates § Category-specific rules` lists it; `SKILL.md § Doc templates § Category-specific templates` mentions it.
+- [ ] **If a doc collection (N ≥ 3 docs sharing a topic) was created:** paired `.prism/architect/<topic>.md` file advertises the collection in a `## Per-Block Documentation` section so manifest-loading agents know it exists; Cross-Reference Map in `documentation.md` has a row per audience (user and dev where both exist); `docs/content/index.mdx` has audience-parallel intro sentences — not just one side.
 - [ ] **If a new category was introduced** (e.g. a new subdirectory under `docs/content/{user,dev}/`): `_meta.js` exists inside the new directory; the parent `_meta.js` lists the new category; `index.mdx` has a section for the new category with at least one link.
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 
@@ -485,7 +485,7 @@ Required if any of the following occurred:
 - An assumption about the feature's audience or scope turned out to be wrong
 - A codebase pattern made the feature harder to document than it should have been
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
 

@@ -2,19 +2,19 @@
 
 ## Skills Ecosystem
 
-This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.claude/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
+This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
 
-The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.claude/SPEC.md`. Start there if you're unsure where a decision belongs.
+The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.prism/SPEC.md`. Start there if you're unsure where a decision belongs.
 
 Key files:
 
-- `.claude/SPEC.md` — tier hierarchy map: what binds, who changes, how proposals work
-- `.claude/spec/adrs/` — architectural decision records for durable, cross-cutting decisions (skill ecosystem, codebase architecture, spec structure). Not ticket-tactical decisions — those stay in the plan's `## Decisions`.
-- `.claude/architect/skills-ecosystem.md` — skill roster, workflows, handoffs, cross-cutting rules
-- `.claude/architect/manifest.json` — maps file paths to architect context docs
-- `.claude/plans/<ticket-id>.md` — living plans scoped to tickets (see `.claude/rules/branch-plan.md`)
-- `.claude/templates/` — shared templates (bug report, PR description, acceptance criteria, ticket types)
-- `.claude/rules/` — code standards, accessibility, useEffect guidelines, plan workflow
+- `.prism/SPEC.md` — tier hierarchy map: what binds, who changes, how proposals work
+- `.prism/spec/adrs/` — architectural decision records for durable, cross-cutting decisions (skill ecosystem, codebase architecture, spec structure). Not ticket-tactical decisions — those stay in the plan's `## Decisions`.
+- `.prism/architect/skills-ecosystem.md` — skill roster, workflows, handoffs, cross-cutting rules
+- `.prism/architect/manifest.json` — maps file paths to architect context docs
+- `.prism/plans/<ticket-id>.md` — living plans scoped to tickets (see `.prism/rules/branch-plan.md`)
+- `.prism/templates/` — shared templates (bug report, PR description, acceptance criteria, ticket types)
+- `.prism/rules/` — code standards, accessibility, useEffect guidelines, plan workflow
 
 ---
 
@@ -54,7 +54,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 - The user explicitly says "don't use a skill" or "just do it"
 - The user is already inside a skill session (don't nest skills)
 
-**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See ADR-0003 for the decision and its tradeoffs; the framework behind it lives in `.claude/plans/4.7-skill-audit-strategy.md` (Round 10).
+**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See ADR-0003 for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
 
 ---
 
@@ -70,7 +70,7 @@ Keep the main context window clean by offloading research, exploration, and para
 
 ## 3. Self-Improvement Loop
 
-After a correction from the user, capture the pattern in `.claude/lessons.md`. Before writing a new entry, check if an existing one already covers it — update rather than duplicate. Keep entries to one sentence where possible — a lessons file that's too long to scan defeats the purpose.
+After a correction from the user, capture the pattern in `.prism/lessons.md`. Before writing a new entry, check if an existing one already covers it — update rather than duplicate. Keep entries to one sentence where possible — a lessons file that's too long to scan defeats the purpose.
 
 Review lessons at session start. The goal is a mistake rate that drops over time — each lesson is a ratchet that prevents the same class of error from recurring.
 
@@ -94,14 +94,14 @@ One exception: if the fix touches a public API, shared type, or shared utility, 
 
 ## Task Management
 
-> Every ticket or epic has a living plan at `.claude/plans/<ticket-id>.md` — see `.claude/rules/branch-plan.md` for the full workflow.
+> Every ticket or epic has a living plan at `.prism/plans/<ticket-id>.md` — see `.prism/rules/branch-plan.md` for the full workflow.
 
-1. **Find or Create Plan** — look up `.claude/plans/<ticket-id>.md` before starting work
+1. **Find or Create Plan** — look up `.prism/plans/<ticket-id>.md` before starting work
 2. **Use Plan as Context** — review goal, decisions, and history before modifying code
 3. **Track Progress** — update `## History` after meaningful changes (include branch name)
 4. **Preserve Intentional Logic** — check `## Decisions` before removing or refactoring code
 5. **Record Decisions** — if you made a choice with a "why" behind it, log it in `## Decisions` with the reasoning, not just the outcome. This includes: picking one approach over another, scoping something in or out, resolving an ambiguity in the requirements, or changing course mid-implementation. The plan is the long-term memory that survives across sessions and skill handoffs — a decision that only lives in conversation context is a decision that will get re-litigated or accidentally undone. A longer plan with clear reasoning is more valuable than a short plan that loses context.
-6. **Capture Lessons** — update `.claude/lessons.md` after corrections
+6. **Capture Lessons** — update `.prism/lessons.md` after corrections
 
 ---
 
@@ -114,9 +114,9 @@ One exception: if the fix touches a public API, shared type, or shared utility, 
 
 ## 7. Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards — built through iterative testing and real project experience. They are the equivalent of a style guide or code standard: follow them as the default authority for project-specific decisions.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — built through iterative testing and real project experience. They are the equivalent of a style guide or code standard: follow them as the default authority for project-specific decisions.
 
-**Framing:** see ADR-0015 (humane language over mandates) and ADR-0016 (explain the why). When editing spec content under `.claude/**`, `.claude/architect/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `skills-ecosystem.md`.
+**Framing:** see ADR-0015 (humane language over mandates) and ADR-0016 (explain the why). When editing spec content under `.claude/**`, `.prism/architect/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `skills-ecosystem.md`.
 
 - Apply every applicable rule as written — these exist because the team learned the hard way what happens without them
 - If a specific situation genuinely requires deviation, flag the deviation and explain the reasoning rather than silently overriding

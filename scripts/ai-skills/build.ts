@@ -19,6 +19,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { runPathGuard } from "./path-guard";
 import {
 	ensureDirectory,
 	escapeToml,
@@ -350,6 +351,118 @@ async function loadSkillSource(
 	};
 }
 
+/**
+ * Areas under the canonical contentRoot (.prism/) that get mirrored to every
+ * platform copy directory. Agent-written areas (plans/, lessons.md) are
+ * deliberately excluded — those live only at canonical.
+ */
+const COPIED_CONTENT_AREAS = [
+	"rules",
+	"architect",
+	"spec",
+	"templates",
+	"references",
+] as const;
+const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
+
+async function copyContentToPlatformDir(
+	contentRoot: string,
+	platformDir: string
+): Promise<void> {
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		const targetArea = path.join(platformDir, area);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
+
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+			const sourcePath = path.join(sourceArea, entry.relativePath);
+			const targetPath = path.join(targetArea, entry.relativePath);
+			const sourceContent = await fs.readFile(sourcePath, "utf8");
+			await writeFileIfChanged(
+				targetPath,
+				sourceContent,
+				checkMode,
+				changedPaths
+			);
+		}
+
+		await writeFileIfChanged(
+			path.join(targetArea, MANAGED_MARKER),
+			"Managed by scripts/ai-skills/build.ts\n",
+			checkMode,
+			changedPaths
+		);
+	}
+
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const sourcePath = path.join(contentRoot, looseFile);
+		const targetPath = path.join(platformDir, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+		const sourceContent = await fs.readFile(sourcePath, "utf8");
+		await writeFileIfChanged(
+			targetPath,
+			sourceContent,
+			checkMode,
+			changedPaths
+		);
+	}
+}
+
+/**
+ * Removes managed build-copy files under `<platformDir>/<area>/` whose
+ * canonical source no longer exists. Detects the build copy by the presence of
+ * the area-level managed marker; refuses to delete files in directories that
+ * lack the marker.
+ */
+async function removeDeletedManagedContent(
+	contentRoot: string,
+	platformDir: string
+): Promise<void> {
+	for (const area of COPIED_CONTENT_AREAS) {
+		const targetArea = path.join(platformDir, area);
+		const sourceArea = path.join(contentRoot, area);
+		const markerPath = path.join(targetArea, MANAGED_MARKER);
+		if (!(await pathExists(targetArea)) || !(await pathExists(markerPath))) {
+			continue;
+		}
+
+		const entries = await listRelativeDirectoryEntries(targetArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+			if (entry.relativePath === MANAGED_MARKER) {
+				continue;
+			}
+			const sourcePath = path.join(sourceArea, entry.relativePath);
+			if (await pathExists(sourcePath)) {
+				continue;
+			}
+			const targetPath = path.join(targetArea, entry.relativePath);
+			changedPaths.push(targetPath);
+			if (checkMode) {
+				continue;
+			}
+			await fs.rm(targetPath, { force: true });
+		}
+
+		if (!(await pathExists(sourceArea))) {
+			changedPaths.push(targetArea);
+			if (!checkMode) {
+				await fs.rm(targetArea, { force: true, recursive: true });
+			}
+		}
+	}
+}
+
 async function removeDeletedManagedAgentFiles(
 	outputRoot: string,
 	validSkillIds: Set<string>
@@ -545,6 +658,33 @@ async function main(): Promise<void> {
 		checkMode,
 		changedPaths
 	);
+
+	const contentRoot = path.join(repoRoot, pathDefinitions.canonical.contentRoot);
+	if (await pathExists(contentRoot)) {
+		const violations = await runPathGuard(contentRoot);
+		if (violations.length > 0) {
+			for (const violation of violations) {
+				console.error(
+					`path-guard: ${violation.relativePath}:${violation.line}: ${violation.text}`
+				);
+			}
+			console.error(
+				`path-guard: ${violations.length} violation(s) found in ${pathDefinitions.canonical.contentRoot}/. Canonical content must reference .prism/<area>/ paths, not platform-dir build copies.`
+			);
+			process.exit(1);
+		}
+
+		const platformCopies = pathDefinitions.generated.platformContentCopies;
+		const platformDirs = [
+			path.join(repoRoot, platformCopies.claude),
+			path.join(repoRoot, platformCopies.codex),
+			path.join(repoRoot, platformCopies.cursor),
+		];
+		for (const platformDir of platformDirs) {
+			await copyContentToPlatformDir(contentRoot, platformDir);
+			await removeDeletedManagedContent(contentRoot, platformDir);
+		}
+	}
 
 	await removeDeletedManagedSkills(
 		targetRoots.claude,

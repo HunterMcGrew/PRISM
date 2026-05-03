@@ -22,6 +22,7 @@ export const GENERATED_HEADER_LINE =
 export interface PathDefinitions {
 	canonical: {
 		skillsRoot: string;
+		contentRoot: string;
 	};
 	generated: {
 		claudeSkillsRoot: string;
@@ -29,6 +30,11 @@ export interface PathDefinitions {
 		codexAgentsRoot: string;
 		codexConfigFile: string;
 		cursorSkillsRoot: string;
+		platformContentCopies: {
+			claude: string;
+			codex: string;
+			cursor: string;
+		};
 	};
 }
 
