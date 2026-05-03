@@ -17,6 +17,7 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 ## History
 
 - 2026-05-03 [no branch yet — plan created on phase-1-foundation]: Plan created. Driven by Winston's evaluation of the asymmetry between platform-specific skill generation (which writes into `.claude/`, `.codex/`, `.cursor/`) and platform-agnostic content (which only landed in `.claude/`). See `.claude/plans/epic-phase-1-foundation.md` § Decisions for the full architectural reasoning.
+- 2026-05-03 [prism-install-layout]: Branch cut off post-merge main following PR #1 squash-merge. Hunter directed: "make sure phase 1.5's implementation is detailed so there is no guesswork." Winston dispatched 3 parallel Explore agents for discovery: (1) full path-reference inventory across canonical content (returned 687 swap-targets, zero ambiguous classifications); (2) skill startup-sequence audit across all 12 canonical skills (returned explicit Read line numbers, in-body citations, layout assumptions); (3) templates surface classification (returned per-file destinations: AGENTS.md.tmpl to root, CLAUDE.md.tmpl to .claude/, everything else under .prism/<area>/). Folded all three intel sets into the plan's `## Implementation Tasks` section. Clove rewrite: 14 sub-bulleted tasks with concrete commands, file-level scope, ordering guarantees, edge cases, and verification recipes. Eli rewrite: 3 tasks (distribution.md rewrite, README "Repo shape" rewrite, paired dev doc) split cleanly from Clove's mechanical path-swap pass. Carried forward `epic-phase-1-foundation.md` PR #1 closeout history into this branch.
 
 ---
 
@@ -38,44 +39,153 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 
 ### Clove
 
-1. **Create `.prism/` directory and move content.** `git mv .claude/rules/* .prism/rules/`, same for `spec/`, `architect/`, `templates/`, `references/`, `plans/`, `SPEC.md`, `lessons.md`. Use `git mv` so history follows the files.
+The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–4 do the file-system move and reference rewrites; tasks 5–6 rename the templates surface and sweep its internals; tasks 7–9 wire the build script to the new shape; tasks 10–12 author the durable record (ADR + architect doc + manifest route); tasks 13–14 verify and ship.
 
-2. **Update `.prism/architect/manifest.json` paths.** The manifest's keys are file-pattern matchers; values are paths to architect docs. After the move, value paths are still relative to the manifest's location (`.prism/architect/`), so most won't change. Verify each route still resolves.
+**Discovery already done before pickup.** Three Explore-agent inventories Winston ran during plan refinement landed concrete intel. Use these as the to-do lists for the sweep and rewrite tasks below — they're the difference between "no guesswork" and ad-hoc grepping.
 
-3. **Extend `scripts/ai-skills/build.ts`** with read-only-content copy logic:
-   - On every build, copy `.prism/rules/`, `.prism/spec/`, `.prism/architect/`, `.prism/templates/`, `.prism/references/` into each platform dir under `<platform-dir>/<area>/`
-   - Add managed-marker file in each copied dir (`.ai-skill-generated`) so `prism:check` can detect out-of-band edits
-   - Use the same drift-check mechanism as skills
+- **Path-reference inventory:** every `.claude/<area>/` reference in canonical content classified `swap` (zero `keep`, zero `unsure`). Total ~687 occurrences across canonical skill bodies, the moving `.claude/` content's internal cross-references, the shipping `templates/claude/` tree, and the top-level docs.
+- **Skill startup-sequence audit:** explicit Reads at named line numbers in 6+ skill bodies (manifest, plan-lookup, architect-context, documentation, standup-summary template), plus mid-skill in-body citations and layout assumptions.
+- **Templates surface classification:** every file in `templates/claude/` mapped to a post-bifurcation destination — `AGENTS.md.tmpl` to root, `CLAUDE.md.tmpl` to `templates/install/.claude/`, everything else under `templates/install/.prism/<area>/`.
 
-4. **Update `.ai-skills/definitions/paths.json`** with new keys:
-   - `canonical.contentRoot: ".prism"`
-   - `generated.platformContentCopies` listing each platform-dir target
+1. **Create `.prism/` directory tree and move content.**
+   - Pre-flight: `mkdir -p .prism/rules .prism/spec/adrs .prism/architect .prism/templates .prism/references .prism/plans` — `git mv` requires destinations to exist.
+   - Pre-flight: confirm `.gitignore` doesn't exclude `.prism/`. Current gitignore excludes `.claude/worktrees/`, `.claude/settings.local.json`, `.agents/`, `.codex/`, `.generated/` — none affect `.prism/`. New files under `.prism/` will be tracked.
+   - Move directories with glob expansion (Git Bash on Windows handles this fine):
+     - `git mv .claude/rules/* .prism/rules/`
+     - `git mv .claude/architect/* .prism/architect/`
+     - `git mv .claude/spec/* .prism/spec/`
+     - `git mv .claude/templates/* .prism/templates/`
+     - `git mv .claude/references/* .prism/references/`
+     - `git mv .claude/plans/* .prism/plans/`
+   - Move loose files: `git mv .claude/SPEC.md .prism/SPEC.md`, `git mv .claude/lessons.md .prism/lessons.md`.
+   - Verify with `git status` — all moves should appear as `renamed:`. If anything appears as `deleted` + `new file`, the rename detection broke; investigate before continuing.
+   - Do NOT move: `.claude/skills/**` (platform-specific build outputs — stay where Claude Code auto-loads them), `.claude/worktrees/`, `.claude/settings.local.json`.
 
-5. **Add build-time path guard.** Fail the build if any canonical source under `.prism/` references `.claude/<area>/`, `.codex/<area>/`, or `.cursor/<area>/` paths outside of skill files (where platform-specific paths are intentional). Allowlist: skill bodies that document platform-specific behavior.
+2. **Update `.prism/architect/manifest.json` keys.** The manifest moved with the architect dir. Its keys are file-pattern matchers; values resolve relative to the manifest's location and stay correct since matched files moved alongside. Update every key from `.claude/<area>/` to `.prism/<area>/`:
+   - `.claude/SPEC.md` → `.prism/SPEC.md`
+   - `.claude/templates/**` → `.prism/templates/**`
+   - `.claude/rules/**` → `.prism/rules/**`
+   - `.claude/spec/adrs/**` → `.prism/spec/adrs/**`
+   - `.claude/architect/**` → `.prism/architect/**`
+   - `.claude/references/**` → `.prism/references/**`
+   - `.claude/plans/**` → `.prism/plans/**`
+   - Keys that STAY: `.claude/skills/prism-qa-test-plan/`, `.claude/skills/**`, `.ai-skills/skills/**`, `scripts/ai-skills/**`, `docs/`, `docs/content/dev/architecture/`, `**`. Skills are platform-specific; the routing for them stays at `.claude/skills/`.
+   - Sanity-check: `cat .prism/architect/manifest.json | jq .` confirms valid JSON.
 
-6. **Sweep canonical sources for cross-reference rewrites.** All references to `.claude/rules/<rule>.md`, `.claude/architect/<doc>.md`, `.claude/spec/adrs/<adr>.md`, etc. become `.prism/rules/<rule>.md` etc. Touches: every file in `.prism/` (post-move), every file in `.ai-skills/skills/<id>/shared.md`, README.md, AGENTS.md, CLAUDE.md, docs/distribution.md, docs/parameterization.md.
+3. **Sweep canonical cross-references** — apply the path swap across the ~687 occurrences identified in the inventory.
+   - Approach: write a one-shot Node script at `scripts/ai-skills/migrate-paths.ts` (delete after this PR) that walks the listed paths, applies the regex `\.claude/(rules|architect|spec|templates|references|plans)/` → `.prism/$1/`, plus the loose-file substitutions `.claude/SPEC.md` → `.prism/SPEC.md` and `.claude/lessons.md` → `.prism/lessons.md`. Add a `--dry-run` flag that reports per-file diff summaries and a total hit count.
+   - Scope: `.prism/**/*.md`, `.ai-skills/skills/**/*.md`. Exclude `.claude/skills/**` (build outputs — `pnpm prism:build` regenerates these from canonical), `.codex/**`, `.cursor/**`, `.generated/**`, `node_modules/**`, `.git/**`.
+   - Run dry first. The hit count should be in the same neighborhood as the inventory's counts — if it's wildly off, investigate before writing.
+   - **Skill startup-time Reads** the audit flagged for verification (every one of these should read `.prism/...` after the sweep):
+     - `prism-architect/shared.md:88-90` (plan-lookup, architect-context, manifest)
+     - `prism-code-dev/shared.md:264, 269` (plan-lookup, manifest)
+     - `prism-code-review-pr/shared.md:175, 181, 219` (plan-lookup, manifest, architect-context)
+     - `prism-code-review-self/shared.md:146, 147` (plan-lookup, manifest)
+     - `prism-debugger/shared.md:168, 194` (plan-lookup, architect-context)
+     - `prism-documentation/shared.md:119, 165` (documentation.md, plan-lookup)
+     - `prism-standup-summary/shared.md:130` (`.claude/templates/standup-summary.md` → `.prism/templates/standup-summary.md`)
+   - **Out-of-scope for this PR — agent-output paths.** Sage's `.claude/changelogs/`, Pixel's `.claude/design/mocks/`, Reese's `.claude/docs/qa/` are NOT under the moving `<area>/` set, so the regex above won't touch them. They're agent-written output locations, conceptually similar to plans/lessons. Whether they should follow the bifurcation principle (move to `.prism/changelogs/`, etc.) is a separate decision belonging to Phase 2 (Atlas configures output paths per team during onboarding). Leave them as `.claude/<output>/` for now and flag in Phase 2 plan.
+   - After sweep: run `pnpm prism:build` to regenerate `.claude/skills/<id>/SKILL.md` outputs with the new path references inside them.
 
-7. **Rename `templates/claude/` → `templates/install/`.** `git mv` the directory. Restructure the contents to match the new layout: `templates/install/.prism/`, `templates/install/.claude/`, `templates/install/.codex/`, `templates/install/.cursor/`, `templates/install/AGENTS.md.tmpl`, `templates/install/CLAUDE.md.tmpl`. Update `paths.json` if it references `templates/claude/`.
+4. **Mechanical path swap in top-level docs.** Same regex as task 3, applied to: `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/parameterization.md`. Per the inventory: README has 2 refs, AGENTS.md has 16, parameterization.md has 1, CLAUDE.md handful. Path-swap only — the conceptual rewrites of README "Repo shape" and `docs/distribution.md` are Eli's job (tasks 16 and 15 below). `docs/distribution.md` is excluded from this mechanical pass since Eli rewrites the whole thing.
 
-8. **Update CLAUDE.md and AGENTS.md** with two changes: (a) sweep prose for `.claude/<area>/` refs and rewrite to `.prism/<area>/`; (b) add an explicit instruction to AGENTS.md (cross-platform constitution) that the agent should treat `.prism/rules/*.md` as the canonical rules surface, with platform-dir copies under `.claude/rules/` etc. as auto-load conveniences.
+5. **Rename `templates/claude/` → `templates/install/` and reorganize the sub-layout.** Per the templates classification audit:
+   - `git mv templates/claude templates/install`
+   - Inside the renamed directory, build the new sub-layout:
+     - Create `templates/install/.claude/`. Move `CLAUDE.md.tmpl` here (Claude-specific behavioral guidance).
+     - Create `templates/install/.prism/` and the area subdirs (`architect/`, `rules/`, `spec/adrs/`, `templates/`, `references/`). Move every other directory's contents under their matching `.prism/<area>/` path. Move `SPEC.md.tmpl` to `templates/install/.prism/SPEC.md.tmpl` (matches the dogfood placement of `.prism/SPEC.md`).
+     - `templates/install/AGENTS.md.tmpl` STAYS at root — cross-platform constitution, applies to Claude/Codex/Cursor uniformly.
+     - Create empty `templates/install/.codex/` and `templates/install/.cursor/` directories with `.gitkeep` files. Codex/Cursor anchor files (if/when they exist) land here. Documenting the convention in advance keeps the layout symmetrical.
 
-9. **Rewrite `docs/distribution.md`.** New source-to-destination map covering the bifurcated layout. Every row updates.
+6. **Sweep references inside `templates/install/**`** with the same regex as task 3. The inventory counted ~198 references in the templates surface — these become consumer install content, so every `.claude/<area>/` mention here would otherwise ship as a stale layout reference to consumer teams. Run the migrate-paths.ts script with the templates tree as scope.
 
-10. **Author ADR-0031 — Bifurcated install layout.** Write to both `.prism/spec/adrs/0031-bifurcated-install-layout.md` and `templates/install/.prism/spec/adrs/0031-bifurcated-install-layout.md`. Pull Context/Decision/Consequences from the Decisions entry above. Reference all five rejected alternatives explicitly.
+7. **Update `.ai-skills/definitions/paths.json`** with the new keys. Preserve the existing structure; the changes are additive plus one small rename:
+   ```json
+   {
+     "canonical": {
+       "skillsRoot": ".ai-skills/skills",
+       "contentRoot": ".prism"
+     },
+     "generated": {
+       "claudeSkillsRoot": ".claude/skills",
+       "codexSkillsRoot": ".agents/skills",
+       "codexAgentsRoot": ".codex/agents",
+       "codexConfigFile": ".generated/codex-config.toml",
+       "cursorSkillsRoot": ".generated/cursor-skills",
+       "platformContentCopies": {
+         "claude": ".claude",
+         "codex": ".codex",
+         "cursor": ".cursor"
+       }
+     }
+   }
+   ```
+   Update the `PathDefinitions` interface in `scripts/ai-skills/utils.ts:22-33` to match — add `canonical.contentRoot: string` and `generated.platformContentCopies: { claude: string; codex: string; cursor: string }`.
 
-11. **Author new architect doc — `install-layout.md`.** Write to `.prism/architect/install-layout.md` and `templates/install/.prism/architect/install-layout.md`. Documents the bifurcation convention, the canonical-vs-copy distinction, the cross-reference convention, the build-time copy mechanism, and the drift detection. Routes via `manifest.json` so any agent editing layout-related files loads the doc.
+8. **Extend `scripts/ai-skills/build.ts` with content-copy logic** for the bifurcation.
+   - Add a function `copyContentToPlatformDirs(repoRoot, contentRoot, platformCopies, checkMode, changedPaths)` that, for each platform target, copies these areas from `<contentRoot>/<area>/` to `<platformDir>/<area>/`:
+     - `rules/` (whole tree)
+     - `architect/` (whole tree, including `manifest.json`)
+     - `spec/` (whole tree, including `adrs/`)
+     - `templates/` (whole tree)
+     - `references/` (whole tree)
+     - Loose file: `SPEC.md`
+   - Skip copying: `plans/`, `lessons.md`. These are agent-written content; they live only at canonical (`.prism/plans/`, `.prism/lessons.md`) and must not be mirrored — mirroring would create write conflicts when an agent edits the plan and the build later overwrites the platform copy.
+   - Reuse `MANAGED_MARKER` from `utils.ts` (value: `.ai-skill-generated`) for drift detection. Write the marker file at the root of each copied area inside each platform dir — e.g. `.claude/rules/.ai-skill-generated`, `.claude/architect/.ai-skill-generated`. Content matches the existing pattern: `Managed by scripts/ai-skills/build.ts\n`.
+   - Reuse `writeFileIfChanged(targetPath, content, checkMode, changedPaths)` from `utils.ts` for the per-file copy — handles the drift-detection bookkeeping.
+   - Add a parallel cleanup function `removeDeletedManagedContent(platformDir, area, canonicalArea, checkMode, changedPaths)` (modeled on `removeDeletedManagedSkills`). For each file under `<platformDir>/<area>/`, compute the corresponding canonical path under `<contentRoot>/<area>/`. If canonical doesn't exist AND the directory contains the marker, remove the file. Handles renames (canonical file renamed → old build-copy gets cleaned up, new one written).
+   - Wire into `main()` after the existing skill-build loop and before the final `removeDeletedManagedSkills` calls. Make sure `--check` mode (`pnpm prism:check`) flags any out-of-band edit to a build-copy file.
 
-12. **Update `manifest.json` to route the new architect doc.** Add an entry mapping layout-related file patterns (e.g. `.prism/**`, `scripts/ai-skills/build.ts`, `.ai-skills/definitions/paths.json`) to the new `install-layout.md`.
+9. **Add build-time path guard.** New step in `build.ts` (called from `main()`, runs in both build mode and check mode) that fails if any markdown file under `.prism/**` references `.claude/<area>/`, `.codex/<area>/`, or `.cursor/<area>/` paths where `<area>` is one of `rules|architect|spec|templates|references|plans`.
+   - Implementation: regex `(\.claude|\.codex|\.cursor)/(rules|architect|spec|templates|references|plans)/`, scan every `.md` file under `.prism/`. Print file:line for each match.
+   - Skip matches inside fenced code blocks (` ```...``` `) — code blocks may legitimately discuss the OLD layout for historical reasons (e.g. ADR-0031's Context section).
+   - Allowlist by filename: `.prism/spec/adrs/0031-bifurcated-install-layout.md` (this PR's ADR explicitly discusses the v1 layout in its Context). Any other allowlist entries get added with a comment explaining why.
+   - On match: print a summary like `path-guard: 3 violation(s) found in .prism/...` and exit non-zero. Build/check fail.
 
-13. **Run verification.** `pnpm prism:build` (regenerates everything), `pnpm prism:check` (drift check), `pnpm prism:check-types`. Open every persona session in chat and confirm rules still load (manual smoke test — Briar, Clove, Winston each).
+10. **Author ADR-0031 — Bifurcated install layout.**
+    - Write to both `.prism/spec/adrs/0031-bifurcated-install-layout.md` and `templates/install/.prism/spec/adrs/0031-bifurcated-install-layout.md`. Byte-identical mirror per the ADR-0029/0030 convention.
+    - Use `.prism/spec/adrs/TEMPLATE.md` as the structural template. Sections: Status (Accepted), Date (2026-05-03), Context, Decision, Consequences, References.
+    - Pull Context / Decision / Consequences from `## Decisions` in this plan and the parent decision in `epic-phase-1-foundation.md`. Reference all five rejected alternatives explicitly: (a) `.prism/`-only with no platform copies, (b) symlinks, (c) `.claude/` as canonical, (d) top-level `rules/`/`spec/` (no leading dot), (e) status quo.
+    - References section: link to the new architect doc `.prism/architect/install-layout.md`, ADR-0029 (rules self-declare — sibling principle), and ADR-0030 (token substitution — parallel build-time mechanism).
+    - **Templates-vs-dogfood split for plan-file references:** the dogfood ADR may cite `.prism/plans/epic-prism-install-layout.md` in References; the templates-surface ADR must NOT — consumer teams won't have the plan file. Same dogfood-vs-templates split PR #1 task 17 established for ADR-0029 and ADR-0030.
 
-14. **Ship per shipping-flow.** Single PR titled `chore: Bifurcate install layout — .prism/ canonical with platform copies`.
+11. **Author the new architect doc — `install-layout.md`.**
+    - Write to both `.prism/architect/install-layout.md` and `templates/install/.prism/architect/install-layout.md`. Byte-identical mirror.
+    - Sections: brief summary; the bifurcation (canonical vs build-copy distinction with one concrete example); the cross-reference convention (cite `.prism/<area>/` paths in canonical content; platform copies are auto-load-only); the build-time copy mechanism (what `prism:build` copies, what areas get copied, what stays canonical-only); drift detection (`MANAGED_MARKER`, `prism:check` behavior); the path guard (regex, exclusions).
+    - Keep it tight — architect docs are agent-loaded; aim for ~80–100 lines.
+    - Cross-link to the longer human-readable companion at `docs/content/dev/architecture/install-layout.md` (Eli's task 17 below). Forward-reference is fine — the dev doc lands after PR #2 merges.
+
+12. **Update `.prism/architect/manifest.json` to route layout-related files to the new architect doc.** Add three entries:
+    - `.prism/**` → `install-layout.md` (any edit to canonical content surfaces the layout context)
+    - `scripts/ai-skills/build.ts` → `install-layout.md`
+    - `.ai-skills/definitions/paths.json` → `install-layout.md`
+    - Mirror to `templates/install/.prism/architect/manifest.stub.json` (the consumer stub) so consumer teams pick up the same routing once they install.
+
+13. **Run verification** — full pass before opening the PR.
+    - `pnpm prism:build` — regenerates everything. Should report changes in skill outputs (path swaps inside generated SKILL.md) plus new content-copy outputs under `.claude/<area>/`, etc.
+    - `pnpm prism:check` — drift check should pass after the build. Sanity-check the guard: temporarily edit one byte of a `.claude/rules/<rule>.md` build-copy file, run `prism:check`, confirm it reports drift, revert.
+    - `pnpm prism:check-types` — TypeScript check on the generator. Confirms the new `paths.json` shape and `utils.ts` types compile.
+    - `pnpm prism:test` — regression suite passes. Add a new test for the path-guard if not already covered (e.g. `scripts/ai-skills/path-guard.test.ts` — feed a fixture markdown with a `.claude/rules/` reference, expect the guard to flag it).
+    - **Manual smoke test:** in chat, invoke Briar (or any persona) on this branch and confirm the persona's startup auto-loads rules and architect docs from the new `.claude/<area>/` build-copy locations without errors. Also confirm a Read on a canonical `.prism/rules/<rule>.md` path resolves.
+    - **Path-guard sanity:** temporarily inject a `.claude/rules/code-comments.md` reference into one canonical file under `.prism/`, run `pnpm prism:check`, confirm it fails with a path-guard error and prints the offending file:line. Revert.
+
+14. **Ship per shipping-flow.** Single PR titled `chore: Bifurcate install layout — .prism/ canonical with platform copies`. Body follows the template in `.prism/rules/pr-description.md`; reference ADR-0031 in the "Why did you do it?" section.
 
 ### Eli (after PR #2 merges)
 
-15. **Update README.md** to describe the new layout. Particular attention to the "Repo shape" section (lines 38-72 of current README) — rewrite to show `.prism/`, the bifurcation, and the build-time copy mechanism. Update the Phase 1 / Phase 2 / Phase 3 narrative to note that Phase 1.5 (this work) shipped before Atlas.
+15. **Rewrite `docs/distribution.md` source-to-destination map.** The current map (13 rows per the audit) describes the v1 layout where everything copies into `.claude/`. Rewrite for the bifurcation:
+    - Sources from `templates/install/.prism/<area>/` and `.ai-skills/skills/<id>/`.
+    - Consumer-side destinations split: `.prism/<area>/` (canonical), `.claude/<area>/` / `.codex/<area>/` / `.cursor/<area>/` (build copies regenerated by `prism:build` on the consumer's side), and root-level (AGENTS.md, CLAUDE.md).
+    - Preserve sections on state management (`.ai-skills/.prism-state.json`), three-way merge behavior, files-not-copied, and team-control boundaries — these don't change with the bifurcation.
+    - Update branching strategy mention to confirm Phase 1.5 → Phase 2 → Phase 3 sequencing.
 
-16. **Write paired dev doc.** New architect doc at `.prism/architect/install-layout.md` (Clove's task #11) gets a paired human-readable companion at `docs/content/dev/architecture/install-layout.md` per the documentation pairing convention. Same topic, longer narrative, cross-link both ways.
+16. **Update `README.md` "Repo shape" section** (current README lines 38-72). Rewrite to show the bifurcated layout:
+    - `.prism/` canonical at root with `architect/`, `rules/`, `spec/adrs/`, `templates/`, `references/`, `plans/`, `lessons.md`, `SPEC.md`.
+    - `.claude/`/`.codex/`/`.cursor/` as build copies of the canonical content, plus their platform-specific bits (skills under `.claude/skills/`, agents under `.codex/agents/`, etc.).
+    - `templates/install/` as the consumer distribution surface (renamed from `templates/claude/`).
+    - Update the "Phased roadmap" prose (current README lines 110-113) to confirm Phase 1.5 (this work) shipped before Atlas. The mechanical path-swaps in the rest of the README were already done by Clove in task 4 — task 16 is the structural rewrite of the layout diagram only.
+
+17. **Author paired dev doc — `docs/content/dev/architecture/install-layout.md`.** Per the documentation pairing convention: same topic as `.prism/architect/install-layout.md` but human-readable narrative for teammates. Walk through the bifurcation, why the v1 asymmetry was a problem (Codex/Cursor consumers were second-class), the build-time copy mechanism, the cross-reference convention, the path guard, and the trade-offs (vs `.prism/`-only, vs symlinks, vs status quo). Cross-link both ways. Length: ~150–200 lines is appropriate for a dev-architecture doc.
 
 ---
 

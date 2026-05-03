@@ -36,6 +36,10 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 - 2026-05-03 [phase-1-foundation]: Briar fourth-pass self-review on commit `3b85250`. Clean — all third-pass fixes verified (ADR-0030 PR #3 citations on both surfaces, prop-ordering reference gone from code-dev/shared.md and generated SKILL.md, ADR-0029 count claims dropped on both surfaces, architecture-doc-shape Thrive content cleared, no remaining stale Clove PR #2 refs outside the plan). `prism:check`, `prism:check-types`, `prism:test` all pass. No new issues.
 - 2026-05-03 [phase-1-foundation]: Eric PR #1 review on commit `3b85250`. One Major (surviving `useEffect-guidelines.md` reference at `prism-code-dev/shared.md:169` — survived four passes due to camelCase mismatch with deleted kebab-case file) plus three Minors (count drift in ADR-0030 line 12 and ADR-0032 line 13 across both surfaces; `escapeToml` doesn't escape newlines, would break TOML on multiline descriptions). Doc-class triage: ADR-0030 source claims (`buildSkillMarkdown` lines, AGENTS.md.tmpl line 33, SPEC.md.tmpl tokens) all verified; one diverged claim (ADR-0029 dangling-refs cleanup) caught as the Major. Resolved existing count-drift thread (ADR-0002 templates) — fix verified in commit `dfe7702`. Inline comments + summary posted; no labels (Major present).
 - 2026-05-03 [phase-1-foundation]: Clove fixed all four Eric PR #1 review issues. Major: deleted trailing `useEffect-guidelines.md` sentence at `.ai-skills/skills/prism-code-dev/shared.md:169`, regenerated SKILL.md mirror via `prism:build`. Minor #1+#2: dropped counts from ADR-0030 line 12 and ADR-0032 line 13 on both surfaces. Minor #3: moved `escapeToml`/`escapeTomlMultiline` from `build.ts` to `utils.ts` (paired text helpers; no side effects on import), added `\n`/`\r` escaping to `escapeToml`, added two regression tests in `discovery-metadata.test.ts`. All 7 tests pass; types clean; `prism:check` confirms no drift. Plan updated; PR Readiness checkbox flipped back.
+- 2026-05-03 [phase-1-foundation]: Eric PR #1 fourth-pass review on commit `8f06190`. All four third-pass fixes verified clean (useEffect-guidelines deletion, count drops on ADRs 0030/0032 both surfaces, escapeToml move + tests). One new Minor flagged: templates ADR-0030 line 28 in-prose plan-file reference survives task #17's References-section sweep — same dangling-pointer pattern, missed because task #17 only targeted the References section. Inline comment posted with suggested rephrase; summary updated; labels `effort:deep` + `review:has-minors` applied. Sandbox blocked auto-resolution of the four prior threads — author can mark them resolved manually.
+- 2026-05-03 [phase-1-foundation]: Winston evaluated Eric's finding plus Hunter's broader concern about review-cycle volume (4 Briar passes + 3 Eric passes on this PR). Surfaced 8 additional dangling-internal-path refs in templates beyond Eric's catch (ADRs 0003, 0005, 0015, 0016, 0017, 0018, references/shipping-flow.md). Initial recommendation included amending ADR-0030 to expand the build-time guard contract — Hunter pushed back: don't manufacture ADRs or amend existing ones to memorialize this PR's cleanup process. Implementation detail (which patterns the guard catches) belongs in PR #3's plan task, not the ADR. Withdrew the amendment proposal and the `lessons.md` entry. Final call: ride Eric's Minor + the 8 surfaced refs into PR #4's existing editorial sweep — that's already the right home per ADR-0032. PR #1 ships with the Minor acknowledged-and-deferred, not fixed in-branch.
+- 2026-05-03 [phase-1-foundation → main]: PR #1 squash-merged into main. `phase-1-foundation` branch closed. Phase 1.5 (PR #2) cuts a fresh `prism-install-layout` branch off the post-merge main and carries forward this plan's PR #1 closeout history (Eric's fourth-pass review + Winston's cycle-pattern evaluation, both above) since they were authored after PR #1's final commit `8f06190` and didn't make the squash.
+- 2026-05-03 [prism-install-layout]: Winston refined PR #3's `## Implementation Tasks > Clove (PR #3)` section to drop count claims (writing-voice § Count rules, not numbers), concretize the substitution seam (build sequence: read canonical → substitute in memory → run path-guard on disk → write platform outputs → run literal-Thrive guard on outputs; canonical stays in `${TOKEN}` form on disk), specify the literal-Thrive allowlist as a file-level mechanism at `.ai-skills/definitions/literal-allowlist.json` with explicit schema and seed-from-inspection process, and replace prose-buried file lists in tasks 17/18 with explicit checklist targets. PR #2's task refinements (separate file `epic-prism-install-layout.md`) and PR #3's refinements share the same source-of-truth principle: zero guesswork by the time Clove starts.
 
 ---
 
@@ -137,16 +141,66 @@ Tracked separately in [`.claude/plans/epic-prism-install-layout.md`](./epic-pris
 
 ### Clove (PR #3 — `prism-tokenization` branch — sweeps at the post-reorg paths)
 
-Note: paths below assume PR #2 has landed and content lives at `.prism/<area>/`. Token map and approach unchanged from earlier; only the target paths shifted.
+Note: paths below assume PR #2 has landed and content lives at `.prism/<area>/`. Token map and approach unchanged from PR #1's planning; only the target paths shifted.
 
-13. **Implement token substitution in `scripts/ai-skills/build.ts`** — load `.ai-skills/config.json`, derive token map per `docs/parameterization.md`, substitute in assembled markdown before write. Hook into `buildSkillMarkdown` (lines 96-114). Token substitution applies to canonical content under `.prism/` AND to the build-time platform copies — same content, substituted once at build.
-14. **Extract derivation logic** into `scripts/ai-skills/lib/tokens.ts` — single seam for adding derived tokens later (PROJECT_LOWERCASE, TICKET_PREFIX_LOWERCASE).
-15. **Add substitution regression test** at `scripts/ai-skills/tokens.test.ts` — sample config in, expected output out. Cover edge cases: missing config keys, malformed token literals, derived-token cascades.
-16. **Add literal-Thrive build-time guard** — fail if assembled output contains `Thrive`/`tractru`/`TracTru/thrive`/`THR-[0-9]+` outside an explicit allowlist file. Allowlist seeds with frozen incident citations and fictional examples.
-17. **Tokenize `.ai-skills/skills/*/shared.md`** — sweep all 11 files with hardcoded Thrive references. Token map: `Thrive` → `${PROJECT}`, `tractru` → `${LINEAR_WORKSPACE}` or `${GITHUB_OWNER}` per context, `TracTru/thrive` → `${GITHUB_OWNER}/${GITHUB_REPO}`, `THR` (in ticket prefix usage) → `${TICKET_PREFIX}`, `thrive.<key>` → `${PROJECT_LOWERCASE}.<key>`, output paths like `.claude/docs/qa/thrive-*` → `.claude/docs/qa/${PROJECT_LOWERCASE}-*`. Skip frozen incident citations (`THR-1636`, `THR-1775`) inside Why/Originating-incident prose where the ticket is a stable historical reference.
-18. **Tokenize `templates/install/**`** — sweep the 16 files per Briar's catalog in Review Issues #1, but now under the renamed `templates/install/` directory tree. Same token map as task #17.
-19. **Verify dogfood install still builds correctly** — `pnpm prism:check` should pass with `.ai-skills/config.json` providing PRISM's own substitution values. Re-run the literal-Thrive guard against the full surface.
-20. **Update `docs/parameterization.md`** — replace "Phase 2" mentions of `scripts/ai-skills/lib/tokens.ts` with "implemented." Verify the schema and substitution table are accurate against the implementation.
+PR #3 layers on top of PR #2's bifurcation. The build sequence after PR #3 lands becomes:
+
+1. Read canonical content from `.prism/<area>/` (markdown with `${TOKEN}` literals).
+2. Read canonical skill bodies from `.ai-skills/skills/<id>/`.
+3. Substitute tokens in memory using `.ai-skills/config.json` + derivation rules.
+4. Run PR #2's path-guard against on-disk canonical content (still the literal `${TOKEN}` form).
+5. Write platform-substituted outputs: skill markdown to `<platform>/skills/`, content copies to `<platform>/<area>/`.
+6. Run the literal-Thrive guard (task #16 below) against the substituted platform outputs.
+
+Canonical files on disk stay in `${TOKEN}` form. Substitution is in-memory only. This keeps the dogfood and consumer installs symmetric — both run the same build, just with different config values.
+
+13. **Implement token substitution in `scripts/ai-skills/build.ts`.**
+    - Load `.ai-skills/config.json` once at the start of `main()`.
+    - Derive the token map per `docs/parameterization.md` (use the helper from task #14).
+    - Apply substitution at the seam between assembly and write: in `buildSkillMarkdown` (skill outputs) AND in `copyContentToPlatformDirs` from PR #2 task #8 (content copies). Both run the substituted version through `writeFileIfChanged` so drift detection still works correctly.
+    - Implementation: a `substituteTokens(content, tokenMap)` function that does straight string replacement of `${KEY}` literals. No conditional logic, no template syntax — substitution layer is the simplest thing that works (per ADR-0030).
+
+14. **Extract derivation logic** into `scripts/ai-skills/lib/tokens.ts`. Exports:
+    - `loadConfig(repoRoot): PrismConfig` — reads `.ai-skills/config.json`, parses, validates against `config.schema.json`.
+    - `deriveTokenMap(config): Map<string, string>` — builds the full substitution map. Derived keys: `PROJECT_LOWERCASE`, `TICKET_PREFIX_LOWERCASE`, `GITHUB_OWNER_LOWERCASE`, etc. Source-of-truth list lives in `docs/parameterization.md` § Substitution table.
+    - `substituteTokens(content, tokenMap): string` — straight `${KEY}` replacement, no escapes.
+
+15. **Add substitution regression test** at `scripts/ai-skills/tokens.test.ts`. Cover:
+    - Happy path: sample config + sample input → expected output.
+    - Missing config key referenced in content → throw with file:line of the offending token.
+    - Malformed token literal (e.g. `${`, `${ KEY }`, `${KEY` without closing brace) → either left alone or thrown — pick one and lock it down.
+    - Derived-token cascades (e.g. `${PROJECT_LOWERCASE}` derived from `${PROJECT}`) — confirm derivation order doesn't depend on declaration order.
+
+16. **Add literal-Thrive build-time guard.**
+    - Run after substitution, against platform outputs (in-memory or on-disk — either works).
+    - Pattern: regex `(Thrive|tractru|TracTru/thrive|THR-[0-9]+|thrive\.[a-zA-Z]+)`.
+    - **Allowlist mechanism: file-level**, defined at `.ai-skills/definitions/literal-allowlist.json`. Schema:
+      ```json
+      {
+        "files": [
+          { "path": ".prism/lessons.md", "reason": "lessons cite originating incidents by ticket ID" },
+          { "path": ".prism/spec/adrs/0015-humane-language-over-mandates.md", "reason": "ADR cites originating incident" }
+        ]
+      }
+      ```
+    - Allowlist is path-prefix matching; a file under an allowlisted path is exempt entirely.
+    - Print file:line for each violation; exit non-zero. Build fails.
+    - The allowlist seeds with frozen incident citations and fictional examples found by inspection — the PR opens with the seed, future entries get added with explicit reason strings.
+
+17. **Tokenize canonical skill sources** (`.ai-skills/skills/*/shared.md`). Sweep every shared.md with hardcoded identifiers; canonical addenda (`claude.md`, `codex.md`, `cursor.md`) too. Token map:
+    - `Thrive` → `${PROJECT}`
+    - `tractru` (Linear workspace context) → `${LINEAR_WORKSPACE}`; (GitHub owner context) → `${GITHUB_OWNER}`. Determine by surrounding prose.
+    - `TracTru/thrive` (GitHub repo URL) → `${GITHUB_OWNER}/${GITHUB_REPO}`
+    - `THR-NNNN` in ticket-prefix usage → `${TICKET_PREFIX}-NNNN`
+    - `thrive.<key>` → `${PROJECT_LOWERCASE}.<key>`
+    - Output paths `.claude/docs/qa/thrive-*` → `.claude/docs/qa/${PROJECT_LOWERCASE}-*` (note: leading `.claude/docs/qa/` stays — output paths are deferred to Phase 2 per PR #2 task 3 sub-bullet)
+    - **Skip frozen incident citations** (e.g. `THR-1636`, `THR-1775` in Why / Originating-incident prose) — these are stable historical references and add to the allowlist file (task #16).
+
+18. **Tokenize the templates surface** (`templates/install/**`). Apply the same token map as task #17. Targets per Briar's catalog (use as a checklist, not a count): `templates/install/.prism/architect/skills-ecosystem.md`, `templates/install/.prism/templates/standup-summary.md`, `templates/install/.prism/rules/{git-conventions,pr-description,branch-plan}.md`, `templates/install/.prism/templates/{pr-description,bug-report}.md`, `templates/install/.prism/architect/qa-test-planning.md`, `templates/install/.prism/references/{shipping-flow,dev-doc-template}.md`, `templates/install/.prism/spec/adrs/0003-authors-ship-reviewers-review.md`, plus any others the task #16 guard surfaces during the verification run.
+
+19. **Verify dogfood build is still correct.** `pnpm prism:check` should pass with `.ai-skills/config.json` providing PRISM's own substitution values (`PROJECT=PRISM`, `TICKET_PREFIX=PRISM`, `GITHUB_OWNER=HunterMcGrew`, `GITHUB_REPO=agent-crew`). Re-run the literal-Thrive guard against the full surface — should report zero violations outside the allowlist.
+
+20. **Update `docs/parameterization.md`.** Replace any "Phase 2" mentions of `scripts/ai-skills/lib/tokens.ts` with "implemented in Phase 1.5." Verify the schema documentation and substitution table match the implementation in `tokens.ts`. If the schema drifted during implementation, sync the doc to the code.
 
 ### Clove (PR #4 — `prism-content-cleanup` branch — strip per-team specifics; Atlas writes specializations during onboarding)
 
@@ -404,6 +458,15 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 - **Suggested fix:** Two options: (a) escape `\n` → `\\n` and `\r` → `\\r` inside `escapeToml` (basic strings interpret escape sequences), or (b) switch the description to a triple-quoted multiline form at the call site (newlines pass through, only `"""` needs escaping). Low real-world risk today (descriptions are conventionally single-line) but worth tightening before Phase 2 contributors pass through multiline descriptions.
 - **Fixed in:** phase-1-foundation, post-Eric-review cleanup. Took option (a). Moved `escapeToml` and `escapeTomlMultiline` from `build.ts` to `utils.ts` (paired text-manipulation helpers, no side effects on import — letting tests import them without triggering `build.ts` `main()`). Added `\n` → `\\n` and `\r` → `\\r` escaping. Two regression tests added to `discovery-metadata.test.ts` covering basic-string and multiline forms. All 7 tests pass; types clean; `prism:check` passes.
 
+### Templates ADR-0030 in-prose plan-file reference survives task #17 sweep (Eric PR #1 fourth-pass review)
+
+- **Severity:** `minor`
+- **Status:** `deferred` — routed to PR #4 (`prism-content-cleanup`)
+- **File:** `templates/claude/spec/adrs/0030-token-substitution-at-build-time.md:28`
+- **Problem:** Task #17 dropped the `.claude/plans/epic-phase-1-foundation.md` reference from the templates ADR-0029 and ADR-0030 References sections (line 43 on the templates 0030). The Decision-body prose at templates 0030 line 28 also references the plan file — `Implementation lands in a follow-up PR (the prism-tokenization branch tracked under ## Implementation Tasks > Clove (PR #3) in .claude/plans/epic-phase-1-foundation.md)` — and was not part of the same sweep. Same dangling-pointer concern: consumer installs of PRISM won't have `.claude/plans/epic-phase-1-foundation.md`. Winston's evaluation surfaced 8 additional dangling-internal-path refs in templates (across ADRs 0003, 0005, 0015, 0016, 0017, 0018 and `references/shipping-flow.md`) — same pattern, broader scope.
+- **Suggested fix:** Drop the file path from the prose so the sentence reads "Implementation lands in a follow-up PR (the `prism-tokenization` branch). This ADR pre-agrees the design so the implementation PR is mechanical execution against a known plan." Keep the dogfood mirror (`.claude/spec/adrs/0030-token-substitution-at-build-time.md:28`) intact — it's the same dogfood-vs-templates split task #17 already established for the References-section bullet.
+- **Deferred to:** PR #4 (`prism-content-cleanup` branch). PR #4's editorial sweep already covers this class of fix per ADR-0032 — a grep for concrete `.claude/plans/<filename>.md` references in templates falls out of the sweep naturally. Avoiding another in-branch finalization pass on PR #1 to fix two lines.
+
 ---
 
 ## Cleanup Items
@@ -414,7 +477,7 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 
 ## PR Readiness
 
-- [x] No critical or major issues remaining for PR #1 — Eric's PR review Major (surviving `useEffect-guidelines.md` reference) fixed; Eric's three Minors all fixed (count drift on both ADRs, `escapeToml` newline gap with regression tests). Briar's earlier passes all clean. Remaining open issues from Briar's first-pass (Issues #1, #2, second-pass language/framework framing, dealership context, originating-incident THR-* generalization) all routed to PR #4 (`prism-content-cleanup`).
+- [x] No critical or major issues remaining for PR #1 — Eric's third-pass Major (surviving `useEffect-guidelines.md` reference) fixed; Eric's third-pass three Minors all fixed (count drift on both ADRs, `escapeToml` newline gap with regression tests). Eric's fourth-pass review (commit `8f06190`) flagged one new Minor (templates ADR-0030 line 28 in-prose plan-file reference) — deferred to PR #4 sweep alongside 8 additional dangling-internal-path refs Winston surfaced during evaluation. Briar's earlier passes all clean. Remaining open issues from Briar's first-pass (Issues #1, #2, second-pass language/framework framing, dealership context, originating-incident THR-* generalization) all routed to PR #4 (`prism-content-cleanup`).
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic — `pnpm prism:test` passes (5 tests covering canonical-source invariants)
@@ -423,4 +486,4 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 - [x] PR description up to date — body synced to reflect ADR-0032 + tasks 13–19 (commit `9a2d885` summary, second-pass narrative, PR #4 scope)
 - [x] Lasting decisions promoted to architect context — ADR-0029 (rules self-declare), ADR-0030 (token substitution at build time), ADR-0032 (canonical content generic) all authored in dogfood and templates
 
-**Last updated:** 2026-05-03 (Clove post-Eric-review cleanup — Major + 3 Minors all fixed; build clean)
+**Last updated:** 2026-05-03 (Winston evaluation of Eric's fourth-pass finding — Minor deferred to PR #4 sweep alongside 8 additional dangling-internal-path refs Winston surfaced; cycle pattern flagged but no new ADR or guard-amendment work added to this PR)
