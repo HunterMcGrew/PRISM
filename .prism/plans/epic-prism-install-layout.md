@@ -20,6 +20,7 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 - 2026-05-03 [prism-install-layout]: Branch cut off post-merge main following PR #1 squash-merge. Hunter directed: "make sure phase 1.5's implementation is detailed so there is no guesswork." Winston dispatched 3 parallel Explore agents for discovery: (1) full path-reference inventory across canonical content (returned 687 swap-targets, zero ambiguous classifications); (2) skill startup-sequence audit across all 12 canonical skills (returned explicit Read line numbers, in-body citations, layout assumptions); (3) templates surface classification (returned per-file destinations: AGENTS.md.tmpl to root, CLAUDE.md.tmpl to .claude/, everything else under .prism/<area>/). Folded all three intel sets into the plan's `## Implementation Tasks` section. Clove rewrite: 14 sub-bulleted tasks with concrete commands, file-level scope, ordering guarantees, edge cases, and verification recipes. Eli rewrite: 3 tasks (distribution.md rewrite, README "Repo shape" rewrite, paired dev doc) split cleanly from Clove's mechanical path-swap pass. Carried forward `epic-phase-1-foundation.md` PR #1 closeout history into this branch.
 - 2026-05-03 [prism-install-layout]: Clove executed PR #2 Clove tasks 1-14. Created `.prism/` tree and `git mv`-ed all canonical content (rules, architect, spec, templates, references, plans, SPEC.md, lessons.md) — git rename detection clean across 50+ files. Updated `.prism/architect/manifest.json` keys to `.prism/<area>/**`. Wrote one-shot `scripts/ai-skills/migrate-paths.ts` (since deleted) and swept ~607 path references across `.prism/`, `.ai-skills/skills/`, top-level docs (README, AGENTS.md, CLAUDE.md, docs/parameterization.md), and `templates/install/` (after rename). Renamed `templates/claude/` → `templates/install/` and reorganized into bifurcated sub-layout (`templates/install/.claude/CLAUDE.md.tmpl`, `templates/install/.prism/<area>/`, `templates/install/.codex/.gitkeep`, `templates/install/.cursor/.gitkeep`, `AGENTS.md.tmpl` at root). Anchored `.gitignore` patterns (`.codex/`, `.cursor/`, `.agents/`, `.generated/`) to repo root so templates anchors stay tracked. Extended `paths.json` with `canonical.contentRoot` and `generated.platformContentCopies`; updated `PathDefinitions` interface in `utils.ts`. Extended `scripts/ai-skills/build.ts` with `copyContentToPlatformDir` and `removeDeletedManagedContent` — copies rules/architect/spec/templates/references/SPEC.md from `.prism/` into each platform dir, with managed markers and drift detection (skips agent-written plans/lessons). Authored `scripts/ai-skills/path-guard.ts` as standalone module — fails the build when canonical content cites `.claude/<area>/`, `.codex/<area>/`, or `.cursor/<area>/` paths in copied areas; skips fenced code blocks; allowlists ADR-0031 and `architect/install-layout.md`. Wrote `scripts/ai-skills/path-guard.test.ts` with 7 regression tests (positive flag, all three platform prefixes, fenced-block exclusion, non-copied-area exclusion, allowlist, loose SPEC.md, missing contentRoot). Authored ADR-0031 (bifurcated install layout) on both dogfood and templates surfaces — byte-identical except for plan-file reference dropped from templates per ADR-0029/0030 convention. Authored `.prism/architect/install-layout.md` agent-loaded doc on both surfaces. Updated manifest.json on both surfaces to route `.prism/**`, `scripts/ai-skills/build.ts`, `scripts/ai-skills/path-guard.ts`, and `.ai-skills/definitions/paths.json` to `install-layout.md`. `pnpm prism:build`, `prism:check`, `prism:check-types`, `prism:test` all pass; 14 total tests; path-guard injection sanity check confirmed (inject `.claude/rules/...` ref → check fails; revert → passes). Deleted the one-shot migrate-paths.ts after the sweep landed.
 - 2026-05-03 [prism-install-layout]: Eli executed Eli tasks 15-17 in-PR (override of "after PR #2 merges" framing — Hunter pulled the docs into PR #2 directly). Authored `docs/content/dev/architecture/install-layout.md` (new file, follows architecture-doc-shape four-beat arc: anchor → need → technical flows → natural fit → platform limits + custom layer; covers cross-reference convention, layout map, edit loop, trade-offs). Rewrote `docs/distribution.md` for the bifurcated layout — split the source-to-destination map into canonical content / build copies / platform-specific outputs / top-level anchors, updated state-file example to reference `.prism/<area>/` paths, updated team-control section for `.prism/plans/` and `.prism/lessons.md`, added frontmatter (was missing), confirmed Phase 1.5 sequencing in branching section. Rewrote README "Repo shape" to show the bifurcated layout (`.prism/` canonical with annotated subdirs, platform dirs as build copies, `templates/install/` as renamed distribution surface). Updated README Status banner to reflect Phase 1 shipped + Phase 1.5 in progress. `pnpm prism:check` still passes.
+- 2026-05-03 [prism-install-layout]: Clove fixed Briar's three open review issues. Major (allowlist count divergence) — updated install-layout.md § Build-time path guard on both dogfood and templates surfaces to read "two entries today" with both paths named, including the rationale for the second entry. Minor #1 (stale parenthetical) — dropped "(paired dev doc, lands after PR #2 merges)" qualifier on both surfaces; now reads simply "the longer human-readable companion." Minor #2 (missing test) — added `respects the file allowlist (architect/install-layout.md)` test in `path-guard.test.ts` covering all three platform-dir path patterns. `pnpm prism:build` regenerated platform copies; `pnpm prism:check` passes; 15 tests pass (was 14).
 
 ---
 
@@ -199,7 +200,7 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 - [ ] Given a consumer running Codex with the bifurcated layout installed, When the agent invokes any skill, Then the rules under `.codex/rules/` (build-time copy) are reachable by the agent on the platform
 - [ ] Given an edit to `.prism/rules/<rule>.md`, When `pnpm prism:build` runs, Then `.prism/rules/<rule>.md`, `.codex/rules/<rule>.md`, and `.cursor/rules/<rule>.md` reflect the change
 - [ ] Given `pnpm prism:check` runs after a manual edit to `.prism/rules/<rule>.md` (out-of-band edit), Then the drift check fails and reports the file
-- [ ] Given the dogfood install in this repo, When any persona session starts, Then plans are read from and written to `.prism/plans/` (not `.prism/plans/`)
+- [ ] Given the dogfood install in this repo, When any persona session starts, Then plans are read from and written to `.prism/plans/` (not `.claude/plans/`)
 - [ ] Given any canonical source under `.prism/` containing a `.prism/rules/` or `.prism/architect/` path reference (other than skill files documenting platform-specific behavior), When `pnpm prism:check` runs, Then the build fails with a path-guard error
 
 ### Non-behavioral
@@ -221,16 +222,47 @@ The 14 sequenced tasks below bifurcate the install layout end-to-end. Tasks 1–
 
 ---
 
+## Review Issues
+
+### Diverged claim: install-layout.md says allowlist has one entry but source has two
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/architect/install-layout.md` (and templates mirror at `templates/install/.prism/architect/install-layout.md`); platform copies regenerated via `pnpm prism:build`. Doc now reads "two entries today: `spec/adrs/0031-bifurcated-install-layout.md` and `architect/install-layout.md` — the latter so this doc's own example block can name `.claude/rules/<file>.md` etc. without the guard tripping."
+- **File:** `.prism/architect/install-layout.md` (§ Build-time path guard) + `.claude/architect/install-layout.md` (build copy — will be fixed by rebuild once canonical is fixed)
+- **Problem:** Doc says "Filename allowlist (one entry today: `.prism/spec/adrs/0031-bifurcated-install-layout.md`)" but `scripts/ai-skills/path-guard.ts` `PATH_GUARD_FILE_ALLOWLIST` has two entries: `spec/adrs/0031-bifurcated-install-layout.md` AND `architect/install-layout.md`. The second entry exists because `install-layout.md` itself references platform-dir paths in its concrete example block.
+- **Suggested fix:** Update the doc to: "Filename allowlist (two entries today: `spec/adrs/0031-bifurcated-install-layout.md` and `architect/install-layout.md`). New allowlist entries need a comment explaining why." Run `pnpm prism:build` to propagate the canonical fix to the `.claude/` build copy.
+
+### Stale parenthetical in install-layout.md forward-reference
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/architect/install-layout.md` (and templates mirror); parenthetical removed on both surfaces. Now reads simply "the longer human-readable companion."
+- **File:** `.prism/architect/install-layout.md` (§ Where to look)
+- **Problem:** "docs/content/dev/architecture/install-layout.md (paired dev doc, lands after PR #2 merges)" — the dev doc was pulled into PR #2 directly (per plan history 2026-05-03 Eli entry). The "(lands after PR #2 merges)" qualifier is stale.
+- **Suggested fix:** Remove the parenthetical or update it to "(paired dev doc, in this PR)".
+
+### Missing regression test for second allowlist entry
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/path-guard.test.ts` — added `respects the file allowlist (architect/install-layout.md)` test. Writes a fixture `architect/install-layout.md` with all three platform-dir path patterns and asserts zero violations. 15 tests pass (was 14).
+- **File:** `scripts/ai-skills/path-guard.test.ts`
+- **Problem:** `path-guard.test.ts` tests the ADR-0031 allowlist entry but not the `architect/install-layout.md` entry. If someone removed the second entry from `PATH_GUARD_FILE_ALLOWLIST`, the build would fail silently in CI because `install-layout.md` references platform-dir paths in its example block.
+- **Suggested fix:** Add a test: write a fixture `architect/install-layout.md` with platform-dir path references, assert `runPathGuard` returns zero violations.
+
+---
+
 ## PR Readiness
 
 Living checklist — updated when Briar self-reviews PR #2.
 
-- [ ] No critical or major issues
+- [x] No critical or major issues
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (path-guard test, copy-logic regression test)
 - [x] All debugged issues resolved
-- [x] Build passes — `pnpm prism:check` passes; manual smoke test on each persona session confirms rules still load
+- [x] Build passes — `pnpm prism:check` passes; build skipped — diff does not affect Next.js bundle
 - [ ] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0031 and `install-layout.md` are exactly this)
 

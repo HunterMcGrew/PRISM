@@ -115,6 +115,23 @@ test("respects the file allowlist (ADR-0031)", async () => {
 	);
 });
 
+test("respects the file allowlist (architect/install-layout.md)", async () => {
+	await withTempContentRoot(
+		async (root) => {
+			await fs.mkdir(path.join(root, "architect"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, "architect", "install-layout.md"),
+				"# Install Layout\n\nExample: `.prism/rules/foo.md` copies to `.claude/rules/foo.md`, `.codex/rules/foo.md`, `.cursor/rules/foo.md`.\n",
+				"utf8"
+			);
+		},
+		async (root) => {
+			const violations = await runPathGuard(root);
+			assert.equal(violations.length, 0);
+		}
+	);
+});
+
 test("flags references in the loose SPEC.md file", async () => {
 	await withTempContentRoot(
 		async (root) => {

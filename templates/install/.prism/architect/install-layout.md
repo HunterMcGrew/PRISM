@@ -49,7 +49,7 @@ The convention does not apply to:
 Two exclusions:
 
 - Matches inside fenced code blocks pass — code blocks may legitimately quote prior layouts (e.g. ADR-0031's Context section).
-- Filename allowlist (one entry today: `.prism/spec/adrs/0031-bifurcated-install-layout.md`). New allowlist entries need a comment explaining why.
+- Filename allowlist (two entries today: `spec/adrs/0031-bifurcated-install-layout.md` and `architect/install-layout.md` — the latter so this doc's own example block can name `.claude/rules/<file>.md` etc. without the guard tripping). New allowlist entries need a comment explaining why.
 
 When the guard fires, it prints `path-guard: <relative-path>:<line>: <text>` for each violation and exits non-zero.
 
@@ -69,4 +69,4 @@ The cleanup function under `removeDeletedManagedContent` handles the last case �
 - `scripts/ai-skills/build.ts` — the copy and cleanup orchestration in `main()`
 - `scripts/ai-skills/path-guard.ts` — the standalone guard module
 - `.ai-skills/definitions/paths.json` — `canonical.contentRoot` and `generated.platformContentCopies` declare the source/target dirs
-- `docs/content/dev/architecture/install-layout.md` (paired dev doc) — the longer human-readable companion
+- `docs/content/dev/architecture/install-layout.md` — the longer human-readable companion
