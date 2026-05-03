@@ -7,13 +7,7 @@ Date: 2026-04-28
 
 ## Context
 
-PR #1925 (THR-1775) shipped a `.claude/architect/` doc through glance-mode review. A deeper Winston audit caught five substantive accuracy gaps post-merge:
-
-- The composer-install asymmetry rationale was wrong.
-- The `composer test:install` prerequisite was missing.
-- The `THRIVE_TOKEN` dual purpose was undocumented.
-- The `release/v*` skip was undocumented.
-- The `HOST_UID` phrasing was muddled enough to be misleading.
+A `.claude/architect/` doc shipped through glance-mode review on a small-diff PR. A deeper Winston audit caught five substantive accuracy gaps post-merge — claims about install asymmetry, missing prerequisites, undocumented dual-purpose env vars, undocumented skip behavior, and misleading phrasing.
 
 Glance review was right-sized for the change *count* — the diff was small. It was wrong-sized for the change *class*. Architect docs route into agent context via `manifest.json` and load as authoritative every time a relevant edit happens. A confident-sounding doc that drifts from source actively misleads every future agent that reads it — worse than no doc, because the reader trusts it.
 
@@ -25,7 +19,7 @@ A `review:source-verified` GitHub label was considered as a process gate. Reject
 
 Architect docs (`.claude/architect/**`) and paired dev docs (`docs/content/dev/architecture/**`) require source-verified review by both author and reviewer. Glance is not sufficient for this class of change.
 
-The verification procedure walks every claim in the doc against the cited source — anything the manifest can route to: YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes. Each claim classifies as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Diverged and missing claims are at minimum **Major** severity.
+The verification procedure walks every claim in the doc against the cited source — anything the manifest can route to: configuration files, schemas, scripts, components, services, classes, hooks. Each claim classifies as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Diverged and missing claims are at minimum **Major** severity.
 
 The bar is codified across three surfaces:
 
@@ -38,10 +32,9 @@ The bar is codified across three surfaces:
 - Positive: claims stay grounded in source. Future agents inherit a verified record, not a confident-sounding drift.
 - Positive: the rule applies to authoring, not just reviewing — the author verifies before opening the PR, so gaps are caught before review.
 - Negative: review takes longer on doc PRs. The cost is real, and worth it — agents read these docs every time the manifest routes them.
-- Neutral: the bar applies only to architect docs and paired dev docs. Other documentation classes (user guides, block docs, getting-started) keep their existing review depth.
+- Neutral: the bar applies only to architect docs and paired dev docs. Other documentation classes (user guides, getting-started, reference) keep their existing review depth.
 
 ## References
 
 - [`.claude/rules/architect-doc-verification.md`](../../rules/architect-doc-verification.md) — the rule this ADR backs.
-- [ADR-0024](0024-branch-plan-decisions-record-the-why.md) — sibling decision from the same THR-1775 audit, governs plan-entry depth.
-- THR-1775 — originating incident.
+- [ADR-0024](0024-branch-plan-decisions-record-the-why.md) — sibling decision, governs plan-entry depth.

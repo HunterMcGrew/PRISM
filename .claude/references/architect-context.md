@@ -14,10 +14,7 @@ Before running these steps, you need:
 
 2. **Match files against the manifest — programmatically, not by intuition.** Do not eyeball the file list and guess which patterns apply. Instead, iterate the full file list and check each path against every key in `manifest.json`. For each file, walk every manifest key and collect all matches.
 
-   A single file can match multiple patterns. This is expected and intentional:
-   - A story file like `frontend/blocks/hero/Hero.stories.tsx` matches both `frontend/blocks/` and `*.stories.tsx` — loading `frontend-blocks.md` and `frontend-stories.md`
-   - A test file like `frontend/blocks/hero/__tests__/resolver.test.ts` matches both `frontend/blocks/` and `frontend/**/*.test.*` — loading `frontend-blocks.md` and `frontend-tests.md`
-   - A file in `frontend/lib/services/` matches the `frontend/lib/services/` key
+   A single file can match multiple patterns. This is expected and intentional — for example, a test file might match both a feature-area glob (e.g. `frontend/cart/`) and a test-pattern glob (e.g. `**/*.test.*`), loading both architect docs. The exact globs and routes are populated per-team during onboarding (Phase 3, when Winston scans the codebase).
 
    Collect **all** matched doc filenames — not just the ones that seem most relevant to the current task.
 

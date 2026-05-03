@@ -1,8 +1,10 @@
 # Accessibility (WCAG 2.1 Level AA)
 
-WCAG 2.1 Level AA is the baseline for UI work in this codebase, with WCAG 2.2 additions flagged inline where they raise the bar. These rules apply when writing, reviewing, or architecting components.
+WCAG 2.1 Level AA is the baseline for UI work, with WCAG 2.2 additions flagged inline where they raise the bar. These rules apply when writing, reviewing, or architecting any UI — frontend, backend admin, embedded widgets, anything a human interacts with through a screen.
 
 **Why the bar lands here:** the ADA's 2024 final rule ([ada.gov](https://www.ada.gov/resources/2024-03-08-web-rule/)) makes WCAG 2.1 AA the enforceable standard for public-facing digital services under Title II, and courts use it as the floor in private litigation. WCAG 2.2 isn't yet legally enforced but represents the direction of travel — adopting its additions where they apply costs little now and avoids retrofits later.
+
+The rules below are stack-agnostic. Framework-specific patterns (React, Next.js, Vue, etc.) live at the bottom under [Stack-specific notes](#stack-specific-notes) — those sections only apply when your `techStack` includes that framework.
 
 ---
 
@@ -14,8 +16,7 @@ WCAG 2.1 Level AA is the baseline for UI work in this codebase, with WCAG 2.2 ad
 - Form fields collecting personal data use the right `autocomplete` value (`email`, `given-name`, etc.) — enables browser autofill and assistive tech (WCAG 1.3.5).
 - Don't lock content to a single orientation (WCAG 1.3.4).
 - When inline content shifts language, mark it with `lang="..."` on the element (WCAG 3.1.2).
-
-The `<h1>`-per-route rule lives in [Next.js-Specific](#nextjs-specific) — it's tied to the App Router's route announcer.
+- Every page has a meaningful `<h1>`. Single-page-app frameworks rely on the `<h1>` for route-change announcements; without one, screen reader users get no signal that a route changed.
 
 ---
 
@@ -27,7 +28,7 @@ The `<h1>`-per-route rule lives in [Next.js-Specific](#nextjs-specific) — it's
 - Visible focus indicators on every interactive element. If you remove the default `outline`, replace it. Custom focus styles meet 3:1 contrast against adjacent colors (WCAG 1.4.11).
 - Sticky headers, banners, and modals can partially obscure a focused element but never fully cover it (WCAG 2.4.11 — **new in 2.2**).
 - Interactive targets are at least **24×24 CSS pixels** — audit icon-only buttons, close buttons, inline controls (WCAG 2.5.8 — **new in 2.2**).
-- Drag-and-drop has a single-pointer or keyboard alternative — applies to sortable block editor UI, carousels, any DnD interface (WCAG 2.5.7 — **new in 2.2**).
+- Drag-and-drop has a single-pointer or keyboard alternative — applies to sortable lists, carousels, any DnD interface (WCAG 2.5.7 — **new in 2.2**).
 
 ---
 
@@ -38,9 +39,9 @@ The `<h1>`-per-route rule lives in [Next.js-Specific](#nextjs-specific) — it's
 - Dynamic content changes announce to screen readers via `aria-live` regions or focus management.
 - `aria-live` containers exist on initial render, even when empty.
 
-  **Why:** screen readers track live regions from the moment they're added to the DOM. A container that appears _with_ its content already inside is treated as a normal element, not a live announcement — the text never gets read out. ([Next.js form error pattern](https://nextjs.org/docs/architecture/accessibility))
+  **Why:** screen readers track live regions from the moment they're added to the DOM. A container that appears _with_ its content already inside is treated as a normal element, not a live announcement — the text never gets read out.
 
-- Status messages that don't receive focus (toast notifications, form success, "item added to cart") use `role="alert"` or `aria-live` (WCAG 4.1.3). This is the single most-missed criterion in custom React notification components.
+- Status messages that don't receive focus (toast notifications, form success, "item added to cart") use `role="alert"` or `aria-live` (WCAG 4.1.3). This is the single most-missed criterion in custom notification components.
 - Form errors: link the input to its error message with `aria-describedby`; the error container uses `aria-live="polite"` and `aria-atomic="true"`.
 - Icon-only buttons need `aria-label` or visually hidden text.
 - Tooltips and popovers must be (a) dismissible via Escape without moving focus, (b) hoverable — pointer can move into the tooltip without it closing, (c) persistent until explicitly dismissed (WCAG 1.4.13).
@@ -49,32 +50,30 @@ The `<h1>`-per-route rule lives in [Next.js-Specific](#nextjs-specific) — it's
 
 An active link (current page) and a focused link are different states. Don't share a CSS selector — give each its own styling channel.
 
-**Why:** THR-1617 → THR-1659 was a third pass at the same bug. Each iteration tried to fix a phantom highlight on iOS Safari that survived navigation. The structural cause was `focus-visible:text-primary` on anchor elements: iOS Safari's `:focus-visible` heuristic is unreliable on touch (sticky after tap, fires on programmatic focus, varies across WebKit versions), and using the same color token for active and focus states meant the bug couldn't be fixed in either dimension without breaking the other. Three tickets, one bug class.
+**Why:** sharing color tokens between active and focus states leads to phantom highlights that survive navigation, especially on iOS Safari where `:focus-visible` heuristics are inconsistent on touch.
 
 **How to apply:**
 
 - Active link: `aria-current="page"` plus multi-channel styling — combine font weight, border accent, and color, never color alone. Multi-channel keeps the indication legible to color-blind users and survives any single-channel CSS conflict.
 - Focus: rely on the browser's default UA focus outline on `<a>` elements unless you need a custom ring. The UA outline uses the browser's internal focus-visible heuristic, which is narrower than CSS `:focus-visible` and only fires on genuine keyboard interaction — no phantom flash on touch.
-- Never use `focus-visible:text-*` color swaps on anchors in touch contexts. They have the same trigger as the bug-causing pattern and reintroduce the iOS path.
+- Avoid `focus-visible:` color swaps on anchors in touch contexts.
 
 ### Touch device pitfalls
 
-Touch devices break a11y assumptions that hold on desktop. Three patterns to watch:
+Touch devices break a11y assumptions that hold on desktop:
 
-1. **Tailwind `hover:` variants.** Without `hoverOnlyWhenSupported` enabled in `tailwind.config.js`, `hover:bg-primary` fires on touch tap and sticks until the next interaction. The codebase does not currently have `hoverOnlyWhenSupported` enabled — flag any new `hover:` variant added to a touch-reachable element.
-2. **iOS `:focus-visible` heuristic on anchors.** WebKit's match heuristic is wider than expected — focus state can persist across navigation, fire on programmatic focus, and survive element unmount. Don't tie load-bearing visuals to `focus-visible:` on anchors. (See "Active state and focus state are not the same selector" above.)
-3. **Headless UI's touch gates.** Some Headless UI behaviors (e.g. `Dialog`'s `initialFocus`) are disabled on touch via `matchMedia("(pointer: coarse)")`. Don't assume a Headless UI prop fires on phone the way it does on desktop — check the source if the behavior matters.
+- **`hover:` styles fire on tap** in many CSS frameworks unless you opt into a hover-media-query gate. A `hover:bg-primary` style sticks until the next tap.
+- **`:focus-visible` heuristics differ across browsers**, especially on touch. Don't tie load-bearing visuals to it on anchors.
+- **Component library touch behaviors** (e.g. Headless UI gates some `Dialog` behaviors via `matchMedia("(pointer: coarse)")`) may not match desktop. Read the source if behavior matters.
 
-**Why:** THR-1577, THR-1617, and THR-1659 all involved touch-only bugs that didn't reproduce on desktop. The patterns above are the root causes; they're easy to write and hard to catch without device testing.
-
-**How to apply:** When building UI that's reachable on touch, audit `hover:`, `focus-visible:`, and Headless UI prop usage against the three patterns. Test on a real iOS device before shipping load-bearing interactions.
+**How to apply:** when building UI reachable on touch, audit `hover:`, `focus-visible:`, and library-specific touch gates. Test on a real touch device before shipping load-bearing interactions.
 
 ---
 
 ## Images and Media
 
 - All `<img>` elements have `alt` text — decorative images use `alt=""`.
-- `next/image` enforces a required `alt` prop via `eslint-plugin-jsx-a11y` — pass `alt=""` for decorative.
+- Frameworks that wrap images (e.g. Next.js's `next/image`, Nuxt's `<NuxtImg>`) typically enforce a required `alt` prop — pass `alt=""` for decorative.
 - Video and audio need captions or transcripts where applicable.
 
 ---
@@ -90,8 +89,6 @@ Touch devices break a11y assumptions that hold on desktop. Three patterns to wat
 - Content survives users overriding spacing: 1.5× line-height, 0.12em letter-spacing, 0.16em word-spacing, 2× paragraph spacing — avoid fixed-height containers on text (WCAG 1.4.12).
 - Respect `prefers-reduced-motion` — pause or disable transform-based animations; opacity-only transitions are acceptable for reduced-motion users.
 
-> A programmatic color contrast utility is planned for Q2 theming work and tracked separately — see `.claude/plans/thr-1523.md`.
-
 ---
 
 ## Forms
@@ -101,25 +98,6 @@ Touch devices break a11y assumptions that hold on desktop. Three patterns to wat
 - Authentication doesn't require a cognitive function test (puzzle CAPTCHA, math problem) as the only option. Acceptable alternatives: object recognition, copy-paste codes, password manager support (WCAG 3.3.8 — **new in 2.2**).
 
   **Why:** cognitive-function tests exclude users with cognitive disabilities and are routinely defeated by the bots they're meant to stop, so they fail the legitimate user without protecting against the threat.
-
----
-
-## Next.js-Specific
-
-- **Route announcements:** every page has a meaningful `<h1>`. Next.js's built-in route announcer reads it on client-side navigation — without one, screen reader users get no signal that a route changed. ([Next.js accessibility](https://nextjs.org/docs/architecture/accessibility))
-- **`eslint-plugin-jsx-a11y`** ships with `eslint-config-next`. Make sure it's activated in `eslint.config.mjs` — it catches missing `alt`, invalid ARIA, incorrect roles, and unlabeled form controls at write time.
-- **`next/image`:** supply a meaningful `alt`, or `alt=""` for decorative.
-- **`next/link`:** never use positive `tabIndex` on links — it breaks natural focus order.
-- **Dynamic error messages:** error containers exist in the DOM before content changes, not injected after. Pattern: `aria-live="polite"` + `aria-atomic="true"` on the container, `aria-describedby` on the input pointing to it.
-
----
-
-## WordPress Blocks
-
-- Block editor controls use WordPress's built-in accessible components where available.
-- Frontend block output follows the same semantic HTML and ARIA rules as the rest of the codebase.
-- Mega menu blocks support keyboard navigation between panes and items.
-- Sortable and drag-and-drop block editor UIs include a keyboard or button alternative for every drag operation (WCAG 2.5.7).
 
 ---
 
@@ -155,8 +133,32 @@ Apply the rules above to every UI change in the diff. The ones easy to miss when
 
 ## Testing
 
-- `eslint-plugin-jsx-a11y` (via `eslint-config-next`) catches mechanical issues at write time.
+- Linters with a11y rules (e.g. `eslint-plugin-jsx-a11y` for React/JSX) catch mechanical issues at write time. Activate in your config.
 - Automated tools (Axe, Lighthouse, WAVE) catch roughly 30–40% of issues — they're a floor, not a ceiling ([a11yproject.com](https://www.a11yproject.com)).
 - Manual keyboard testing is required for custom widgets: Tab, Shift+Tab, Enter, Space, Escape, arrow keys.
 - Test interactive states (default, hover, focus, active, disabled) for color contrast.
 - Include accessibility assertions in component tests — ARIA attributes, semantic elements, keyboard interactions.
+
+---
+
+## Stack-specific notes
+
+These sections apply only when your `techStack` includes the named framework.
+
+### React / Next.js
+
+- **Route announcements**: ensure each route has a meaningful `<h1>` so the framework's route announcer can read it on client-side navigation. ([Next.js accessibility](https://nextjs.org/docs/architecture/accessibility))
+- **`eslint-plugin-jsx-a11y`** ships with `eslint-config-next` and most React style configs. Activate it in `eslint.config.*` — it catches missing `alt`, invalid ARIA, incorrect roles, and unlabeled form controls at write time.
+- **`next/image`**: supply a meaningful `alt`, or `alt=""` for decorative.
+- **`next/link`**: never use positive `tabIndex` on links — it breaks natural focus order.
+- **Dynamic error messages**: error containers exist in the DOM before content changes, not injected after. Pattern: `aria-live="polite"` + `aria-atomic="true"` on the container, `aria-describedby` on the input pointing to it.
+
+### CMS-driven block editors (WordPress Gutenberg, Sanity blocks, etc.)
+
+- Block editor controls use the platform's built-in accessible components where available.
+- Frontend block output follows the same semantic HTML and ARIA rules as the rest of the codebase.
+- Sortable and drag-and-drop block editor UIs include a keyboard or button alternative for every drag operation (WCAG 2.5.7).
+
+### Touch UI (mobile, tablet, hybrid)
+
+See [Touch device pitfalls](#touch-device-pitfalls) above. The patterns there apply to any touch-reachable UI, not just one framework.
