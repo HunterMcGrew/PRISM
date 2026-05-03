@@ -25,7 +25,7 @@ The substitution map mirrors the contract in `docs/parameterization.md` § All t
 
 A `scripts/ai-skills/lib/tokens.ts` module owns the derivation map and substitution function. New derived tokens are added at that single seam and documented in `docs/parameterization.md`. A regression test pins the substitution behavior against a sample config. A build-time guard fails the build if assembled output contains literal `Thrive`, `tractru`, `TracTru/thrive`, or `THR-[0-9]+` outside an explicit allowlist (frozen incident citations, fictional examples).
 
-Implementation lands in a follow-up PR (the `prism-tokenization` branch tracked under `## Implementation Tasks > Clove (PR #2)` in `.claude/plans/epic-phase-1-foundation.md`). This ADR pre-agrees the design so the implementation PR is mechanical execution against a known plan.
+Implementation lands in a follow-up PR (the `prism-tokenization` branch tracked under `## Implementation Tasks > Clove (PR #3)` in `.claude/plans/epic-phase-1-foundation.md`). This ADR pre-agrees the design so the implementation PR is mechanical execution against a known plan.
 
 ## Consequences
 
@@ -40,5 +40,5 @@ Implementation lands in a follow-up PR (the `prism-tokenization` branch tracked 
 
 - `docs/parameterization.md` — the token contract this ADR makes real.
 - `scripts/ai-skills/build.ts` — current byte-faithful build; substitution slots in between assembly (lines 96-114) and write.
-- `.claude/plans/epic-phase-1-foundation.md` § Implementation Tasks > Clove (PR #2) — the implementation plan.
+- `.claude/plans/epic-phase-1-foundation.md` § Implementation Tasks > Clove (PR #3) — the implementation plan.
 - ADR-0029 (Rules Self-Declare) — sibling Phase 1 architectural decision.

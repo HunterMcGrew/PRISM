@@ -31,6 +31,8 @@ Bootstrap PRISM as a multi-team distributable AI toolkit: rebrand `thrive-` → 
 - 2026-05-03 [phase-1-foundation]: Hunter directed cleanup approach for Briar's findings. Establishes a new architectural principle: canonical skill content is generic; per-team specializations (languages/frameworks, domain context, illustrative examples) are stripped from canonical sources and written in by Atlas during onboarding when the consumer's actual codebase context is known. Sibling to ADR-0029. Token substitution alone (ADR-0030) doesn't solve the bleed because mechanical replacement can't fix `WordPress` framing assuming the reader is a WordPress shop. PR ordering: small in-branch fixes ship in PR #1; comprehensive content cleanup gets its own PR #4 after layout reorg (PR #2) and tokenization (PR #3) land. The `.claude/` → `.prism/` hardcoded path audit Hunter flagged is already in PR #2's scope (`epic-prism-install-layout.md` task #6 + path-guard task #5).
 - 2026-05-03 [phase-1-foundation]: Winston evaluated Hunter's direction and built phased plan. ADR-0032 documents the new principle. PR #1 in-branch tasks expanded; PR #4 created (content cleanup) — sequenced after PR #2 + PR #3.
 - 2026-05-03 [phase-1-foundation]: Clove executed PR #1 second-pass finalization tasks 13-19. Dropped count claims from ADR-0029 (both surfaces, line 12 + line 31 — Decision section had matching count). Fixed prop-ordering miss at `.ai-skills/skills/prism-code-dev/shared.md:289`. Stripped Thrive-flavored content from `architecture-doc-shape.md` on both surfaces — generic Beat 1 framing, mirrored line-36 anchor fix to dogfood, dropped Cloudways/Vercel shopping-list example, generalized platform-limits and corollary, dropped headless-architecture clause from problem-shape section, deleted broken `ci-pipeline.md` cross-reference. Fixed schema count description at `.ai-skills/config.schema.json:100`. Dropped plan-file references from templates ADR-0029 and ADR-0030. Authored ADR-0032 (canonical content generic; onboarding writes specializations) on both surfaces. `pnpm prism:build`, `prism:check`, `prism:check-types`, `prism:test` all pass.
+- 2026-05-03 [phase-1-foundation]: Briar third-pass self-review on commit `9a2d885`. Caught one new Major: stale `Clove (PR #2)` references in ADR-0030 across both surfaces (Decision-body line 28 on both, References line 43 on dogfood). When ADR-0030 was authored, tokenization was planned as PR #2; the later layout/tokenization swap (commit ea0590e) made PR #2 the layout reorg and PR #3 the tokenization, but ADR-0030's citations weren't updated. Also one new Minor: architecture-doc-shape Problem-shape section examples remain Thrive-flavored — task 15 explicitly preserved them, but they don't meet ADR-0032's stub-anchor principle; routed to PR #4 sweep. Build / types / tests confirmed clean by Clove's prior pass.
+- 2026-05-03 [phase-1-foundation]: Clove fixed Briar's third-pass Major. Replaced `Clove (PR #2)` with `Clove (PR #3)` at three locations — `.claude/spec/adrs/0030-token-substitution-at-build-time.md:28,43` and `templates/claude/spec/adrs/0030-token-substitution-at-build-time.md:28`. Grep confirmed no other stale references outside the plan's own documentation of the issue. `prism:check` passes (drift + 5 tests).
 
 ---
 
@@ -346,6 +348,23 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 - **Suggested fix:** Either drop the line from the templates copy (keep it in dogfood), or rephrase as "PRISM's own Phase 1 plan (see the PRISM repo) — originating context" so consumers know it's a cross-repo reference.
 - **Fixed in:** phase-1-foundation, second-pass finalization (task 17). Dropped from templates; kept in dogfood.
 
+### Stale `Clove (PR #2)` references in ADR-0030 (both surfaces)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.claude/spec/adrs/0030-token-substitution-at-build-time.md:28,43` and `templates/claude/spec/adrs/0030-token-substitution-at-build-time.md:28`
+- **Problem:** When ADR-0030 was authored (commit 377859e, first finalization pass), tokenization was planned as PR #2. Then commit ea0590e swapped the ordering — PR #2 became `prism-install-layout` (layout reorg) and PR #3 became `prism-tokenization`. The plan was updated to reflect the swap (`### Clove (PR #2 — prism-install-layout branch ...)` and `### Clove (PR #3 — prism-tokenization branch ...)`) but ADR-0030's Decision-body and References citations were not. ADR-0030 line 28 still says "Implementation lands in a follow-up PR (the `prism-tokenization` branch tracked under `## Implementation Tasks > Clove (PR #2)` in `.claude/plans/epic-phase-1-foundation.md`)" — sending readers to the layout-reorg section instead of tokenization. Same issue at the dogfood References line 43 (templates dropped the References entry per task 17, but the Decision-body citation at line 28 remains stale on both surfaces). This is durable agent context — every future agent loading ADR-0030 follows the citation to the wrong section.
+- **Suggested fix:** Replace `Clove (PR #2)` with `Clove (PR #3)` at both line 28 occurrences (dogfood + templates) and the dogfood line 43 References entry. Verify no other locations carry the stale ref.
+- **Fixed in:** phase-1-foundation, post-third-pass cleanup. Three citations updated; grep confirms no other `Clove (PR #2)` references remain outside the plan's own documentation of this issue.
+
+### Architecture-doc-shape Problem-shape examples remain Thrive-flavored
+
+- **Severity:** `minor`
+- **Status:** `open` — routed to PR #4 (`prism-content-cleanup`)
+- **File:** `.claude/architect/architecture-doc-shape.md:88` and `templates/claude/architect/architecture-doc-shape.md:88` (byte-identical after the second-pass mirror)
+- **Problem:** Plan task 15 explicitly preserved the CI and block-system examples in the Problem-shape section as "generic illustrations": `For CI: two operational scopes (fleet-wide + single-site) × two deployment targets (backend + frontend) = four operational modes. For the block system: two editor contexts (backend edit + frontend view).` These read as concrete and plausible but encode Thrive's specific architecture (fleet of dealer sites, WordPress + Next.js split, Gutenberg block system). A consumer team without a fleet-of-sites architecture or a Gutenberg-style block editor sees these as references that don't match their work. ADR-0032's principle says canonical content should be generic with stub anchors where Atlas writes specifics — these examples don't fully meet that bar.
+- **Suggested fix:** Re-evaluate during the PR #4 editorial sweep. Two options: (a) replace with stub anchor `<!-- atlas:problem-shape-examples -->` and let Atlas write per-team illustrations during onboarding; (b) keep the examples but explicitly label the section "Examples drawn from architectures with that shape — adapt for your team's reality." Option (a) aligns more cleanly with ADR-0032's stub-anchor convention.
+
 ---
 
 ## Cleanup Items
@@ -356,13 +375,13 @@ Note: paths below assume PR #2 (layout reorg) and PR #3 (tokenization) have land
 
 ## PR Readiness
 
-- [x] No critical or major issues remaining for PR #1 — tasks 13–19 finalized this pass: ADR-0029 count claim dropped, prop-ordering miss fixed, architecture-doc-shape Thrive-flavored content stripped on both surfaces (incl. ci-pipeline cross-ref deletion), schema count fix, templates ADR plan-file refs dropped, ADR-0032 authored. Issues that remain `open` (Briar Issues #1 critical, #2 major, language/framework framing, dealership context blocks, originating-incident THR-* generalization) are all routed to PR #4 (`prism-content-cleanup`) — sequenced after PR #2 (layout) and PR #3 (tokenization). PR #1 ships green.
+- [x] No critical or major issues remaining for PR #1 — Briar's third-pass Major (stale `Clove (PR #2)` references in ADR-0030) fixed at three citation locations. The remaining open Major and Critical issues (Briar's first-pass Issues #1, #2 plus the second-pass language/framework framing, dealership context, originating-incident THR-* generalization) are all routed to PR #4 (`prism-content-cleanup`).
 - [x] Types correct — `pnpm prism:check-types` passes
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic — `pnpm prism:test` passes (5 tests covering canonical-source invariants)
 - [x] All debugged issues resolved — N/A (no debugged issues)
 - [x] Build passes — `pnpm prism:check` passes (drift check + 5 tests); no Next.js bundle in this repo
-- [ ] PR description up to date — body sync needed; ADR-0032 + finalization pass change the readiness picture
+- [x] PR description up to date — body synced to reflect ADR-0032 + tasks 13–19 (commit `9a2d885` summary, second-pass narrative, PR #4 scope)
 - [x] Lasting decisions promoted to architect context — ADR-0029 (rules self-declare), ADR-0030 (token substitution at build time), ADR-0032 (canonical content generic) all authored in dogfood and templates
 
-**Last updated:** 2026-05-03 (Clove second-pass finalization tasks 13–19)
+**Last updated:** 2026-05-03 (Clove post-third-pass cleanup — Briar Major fixed)
