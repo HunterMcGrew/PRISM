@@ -10,7 +10,7 @@ Rules that apply to spec edits include, but aren't limited to:
 - `.claude/rules/branch-plan.md` — plan file structure and lifecycle (applies to `.claude/plans/**`)
 - `.claude/rules/architect-doc-verification.md` — source-verified review for architect docs and paired dev docs
 
-The "include, but aren't limited to" framing is load-bearing — don't collapse it into a closed list. Treating an enumerated list as exhaustive is a known LLM failure mode; it's what produced the Lilac voice drift during THR-1634. When a new rule governs spec content, add it to this list and keep the preamble.
+The "include, but aren't limited to" framing is load-bearing — don't collapse it into a closed list. Treating an enumerated list as exhaustive is a known LLM failure mode that has produced voice drift in spec content; see ADR-0015 for the originating reasoning. When a new rule governs spec content, add it to this list and keep the preamble.
 
 ## Why this file exists
 

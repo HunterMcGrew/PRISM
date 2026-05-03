@@ -7,7 +7,7 @@ Date: 2026-04-28
 
 ## Context
 
-The same THR-1775 audit that surfaced the architect-doc accuracy gaps also surfaced a depth gap in the branch plan. Winston's `## Decisions` entries tend to record the conclusion of a verified fix without the reasoning that produced it — root cause, alternatives considered, chosen approach, implementation guidance.
+The same audit of the architect docs surface that surfaced the doc accuracy gaps also surfaced a depth gap in the branch plan. Winston's `## Decisions` entries tend to record the conclusion of a verified fix without the reasoning that produced it — root cause, alternatives considered, chosen approach, implementation guidance.
 
 The downstream cost compounds:
 
@@ -44,5 +44,4 @@ The depth bar is codified in [`branch-plan.md`](../../rules/branch-plan.md) unde
 ## References
 
 - [`.claude/rules/branch-plan.md`](../../rules/branch-plan.md) § Depth on Verified Fixes and Non-Trivial Decisions — the rule this ADR backs.
-- [ADR-0023](0023-architect-docs-source-verified-review.md) — sibling decision from the same THR-1775 audit, governs review-class on architect docs.
-- THR-1775 — originating incident.
+- [ADR-0023](0023-architect-docs-source-verified-review.md) — sibling decision from the same architect-docs audit, governs review-class on architect docs.

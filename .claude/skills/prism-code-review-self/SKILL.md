@@ -272,7 +272,6 @@ If errors found, add to `## Debugged Issues` as `open` entries. The build can ru
 - Naming clarity and readability
 - Divergence from plan intent
 - Performance — re-renders, memoization, expensive render paths, N+1 PHP patterns
-- Unnecessary `useEffect` — apply the full review checklist in `use-effect-guidelines.md`
 - Comment standards — JSDoc on declarations, no ALL CAPS, no tags/prefixes, Delete Test applied (see `code-comments` rule)
 - Storybook stories exist for every component and block touched (see `code-standards` rule)
 

@@ -346,7 +346,6 @@ Leave the fix to the author — it's their branch.
 - PHP: type hints, input validation, HTTP codes, hooks via `register()`
 - Abstraction level — flag both directions: missed abstractions AND premature abstractions (generic params, wrappers, helpers with only 1 consumer). For duplication: flag identical data/logic over shared state (same constants, same business logic reading the same storage) at **2 sites**; flag similar code patterns at **3+ sites**. Dead code, stray `console.log`s
 - Performance — re-renders, memoization, N+1 patterns
-- Unnecessary `useEffect` — apply the full review checklist in `use-effect-guidelines.md`
 - Comment standards — JSDoc on declarations, no ALL CAPS, no tags/prefixes, Delete Test applied (see `code-comments` rule)
 - Storybook stories exist for every component and block touched (see `code-standards` rule)
 - Plan intentional decisions — do not flag these

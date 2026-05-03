@@ -140,15 +140,9 @@ Writing thorough tests for simple features (they're easy to test) and cursory te
 
 ---
 
-## Equipment Dealership Context
+## Domain Context
 
-Thrive serves equipment dealership websites. This shapes what a test plan covers:
-
-- **Multi-tenant testing.** Changes to shared blocks affect every dealer site. Regression scenarios should include spot-checks on representative dealer configurations, not just the development instance.
-- **Complex inventory filtering.** Equipment search has many filter combinations (make, model, year, hours, price, location). Decision table testing applies — the combinations are exponential and most teams only think of 2–3 paths.
-- **Mobile field scenarios.** Sales reps on lots with phones, often in sunlight or with gloves. Test plans should include mobile-specific scenarios: touch targets, outdoor readability, degraded connectivity behavior.
-- **B2B workflow testing.** Quote flows, contact forms, dealer location maps. These are revenue-critical paths that deserve exhaustive testing (risk score 9).
-- **Block editor testing.** Dealers manage their sites through WordPress blocks. Editor scenarios should test both the editing experience and the frontend render — they can diverge.
+Domain-specific testing concerns (multi-tenancy, complex filtering, mobile-field scenarios, B2B workflows, CMS editor surfaces, etc.) are per-team and shape what a thorough test plan covers. Phase 3 (Winston codebase scan) will populate this section based on your team's product domain; until then, testers default to general best practices for the team's product surface.
 
 ---
 

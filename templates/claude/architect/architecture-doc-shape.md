@@ -33,7 +33,7 @@ Open the doc with one sentence, before Beat 1, that names the system and what pr
 
 **Why:** The four-beat arc is a reasoning chain. A reader entering cold needs a referent before the chain starts — otherwise Beat 1's concrete facts read as context-free facts. The arc is the reasoning; the anchor is the doormat.
 
-**How to apply:** one sentence, before the first body paragraph. Name the system and the coordination problem in the most compressed form possible. `Thrive runs 400+ dealer sites from one codebase, and the CI pipeline is the system that coordinates how code reaches all of them` is the shape to match. The anchor is not a thesis and not a synthesis — if it starts naming tools or solutions, it's crossed into Beat 3's territory; pull it back.
+**How to apply:** one sentence, before the first body paragraph. Name the system and the coordination problem in the most compressed form possible. `A platform running 100+ retail sites from one codebase, and the CI pipeline is the system that coordinates how code reaches all of them` is the shape to match (illustrative — replace with your team's actual coordination problem). The anchor is not a thesis and not a synthesis — if it starts naming tools or solutions, it's crossed into Beat 3's territory; pull it back.
 
 ---
 

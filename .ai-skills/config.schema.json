@@ -1,6 +1,5 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://prism.dev/config.schema.json",
 	"title": "PRISM team config",
 	"description": "Per-team config for token substitution and tech-stack-conditional content. Lives at .ai-skills/config.json in the consumer's repo. The onboarding flow (Atlas, Phase 2) writes this; agents read from it at chat time when behavior depends on tech stack. Derived tokens used at sync time but not stored as fields: ${PROJECT_LOWERCASE} (lowercase form of project, used for git-config namespaces), ${TICKET_PREFIX_LOWERCASE} (lowercase form of ticketPrefix). Add new derived tokens at the same seam in scripts/ai-skills/lib/tokens.ts (Phase 2).",
 	"type": "object",

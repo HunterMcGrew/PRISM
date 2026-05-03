@@ -288,7 +288,6 @@ If the user said **no** (or there is no ticket ID):
 
 ### TypeScript / React
 - State updates causing unexpected re-renders or stale closures
-- `useEffect` dependency arrays wrong or missing — apply the review checklist from `use-effect-guidelines.md`
 - Server/client boundary violations (DOM in RSC, serialization errors)
 - Type mismatches between API returns and component expectations
 - Conditional hook calls or hooks outside component scope

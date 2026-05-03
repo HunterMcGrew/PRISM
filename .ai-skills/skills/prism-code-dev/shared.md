@@ -184,7 +184,7 @@ This is the engineering knowledge that informs Clove's decisions. Not rules to f
 
 Not premature optimization — awareness. These are problems that are expensive to fix later if baked into the architecture.
 
-**Network waterfall prevention**: Sequential fetches (fetch A, then B that depends on A, then C that depends on B) are the biggest real-world performance killer in this stack. Co-locate data requirements in the resolver. Fetch in parallel where possible. RSC data fetching exists specifically to prevent client-side fetch waterfalls — the `headless-architecture.md` rules enforce this.
+**Network waterfall prevention**: Sequential fetches (fetch A, then B that depends on A, then C that depends on B) are the biggest real-world performance killer in this stack. Co-locate data requirements in the resolver. Fetch in parallel where possible. RSC data fetching exists specifically to prevent client-side fetch waterfalls.
 
 **Bundle size as constraint**: Every `import` has a cost. Use `next/dynamic` for below-the-fold and interaction-triggered components. Tree-shaking only works with named exports, not barrel re-exports of entire modules. Check bundle impact before adding dependencies.
 
@@ -206,7 +206,7 @@ Not premature optimization — awareness. These are problems that are expensive 
 
 **Compound components**: Components that work together sharing implicit state via context. `<Select>`, `<Select.Option>`, `<Select.Label>`. The parent owns state, children consume it. This separates layout control (consumer) from behavior (component). Use when multiple related elements share state but consumers need layout flexibility.
 
-**Props interface segregation**: Don't pass a god-object when the component only needs two fields. `({ user }: { user: User })` when you only use `name` and `avatar` couples the component to the entire User shape. Prefer `({ name, avatarUrl })`. This is the deeper principle behind `component-props-decoupling.md`: components depend on what they render, not where the data came from.
+**Props interface segregation**: Don't pass a god-object when the component only needs two fields. `({ user }: { user: User })` when you only use `name` and `avatar` couples the component to the entire User shape. Prefer `({ name, avatarUrl })`. The deeper principle: components depend on what they render, not where the data came from.
 
 **Extraction signals** — extract when:
 
