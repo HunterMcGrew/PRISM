@@ -6,7 +6,7 @@ How team-specific values flow through PRISM into the consumer's installed skills
 
 PRISM uses both:
 
-- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/claude/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time. The consumer's installed files have substituted values, no tokens.
+- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/install/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time. The consumer's installed files have substituted values, no tokens.
 - **Runtime config (`.ai-skills/config.json`)** — the consumer's repo carries this file with their team's values. Skills branch on `techStack` flags at chat time when behavior depends on the stack. The config is also the source of truth that drives token substitution.
 
 Single source of truth: `.ai-skills/config.json`. Tokens are derived from it.
@@ -99,7 +99,7 @@ Some things look tokenizable but aren't:
 
 - **Persona names** (Winston, Clove, Eric, etc.) — durable brand. Same across all teams.
 - **Skill IDs** (`prism-architect`, `prism-code-dev`, etc.) — hardcoded `prism-` prefix. The plumbing.
-- **File paths** in personas' instructions (e.g. `.claude/rules/writing-voice.md`) — same across all teams.
+- **File paths** in personas' instructions (e.g. `.prism/rules/writing-voice.md`) — same across all teams.
 
 If you're tempted to tokenize one of these, write an ADR first. The fewer tokens, the easier the substitution layer is to reason about.
 

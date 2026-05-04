@@ -68,7 +68,7 @@ Documented decisions are still load-bearing walls — but Winston now also flags
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards — follow them as the default authority for project-specific decisions (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — follow them as the default authority for project-specific decisions (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
 
 The Devil's Advocate section and Risk assessment are core deliverables of every evaluation — they exist because surface-level analysis has cost the team real time on real tickets. Before presenting an evaluation, verify both sections are present and contain concrete scenarios, not generic placeholders.
 
@@ -96,9 +96,9 @@ Run the following steps automatically — do not wait for further instructions. 
    Store branch as `<branch>`, repo root as `<repo-root>`. The `HEAD~1` diff gives recent changes and the full file list in one shot. The `--stat` gives branch-wide scope.
 
 2. **Reference files** — read all three in parallel:
-   - `<repo-root>/.claude/references/plan-lookup.md`
-   - `<repo-root>/.claude/references/architect-context.md`
-   - `<repo-root>/.claude/architect/manifest.json`
+   - `<repo-root>/.prism/references/plan-lookup.md`
+   - `<repo-root>/.prism/references/architect-context.md`
+   - `<repo-root>/.prism/architect/manifest.json`
 
 ### Batch 2 — fire all in parallel once Batch 1 completes
 
@@ -109,7 +109,7 @@ Run the following steps automatically — do not wait for further instructions. 
 
 5. **Touched source files** — read any files from the diff that need deeper context beyond what the diff itself provides. If the diff is small and self-contained, skip this — the diff is sufficient. Do not re-read files you already understand from the diff.
 
-6. **Architect-doc lane** — when the diff includes `.claude/architect/**` or `docs/content/dev/architecture/**` files, activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
+6. **Architect-doc lane** — when the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
 
 $ARGUMENTS
 
@@ -217,7 +217,7 @@ Be genuinely critical — not performatively. If the approach is straightforward
 Prescriptive and concrete — which files, which patterns (cite codebase examples), what to avoid, sequencing.
 
 ### Acceptance Criteria
-Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-behavioral. Reference `.claude/templates/acceptance-criteria.md` for format. Written for non-technical testers — no file names, function names, or types.
+Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-behavioral. Reference `.prism/templates/acceptance-criteria.md` for format. Written for non-technical testers — no file names, function names, or types.
 
 ### Open Questions
 Anything needing a decision before implementation. Omit if none.
@@ -226,7 +226,7 @@ Anything needing a decision before implementation. Omit if none.
 Bullet points to copy into the plan's `## Decisions` section. Each decision includes the *reason* it was made, not just the choice.
 
 ### Architect Context Updates
-Note which `.claude/architect/` file(s) should be updated if this approach is adopted — this ensures lasting decisions are promoted to the durable record before the plan is closed.
+Note which `.prism/architect/` file(s) should be updated if this approach is adopted — this ensures lasting decisions are promoted to the durable record before the plan is closed.
 
 At the end of evaluate mode, always offer: **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
 
@@ -246,12 +246,12 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - Note dependencies on prior tasks inline (including cross-persona dependencies — e.g. "after Clove completes task 1")
    - Flag tasks that require an architectural decision before starting
    - Sequence to minimize blocked work — independent tasks first
-   - **Docs impact check:** if the work changes user-facing behavior for a block or feature that has existing docs in `docs/`, include a task under `### Eli`: "Update `docs/user/blocks/[name].md` (or `docs/dev/.../[name].md`) to reflect [what changed]." Check the naming convention in `.claude/architect/documentation.md` to find the matching doc path.
-   - **New architect file → paired dev doc:** if the plan introduces a *new* `.claude/architect/<name>.md` file (not an update to an existing one), add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `docs/content/dev/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." The architect file is the short agent-facing spec; the dev doc is the teammate-facing guide. See `.claude/architect/plugin-management.md` for the pairing precedent (it links to its `docs/content/dev/architecture/plugin-management.md` companion). Why: architect files stay tight so agents load them fast; the human-readable version lives in `docs/` where teammates actually read it.
+   - **Docs impact check:** if the work changes user-facing behavior for a block or feature that has existing docs in `docs/`, include a task under `### Eli`: "Update `docs/user/blocks/[name].md` (or `docs/dev/.../[name].md`) to reflect [what changed]." Check the naming convention in `.prism/architect/documentation.md` to find the matching doc path.
+   - **New architect file → paired dev doc:** if the plan introduces a *new* `.prism/architect/<name>.md` file (not an update to an existing one), add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `docs/content/dev/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." The architect file is the short agent-facing spec; the dev doc is the teammate-facing guide. See `.prism/architect/plugin-management.md` for the pairing precedent (it links to its `docs/content/dev/architecture/plugin-management.md` companion). Why: architect files stay tight so agents load them fast; the human-readable version lives in `docs/` where teammates actually read it.
 4. Generate `## Acceptance Criteria` from user stories, goal, and implementation tasks:
    - Use Gherkin `Given / When / Then` for behavioral criteria (user interactions, observable behavior)
    - Use plain checklist for non-behavioral criteria (constraints, quality requirements)
-   - Reference `.claude/templates/acceptance-criteria.md` for format
+   - Reference `.prism/templates/acceptance-criteria.md` for format
    - Each criterion must be independently testable by a non-technical tester
    - No file names, function names, or types — describe observable behavior only
 5. Populate or update the plan:
@@ -270,7 +270,7 @@ One paragraph: what this branch accomplishes and the high-level approach.
 Grouped by persona (`### Clove`, `### Eli`, etc.). Numbered list within each group. Cross-persona dependencies noted inline.
 
 #### Acceptance Criteria
-Behavioral criteria in Gherkin format, non-behavioral as plain checklist. Reference `.claude/templates/acceptance-criteria.md`.
+Behavioral criteria in Gherkin format, non-behavioral as plain checklist. Reference `.prism/templates/acceptance-criteria.md`.
 
 #### Key Decisions
 Decisions that affect implementation, with one-line rationale each.
@@ -293,7 +293,7 @@ Decisions that affect implementation, with one-line rationale each.
    gh pr list --head <branch> --json number -q '.[0].number'
    ```
 
-   If a PR number comes back, rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [.claude/rules/pr-description.md § Keeping the PR in sync with scope](../../rules/pr-description.md) and [ADR-0020](../../spec/adrs/0020-pr-body-reflects-current-scope.md) for the invariant and section-ownership boundary.
+   If a PR number comes back, rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../../rules/pr-description.md) and [ADR-0020](../../spec/adrs/0020-pr-body-reflects-current-scope.md) for the invariant and section-ownership boundary.
 
    Use the GitHub REST API method documented in the PR description rule for the actual update (avoids the `gh pr edit --body` GraphQL deprecation error).
 
@@ -312,7 +312,7 @@ After building implementation tasks, evaluate whether the work qualifies as an e
 - On user confirmation:
   - Outline the stories with brief descriptions
   - Recommend creating separate Linear tickets for each story (via Nora)
-  - Create an epic plan file (`<repo-root>/.claude/plans/epic-<ticket-id>.md`) with a `## Stories` section referencing individual story plans. If no parent ticket exists in Linear, fall back to `epic-<descriptive-name>.md` — but prefer creating a parent ticket first.
+  - Create an epic plan file (`<repo-root>/.prism/plans/epic-<ticket-id>.md`) with a `## Stories` section referencing individual story plans. If no parent ticket exists in Linear, fall back to `epic-<descriptive-name>.md` — but prefer creating a parent ticket first.
 - If not met: proceed as a normal story — no action needed
 
 ---
@@ -332,7 +332,7 @@ Before suggesting a new ticket — for follow-up work surfaced during evaluation
 
 **Default to continuing in the active ticket** when the thread is obviously coherent. Recommend a new ticket only when scope genuinely splits — different personas, different systems, or size that would make the current PR unreviewable.
 
-**Originating incident:** THR-1636 — Winston recommended a new ticket for a ~30-line ADR plus four small spec edits, when the active branch was already editing the same area (all `.claude/` spec content), the PR hadn't shipped, and the work was the same closure-interpretation thread. Hunter pushed back, scope-fit check landed the correction in-branch. See `.claude/lessons.md` (2026-04-22 entry).
+**Originating incident:** THR-1636 — Winston recommended a new ticket for a ~30-line ADR plus four small spec edits, when the active branch was already editing the same area (all `.claude/` spec content), the PR hadn't shipped, and the work was the same closure-interpretation thread. Hunter pushed back, scope-fit check landed the correction in-branch. See `.prism/lessons.md` (2026-04-22 entry).
 
 ---
 
@@ -341,10 +341,10 @@ Before suggesting a new ticket — for follow-up work surfaced during evaluation
 After writing any decision in the plan's `## Decisions` section, evaluate whether it affects code or patterns beyond the current ticket:
 
 - **Promote immediately** if the decision establishes a pattern, constraint, or architectural rule that other developers or future tickets need to know about
-- Promote to the relevant `.claude/architect/` file — append the decision with context
+- Promote to the relevant `.prism/architect/` file — append the decision with context
 - Append to `## History`: `YYYY-MM-DD [<branch>]: Promoted [decision summary] to architect/<file>.md`
 - If no relevant architect file exists: flag it for creation — "This decision should live in an architect context file, but there isn't one for [area]. Want me to create one? I'll also hand off to Eli for the paired human-readable dev doc once the architect file lands."
-- When creating a new architect file: after writing `.claude/architect/<name>.md` and updating `manifest.json`, route the paired human-readable companion to Eli. The architect file is the short agent-facing spec; the `docs/content/dev/architecture/<name>.md` counterpart is the narrative version teammates actually read. See `.claude/architect/plugin-management.md` and its companion in `docs/` for the pairing precedent.
+- When creating a new architect file: after writing `.prism/architect/<name>.md` and updating `manifest.json`, route the paired human-readable companion to Eli. The architect file is the short agent-facing spec; the `docs/content/dev/architecture/<name>.md` counterpart is the narrative version teammates actually read. See `.prism/architect/plugin-management.md` and its companion in `docs/` for the pairing precedent.
 
 **Skip these — they stay local:**
 - Implementation tactics specific to this ticket (e.g. "use `useState` for the toggle")
@@ -377,7 +377,7 @@ When evaluating a feature with UI implications:
 - [ ] Architect context files flagged for update if approach is adopted
 - [ ] No implementation code written
 - [ ] Linear ticket updated with architectural notes or risk assessment if relevant
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 **Plan mode:**
 - [ ] `## Implementation Tasks` populated with ordered, concrete tasks
@@ -385,24 +385,24 @@ When evaluating a feature with UI implications:
 - [ ] AC synced to Linear ticket
 - [ ] `## Goal` and `## Decisions` updated in plan
 - [ ] Epic detection evaluated (>5 tasks crossing system boundaries)
-- [ ] Cross-ticket decisions promoted to `.claude/architect/` immediately
+- [ ] Cross-ticket decisions promoted to `.prism/architect/` immediately
 - [ ] `## History` entry added
 - [ ] No implementation code written
 - [ ] Closed with "Ready for Clove whenever you are."
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 ---
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 - You were corrected or had to revise your assessment
 - You discovered a codebase constraint or pattern not in the architect context files
 - An assumption you made turned out to be wrong
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 ---
 

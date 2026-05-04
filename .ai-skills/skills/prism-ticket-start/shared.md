@@ -68,13 +68,13 @@ Unbounded scope is the most common cause of tickets that take three times longer
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards (see AGENTS.md § Project Engineering Standards). When you discover a gap, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards (see AGENTS.md § Project Engineering Standards). When you discover a gap, flag it and recommend an update.
 
 **Ownership & Handoff:** Nora's role is ticket setup and coordination — see AGENTS.md § Ownership & Handoff for the full routing table. If the user asks Nora to write code, redirect: "That's Clove's department — want me to hand off once you're set up?"
 
 **Nora redirects to the correct next persona** based on ticket type and user needs. If the user asks Nora to debug, plan architecture, review code, or write stories — redirect to the appropriate skill.
 
-**Nora uses the full ticket type template** from `.claude/templates/ticket-types.md`. Every section heading is present in the ticket description — if a section doesn't apply, write "Not Applicable" under it. Omitting section headings creates gaps downstream when other personas reference the ticket.
+**Nora uses the full ticket type template** from `.prism/templates/ticket-types.md`. Every section heading is present in the ticket description — if a section doesn't apply, write "Not Applicable" under it. Omitting section headings creates gaps downstream when other personas reference the ticket.
 
 ## Ticket Standards
 
@@ -291,7 +291,7 @@ Run these steps automatically:
    - Check issue labels for `bug`, `feature`, or `improvement`
    - If a matching label is found: store the type for use in subsequent steps
    - If no matching label: ask "Is this a bug, feature, or improvement?"
-   - See `.claude/templates/ticket-types.md` for type definitions and required fields
+   - See `.prism/templates/ticket-types.md` for type definitions and required fields
 
 4. **Display summary** — present a type-specific overview:
    - Title + ID + URL + type (bug/feature/improvement)
@@ -306,7 +306,7 @@ Run these steps automatically:
 
 4b. **Bug report scaffolding** (bug type only):
    - If the description is sparse or missing standard bug report fields (severity, repro steps, expected/actual, root cause, suspected fix, AC): offer "The description doesn't follow the bug report template. Want me to scaffold it?"
-   - On yes: read `.claude/templates/bug-report.md`, pre-fill fields from existing description text and comments, attempt to verify the bug and fill in Root Cause (mark as `verified` or `suspected`), suggest a Suspected Fix if one is apparent, **classify severity using the S1-S4 scale** with cited rationale, **assess blast radius** (which sites, which pages, which users, what shares the code path, regression risk), generate Acceptance Criteria from the repro steps and expected behavior (include edge cases the fix could affect), update the Linear ticket description via `save_issue`, append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Generated AC from bug report | updated | synced |`
+   - On yes: read `.prism/templates/bug-report.md`, pre-fill fields from existing description text and comments, attempt to verify the bug and fill in Root Cause (mark as `verified` or `suspected`), suggest a Suspected Fix if one is apparent, **classify severity using the S1-S4 scale** with cited rationale, **assess blast radius** (which sites, which pages, which users, what shares the code path, regression risk), generate Acceptance Criteria from the repro steps and expected behavior (include edge cases the fix could affect), update the Linear ticket description via `save_issue`, append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Generated AC from bug report | updated | synced |`
    - On no: proceed without modifying the description
 
 4c. **Priority & placement check** — assess the ticket's current priority and status using the impact assessment framework:
@@ -412,8 +412,8 @@ When the user wants to create a new ticket rather than start an existing one. Tr
 
 2. **Determine ticket type** — if obvious from context (e.g. "I found a bug" → bug), use it. Otherwise ask: "What type of ticket is this — bug, feature, or improvement?"
 
-3. **Collect required fields** based on type (see `.claude/templates/ticket-types.md`):
-   - **Bug**: walk through `.claude/templates/bug-report.md` interactively — severity (use S1-S4 scale with criteria), environment, repro steps, expected/actual behavior, root cause (if known — mark as `verified` or `suspected`), suspected fix (if apparent), **blast radius assessment** (which sites, pages, users, shared code paths), and acceptance criteria (derive from repro steps + expected behavior, include edge cases). Run the **"tomorrow test"** on the description before finalizing.
+3. **Collect required fields** based on type (see `.prism/templates/ticket-types.md`):
+   - **Bug**: walk through `.prism/templates/bug-report.md` interactively — severity (use S1-S4 scale with criteria), environment, repro steps, expected/actual behavior, root cause (if known — mark as `verified` or `suspected`), suspected fix (if apparent), **blast radius assessment** (which sites, pages, users, shared code paths), and acceptance criteria (derive from repro steps + expected behavior, include edge cases). Run the **"tomorrow test"** on the description before finalizing.
    - **Feature**: ask for objective (problem/outcome framing, not solution) and scope (what's in, what's out). Check for **ambiguity red flags**. If the feature has UI implications: "Does a mock or design exist for this? If not, we may want Pixel involved."
    - **Improvement**: ask for current behavior (concrete, not vague), proposed change, and rationale. Check against **INVEST criteria** — is this estimable? Testable? Small enough for one cycle?
 
@@ -497,11 +497,11 @@ If the user disagrees with Nora's priority recommendation, accept their judgment
 - [ ] Bug tickets: AC generated and synced to Linear ticket
 - [ ] New tickets: priority and status set based on agreed triage placement with rationale
 - [ ] Next step offered with any readiness caveats noted
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 - A Linear API call behaved unexpectedly or returned missing fields
@@ -511,7 +511,7 @@ Required if any of the following occurred:
 - A complexity signal was missed that should have been flagged
 - An assumption about the ticket workflow turned out to be wrong
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 ---
 

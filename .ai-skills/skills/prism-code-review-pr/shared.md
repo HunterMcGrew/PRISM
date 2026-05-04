@@ -111,7 +111,7 @@ Eric reviews code for equipment dealership websites. This shapes his review focu
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards — actively cross-reference them against every changed line (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — actively cross-reference them against every changed line (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
 
 **Ownership & Handoff:** Eric reviews and posts comments — Clove fixes (see AGENTS.md § Ownership & Handoff). If the user asks Eric to fix something, redirect: "That's Clove's department — want me to hand off with the findings?"
 
@@ -173,12 +173,12 @@ Run the following steps automatically — do not wait for further instructions. 
 
 4. **Parallel batch B** — metadata + file list + plan. Run ALL of these in a single message:
 
-   a. **Plan lookup** — read `/tmp/pr-review-<branch-slug>/.claude/references/plan-lookup.md` and execute every step, using `/tmp/pr-review-<branch-slug>/` as `<repo-root>`. If references/ doesn't exist in the worktree, read from the main repo's `.claude/references/plan-lookup.md` instead.
+   a. **Plan lookup** — read `/tmp/pr-review-<branch-slug>/.prism/references/plan-lookup.md` and execute every step, using `/tmp/pr-review-<branch-slug>/` as `<repo-root>`. If references/ doesn't exist in the worktree, read from the main repo's `.prism/references/plan-lookup.md` instead.
       - **Override:** Never create a plan in the worktree — this is someone else's branch and creating files would cause merge conflicts. If no plan exists, note "no plan found" and proceed. All findings go into the GitHub PR comment only.
       - If a plan exists: check `## Debugged Issues` and `## Review Issues` for open/fixed status, and respect `## Decisions` as intentional constraints.
 
    b. **Manifest** — read the manifest (needed to compute architect docs for batch C):
-      - Read `/tmp/pr-review-<branch-slug>/.claude/architect/manifest.json`
+      - Read `/tmp/pr-review-<branch-slug>/.prism/architect/manifest.json`
       - The file list is already available from batch A (`gh pr diff --name-only`)
 
    c. **Review threads** via GraphQL:
@@ -216,7 +216,7 @@ Run the following steps automatically — do not wait for further instructions. 
 
    a. **Full diff**: `gh pr diff <pr-number>`
 
-   b. **Architect docs** — read `<repo-root>/.claude/references/architect-context.md` (from the main repo or worktree) and execute fully against the changed file list from batch B. Every matching pattern must be loaded — partial loads miss constraints. Use the worktree path for reading the actual architect docs. Skip any that don't exist.
+   b. **Architect docs** — read `<repo-root>/.prism/references/architect-context.md` (from the main repo or worktree) and execute fully against the changed file list from batch B. Every matching pattern must be loaded — partial loads miss constraints. Use the worktree path for reading the actual architect docs. Skip any that don't exist.
 
    c. **All source files** — from the file list, identify every file you'll need to read for review context (new/modified source files, not deleted files or config-only changes like `.claude/` files). Read them ALL in this batch. Do not spread source file reads across multiple rounds — that is the single biggest time waste in this workflow. If a file is in the diff, read it now.
 
@@ -285,7 +285,7 @@ Run the following steps automatically — do not wait for further instructions. 
     - Commit the plan update in the worktree:
       ```
       cd /tmp/pr-review-<branch-slug>
-      git add .claude/plans/
+      git add .prism/plans/
       git commit -m "chore: update plan with PR review findings"
       git push origin HEAD:refs/heads/<branch>
       cd /workspace
@@ -355,7 +355,7 @@ This does not apply to the existence of new files (components, tests, constants)
 
 ### Doc-Class Triage
 
-When the diff includes `.claude/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
+When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
 
 - **Verified** — the claim matches the source as written.
 - **Diverged** — the claim contradicts the source. Flag as **Major** or higher.
@@ -391,7 +391,7 @@ Missing tests with suggestions.
 - [ ] Lasting decisions promoted to architect context (if applicable)
 - [ ] PR description accurately reflects changes
 - [ ] Storybook stories exist for every component and block touched
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 ## PR Label
 
@@ -502,14 +502,14 @@ Reading files incrementally (a few per round, discovering more as you go) is the
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 - You found a recurring issue pattern not already in lessons.md
 - A worktree, API, or tooling failure revealed a constraint worth documenting
 - An assumption about the codebase or PR turned out to be wrong
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 

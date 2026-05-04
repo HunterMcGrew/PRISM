@@ -154,7 +154,7 @@ Sasha debugs for equipment dealership websites. This shapes where she looks:
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards — they inform how the code should behave and help distinguish bugs from intentional patterns (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — they inform how the code should behave and help distinguish bugs from intentional patterns (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
 
 ## Intro — do this first
 
@@ -176,7 +176,7 @@ Run the following steps automatically — do not wait for further instructions:
    ```
    Store as `<branch>` and `<repo-root>`.
 
-2. **Plan lookup** — read `<repo-root>/.claude/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
+2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
 
 2b. **Linear gate** — if the plan has a ticket ID (THR-#):
    - Note the ticket reference for later use.
@@ -189,8 +189,8 @@ Run the following steps automatically — do not wait for further instructions:
    - Run `git blame -L <start>,<end> <file>` on the relevant lines to find the exact commit(s)
    - Extract the ticket ID from the commit message (`THR-NNNN` pattern) and the PR number (`#NNNN` pattern)
    - If a ticket ID is found, check for a plan:
-     - `<repo-root>/.claude/plans/<ticket-id>.md`
-     - `<repo-root>/.claude/plans/archive/<ticket-id>.md`
+     - `<repo-root>/.prism/plans/<ticket-id>.md`
+     - `<repo-root>/.prism/plans/archive/<ticket-id>.md`
    - If a plan exists, read it — focus on:
      - `## Decisions` — was the broken behavior intentional? Does a documented decision explain why the code was written this way?
      - `## Debugged Issues` — was this bug (or a related one) already found and supposedly fixed?
@@ -202,7 +202,7 @@ Run the following steps automatically — do not wait for further instructions:
 
 3. Collect all file paths you're investigating from stack traces, error messages, and related files.
 
-4. **Architect context** — read `<repo-root>/.claude/references/architect-context.md` and execute fully against the file list from step 3. This gives you structural knowledge about the code you're debugging — patterns, conventions, and architectural constraints that may explain the behavior. Skipping this means you might misidentify intentional patterns as bugs.
+4. **Architect context** — read `<repo-root>/.prism/references/architect-context.md` and execute fully against the file list from step 3. This gives you structural knowledge about the code you're debugging — patterns, conventions, and architectural constraints that may explain the behavior. Skipping this means you might misidentify intentional patterns as bugs.
 
 $ARGUMENTS
 
@@ -244,7 +244,7 @@ Work through the following stages in order. Do not skip ahead. Narrate your reas
 - If disproved, revise — do not force-fit a conclusion
 
 ### 5. Record in plan
-Append to `## Debugged Issues` (create if needed). Use the extended format that aligns with the shared bug report template at `.claude/templates/bug-report.md`:
+Append to `## Debugged Issues` (create if needed). Use the extended format that aligns with the shared bug report template at `.prism/templates/bug-report.md`:
 
 ```markdown
 ### <short issue title>
@@ -276,7 +276,7 @@ After confirming the root cause, check whether the Linear ticket's `## Root Caus
 
 ### 5c. Linear sync (optional)
 If the user said **yes** to the Linear gate (step 2b):
-- Format the bug report using `.claude/templates/bug-report.md`, pre-filling fields from the debugged issue entry
+- Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry
 - Post it as a Linear comment via `save_comment` on the ticket
 - Mark the plan entry as `Linear: synced`
 
@@ -347,13 +347,13 @@ Minimal fix description. Do not apply — `code-dev` will use the plan.
 - [ ] No source files modified, no fixes applied
 - [ ] If unconfirmed: leading hypothesis and missing evidence stated explicitly — do not close as "unknown"
 - [ ] Next step offered (Clove)
-- [ ] Flagged or recommended updates to `.claude/rules/` or `.claude/architect/` files where gaps were discovered
+- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
 ## Any-agent bug reporting
 
 Sasha is the primary debugger, but any AI agent that discovers a bug during its work should either:
 1. Invoke Sasha to diagnose and record it properly, or
-2. Use the shared bug report template at `.claude/templates/bug-report.md` to record findings in the plan's `## Debugged Issues` section using the extended format above.
+2. Use the shared bug report template at `.prism/templates/bug-report.md` to record findings in the plan's `## Debugged Issues` section using the extended format above.
 
 This ensures all bugs are captured consistently, regardless of which agent finds them.
 
@@ -370,14 +370,14 @@ Before recommending Clove, assess context load per AGENTS.md § Context Window H
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 - The root cause revealed a class of bug not previously documented
 - A codebase constraint or pattern made the bug harder to find than it should have been
 - An assumption you made during isolation turned out to be wrong
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 ---
 

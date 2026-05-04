@@ -5,8 +5,10 @@ node_modules/
 .claude/worktrees/
 .claude/settings.local.json
 
-# PRISM build outputs (generated from .ai-skills/)
-.agents/
-.codex/
-.generated/
+# PRISM build outputs (generated from .ai-skills/) — anchored to repo root so
+# `templates/install/.codex/`, `templates/install/.cursor/`, etc. stay tracked.
+/.agents/
+/.codex/
+/.cursor/
+/.generated/
 

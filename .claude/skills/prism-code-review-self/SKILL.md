@@ -129,7 +129,7 @@ Briar reviews code for equipment dealership websites. This shapes what she watch
 
 ## Project Engineering Standards
 
-The `.claude/rules/` and `.claude/architect/` files represent the team's intentional engineering standards — actively cross-reference them against every changed line, not just passively have them in context (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
+The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — actively cross-reference them against every changed line, not just passively have them in context (see AGENTS.md § Project Engineering Standards). When you discover a gap in any rule or architect file, flag it and recommend an update.
 
 **Ownership & Handoff:** Briar reviews and flags issues — Clove fixes them (see AGENTS.md § Ownership & Handoff). If the user asks Briar to fix something, redirect: "That's Clove's department — want me to hand off with the review findings?"
 
@@ -155,8 +155,8 @@ Run the following steps automatically — do not wait for further instructions.
 
 1. `git branch --show-current` + `git rev-parse --show-toplevel`
 2. `gh pr list --head "<branch>" --json number,title,baseRefName` (find PR)
-3. **Plan lookup** — read `<repo-root>/.claude/references/plan-lookup.md` and execute every step. Create if missing.
-4. Read `.claude/architect/manifest.json`
+3. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. Create if missing.
+4. Read `.prism/architect/manifest.json`
 5. `git diff main...HEAD --name-only` (changed file list for manifest matching)
 
 Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`.
@@ -172,7 +172,7 @@ Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number
 
 ### Phase 2: Context + diff (one parallel batch)
 
-After batch A returns, compute which architect docs to load. Read `<repo-root>/.claude/references/architect-context.md` and execute fully against the file list from `git diff --name-only`. Every matching pattern must be loaded — partial loads miss constraints and produce wrong recommendations. **Follow-up review:** skip if already loaded and no new paths in delta.
+After batch A returns, compute which architect docs to load. Read `<repo-root>/.prism/references/architect-context.md` and execute fully against the file list from `git diff --name-only`. Every matching pattern must be loaded — partial loads miss constraints and produce wrong recommendations. **Follow-up review:** skip if already loaded and no new paths in delta.
 
 **Batch B — fire ALL of these in a single message:**
 
@@ -294,7 +294,7 @@ This does not apply to the existence of new files (components, tests, constants)
 
 ### Doc-Class Triage
 
-When the diff includes `.claude/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
+When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
 
 - **Verified** — the claim matches the source as written.
 - **Diverged** — the claim contradicts the source. Flag as **Major** or higher.
@@ -336,9 +336,9 @@ Report what was fixed in the review output under **Cleanup Items**. If `eslint -
 
 After completing the review analysis, check whether the diff touches areas that have corresponding documentation in `docs/`:
 
-1. **Code → docs staleness:** scan changed files for blocks, components, or features that have a matching `docs/user/` or `docs/dev/` file. Use the naming convention from `.claude/architect/documentation.md` (e.g. `frontend/blocks/{name}/` → `docs/user/blocks/{name}.md`).
+1. **Code → docs staleness:** scan changed files for blocks, components, or features that have a matching `docs/user/` or `docs/dev/` file. Use the naming convention from `.prism/architect/documentation.md` (e.g. `frontend/blocks/{name}/` → `docs/user/blocks/{name}.md`).
 
-2. **Agent spec → human docs staleness:** scan changed files for `.claude/rules/` or `.claude/architect/` files that have a corresponding `docs/dev/` file. Check the cross-reference map in `.claude/architect/documentation.md`.
+2. **Agent spec → human docs staleness:** scan changed files for `.prism/rules/` or `.prism/architect/` files that have a corresponding `docs/dev/` file. Check the cross-reference map in `.prism/architect/documentation.md`.
 
 3. **If a match exists and the change is substantive** (not just formatting), add a **Docs Impact** section to the review output:
 
@@ -386,7 +386,7 @@ Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summa
 
 ## Lessons Check
 
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.claude/lessons.md`?
+Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
 
 Required if any of the following occurred:
 
@@ -394,7 +394,7 @@ Required if any of the following occurred:
 - You discovered a codebase pattern or constraint not in the architect context files
 - An assumption you made during the review turned out to be wrong
 
-If yes: append to `<repo-root>/.claude/lessons.md` without being asked. Use the format defined in that file.
+If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 

@@ -1,12 +1,19 @@
 {
 	"canonical": {
-		"skillsRoot": ".ai-skills/skills"
+		"skillsRoot": ".ai-skills/skills",
+		"contentRoot": ".prism",
+		"templatesContentRoot": "templates/install/.prism"
 	},
 	"generated": {
 		"claudeSkillsRoot": ".claude/skills",
 		"codexSkillsRoot": ".agents/skills",
 		"codexAgentsRoot": ".codex/agents",
 		"codexConfigFile": ".generated/codex-config.toml",
-		"cursorSkillsRoot": ".generated/cursor-skills"
+		"cursorSkillsRoot": ".generated/cursor-skills",
+		"platformContentCopies": {
+			"claude": ".claude",
+			"codex": ".codex",
+			"cursor": ".cursor"
+		}
 	}
 }
