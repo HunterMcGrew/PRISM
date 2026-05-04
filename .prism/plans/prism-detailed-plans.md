@@ -14,6 +14,7 @@ Codify a high-detail bar for implementation-driving artifacts (Winston's `## Imp
 
 - 2026-05-03 [prism-detailed-plans]: Plan created. Codifies implementation task detail bar (ADR-0033) and removes Pixel direct-to-Clove path (ADR-0034). Out-of-phase work between PR #2 merge and PR #3 start.
 - 2026-05-03 [prism-detailed-plans]: Winston executed tasks 1-20 in one session under auto mode. Authored rule + ADRs 0033/0034 on both surfaces; updated Pixel/Winston/branch-plan/AGENTS/skills-ecosystem on both surfaces; ran `pnpm prism:build` clean (26 tests pass); `pnpm prism:check` and `pnpm prism:check-types` clean. ADR-0033 templates version intentionally drops the two `.prism/plans/...` reference lines from the dogfood version per the established pattern in PR #1 task #17 (templates ship to consumer teams without dogfood plan files) — diff result expected, not byte-identical for that file. ADR-0034 is byte-identical between surfaces. Also fixed mock-spec Status field options in Pixel skill template — replaced `Ready for implementation` with `Ready for Winston` to match the new routing.
+- 2026-05-04 [prism-detailed-plans]: Briar first-pass review opened on PR #3 — one minor flagged (UX Concern flow truncation in skills-ecosystem.md, missing final `→ Eric` in code block, pre-existing divergence). Winston added task #23 to the plan; Clove fixed both surfaces; build + check clean.
 
 ---
 
@@ -121,6 +122,10 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 
 21. **Append plan history entry.** After verification passes, append to `## History` in this plan: `2026-05-03 [prism-detailed-plans]: Clove executed tasks 1-20 — authored rule + ADRs 0033/0034, updated Pixel/Winston/branch-plan/AGENTS/skills-ecosystem on both surfaces, build+verification clean.`
 
+### Clove (Briar's first-pass review fixes)
+
+23. **Fix the UX Concern flow truncation in `skills-ecosystem.md`.** Both surfaces. The code block under `### Mid-Ticket Moves > **UX Concern from Review**` shows `Briar/Eric → Pixel → Winston → Clove → Briar` — Briar caught that this is missing the final `→ Eric` that the Pixel skill spells out (`Briar/Eric → Pixel → Winston → Clove → Briar → Eric`). Pre-existing divergence carried forward by my edit, not introduced by this PR, but the right cleanup window. Files: `.prism/architect/skills-ecosystem.md` and `templates/install/.prism/architect/skills-ecosystem.md`. Replace the code block content. Run `pnpm prism:build` after to regenerate platform copies. Run `pnpm prism:check` to confirm no drift.
+
 ### Eli (after PR merges)
 
 22. **Audit README for Pixel routing references.** Grep `README.md` for any mention of the Pixel→Clove path or the team flow. If the workflow description mentions Pixel handing to Clove for ready-to-build designs, update to Pixel→Winston→Clove. If no such reference exists, no action needed — note in plan.
@@ -157,18 +162,32 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-05-03 | Winston | Generated AC | updated | N/A (no Linear ticket) |
+| 2026-05-04 | Briar | Validated AC against diff — all items verified accurate, no changes needed | unchanged | N/A |
+
+---
+
+## Review Issues
+
+### UX Concern flow truncated in skills-ecosystem.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/skills-ecosystem.md` (Mid-Ticket Moves, UX Concern code block)
+- **Problem:** Code block shows `Briar/Eric → Pixel → Winston → Clove → Briar` — missing the final `→ Eric` shown in the Pixel skill: `Briar/Eric → Pixel → Winston → Clove → Briar → Eric`. Pre-existing divergence (old version also truncated); may be intentional shorthand.
+- **Suggested fix:** Add `→ Eric` to the code block, or add a prose note clarifying Eric is optional. No urgency — this matches the pre-PR pattern and the old format.
+- **Fixed in:** `prism-detailed-plans` branch, task #23. Added `→ Eric` to the code block on both surfaces (canonical + templates). Verified with `pnpm prism:build` + `prism:check` — clean.
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (existing prism:test suite covers build + path-guard + content-copy)
-- [ ] All debugged issues resolved (no `open` entries)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (markdown-only diff)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (prism:test suite 26/26 pass — 2026-05-04)
+- [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-05-03 (`pnpm prism:build` + `prism:check` + `prism:check-types` all clean)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (ADRs 0033 + 0034 already serve this role)
+- [x] PR description up to date (verified 2026-05-04 — accurate and current)
+- [x] Lasting decisions promoted to architect context (ADRs 0033 + 0034 already serve this role)
 
-**Last updated:** 2026-05-03
+**Last updated:** 2026-05-04

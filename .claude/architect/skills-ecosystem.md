@@ -116,7 +116,7 @@ Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes. 
 **UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
 
 ```
-Briar/Eric → Pixel → Winston → Clove → Briar
+Briar/Eric → Pixel → Winston → Clove → Briar → Eric
 ```
 
 Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston — see ADR-0034 for the routing rule.
