@@ -177,6 +177,14 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 - **Suggested fix:** Add `→ Eric` to the code block, or add a prose note clarifying Eric is optional. No urgency — this matches the pre-PR pattern and the old format.
 - **Fixed in:** `prism-detailed-plans` branch, task #23. Added `→ Eric` to the code block on both surfaces (canonical + templates). Verified with `pnpm prism:build` + `prism:check` — clean.
 
+### State wireframe annotation placement
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-pixel/shared.md` (§ States, mock-spec template)
+- **Problem:** Task 9 specified adding annotation instructions "at the top of each `### <state>` subsection." The implementation placed a single paragraph above all states instead. Guidance is present but weaker scaffolding — the preamble isn't visible when an LLM is filling in state 4 or 5.
+- **Suggested fix:** Add a short one-liner inside each state subsection (e.g. `<!-- Annotate with Tailwind tokens; cite UI/UX principle for each choice. -->`), or keep the preamble and add inline reminders at each state heading.
+
 ---
 
 ## PR Readiness
@@ -189,5 +197,6 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 - [x] Build passes — last run: 2026-05-03 (`pnpm prism:build` + `prism:check` + `prism:check-types` all clean)
 - [x] PR description up to date (verified 2026-05-04 — accurate and current)
 - [x] Lasting decisions promoted to architect context (ADRs 0033 + 0034 already serve this role)
+- [ ] Minor open: state wireframe annotation placement (Eric PR review — 2026-05-04)
 
 **Last updated:** 2026-05-04
