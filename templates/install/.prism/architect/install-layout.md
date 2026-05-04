@@ -63,6 +63,8 @@ When the guard fires, it prints `path-guard: <relative-path>:<line>: <text>` for
 
 The cleanup function under `removeDeletedManagedContent` handles the last case — it detects build copies whose canonical source no longer exists (recognized via the area-level `.ai-skill-generated` marker) and removes them.
 
+Platforms without managed content are treated as opt-out, not drift. The signal is the area-level `.ai-skill-generated` marker — if no copied area carries it inside `<platformDir>/`, `prism:build` has never run for that platform and `prism:check` skips it. This keeps fresh clones passing on platforms the contributor hasn't built locally yet (e.g. when `.codex/`/`.cursor/`/`.agents/` are gitignored). Once any area is built and the marker is written, drift detection picks the platform up on subsequent checks. Build mode always copies and writes the marker.
+
 ## Where to look
 
 - ADR-0031 in `.prism/spec/adrs/` — the decision and the alternatives considered

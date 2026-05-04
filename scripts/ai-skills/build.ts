@@ -433,6 +433,94 @@ async function copyFileIfChanged(
 }
 
 /**
+ * Wraps the per-platform copy + cleanup so platforms without managed content
+ * are treated as opt-out in check mode rather than reported as drift. The
+ * signal is the area-level managed marker — if no copied area carries it,
+ * `prism:build` has never run for this platform and a fresh clone shouldn't
+ * fail `prism:check` over it. Once any area is built, the marker is present
+ * and drift detection picks the platform up on subsequent checks.
+ *
+ * Plain "does the platform dir exist" isn't a strong enough signal because
+ * `ensureDirectory(targetRoots.codexAgents)` materializes `.codex/` early in
+ * main() for the skill-output side of the build, even when no content copy
+ * has happened.
+ */
+export async function syncPlatformContentCopy(
+	contentRoot: string,
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
+): Promise<void> {
+	if (checkModeArg && !(await platformHasManagedContent(platformDir))) {
+		return;
+	}
+
+	await copyContentToPlatformDir(
+		contentRoot,
+		platformDir,
+		checkModeArg,
+		changedPathsArg
+	);
+	await removeDeletedManagedContent(
+		contentRoot,
+		platformDir,
+		checkModeArg,
+		changedPathsArg
+	);
+}
+
+async function platformHasManagedContent(platformDir: string): Promise<boolean> {
+	for (const area of COPIED_CONTENT_AREAS) {
+		if (await pathExists(path.join(platformDir, area, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+	return false;
+}
+
+async function skillsRootHasManagedContent(
+	skillsRoot: string
+): Promise<boolean> {
+	if (!(await pathExists(skillsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isDirectory() || entry.name.startsWith(".")) {
+			continue;
+		}
+		if (await pathExists(path.join(skillsRoot, entry.name, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+	return false;
+}
+
+async function codexAgentsRootHasManagedContent(
+	agentsRoot: string
+): Promise<boolean> {
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (
+			!entry.isFile() ||
+			!entry.name.endsWith(".toml") ||
+			entry.name.startsWith(".")
+		) {
+			continue;
+		}
+		const content =
+			(await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
+		if (content.startsWith(GENERATED_HEADER_LINE)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Removes managed build-copy files under `<platformDir>/<area>/` whose
  * canonical source no longer exists. Detects the build copy by the presence of
  * the area-level managed marker; refuses to delete files in directories that
@@ -547,8 +635,23 @@ async function main(): Promise<void> {
 		pathDefinitions.generated.codexConfigFile
 	);
 
-	for (const targetRoot of Object.values(targetRoots)) {
-		await ensureDirectory(targetRoot);
+	const optedIn = {
+		claude:
+			!checkMode || (await skillsRootHasManagedContent(targetRoots.claude)),
+		codex:
+			!checkMode || (await skillsRootHasManagedContent(targetRoots.codex)),
+		cursor:
+			!checkMode || (await skillsRootHasManagedContent(targetRoots.cursor)),
+		codexAgents:
+			!checkMode ||
+			(await codexAgentsRootHasManagedContent(targetRoots.codexAgents)),
+		codexConfig: !checkMode || (await pathExists(codexConfigPath)),
+	};
+
+	if (!checkMode) {
+		for (const targetRoot of Object.values(targetRoots)) {
+			await ensureDirectory(targetRoot);
+		}
 	}
 
 	const roleMap = new Map<string, RoleDefinition>();
@@ -598,84 +701,97 @@ async function main(): Promise<void> {
 		const claudeSkillRoot = path.join(targetRoots.claude, skillId);
 		const codexSkillRoot = path.join(targetRoots.codex, skillId);
 		const cursorSkillRoot = path.join(targetRoots.cursor, skillId);
-		await writeFileIfChanged(
-			path.join(claudeSkillRoot, "SKILL.md"),
-			claudeMarkdown,
-			checkMode,
-			changedPaths
-		);
-		await writeFileIfChanged(
-			path.join(codexSkillRoot, "SKILL.md"),
-			codexMarkdown,
-			checkMode,
-			changedPaths
-		);
-		await writeFileIfChanged(
-			path.join(cursorSkillRoot, "SKILL.md"),
-			cursorMarkdown,
-			checkMode,
-			changedPaths
-		);
-		await writeFileIfChanged(
-			path.join(claudeSkillRoot, MANAGED_MARKER),
-			"Managed by scripts/ai-skills/build.ts\n",
-			checkMode,
-			changedPaths
-		);
-		await writeFileIfChanged(
-			path.join(codexSkillRoot, MANAGED_MARKER),
-			"Managed by scripts/ai-skills/build.ts\n",
-			checkMode,
-			changedPaths
-		);
-		await writeFileIfChanged(
-			path.join(cursorSkillRoot, MANAGED_MARKER),
-			"Managed by scripts/ai-skills/build.ts\n",
-			checkMode,
-			changedPaths
-		);
-		await syncOptionalSkillPayloads(
-			path.join(sourceSkillsRoot, skillId),
-			codexSkillRoot
-		);
-		await syncOptionalSkillPayloads(
-			path.join(sourceSkillsRoot, skillId),
-			cursorSkillRoot
-		);
 
-		const description =
-			skillSource.frontmatterMap.get("description") ??
-			`Generated codex agent adapter for ${skillId}.`;
-		const codexAgentToml = buildCodexAgentToml({
-			codexSkillMarkdown: codexMarkdown,
-			description,
-			roleDefinition,
-			skillId,
-		});
+		if (optedIn.claude) {
+			await writeFileIfChanged(
+				path.join(claudeSkillRoot, "SKILL.md"),
+				claudeMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(claudeSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+		}
+
+		if (optedIn.codex) {
+			await writeFileIfChanged(
+				path.join(codexSkillRoot, "SKILL.md"),
+				codexMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(codexSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+			await syncOptionalSkillPayloads(
+				path.join(sourceSkillsRoot, skillId),
+				codexSkillRoot
+			);
+		}
+
+		if (optedIn.cursor) {
+			await writeFileIfChanged(
+				path.join(cursorSkillRoot, "SKILL.md"),
+				cursorMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(cursorSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+			await syncOptionalSkillPayloads(
+				path.join(sourceSkillsRoot, skillId),
+				cursorSkillRoot
+			);
+		}
+
+		if (optedIn.codexAgents) {
+			const description =
+				skillSource.frontmatterMap.get("description") ??
+				`Generated codex agent adapter for ${skillId}.`;
+			const codexAgentToml = buildCodexAgentToml({
+				codexSkillMarkdown: codexMarkdown,
+				description,
+				roleDefinition,
+				skillId,
+			});
+			await writeFileIfChanged(
+				path.join(targetRoots.codexAgents, `${skillId}.toml`),
+				codexAgentToml,
+				checkMode,
+				changedPaths
+			);
+		}
+	}
+
+	if (optedIn.codexConfig) {
+		const codexConfig = [
+			GENERATED_HEADER_LINE,
+			"# Source: .ai-skills/definitions/roles.json",
+			"# Target: codex-config | Regenerate with: pnpm prism:build",
+			"",
+			"[agents]",
+			"max_threads = 6",
+			"max_depth = 1",
+			"",
+		].join("\n");
 		await writeFileIfChanged(
-			path.join(targetRoots.codexAgents, `${skillId}.toml`),
-			codexAgentToml,
+			codexConfigPath,
+			codexConfig,
 			checkMode,
 			changedPaths
 		);
 	}
-
-	const codexConfig = [
-		GENERATED_HEADER_LINE,
-		"# Source: .ai-skills/definitions/roles.json",
-		"# Target: codex-config | Regenerate with: pnpm prism:build",
-		"",
-		"[agents]",
-		"max_threads = 6",
-		"max_depth = 1",
-		"",
-	].join("\n");
-	await writeFileIfChanged(
-		codexConfigPath,
-		codexConfig,
-		checkMode,
-		changedPaths
-	);
 
 	const contentRoot = path.join(repoRoot, pathDefinitions.canonical.contentRoot);
 	if (await pathExists(contentRoot)) {
@@ -699,8 +815,12 @@ async function main(): Promise<void> {
 			path.join(repoRoot, platformCopies.cursor),
 		];
 		for (const platformDir of platformDirs) {
-			await copyContentToPlatformDir(contentRoot, platformDir, checkMode, changedPaths);
-			await removeDeletedManagedContent(contentRoot, platformDir, checkMode, changedPaths);
+			await syncPlatformContentCopy(
+				contentRoot,
+				platformDir,
+				checkMode,
+				changedPaths
+			);
 		}
 	}
 

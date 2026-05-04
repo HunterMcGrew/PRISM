@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import {
 	copyContentToPlatformDir,
 	removeDeletedManagedContent,
+	syncPlatformContentCopy,
 } from "./build";
 import { MANAGED_MARKER } from "./utils";
 
@@ -163,6 +164,123 @@ test("copyContentToPlatformDir copies the loose SPEC.md file", async () => {
 			const idempotent: string[] = [];
 			await copyContentToPlatformDir(contentRoot, platformDir, false, idempotent);
 			assert.equal(idempotent.length, 0, "no changes on second pass");
+		}
+	);
+});
+
+test("syncPlatformContentCopy skips a platform with no managed content in check mode", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await syncPlatformContentCopy(
+				contentRoot,
+				platformDir,
+				true,
+				changedPaths
+			);
+
+			assert.equal(
+				changedPaths.length,
+				0,
+				"no drift reported for platform without markers"
+			);
+		}
+	);
+});
+
+test("syncPlatformContentCopy still skips when only an unrelated dir exists in the platform", async () => {
+	await withTempRoots(
+		async (contentRoot, platformDir) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+			await fs.mkdir(path.join(platformDir, "agents"), { recursive: true });
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await syncPlatformContentCopy(
+				contentRoot,
+				platformDir,
+				true,
+				changedPaths
+			);
+
+			assert.equal(
+				changedPaths.length,
+				0,
+				"unrelated subdir is not the opt-in signal"
+			);
+		}
+	);
+});
+
+test("syncPlatformContentCopy creates an absent platform dir in build mode", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			await fs.rm(platformDir, { force: true, recursive: true });
+
+			const changedPaths: string[] = [];
+			await syncPlatformContentCopy(
+				contentRoot,
+				platformDir,
+				false,
+				changedPaths
+			);
+
+			const copiedPath = path.join(platformDir, "rules", "alpha.md");
+			const copied = await fs.readFile(copiedPath, "utf8");
+			assert.equal(copied, "# Alpha\n");
+			assert.ok(changedPaths.includes(copiedPath));
+		}
+	);
+});
+
+test("syncPlatformContentCopy drift-checks an existing platform dir in check mode", async () => {
+	await withTempRoots(
+		async (contentRoot, platformDir) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+			const initial: string[] = [];
+			await syncPlatformContentCopy(contentRoot, platformDir, false, initial);
+
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha edited\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await syncPlatformContentCopy(
+				contentRoot,
+				platformDir,
+				true,
+				changedPaths
+			);
+			assert.ok(changedPaths.length > 0, "drift reported for existing platform dir");
 		}
 	);
 });
