@@ -23,3 +23,5 @@ Eric's and Briar's hooks share phrasing — the bar reads identically across aut
 ## Severity
 
 Diverged and missing claims are at minimum **Major**. The doc is durable agent context — every future agent that loads it inherits the wrong fact, so the blast radius is wider than a typical correctness issue.
+
+Re-enumeration drift in an architect doc — when the doc re-enumerates a concept owned by another doc and the enumerations disagree — counts as a diverged claim under this severity bar. Same Major minimum. See [implementation-task-detail.md](./implementation-task-detail.md) § Cite, don't restate, when overlapping existing framing.

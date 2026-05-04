@@ -15,6 +15,7 @@ Codify a high-detail bar for implementation-driving artifacts (Winston's `## Imp
 - 2026-05-03 [prism-detailed-plans]: Plan created. Codifies implementation task detail bar (ADR-0033) and removes Pixel direct-to-Clove path (ADR-0034). Out-of-phase work between PR #2 merge and PR #3 start.
 - 2026-05-03 [prism-detailed-plans]: Winston executed tasks 1-20 in one session under auto mode. Authored rule + ADRs 0033/0034 on both surfaces; updated Pixel/Winston/branch-plan/AGENTS/skills-ecosystem on both surfaces; ran `pnpm prism:build` clean (26 tests pass); `pnpm prism:check` and `pnpm prism:check-types` clean. ADR-0033 templates version intentionally drops the two `.prism/plans/...` reference lines from the dogfood version per the established pattern in PR #1 task #17 (templates ship to consumer teams without dogfood plan files) — diff result expected, not byte-identical for that file. ADR-0034 is byte-identical between surfaces. Also fixed mock-spec Status field options in Pixel skill template — replaced `Ready for implementation` with `Ready for Winston` to match the new routing.
 - 2026-05-04 [prism-detailed-plans]: Briar first-pass review opened on PR #3 — one minor flagged (UX Concern flow truncation in skills-ecosystem.md, missing final `→ Eric` in code block, pre-existing divergence). Winston added task #23 to the plan; Clove fixed both surfaces; build + check clean.
+- 2026-05-04 [prism-detailed-plans]: Eric caught the same Minor on Thrive's port that exists here too — `implementation-task-detail.md` § "All five states" re-enumerated states (`Default, empty, loading, error, success`) instead of citing Pixel's doctrine, drifting from Pixel's actual five (`empty, loading, error, partial/edge, success`). Winston applied the cite-don't-restate fix on both surfaces (canonical + templates), added a new `## Cite, don't restate, when overlapping existing framing` section to the rule codifying the principle, and slotted re-enumeration drift under the Major severity bar in `architect-doc-verification.md`. `pnpm prism:build` + `prism:check` clean (26 tests pass). Scope-fit per the active branch — same file PR #3 introduced, structurally same fix Thrive shipped, before the 2nd review pass.
 
 ---
 
@@ -40,6 +41,12 @@ Codify a high-detail bar for implementation-driving artifacts (Winston's `## Imp
 - **Mode 3 HTML mocks and Mode 1 inline sketches are exempt from the detail bar.** Bar applies to Mode 2 saved markdown specs and `## Implementation Tasks` only.
   - **Root cause:** Mode 1 is conversational by design — riffing in chat. Mode 3 is a visual preview, not a spec. Holding either to the implementation-grade bar would defeat their purpose.
   - **Chosen approach:** Bar limited to spec-class artifacts. Rule states the exemption explicitly so future reviewers don't try to apply the bar to inline sketches.
+
+- **Cite, don't restate, when overlapping existing framing.** When a rule, ADR, architect doc, or skill section restates a concept defined elsewhere — a doctrine, an established enumeration — cite the source rather than re-enumerate. Re-enumeration drifts the moment either side moves; cited content can't.
+  - **Root cause:** First-pass `implementation-task-detail.md` § "All five states" enumerated `Default, empty, loading, error, success` while Pixel's doctrine at `prism-pixel § States` says `empty, loading, error, partial/edge, success`. Three docs out of sync (rule, Pixel skill, mode 2 template) on the day the rule shipped — exactly the divergence-failure-mode the rule's bar already addresses, just upstream. Caught by Eric on Thrive's port; same drift exists here.
+  - **Alternatives considered:** (a) Align the rule's enumeration to Pixel's doctrine (one-line fix, picks shorter side as canonical). (b) Add the principle as a standalone rule. (c) Add it under `branch-plan.md`. (d) Leave as a lesson for Winston.
+  - **Chosen approach:** New `## Cite, don't restate, when overlapping existing framing` section in `implementation-task-detail.md` (the bar that committed the violation absorbs the principle that prevents it — same root cause as the bar, just upstream). Severity bar in `architect-doc-verification.md` extended to cover re-enumeration drift as a diverged claim. The rule's "All five states" line itself rewritten to cite Pixel's doctrine — eats its own dogfood.
+  - **Implementation guidance:** When authoring a rule, ADR, architect doc, or skill section, if you find yourself enumerating a list and another doc already enumerates them, replace the list with `per [doc] § [section]`. At most a sentence of paraphrase for context.
 
 ---
 
@@ -199,4 +206,4 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 - [x] Lasting decisions promoted to architect context (ADRs 0033 + 0034 already serve this role)
 - [ ] Minor open: state wireframe annotation placement (Eric PR review — 2026-05-04)
 
-**Last updated:** 2026-05-04
+**Last updated:** 2026-05-04 (cite-don't-restate fix applied — same drift Eric flagged at Thrive)
