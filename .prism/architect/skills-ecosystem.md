@@ -116,10 +116,10 @@ Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes. 
 **UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
 
 ```
-Briar/Eric → Pixel → Clove → Briar
+Briar/Eric → Pixel → Winston → Clove → Briar
 ```
 
-Pixel specs the fix. Clove implements. Review cycle continues.
+Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston — see ADR-0034 for the routing rule.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 
@@ -216,7 +216,7 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 | **Clove**   | Briar (in-session) or Eric (fresh chat)                                                                  | After PR is pushed                                                                                                        |
 | **Briar**   | Eric (in a fresh chat)                                                                                   | After clean self-review                                                                                                   |
 | **Eric**    | Clove (if issues found)                                                                                  | After PR review                                                                                                           |
-| **Pixel**   | Winston (architectural implications), Clove (ready to build)                                             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. See ADR-0013. |
+| **Pixel**   | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. See ADR-0013 (discovery) and ADR-0034 (routing destination). |
 
 ---
 
