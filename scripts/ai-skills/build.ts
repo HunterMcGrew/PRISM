@@ -794,20 +794,45 @@ async function main(): Promise<void> {
 	}
 
 	const contentRoot = path.join(repoRoot, pathDefinitions.canonical.contentRoot);
-	if (await pathExists(contentRoot)) {
-		const violations = await runPathGuard(contentRoot);
-		if (violations.length > 0) {
-			for (const violation of violations) {
-				console.error(
-					`path-guard: ${violation.relativePath}:${violation.line}: ${violation.text}`
-				);
-			}
-			console.error(
-				`path-guard: ${violations.length} violation(s) found in ${pathDefinitions.canonical.contentRoot}/. Canonical content must reference .prism/<area>/ paths, not platform-dir build copies.`
-			);
-			process.exit(1);
-		}
+	const templatesContentRoot = path.join(
+		repoRoot,
+		pathDefinitions.canonical.templatesContentRoot
+	);
 
+	const guardedRoots: { absolutePath: string; relativeLabel: string }[] = [
+		{
+			absolutePath: contentRoot,
+			relativeLabel: pathDefinitions.canonical.contentRoot,
+		},
+		{
+			absolutePath: templatesContentRoot,
+			relativeLabel: pathDefinitions.canonical.templatesContentRoot,
+		},
+	];
+	let totalViolations = 0;
+	for (const guardedRoot of guardedRoots) {
+		if (!(await pathExists(guardedRoot.absolutePath))) {
+			continue;
+		}
+		const violations = await runPathGuard(guardedRoot.absolutePath);
+		if (violations.length === 0) {
+			continue;
+		}
+		for (const violation of violations) {
+			console.error(
+				`path-guard: ${guardedRoot.relativeLabel}/${violation.relativePath}:${violation.line}: ${violation.text}`
+			);
+		}
+		console.error(
+			`path-guard: ${violations.length} violation(s) found in ${guardedRoot.relativeLabel}/. Canonical content must reference .prism/<area>/ paths, not platform-dir build copies.`
+		);
+		totalViolations += violations.length;
+	}
+	if (totalViolations > 0) {
+		process.exit(1);
+	}
+
+	if (await pathExists(contentRoot)) {
 		const platformCopies = pathDefinitions.generated.platformContentCopies;
 		const platformDirs = [
 			path.join(repoRoot, platformCopies.claude),

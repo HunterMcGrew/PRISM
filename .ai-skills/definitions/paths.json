@@ -1,7 +1,8 @@
 {
 	"canonical": {
 		"skillsRoot": ".ai-skills/skills",
-		"contentRoot": ".prism"
+		"contentRoot": ".prism",
+		"templatesContentRoot": "templates/install/.prism"
 	},
 	"generated": {
 		"claudeSkillsRoot": ".claude/skills",

@@ -149,6 +149,34 @@ test("flags references in the loose SPEC.md file", async () => {
 	);
 });
 
+test("scans the templates-surface content root using the same allowlist", async () => {
+	await withTempContentRoot(
+		async (root) => {
+			await fs.mkdir(path.join(root, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, "rules", "stale.md"),
+				"See `.claude/rules/other.md` for details.\n",
+				"utf8"
+			);
+			await fs.mkdir(path.join(root, "architect"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, "architect", "install-layout.md"),
+				"Example: `.claude/rules/foo.md` copies from `.prism/rules/foo.md`.\n",
+				"utf8"
+			);
+		},
+		async (root) => {
+			const violations = await runPathGuard(root);
+			assert.equal(
+				violations.length,
+				1,
+				"templates-surface stale rule flagged; allowlisted install-layout.md skipped"
+			);
+			assert.equal(violations[0].relativePath, "rules/stale.md");
+		}
+	);
+});
+
 test("returns empty when contentRoot does not exist", async () => {
 	const violations = await runPathGuard(
 		path.join(os.tmpdir(), "prism-path-guard-missing-" + Date.now())

@@ -23,6 +23,7 @@ export interface PathDefinitions {
 	canonical: {
 		skillsRoot: string;
 		contentRoot: string;
+		templatesContentRoot: string;
 	};
 	generated: {
 		claudeSkillsRoot: string;

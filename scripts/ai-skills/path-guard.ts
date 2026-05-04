@@ -1,7 +1,7 @@
 /**
- * Build-time path guard: fails when canonical content under `.prism/` cites
- * platform-dir paths (`.claude/<area>/`, `.codex/<area>/`, `.cursor/<area>/`)
- * for an area that gets mirrored to those dirs by `prism:build`.
+ * Build-time path guard: fails when canonical content cites platform-dir paths
+ * (`.claude/<area>/`, `.codex/<area>/`, `.cursor/<area>/`) for an area that
+ * gets mirrored to those dirs by `prism:build`.
  *
  * Limited to copied areas because copied content lands at every platform — a
  * file under `.prism/rules/` ships to `.claude/rules/`, `.codex/rules/`, and
@@ -11,6 +11,11 @@
  * Areas not copied (plans/, lessons.md) live only at canonical and may
  * legitimately reference platform paths when the ticket itself concerns
  * platform layout — they're out of scope.
+ *
+ * Called once per canonical content root by `build.ts` — once for the dogfood
+ * canonical (`.prism/`) and once for the templates-surface mirror that ships
+ * to consumer installs (`templates/install/.prism/`). The allowlist keys are
+ * relative to the contentRoot, so the same allowlist applies to both surfaces.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
