@@ -26,7 +26,7 @@ This rule covers two failure modes — same severity, different shape:
 
 - **Doc vs. source.** The doc claims X about a code file; the code file does Y. The triage above (Verified / Diverged / Missing) is for this case. The rule auto-loads on `.prism/architect/**`, `.prism/spec/adrs/**`, and `docs/content/dev/architecture/**` because those are the authoring surfaces where this drift originates.
 
-- **Citation vs. cited.** Doc A cites Doc B's framing; Doc A's restatement no longer matches what Doc B actually says. This drift originates on _citing_ surfaces — rules, `AGENTS.md`, plan history, anywhere that re-enumerates ADR or architect content. The verification mechanism for this drift lives in [`implementation-task-detail.md`](./implementation-task-detail.md) § Cite, don't restate, when overlapping existing framing — that rule is Tier 1 (always-loaded per [ADR-0033](../spec/adrs/0033-rule-loading-tiers.md)), so it's in context on every edit regardless of glob match.
+- **Citation vs. cited.** Doc A cites Doc B's framing; Doc A's restatement no longer matches what Doc B actually says. This drift originates on _citing_ surfaces — rules, `AGENTS.md`, plan history, anywhere that re-enumerates ADR or architect content. The verification mechanism for this drift lives in [`implementation-task-detail.md`](./implementation-task-detail.md) § Cite, don't restate, when overlapping existing framing — that rule is Tier 1 (always-loaded per [ADR-0035](../spec/adrs/0035-rule-loading-tiers.md)), so it's in context on every edit regardless of glob match.
 
 If you're editing a citing surface and you touch an ADR citation or a re-enumeration of another spec doc, the Cite-Don't-Restate clause governs — re-read the cited source and verify your restatement matches.
 

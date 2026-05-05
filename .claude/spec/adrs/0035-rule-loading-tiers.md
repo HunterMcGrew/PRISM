@@ -1,5 +1,5 @@
 ---
-Number: 0033
+Number: 0035
 Title: Rule Loading Tiers
 Status: accepted
 Date: 2026-05-04
@@ -23,7 +23,7 @@ Three approaches were considered for the remaining unscoped rules:
 
 Rules in `.prism/rules/` fall into three tiers based on when they should be in context. Tier membership is determined by the rule's content, not its filename.
 
-**Tier 1 — Always-loaded.** Rules that apply across every persona's lane and every conversation. No `paths:` frontmatter. Members: workflow rules (`branch-plan.md`, `pr-description.md`, `git-conventions.md`, `verification-commands.md`, `acceptance-criteria.md`), universal code rules (`code-comments.md`, `code-standards.md`).
+**Tier 1 — Always-loaded.** Rules that apply across every persona's lane and every conversation. No `paths:` frontmatter. Members: workflow rules (`branch-plan.md`, `pr-description.md`, `git-conventions.md`, `verification-commands.md`, `acceptance-criteria.md`, `implementation-task-detail.md`), universal code rules (`code-comments.md`, `code-standards.md`).
 
 **Tier 2 — Path-scoped via `paths:` frontmatter.** Rules that only apply when files in a specific area are being read or edited. The frontmatter scopes them to the relevant globs. Members include the writing-voice rule (`writing-voice.md`, scoped to durable spec content), the accessibility rule (`accessibility.md`, scoped to UI files), and the architect-doc-verification rule (`architect-doc-verification.md`, scoped to architect/ADR/dev-doc surfaces).
 

@@ -48,7 +48,7 @@ Three pieces:
 
 | Tier                        | Where it lives                                                                                  | When it loads                                                    | Examples                                                                                                                                                   |
 | --------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tier 1** — Always-loaded  | `.prism/rules/<rule>.md` (no `paths:` frontmatter)                                              | Every conversation, before any work starts                       | `branch-plan.md`, `pr-description.md`, `git-conventions.md`, `verification-commands.md`, `acceptance-criteria.md`, `code-comments.md`, `code-standards.md` |
+| **Tier 1** — Always-loaded  | `.prism/rules/<rule>.md` (no `paths:` frontmatter)                                              | Every conversation, before any work starts                       | `branch-plan.md`, `pr-description.md`, `git-conventions.md`, `verification-commands.md`, `acceptance-criteria.md`, `implementation-task-detail.md`, `code-comments.md`, `code-standards.md` |
 | **Tier 2** — Path-scoped    | `.prism/rules/<rule>.md` with `paths:` YAML frontmatter                                         | Only when the agent reads a file matching one of the globs       | `accessibility.md` (scoped to UI files), `architect-doc-verification.md` (scoped to architect docs, ADRs, paired dev docs)                                 |
 | **Tier 3** — Skill-internal | `.ai-skills/skills/<id>/references/<file>.md` (copied to platform output by `pnpm prism:build`) | Only when the citing `SKILL.md` instructs the persona to read it | Pixel's `doctrine.md` and `pattern-vocabulary.md`; Reese's per-mode files; Nora's `frameworks.md`                                                          |
 
@@ -92,7 +92,7 @@ Three pieces:
 
 ## Cross-references
 
-- [`ADR-0033`](../../../../.prism/spec/adrs/0033-rule-loading-tiers.md) — the decision and the alternatives considered
+- [`ADR-0035`](../../../../.prism/spec/adrs/0035-rule-loading-tiers.md) — the decision and the alternatives considered
 - [Claude Code memory docs § Path-specific rules](https://code.claude.com/docs/en/memory#path-specific-rules) — the platform mechanism Tier 2 rides on
 - [`docs/content/dev/architecture/install-layout.md`](./install-layout.md) — how canonical content reaches each platform's auto-load surface; the build copy that Tier 1 and Tier 2 ride on, and the `references/` payload that Tier 3 rides on
 - [`.prism/architect/install-layout.md`](../../../../.prism/architect/install-layout.md) — agent-loaded reference for the install layout, terser by design

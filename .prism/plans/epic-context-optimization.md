@@ -1422,6 +1422,88 @@ PRISM canonical only ports two of these five (the others are Thrive-specific). P
 
 ---
 
+## Review Issues
+
+### ADR number collision — 0033 used twice
+
+- **Severity:** `critical`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 [hmcgrew/context-optimization-thrive-learnings] — `git mv` renamed `.prism/spec/adrs/0033-rule-loading-tiers.md` and `.claude/spec/adrs/0033-rule-loading-tiers.md` to `0035-rule-loading-tiers.md`. Frontmatter `Number:` updated. References updated in `.prism/architect/documentation.md:120`, `.claude/architect/documentation.md:120`, `.prism/rules/architect-doc-verification.md` § Drift classes covered, `.claude/rules/architect-doc-verification.md` § Drift classes covered, `docs/content/dev/architecture/rule-loading-tiers.md:51` and `:95`, and `.prism/lessons.md:36` (historical reference updated for accuracy).
+- **File:** `.prism/spec/adrs/0033-implementation-task-detail.md`, `.prism/spec/adrs/0033-rule-loading-tiers.md` (and the same pair under `.claude/spec/adrs/`)
+- **Problem:** Two distinct ADRs share number 0033 — `0033-implementation-task-detail.md` (dated 2026-05-03, merged via PR #3) and `0033-rule-loading-tiers.md` (dated 2026-05-04, added in this PR). `.prism/spec/adrs/README.md:29` explicitly forbids reuse: "never reuse numbers, never renumber to fill gaps." Every bare "ADR-0033" reference (e.g. `.prism/rules/branch-plan.md:208` "See ADR-0033") is now ambiguous, and downstream agents loading the spec see two ADRs with the same identifier.
+- **Suggested fix:** Renumber the rule-loading-tiers ADR to `0035-rule-loading-tiers.md` (next unused number — 0034 is taken by the Pixel routing ADR also added in this branch). Touch every "ADR-0033" reference to disambiguate where the link is bare: in canonical, `.prism/rules/branch-plan.md:208`, `.prism/rules/architect-doc-verification.md` § Drift classes covered (the inline link to "ADR-0033" pointing at rule-loading-tiers), `docs/content/dev/architecture/rule-loading-tiers.md:95`, `.prism/architect/documentation.md:120`. Same paths under `.claude/`. After renumbering, run `pnpm prism:build` to refresh platform copies and `pnpm prism:check` to confirm.
+
+### Tier 1 enumeration omits implementation-task-detail.md
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 — added `implementation-task-detail.md` to the Tier 1 workflow-rules group in `.prism/spec/adrs/0035-rule-loading-tiers.md:26`, `.claude/spec/adrs/0035-rule-loading-tiers.md:26`, `templates/install/.prism/spec/adrs/0035-rule-loading-tiers.md:26`, and `docs/content/dev/architecture/rule-loading-tiers.md:51`.
+- **File:** `.prism/spec/adrs/0033-rule-loading-tiers.md:26` and `docs/content/dev/architecture/rule-loading-tiers.md:51`
+- **Problem:** Both ADR and paired dev doc enumerate Tier 1 members as a closed list — `branch-plan.md, pr-description.md, git-conventions.md, verification-commands.md, acceptance-criteria.md, code-comments.md, code-standards.md`. Implementation-task-detail.md, added in this same PR, has no `paths:` frontmatter and is therefore Tier 1 by the membership rule. Architect-doc-verification.md § Drift classes covered explicitly states "[implementation-task-detail.md] is Tier 1 (always-loaded per ADR-0033)" — confirming it belongs in the enumeration. Missing claim per `.prism/rules/architect-doc-verification.md`. Severity Major because the doc is durable agent context; future agents reading the Tier 1 list will treat the new rule as something other than Tier 1.
+- **Suggested fix:** Add `implementation-task-detail.md` to the Tier 1 enumeration in both surfaces (the ADR Members line and the dev doc table row). Same Tier 1 list also appears in `.claude/spec/adrs/0033-rule-loading-tiers.md` after rebuild.
+
+### Templates mirror drift — accessibility.md missing paths frontmatter
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 — prepended the canonical `paths:` frontmatter block to `templates/install/.prism/rules/accessibility.md`.
+- **File:** `templates/install/.prism/rules/accessibility.md:1`
+- **Problem:** `.prism/rules/accessibility.md` got `paths:` YAML frontmatter scoping it to UI files in this PR. The templates/install mirror (its own canonical surface per `install-layout.md:47`) did not get the same change, so consumers installing PRISM after this PR ships will get the unscoped (Tier 1) version of accessibility.md and pay the rule-tier cost the optimization was supposed to remove. The optimization target named in the plan goal — "cut baseline conversation context by roughly 40%" — depends on consumers receiving the path-scoped rule.
+- **Suggested fix:** Prepend the same `paths:` frontmatter block (description + `**/*.{ts,tsx,jsx,vue,svelte}`) to `templates/install/.prism/rules/accessibility.md`. Per the Phase 6 task 6.1 instruction format.
+
+### Templates mirror drift — architect-doc-verification.md retains Thrive specifics
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 — replaced `templates/install/.prism/rules/architect-doc-verification.md` with the canonical body (frontmatter, Drift classes covered section, ADR-0035 link). The canonical version is already PRISM-neutral so no further generalization needed.
+- **File:** `templates/install/.prism/rules/architect-doc-verification.md:5`
+- **Problem:** The file was modified in this PR (in the merge from main) but is incomplete vs canonical: missing `paths:` frontmatter, missing `## Drift classes covered` section, and retains a stale Thrive-specific reference — "THR-1775 shipped with five accuracy gaps (composer-install asymmetry rationale, missing `composer test:install` prereq, undocumented `THRIVE_TOKEN` dual purpose, undocumented `release/v*` skip, muddled HOST_UID phrasing) because PR #1925 received glance review." The history line at 2026-05-05 noted this drift but flagged it as out of scope for the merge. Since this PR ships the canonical→consumer path, the inconsistency lands in front of every PRISM consumer who reads the rule.
+- **Suggested fix:** Replace `templates/install/.prism/rules/architect-doc-verification.md` body with the canonical `.prism/rules/architect-doc-verification.md` body, generalizing or stripping the THR-1775 incident reference for consumer audiences (the canonical's "an ADR's example list naming files that were never created" framing is already PRISM-neutral and works).
+
+### Templates mirror missing 0033-rule-loading-tiers.md
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 — created `templates/install/.prism/spec/adrs/0035-rule-loading-tiers.md` (renumbered per fix #1). Generalized THR-1826 references to consumer-neutral phrasing ("An initial audit", "Pilot adoption shed roughly 16,000 tokens"). Dropped the dogfood plan reference and the paired dev-doc reference since `templates/install/` ships neither.
+- **File:** `templates/install/.prism/spec/adrs/` (file absent)
+- **Problem:** The new ADR added in this PR exists in `.prism/spec/adrs/` and `.claude/spec/adrs/` but not in `templates/install/.prism/spec/adrs/`. `templates/install/.prism/rules/branch-plan.md:208` and `templates/install/.prism/rules/architect-doc-verification.md` reference "ADR-0033" — in a consumer install, that resolves only to the implementation-task-detail.md ADR since the rule-loading-tiers ADR isn't shipped. Consumers won't have access to the decision rationale for the tier system that scopes the rules they're consuming.
+- **Suggested fix:** Copy `0033-rule-loading-tiers.md` (or its renumbered version after fix #1) into `templates/install/.prism/spec/adrs/`. If it lands as `0035-rule-loading-tiers.md` per fix #1, ship the renumbered filename.
+
+### Bare "ADR-0033" references after collision
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** 2026-05-05 — resolved as a cascade of fix #1. After the renumber, every remaining `ADR-0033` reference (in `.prism/rules/branch-plan.md:208`, `.claude/rules/branch-plan.md:208`, `templates/install/.prism/rules/branch-plan.md:208`, `.prism/rules/implementation-task-detail.md:5` and platform copies, `.prism/plans/prism-detailed-plans.md:15`, `.ai-skills/skills/prism-architect/shared.md:249`, `.claude/skills/prism-architect/SKILL.md:260`) unambiguously points at the implementation-task-detail ADR — the only remaining ADR-0033. Verified with `grep -rn "ADR-0033"` post-renumber.
+- **File:** `.prism/rules/branch-plan.md:208`, `templates/install/.prism/rules/branch-plan.md:208`, `.prism/lessons.md:36`, `.prism/plans/prism-detailed-plans.md:15` and surrounding lines
+- **Problem:** These references read "See ADR-0033" or "ADR-0033 line 30" without a slug or link, leaving the reader to guess which 0033 is meant. Same problem persists in the synced platform copies (`.claude/rules/branch-plan.md:208`, etc.).
+- **Suggested fix:** This issue dissolves after fix #1 (renumber the second 0033). The bare references — once one of the two ADRs has a different number — become unambiguous because only one ADR-0033 exists. Verify by re-grepping `ADR-0033|adrs/0033` after the renumber pass and confirming each reference points at the intended ADR.
+
+### ADR README index out of date
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **Deferred reason:** Briar's own suggestion was to "Skip in this PR if scope creep is a concern; track as cleanup." Punting to a follow-up — this PR's scope is context-optimization, not the README index refresh. The new ADRs (0029–0035) are still discoverable by listing the directory; the index just lags behind. Worth a dedicated cleanup ticket.
+- **File:** `.prism/spec/adrs/README.md:79-86` (Index section)
+- **Problem:** Index lists 0021–0026 only; the canonical now has 0027 through 0034 (with 0033 used twice — see fix #1). The Index header acknowledges "older ADRs (0001–0020) are discoverable by listing the directory" but doesn't surface 0027+. Minor because it's a navigation aid, not a load-bearing claim — but the ADRs landing in this PR (0033, 0034) earn easy-lookup placement.
+- **Suggested fix:** Add rows for 0027 through 0034 with their titles and one-line summaries. Skip in this PR if scope creep is a concern; track as cleanup.
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues — all 6 actionable Briar issues fixed (1 critical, 5 major); minor #7 (README index) deferred to a separate cleanup ticket per Briar's own suggestion
+- [x] Types correct — N/A; no TypeScript code in diff except `scripts/ai-skills/build.ts` which already passed prism-test
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — `pnpm prism:test` runs 26 tests, all pass
+- [x] All debugged issues resolved (no `open` entries)
+- [ ] Build passes — needs re-run after Briar fixes (renumber + templates/install changes)
+- [ ] PR description up to date — needs sync after build re-verification
+- [ ] Lasting decisions promoted to architect context — defer until PR description is synced
+
+**Last updated:** 2026-05-05
+
+---
+
 ## History
 
 - 2026-05-04 [main]: Plan drafted on desktop — context optimization epic. Goal is roughly 40% baseline context reduction and 30–50% reduction on heavy-skill invocation cost.
@@ -1430,3 +1512,5 @@ PRISM canonical only ports two of these five (the others are Thrive-specific). P
 - 2026-05-04 [hmcgrew/context-optimization-thrive-learnings]: Phase 6 implementation by Clove. All 10 tasks complete: paths frontmatter on accessibility.md + architect-doc-verification.md (rephrased ADR-0033 line to satisfy path-guard); manifest catch-all dropped; Pixel/Reese/Nora split into shared.md + references/ files; Lilac paste-only revert (459 lines, all `slack_send_message`/`MCP availability`/`MCP wrapper` refs removed); context-reuse section added to all 12 skills; ADR-0033 created; AGENTS.md tables consolidated (217 lines); class-sweep lesson appended. Build script bug fixed: `optedIn.claude` branch in scripts/ai-skills/build.ts was missing the `syncOptionalSkillPayloads` call that Codex and Cursor branches both have, so `references/` payloads weren't copying to `.claude/skills/<id>/references/` — added the call so AC #4 (Pixel doctrine.md/pattern-vocabulary.md exist in references/) actually holds at the platform layer. `pnpm prism:build` and `pnpm prism:check` both clean; 26 tests pass.
 - 2026-05-05 [hmcgrew/context-optimization-thrive-learnings]: Eli task 11 complete — wrote `docs/content/dev/architecture/rule-loading-tiers.md` (paired dev doc for ADR-0033). Followed the four-beat arc per `.prism/architect/architecture-doc-shape.md`: anchor sentence, then Need / Technical flows / Natural fit (`paths:` frontmatter + `references/` folder pattern) / Platform limits (the convention layer that decides which rule belongs in which tier). Added a Cross-Reference Map row in `.prism/architect/documentation.md` linking ADR-0033 to the new doc. Eli task 12 (update PRISM onboarding/install guides with the path-scoping default) deferred — `docs/content/dev/getting-started/` doesn't exist yet, so there's no onboarding doc to update; flagged for when the onboarding flow lands (Phase 2 per `.prism/rules/code-standards.md` § Dedicated Standards).
 - 2026-05-05 [hmcgrew/context-optimization-thrive-learnings]: Merged `origin/main` into branch to clear PR #4 conflicts. Three conflicts resolved in favor of HEAD: (1) AGENTS.md §9 keeps the cite-back to §0 instead of duplicating the persona table — §0's preamble explicitly names §9 as the section that refers back; (2)+(3) `.prism/rules/architect-doc-verification.md` and `.claude/rules/architect-doc-verification.md` § Severity keep the "Citation-vs-cited drift" wording, which matches the "Drift classes covered" subsection HEAD added above. `templates/install/.prism/rules/architect-doc-verification.md` auto-merged to main's "Re-enumeration drift" wording — pre-existing structural asymmetry between install templates (sparser, no Drift classes section) and canonical `.prism/rules/`. Worth a follow-up to bring install templates in line, but out of scope for the merge.
+- 2026-05-05 [hmcgrew/context-optimization-thrive-learnings]: Briar self-review run on PR #4 — found 1 critical (ADR number collision: 0033 used twice) and 5 major issues (Tier 1 enumeration omission, three templates/install drift cases, bare "ADR-0033" references) plus 1 minor (README index stale). Findings logged under `## Review Issues`. PR Readiness shows 6 open issues blocking. Build clean (`pnpm prism:build` + `pnpm prism:check` pass; 26 tests). Class-sweep lesson at `.prism/lessons.md:36` would have caught the ADR collision via `ls .prism/spec/adrs/ | sort | uniq -c -w4` — the same author wrote the rule and shipped its violation in the same PR.
+- 2026-05-05 [hmcgrew/context-optimization-thrive-learnings]: Clove resolved Briar's 6 actionable issues. (1) Critical — renumbered `0033-rule-loading-tiers.md` → `0035-rule-loading-tiers.md` in `.prism/spec/adrs/` and `.claude/spec/adrs/` via `git mv`; updated frontmatter `Number:`; updated five reference sites (`.prism/architect/documentation.md:120`, `.claude/architect/documentation.md:120`, `.prism/rules/architect-doc-verification.md:29`, `.claude/rules/architect-doc-verification.md:29`, `docs/content/dev/architecture/rule-loading-tiers.md:95`); also updated the historical pointer at `.prism/lessons.md:36` for accuracy. (2) Major — added `implementation-task-detail.md` to the Tier 1 workflow-rules enumeration in three ADR copies and the dev doc table row. (3) Major — prepended canonical `paths:` frontmatter to `templates/install/.prism/rules/accessibility.md`. (4) Major — replaced `templates/install/.prism/rules/architect-doc-verification.md` with the canonical body (which is already PRISM-neutral, no THR-1775 references to strip). (5) Major — created `templates/install/.prism/spec/adrs/0035-rule-loading-tiers.md`, generalizing THR-1826 references to consumer-neutral phrasing and dropping `.prism/plans/...` and `docs/content/dev/...` references that templates/install does not ship. (6) Major — bare "ADR-0033" references resolved via cascade from fix #1; verified with `grep -rn "ADR-0033"` that all remaining bare references unambiguously point at the implementation-task-detail ADR. Minor #7 (ADR README index) deferred per Briar's own suggestion — separate cleanup ticket.
