@@ -164,7 +164,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 | Sage    | Changelog documents                                                                         | Clove (implementation)                         |
 | Eli     | Feature documentation                                                                       | Clove (implementation)                         |
 | Reese   | QA test plans and bug-fix verification across release, sprint, single-PR, and bug-fix modes | Clove (implementation), Sasha (debugging)      |
-| Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | Clove (implementation)                         |
+| Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | Winston (mode 2 specs always); Clove (mode 1 inline sketches only) |
 
 **Handoff language** — when a request falls outside scope:
 
