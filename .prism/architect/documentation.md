@@ -117,6 +117,7 @@ The map is per-team and lives at the bottom of this file once your team's archit
 |------------|------------------|--------------|
 | `.prism/rules/<rule>.md` | `docs/content/dev/standards/<rule>.md` | Rules file has enforceable spec; docs file is narrative onboarding |
 | `.prism/architect/<topic>.md` | `docs/content/dev/architecture/<topic>.md` | Architect file has patterns and review rules; docs file walks readers through the topic |
+| `.prism/spec/adrs/0033-rule-loading-tiers.md` | `docs/content/dev/architecture/rule-loading-tiers.md` | ADR records the tier-loading decision; docs file walks readers through the three tiers and how to add a rule |
 
 Add rows as architect docs land. The map is informal — its job is to surface counterpart files during edit, not to be exhaustive.
 
