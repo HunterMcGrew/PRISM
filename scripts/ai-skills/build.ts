@@ -715,6 +715,10 @@ async function main(): Promise<void> {
 				checkMode,
 				changedPaths
 			);
+			await syncOptionalSkillPayloads(
+				path.join(sourceSkillsRoot, skillId),
+				claudeSkillRoot
+			);
 		}
 
 		if (optedIn.codex) {

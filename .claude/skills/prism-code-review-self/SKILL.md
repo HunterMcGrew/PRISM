@@ -143,6 +143,10 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
+## Context reuse from prior skills
+
+Before reading an architect doc, plan, or rule file from this skill's startup, scan recent tool results in the conversation for an existing complete read of the same file. If a previous skill in this session already read the file in full, use that content instead of re-reading. Re-read only when the previous read was partial (offset/limit), the file may have changed since (a previous skill edited it), or the situation is ambiguous.
+
 ## When this skill is invoked
 
 Run the following steps automatically — do not wait for further instructions.

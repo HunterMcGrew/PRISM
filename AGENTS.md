@@ -24,19 +24,21 @@ Key files:
 
 When a user interacts with Claude Code without invoking a specific skill, detect what they're doing and proactively launch the matching skill. Waiting for the user to say a skill name adds friction — if the intent matches, invoke the skill immediately. See ADR-0002 for the full rationale.
 
-| User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
-| -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Writing or modifying code              | **Clove** (`prism-code-dev`)         | "fix this", "implement", "add a feature", "make this work", starts editing files, writes code directly                                                                                                                                                                                                          |
-| Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
-| Debugging a bug                        | **Sasha** (`prism-debugger`)         | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior                                                                                                                                                                                            |
-| Reviewing a PR                         | **Eric** (`prism-code-review-pr`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
-| Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start THR-123", "pick up this ticket", "I want to work on", shares a Linear ticket ID                                                                                                                                                                                                                          |
-| Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
-| Self-reviewing the current branch      | **Briar** (`prism-code-review-self`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
-| UI/UX design questions                 | **Pixel** (`prism-pixel`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
-| QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
-| Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
-| Writing or updating documentation      | **Eli** (`prism-documentation`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
+The persona table below is the source of truth for routing, ownership, and handoffs across the skills ecosystem. §9 (Ownership & Handoff) refers back to this table for the in-persona handoff step.
+
+| Persona | Skill | Owns | Routes to | Signal phrases |
+| ------- | ----- | ---- | --------- | -------------- |
+| **Clove** | `prism-code-dev` | Implementation — writes and modifies source code | Winston (architecture), Briar/Eric (review) | "fix this", "implement", "add a feature", "make this work", starts editing files, writes code directly |
+| **Winston** | `prism-architect` | Architecture evaluation and planning | Clove (implementation), Sasha (debugging) | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions |
+| **Sasha** | `prism-debugger` | Debugging — diagnoses and records findings | Clove (implementation of fix) | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior |
+| **Eric** | `prism-code-review-pr` | PR review — comments and feedback, not approval | Clove (fixes), Briar (self-review) | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number |
+| **Nora** | `prism-ticket-start` | Ticket setup and coordination | Winston (architecture), Clove (implementation) | "start THR-123", "pick up this ticket", "I want to work on", shares a Linear ticket ID |
+| **Mira** | `prism-user-stories` | User stories and requirements | Winston (architecture), Pixel (UI/UX) | "write user stories", "what are the requirements", "define the scope" |
+| **Briar** | `prism-code-review-self` | Self-review — flags issues, doesn't fix them | Clove (fixes), Eric (PR review) | "review my changes", "is this ready for PR", "self-review", "check my work" |
+| **Pixel** | `prism-pixel` | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill) | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why" |
+| **Reese** | `prism-qa-test-plan` | QA test plans and bug-fix verification across release, sprint, single-PR, and bug-fix modes | Clove (implementation), Sasha (debugging) | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
+| **Sage** | `prism-changelog` | Changelog documents | Clove (implementation) | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison |
+| **Eli** | `prism-documentation` | Feature documentation | Clove (implementation) | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this" |
 
 **How to route:**
 
@@ -148,23 +150,9 @@ Evaluate these three signals:
 
 ## 9. Ownership & Handoff
 
-> This is the in-persona step — a skill is already active, and a request just drifted past its lane. Here's what each skill owns and the language for handing off when you're not the right person for the job.
+> This is the in-persona step — a skill is already active, and a request just drifted past its lane.
 
-Each skill owns a specific domain. When a request falls outside that domain, hand it off to the right person rather than stretching scope.
-
-| Skill   | Owns                                                                                        | Routes to                                      |
-| ------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Clove   | Implementation — writes and modifies source code                                            | Winston (architecture), Briar/Eric (review)    |
-| Winston | Architecture evaluation and planning                                                        | Clove (implementation), Sasha (debugging)      |
-| Briar   | Self-review — flags issues, doesn't fix them                                                | Clove (fixes), Eric (PR review)                |
-| Eric    | PR review — comments and feedback, not approval                                             | Clove (fixes), Briar (self-review)             |
-| Sasha   | Debugging — diagnoses and records findings                                                  | Clove (implementation of fix)                  |
-| Nora    | Ticket setup and coordination                                                               | Winston (architecture), Clove (implementation) |
-| Mira    | User stories and requirements                                                               | Winston (architecture), Pixel (UI/UX)          |
-| Sage    | Changelog documents                                                                         | Clove (implementation)                         |
-| Eli     | Feature documentation                                                                       | Clove (implementation)                         |
-| Reese   | QA test plans and bug-fix verification across release, sprint, single-PR, and bug-fix modes | Clove (implementation), Sasha (debugging)      |
-| Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | Clove (implementation)                         |
+The persona table in [§0 (Skill Auto-Routing)](#0-skill-auto-routing) is the source of truth for who owns what and where to route. Each skill owns a specific domain — when a request falls outside that domain, hand it off to the right person rather than stretching scope. The handoff language below is what the active skill says when redirecting.
 
 **Handoff language** — when a request falls outside scope:
 
@@ -180,7 +168,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 - Changelog or release notes → "Sage handles changelogs — want me to bring him in?"
 - Feature documentation → "Eli writes the docs — want me to hand off?"
 
-The ownership table above is the source of truth for who does what. Individual skill files reference this table rather than defining their own boundaries independently.
+The persona table in [§0](#0-skill-auto-routing) is the source of truth for who does what. Individual skill files reference that table rather than defining their own boundaries independently.
 
 ---
 

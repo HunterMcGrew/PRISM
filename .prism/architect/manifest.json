@@ -2,12 +2,15 @@
 	".claude/skills/prism-qa-test-plan/": "qa-test-planning.md",
 	".prism/SPEC.md": "spec-editing.md",
 	".claude/skills/**": "spec-editing.md",
+	".claude/skills/**/SKILL.md": "skills-ecosystem.md",
 	".prism/templates/**": "spec-editing.md",
 	".prism/rules/**": "spec-editing.md",
 	".prism/spec/adrs/**": "spec-editing.md",
+	".prism/spec/adrs/*.md": "skills-ecosystem.md",
 	".prism/architect/**": "spec-editing.md",
 	".prism/references/**": "spec-editing.md",
 	".prism/plans/**": "spec-editing.md",
+	".prism/plans/*.md": "skills-ecosystem.md",
 	".ai-skills/skills/**": "spec-editing.md",
 	"scripts/ai-skills/**": "spec-editing.md",
 	".prism/**": "install-layout.md",
@@ -15,6 +18,5 @@
 	"scripts/ai-skills/path-guard.ts": "install-layout.md",
 	".ai-skills/definitions/paths.json": "install-layout.md",
 	"docs/": "documentation.md",
-	"docs/content/dev/architecture/": "architecture-doc-shape.md",
-	"**": "skills-ecosystem.md"
+	"docs/content/dev/architecture/": "architecture-doc-shape.md"
 }

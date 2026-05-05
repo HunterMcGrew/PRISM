@@ -1,3 +1,9 @@
+---
+description: WCAG 2.1 AA accessibility rules — semantic HTML, keyboard, ARIA, contrast, framework-specific notes
+paths:
+  - "**/*.{ts,tsx,jsx,vue,svelte}"
+---
+
 # Accessibility (WCAG 2.1 Level AA)
 
 WCAG 2.1 Level AA is the baseline for UI work, with WCAG 2.2 additions flagged inline where they raise the bar. These rules apply when writing, reviewing, or architecting any UI — frontend, backend admin, embedded widgets, anything a human interacts with through a screen.
