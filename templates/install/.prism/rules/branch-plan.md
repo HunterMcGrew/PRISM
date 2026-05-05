@@ -205,6 +205,8 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 Added by the architect skill (Winston). Tasks are grouped by persona — each group has a heading naming the skill that owns those tasks. The persona heading is the source of truth for ownership: a skill works within its named heading and treats other personas' headings as out-of-scope by default. See ADR-0018.
 
+Tasks must meet the detail bar in `.prism/rules/implementation-task-detail.md` — front-load every decision (file path, exact change, verification command, sequence), no judgment calls left to the implementer. See ADR-0033.
+
 When work needs to cross a lane, the skill has three options:
 
 - **Skip and let the owner handle it.** Default — leave the lane to its owner and continue with in-scope work.

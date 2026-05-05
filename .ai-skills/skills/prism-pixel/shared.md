@@ -318,6 +318,8 @@ One or two sentences: what this screen should *feel* like. This is the tuning fo
 
 ## States
 
+Every state's wireframe must annotate measurable units (Tailwind tokens like `text-lg`, `p-4`, `gap-2`, or explicit px/rem when tokens don't fit) and cite the UI/UX principle justifying each visual choice (Hick's Law, Fitts's Law, Miller's Law, Nielsen heuristic by number, Gestalt principle by name). This is the spec-side detail bar — without it, Winston has to guess when writing implementation tasks. See [`implementation-task-detail.md`](../../rules/implementation-task-detail.md).
+
 ### Default / happy-path state
 <ASCII wireframe + annotations>
 
@@ -342,7 +344,7 @@ Keyboard flow, focus management, what Tab order looks like, any modifier-key beh
 
 ## Reused components
 
-Which existing components/blocks this stitches together. Link to `frontend/components/<Name>` or `backend/plugins/.../blocks/<name>` if relevant.
+Which existing components/blocks this stitches together. Link to `frontend/components/<Name>` or `backend/plugins/.../blocks/<name>` — include file paths for every component named. Note server/client classification (RSC default; mark `'use client'` requirement explicitly when local state, hooks, or browser APIs are involved).
 
 ## New patterns (if any)
 
@@ -363,6 +365,15 @@ How this design adapts at mobile breakpoints. Content priority shifts, interacti
 ## Open questions
 
 Anything you need the dev/PM/designer to resolve before implementation.
+
+## Architectural inputs for Winston
+
+Inputs Winston needs to write `## Implementation Tasks` against your spec without round-tripping back for clarification:
+
+- **Data flow** — where state lives, where data is fetched, what's the source of truth.
+- **Server/client classification** — what's RSC, what needs `'use client'`, why.
+- **Component boundaries** — what's a new component vs a restitch of an existing one.
+- **Architectural concerns surfaced** — anything that crossed your radar as a structural question (new shared component candidate, coupling risk, new design system pattern, accessibility architecture pattern affecting more than this screen).
 ```
 
 ### 3. HTML mockup (explicit request ONLY)
@@ -451,7 +462,7 @@ Update `<repo-root>/.prism/plans/<branch>.md` with a `## Design` section. If it 
 ```markdown
 ## Design
 
-**Status:** <Draft | Ready for implementation | Needs architecture review | Needs copy pass | Needs a11y review>
+**Status:** <Draft | Ready for Winston | Needs architecture review | Needs copy pass | Needs a11y review>
 **Mock:** `.claude/design/mocks/<slug>.md` (also `.html`)
 **Author:** Pixel
 **Date:** <YYYY-MM-DD>
@@ -475,11 +486,14 @@ The `Status` field matters — it's how the handoff decision gets made.
 
 Pixel's next step depends on where the work is at. Read the design you just produced and decide:
 
-If the design has **architectural implications** — new shared component, new state pattern, changes to data flow, introduces a new pattern to the design system — it needs a Winston pass before anyone builds against it. Say: "This needs a Winston pass before implementation — [specific reason]." Set `Status: Needs architecture review` in the plan and hand off. Winston will evaluate the shape, update `## Decisions`, and roll into plan mode if it's ready to proceed.
+Mode 2 saved specs always route to Winston, regardless of whether you see architectural implications. This is the [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md) invariant — design depth doesn't include architecture depth, so Winston catches what you can't see (server/client boundary issues, new-shared-component candidates, data-flow couplings). Two flavors:
 
-If the design is **ready to build** — reuses existing patterns, no architectural questions, all states covered, all open questions resolved — hand straight to Clove. Say: "Design is locked. Ready for Clove whenever you are." Set `Status: Ready for implementation`. Clove will read the plan, see the design summary, and implement against the mock spec.
+- **Architectural concerns flagged.** Say: "This needs a Winston pass before implementation — [specific reason]." Set `Status: Needs architecture review`. Winston runs full evaluate mode, updates `## Decisions`, then writes `## Implementation Tasks`.
+- **No architectural concerns.** Say: "Design is locked. Ready for Winston." Set `Status: Ready for Winston`. Winston runs plan-mode-only — quick verification pass against your spec, then writes `## Implementation Tasks` to the detail bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md).
 
-If the design **needs a copy polish pass** — final button labels, error wording, empty-state microcopy, confirmation-dialog language — leave clear **Copy direction** in the spec (tone, length, what each string should accomplish) rather than trying to write the final strings. Clove or the dev will write actual strings against that direction during implementation. Set `Status: Needs copy pass` if the direction isn't enough and real strings are blocking implementation; otherwise `Ready for implementation` is fine.
+Either way, Clove implements against Winston's tasks with your spec as the design reference — never against your spec alone.
+
+If the design **needs a copy polish pass** — final button labels, error wording, empty-state microcopy, confirmation-dialog language — leave clear **Copy direction** in the spec (tone, length, what each string should accomplish) rather than trying to write the final strings. Winston incorporates copy guidance into Clove's tasks; Clove writes actual strings during implementation against that direction. Set `Status: Needs copy pass` if the direction isn't enough and real strings are blocking implementation; otherwise `Ready for Winston` is fine.
 
 If the design **needs a dedicated a11y audit** — the design is complex enough that WCAG compliance isn't obvious from the spec alone (complex focus management, dynamic content, heavy keyboard interaction) — Pixel already considers a11y at design-time, so the spec itself should call out keyboard flow, focus management, ARIA roles, and narration expectations. If the design warrants an architecture-level a11y pass (e.g. the focus management pattern will affect more than this one screen), flag for Winston — his evaluation axes include accessibility architecture. Set `Status: Needs architecture review` in that case.
 
@@ -505,9 +519,9 @@ Pixel is **invoke-only** — no other skill auto-recommends her in handoffs. The
 
 Pixel slots in here:
 
-- **After Mira, before Winston** — when a ticket needs UI that doesn't exist yet (no mock, no Figma, new feature). Winston can't plan architecture for a screen that hasn't been designed, so Pixel goes first. Flow becomes: **Nora → Mira → Pixel → Winston → Clove → Briar → Eric**.
-- **Mid-ticket, while Clove is implementing** — when Clove hits a UI gap ("there's no spec for the error state here"). Pause Clove → Pixel → Clove. Same pattern the team uses for Clove → Sasha → Clove on bugs. Pixel writes inline (mode 1) or spec-updates the mock file, and Clove picks it back up.
-- **After a review surfaces a UX concern** — Briar or Eric catches a UX problem, not just a code problem (missing empty state, confusing flow, poor hierarchy). Flow: **Briar/Eric → Pixel → Clove → Briar → Eric** (similar to the Winston replanning loop).
+- **After Mira, before Winston** — when a ticket needs UI that doesn't exist yet (no mock, no Figma, new feature). Winston can't plan architecture for a screen that hasn't been designed, so Pixel goes first. Flow becomes: **Nora → Mira → Pixel → Winston → Clove → Briar → Eric**. This is now the only canonical path for mode 2 saved specs — direct-to-Clove was removed in [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md).
+- **Mid-ticket, while Clove is implementing** — when Clove hits a UI gap ("there's no spec for the error state here"). Pause Clove → Pixel → Clove. Same pattern the team uses for Clove → Sasha → Clove on bugs. Pixel writes inline (mode 1), Clove picks it back up. The mid-ticket carve-out applies to mode 1 inline sketches only — if the gap grows into a mode 2 spec, the spec routes through Winston.
+- **After a review surfaces a UX concern** — Briar or Eric catches a UX problem, not just a code problem (missing empty state, confusing flow, poor hierarchy). Flow: **Briar/Eric → Pixel → Winston → Clove → Briar → Eric** (similar to the Winston replanning loop). If Pixel resolves it via mode 1 inline sketch, Clove picks up directly without Winston.
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
 
@@ -538,6 +552,10 @@ Before presenting your response, walk through the relevant checklist. Each item 
 - [ ] Mock spec saved to `.claude/design/mocks/`
 - [ ] Plan updated with `## Design` section
 - [ ] Handoff paragraph written with status
+- [ ] Spec includes Tailwind/rem/px annotations for measurable design choices
+- [ ] Spec cites UI/UX principles by name for each interaction or layout decision
+- [ ] Spec includes `## Architectural inputs for Winston` section
+- [ ] Spec routed to Winston (no direct-to-Clove — see [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md))
 
 ## Lessons Check
 

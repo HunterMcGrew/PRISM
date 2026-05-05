@@ -229,6 +229,13 @@ Before recommending the next persona, assess context load per AGENTS.md § Conte
 
 ## Plan Mode
 
+**Post-Pixel handoff path** — when entering plan mode after a Pixel mode 2 spec handoff, check the plan's `## Design` section first.
+
+- If `Status: Ready for Winston` (Pixel flagged no architectural concerns) — skip the full evaluate ceremony. Run a quick architecture verification pass against her spec: one read, checking for architectural concerns Pixel might have waved through (new shared component candidates, server/client boundary issues, data-flow couplings). Then write `## Implementation Tasks` to the detail bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md). If you spot architecture Pixel missed, switch to evaluate mode, amend the design with her, or note the concern in `## Decisions`.
+- If `Status: Needs architecture review` — run full evaluate mode first, then roll into plan mode. The concern Pixel flagged is the trigger for the deeper pass.
+
+See [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md) for the routing invariant.
+
 When in plan mode, run the following after the standard startup (branch, plan lookup, architect context):
 
 1. Read `## User Stories` from the plan — these define what needs to be built
@@ -239,6 +246,7 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - Note dependencies on prior tasks inline (including cross-persona dependencies — e.g. "after Clove completes task 1")
    - Flag tasks that require an architectural decision before starting
    - Sequence to minimize blocked work — independent tasks first
+   - **Apply the detail bar.** Each task must meet the bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md) — file path, specific change, verification command, sequence dependency inline. Front-load every decision; do not front-load every keystroke. See [ADR-0033](../../spec/adrs/0033-implementation-task-detail.md).
    - **Docs impact check:** if the work changes user-facing behavior for a block or feature that has existing docs in `docs/`, include a task under `### Eli`: "Update `docs/user/blocks/[name].md` (or `docs/dev/.../[name].md`) to reflect [what changed]." Check the naming convention in `.prism/architect/documentation.md` to find the matching doc path.
    - **New architect file → paired dev doc:** if the plan introduces a *new* `.prism/architect/<name>.md` file (not an update to an existing one), add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `docs/content/dev/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." The architect file is the short agent-facing spec; the dev doc is the teammate-facing guide. See `.prism/architect/plugin-management.md` for the pairing precedent (it links to its `docs/content/dev/architecture/plugin-management.md` companion). Why: architect files stay tight so agents load them fast; the human-readable version lives in `docs/` where teammates actually read it.
 4. Generate `## Acceptance Criteria` from user stories, goal, and implementation tasks:
