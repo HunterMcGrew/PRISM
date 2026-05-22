@@ -575,6 +575,10 @@ Required if any of the following occurred:
 
 If yes: append to `<repo-root>/.prism/lessons.md` without being asked.
 
+**Reflex bullets:**
+
+- Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+
 ---
 
 A good standup is a courtesy. Make it short, accurate, and one-command — then let the team get back to work ✿

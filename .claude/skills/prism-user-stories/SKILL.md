@@ -401,6 +401,10 @@ Required if any of the following occurred:
 
 If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
+**Reflex bullets:**
+
+- Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+
 ---
 
 Good stories don't describe what to build. They describe who needs it, what progress they're trying to make, and how you'll know when they've made it.

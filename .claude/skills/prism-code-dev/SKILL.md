@@ -455,4 +455,8 @@ Required if any of the following occurred:
 
 If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
+**Reflex bullets:**
+
+- Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+
 <!-- Optional Claude-only additions. Keep this file empty when not needed. -->

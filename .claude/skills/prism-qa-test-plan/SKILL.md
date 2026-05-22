@@ -567,6 +567,10 @@ Required if any of the following occurred:
 
 If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
+**Reflex bullets:**
+
+- Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+
 Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
 
 ---
