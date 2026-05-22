@@ -1,0 +1,40 @@
+# Follow-up Scope
+
+## Purpose
+
+A follow-up ticket carries forward work that the originating ticket couldn't absorb — a deferred refactor surfaced during review, a separate concern Briar found while self-reviewing, an out-of-scope improvement the user wanted to track. The follow-up earns its place when its scope is sharp enough to act on. Open-ended follow-ups ("clean up X someday") drift into the backlog as dead weight, because no one can tell when they're done or whether the next person reading the description will agree on what "X" even means.
+
+**Why:** Follow-ups are how PRISM keeps the originating PR scoped — by exporting the out-of-scope work to a separate ticket instead of letting it accrete. That contract only holds if the exported tickets are themselves actionable. A vague follow-up is worse than no follow-up: it consumes Linear hygiene budget, gives the originating ticket false confidence that the work is "tracked," and leaves the next implementer to guess at what was intended.
+
+## Scope-fit gate
+
+Before Nora creates a follow-up ticket, the proposed scope passes the gate:
+
+- **One fix or one feature.** A follow-up ticket addresses a single concern. "Refactor X and update Y and add tests for Z" is three follow-ups, not one.
+- **Traceable to one decision.** The follow-up cites the specific decision, review comment, or plan entry in the originating ticket that produced it. The citation is a one-liner inside the ticket description, not buried in conversation.
+- **Has a done condition.** A reader landing on the ticket cold can tell when it's complete. "When the helper is extracted and the three callers updated" passes; "when this feels cleaner" doesn't.
+- **Owned by a known persona class.** The follow-up names which kind of work it is (implementation, debugging, design, documentation) so the next persona invocation routes correctly.
+
+If the proposed scope fails any of these, Nora asks the user to narrow it before creating the ticket. The ticket is not created without an explicit override.
+
+## What counts as in-scope for a follow-up
+
+- A specific refactor, surfaced during review, that's larger than the local frame defined by [`.prism/rules/code-standards.md` § Refactor scope](./code-standards.md).
+- A separate bug discovered while implementing the originating ticket — recorded in the plan's `## Debugged Issues`, not silently fixed inline.
+- A documentation gap noted by Briar or Eric that isn't load-bearing for the current PR.
+- A design follow-up Pixel flagged as out-of-scope for the current mock spec.
+- A test coverage gap the originating ticket couldn't reach without scope creep.
+
+The common shape: it could plausibly have been part of the originating ticket but wasn't, and there's a single specific action that closes it.
+
+## Anti-patterns
+
+- **Bundled cleanup tickets.** "Clean up the auth module" combining six unrelated cleanups into one ticket. Each cleanup is its own follow-up — or, if they're not worth filing individually, none of them are.
+- **Open-ended phrasing.** "We'll figure out scope later." If you don't know what's in scope at file time, the ticket isn't ready to file.
+- **Speculative follow-ups.** "Maybe we should look into X someday." Backlog noise. Either it's a known problem with a known shape (file it), or it's not (don't).
+- **Follow-ups without traceability.** A ticket with no link back to the decision that produced it. Six months later no one can answer "why is this ticket here?" and it gets closed unread.
+
+## Who runs this rule
+
+- **Nora** ([prism-ticket-start](../skills/prism-ticket-start/SKILL.md)) — applies the scope-fit gate before creating any follow-up ticket. When the proposed scope fails the gate, Nora prints the failure and asks the user to narrow scope.
+- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — when surfacing a "this should be a follow-up" recommendation during review, frame the recommendation with the scope-fit elements already filled in so Nora can act on it without round-tripping.
