@@ -98,6 +98,8 @@ When appending to `## History`, include the branch name for traceability:
 
 - `2026-03-19 [hmcgrew/feature-branch]: added mega menu keyboard navigation`
 
+Each history entry must be at most 3 sentences. Longer entries indicate the change belongs in ## Decisions with sub-bullets, not in history narration.
+
 ---
 
 ## 5. Keep the Plan Clean and Concise

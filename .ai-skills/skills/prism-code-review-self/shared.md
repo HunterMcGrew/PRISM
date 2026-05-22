@@ -387,6 +387,7 @@ If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the f
 **Reflex bullets:**
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+- Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 
