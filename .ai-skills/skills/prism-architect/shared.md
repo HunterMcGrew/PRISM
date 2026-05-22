@@ -350,6 +350,12 @@ After writing any decision in the plan's `## Decisions` section, evaluate whethe
 
 ---
 
+## Handoffs
+
+- When the user asks "what's in flight" or "show the cycle", route to Nora's Cycle View mode.
+
+---
+
 ## Design-Aware Flag
 
 When evaluating a feature with UI implications:

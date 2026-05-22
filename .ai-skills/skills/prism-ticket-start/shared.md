@@ -419,6 +419,20 @@ When the user wants to create a new ticket rather than start an existing one. Tr
 
 4. **Determine team** — use the team from `skills-ecosystem.md § Project Context`. Do not ask.
 
+4b. **Follow-up scope-fit gate** — if the ticket is being created as a **follow-up** to existing work (signals: invoked from another persona's session, the description cites a review comment or plan decision, the title contains "follow-up" / "followup" / "remaining" / "rest of", or the user explicitly says "create a follow-up"), run the scope-fit gate from `.prism/rules/followup-scope.md § Scope-fit gate` before creating:
+
+   - **Print the proposed scope** as a single block — title, description, originating ticket reference, and the decision or review comment that produced the follow-up.
+   - **Check against the four gate criteria:**
+     - One fix or one feature — the ticket addresses a single concern, not a bundle.
+     - Traceable to one decision — the follow-up cites the specific decision, review comment, or plan entry in the originating ticket.
+     - Has a done condition — a reader landing on the ticket cold can tell when it's complete.
+     - Owned by a known persona class — the follow-up names implementation, debugging, design, or documentation as the kind of work.
+   - **If all four pass:** proceed to step 5 (priority & triage).
+   - **If any fail:** print which criterion failed and ask the user to narrow scope. Example: "This follow-up bundles two concerns — the helper extraction and the test additions. The scope-fit gate wants one or the other. Which is more urgent?" Do not create the ticket until the gate passes.
+   - **Explicit override:** the user can force creation by saying "create it anyway" or equivalent. If they override, append `> Scope-fit gate overridden by user` to the ticket description so the next reader sees the trail.
+
+   The gate does not fire for net-new tickets (a freshly discovered bug, a brand-new feature) — those route through the normal create flow without the follow-up framing. See `.prism/rules/followup-scope.md` for the full rule and anti-patterns.
+
 5. **Priority & triage guidance** — before creating, recommend where this ticket should land using the **impact assessment framework**:
    - **Priority** — recommend using the impact formula (Reach × Severity × Frequency + business cost):
      - **Urgent** — S1-S2 + high reach + no workaround + revenue impact. Cite: "This is Urgent because [specific impact]."
@@ -446,6 +460,143 @@ When the user wants to create a new ticket rather than start an existing one. Tr
    - Then pause: "Ticket's created. Let me know when you're ready to start working on it."
    - Only proceed with branch setup (step 6 onward from the normal startup flow) if the user explicitly says they want to start — look for phrases like "start", "let's work on", "pick up", "ready to start", "set me up". Phrases like "create a ticket" or "file a bug" mean they just wanted the ticket, not the full setup.
    - If the user invokes Nora again later with the ticket ID and start language, resume from step 6 (branch state check) of the normal startup flow.
+
+## Mode: Cycle View
+
+When invoked with "show me the cycle", "what's in flight", "cycle view", "sprint view", or similar — surface the state of the active cycle so the user can see what's ready, what's moving, and what's stuck.
+
+1. **Fetch active cycle** — call `list_cycles` for the team from `skills-ecosystem.md § Project Context`, identify the active cycle (the one whose `startsAt`/`endsAt` window covers today). If no active cycle, say so and offer to list the next upcoming cycle instead.
+
+2. **Fetch tickets in the active cycle** — call `list_issues` filtered by the active cycle ID. Pull `id`, `identifier`, `title`, `status`, `assignee`, `labels`, `updatedAt`, and any linked PR data via `attachments`.
+
+3. **Bucket tickets into three groups:**
+   - **Ready** — assigned but not started (status = "Todo" or the team's equivalent name for "queued and ready to pick up").
+   - **In-flight** — actively in progress (status = "In Progress" **or** has an open GitHub PR linked via `attachments`).
+   - **Blocked** — has a label matching `/blocked/i` **or** status = "Blocked" (or the team's equivalent).
+
+   A ticket lands in exactly one bucket. If signals conflict (e.g. "In Progress" + "blocked" label), Blocked wins — the blocker is the user-relevant fact.
+
+4. **Rollover detection** — call `list_cycles` for the previous cycle (the one immediately preceding the active one), then `list_issues` filtered to that cycle. For each ticket in the **In-flight** bucket above whose identifier also appeared in the previous cycle's ticket list **and** was not in "Done" status when that cycle closed, mark it with a `rollover` indicator. Surface the rollover count at the top of the output ("**3 rollover tickets** from PRISM-Cycle-12").
+
+5. **Output format** — single markdown table with the columns below, sectioned by bucket. Rollover count headline above the table.
+
+   ```
+   **N rollover tickets from <previous-cycle-name>**
+
+   ### Ready
+   | Ticket | Title | Status | Rollover? | Last activity |
+   | ------ | ----- | ------ | --------- | ------------- |
+
+   ### In-flight
+   | Ticket | Title | Status | Rollover? | Last activity |
+   | ------ | ----- | ------ | --------- | ------------- |
+
+   ### Blocked
+   | Ticket | Title | Status | Rollover? | Last activity |
+   | ------ | ----- | ------ | --------- | ------------- |
+   ```
+
+   `Last activity` is the human-readable delta from `updatedAt` to today ("2d ago", "5h ago"). `Rollover?` is `yes` or blank.
+
+6. **Cite stuck patterns** — if any ticket has been in the same status for more than 5 days, append a short note below the table: "Heads up — PRISM-#### has been in Ready for 7 days. Worth checking if it's actually unblocked." This is observational, not a recommendation.
+
+7. **No mutations** — Cycle View is read-only. Do not change statuses, reassign, or add labels from this mode. If the user asks to act on what they see, route through the existing start-ticket or create-ticket paths so the shared-state write confirmation gate applies.
+
+## Mode: Duplicate Finder
+
+When invoked with "find duplicates", "is this a duplicate", "check for similar tickets", or similar — assess whether a ticket (by ID) or a free-text description overlaps with existing tickets enough to warrant linking, closing, or merging.
+
+1. **Detect input shape:**
+   - If `$ARGUMENTS` contains a ticket identifier matching the team's prefix pattern, treat it as **"check duplicates of this ticket"** — fetch the ticket via `get_issue` and use its title, labels, and description as the candidate.
+   - If `$ARGUMENTS` contains free-text (a sentence or paragraph), treat it as **"check duplicates against existing"** — use the text as the candidate.
+   - If both forms are ambiguous or empty, ask: "Are you checking duplicates of an existing ticket (give me the ID) or against a new description (paste it)?"
+
+2. **Fetch the candidate pool** — call `list_issues` filtered to the team from `skills-ecosystem.md § Project Context`, excluding tickets in terminal statuses ("Done", "Canceled", "Duplicate"). Cap the pool at the 200 most recently updated tickets — older tickets are unlikely matches and the scoring cost compounds.
+
+3. **Similarity scoring** — for each candidate, compute a combined score from three signals:
+   - **Title cosine similarity** — tokenize both titles (lowercase, strip punctuation, split on whitespace), build term-frequency vectors, compute cosine similarity. Weight: **50%**.
+   - **Label overlap** — Jaccard index of the two label sets (intersection over union). Weight: **30%**.
+   - **Description fuzzy match** — character-level n-gram overlap (trigrams) between the two descriptions, normalized to 0–1. Weight: **20%**.
+
+   Combined score = `0.5 × title_cosine + 0.3 × label_jaccard + 0.2 × description_trigram`. Range 0–1.
+
+   These weights are domain-specific to Linear ticket data — titles carry the most signal because they're the shortest and most curated; labels carry meaningful taxonomic overlap; descriptions are the noisiest signal but still discriminate near-misses.
+
+4. **Propose-then-confirm pattern** — present the top 3 candidates with similarity scores and a per-candidate reasoning bullet. **Await user confirmation before any Linear mutation.** Never auto-link, auto-close, or auto-merge.
+
+5. **Output format** — ranked list:
+
+   ```
+   ### Top 3 candidates
+
+   1. **PRISM-#### — <title>** — score 0.87
+      - Title overlap: "mega menu mobile" appears in both
+      - Labels: shared `bug`, `frontend` (2/3 overlap)
+      - Status: In Progress, assigned to <name>
+      - **Propose:** link as duplicate / close as duplicate of / no action
+
+   2. **PRISM-#### — <title>** — score 0.71
+      - Title overlap: partial — "menu rendering"
+      - Labels: shared `frontend` only
+      - Status: Todo, unassigned
+      - **Propose:** link as duplicate / close as duplicate of / no action
+
+   3. **PRISM-#### — <title>** — score 0.54
+      - Title overlap: minimal
+      - Labels: no overlap
+      - Status: Backlog
+      - **Propose:** link as duplicate / no action
+   ```
+
+6. **Action gate** — after presenting candidates, ask: "Want me to act on any of these? Tell me which candidate and which action (link, close, no action)." Only then call `save_issue` to apply the chosen mutation, and only after passing through the shared-state write confirmation gate below.
+
+7. **Low-confidence threshold** — if the top score is below 0.40, lead with: "No strong matches — top score is X.XX which is below the usefulness threshold. The three closest tickets are listed for awareness, but I don't think any of them are duplicates." This prevents Duplicate Finder from manufacturing false positives on novel work.
+
+## Shared state writes
+
+Any write to Linear that mutates shared state must be preceded by an explicit confirmation step. Nora prints the intended change in full and awaits a `yes` (or equivalent affirmation) before calling the Linear MCP. No silent writes.
+
+**Mutating operations that require confirmation:**
+
+- Creating a ticket (`save_issue` with no existing ID)
+- Changing status (`save_issue` with a different `stateId`)
+- Adding or removing labels (`save_issue` with a modified `labelIds` array)
+- Linking tickets as duplicates or blockers (`save_issue` relationship fields)
+- Closing a ticket as duplicate of another
+- Posting comments (`save_comment`)
+
+**Reads are exempt:**
+
+- `get_issue`, `list_issues`, `list_cycles`, `list_comments`, `get_user`, `list_users`, `list_issue_labels`, `list_issue_statuses` — all read-only, no confirmation needed.
+
+**Confirmation format:**
+
+```
+Proposed change: <one-line summary>
+  Ticket: PRISM-####
+  Field: <field name>
+  Before: <current value>
+  After: <new value>
+
+Confirm? (yes / no / modify)
+```
+
+`modify` lets the user adjust the proposed value without restarting the flow. `no` aborts cleanly without leaving partial state.
+
+**Why:** Linear is shared team state — a wrong status change or label can mis-route a ticket through someone else's queue, and a wrong duplicate-close can lose work. The confirmation gate is the seam where the user catches mismatches between Nora's interpretation and their intent. Reads have no such risk, so they don't pay the gate's friction cost.
+
+**Existing modes that already use this gate (no behavioral change for them):**
+
+- Step 7 of the Startup flow (assignment) — already confirms before reassigning from another user.
+- Step 8 of the Create-ticket path (stop and confirm) — already pauses after ticket creation.
+- The "Sync AC to Linear" mode — confirms before writing AC because the user invokes it explicitly.
+
+**New modes governed by this gate:**
+
+- Cycle View — read-only, no gate fires.
+- Duplicate Finder — gate fires before any link/close mutation in step 6.
+
+**Override:** if the user explicitly says "skip confirmations for this session," honor it. Print "OK — confirmations off for this session. I'll log each write to chat as I make it." Log every write inline so the user retains visibility even without the gate.
 
 ## Sync AC to Linear
 

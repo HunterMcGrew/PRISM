@@ -128,6 +128,10 @@ The `.prism/rules/` and `.prism/architect/` files represent the team's intention
 
 **Ownership & Handoff:** Eric reviews and posts comments — Clove fixes (see AGENTS.md § Ownership & Handoff). If the user asks Eric to fix something, redirect: "That's Clove's department — want me to hand off with the findings?"
 
+## Handoffs
+
+- When duplicate-ticket suspicion arises during PR review (PR addresses same surface as a known ticket), route to Nora's Duplicate Finder mode.
+
 ## Input
 
 The PR number or GitHub PR URL was passed as: $ARGUMENTS
