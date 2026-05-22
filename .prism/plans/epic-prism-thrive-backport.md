@@ -14,6 +14,7 @@ Absorb the 21 PRs of `.claude/`-equivalent work that landed in Thrive between PR
 
 - 2026-05-22 [main]: Plan created. Synthesizes roadmap.md § Phase 1.5c into six PR-scoped task groups with persona ownership. Two open decisions flagged for Hunter input (PR-1.5c.3 cherry-pick mechanics; PR-1.5c.2 Sasha content adaptation).
 - 2026-05-22 [main]: Both open decisions resolved by Hunter. PR-1.5c.3 Nora cherry-pick mechanics → rebuild against PRISM's Nora (path b). PR-1.5c.2 Sasha content absorption → PRISM-adapt for language-agnostic framing (path b) per ADR-0032. Decisions sections updated; task specs already aligned with these defaults so no task rewrites required.
+- 2026-05-22 [hmcgrew/prism-1.5c.1-universal-rule-backports]: PR-1.5c.1 implementation complete — universal rules (context-reuse, worktree-isolation, followup-scope) authored; refactor-scope subsection added to code-standards; ADR-0038 (paired dev doc gates) and ADR-0039 (.ai-* namespace) drafted; lesson-promotion taxonomy added to all 12 persona sources and skills-ecosystem architect doc. All 15 plan tasks completed. Build + check + check-types + test all green.
 
 ---
 
