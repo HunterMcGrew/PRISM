@@ -24,6 +24,30 @@ Use `Given / When / Then` for any criterion that describes a user interaction or
 - Start with an action verb when the Given clause is implicit (e.g. "Navigate to...", "Verify that...")
 - Include where to find relevant WordPress settings when not obvious
 
+### Pre-requisites Background
+
+When several behavioral criteria share the same starting state — a logged-in user with a specific role, a populated fixture, a configured feature flag — extract the shared state into a `**Background:**` block at the top of the behavioral section instead of repeating the same Given clause across every item. Following Gherkin's Background convention keeps individual criteria scoped to the action and outcome that distinguish them.
+
+**Format:**
+
+```
+**Background:** [shared state — written as a sentence, not a Given clause]
+
+- [ ] When [user action], Then [outcome]
+- [ ] When [user action], Then [outcome]
+```
+
+**Example:**
+
+```
+**Background:** The user is logged in with the admin role and the dealer-locator feature flag is enabled.
+
+- [ ] When the user navigates to /admin/dealers, Then the dealer list loads with all active dealers shown
+- [ ] When the user clicks "Add Dealer," Then the new-dealer modal opens with the location field focused
+```
+
+**When to extract a Background:** three or more criteria share the same Given clause word-for-word. With fewer than three, keep the Given inline — extracting prematurely makes the AC harder to scan.
+
 ---
 
 ## Non-behavioral — Plain Checklist
