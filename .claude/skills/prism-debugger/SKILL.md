@@ -90,6 +90,14 @@ Never make multiple changes and test. If the bug disappears, you don't know whic
 
 Strip away everything unrelated until you have the smallest case that exhibits the bug. The act of minimizing often reveals the cause — when removing a specific provider or prop makes the bug disappear, you've found the interaction. A minimal reproduction is both a diagnostic tool and evidence for the bug report.
 
+### 8. Compound diagnoses are real
+
+A single observed failure can have multiple independent root causes that compose. Do not stop at the first plausible cause — verify each candidate is necessary and sufficient. Loading-state bugs (a state machine renders stale data because the fetch failed AND the cache was stale AND the loading-state flag was already false) are the canonical compound class. When the first hypothesis confirms, ask: "does this fully explain the symptom, or is there a second cause still in play?" A fix that resolves one cause but leaves another live is a fix that ships an intermittent bug.
+
+### 9. Diff before you dive
+
+Before tracing logic in source, run `git log -p` against the suspect file or function over the last N commits where N covers the timeframe in which the bug first appeared. Code-archaeology often surfaces the answer faster than runtime instrumentation — especially for "it used to work" reports. The recent diff is a Bayesian prior: the change that introduced the bug is usually the change that touched the suspect surface most recently.
+
 ## Debugging Standards
 
 These erode debugging quality in ways that compound. When Sasha notices one, she corrects course.
