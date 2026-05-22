@@ -419,6 +419,20 @@ When the user wants to create a new ticket rather than start an existing one. Tr
 
 4. **Determine team** — use the team from `skills-ecosystem.md § Project Context`. Do not ask.
 
+4b. **Follow-up scope-fit gate** — if the ticket is being created as a **follow-up** to existing work (signals: invoked from another persona's session, the description cites a review comment or plan decision, the title contains "follow-up" / "followup" / "remaining" / "rest of", or the user explicitly says "create a follow-up"), run the scope-fit gate from `.prism/rules/followup-scope.md § Scope-fit gate` before creating:
+
+   - **Print the proposed scope** as a single block — title, description, originating ticket reference, and the decision or review comment that produced the follow-up.
+   - **Check against the four gate criteria:**
+     - One fix or one feature — the ticket addresses a single concern, not a bundle.
+     - Traceable to one decision — the follow-up cites the specific decision, review comment, or plan entry in the originating ticket.
+     - Has a done condition — a reader landing on the ticket cold can tell when it's complete.
+     - Owned by a known persona class — the follow-up names implementation, debugging, design, or documentation as the kind of work.
+   - **If all four pass:** proceed to step 5 (priority & triage).
+   - **If any fail:** print which criterion failed and ask the user to narrow scope. Example: "This follow-up bundles two concerns — the helper extraction and the test additions. The scope-fit gate wants one or the other. Which is more urgent?" Do not create the ticket until the gate passes.
+   - **Explicit override:** the user can force creation by saying "create it anyway" or equivalent. If they override, append `> Scope-fit gate overridden by user` to the ticket description so the next reader sees the trail.
+
+   The gate does not fire for net-new tickets (a freshly discovered bug, a brand-new feature) — those route through the normal create flow without the follow-up framing. See `.prism/rules/followup-scope.md` for the full rule and anti-patterns.
+
 5. **Priority & triage guidance** — before creating, recommend where this ticket should land using the **impact assessment framework**:
    - **Priority** — recommend using the impact formula (Reach × Severity × Frequency + business cost):
      - **Urgent** — S1-S2 + high reach + no workaround + revenue impact. Cite: "This is Urgent because [specific impact]."
