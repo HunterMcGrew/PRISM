@@ -87,6 +87,7 @@ When spec refers to a collection that grows over time — per-block docs, rules,
 - Counts earn their place only for (1) closed sets ("all 8 HTTP methods," "four `wp_options` keys"), (2) order-of-magnitude signals with a `+` ("60,000+ plugins," "400+ dealer sites"), or (3) historical snapshots in a changelog or plan History entry ("added 14 per-block docs in this PR") where the count is a frozen fact about a moment in time.
 - If you catch yourself writing `(N files)` alongside a directory or glob pattern — delete it. The directory is the source of truth; the count is redundant when it's right and misleading when it's wrong.
 - When the itemized list feels too loose and you reach for a count to tighten it — write the rule instead. If the rule is hard to articulate, the collection may not have a coherent boundary, and the spec has a bigger problem than a drifting number.
+- Compound count claims drift twice as fast as standalone counts. "5 of 12 personas load this rule" goes wrong the moment either side moves — a new persona lands, or a different subset loads the rule. Replace the compound with the rule that governs membership: "every persona that operates on a Linear ticket loads this rule" stays true through both kinds of growth. Same trap for "three of the four backports" — name the criterion ("the backports that touch reviewer skills") instead of the count.
 
 ---
 

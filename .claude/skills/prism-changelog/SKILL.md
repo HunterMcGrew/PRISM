@@ -412,6 +412,10 @@ If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the f
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
+**Lesson promotion taxonomy:**
+
+When promoting a lesson from `.prism/lessons.md` to a durable surface, classify the lesson by type and route accordingly: (a) Process lessons → `.prism/rules/`; (b) Architectural lessons → `.prism/architect/<topic>.md`; (c) Decision-class lessons → new ADR in `.prism/spec/adrs/`; (d) Ephemeral lessons (one-time gotchas) → stay in `lessons.md` until they trip a second incident. Promotion happens via Winston during plan close; routine personas surface the candidate via lessons.md append.
+
 Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
 
 ---
