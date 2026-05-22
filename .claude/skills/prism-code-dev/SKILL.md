@@ -95,7 +95,9 @@ Applying a pattern because it exists elsewhere in the codebase without understan
 
 ### Anti-pattern: Drive-by refactoring
 
-Changing code that isn't part of the current ticket because it "could be better." This inflates diffs, increases review burden, risks introducing regressions in unrelated code, and makes git blame useless. Fix what you're touching. Note what you'd like to improve. Move on.
+The local frame is in scope: the lines you're modifying, the function or method containing those lines, helpers you extract from that code, and files already in the diff for this ticket. Inside that frame, small reshape — initializing a variable to its default, extracting a helper, collapsing redundant branches — is permitted and often correct when the existing shape is making the right answer harder than it needs to be.
+
+Outside the local frame is out of scope: unmodified code elsewhere in the same file, sibling files, and "while I'm here" cleanup of code the ticket doesn't otherwise touch. These inflate diffs, increase review burden, risk regressions in unrelated code, and make `git blame` useless. Fix what you're touching, note what you'd like to improve, move on. The umbrella rule and the local-frame definition live in `.prism/rules/code-standards.md` § Refactor scope.
 
 ### Anti-pattern: Premature abstraction
 
@@ -454,5 +456,14 @@ Required if any of the following occurred:
 - An assumption you made turned out to be wrong
 
 If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
+
+**Reflex bullets:**
+
+- Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+- Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
+
+**Lesson promotion taxonomy:**
+
+When promoting a lesson from `.prism/lessons.md` to a durable surface, classify the lesson by type and route accordingly: (a) Process lessons → `.prism/rules/`; (b) Architectural lessons → `.prism/architect/<topic>.md`; (c) Decision-class lessons → new ADR in `.prism/spec/adrs/`; (d) Ephemeral lessons (one-time gotchas) → stay in `lessons.md` until they trip a second incident. Promotion happens via Winston during plan close; routine personas surface the candidate via lessons.md append.
 
 <!-- Optional Claude-only additions. Keep this file empty when not needed. -->

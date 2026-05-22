@@ -242,6 +242,23 @@ PR-related skills (Eric, Briar, Reese, Sage when scoped to a PR) accept any of: 
 
 ---
 
+## Lessons
+
+Skills surface lessons during a session by appending to `.prism/lessons.md`. The append is cheap and unblocking — any persona that hits a moment worth recording writes it there. Promotion is the separate step that converts a lesson into a durable surface.
+
+### Lesson promotion taxonomy
+
+When a lesson moves from `.prism/lessons.md` to a durable home, it routes by type:
+
+- **Process lessons** → `.prism/rules/<name>.md`. Operational patterns, workflow constraints, how-to-do-things-right. Loaded by every relevant skill that triggers on the rule's `paths:` frontmatter.
+- **Architectural lessons** → `.prism/architect/<topic>.md`. Coupling, data flow, abstraction decisions, codebase shape. Loaded via manifest routing into the skills that work on the topic.
+- **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
+- **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
+
+Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is deleted. Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
+
+---
+
 ## Rules for All Skills
 
 1. **Plan is source of truth** — read the plan before starting work. Check `## Decisions` before removing or changing any logic. See ADR-0001.
