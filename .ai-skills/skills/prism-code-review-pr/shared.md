@@ -132,15 +132,34 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 - "Hey — Eric checking in. Let me pull up this PR."
 - "Eric's on it. Excited to dig into this one."
 
-Greet every time — it confirms the skill loaded even when the UI doesn't show it.
+Greet every time — it confirms the skill loaded even when the UI doesn't show it. Right after the greeting, run the mode gate (see § Mode selection) and announce the chosen mode in one line: "Running in-branch — reading the diff directly." or "Running in worktree mode — setting up an isolated checkout." This sets the user's expectation for what Eric will do next.
 
 ## When this skill is invoked
 
 Run the following steps automatically — do not wait for further instructions. **Maximize parallelism** — the annotations below show which steps can run together. Every independent call should be batched into a single message with multiple tool uses.
 
+## Mode selection
+
+Eric runs in one of two modes. The mode is chosen at session start and locked for the rest of the run.
+
+- **In-branch mode** (default) — Eric reads the PR's diff via `gh pr diff <pr-number>` and reads changed files at the PR head without touching the working tree. No checkout, no install, no worktree. This is the common path and the cheap path; most PRs use it.
+- **Worktree mode** (opt-in) — Eric creates an isolated checkout of the PR's branch and runs the review against that checkout. This is the path for branches that need real filesystem isolation. The full procedure lives in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md); the cleanup invariant lives in [`.prism/rules/worktree-isolation.md`](../../rules/worktree-isolation.md).
+
+**Mode gate** — Eric enters worktree mode if **any** of the following are true; otherwise he stays in-branch:
+
+1. The user explicitly requested it — a `--worktree` flag in `$ARGUMENTS`, or phrasing like "review in worktree" / "use a worktree" in the invocation.
+2. The PR's branch differs from the current working tree branch **and** the current working tree has uncommitted changes — a plain checkout in this state would discard the author's work, so isolation is required.
+3. The diff includes commands the review must execute (formatters, tests, builds) against the PR's branch and the current working tree is not on that branch — running them in place would mix branches.
+
+If none apply, Eric runs in-branch. The mode decision is announced in the greeting so the user knows which path is active.
+
+## In-branch mode procedure
+
+The default path. Read the diff, read the changed files at HEAD, review.
+
 ### Phase 1: Setup (sequential — each step depends on the previous)
 
-1. Parse $ARGUMENTS to extract `<pr-number>`.
+1. Parse `$ARGUMENTS` to extract `<pr-number>`.
 
 2. **Parallel batch A** — repo info + PR metadata + file list (all independent):
    ```
@@ -148,7 +167,7 @@ Run the following steps automatically — do not wait for further instructions. 
    gh pr view <pr-number> --json number,title,headRefName,baseRefName
    gh pr diff <pr-number> --name-only
    ```
-   Store `headRefName` as `<branch>`, derive `<branch-slug>`. Store the file list for classification and batch B.
+   Store `headRefName` as `<branch>`. Store the file list for classification and batch B.
 
 2b. **PR classification** — classify the PR based on the file list from batch A:
    - **Non-code patterns:** `.claude/**`, `docs/**`, `*.md`, `.github/**`, `.vscode/**`
@@ -156,34 +175,17 @@ Run the following steps automatically — do not wait for further instructions. 
    - If **ANY** file falls outside these patterns → **full** review path (conservative default)
    - Store the classification as `<review-path>` (`lightweight` or `full`)
 
-3. **Worktree setup** (depends on step 2 for branch name):
-   ```
-   git worktree remove /tmp/pr-review-<branch-slug> --force 2>/dev/null || true
-   rm -rf /tmp/pr-review-<branch-slug>
-   git fetch origin <branch>
-   git worktree add /tmp/pr-review-<branch-slug> origin/<branch>
-   ```
-   All file reads use `/tmp/pr-review-<branch-slug>/` as root.
-
-   **Full path only** — install dependencies:
-   ```
-   cd /tmp/pr-review-<branch-slug> && pnpm install --frozen-lockfile
-   ```
-   **Lightweight path:** skip `pnpm install` — the worktree is still created for plan and architect context access, but no dependencies are needed for non-code reviews.
-
-   **Important — cwd discipline:** After install (or worktree creation on lightweight path), immediately `cd` back to the repo root (`/workspace`). Never leave your shell cwd inside the worktree — if you do, `git worktree remove` will fail at cleanup. Use absolute paths or `pnpm -r --filter` for all worktree operations.
+3. **No checkout.** In-branch mode reads files at the PR head via `gh pr diff` and direct reads against the PR's branch ref. The current working tree is not modified.
 
 ### Phase 2: Context gathering (two batches — B then C)
 
 4. **Parallel batch B** — metadata + file list + plan. Run ALL of these in a single message:
 
-   a. **Plan lookup** — read `/tmp/pr-review-<branch-slug>/.prism/references/plan-lookup.md` and execute every step, using `/tmp/pr-review-<branch-slug>/` as `<repo-root>`. If references/ doesn't exist in the worktree, read from the main repo's `.prism/references/plan-lookup.md` instead.
-      - **Override:** Never create a plan in the worktree — this is someone else's branch and creating files would cause merge conflicts. If no plan exists, note "no plan found" and proceed. All findings go into the GitHub PR comment only.
+   a. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. Use the PR head ref (`origin/<branch>`) when fetching the plan content — `git show origin/<branch>:.prism/plans/<plan-file>` reads the plan as it exists on the PR's branch.
+      - **Override:** Never write a plan during in-branch mode — this is someone else's branch. If no plan exists, note "no plan found" and proceed. All findings go into the GitHub PR comment only.
       - If a plan exists: check `## Debugged Issues` and `## Review Issues` for open/fixed status, and respect `## Decisions` as intentional constraints.
 
-   b. **Manifest** — read the manifest (needed to compute architect docs for batch C):
-      - Read `/tmp/pr-review-<branch-slug>/.prism/architect/manifest.json`
-      - The file list is already available from batch A (`gh pr diff --name-only`)
+   b. **Manifest** — read `<repo-root>/.prism/architect/manifest.json`. The file list is already available from batch A (`gh pr diff --name-only`).
 
    c. **Review threads** via GraphQL:
       ```
@@ -211,32 +213,24 @@ Run the following steps automatically — do not wait for further instructions. 
 
    e. **Commit SHA** for inline comments:
       ```
-      cd /tmp/pr-review-<branch-slug> && git rev-parse HEAD; cd /workspace
+      gh pr view <pr-number> --json headRefOid --jq '.headRefOid'
       ```
 
-   **Why batch all of these:** Plan, manifest, file list, threads, summary check, and commit SHA are completely independent. Running them sequentially wastes round trips. A failure in any one does not affect the others — use `; cd /workspace` (not `&&`) for commands that `cd` into the worktree to prevent cascade failures.
+   **Why batch all of these:** Plan, manifest, file list, threads, summary check, and commit SHA are completely independent. Running them sequentially wastes round trips.
 
 5. **Parallel batch C — the big read.** Immediately after batch B returns, use the manifest + file list to compute everything needed, then issue ONE parallel batch containing ALL of the following:
 
    a. **Full diff**: `gh pr diff <pr-number>`
 
-   b. **Architect docs** — read `<repo-root>/.prism/references/architect-context.md` (from the main repo or worktree) and execute fully against the changed file list from batch B. Every matching pattern must be loaded — partial loads miss constraints. Use the worktree path for reading the actual architect docs. Skip any that don't exist.
+   b. **Architect docs** — read `<repo-root>/.prism/references/architect-context.md` and execute fully against the changed file list from batch B. Every matching pattern must be loaded — partial loads miss constraints. Skip any that don't exist.
 
-   c. **All source files** — from the file list, identify every file you'll need to read for review context (new/modified source files, not deleted files or config-only changes like `.claude/` files). Read them ALL in this batch. Do not spread source file reads across multiple rounds — that is the single biggest time waste in this workflow. If a file is in the diff, read it now.
+   c. **All source files at the PR head** — from the file list, identify every file you'll need to read for review context (new/modified source files, not deleted files or config-only changes like `.claude/` files). Read them ALL in this batch using `git show origin/<branch>:<path>` so the read reflects the PR head, not the current working tree. Do not spread source file reads across multiple rounds — that is the single biggest time waste in this workflow.
 
-   d. **Formatting checks** (**full path only** — skip on lightweight):
-      Run prettier and eslint in this same batch (they are independent of file reads and of each other). Use `;` (not `&&`) between `cd` and `cd /workspace` to prevent a formatting failure from cancelling the return-to-root:
-      ```bash
-      cd /tmp/pr-review-<branch-slug>/frontend && npx prettier --check <files>; cd /workspace
-      cd /tmp/pr-review-<branch-slug>/frontend && npx eslint <files>; cd /workspace
-      ```
-      **Lightweight path:** no source files to format — skip this step entirely.
-
-   **Why this batch is critical:** This is where previous runs wasted 3-4 round trips reading files incrementally. By computing the full read list from batch B's results and issuing everything at once — diff, architect docs, source files, and formatting — you collapse ~4 sequential rounds into 1. The formatting checks do not depend on file reads and should not be deferred to a later step.
+   **Why no formatting checks in in-branch mode:** Formatters and linters need files on disk and per-package plugin resolution. In-branch mode reads from refs, not disk. Formatting/linting checks are deferred to CI on the PR — Eric flags only formatting issues visible in the diff itself (e.g. trailing whitespace, obvious style drift). For full formatter/linter runs against the PR's branch, the user opts into worktree mode.
 
 ### Phase 3: Review (sequential — requires batch C results)
 
-6. If the diff or source files from batch C reveal additional files needed for context (e.g., a shared utility imported by a changed file), read those now. This should be rare — batch C should have covered the primary files. Do not re-read files already loaded.
+6. If the diff or source files from batch C reveal additional files needed for context (e.g., a shared utility imported by a changed file), read those now via `git show origin/<branch>:<path>`. This should be rare — batch C should have covered the primary files. Do not re-read files already loaded.
 
 ### Phase 4: GitHub writes (one batch — all writes together)
 
@@ -280,52 +274,43 @@ Run the following steps automatically — do not wait for further instructions. 
 
    **Why one batch:** Every thread reply, resolve mutation, inline comment, and summary comment update is an independent GitHub API call. The summary content is fully determined by the review analysis — it does not depend on whether inline comments succeed. Posting them all in one message eliminates an extra round trip.
 
-### Phase 5: Plan update + cleanup
+### Phase 5: Plan update
 
-8. **Update the branch plan** — if a plan was found in step 4a, update it in the **worktree copy** (which is on the PR branch) so the author gets the changes on their next pull. **Do not skip this step when a plan exists** — the plan is the persistent record of review findings.
-    - Add/update `## Review Issues` with structured entries for each issue posted as an inline comment (status: `open`, file, line, description, suggested fix). If no new issues were found, note "No new issues" with the review date.
-    - Update `## PR Readiness` with the checklist state from the summary.
-    - Read the plan fully once before editing — note the line numbers for all sections you need to update, then make all edits. Do not re-read the plan between edits.
-    - Commit the plan update in the worktree:
-      ```
-      cd /tmp/pr-review-<branch-slug>
-      git add .prism/plans/
-      git commit -m "chore: update plan with PR review findings"
-      git push origin HEAD:refs/heads/<branch>
-      cd /workspace
-      ```
-      **Important:** The worktree is in detached HEAD state. You must push to the full branch ref (`HEAD:refs/heads/<branch>`) — `git push origin HEAD` alone will fail with "not a full refname."
-    If no plan was found, skip this step — findings live in the PR comments only.
+8. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
 
-9. Cleanup — ensure cwd is the repo root first, then remove the worktree:
-    ```
-    cd /workspace && git worktree remove /tmp/pr-review-<branch-slug> --force
-    ```
+   If the user wants the plan updated as part of the review, that's the trigger to opt into worktree mode — call out the missing plan update in the summary comment and offer to re-run in worktree mode.
+
+## Worktree mode procedure
+
+Worktree mode runs the same review logic as in-branch mode, but against a worktree checkout. The worktree mechanics — create, operate, tear down — live in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md). Read that reference before executing worktree mode.
+
+The review-specific worktree adaptations:
+
+- **Worktree path:** `/tmp/pr-review-<branch-slug>` where `<branch-slug>` is the safe-filesystem form of the target branch.
+- **Full path only — install dependencies after worktree create:**
+  ```
+  cd /tmp/pr-review-<branch-slug> && pnpm install --frozen-lockfile; cd <repo-root>
+  ```
+  Lightweight path skips the install — the worktree is still created for plan and architect context access, but no dependencies are needed for non-code reviews.
+- **Reads use the worktree path as root** — `/tmp/pr-review-<branch-slug>/` replaces the `git show origin/<branch>:` reads from in-branch mode. Architect context, manifest, plan, and source files all read from the worktree.
+- **Formatting checks are in batch C** (full path only — skip on lightweight). Same prettier/eslint commands as the rest of the codebase uses, executed from inside the worktree. Use `;` (not `&&`) before the return-to-root per the reference — a non-zero exit from prettier or eslint should not cancel the return-to-root.
+- **Plan update is included.** Worktree mode can commit and push back to the PR branch. After review, update `## Review Issues` and `## PR Readiness` in the worktree's plan file, then commit and push from the worktree per the push-from-detached-HEAD pattern in the reference.
+- **Cleanup is mandatory** per [`.prism/rules/worktree-isolation.md`](../../rules/worktree-isolation.md) § Cleanup contract. Tear down the worktree on success, on error, and on interruption.
 
 ## Formatting Check
 
-As part of the review, run formatting and linting checks on all files in the PR diff (in the worktree — check only, no auto-fix, since this is someone else's branch).
+**Worktree mode only.** In-branch mode does not run formatters or linters — those require files on disk and per-package plugin resolution. CI catches formatting/linting on the PR; Eric in in-branch mode flags only what's visible in the diff itself (trailing whitespace, obvious style drift).
 
-**Critical:** Prettier plugins (e.g. `@ianvs/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`) are installed per-package, not at the repo root. Running `npx prettier` from the repo root will fail with "Cannot find package" errors. Always run from the package directory context:
+In worktree mode, run formatting and linting checks on all files in the PR diff (check only, no auto-fix, since this is someone else's branch).
 
-```bash
-# Backend files — run from the plugin package
-pnpm -r --filter gravity-platform-core exec npx prettier --check <relative-paths-from-package-root>
-pnpm -r --filter gravity-platform-core exec npx eslint <relative-paths-from-package-root>
+**Critical:** Prettier plugins (e.g. sort-imports, tailwind class sorting) are installed per-package, not at the repo root. Running `npx prettier` from the repo root will fail with "Cannot find package" errors. Always run from the package directory context — see [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) § Operate for the `cd` and return-to-root pattern (use `;` not `&&` before the return-to-root so a non-zero formatter exit does not cancel the return).
 
-# Frontend files — run from the frontend package
-cd /tmp/pr-review-<branch-slug>/frontend && npx prettier --check <relative-paths>; cd /workspace
-cd /tmp/pr-review-<branch-slug>/frontend && npx eslint <relative-paths>; cd /workspace
-```
-
-Note: `pnpm -r --filter` does not change your shell cwd, so it's safe. For `cd` commands, use `;` (not `&&`) before `cd /workspace` — this ensures you return to repo root even when prettier/eslint exits non-zero (which it will when it finds violations). Using `&&` causes a cascade failure where the return-to-root is skipped and subsequent commands run from the wrong directory.
-
-Run prettier and eslint in parallel (they are independent). They can safely run in the same batch as file reads (batch C) — formatting checks and Read tool calls do not interfere with each other. Use `;` before `cd /workspace` so a non-zero exit from prettier/eslint does not cascade-cancel the other tool calls in the batch.
+Run prettier and eslint in parallel (they are independent). They can safely run in the same batch as file reads (batch C) — formatting checks and Read tool calls do not interfere with each other.
 
 If either reports violations, include them in the review:
 - Post inline comments on specific formatting/linting issues (same as any other review comment)
 - Summarize in the **Issues** section under **Minor** severity
-- Note in the summary: "Run `npx prettier --write` and `npx eslint --fix` on the flagged files to resolve."
+- Note in the summary: "Run `prettier --write` and `eslint --fix` on the flagged files to resolve."
 
 Leave the fix to the author — it's their branch.
 ## What to look for
@@ -462,8 +447,7 @@ If everything looks good — zero issues, or all minors have been addressed — 
 
 ## Common Issues
 
-### Worktree setup fails
-`git fetch` or `git worktree add` errors — branch doesn't exist on origin or is dirty. Clear stale entries with `git worktree remove <path> --force`. If "couldn't find remote ref", ask the user to push the branch first.
+For worktree-specific gotchas (creation failures, cleanup `getcwd` errors, formatter cascade failures, detached-HEAD push failures), see [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) § Common worktree gotchas.
 
 ### GraphQL mutation to resolve thread fails
 The `resolveReviewThread` mutation can fail if the thread ID is stale or the token lacks `write:discussion` scope.
@@ -473,15 +457,7 @@ The `resolveReviewThread` mutation can fail if the thread ID is stale or the tok
 Means the target line is outside the diff hunk. Already handled in step 12 — move the observation to the summary comment. Do not retry with a different line number.
 
 ### Prettier/ESLint "Cannot find package" error
-Prettier plugins are installed per-package, not at the monorepo root. Always run from the package context: `pnpm -r --filter <package-name> exec npx prettier --check <files>`, or `cd` into `frontend/`. See **Formatting Check** for exact commands.
-
-### Worktree cleanup fails with "getcwd: cannot access parent directories"
-Happens when your shell cwd is inside the worktree being removed. Always prefix cleanup with `cd /workspace &&`, or use absolute paths throughout — never leave cwd inside the worktree.
-
-### Prettier/ESLint failure cancels parallel tool calls
-If you use `&&` between the formatting command and `cd /workspace`, a non-zero exit code from prettier/eslint prevents the `cd` and can cascade-cancel parallel tool calls in the same message.
-- Use `;` instead of `&&` before `cd /workspace` in formatting commands — e.g. `cd /tmp/.../frontend && npx prettier --check <files>; cd /workspace`. This ensures you always return to repo root regardless of exit code.
-- Formatting checks run safely alongside Read tool calls in batch C — a Bash tool failure does not cancel parallel Read calls.
+Prettier plugins are installed per-package, not at the monorepo root. Always run from the package context: `pnpm -r --filter <package-name> exec npx prettier --check <files>`, or `cd` into the package directory. See **Formatting Check** for exact commands. (Worktree mode only — in-branch mode does not run formatters.)
 
 ### `gh pr diff --stat` does not exist
 The `gh pr diff` command does not support `--stat`. Use `--name-only` to get a list of changed file paths. Do not use `--stat` — it will error.
@@ -493,11 +469,6 @@ Thread replies, thread resolves, inline comments, and the summary comment update
 The Write tool requires a prior Read on existing files, but also fails on new files in `/tmp/`.
 - Always use bash heredoc (`cat > /tmp/file.md << 'EOF' ... EOF`) for temp files.
 - Reserve the Write tool for repo files only.
-
-### `git push origin HEAD` fails in worktree with "not a full refname"
-Worktrees created with `git worktree add <path> origin/<branch>` are in detached HEAD state. `git push origin HEAD` fails because HEAD is not a branch ref.
-- Always push with the full ref: `git push origin HEAD:refs/heads/<branch>`.
-- Store the branch name from step 2 and reuse it here.
 
 ### Source file reads spread across multiple rounds
 Reading files incrementally (a few per round, discovering more as you go) is the single biggest time waste. After batch B returns the file list and manifest, compute the full set of files to read and issue them ALL in batch C alongside the diff, architect docs, and formatting checks. The only acceptable reason for an additional read round is discovering a dependency not in the diff (e.g., a shared utility imported by a changed file).
