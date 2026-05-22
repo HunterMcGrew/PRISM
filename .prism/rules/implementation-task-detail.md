@@ -1,3 +1,9 @@
+---
+paths:
+  - ".prism/plans/**/*.md"
+  - ".prism/design/mocks/**/*.md"
+---
+
 # Implementation Task Detail
 
 When authoring artifacts that drive implementation — Winston's `## Implementation Tasks` in a branch plan, or Pixel's mode 2 mock specs in `.claude/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**

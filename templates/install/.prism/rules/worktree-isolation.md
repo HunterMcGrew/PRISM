@@ -1,3 +1,9 @@
+---
+paths:
+  - ".prism/**"
+  - "scripts/**"
+---
+
 # Worktree Isolation
 
 ## Purpose
