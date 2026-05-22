@@ -571,6 +571,12 @@ The default assumption is `channel_id` + `message`, but some MCP variants may us
 - [ ] Standup never wrapped in a code block
 - [ ] Empty subsections omitted
 
+## Context reuse across skills
+
+When this skill invokes another skill — or is invoked by one — three loading tiers govern which rules carry across the handoff. Tier 1 rules (the universal load set: `code-comments.md`, `code-standards.md`, `branch-plan.md`, `git-conventions.md`, `pr-description.md`, `context-reuse.md`, `followup-scope.md`, `writing-voice.md`) are already in context from the parent session — the invoked skill inherits them without reloading. Tier 2 rules (`accessibility.md`, `architect-doc-verification.md`, `implementation-task-detail.md`, `acceptance-criteria.md`, `worktree-isolation.md`, `verification-commands.md`) re-evaluate against the invoked skill's working file set — a Tier 2 rule that didn't apply in the parent session may apply once the invoked skill starts touching files matching its `paths:` frontmatter, and vice versa. Tier 3 rules are skill-local — they don't carry across the handoff in either direction. See [ADR-0035](../../../.prism/spec/adrs/0035-rule-loading-tiers.md) for the loading model.
+
+---
+
 ## Lessons Check
 
 Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?

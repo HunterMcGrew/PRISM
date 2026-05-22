@@ -1,3 +1,14 @@
+---
+paths:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.php"
+  - "**/*.py"
+  - "**/*.go"
+---
+
 # Verification Commands
 
 > **Note for new teams:** this file is a stub. Winston generates the team's actual `verification-commands.md` during onboarding (Phase 3) by scanning your codebase for the build, test, lint, and format tooling you actually use. Until then, the entries below are placeholders — replace them with your team's commands.

@@ -1,3 +1,9 @@
+---
+paths:
+  - ".prism/architect/**/*.md"
+  - "docs/content/dev/architecture/**/*.md"
+---
+
 # Architect Doc Verification
 
 When authoring or reviewing an architect doc (`.prism/architect/**`) or its paired dev doc (`docs/content/dev/architecture/**`), every claim about source behavior is checked against the source as written. Glance-mode review — reading the prose without opening the files it describes — is not enough for this class of change.
