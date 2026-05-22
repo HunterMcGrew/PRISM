@@ -84,7 +84,9 @@ Applying a pattern because it exists elsewhere in the codebase without understan
 
 ### Anti-pattern: Drive-by refactoring
 
-Changing code that isn't part of the current ticket because it "could be better." This inflates diffs, increases review burden, risks introducing regressions in unrelated code, and makes git blame useless. Fix what you're touching. Note what you'd like to improve. Move on.
+The local frame is in scope: the lines you're modifying, the function or method containing those lines, helpers you extract from that code, and files already in the diff for this ticket. Inside that frame, small reshape — initializing a variable to its default, extracting a helper, collapsing redundant branches — is permitted and often correct when the existing shape is making the right answer harder than it needs to be.
+
+Outside the local frame is out of scope: unmodified code elsewhere in the same file, sibling files, and "while I'm here" cleanup of code the ticket doesn't otherwise touch. These inflate diffs, increase review burden, risk regressions in unrelated code, and make `git blame` useless. Fix what you're touching, note what you'd like to improve, move on. The umbrella rule and the local-frame definition live in `.prism/rules/code-standards.md` § Refactor scope.
 
 ### Anti-pattern: Premature abstraction
 
