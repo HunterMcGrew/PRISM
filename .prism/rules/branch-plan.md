@@ -236,11 +236,33 @@ Tasks may reference other personas as needed (e.g. `### Briar`, `### Sasha`). Cr
 
 When a decision had a real alternative that was considered and rejected, rethink the rejection before recording it — was the alternative really worse, or was "rejected" a lazy path dressed up as a tradeoff? If the rethink flips the call, go back and apply the better approach. If the rejection still stands, record it as a TL;DR: alternative + one-line reason. No essay. The point of writing it down is to force the rethink, not to produce documentation.
 
+### Open-question Decision variant
+
+Some decisions surface during planning but can't be resolved without input the team doesn't yet have — a stakeholder hasn't weighed in, a benchmark hasn't run, a constraint is genuinely open. Record these explicitly using the open-question variant, so work can continue under a documented default path while the open question stays visible.
+
+**Format:**
+
+```markdown
+- **OPEN — TBD, needs <name> input.** <Description of the open question>. **Default path (used until resolved):** <Description of the path work follows in the meantime>.
+```
+
+**Why this is a variant and not a missing bullet:** undocumented open questions either block work or get silently absorbed into one of the implicit paths. Both fail. The `OPEN` marker lets a default path carry the work without losing the question — and Zoe's cadence audit later flags `OPEN` Decisions that have aged past 30 days as `open-stale` so they don't sit forever.
+
+**How to apply:**
+
+- Use `OPEN — TBD, needs <name> input.` as the first sentence so the marker is scannable.
+- Name the person whose input resolves the question. If multiple people, name the decision-maker.
+- Always include the **Default path** sub-clause — work has to be able to continue. If you can't articulate a default, the open question isn't ready to be a Decision yet.
+- When the question resolves, replace the entry with a normal Decision capturing the resolution (and note in `## History` that the open question closed).
+
+The current plan's own `## Decisions` section uses this variant for genuinely open architectural questions — see `.prism/plans/epic-prism-thrive-backport.md` for the canonical pattern.
+
 Examples:
 
 - `isLinkObject` lives in `type-guards/link.ts`, not `interfaces/link.ts` — avoids circular dependency.
 - `setLinkTarget` with `undefined` deletes both `target` and `rel` — callers must use `setLinkRel` to set rel independently.
 - `ModalPhoneSource` is a separate type from `PhoneSource`, not an extension. Considered: extending `PhoneSource` with `"all"`. Rejected: schema files would also accept `"all"` as a stored value, which is wrong — `"all"` only exists as a runtime modal-display value, never on a CTA.
+- **OPEN — TBD, needs Hunter input.** Whether the audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` should also post a Slack summary on completion. **Default path (used until resolved):** report stays file-local; user manually shares if desired.
 
 ---
 
