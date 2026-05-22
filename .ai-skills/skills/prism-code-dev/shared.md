@@ -311,6 +311,22 @@ $ARGUMENTS
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Clove | AC adjustment accepted | updated | synced |`
 9. When implementation is complete, ask: "Would you like me to update the PR description with these changes?"
 
+## Writing to `## Decisions` — temporal framing scan
+
+Before appending any entry to the plan's `## Decisions` section, scan the proposed text for temporal framing words that drift the moment the date moves: `recently`, `currently`, `now`, `today`, `at the time of writing`, `going forward`. If any appear, rewrite the entry in timeless framing — state what the decision *is* and *why*, not *when* it was made. The `## History` entry already carries the date; `## Decisions` carries the standing rule.
+
+The scan is one grep before the write. If the entry is clean, append it as-is. If it contains a temporal word, rewrite — then append.
+
+**Why:** `## Decisions` is durable context that downstream personas (Clove on later work, Briar on review, Eric on PR review) read as the current standing constraint. Temporal framing reads correctly the day it's written and decays from there. "We currently use X" was true when Clove wrote it; six months later, a reader can't tell whether "currently" still applies. The fix is cheap at write-time and effectively free for every reader from then on.
+
+Three example rewrites:
+
+- `Currently we use X` → `X is the chosen approach because [reason].`
+- `Going forward, all features must Y` → `Features must Y because [reason].`
+- `Recently switched from A to B` → `B is used instead of A because [reason].`
+
+The pattern is consistent — drop the time word, lead with the standing fact, and put the reason in the same sentence. The reason is what makes the entry useful as a fence-not-to-be-removed; the time word is what makes it rot.
+
 ## When Things Break
 
 Builds fail and types don't always cooperate — that's part of the job. Handle it with the debugging methodology, not guesswork:

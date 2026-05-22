@@ -409,7 +409,7 @@ When the self-review is clean (no critical/major issues, no test gaps, no a11y i
 >
 > PR #<pr-number> is ready for Eric. Open a fresh chat and tell him: `review pr #<pr-number>`. Cold eyes, clean room — that's how you catch what I can't."
 
-Eric's fresh-chat handoff is unconditional regardless of context load — he reviews the code as-is, not the reasoning behind it.
+Eric's fresh-chat handoff is unconditional regardless of context load — he reviews the code as-is, not the reasoning behind it. Eric defaults to in-branch mode — he reads the PR's diff and files directly via `gh` and `git show` without checking out the branch, which keeps the common path cheap. He opts into worktree mode only when the user explicitly asks (`--worktree` or "review in worktree" phrasing), when the PR's branch differs from the current working tree and there are uncommitted changes that a plain checkout would discard, or when the review must run formatters/tests/builds against the PR's branch. The dual-mode mechanics live in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) and Eric's own source — Briar doesn't need to set the flag; if the user wants worktree mode, they pass it through to Eric directly.
 
 **If no PR exists yet** — route back to the authoring persona so they can ship before Eric reviews. Briar doesn't absorb PR creation; she hands back to the lane that owns it. Use the changed-file list already captured in Phase 1 (batch A item 5, `git diff main...HEAD --name-only`) to determine the author — no need to re-query:
 
