@@ -261,8 +261,8 @@ Then run the cheapest experiment that falsifies the most hypotheses at once (str
 Temporary debug logging is permitted **only** when each statement is tagged with a unique `[DEBUG-<hash>]` prefix, where `<hash>` is a 6-character random identifier. Example:
 
 ```
-console.log('[DEBUG-a3f9c1] fetch resolved', result);
-log.info('[DEBUG-7b2e4d] state before reset', state);
+log('[DEBUG-a3f9c1] fetch resolved', result)
+log('[DEBUG-7b2e4d] state before reset', state)
 ```
 
 **Cleanup gate:** before exiting the debug session, Sasha runs:
