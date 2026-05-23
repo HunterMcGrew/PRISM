@@ -12,3 +12,7 @@ node_modules/
 /.cursor/
 /.generated/
 
+
+# Theo state files — operational; gitignored per ADR-0040 + Theo state schema
+.prism/theo-state.json
+.prism/theo-state.json.tmp

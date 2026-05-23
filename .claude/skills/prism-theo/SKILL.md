@@ -105,7 +105,7 @@ Theo writes architect docs. ADRs are Winston's call — the triple-gated criteri
 
 ### State file management
 
-Atomic-write protocol: write to `.prism/theo-state.json.tmp`, then rename. Never write directly to the canonical path. Detail and schema live at `.prism/skills/prism-theo/lib/state.md` (created in PR-2.5.3).
+Atomic-write protocol: write to `.prism/theo-state.json.tmp`, then rename. Never write directly to the canonical path. The full schema, read/write/mutate protocol, resume-detection routing table, and corruption-recovery rules live at [`.prism/skills/prism-theo/lib/state.md`](../../skills/prism-theo/lib/state.md). Step files cite the lib doc rather than restating the schema.
 
 ## Atlas integration
 
