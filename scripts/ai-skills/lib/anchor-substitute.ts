@@ -194,6 +194,18 @@ function findCloseMarker(
 	};
 }
 
+export interface SubstituteAnchorsOptions {
+	/**
+	 * Suppresses the per-file "unknown replacement key" warning. The cross-
+	 * skills caller (`substituteAnchorsAcrossSkills`) sets this because in
+	 * cross-skills mode the same replacement map is fanned out to every
+	 * canonical source — a key that's absent from one file but present in
+	 * another is normal, not a misconfiguration. The aggregate caller emits
+	 * a single warning per key that ended up unused across every file.
+	 */
+	suppressUnknownKeyWarning?: boolean;
+}
+
 /**
  * Reads `filePath`, applies `replacements` to each known anchor, and writes
  * the result atomically. Returns whether bytes changed and which anchor
@@ -205,23 +217,28 @@ function findCloseMarker(
  * - Atomic — tmp file in the same directory, rename over the target. A
  *   failed rename leaves the original file intact.
  * - Unknown replacement keys (in `replacements` but not in the file) emit a
- *   `console.warn` and don't throw.
+ *   `console.warn` and don't throw. Suppress with
+ *   `suppressUnknownKeyWarning: true` when the caller aggregates the check
+ *   across many files (`substituteAnchorsAcrossSkills`).
  * - Orphan anchors (in the file but not in `replacements`) preserve their
  *   existing default content untouched.
  */
 export async function substituteAnchors(
 	filePath: string,
 	content: string,
-	replacements: Record<string, string>
+	replacements: Record<string, string>,
+	options: SubstituteAnchorsOptions = {}
 ): Promise<{ written: boolean; anchorsReplaced: string[] }> {
 	const anchors = findAnchors(content);
 	const anchorNames = new Set(anchors.map((a) => a.name));
 
-	for (const key of Object.keys(replacements)) {
-		if (!anchorNames.has(key)) {
-			console.warn(
-				`anchor-substitute: unknown replacement key ${JSON.stringify(key)} (not present in ${filePath})`
-			);
+	if (!options.suppressUnknownKeyWarning) {
+		for (const key of Object.keys(replacements)) {
+			if (!anchorNames.has(key)) {
+				console.warn(
+					`anchor-substitute: unknown replacement key ${JSON.stringify(key)} (not present in ${filePath})`
+				);
+			}
 		}
 	}
 
@@ -269,6 +286,11 @@ export async function substituteAnchors(
  * Returns one `AnchorResult` per file (whether it was written or not), keyed
  * by absolute file path. Skips files with no anchors silently — the caller
  * does not need to know about unaffected files.
+ *
+ * Unknown-key warnings are aggregated across all files: a replacement key
+ * that's absent from one file but present in another is normal in cross-
+ * skills mode, so per-file warnings would be misleading. Only keys absent
+ * from every canonical source emit a single warning at the end.
  */
 export async function substituteAnchorsAcrossSkills(
 	repoRoot: string,
@@ -292,6 +314,7 @@ export async function substituteAnchorsAcrossSkills(
 
 	const platformFiles = ["shared.md", "claude.md", "codex.md", "cursor.md"];
 	const results = new Map<string, AnchorResult>();
+	const usedKeys = new Set<string>();
 
 	for (const dir of skillDirs) {
 		for (const filename of platformFiles) {
@@ -315,13 +338,25 @@ export async function substituteAnchorsAcrossSkills(
 			const result = await substituteAnchors(
 				filePath,
 				content,
-				contentByAnchor
+				contentByAnchor,
+				{ suppressUnknownKeyWarning: true }
 			);
+			for (const name of result.anchorsReplaced) {
+				usedKeys.add(name);
+			}
 			results.set(filePath, {
 				path: filePath,
 				written: result.written,
 				anchorsReplaced: result.anchorsReplaced,
 			});
+		}
+	}
+
+	for (const key of Object.keys(contentByAnchor)) {
+		if (!usedKeys.has(key)) {
+			console.warn(
+				`anchor-substitute: replacement key ${JSON.stringify(key)} was not found in any canonical source under ${skillsRoot}`
+			);
 		}
 	}
 
