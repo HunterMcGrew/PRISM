@@ -32,4 +32,3 @@ Skill files themselves (`.claude/skills/<skill>/SKILL.md`) stay model-agnostic �
 
 - `AGENTS.md` — model-agnostic shared layer
 - `CLAUDE.md` — Claude-specific patches
-- `.prism/plans/4.7-skill-audit-strategy.md` § Cross-Model Portability Notes

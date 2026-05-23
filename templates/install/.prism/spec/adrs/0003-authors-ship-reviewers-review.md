@@ -9,7 +9,7 @@ Date: 2026-04-19
 
 The skill ecosystem initially had ambiguous ownership around PR creation. Clove wrote code but paused before pushing to ask "Want me to push this up?" Briar, reviewing the branch, sometimes absorbed PR creation when asked. Eli, Sage, and Reese produced artifacts but stopped at file creation — shipping was a separate step the user had to request.
 
-This ambiguity created two failure modes: ceremony (prompting for actions the user almost always approved) and lane drift (reviewers absorbing author responsibilities, eroding the review's adversarial edge). The Round 10 audit in `.prism/plans/4.7-skill-audit-strategy.md` formalized the framework that resolves both.
+This ambiguity created two failure modes: ceremony (prompting for actions the user almost always approved) and lane drift (reviewers absorbing author responsibilities, eroding the review's adversarial edge). A Round 10 audit formalized the framework that resolves both.
 
 The three-question test: an action skips its prompt when it is reversible AND the user almost always says yes AND it is in-lane. PR creation by an author after a clean implementation passes all three.
 
@@ -62,7 +62,5 @@ If a second per-user override emerges, write a new ADR that generalizes the mech
 
 ## References
 
-- `.prism/plans/4.7-skill-audit-strategy.md` § Round 10 — the three-question framework
-- `.prism/plans/thr-1631.md` — the implementation of this pattern across Clove, Eli, Sage, Reese, Briar, and AGENTS.md
 - `.prism/references/shipping-flow.md` — shared shipping mechanics
 - `AGENTS.md § 0` — the one-line summary in the auto-routing section

@@ -9,7 +9,7 @@ Date: 2026-04-19
 
 Plans group `## Implementation Tasks` under persona headings — `### Clove`, `### Eli`, `### Sasha`, etc. — so it's clear which skill owns which work. The headings exist to prevent two problems: skills picking up work outside their lane, and work that crosses lanes happening invisibly with no record of the scope shift.
 
-Concrete history: in THR-1632 task 8, `## Implementation Tasks` enumerated separate Clove and Eli targets. Clove absorbed two of Eli's `docs/content/dev/ai-skills/` files (`overview.md`, `why-ai-skills.md`) during her Briar-decoupling pass. The edits were thematically correct — same theme, same file cluster, same PR — but boundary-crossing without a handoff note. The plan said Eli owned those files; Clove edited them anyway, with no `## Decisions` entry recording the absorption. That's the gap this ADR closes.
+Concrete history: in an early-Phase incident, `## Implementation Tasks` enumerated separate Clove and Eli targets. Clove absorbed two of Eli's documentation files during a related refactor pass. The edits were thematically correct — same theme, same file cluster, same PR — but boundary-crossing without a handoff note. The plan said Eli owned those files; Clove edited them anyway, with no `## Decisions` entry recording the absorption. That's the gap this ADR closes.
 
 ## Decision
 
@@ -35,5 +35,4 @@ Silent cross-lane edits are the failure mode this ADR prevents. Documented absor
 
 - `.prism/rules/branch-plan.md` — Implementation Tasks section enforces the heading structure
 - `.prism/architect/skills-ecosystem.md` — Rules for All Skills (Rule 13 cites this ADR)
-- `.prism/plans/thr-1632.md` — the absorption incident that surfaced the gap (see `## Decisions` entry on 2026-04-19 documenting the scope expansion)
 - ADR-0014 (Plan Section Ownership) — related but distinct: 0014 governs who writes to which `## Section`; this ADR governs who owns which task within `## Implementation Tasks`

@@ -2,7 +2,7 @@
 
 Shared reference for the authoring personas that own their own PR creation: **Clove** (code), **Eli** (docs), **Sage** (changelog), **Reese** (QA checklist).
 
-The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../../AGENTS.md) and the Round 10 framework ("Prefer Action, Guard Against Destruction") in [.prism/plans/4.7-skill-audit-strategy.md](../plans/4.7-skill-audit-strategy.md). Pushing a completed branch is reversible, predictable, and in-lane, so it's action rather than question. No prompt before pushing.
+The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../../AGENTS.md) and the "Prefer Action, Guard Against Destruction" framework. Pushing a completed branch is reversible, predictable, and in-lane, so it's action rather than question. No prompt before pushing.
 
 ## Per-persona defaults
 

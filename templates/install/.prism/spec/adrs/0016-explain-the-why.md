@@ -33,6 +33,5 @@ When you find yourself writing a directive without the reason, pause. The reason
 
 ## References
 
-- `.prism/plans/4.7-skill-audit-strategy.md` § Guiding Principle 2
 - ADR-0015 (Humane Language Over Mandates) — related but distinct: framing vs. presence of reasoning
 - The auto-memory system format (feedback and project memories include `**Why:**` and `**How to apply:**` lines by design)
