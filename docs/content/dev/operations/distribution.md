@@ -77,7 +77,7 @@ Skills are not under canonical at all. They're generated from `.ai-skills/skills
 | `.ai-skills/skills/<id>/`             | `consumer/.claude/skills/<id>/SKILL.md`                | Built via `prism:build` with token substitution  |
 | `.ai-skills/skills/<id>/`             | `consumer/.agents/skills/<id>/SKILL.md`                | Codex skill output                               |
 | `.ai-skills/skills/<id>/`             | `consumer/.codex/agents/<id>.toml`                     | Codex agent adapter                              |
-| `.ai-skills/skills/<id>/`             | `consumer/.generated/cursor-skills/<id>/SKILL.md`      | Cursor output                                    |
+| `.ai-skills/skills/<id>/`             | `consumer/.cursor/skills/<id>/SKILL.md`                | Cursor output                                    |
 
 ### Top-level anchor files
 
@@ -145,7 +145,7 @@ After sync:
 - The consumer's `.ai-skills/config.json` — owned by the team. Edit to change ticket prefix, tech stack, opt-in rules, etc. The next sync re-reads it.
 - Hand-authored skills under `.claude/skills/` (without a corresponding `.ai-skills/skills/<id>/` in PRISM) — never managed.
 - `.prism/plans/` and `.prism/lessons.md` — agent working memory; sync doesn't touch them.
-- Anything in the consumer's repo outside `.prism/`, `.claude/`, `.agents/`, `.codex/`, `.cursor/`, `.generated/`, and the `AGENTS.md` / `CLAUDE.md` anchor files — sync doesn't touch.
+- Anything in the consumer's repo outside `.prism/`, `.claude/`, `.agents/`, `.codex/`, `.cursor/`, and the `AGENTS.md` / `CLAUDE.md` anchor files — sync doesn't touch. (`.generated/` was a pre-Phase-1.5f staging directory; removed in ADR-0044.)
 
 ## Branching and updates upstream
 

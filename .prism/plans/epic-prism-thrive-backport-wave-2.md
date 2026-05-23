@@ -16,6 +16,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
 - 2026-05-23 [hmcgrew/prism-1.5f.1-pixel-mocks-relocation]: PR-1.5f.1 implementation complete — all 9 tasks done. Pixel mocks references rewritten `.claude/design/mocks/` → `.prism/design/mocks/` across 9 canonical sources (Pixel skill source/frontmatter, `.prism/SPEC.md`, spec-editing architect doc, implementation-task-detail rule, ADR-0033) plus their templates mirrors; `pnpm prism:build` regenerated `.claude/` mirrors. Drift fix in `scripts/ai-skills/atlas-dogfood.test.ts:56` (`linearWorkspace` → `linearTeam`, pre-existing on main, caught by `prism:check-types`); all verification green.
 - 2026-05-23 [hmcgrew/prism-1.5f.2-decisions-verdict-pattern]: PR-1.5f.2 implementation complete — all 6 tasks done plus Eli task #6 absorbed (one-line edit to skills-ecosystem Winston row, faster than handoff). Added `## Decision verdict gate` subsection to `.prism/rules/branch-plan.md` + templates mirror; appended verdict-gate reflex bullets to Winston (close-side), Briar, and Eric (surface-as-Minor side); updated skills-ecosystem Winston row with verdict-gate reference. `pnpm prism:build` regenerated `.claude/` mirrors for the three personas; all verification green.
 - 2026-05-23 [hmcgrew/prism-1.5f.3-draft-prs-by-default]: PR-1.5f.3 implementation complete — Clove tasks 1-3 + 5-6 done, task 4 was a no-op (Clove source references shipping-flow.md, doesn't inline `gh pr create`), Eli task #7 absorbed (5 one-line row updates in skills-ecosystem, no other surface than skills-ecosystem affected so handoff would have been pure overhead). Added `--draft` to `gh pr create` at `shipping-flow.md:57` + templates mirror, added new `## Draft-by-default` subsection with per-PR-type flip table, added state-#3-only `gh pr ready` to Eric's batch D label pipeline, updated skills-ecosystem Clove/Eric/Sage/Eli/Reese rows. All verification green; this PR opens non-draft (changes take effect for future PRs).
+- 2026-05-23 [hmcgrew/prism-1.5f.4-generated-collapse]: PR-1.5f.4 implementation complete — all 15 tasks done. Flipped paths.json + build.ts JSDoc + README to direct-write `.cursor/skills/` and `.codex/codex-config.toml`; surgical gitignore commits the full `.cursor/` and `.codex/` content trees (223 new tracked files) while keeping `.agents/`, `.codex/codex-config.toml`, and tool worktrees ignored; deleted `.generated/`; authored ADR-0044 (dual-written canonical + templates), `.ai-skills/docs/compatibility.md`, paired `docs/content/dev/ai-skills/compatibility.md`, narrative `docs/content/dev/ai-skills/syncing.md`; added `.ai-skills/docs/**` manifest route; updated install-layout.md with Direct-write tool outputs section; added verdict sub-bullets to all 5 epic Decisions per the verdict-gate rule. Drift fixes: stale `.generated/cursor-skills/` paths in `literal-allowlist.json` rewritten to `.cursor/skills/`. All verification green; plan now complete and ready for Winston to close.
 
 ---
 
@@ -26,27 +27,32 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
   - **Alternatives considered:** (a) Single mega-PR mirroring Thrive's PR #2025 — too large, mixes install-contract change with unrelated cleanups, review attention drowns. (b) Strict sequential — slower; 1.5f.2 and 1.5f.3 have no file overlap and can land in parallel. (c) Lead with 1.5f.4 — front-loads the riskiest change before the smaller cleanups have validated the build.
   - **Chosen approach:** Four cohesive sub-PRs grouped by concern. 1.5f.1 (Pixel mocks) is the smallest content-only edit and unblocks nothing; ship it first to demonstrate the build holds. 1.5f.2 and 1.5f.3 are parallel-safe content edits to different rule/reference files. 1.5f.4 lands last with its ADR and consumer-facing compatibility doc.
   - **Implementation guidance:** Track each sub-PR as a separate task group below. Branch names follow `hmcgrew/prism-1.5f.N-<slug>`. Each sub-PR closes its own PR before the next opens unless explicitly parallel-safe.
+  - → no promotion needed (process scoping specific to Phase 1.5f; no architectural pattern to promote)
 
 - **New mocks directory at `.prism/design/mocks/`, not `.ai-spec/design/mocks/`.**
   - **Root cause:** Thrive chose `.ai-spec/` because their content-root namespace is `.ai-spec/`. PRISM's content root is `.prism/` (per ADR-0031 bifurcated install layout + ADR-0039 `.ai-*` namespace). Mocks belong inside the content namespace, not parallel to it.
   - **Alternatives considered:** (a) Match Thrive verbatim with `.ai-spec/design/mocks/` — diverges from PRISM's `.prism/` namespace; future Pixel mocks would be the only `.ai-spec/`-prefixed content in the repo. (b) Keep `.claude/design/mocks/` — the bug being fixed (tool-agnostic content lives in a tool namespace). (c) `.prism/design/mocks/` — composes with the existing namespace; matches the spirit of Thrive's fix.
   - **Chosen approach:** `.prism/design/mocks/`. Tool-agnostic per Thrive's intent; namespace-consistent per PRISM's existing structure.
   - **Implementation guidance:** All `.claude/design/mocks/` references rewrite to `.prism/design/mocks/`. The Phase 1.5c-style template surface mirror is at `templates/install/.prism/design/` — but since no mocks exist in PRISM yet, only the *references to the path* need updating, not actual mock files. The directory itself gets created on first Pixel mode-2 invocation.
+  - → promoted to `.prism/SPEC.md` + `.prism/architect/spec-editing.md` (via PR-1.5f.1 path-rename edits to canonical surfaces)
 
 - **One ADR (ADR-0044) covers 1.5f.4 only.** The other three sub-PRs are rule/reference/template edits that don't pass the immediate-decision-promotion three-gate test.
   - **Root cause:** ADR-0044 (Direct-write tool outputs; commit `.cursor/skills/`) is hard-to-reverse (changes consumer install contract), surprising (reverses PRISM's current "Cursor/Codex output is generated, ignore it" model), and has a real alternative (relocate-only, gitignored). The verdict pattern in 1.5f.2 is hard-to-reverse but is process discipline, not architecture — belongs in `branch-plan.md` rule. Draft PRs in 1.5f.3 is a behavioral change but already industry-standard, not surprising. Pixel mocks in 1.5f.1 is a bug fix, not a decision.
   - **Alternatives considered:** Separate ADR per sub-PR (3–4 ADRs total) — overkill; most of these are codified by the rule/reference edits themselves.
   - **Chosen approach:** Single ADR for the load-bearing install-contract decision. Rule and reference edits codify the smaller decisions in place.
   - **Implementation guidance:** ADR-0044 is dual-written canonical + templates per the ADR-0029/0030 pattern. ADR-0038 paired-dev-doc gate fires because ADR-0044 introduces a new architect-doc topic (compatibility) — Eli pairs `docs/content/dev/ai-skills/compatibility.md` and `docs/content/dev/ai-skills/syncing.md` against the architect surface in 1.5f.4.
+  - → no promotion needed (meta-decision about ADR scope within this phase; not a standing rule)
 
 - **`.cursor/skills/` becomes committed surface; `.codex/codex-config.toml` stays gitignored.** Asymmetric on purpose.
   - **Root cause:** `.cursor/skills/` content is consumed by Cursor's skill picker via `git pull` — committing it removes the install step for Cursor users. `.codex/codex-config.toml` is a per-user file (containing personality, projects, marketplaces); committing it would clobber consumer customization. Same logic as Thrive's PR #2025 install-script-scope rule.
   - **Alternatives considered:** (a) Commit both — clobbers consumer codex-config customization. (b) Ignore both — loses the Cursor-user-gets-skills-on-git-pull benefit; defeats the purpose of removing `.generated/`. (c) Commit `.cursor/skills/`, ignore `.codex/codex-config.toml` — matches Thrive's per-tool decision exactly.
   - **Chosen approach:** Path (c). The `.ai-skills/docs/compatibility.md § Install-Script Scope` section codifies the rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts.
   - **Implementation guidance:** Gitignore in 1.5f.4 replaces blanket `/.cursor/` with surgical rules — `.cursor/skills/` trackable, `.cursor/worktrees/` and `.cursor/plans/` (anything not generated) ignored.
+  - → promoted to ADR-0044 + `.ai-skills/docs/compatibility.md` + `.prism/architect/install-layout.md § Direct-write tool outputs`
 
 - **Persona ownership within sub-PRs.** Clove owns implementation tasks (file edits, new file authoring, build verification). Eli owns documentation tasks (ADR Context/Decision/Consequences prose, paired dev doc authoring, compatibility-doc narrative).
   - **Implementation guidance:** Within each sub-PR's heading, tasks split into `#### Clove` and `#### Eli` subheadings. Cross-persona dependencies noted inline.
+  - → no promotion needed (codified in ADR-0018 persona lane ownership)
 
 ---
 
@@ -353,6 +359,15 @@ Backport target: Track A + Track C of Thrive PR #2025 (collapse `.generated/` st
 - **Problem:** Plan task said "7 references at lines [9 line numbers]" — count mismatched the enumeration.
 - **Suggested fix:** Drop the count, let the enumeration stand (per writing-voice § Count rules, not numbers). Fixed in this PR per the goal directive.
 
+### ADR-0044 + docs reference `pnpm prism:install-codex` which doesn't exist in PRISM
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/0044-direct-write-tool-outputs.md`, `.prism/architect/install-layout.md`, `.ai-skills/docs/compatibility.md`, `docs/content/dev/ai-skills/syncing.md` (plus templates mirrors of ADR + install-layout)
+- **Problem:** Four documentation surfaces referenced `pnpm prism:install-codex` as if it were a shipped command. The script is planned for Phase 2 but doesn't exist in `package.json` today. Per `architect-doc-verification.md`, missing/diverged claims in architect docs are Major minimum — durable agent context that misleads every future reader.
+- **Additionally:** Two false historical claims in syncing.md and ADR-0044 that "Cursor consumers had to run an install script" — PRISM never shipped a Cursor install script (the upstream Thrive dogfood had one; PRISM was extracted before that script was added).
+- **Suggested fix:** Hedge the `prism:install-codex` references as planned-for-Phase-2; rewrite the historical claims to accurately describe PRISM's pre-1.5f state (no Cursor install script existed). Fixed in this PR per the goal directive — all four surfaces updated; ADR + install-layout mirrored to templates; build green post-fix.
+
 ## Cleanup Items
 
 None at plan-creation time.
@@ -368,6 +383,6 @@ Living checklist — updated by each sub-PR's self-review run.
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (especially the surgical gitignore behavior in PR-1.5f.4 task #8)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-05-23 (1.5f.1 + 1.5f.2 + 1.5f.3 review pass: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass)
+- [x] Build passes — last run: 2026-05-23 (1.5f.4 + Briar review fixes: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass; `.generated/` deleted; `git check-ignore` verified surgical gitignore behavior; install-codex doc drift fixed across 4 surfaces)
 - [ ] PR descriptions up to date for each sub-PR
 - [ ] Lasting decisions promoted to architect context (ADR-0044 + compatibility.md cover the durable surface for 1.5f.4; rule edits in 1.5f.1/1.5f.2/1.5f.3 codify the smaller decisions in place)

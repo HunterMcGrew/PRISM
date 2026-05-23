@@ -7,8 +7,8 @@
  *   - .claude/skills/<id>/SKILL.md
  *   - .agents/skills/<id>/SKILL.md (Codex)
  *   - .codex/agents/<id>.toml (Codex agent adapter)
- *   - .generated/cursor-skills/<id>/SKILL.md (Cursor)
- *   - .generated/codex-config.toml
+ *   - .cursor/skills/<id>/SKILL.md (Cursor)
+ *   - .codex/codex-config.toml
  *
  * Run `pnpm prism:build` to regenerate, or `pnpm prism:check` to fail on drift.
  *

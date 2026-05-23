@@ -11,7 +11,7 @@ A multi-team AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills
   - **Plan & spec:** Parker (PRDs), Mira (user stories), Nora (ticket setup), Pixel (UI/UX), Reese (QA test plans)
   - **Document & decide:** Eli (documentation), Theo (architect-doc walker), Sage (changelog), Lilac (standups)
   - **Maintain & onboard:** Atlas (onboarding), Ren (refactor scout), Zoe (cadence audit)
-- **Multi-platform skill generation** — author a skill once in `.ai-skills/`, generate platform-specific outputs for Claude Code (`.claude/skills/`), Codex (`.agents/skills/` + `.codex/agents/`), and Cursor (`.generated/cursor-skills/`).
+- **Multi-platform skill generation** — author a skill once in `.ai-skills/`, generate platform-specific outputs for Claude Code (`.claude/skills/`), Codex (`.agents/skills/` + `.codex/agents/`), and Cursor (`.cursor/skills/`).
 - **A tiered context system** — `.prism/rules/` for engineering standards, loaded in three tiers per [ADR-0035](./.prism/spec/adrs/0035-rule-loading-tiers.md): Tier 1 universal rules always-on (e.g. `code-comments.md`, `git-conventions.md`); Tier 2 path-scoped via `paths:` YAML frontmatter (e.g. `accessibility.md` only loads when the diff touches UI files); Tier 3 skill-internal rules that only load when the citing skill loads. `.prism/architect/` holds path-scoped context loaded only when relevant files are touched. `.prism/spec/adrs/` holds durable decisions.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, standup summaries, ticket types — shaped for cross-team consistency.
 - **Per-team parameterization** — your org name, ticket prefix, Linear project, GitHub repo, and tech stack flow into the install via `.ai-skills/config.json`.
@@ -100,7 +100,7 @@ PRISM/
 | Command | What it does |
 |---------|-------------|
 | `pnpm prism:bootstrap` | One-time importer. Reads `.claude/skills/<id>/SKILL.md` and splits into the canonical `.ai-skills/skills/<id>/` shape. Renames `thrive-` prefixes to `prism-`. |
-| `pnpm prism:build` | Regenerate platform outputs from `.ai-skills/`. Writes `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.generated/cursor-skills/`. Runs `prism:test` on completion. |
+| `pnpm prism:build` | Regenerate platform outputs from `.ai-skills/`. Writes `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.cursor/skills/`, `.codex/codex-config.toml`. Runs `prism:test` on completion. |
 | `pnpm prism:check` | Drift detection. Fails if any generated output is out of sync with canonical. CI-ready. |
 | `pnpm prism:test` | Regression suite (anchor substitution, Atlas dogfood, content copy, discovery metadata, literal guard, onboarding state/config, path guard, rule generators, stack detection, token substitution). |
 | `pnpm prism:check-types` | TypeScript check on the generator scripts. |

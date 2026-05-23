@@ -8,8 +8,8 @@
 		"claudeSkillsRoot": ".claude/skills",
 		"codexSkillsRoot": ".agents/skills",
 		"codexAgentsRoot": ".codex/agents",
-		"codexConfigFile": ".generated/codex-config.toml",
-		"cursorSkillsRoot": ".generated/cursor-skills",
+		"codexConfigFile": ".codex/codex-config.toml",
+		"cursorSkillsRoot": ".cursor/skills",
 		"platformContentCopies": {
 			"claude": ".claude",
 			"codex": ".codex",
