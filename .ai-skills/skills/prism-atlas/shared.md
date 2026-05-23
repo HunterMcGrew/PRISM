@@ -67,7 +67,7 @@ The default mode when no `.ai-skills/config.json` exists. Atlas walks the full g
 5. Collect ticket-system workspace and team key (today only `kind: "linear"` is supported per the schema).
 6. Collect product domain (short freeform — used to populate the `atlas:domain-context` anchor in canonical persona sources).
 7. Collect existing engineering standards (optional paths to user-supplied standards documents the team wants Atlas to read and either route into `.prism/rules/` or summarize into architect context).
-8. Generate per-team rules via the rule generators (PR-2.3) — code-standards per language, security per stack, framework-guidelines per framework.
+8. Generate per-team rules via `runRuleGenerators(config, repoRoot)` from `scripts/ai-skills/lib/onboarding-run.ts`. The orchestrator invokes the generators in fixed order — code-standards → security → framework-guidelines — and returns a `RuleGenerationSummary` whose `written` and `skipped` entries Atlas surfaces in the closing summary. Each generator is skip-if-exists by default; pass `{ force: true }` only when the user explicitly opts in.
 9. Populate stub anchors across canonical persona sources via `substituteAnchorsAcrossSkills` (PR-2.4).
 10. Write `.ai-skills/config.json` atomically via `writeOnboardingConfig` (PR-2.1).
 11. Run `pnpm prism:build` to regenerate platform mirrors so the team's freshly-configured surface lands in `.claude/`, `.codex/`, `.cursor/`.

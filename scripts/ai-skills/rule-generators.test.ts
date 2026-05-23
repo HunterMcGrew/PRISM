@@ -31,6 +31,7 @@ import { generate as generateCodeStandards } from "./lib/rule-generators/code-st
 import { generate as generateSecurity } from "./lib/rule-generators/security";
 import { generate as generateFrameworkGuidelines } from "./lib/rule-generators/framework-guidelines";
 import { REASONS } from "./lib/rule-generators/types";
+import { RULE_GENERATORS, runRuleGenerators } from "./lib/onboarding-run";
 import type { OnboardingConfig } from "./lib/onboarding-types";
 import type { DetectedStack } from "./lib/stack-detect";
 
@@ -454,4 +455,68 @@ test("REASONS exports are stable string literals", () => {
 	);
 	assert.equal(REASONS.forced, "force-overwrote existing file");
 	assert.equal(REASONS.noStackMatch, "no detected stack matched this generator");
+});
+
+// ---------------------------------------------------------------------------
+// runRuleGenerators orchestrator
+// ---------------------------------------------------------------------------
+
+test("RULE_GENERATORS declares code-standards → security → framework-guidelines order", () => {
+	const names = RULE_GENERATORS.map((g) => g.name);
+	assert.deepEqual(names, [
+		"code-standards",
+		"security",
+		"framework-guidelines",
+	]);
+});
+
+test("runRuleGenerators emits every generator's output and groups by written/skipped", async (t) => {
+	const repoRoot = await makeTempRepo();
+	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
+
+	const config = buildConfig({
+		languages: [
+			{ name: "typescript", confidence: "high", evidence: ["package.json"] },
+			{ name: "php", confidence: "high", evidence: ["composer.json"] },
+		],
+		frameworks: [
+			{ name: "react", confidence: "high", evidence: ["package.json"] },
+			{ name: "wordpress", confidence: "high", evidence: ["composer.json"] },
+		],
+	});
+
+	const summary = await runRuleGenerators(config, repoRoot);
+
+	const expectedFiles = [
+		"code-standards-typescript.md",
+		"code-standards-php.md",
+		"security.md",
+		"react-guidelines.md",
+		"wordpress-guidelines.md",
+	];
+	const writtenNames = summary.written.map((e) => path.basename(e.result.path)).sort();
+	assert.deepEqual(writtenNames, [...expectedFiles].sort());
+	assert.equal(summary.skipped.length, 0);
+	assert.equal(summary.entries.length, expectedFiles.length);
+});
+
+test("runRuleGenerators reports skip-if-exists entries in the skipped bucket", async (t) => {
+	const repoRoot = await makeTempRepo();
+	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
+
+	const config = buildConfig({
+		languages: [
+			{ name: "typescript", confidence: "high", evidence: ["package.json"] },
+		],
+		frameworks: [],
+	});
+
+	await runRuleGenerators(config, repoRoot);
+	const secondRun = await runRuleGenerators(config, repoRoot);
+
+	assert.equal(secondRun.written.length, 0);
+	assert.ok(secondRun.skipped.length >= 2, "code-standards and security should both skip");
+	for (const entry of secondRun.skipped) {
+		assert.equal(entry.result.reason, REASONS.exists);
+	}
 });
