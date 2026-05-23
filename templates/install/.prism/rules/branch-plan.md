@@ -255,7 +255,11 @@ Some decisions surface during planning but can't be resolved without input the t
 - Always include the **Default path** sub-clause — work has to be able to continue. If you can't articulate a default, the open question isn't ready to be a Decision yet.
 - When the question resolves, replace the entry with a normal Decision capturing the resolution (and note in `## History` that the open question closed).
 
-The current plan's own `## Decisions` section uses this variant for genuinely open architectural questions — see `.prism/plans/epic-prism-thrive-backport.md` for the canonical pattern.
+A canonical `OPEN` entry inline — open question + named reviewer + default path on a single bullet, ready to drop into a plan's `## Decisions` section:
+
+```markdown
+- **OPEN — TBD, needs <decision-maker> input.** Whether <open question — e.g. the audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` should also post a Slack summary on completion>. **Default path (used until resolved):** <what work follows in the meantime — e.g. report stays file-local; user shares manually if desired>.
+```
 
 Examples:
 
