@@ -51,7 +51,7 @@ When updating an existing PR description:
 
 ## Keeping the PR in sync with scope
 
-The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because Thrive squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
+The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because ${PROJECT} squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
 **Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the full decision.
 

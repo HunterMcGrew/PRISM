@@ -35,9 +35,9 @@ When a reviewer runs against a branch with no PR open yet, the reviewer routes b
 The team-wide default above stays as-is. Individuals whose review discipline needs a diff gate before code leaves their machine can opt into a pre-commit pause via git config:
 
 ```bash
-git config --global thrive.pauseBeforeCommit true    # opt in
-git config --global thrive.pauseBeforeCommit false   # opt out (matches team default)
-git config --global --unset thrive.pauseBeforeCommit # reset (prompts again on next ship)
+git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit true    # opt in
+git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit false   # opt out (matches team default)
+git config --global --unset ${PROJECT_LOWERCASE}.pauseBeforeCommit # reset (prompts again on next ship)
 ```
 
 The shipping flow (see `.prism/references/shipping-flow.md`) reads this value before every commit and branches:
@@ -56,7 +56,7 @@ The override has to survive across every surface a developer runs Claude Code fr
 
 ### Scope
 
-`git config --global thrive.*` is reserved for per-user, machine-local Thrive preferences that layer on top of the tier defaults. Currently `thrive.pauseBeforeCommit` is the only entry.
+`git config --global ${PROJECT_LOWERCASE}.*` is reserved for per-user, machine-local ${PROJECT} preferences that layer on top of the tier defaults. Currently `${PROJECT_LOWERCASE}.pauseBeforeCommit` is the only entry.
 
 If a second per-user override emerges, write a new ADR that generalizes the mechanism rather than piling into this section. Preferences earn a place in this namespace when they describe durable per-user behavior — not task-level heuristics, not per-skill tweaks, not anything that belongs in a plan or a skill file.
 

@@ -31,7 +31,7 @@ Always pass the commit message via HEREDOC to preserve formatting:
 
 ```bash
 git commit -m "$(cat <<'EOF'
-THR-1588: Fix remaining ILink migration gaps in block registration and view props
+${TICKET_PREFIX}-1588: Fix remaining ILink migration gaps in block registration and view props
 
 The ILink migration missed two files: index.tsx still registered buttonUrl/buttonUrlTarget
 as block attributes, and MegaMenuInfoBannerBlock.view.tsx still exported the old prop types.

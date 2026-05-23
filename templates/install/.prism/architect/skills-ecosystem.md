@@ -6,9 +6,9 @@ This document is the shared reference for all AI skills. Every skill loads it on
 
 ## Project Context
 
-- **Repository:** tractru/thrive
-- **Linear team:** THR (prefix: THR-####)
-- **GitHub org:** tractru
+- **Repository:** ${GITHUB_OWNER}/${GITHUB_REPO}
+- **Linear team:** ${LINEAR_TEAM_KEY} (prefix: ${TICKET_PREFIX}-####)
+- **GitHub org:** ${GITHUB_OWNER}
 
 All skills operate exclusively within this project. When creating tickets, referencing Linear, or interacting with GitHub, use these identifiers — do not ask.
 

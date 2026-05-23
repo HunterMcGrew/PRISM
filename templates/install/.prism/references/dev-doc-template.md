@@ -1,6 +1,6 @@
 # Developer Documentation Template
 
-Template for developer-facing docs in `docs/content/dev/`. Audience: engineers working on the Thrive codebase — experienced with the tech stack but potentially new to this project.
+Template for developer-facing docs in `docs/content/dev/`. Audience: engineers working on the ${PROJECT} codebase — experienced with the tech stack but potentially new to this project.
 
 ## When to use
 
