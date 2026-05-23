@@ -15,5 +15,6 @@
 	"techStack": ["typescript", "node"],
 	"rules": {
 		"universal": "all"
-	}
+	},
+	"slackChannel": "#prism-dev"
 }

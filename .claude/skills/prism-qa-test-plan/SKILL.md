@@ -112,7 +112,7 @@ The core rule: **infer by default from data, override from words.** If the data 
 **Worked examples:**
 
 - "Reese, QA plan for v1.0.812 to v1.1.10" → Release. Prompt says release-ish language and the input is a tag pair. Dispatch silently.
-- "Reese, QA plan for PR #1234" where THR-1500 is in the PR title and has the `bug` label → Bug-fix Verification. Greeting announces it: "This PR is tied to THR-1500, which is labeled a bug — running this as a bug-fix verification. Say the word if you want a plain feature pass instead."
+- "Reese, QA plan for PR #1234" where PRISM-1500 is in the PR title and has the `bug` label → Bug-fix Verification. Greeting announces it: "This PR is tied to PRISM-1500, which is labeled a bug — running this as a bug-fix verification. Say the word if you want a plain feature pass instead."
 - "Reese, QA plan for PR #1234" where the ticket is a feature → Feature / PR. No bug signals anywhere.
 - "Reese, give me a plain feature pass for PR #1234" where the ticket _is_ labeled `bug` → Feature / PR. The user's words beat the label.
 - "Reese, verify this bug fix for PR #1234" regardless of label → Bug-fix Verification. Explicit prompt wins.
@@ -137,7 +137,7 @@ Triggered by a tag pair, a GitHub compare URL between tags, or release-flavored 
 ### 1. Parse the input
 
 - **Two tags** (e.g. `v1.0.812 v1.1.10`, `v1.0.812..v1.1.10`, `v1.0.812 to v1.1.10`, `from v1.0.812 to v1.1.10`): extract `<base>` (old) and `<head>` (new). Normalize tags — if a tag is missing the `v` prefix, prepend it (`1.0.812` → `v1.0.812`). Tags always start with `v`.
-- **GitHub compare URL** (e.g. `https://github.com/TracTru/thrive/compare/v1.0.812...v1.1.10`): parse `/compare/<base>...<head>` from the URL path (three dots).
+- **GitHub compare URL** (e.g. `https://github.com/HunterMcGrew/agent-crew/compare/v1.0.812...v1.1.10`): parse `/compare/<base>...<head>` from the URL path (three dots).
 - **One tag only**: ask which end it represents and what the other tag is.
 - **No tags**: ask for the previous and new release tags.
 
@@ -198,7 +198,7 @@ Then use `$REPO_URL/compare/<base>...<head>` wherever a compare link is needed.
 **Header:**
 
 ```
-# Thrive — Manual QA Checklist
+# PRISM — Manual QA Checklist
 
 **Release reference:** [<base> → <head>]($REPO_URL/compare/<base>...<head>)
 **Scope:** Manual scenarios for **UI-facing work** merged in this tag range from **all authors**. Internal-only PRs are listed under **Out of scope** below.
@@ -265,7 +265,7 @@ Build the document using this skeleton:
 **Header:**
 
 ```
-# Thrive — Sprint QA Checklist
+# PRISM — Sprint QA Checklist
 
 **Change set:** <list PRs with links, or the commit range>
 **Scope:** Manual scenarios for UI-facing work across this sprint / PR group. Non-UI PRs are listed under **Out of scope** below.
@@ -317,7 +317,7 @@ Or, for a branch with no PR, use the `origin/main..<branch>` range. Then run `gi
 **Header:**
 
 ```
-# Thrive — PR QA Checklist
+# PRISM — PR QA Checklist
 
 **PR:** [#<number> — <title>](<pr-url>)
 **Ticket:** THR-NNNN (inline; link to Linear)
@@ -372,7 +372,7 @@ Same mechanics as Feature / PR mode — `gh pr diff <num> --name-only` to see wh
 **Header:**
 
 ```
-# Thrive — Bug-Fix Verification Plan
+# PRISM — Bug-Fix Verification Plan
 
 **Bug:** [THR-NNNN — <title>](<linear-url>)
 **PR:** [#<number> — <title>](<pr-url>)

@@ -23,6 +23,54 @@
 		{
 			"path": ".cursor/spec/adrs/0015-humane-language-over-mandates.md",
 			"reason": "platform-copy mirror of ADR-0015"
+		},
+		{
+			"path": ".claude/skills/prism-architect/SKILL.md",
+			"reason": "skill cites the THR-1636 originating incident in scope-fit guidance"
+		},
+		{
+			"path": ".agents/skills/prism-architect/SKILL.md",
+			"reason": "platform-copy mirror of prism-architect"
+		},
+		{
+			"path": ".codex/agents/prism-architect.toml",
+			"reason": "platform-copy mirror of prism-architect"
+		},
+		{
+			"path": ".generated/cursor-skills/prism-architect/SKILL.md",
+			"reason": "platform-copy mirror of prism-architect"
+		},
+		{
+			"path": ".claude/skills/prism-code-dev/SKILL.md",
+			"reason": "skill cites the THR-1636 originating incident in prettier guidance"
+		},
+		{
+			"path": ".agents/skills/prism-code-dev/SKILL.md",
+			"reason": "platform-copy mirror of prism-code-dev"
+		},
+		{
+			"path": ".codex/agents/prism-code-dev.toml",
+			"reason": "platform-copy mirror of prism-code-dev"
+		},
+		{
+			"path": ".generated/cursor-skills/prism-code-dev/SKILL.md",
+			"reason": "platform-copy mirror of prism-code-dev"
+		},
+		{
+			"path": ".claude/skills/prism-qa-test-plan/SKILL.md",
+			"reason": "skill cites the THR-1630 research phase that surfaced future modes"
+		},
+		{
+			"path": ".agents/skills/prism-qa-test-plan/SKILL.md",
+			"reason": "platform-copy mirror of prism-qa-test-plan"
+		},
+		{
+			"path": ".codex/agents/prism-qa-test-plan.toml",
+			"reason": "platform-copy mirror of prism-qa-test-plan"
+		},
+		{
+			"path": ".generated/cursor-skills/prism-qa-test-plan/SKILL.md",
+			"reason": "platform-copy mirror of prism-qa-test-plan"
 		}
 	]
 }

@@ -161,7 +161,7 @@ If the current branch is not `main`/`master`/`develop` and has a diff against ma
 
 > "What should I document? You can give me:
 >
-> - A branch name (e.g. `feature/THR-1234-my-feature`)
+> - A branch name (e.g. `feature/PRISM-1234-my-feature`)
 > - A PR number (e.g. `#456`)
 > - A tag range (e.g. `v1.1.0..v1.2.0`)
 > - An existing doc to update (e.g. `docs/user/blocks/colophon.md`)

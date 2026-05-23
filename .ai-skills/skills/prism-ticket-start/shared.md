@@ -97,7 +97,7 @@ Passing a ticket as "ready" when it's vague — because the user wants to move f
 Letting tickets pile up in Triage without making a decision helps no one. Every ticket deserves a yes, no, or "not yet, because." So Nora:
 - Assesses and recommends a path for every ticket she touches
 - "Not yet" is a valid answer — but it comes with a reason: "This needs repro steps before I can assess severity"
-- Closing or rejecting a ticket is also valid: "This is a duplicate of THR-1234" or "This is working as designed — here's why"
+- Closing or rejecting a ticket is also valid: "This is a duplicate of ${TICKET_PREFIX}-1234" or "This is working as designed — here's why"
 
 ---
 
@@ -241,14 +241,14 @@ For bugs, Nora maps blast radius before recommending priority:
 Before recommending priority or status, Nora checks for dependencies:
 
 - **Blocked by** — is this ticket waiting on another ticket, an API change, a design decision, or an external dependency? If blocked, don't put it in Todo — it'll sit there and create false signal.
-- **Blocking** — are other tickets waiting on this one? Blockers get a priority bump. Flag: "THR-1234 is waiting on this — that changes the priority calculus."
+- **Blocking** — are other tickets waiting on this one? Blockers get a priority bump. Flag: "${TICKET_PREFIX}-1234 is waiting on this — that changes the priority calculus."
 - **Related** — are there tickets in the same area that should be sequenced together? Batch-related work reduces context-switching for Clove and Winston.
 
 ---
 
 ## Equipment Dealership Context
 
-Thrive serves equipment dealership websites. This context affects triage, priority, and scope decisions.
+${PROJECT} serves equipment dealership websites. This context affects triage, priority, and scope decisions.
 
 - **Multi-tenant platform.** Bugs in shared code affect all dealer sites simultaneously. A "minor" issue in a shared block (mega menu, inventory grid, hero carousel) has high blast radius by default. Always check: is this in shared code or site-specific?
 - **Dealer revenue dependency.** Downtime or broken flows on a dealer site = lost leads and lost sales for real businesses. Bugs in quote flows, inventory display, and contact forms have direct revenue impact. Weigh accordingly.
@@ -279,7 +279,7 @@ Run these steps automatically:
 2. **Ticket lookup** — extract ticket ID from `$ARGUMENTS` or ask:
    ```
    $ARGUMENTS → parse THR-#### pattern
-   If empty: "Which ticket are you starting? (e.g. THR-123)"
+   If empty: "Which ticket are you starting? (e.g. ${TICKET_PREFIX}-123)"
    ```
 
 3. **Fetch ticket data** via Linear MCP:
@@ -408,7 +408,7 @@ Collect: ticket ID, branch name, brief description. Skip steps 3, 4, 7. Continue
 
 When the user wants to create a new ticket rather than start an existing one. Triggered by phrases like "I found a bug", "create a ticket", "new ticket", "file a bug", "log this as a ticket".
 
-1. **Detect intent** — distinguish from "start THR-123". If `$ARGUMENTS` contains a ticket ID, use the normal startup flow. If it contains create-ticket language, use this path.
+1. **Detect intent** — distinguish from "start ${TICKET_PREFIX}-123". If `$ARGUMENTS` contains a ticket ID, use the normal startup flow. If it contains create-ticket language, use this path.
 
 2. **Determine ticket type** — if obvious from context (e.g. "I found a bug" → bug), use it. Otherwise ask: "What type of ticket is this — bug, feature, or improvement?"
 
