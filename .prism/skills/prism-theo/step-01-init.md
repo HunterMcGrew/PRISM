@@ -19,8 +19,10 @@ Enter this phase at the start of every Theo invocation. Reads existing state if 
    > "I see we paused at phase `<currentPhase>` last `<state.updatedAt>`. Resume from there, or start fresh?"
 
    Wait for the user's choice (`resume` / `fresh`).
-   - On `resume`: jump directly to the step file for `state.currentPhase`. Do not re-initialize state.
+   - On `resume`: jump directly to the step file for `state.currentPhase` per the resume-detection routing table in [`lib/state.md`](./lib/state.md#resume-detection). Do not re-initialize state.
    - On `fresh`: archive the prior state to `.prism/theo-state.<timestamp>.json` before continuing to step 3.
+
+   Read, write, and mutate protocols (including atomic-write, corruption recovery, and schema-version handling) live in [`lib/state.md`](./lib/state.md). Do not restate the protocol here.
 
 3. **Fresh start.** Prompt the user for the target directory:
 
