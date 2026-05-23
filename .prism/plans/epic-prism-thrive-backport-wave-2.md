@@ -367,6 +367,6 @@ Living checklist — updated by each sub-PR's self-review run.
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (especially the surgical gitignore behavior in PR-1.5f.4 task #8)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-05-23 (1.5f.1: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass)
+- [x] Build passes — last run: 2026-05-23 (1.5f.1 + 1.5f.2: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass)
 - [ ] PR descriptions up to date for each sub-PR
 - [ ] Lasting decisions promoted to architect context (ADR-0044 + compatibility.md cover the durable surface for 1.5f.4; rule edits in 1.5f.1/1.5f.2/1.5f.3 codify the smaller decisions in place)
