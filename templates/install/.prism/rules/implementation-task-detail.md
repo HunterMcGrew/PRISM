@@ -6,7 +6,7 @@ paths:
 
 # Implementation Task Detail
 
-When authoring artifacts that drive implementation — Winston's `## Implementation Tasks` in a branch plan, or Pixel's mode 2 mock specs in `.claude/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**
+When authoring artifacts that drive implementation — Winston's `## Implementation Tasks` in a branch plan, or Pixel's mode 2 mock specs in `.prism/design/mocks/<slug>.md` — the bar is: any LLM at any effort level should be able to execute the artifact without making judgment calls about what file to touch, what specific change to make, or how to verify it worked. **Front-load every decision; do not front-load every keystroke.**
 
 **Why:** Cross-LLM portability is one of PRISM's core promises. Sonnet, low-effort Opus, ChatGPT, Cursor — they all hit ambiguity differently, but they all hit it. A plan that leaves decisions to the implementer produces divergent outputs across runs and across models. The latent model already exists in the dogfood: `.prism/plans/epic-phase-1-foundation.md` tasks 13–19 hit this bar implicitly. Codifying the bar means the next planner doesn't have to reinvent the pattern, and the next reviewer has a concrete standard to flag against. See [ADR-0033](../spec/adrs/0033-implementation-task-detail.md).
 
@@ -15,7 +15,7 @@ When authoring artifacts that drive implementation — Winston's `## Implementat
 Two artifact classes are in scope:
 
 - **`## Implementation Tasks` in branch plans** — written by Winston in plan mode. Each task line is a unit of work Clove (or another implementing persona) executes against.
-- **Mode 2 saved mock specs** — written by Pixel at `.claude/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; Winston reads it when writing tasks.
+- **Mode 2 saved mock specs** — written by Pixel at `.prism/design/mocks/<slug>.md`. The spec is the implementation guide for the design portion of the work; Winston reads it when writing tasks.
 
 Two artifact classes are explicitly **exempt**:
 

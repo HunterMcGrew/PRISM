@@ -31,6 +31,6 @@ This context loads for edits under:
 - `.prism/references/**`
 - `.prism/plans/**` — durable sections only; in-progress `## History`, `## Debugged Issues`, and `## Review Issues` are working notes
 
-Out of scope: `.prism/lessons.md`, `.claude/docs/`, `.claude/design/mocks/` — working notes and design artifacts, not durable spec.
+Out of scope: `.prism/lessons.md`, `.claude/docs/`, `.prism/design/mocks/` — working notes and design artifacts, not durable spec.
 
 If you add a new `.claude/` subfolder or a new top-level `.claude/*.md` file, decide whether it's spec content. If yes, add a manifest route pointing it here.

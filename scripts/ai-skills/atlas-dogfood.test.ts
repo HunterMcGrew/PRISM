@@ -53,7 +53,7 @@ function buildFixtureConfig(detected: Awaited<ReturnType<typeof detectStack>>): 
 		ticketPrefix: "FIX",
 		githubOwner: "fixture-org",
 		githubRepo: "fixture-app",
-		linearWorkspace: "fixture",
+		linearTeam: "fixture",
 		productDomain: "fixture product domain",
 		techStack: detected,
 		existingStandards: [],
