@@ -324,7 +324,7 @@ After completing the review analysis, check whether the diff touches areas that 
 4. **Sync AC to Linear if changed** — if AC was created or updated in step 3:
    - Extract ticket ID from `## Ticket`
    - Fetch current ticket description via `get_issue`, replace the `## Acceptance Criteria` section (or append if missing), update via `save_issue`
-   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket THR-####`
+   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket ${TICKET_PREFIX}-NNNN`
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Briar | Refined AC from review | updated | synced |`
 5. Update `## PR Readiness` in the plan with checklist state and build result.
 6. **Make all plan edits in one pass.** Note section line numbers from the initial plan read (batch A). Do not re-read the plan between edits — you already have the content in context.

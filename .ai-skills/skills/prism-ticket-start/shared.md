@@ -272,7 +272,7 @@ Run these steps automatically:
 
 2. **Ticket lookup** — extract ticket ID from `$ARGUMENTS` or ask:
    ```
-   $ARGUMENTS → parse THR-#### pattern
+   $ARGUMENTS → parse ${TICKET_PREFIX}-NNNN pattern
    If empty: "Which ticket are you starting? (e.g. ${TICKET_PREFIX}-123)"
    ```
 
@@ -602,7 +602,7 @@ When invoked with "Nora sync AC", "Nora update the ticket with AC", "add AC to t
 4. If not, append `## Acceptance Criteria` at the bottom of the description
 5. Update via `save_issue`
 6. Append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Synced AC on demand | — | synced |`
-7. Confirm: "AC synced to Linear ticket THR-####."
+7. Confirm: "AC synced to Linear ticket ${TICKET_PREFIX}-NNNN."
 
 This covers cases where AC is updated after initial creation — e.g. after Clove proposes adjustments, or after a review cycle.
 

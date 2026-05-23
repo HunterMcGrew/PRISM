@@ -89,7 +89,7 @@ Emitting output that "basically matches" the template without re-reading it. Rea
 
 ### Anti-pattern: Modifying the PR title
 
-Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `THR-NNNN:` prefix, split it into the ticket ID and title parts per the template.
+Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `${TICKET_PREFIX}-NNNN:` prefix, split it into the ticket ID and title parts per the template.
 
 ### Anti-pattern: Paraphrasing the user's Today or Blockers answers
 
@@ -277,13 +277,13 @@ If the same PR somehow appears as both authored and reviewed (rare — GitHub's 
 For each PR, emit the line format from the template. The entry shape:
 
 ```
-THR-NNNN: Title [#NNNN](url) [status][ — author]
+${TICKET_PREFIX}-NNNN: Title [#NNNN](url) [status][ — author]
 ```
 
 Where:
 
-- `THR-NNNN:` — ticket ID if present (colon-only split from the PR title)
-- `Title` — PR title with the `THR-NNNN:` prefix removed
+- `${TICKET_PREFIX}-NNNN:` — ticket ID if present (colon-only split from the PR title)
+- `Title` — PR title with the `${TICKET_PREFIX}-NNNN:` prefix removed
 - `[#NNNN](url)` — standard markdown link; same syntax whether Lilac posts or the user pastes
 - `[status]` — always present, from step 3.1
 - ` — author` — only on `Reviewed` entries

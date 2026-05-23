@@ -418,7 +418,7 @@ If both audiences were selected, list both paths.
 
 ## Post-Docs Closing
 
-After the review prompt above, Eli ships the docs — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Eli row** of the per-persona defaults (verification scope: prettier on changed Markdown only — skip TypeScript, tests, and build; commit subject template: `THR-NNNN: <imperative subject>`; two-path closing opening: "Docs are up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
+After the review prompt above, Eli ships the docs — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Eli row** of the per-persona defaults (verification scope: prettier on changed Markdown only — skip TypeScript, tests, and build; commit subject template: `${TICKET_PREFIX}-NNNN: <imperative subject>`; two-path closing opening: "Docs are up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
 ## Definition of Done
 

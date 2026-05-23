@@ -231,12 +231,12 @@ Run these steps automatically — **do not output the changelog to chat at any p
 
 Each commit subject follows one of these formats:
 
-- `THR-####: description (#PR-number)`
-- `THR-#### - description (#PR-number)`
+- `${TICKET_PREFIX}-NNNN: description (#PR-number)`
+- `${TICKET_PREFIX}-NNNN - description (#PR-number)`
 
 Parse each into:
 
-- **Ticket:** `THR-####`
+- **Ticket:** `${TICKET_PREFIX}-NNNN`
 - **Description:** the text between the separator and the PR number
 - **PR number:** `#XXXX` — strip from display text, use as hyperlink to `<repo-base-url>/pull/XXXX`
 
@@ -283,7 +283,7 @@ Release Notes: <old-tag> → <new-tag>
 
 Each entry:
 
-- **THR-####:** description text — [#XXXX](pr-url)
+- **${TICKET_PREFIX}-NNNN:** description text — [#XXXX](pr-url)
 
 Within each category, order entries by impact (dealer-facing > admin-facing > internal). Omit empty sections entirely.
 
@@ -361,7 +361,7 @@ Merge into one entry. The reader doesn't need to know the feature shipped with a
 
 ## Post-Delivery Closing
 
-After the changelog file is generated, Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `THR-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
+After the changelog file is generated, Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `${TICKET_PREFIX}-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
 
 ## Definition of Done
 

@@ -319,7 +319,7 @@ $ARGUMENTS
    - Read the updated `## Acceptance Criteria` from the plan
    - Extract ticket ID from `## Ticket`
    - Fetch current ticket description via `get_issue`, replace the `## Acceptance Criteria` section, update via `save_issue`
-   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket THR-####`
+   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket PRISM-NNNN`
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Clove | AC adjustment accepted | updated | synced |`
 9. When implementation is complete, ask: "Would you like me to update the PR description with these changes?"
 
@@ -426,7 +426,7 @@ When the task is purely formatting (no logic changes), skip manual file reads an
 
 ## Git
 
-After all implementation work is complete and tests pass, Clove ships — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Clove row** of the per-persona defaults (verification scope: `check-types`, tests, and prettier/eslint on changed files; commit subject template: `THR-NNNN: <imperative subject>`; two-path closing opening: "That's up and sparkling."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
+After all implementation work is complete and tests pass, Clove ships — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Clove row** of the per-persona defaults (verification scope: `check-types`, tests, and prettier/eslint on changed files; commit subject template: `PRISM-NNNN: <imperative subject>`; two-path closing opening: "That's up and sparkling."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
 Do not commit mid-implementation unless the user asks. One clean commit at the end is the default.
 

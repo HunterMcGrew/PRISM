@@ -286,7 +286,7 @@ Triggered by a single PR (number, URL, or branch name) without bug-verification 
 
 ### 2. Inline the Linear AC when a THR-\* is in the PR title
 
-If the PR title contains `THR-NNNN`, call `get_issue` and pull the `## Acceptance Criteria` section from the ticket description. These get inlined in the document so the tester can verify acceptance directly from the checklist without jumping to Linear.
+If the PR title contains `${TICKET_PREFIX}-NNNN`, call `get_issue` and pull the `## Acceptance Criteria` section from the ticket description. These get inlined in the document so the tester can verify acceptance directly from the checklist without jumping to Linear.
 
 ### 3. Resolve the commit set and inspect the diff
 
@@ -309,7 +309,7 @@ Or, for a branch with no PR, use the `origin/main..<branch>` range. Then run `gi
 # ${PROJECT} — PR QA Checklist
 
 **PR:** [#<number> — <title>](<pr-url>)
-**Ticket:** THR-NNNN (inline; link to Linear)
+**Ticket:** ${TICKET_PREFIX}-NNNN (inline; link to Linear)
 **Scope:** Manual scenarios for the user-visible change in this PR, plus targeted regression on surfaces the diff touches.
 
 **Who this is for:** Testers using the site like real visitors, plus the **WordPress block editor** when the change involves editor UI.
@@ -363,7 +363,7 @@ Same mechanics as Feature / PR mode — `gh pr diff <num> --name-only` to see wh
 ```
 # ${PROJECT} — Bug-Fix Verification Plan
 
-**Bug:** [THR-NNNN — <title>](<linear-url>)
+**Bug:** [${TICKET_PREFIX}-NNNN — <title>](<linear-url>)
 **PR:** [#<number> — <title>](<pr-url>)
 **Severity:** <S1 / S2 / S3 / S4>
 **Environment:** <where it was observed>
@@ -506,17 +506,17 @@ After the test plan file is saved, Reese ships it — no prompt before pushing. 
 
 **Subject-line templates by mode.** Reese runs four modes, and the commit subject template branches per mode. Use the template for the mode you just ran:
 
-- **Release:** `chore: Add QA checklist for <base> → <head>` (or `THR-NNNN:` variant when tied to a ticket)
+- **Release:** `chore: Add QA checklist for <base> → <head>` (or `${TICKET_PREFIX}-NNNN:` variant when tied to a ticket)
 - **Sprint / Group:** `chore: Add QA checklist for PRs #X, #Y, #Z` (or `chore: Add QA checklist for <range-slug>`)
-- **Feature / PR:** `chore: Add QA checklist for PR #<number>` — and if a THR-NNNN is in the PR title, prefer `THR-NNNN: Add QA checklist for PR #<number>`
-- **Bug-fix Verification:** `THR-NNNN: Add bug-fix verification plan for PR #<number>`
+- **Feature / PR:** `chore: Add QA checklist for PR #<number>` — and if a ${TICKET_PREFIX}-NNNN is in the PR title, prefer `${TICKET_PREFIX}-NNNN: Add QA checklist for PR #<number>`
+- **Bug-fix Verification:** `${TICKET_PREFIX}-NNNN: Add bug-fix verification plan for PR #<number>`
 
 > [!NOTE]
 > This closing now covers four modes: Release, Sprint / Group, Feature / PR, and Bug-fix Verification. Three more modes are documented under _Future Phases_ for when demand surfaces: pre-implementation AC-derived testing, exploratory charter / SBTM, and scheduled regression / smoke. The commit-and-ship mechanics in the shared reference stay the same across all current modes — only the subject-line template changes.
 
 ## Future Phases
 
-Three modes surfaced during the THR-1630 research phase that Reese doesn't build yet — documented here so the design accommodates them when demand appears.
+Three modes surfaced during an early-Phase research pass that Reese doesn't build yet — documented here so the design accommodates them when demand appears.
 
 - **Pre-implementation AC-derived testing.** Test plan built from user stories and acceptance criteria _before_ code exists, so QA can run the plan as soon as the feature lands. Input: a Linear ticket (typically a feature) with AC defined. Output: behavior-verification scenarios derived directly from the AC. Different from Feature / PR mode because there's no diff to scope from yet.
 - **Exploratory charter / SBTM** (Session-Based Test Management, per Bach / Bach / Bolton). A 60–120 minute mission statement plus a session sheet — not a Pass/Fail checklist. Different artifact class entirely. Input: a risk area, a ticket, or a recent production incident. Output: a charter + session sheet template for structured exploratory testing.

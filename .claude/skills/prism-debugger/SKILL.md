@@ -190,7 +190,7 @@ Run the following steps automatically — do not wait for further instructions:
 2c. **Historical discovery** — trace the broken code back to the change that introduced it:
    - Identify the file(s) and line(s) where the bug manifests (from the user's description, stack trace, or error message)
    - Run `git blame -L <start>,<end> <file>` on the relevant lines to find the exact commit(s)
-   - Extract the ticket ID from the commit message (`THR-NNNN` pattern) and the PR number (`#NNNN` pattern)
+   - Extract the ticket ID from the commit message (`PRISM-NNNN` pattern) and the PR number (`#NNNN` pattern)
    - If a ticket ID is found, check for a plan:
      - `<repo-root>/.prism/plans/<ticket-id>.md`
      - `<repo-root>/.prism/plans/archive/<ticket-id>.md`
@@ -330,7 +330,7 @@ After confirming the root cause, check whether the Linear ticket's `## Root Caus
 - Fetch current ticket description via `get_issue`
 - If Sasha's root cause or fix differs from what's in the ticket (e.g. Nora's initial `suspected` entry): replace those sections in the description via `save_issue`, updating the confidence to `verified`
 - If they match: no update needed
-- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket THR-####`
+- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket PRISM-NNNN`
 - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Sasha | Updated Root Cause + Fix | — | synced |`
 
 ### 5c. Linear sync (optional)
