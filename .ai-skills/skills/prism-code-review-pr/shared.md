@@ -495,6 +495,7 @@ If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the f
 **Reflex bullets:**
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
+- When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
 
 **Lesson promotion taxonomy:**
 

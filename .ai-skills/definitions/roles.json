@@ -47,6 +47,10 @@
 		{
 			"id": "prism-user-stories",
 			"persona": "Mira"
+		},
+		{
+			"id": "prism-zoe",
+			"persona": "Zoe"
 		}
 	]
 }
