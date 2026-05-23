@@ -1,0 +1,7 @@
+{
+	"name": "php-wordpress-fixture",
+	"require": {
+		"johnpbloch/wordpress-core": "^6.0",
+		"php": "^8.1"
+	}
+}

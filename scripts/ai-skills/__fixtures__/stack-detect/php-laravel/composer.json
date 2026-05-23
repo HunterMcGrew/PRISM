@@ -1,0 +1,7 @@
+{
+	"name": "php-laravel-fixture",
+	"require": {
+		"laravel/framework": "^10.0",
+		"php": "^8.1"
+	}
+}
