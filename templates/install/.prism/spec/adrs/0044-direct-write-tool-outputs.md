@@ -5,7 +5,7 @@
 
 ## Context
 
-`pnpm prism:build` historically wrote Cursor skills to `.generated/cursor-skills/` and Codex native configuration to `.generated/codex-config.toml`, with the `.gitignore` blanket-ignoring `/.generated/`, `/.cursor/`, and `/.codex/`. Cursor consumers of PRISM had to run an install script before any skill was usable — the build wrote to staging, the install copied from staging into the live tool namespace.
+`pnpm prism:build` historically wrote Cursor skills to `.generated/cursor-skills/` and Codex native configuration to `.generated/codex-config.toml`, with the `.gitignore` blanket-ignoring `/.generated/`, `/.cursor/`, and `/.codex/`. PRISM never shipped an install script for Cursor — the build wrote to staging and the directory was gitignored, leaving Cursor consumers without a clean install path. (The upstream Thrive dogfood had `scripts/ai-skills/install-cursor.ts` for this; PRISM was extracted before that script was added.) Direct-writing to `.cursor/skills/` and committing the directory makes Cursor a first-class consumer for the first time.
 
 The `.generated/` namespace was a pass-through. Run the deletion test on it: imagine deleting `.generated/`. What complexity disappears? Just the extra namespace. What complexity moves? The build outputs go directly to `.cursor/skills/` and `.codex/codex-config.toml` — places they were always conceptually destined for. No complexity reappears scattered across callers. The staging surface wasn't carrying weight.
 
@@ -22,14 +22,14 @@ Direct-write build outputs to their tool-namespaced destinations — no `.genera
 
 Commit `.cursor/skills/` to the repo via surgical gitignore (replacing the blanket `/.cursor/`). Cursor consumers get every persona via `git pull` — no install step.
 
-Keep `.codex/codex-config.toml` gitignored because it's a per-user file containing personality, projects, and marketplaces; committing it would clobber consumer customization. Keep `.agents/` fully gitignored because the destination is outside the repo (`~/.agents/skills/`) on consumer machines.
+Keep `.codex/codex-config.toml` gitignored because it's a per-user file containing personality, projects, and marketplaces; committing it would clobber consumer customization. Keep `.agents/` fully gitignored because the destination is outside the repo (`~/.agents/skills/`) on consumer machines. PRISM does not yet ship an install script for Codex's per-user destinations — that script is planned for Phase 2 (Atlas's onboarding flow). Pre-Phase-2, Codex consumers either dogfood PRISM directly (PRISM's own install is local-only) or wire `~/.agents/skills/` themselves.
 
 Delete `.generated/` and the staging-aware install scripts targeting it.
 
 ## Consequences
 
 - Cursor users get skills on `git pull` — no install step needed for the most common use case.
-- Codex users still run `pnpm prism:install-codex` (or PRISM's equivalent) because the per-user destination (`~/.agents/skills/`, `~/.codex/agents/`) lives outside the repo. This is the canonical example of the per-tool rule codified in [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../../.ai-skills/docs/compatibility.md).
+- Codex users will eventually run a per-user install script (planned for Phase 2; not yet shipped in PRISM) because the per-user destination (`~/.agents/skills/`, `~/.codex/agents/`) lives outside the repo. This is the canonical example of the per-tool rule codified in [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../../.ai-skills/docs/compatibility.md).
 - The committed-vs-ignored split inside each tool namespace becomes a rule that consumers internalize. Recorded in [`.ai-skills/docs/compatibility.md § Per-Tool Directory Ownership`](../../../.ai-skills/docs/compatibility.md).
 - Drift risk: someone hand-edits `.cursor/skills/<id>/SKILL.md` directly instead of `.ai-skills/skills/<id>/`. Mitigated by the existing `.ai-skill-generated` marker file convention and `pnpm prism:check` drift detection, both of which already shipped before this ADR.
 - Consumer migration cost: PRISM teams with stale clones containing `.generated/` need a one-time `rm -rf .generated/` after pulling. Noted in PR release notes.

@@ -359,6 +359,15 @@ Backport target: Track A + Track C of Thrive PR #2025 (collapse `.generated/` st
 - **Problem:** Plan task said "7 references at lines [9 line numbers]" — count mismatched the enumeration.
 - **Suggested fix:** Drop the count, let the enumeration stand (per writing-voice § Count rules, not numbers). Fixed in this PR per the goal directive.
 
+### ADR-0044 + docs reference `pnpm prism:install-codex` which doesn't exist in PRISM
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/0044-direct-write-tool-outputs.md`, `.prism/architect/install-layout.md`, `.ai-skills/docs/compatibility.md`, `docs/content/dev/ai-skills/syncing.md` (plus templates mirrors of ADR + install-layout)
+- **Problem:** Four documentation surfaces referenced `pnpm prism:install-codex` as if it were a shipped command. The script is planned for Phase 2 but doesn't exist in `package.json` today. Per `architect-doc-verification.md`, missing/diverged claims in architect docs are Major minimum — durable agent context that misleads every future reader.
+- **Additionally:** Two false historical claims in syncing.md and ADR-0044 that "Cursor consumers had to run an install script" — PRISM never shipped a Cursor install script (the upstream Thrive dogfood had one; PRISM was extracted before that script was added).
+- **Suggested fix:** Hedge the `prism:install-codex` references as planned-for-Phase-2; rewrite the historical claims to accurately describe PRISM's pre-1.5f state (no Cursor install script existed). Fixed in this PR per the goal directive — all four surfaces updated; ADR + install-layout mirrored to templates; build green post-fix.
+
 ## Cleanup Items
 
 None at plan-creation time.
@@ -374,6 +383,6 @@ Living checklist — updated by each sub-PR's self-review run.
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (especially the surgical gitignore behavior in PR-1.5f.4 task #8)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-05-23 (1.5f.4 includes smoke verification: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass; `.generated/` deleted; `git check-ignore` verified surgical gitignore behavior)
+- [x] Build passes — last run: 2026-05-23 (1.5f.4 + Briar review fixes: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass; `.generated/` deleted; `git check-ignore` verified surgical gitignore behavior; install-codex doc drift fixed across 4 surfaces)
 - [ ] PR descriptions up to date for each sub-PR
 - [ ] Lasting decisions promoted to architect context (ADR-0044 + compatibility.md cover the durable surface for 1.5f.4; rule edits in 1.5f.1/1.5f.2/1.5f.3 codify the smaller decisions in place)

@@ -39,7 +39,7 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
-- `.agents/` is **ignored** — per-user Codex skills root; consumers populate it via `pnpm prism:install-codex`.
+- `.agents/` is **ignored** — per-user Codex skills root; consumers will populate it via a per-user install script planned for Phase 2 (not yet shipped in PRISM).
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../.ai-skills/docs/compatibility.md) for the full reasoning.
