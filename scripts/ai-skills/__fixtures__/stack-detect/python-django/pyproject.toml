@@ -1,0 +1,7 @@
+[project]
+name = "django-fixture"
+version = "0.1.0"
+dependencies = [
+    "django>=4.2",
+    "gunicorn>=21.0",
+]
