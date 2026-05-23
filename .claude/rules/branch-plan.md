@@ -171,6 +171,22 @@ Decisions that stay in git history only:
 
 ---
 
+## Decision verdict gate
+
+Before promoting decisions and deleting the plan (steps 1–2 above), every entry in `## Decisions` must carry an explicit verdict sub-bullet. The verdict closes the loop on whether the decision was promoted to a durable surface or intentionally stays local.
+
+**Verdict format:** append as the last sub-bullet on each Decision entry:
+
+- `→ promoted to .prism/architect/<file>.md` — decision graduated to a durable architect doc.
+- `→ promoted to ADR-NNNN` — decision graduated to its own ADR.
+- `→ no promotion needed (<one-line reason>)` — decision is ticket-tactical, codified elsewhere, or otherwise doesn't generalize. Reason is required, not optional.
+
+**Why:** Without an explicit verdict, decisions get promoted mentally, the plan deletes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
+
+**How to apply:** Winston runs this gate during plan close. Briar surfaces missing verdicts as a Minor in self-review when a plan is being closed. Eric surfaces missing verdicts during PR review when the PR is the close-out PR for a ticket.
+
+---
+
 # Plan File Template
 
 When creating a new plan, use the following structure.

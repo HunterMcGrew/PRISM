@@ -14,6 +14,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
 
 - 2026-05-23 [main]: Plan created. Winston scoped the second wave of Thrive backports across four sub-PRs: Pixel mocks relocation, Decisions verdict pattern, draft PRs by default, then `.generated/` collapse + full Thrive parity (commit `.cursor/skills/` + compatibility doc + ADR-0044). Order chosen to land smaller content-only edits first and gate the load-bearing install-contract change (1.5f.4) on the others merging clean.
 - 2026-05-23 [hmcgrew/prism-1.5f.1-pixel-mocks-relocation]: PR-1.5f.1 implementation complete — all 9 tasks done. Pixel mocks references rewritten `.claude/design/mocks/` → `.prism/design/mocks/` across 9 canonical sources (Pixel skill source/frontmatter, `.prism/SPEC.md`, spec-editing architect doc, implementation-task-detail rule, ADR-0033) plus their templates mirrors; `pnpm prism:build` regenerated `.claude/` mirrors. Drift fix in `scripts/ai-skills/atlas-dogfood.test.ts:56` (`linearWorkspace` → `linearTeam`, pre-existing on main, caught by `prism:check-types`); all verification green.
+- 2026-05-23 [hmcgrew/prism-1.5f.2-decisions-verdict-pattern]: PR-1.5f.2 implementation complete — all 6 tasks done plus Eli task #6 absorbed (one-line edit to skills-ecosystem Winston row, faster than handoff). Added `## Decision verdict gate` subsection to `.prism/rules/branch-plan.md` + templates mirror; appended verdict-gate reflex bullets to Winston (close-side), Briar, and Eric (surface-as-Minor side); updated skills-ecosystem Winston row with verdict-gate reference. `pnpm prism:build` regenerated `.claude/` mirrors for the three personas; all verification green.
 
 ---
 
@@ -366,6 +367,6 @@ Living checklist — updated by each sub-PR's self-review run.
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (especially the surgical gitignore behavior in PR-1.5f.4 task #8)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-05-23 (1.5f.1: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass)
+- [x] Build passes — last run: 2026-05-23 (1.5f.1 + 1.5f.2: `prism:build`, `prism:check`, `prism:check-types` all green; 116/116 tests pass)
 - [ ] PR descriptions up to date for each sub-PR
 - [ ] Lasting decisions promoted to architect context (ADR-0044 + compatibility.md cover the durable surface for 1.5f.4; rule edits in 1.5f.1/1.5f.2/1.5f.3 codify the smaller decisions in place)

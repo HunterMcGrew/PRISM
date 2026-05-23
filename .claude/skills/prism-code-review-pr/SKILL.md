@@ -511,6 +511,7 @@ If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the f
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
+- During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
 
 **Lesson promotion taxonomy:**
 
