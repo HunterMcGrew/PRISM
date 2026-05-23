@@ -10,10 +10,10 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 
 | Persona   | Verification scope                                                                                               | Commit subject template                                                                                              | Two-path closing opening   |
 | --------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| **Clove** | Run `check-types`, tests, and prettier/eslint on changed files before committing.                                | `THR-NNNN: <imperative subject>`                                                                                     | "That's up and sparkling." |
-| **Eli**   | Run prettier on changed Markdown. Skip TypeScript, tests, and build — they have nothing to evaluate in Markdown. | `THR-NNNN: <imperative subject>`                                                                                     | "Docs are up."             |
-| **Sage**  | Run prettier on the changelog file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `THR-NNNN: Add changelog for <old-tag> → <new-tag>` (or `chore: Add changelog for <tags>` when not tied to a ticket) | "Changelog is up."         |
-| **Reese** | Run prettier on the checklist file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `THR-NNNN: Add QA checklist for <base> → <head>` (or `chore:` variant)                                               | "Checklist is up."         |
+| **Clove** | Run `check-types`, tests, and prettier/eslint on changed files before committing.                                | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "That's up and sparkling." |
+| **Eli**   | Run prettier on changed Markdown. Skip TypeScript, tests, and build — they have nothing to evaluate in Markdown. | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "Docs are up."             |
+| **Sage**  | Run prettier on the changelog file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `${TICKET_PREFIX}-NNNN: Add changelog for <old-tag> → <new-tag>` (or `chore: Add changelog for <tags>` when not tied to a ticket) | "Changelog is up."         |
+| **Reese** | Run prettier on the checklist file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `${TICKET_PREFIX}-NNNN: Add QA checklist for <base> → <head>` (or `chore:` variant)                                               | "Checklist is up."         |
 
 ## The flow
 
@@ -21,7 +21,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 2. Before committing, read the user's per-user pause preference:
 
    ```bash
-   pref=$(git config --global --get thrive.pauseBeforeCommit)
+   pref=$(git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit)
    ```
 
    Three branches:
@@ -34,9 +34,9 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
      > - **yes** → I'll pause before every commit going forward and wait for you to say "ship it" before pushing.
      > - **no** → I'll commit and push directly, no prompt. Matches the team default.
      >
-     > I'll save your answer so I won't ask again. You can change it anytime with `git config --global thrive.pauseBeforeCommit true` (or `false`).
+     > I'll save your answer so I won't ask again. You can change it anytime with `git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit true` (or `false`).
 
-     Persist with `git config --global thrive.pauseBeforeCommit <true|false>`.
+     Persist with `git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit <true|false>`.
 
    Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning.
 

@@ -2,8 +2,8 @@
 
 ## PR Title
 
-- Format: `THR-NNNN: <description>` for the primary implementation PR
-- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `THR-NNNN followup: <description>`
+- Format: `${TICKET_PREFIX}-NNNN: <description>` for the primary implementation PR
+- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `${TICKET_PREFIX}-NNNN followup: <description>`
 
 ## What goes in the PR body
 
@@ -19,7 +19,7 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
 - `## Screenshots` — UI PRs only; delete the heading when not applicable
 - `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — THR-#### or Linear URL
+- `## Ticket` — ${TICKET_PREFIX}-#### or Linear URL
 - `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
 
 **Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.
@@ -51,7 +51,7 @@ When updating an existing PR description:
 
 ## Keeping the PR in sync with scope
 
-The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because Thrive squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
+The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because ${PROJECT} squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
 **Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the full decision.
 

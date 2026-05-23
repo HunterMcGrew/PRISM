@@ -19,8 +19,8 @@ The filename must match the ticket or epic identifier in lowercase.
 
 Examples:
 
-- Ticket THR-1448 → `.prism/plans/thr-1448.md`
-- Epic THR-1524 → `.prism/plans/epic-thr-1524.md`
+- Ticket PRISM-1448 → `.prism/plans/prism-1448.md`
+- Epic PRISM-1524 → `.prism/plans/epic-prism-1524.md`
 - Epic with no parent ticket → `.prism/plans/epic-<descriptive-name>.md` (fallback — prefer creating a parent ticket in Linear)
 
 ---

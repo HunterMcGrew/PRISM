@@ -9,7 +9,7 @@ Date: 2026-05-03
 
 PRISM's value prop rests on cross-LLM portability — a plan written by one model should be executable by another model at any effort level (Sonnet, low-effort Opus, ChatGPT-5, Cursor's built-in agent). The shape of an implementation-driving artifact determines whether that promise holds. A plan that says "update the config" gets one answer from a fast model and a different answer from a slow one; a plan that says "edit `.ai-skills/config.schema.json:100` — drop `(10 universal rules ship with PRISM)` from the `rules.universal` description per writing-voice § Count rules, not numbers" gets the same answer from every model.
 
-The latent model already exists in the dogfood. Tasks 13–19 in `.prism/plans/epic-phase-1-foundation.md` hit this bar implicitly — they name files, line numbers, exact text replacements, and verification commands. The pattern works. But it isn't codified anywhere, which means the next planner has to reinvent it, and the next reviewer has no standard to flag against.
+The latent model already exists in the dogfood — foundation-era tasks hit this bar implicitly, naming files, line numbers, exact text replacements, and verification commands. The pattern works. But it isn't codified anywhere, which means the next planner has to reinvent it, and the next reviewer has no standard to flag against.
 
 Two artifact classes drive implementation:
 
@@ -30,7 +30,7 @@ Implementation-driving artifacts must hit a detail bar that eliminates judgment 
 
 Two artifact classes are covered: Winston's `## Implementation Tasks` and Pixel's mode 2 mock specs. Two artifact classes are explicitly exempt: Pixel's mode 1 inline sketches and mode 3 HTML mockups.
 
-The bar is codified at `.prism/rules/implementation-task-detail.md`, which opens with applicability declaration per [ADR-0029](./0029-rules-self-declare-applicability.md), names Winston and Pixel in a "Who runs this rule" section, and includes concrete good-task and bad-task examples drawn from `.prism/plans/epic-phase-1-foundation.md` tasks 13–19.
+The bar is codified at `.prism/rules/implementation-task-detail.md`, which opens with applicability declaration per [ADR-0029](./0029-rules-self-declare-applicability.md), names Winston and Pixel in a "Who runs this rule" section, and includes concrete good-task and bad-task examples drawn from PRISM's foundation-era plans.
 
 Tasks or specs that fail the bar are at minimum **Major** in self-review and PR review. The blast radius is wider than a typical correctness issue — every implementer downstream makes the same judgment call against the same gap, and the divergences compound.
 

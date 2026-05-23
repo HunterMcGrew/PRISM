@@ -19,6 +19,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
+import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import {
 	ensureDirectory,
@@ -61,6 +63,7 @@ interface BuildSkillMarkdownArgs {
 	platformName: string;
 	sharedBody: string;
 	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 interface BuildCodexAgentTomlArgs {
@@ -68,6 +71,7 @@ interface BuildCodexAgentTomlArgs {
 	description: string;
 	roleDefinition: RoleDefinition;
 	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 type OptionalSkillPayload =
@@ -94,6 +98,7 @@ function buildSkillMarkdown({
 	platformName,
 	sharedBody,
 	skillId,
+	tokenMap,
 }: BuildSkillMarkdownArgs): string {
 	const header = [
 		"<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->",
@@ -105,7 +110,9 @@ function buildSkillMarkdown({
 		.filter(Boolean)
 		.join("\n\n");
 
-	return `---\n${frontmatter}\n---\n\n${header}\n\n${contentSections}\n`;
+	const assembled = `---\n${frontmatter}\n---\n\n${header}\n\n${contentSections}\n`;
+
+	return substituteTokens(assembled, tokenMap);
 }
 
 function buildCodexAgentToml({
@@ -113,6 +120,7 @@ function buildCodexAgentToml({
 	description,
 	roleDefinition,
 	skillId,
+	tokenMap,
 }: BuildCodexAgentTomlArgs): string {
 	const header = [
 		GENERATED_HEADER_LINE,
@@ -121,8 +129,11 @@ function buildCodexAgentToml({
 		"",
 	].join("\n");
 
+	const substitutedDescription = substituteTokens(description, tokenMap);
+	const substitutedPersona = substituteTokens(roleDefinition.persona, tokenMap);
+
 	const developerInstructions = [
-		`You are ${roleDefinition.persona}.`,
+		`You are ${substitutedPersona}.`,
 		`Canonical skill source: .ai-skills/skills/${skillId}`,
 		"Follow this generated skill definition:",
 		"",
@@ -132,7 +143,7 @@ function buildCodexAgentToml({
 	return [
 		header,
 		`name = "${escapeToml(skillId)}"`,
-		`description = "${escapeToml(description)}"`,
+		`description = "${escapeToml(substitutedDescription)}"`,
 		'developer_instructions = """',
 		escapeTomlMultiline(developerInstructions),
 		'"""',
@@ -369,7 +380,8 @@ export async function copyContentToPlatformDir(
 	contentRoot: string,
 	platformDir: string,
 	checkModeArg: boolean,
-	changedPathsArg: string[]
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const sourceArea = path.join(contentRoot, area);
@@ -385,7 +397,13 @@ export async function copyContentToPlatformDir(
 			}
 			const sourcePath = path.join(sourceArea, entry.relativePath);
 			const targetPath = path.join(targetArea, entry.relativePath);
-			await copyFileIfChanged(sourcePath, targetPath, checkModeArg, changedPathsArg);
+			await copyContentFileWithSubstitution(
+				sourcePath,
+				targetPath,
+				checkModeArg,
+				changedPathsArg,
+				tokenMap
+			);
 		}
 
 		await writeFileIfChanged(
@@ -402,34 +420,39 @@ export async function copyContentToPlatformDir(
 		if (!(await pathExists(sourcePath))) {
 			continue;
 		}
-		await copyFileIfChanged(sourcePath, targetPath, checkModeArg, changedPathsArg);
+		await copyContentFileWithSubstitution(
+			sourcePath,
+			targetPath,
+			checkModeArg,
+			changedPathsArg,
+			tokenMap
+		);
 	}
 }
 
 /**
- * Byte-faithful copy that respects check mode and tracks drift via changedPaths.
- * Used for the bifurcation's content-copy step so future binary content under a
- * copied area doesn't get corrupted by a utf8 round-trip.
+ * Reads a canonical-content file, substitutes tokens against the build's
+ * token map, and writes the substituted form to its platform-copy target.
+ * Drift detection compares the on-disk target against the substituted output,
+ * so `prism:check` operates on the post-substitution form — what consumers
+ * actually load — not on the canonical-with-token-literals source.
  */
-async function copyFileIfChanged(
+async function copyContentFileWithSubstitution(
 	sourcePath: string,
 	targetPath: string,
 	checkModeArg: boolean,
-	changedPathsArg: string[]
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
-	if (await pathExists(targetPath)) {
-		if (await filesAreEqual(sourcePath, targetPath)) {
-			return;
-		}
-	}
+	const sourceContent = await fs.readFile(sourcePath, "utf8");
+	const substituted = substituteTokens(sourceContent, tokenMap);
 
-	changedPathsArg.push(targetPath);
-	if (checkModeArg) {
-		return;
-	}
-
-	await ensureDirectory(path.dirname(targetPath));
-	await fs.copyFile(sourcePath, targetPath);
+	await writeFileIfChanged(
+		targetPath,
+		substituted,
+		checkModeArg,
+		changedPathsArg
+	);
 }
 
 /**
@@ -449,7 +472,8 @@ export async function syncPlatformContentCopy(
 	contentRoot: string,
 	platformDir: string,
 	checkModeArg: boolean,
-	changedPathsArg: string[]
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
 	if (checkModeArg && !(await platformHasManagedContent(platformDir))) {
 		return;
@@ -459,7 +483,8 @@ export async function syncPlatformContentCopy(
 		contentRoot,
 		platformDir,
 		checkModeArg,
-		changedPathsArg
+		changedPathsArg,
+		tokenMap
 	);
 	await removeDeletedManagedContent(
 		contentRoot,
@@ -613,6 +638,8 @@ async function main(): Promise<void> {
 		".ai-skills/definitions/roles.json",
 		"roles definitions"
 	);
+	const config = loadConfig(repoRoot);
+	const tokenMap = deriveTokenMap(config);
 
 	const sourceSkillsRoot = path.join(
 		repoRoot,
@@ -682,6 +709,7 @@ async function main(): Promise<void> {
 			platformName: "claude",
 			sharedBody: skillSource.sharedBody,
 			skillId,
+			tokenMap,
 		});
 		const codexMarkdown = buildSkillMarkdown({
 			frontmatter: skillSource.frontmatter,
@@ -689,6 +717,7 @@ async function main(): Promise<void> {
 			platformName: "codex",
 			sharedBody: skillSource.sharedBody,
 			skillId,
+			tokenMap,
 		});
 		const cursorMarkdown = buildSkillMarkdown({
 			frontmatter: skillSource.frontmatter,
@@ -696,6 +725,7 @@ async function main(): Promise<void> {
 			platformName: "cursor",
 			sharedBody: skillSource.sharedBody,
 			skillId,
+			tokenMap,
 		});
 
 		const claudeSkillRoot = path.join(targetRoots.claude, skillId);
@@ -764,6 +794,7 @@ async function main(): Promise<void> {
 				description,
 				roleDefinition,
 				skillId,
+				tokenMap,
 			});
 			await writeFileIfChanged(
 				path.join(targetRoots.codexAgents, `${skillId}.toml`),
@@ -844,7 +875,8 @@ async function main(): Promise<void> {
 				contentRoot,
 				platformDir,
 				checkMode,
-				changedPaths
+				changedPaths,
+				tokenMap
 			);
 		}
 	}
@@ -868,6 +900,28 @@ async function main(): Promise<void> {
 		changedPaths
 	);
 	await removeDeletedManagedAgentFiles(targetRoots.codexAgents, knownSkillIds);
+
+	const literalGuardRoots = [
+		targetRoots.claude,
+		targetRoots.codex,
+		targetRoots.cursor,
+		targetRoots.codexAgents,
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
+	];
+	const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
+	if (literalViolations.length > 0) {
+		for (const violation of literalViolations) {
+			console.error(
+				`literal-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`
+			);
+		}
+		console.error(
+			`literal-guard: ${literalViolations.length} non-allowlisted Thrive-flavored literal(s) found in platform outputs. Tokenize the canonical source or add the file to .ai-skills/definitions/literal-allowlist.json.`
+		);
+		process.exit(1);
+	}
 
 	if (checkMode) {
 		if (changedPaths.length > 0) {

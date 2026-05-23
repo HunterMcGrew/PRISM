@@ -38,7 +38,7 @@ File-level change details live in the GitHub diff, and acceptance criteria live 
 
 ## Ticket
 
-[THR-#### or Linear URL]
+[PRISM-#### or Linear URL]
 
 ## Type of Change
 

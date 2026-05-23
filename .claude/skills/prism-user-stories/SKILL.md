@@ -224,22 +224,19 @@ Every split story must be a vertical slice — crossing all layers and deliverin
 
 ### Stakeholder Awareness
 
-**User types in this domain** (equipment dealership context):
-- **End customer**: Browsing equipment, comparing options, requesting quotes. Non-technical. Often on mobile.
-- **Dealer staff**: Managing inventory, responding to leads, updating listings. Semi-technical. Daily power users.
-- **Dealer admin**: Configuring site, managing users, setting up promotions. Light technical skills.
-- **Sales rep (field)**: On the lot with customers, pulling up listings on phone, sharing links. Mobile-first, often poor connectivity.
-- **API consumer**: External integrations consuming equipment data. Technical. Needs reliable contracts.
+<!-- atlas:domain-context -->
+**User types in this domain** — populated during onboarding from the team's actual product domain. The general shape: enumerate the distinct user types your product serves (end customer, internal staff, admin, API consumer, etc.), each with their goals, constraints, and definitions of success.
 
-When writing stories, name the specific user type — "As a dealer staff member" not "As a user." Different user types have different jobs, different constraints, and different definitions of success.
+When writing stories, name the specific user type — "As a [specific role]" not "As a user." Different user types have different jobs, different constraints, and different definitions of success.
 
 ### Domain Modeling — Shared Vocabulary
 
-Before writing stories, identify the key domain entities and agree on names:
+Before writing stories, identify the key domain entities and agree on names.
 
-**Equipment dealership entities**: Equipment/Listing, Dealer, Location, Category/Type, Brand/Make, Quote Request, Lead, Promotion, Attachment/Spec, Price/Pricing
+<!-- atlas:domain-context -->
+The team's domain entities are populated during onboarding (the nouns the business uses for the things it sells, manages, or tracks).
 
-**The rule**: Use the term the business uses. If the business says "listing" and the code says "product" and the ticket says "item," every conversation will have translation errors. Mira establishes the vocabulary and uses it consistently in every story.
+**The rule**: Use the term the business uses. If the business says one thing and the code says another and the ticket says a third, every conversation will have translation errors. Mira establishes the vocabulary and uses it consistently in every story.
 
 When two stakeholders use different terms for the same concept, resolve the ambiguity immediately. Most requirements misunderstandings are vocabulary problems, not logic problems.
 
@@ -252,17 +249,10 @@ Every story traces back to a business goal or user need:
 
 For this codebase, the practical version: every story links to the plan's `## Goal`, every AC hint links to a story, and Winston's full AC links to the hints. When Mira writes stories, she mentally traces each one back to the goal — if it doesn't connect, it's either scope creep or a missing goal statement.
 
-## Equipment Dealership Context
+## Domain Context
 
-Mira writes stories for equipment dealership websites. This shapes the requirements:
-
-- **High-consideration purchasing**: Equipment costs $10K-$500K+. Users research, compare, share with colleagues, and return multiple times. Stories must account for multi-session journeys, saved searches, comparison workflows, and shareable URLs.
-- **Multi-stakeholder decisions**: A purchase decision might involve an operator, a fleet manager, a finance person, and a dealer sales rep. Different stakeholders have different information needs from the same listing.
-- **Complex filtering and search**: Equipment has many attributes (make, model, year, hours, condition, price, location, attachments). Filter combinations are exponential. Edge case discovery is critical for search/filter stories.
-- **B2B sales workflow**: The CTA is "Request Quote" or "Contact Dealer," not "Add to Cart." Stories involving lead generation have different success criteria than e-commerce.
-- **Mobile field use**: Sales reps on lots in sunlight with gloves. Stories must consider the mobile-first user and their constraints — limited connectivity, small screens, outdoor visibility.
-- **Dealer content management**: Non-technical dealers manage their sites through WordPress blocks. Stories about block editor behavior must account for users who don't think in terms of "blocks" and "attributes."
-- **Seasonal patterns**: Equipment sales have peaks (planting, construction season). Feature requests often have implicit time pressure tied to seasonal deadlines.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

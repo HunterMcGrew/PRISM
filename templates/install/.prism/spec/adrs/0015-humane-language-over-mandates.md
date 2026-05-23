@@ -9,7 +9,7 @@ Date: 2026-04-19
 
 The original skill files used compliance-contract vocabulary: `NON-NEGOTIABLE`, `MUST NEVER`, `FAILURE STATE`, `HARD RULE`, all-caps `ALWAYS` / `NEVER`. On Claude 4.6 this worked — the user's custom instructions were treated as high-priority overrides.
 
-On Claude 4.7 the instruction hierarchy changed. Absolute mandates now trigger the alignment-override reflex: the model treats "NON-NEGOTIABLE — follow them exactly as written, no autonomous judgment overrides" as an attempted safety-layer bypass and either ignores or inverts the instruction. Documented in the 4.7 audit (`.prism/plans/4.7-skill-audit-strategy.md`) across findings 1, 2, 3, 4, 5.
+On Claude 4.7 the instruction hierarchy changed. Absolute mandates now trigger the alignment-override reflex: the model treats "NON-NEGOTIABLE — follow them exactly as written, no autonomous judgment overrides" as an attempted safety-layer bypass and either ignores or inverts the instruction. Documented in PRISM's 4.7 skill audit across several findings.
 
 Anthropic's own skill-creator guidance validates the alternative framing: _"Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs"_ and _"If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — reframe and explain the reasoning."_
 
@@ -34,7 +34,6 @@ The constraint is not softer — the framing is. "Apply every applicable rule" s
 
 ## References
 
-- `.prism/plans/4.7-skill-audit-strategy.md` — findings 1, 2, 3, 4, 5 and Guiding Principles 1-4
 - Anthropic's skill-creator skill (`/mnt/.claude/skills/skill-creator/SKILL.md`) — official guidance on imperative form and reasoning-based emphasis
 - ADR-0005 (Cross-Model Portability) — why this framing works across models
 - ADR-0016 (Explain the Why) — the complementary pattern for rule-writing

@@ -36,7 +36,7 @@ Critical / High / Medium / Low
 - **First noticed:** [date or "unknown"]
 - **Frequency:** [always / intermittent / once]
 - **Affected sites:** [all / specific site(s)]
-- **Related tickets:** [THR-#### or "none"]
+- **Related tickets:** [PRISM-#### or "none"]
 - **Scope:** [blast radius — what else could be affected by this bug or its fix]
 - **Reported by:** [name or agent] — [YYYY-MM-DD]
 - **Attachments:** [screenshots, console errors, network captures — or "none"]

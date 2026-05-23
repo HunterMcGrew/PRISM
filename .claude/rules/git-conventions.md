@@ -4,7 +4,7 @@
 
 ### Subject line
 
-Format: `THR-NNNN: <imperative summary>`
+Format: `PRISM-NNNN: <imperative summary>`
 
 - Start with the ticket ID, colon, space
 - Use imperative mood ("Fix image distortion", not "Fixed" or "Fixes")
@@ -13,7 +13,7 @@ Format: `THR-NNNN: <imperative summary>`
 - No trailing period
 
 Variants:
-- Follow-up commits after the main PR has merged: `THR-NNNN followup: <summary>`
+- Follow-up commits after the main PR has merged: `PRISM-NNNN followup: <summary>`
 - Chores not tied to a ticket (plan updates, CI config, tooling): `chore: <summary>`
 
 ### Body
@@ -31,7 +31,7 @@ Always pass the commit message via HEREDOC to preserve formatting:
 
 ```bash
 git commit -m "$(cat <<'EOF'
-THR-1588: Fix remaining ILink migration gaps in block registration and view props
+PRISM-1588: Fix remaining ILink migration gaps in block registration and view props
 
 The ILink migration missed two files: index.tsx still registered buttonUrl/buttonUrlTarget
 as block attributes, and MegaMenuInfoBannerBlock.view.tsx still exported the old prop types.
@@ -66,7 +66,7 @@ Always branch from `origin/main` — never from the current branch, which may ca
 ## Merge Strategy
 
 PRs are **squash-merged** on GitHub. This means:
-- The PR title becomes the merge commit subject — which is why `pr-description.md` documents the title format (`THR-NNNN: <description>`)
+- The PR title becomes the merge commit subject — which is why `pr-description.md` documents the title format (`PRISM-NNNN: <description>`)
 - Individual commit messages on the branch don't appear in `main` history
 - Commit quality still matters for branch-level `git log` and `git blame` during development
 

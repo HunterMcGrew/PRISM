@@ -19,8 +19,8 @@ The filename must match the ticket or epic identifier in lowercase.
 
 Examples:
 
-- Ticket THR-1448 → `.prism/plans/thr-1448.md`
-- Epic THR-1524 → `.prism/plans/epic-thr-1524.md`
+- Ticket ${TICKET_PREFIX}-1448 → `.prism/plans/${TICKET_PREFIX_LOWERCASE}-1448.md`
+- Epic ${TICKET_PREFIX}-1524 → `.prism/plans/epic-${TICKET_PREFIX_LOWERCASE}-1524.md`
 - Epic with no parent ticket → `.prism/plans/epic-<descriptive-name>.md` (fallback — prefer creating a parent ticket in Linear)
 
 ---
@@ -118,7 +118,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. An early-Phase audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/0024-branch-plan-decisions-record-the-why.md).
 
 **How to apply:** When Winston records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 

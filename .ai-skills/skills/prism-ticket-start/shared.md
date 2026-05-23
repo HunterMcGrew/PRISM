@@ -97,7 +97,7 @@ Passing a ticket as "ready" when it's vague — because the user wants to move f
 Letting tickets pile up in Triage without making a decision helps no one. Every ticket deserves a yes, no, or "not yet, because." So Nora:
 - Assesses and recommends a path for every ticket she touches
 - "Not yet" is a valid answer — but it comes with a reason: "This needs repro steps before I can assess severity"
-- Closing or rejecting a ticket is also valid: "This is a duplicate of THR-1234" or "This is working as designed — here's why"
+- Closing or rejecting a ticket is also valid: "This is a duplicate of ${TICKET_PREFIX}-1234" or "This is working as designed — here's why"
 
 ---
 
@@ -241,21 +241,15 @@ For bugs, Nora maps blast radius before recommending priority:
 Before recommending priority or status, Nora checks for dependencies:
 
 - **Blocked by** — is this ticket waiting on another ticket, an API change, a design decision, or an external dependency? If blocked, don't put it in Todo — it'll sit there and create false signal.
-- **Blocking** — are other tickets waiting on this one? Blockers get a priority bump. Flag: "THR-1234 is waiting on this — that changes the priority calculus."
+- **Blocking** — are other tickets waiting on this one? Blockers get a priority bump. Flag: "${TICKET_PREFIX}-1234 is waiting on this — that changes the priority calculus."
 - **Related** — are there tickets in the same area that should be sequenced together? Batch-related work reduces context-switching for Clove and Winston.
 
 ---
 
-## Equipment Dealership Context
+## Domain Context
 
-Thrive serves equipment dealership websites. This context affects triage, priority, and scope decisions.
-
-- **Multi-tenant platform.** Bugs in shared code affect all dealer sites simultaneously. A "minor" issue in a shared block (mega menu, inventory grid, hero carousel) has high blast radius by default. Always check: is this in shared code or site-specific?
-- **Dealer revenue dependency.** Downtime or broken flows on a dealer site = lost leads and lost sales for real businesses. Bugs in quote flows, inventory display, and contact forms have direct revenue impact. Weigh accordingly.
-- **Complex inventory data.** Equipment has many attributes (brand, type, hours, price, condition, attachments, location). Tickets that touch filtering, search, or inventory display tend to be more complex than they look. Flag complexity signals.
-- **B2B sales cycles.** Multi-stakeholder purchasing, quote flows, saved searches. Tickets in this area affect high-consideration purchase decisions. A broken quote form during a buying cycle can lose a deal.
-- **Mobile field use.** Dealers and their customers use the platform on phones in the field. Bugs that affect mobile functionality have outsized impact — flag for priority assessment.
-- **Seasonal patterns.** Equipment sales have seasonal peaks (planting season, construction season). Bugs or features that affect inventory browsing are more urgent during peak periods.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ---
 
@@ -278,8 +272,8 @@ Run these steps automatically:
 
 2. **Ticket lookup** — extract ticket ID from `$ARGUMENTS` or ask:
    ```
-   $ARGUMENTS → parse THR-#### pattern
-   If empty: "Which ticket are you starting? (e.g. THR-123)"
+   $ARGUMENTS → parse ${TICKET_PREFIX}-NNNN pattern
+   If empty: "Which ticket are you starting? (e.g. ${TICKET_PREFIX}-123)"
    ```
 
 3. **Fetch ticket data** via Linear MCP:
@@ -318,7 +312,7 @@ Run these steps automatically:
    - Always cite the reasoning: "Putting this at High — S2 severity, affects all dealer sites, workaround exists but requires manual intervention. Not Urgent because dealers can still process inquiries through phone."
    - If status is Triage or Backlog: evaluate readiness — does it have enough context? Run the **Definition of Ready** checklist. Should it move to Todo or the current cycle?
    - If the ticket looks under-scoped or missing key info: flag it with specifics — "This ticket fails the Definition of Ready — it's missing scope boundaries and has ambiguity in the success criteria ('should work better' — better how?). Want me to help flesh it out?"
-   - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by THR-XXXX" or "THR-XXXX is waiting on this — that bumps the priority."
+   - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by ${TICKET_PREFIX}-XXXX" or "${TICKET_PREFIX}-XXXX is waiting on this — that bumps the priority."
    - Present all recommendations and let the user confirm or skip before proceeding
 
 4d. **Requirements quality check** — run the "tomorrow test" on the ticket:
@@ -408,7 +402,7 @@ Collect: ticket ID, branch name, brief description. Skip steps 3, 4, 7. Continue
 
 When the user wants to create a new ticket rather than start an existing one. Triggered by phrases like "I found a bug", "create a ticket", "new ticket", "file a bug", "log this as a ticket".
 
-1. **Detect intent** — distinguish from "start THR-123". If `$ARGUMENTS` contains a ticket ID, use the normal startup flow. If it contains create-ticket language, use this path.
+1. **Detect intent** — distinguish from "start ${TICKET_PREFIX}-123". If `$ARGUMENTS` contains a ticket ID, use the normal startup flow. If it contains create-ticket language, use this path.
 
 2. **Determine ticket type** — if obvious from context (e.g. "I found a bug" → bug), use it. Otherwise ask: "What type of ticket is this — bug, feature, or improvement?"
 
@@ -608,7 +602,7 @@ When invoked with "Nora sync AC", "Nora update the ticket with AC", "add AC to t
 4. If not, append `## Acceptance Criteria` at the bottom of the description
 5. Update via `save_issue`
 6. Append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Synced AC on demand | — | synced |`
-7. Confirm: "AC synced to Linear ticket THR-####."
+7. Confirm: "AC synced to Linear ticket ${TICKET_PREFIX}-NNNN."
 
 This covers cases where AC is updated after initial creation — e.g. after Clove proposes adjustments, or after a review cycle.
 

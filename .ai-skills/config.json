@@ -1,0 +1,20 @@
+{
+	"org": "PRISM",
+	"project": "PRISM",
+	"ticketPrefix": "PRISM",
+	"ticketSystem": {
+		"kind": "linear",
+		"workspace": "PRISM",
+		"teamKey": "PRISM"
+	},
+	"github": {
+		"owner": "HunterMcGrew",
+		"repo": "agent-crew"
+	},
+	"defaultBranch": "main",
+	"techStack": ["typescript", "node"],
+	"rules": {
+		"universal": "all"
+	},
+	"slackChannel": "#prism-dev"
+}

@@ -9,7 +9,7 @@ Date: 2026-04-19
 
 The skill ecosystem initially had ambiguous ownership around PR creation. Clove wrote code but paused before pushing to ask "Want me to push this up?" Briar, reviewing the branch, sometimes absorbed PR creation when asked. Eli, Sage, and Reese produced artifacts but stopped at file creation — shipping was a separate step the user had to request.
 
-This ambiguity created two failure modes: ceremony (prompting for actions the user almost always approved) and lane drift (reviewers absorbing author responsibilities, eroding the review's adversarial edge). The Round 10 audit in `.prism/plans/4.7-skill-audit-strategy.md` formalized the framework that resolves both.
+This ambiguity created two failure modes: ceremony (prompting for actions the user almost always approved) and lane drift (reviewers absorbing author responsibilities, eroding the review's adversarial edge). A Round 10 audit formalized the framework that resolves both.
 
 The three-question test: an action skips its prompt when it is reversible AND the user almost always says yes AND it is in-lane. PR creation by an author after a clean implementation passes all three.
 
@@ -35,9 +35,9 @@ When a reviewer runs against a branch with no PR open yet, the reviewer routes b
 The team-wide default above stays as-is. Individuals whose review discipline needs a diff gate before code leaves their machine can opt into a pre-commit pause via git config:
 
 ```bash
-git config --global thrive.pauseBeforeCommit true    # opt in
-git config --global thrive.pauseBeforeCommit false   # opt out (matches team default)
-git config --global --unset thrive.pauseBeforeCommit # reset (prompts again on next ship)
+git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit true    # opt in
+git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit false   # opt out (matches team default)
+git config --global --unset ${PROJECT_LOWERCASE}.pauseBeforeCommit # reset (prompts again on next ship)
 ```
 
 The shipping flow (see `.prism/references/shipping-flow.md`) reads this value before every commit and branches:
@@ -56,13 +56,11 @@ The override has to survive across every surface a developer runs Claude Code fr
 
 ### Scope
 
-`git config --global thrive.*` is reserved for per-user, machine-local Thrive preferences that layer on top of the tier defaults. Currently `thrive.pauseBeforeCommit` is the only entry.
+`git config --global ${PROJECT_LOWERCASE}.*` is reserved for per-user, machine-local ${PROJECT} preferences that layer on top of the tier defaults. Currently `${PROJECT_LOWERCASE}.pauseBeforeCommit` is the only entry.
 
 If a second per-user override emerges, write a new ADR that generalizes the mechanism rather than piling into this section. Preferences earn a place in this namespace when they describe durable per-user behavior — not task-level heuristics, not per-skill tweaks, not anything that belongs in a plan or a skill file.
 
 ## References
 
-- `.prism/plans/4.7-skill-audit-strategy.md` § Round 10 — the three-question framework
-- `.prism/plans/thr-1631.md` — the implementation of this pattern across Clove, Eli, Sage, Reese, Briar, and AGENTS.md
 - `.prism/references/shipping-flow.md` — shared shipping mechanics
 - `AGENTS.md § 0` — the one-line summary in the auto-routing section

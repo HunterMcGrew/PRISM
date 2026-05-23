@@ -67,13 +67,20 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `tractru` |
 | `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` |
 | `${GITHUB_OWNER}` | `github.owner` | `tractru` |
+| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `tractru` |
 | `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` |
 | `${DEFAULT_BRANCH}` | `defaultBranch` | `main` |
 | `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` |
 
-Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (Phase 2, in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals during sync.
+Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (implemented in Phase 1.5d, lives in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals at build time — canonical files on disk stay tokenized, platform outputs receive substituted content.
 
 Adding a new derived token: extend the substitution map in `scripts/ai-skills/lib/tokens.ts`. Update this doc and the schema description.
+
+### How tokens propagate to consumer installs
+
+Canonical sources at `.prism/` and `.ai-skills/skills/` stay tokenized — the `${TOKEN}` literals never get rewritten on disk. The build script reads `.ai-skills/config.json`, derives the token map, and substitutes during platform-output assembly. Consumer teams running `pnpm prism:build` against their own `config.json` get platform outputs that reflect their team's values; PRISM itself runs the same build against its dogfood `config.json` and produces platform outputs with `PROJECT=PRISM` substituted.
+
+A literal-Thrive guard runs as the last build step against platform outputs (`.claude/`, `.codex/`, `.cursor/`, `.generated/cursor-skills/`). The guard scans for `Thrive`, `tractru`, `TracTru/thrive`, `THR-[0-9]+`, and `thrive.<key>` patterns and fails the build on any non-allowlisted hit. The allowlist at `.ai-skills/definitions/literal-allowlist.json` exempts files where literal references are intentional — frozen incident citations in `lessons.md`, originating-incident ADRs, and their platform-copy mirrors.
 
 ## Tech-stack flags
 

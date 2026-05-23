@@ -31,7 +31,7 @@ PRs in the Yesterday section split into four subsections in this order: `Merged`
 
 ### 4. Section labels are bold, spacers are zero-width
 
-Slack's `slack_send_message` tool rejects Markdown heading syntax (`#` / `##` / `###`) with `invalid_blocks` and also collapses blank paragraph breaks when rendering the posted message. The rendering contract Lilac settled on after two real-run failures: every section label — top-level prompts and Yesterday subsections alike — is a bold line (`**Label:**`) on its own, and every paragraph break Lilac wants to survive rendering is a line containing one zero-width space (U+200B). The spacer sits between every top-level prompt and its content (plain text like `Thrive` or another bold label like `**Merged:**`) and between adjacent top-level sections. Subsection labels inside Yesterday keep a plain blank line to their entries — entry lines are non-bold, so the paragraph break renders fine without a spacer. Empty lines collapse; lines with U+200B don't.
+Slack's `slack_send_message` tool rejects Markdown heading syntax (`#` / `##` / `###`) with `invalid_blocks` and also collapses blank paragraph breaks when rendering the posted message. The rendering contract Lilac settled on after two real-run failures: every section label — top-level prompts and Yesterday subsections alike — is a bold line (`**Label:**`) on its own, and every paragraph break Lilac wants to survive rendering is a line containing one zero-width space (U+200B). The spacer sits between every top-level prompt and its content (plain text like `${PROJECT}` or another bold label like `**Merged:**`) and between adjacent top-level sections. Subsection labels inside Yesterday keep a plain blank line to their entries — entry lines are non-bold, so the paragraph break renders fine without a spacer. Empty lines collapse; lines with U+200B don't.
 
 ### 5. The window is strict
 
@@ -65,7 +65,7 @@ Using `#` / `##` / `###` for section labels. A real run posting through `slack_s
 
 ### Anti-pattern: Blank lines as the only separator between sections or between a top-level label and its content
 
-Relying on a truly empty line where a paragraph break needs to survive. Slack collapses empty lines when rendering a posted message — between adjacent sections AND between a top-level prompt and its first content line (including when the content is another bold label, like `**What did you do yesterday?**` → `**Merged:**`). Two real runs demonstrated this: first between sections (`ThriveWhat did you do yesterday?` on a single line), then between `**What did you do yesterday?**` and `**Merged:**` rendering flush. A spacer line containing one zero-width space (U+200B) is the workaround: it counts as non-empty to the renderer and produces the gap without showing a visible character. Only subsection-label-to-entries transitions (e.g. `**Merged:**` → `THR-1627: ...`) can rely on a plain blank line, since entry lines are non-bold and Slack's renderer handles the break naturally.
+Relying on a truly empty line where a paragraph break needs to survive. Slack collapses empty lines when rendering a posted message — between adjacent sections AND between a top-level prompt and its first content line (including when the content is another bold label, like `**What did you do yesterday?**` → `**Merged:**`). Two real runs demonstrated this: first between sections (`${PROJECT}What did you do yesterday?` on a single line), then between `**What did you do yesterday?**` and `**Merged:**` rendering flush. A spacer line containing one zero-width space (U+200B) is the workaround: it counts as non-empty to the renderer and produces the gap without showing a visible character. Only subsection-label-to-entries transitions (e.g. `**Merged:**` → `${TICKET_PREFIX}-1627: ...`) can rely on a plain blank line, since entry lines are non-bold and Slack's renderer handles the break naturally.
 
 ### Anti-pattern: Posting without explicit confirmation
 
@@ -89,13 +89,13 @@ Emitting output that "basically matches" the template without re-reading it. Rea
 
 ### Anti-pattern: Modifying the PR title
 
-Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `THR-NNNN:` prefix, split it into the ticket ID and title parts per the template.
+Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `${TICKET_PREFIX}-NNNN:` prefix, split it into the ticket ID and title parts per the template.
 
 ### Anti-pattern: Paraphrasing the user's Today or Blockers answers
 
 Rewriting, summarizing, or reinterpreting what the user said for the Today or Blockers sections. The user is the authority on their own plan — their words stay theirs.
 
-Light list normalization is not paraphrase and is expected (see Phase 6). The split is mechanical — delimiter-based, with surgical filler removal — and preserves every meaningful word the user typed. Paraphrase is swapping words for other words (e.g. "Thrive sprint planning" → "attending the Thrive sprint planning session"); that's not allowed.
+Light list normalization is not paraphrase and is expected (see Phase 6). The split is mechanical — delimiter-based, with surgical filler removal — and preserves every meaningful word the user typed. Paraphrase is swapping words for other words (e.g. "${PROJECT} sprint planning" → "attending the ${PROJECT} sprint planning session"); that's not allowed.
 
 ## Project Engineering Standards
 
@@ -113,13 +113,13 @@ When this skill is invoked, before anything else, greet the user so they know Li
 
 ## Default Configuration
 
-- **Repo:** `TracTru/thrive`
+- **Repo:** `${GITHUB_OWNER}/${GITHUB_REPO}`
 - **Default window:** the full calendar day of yesterday, local time
 - **Monday exception:** on Mondays, default to the full calendar day of last Friday
 - **User override:** honor any range the user specifies ("since Friday", "this week", etc.)
-- **Default Slack channel:** `#tractru-dev` (canonical name; Lilac resolves this to a channel ID at runtime via `slack_search_channels` before calling the post tool, since the MCP typically requires `channel_id`, not the `#name` form)
+- **Default Slack channel:** `${SLACK_CHANNEL}` (canonical name; Lilac resolves this to a channel ID at runtime via `slack_search_channels` before calling the post tool, since the MCP typically requires `channel_id`, not the `#name` form)
 - **Channel override:** honor any channel the user specifies per-invocation ("post this one to #planning") — do not infer the channel from context; same name-to-ID resolution applies
-- **Default project name:** `Thrive` (hardcoded for now; revisit when multi-project standups become a need)
+- **Default project name:** `${PROJECT}` (hardcoded for now; revisit when multi-project standups become a need)
 - **Bot identity:** Lilac posts via the Slack MCP's bot user. The posted message has no attribution line — it starts at the first `**Bold:**` section label. The standup owner is implied by which Slack user the bot posts on behalf of.
 
 ## Startup
@@ -190,25 +190,25 @@ Before running queries, read these — they've caused failures before:
 #### 2.2 Merged PRs authored by the user (run alone first)
 
 ```bash
-gh search prs --author=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=TracTru/thrive --json title,number,closedAt,isDraft --limit 50
+gh search prs --author=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=${GITHUB_OWNER}/${GITHUB_REPO} --json title,number,closedAt,isDraft --limit 50
 ```
 
 #### 2.3 Open PRs authored by the user, updated in the window (batch after 2.2 succeeds)
 
 ```bash
-gh search prs --author=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=TracTru/thrive --state=open --json title,number,createdAt,updatedAt,isDraft --limit 50
+gh search prs --author=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=${GITHUB_OWNER}/${GITHUB_REPO} --state=open --json title,number,createdAt,updatedAt,isDraft --limit 50
 ```
 
 #### 2.4 Reviewed PRs updated in the window
 
 ```bash
-gh search prs --reviewed-by=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=TracTru/thrive --json title,number,author,state,isDraft --limit 50
+gh search prs --reviewed-by=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=${GITHUB_OWNER}/${GITHUB_REPO} --json title,number,author,state,isDraft --limit 50
 ```
 
 #### 2.5 Reviewed PRs merged in the window
 
 ```bash
-gh search prs --reviewed-by=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=TracTru/thrive --json title,number,author,closedAt,isDraft --limit 50
+gh search prs --reviewed-by=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=${GITHUB_OWNER}/${GITHUB_REPO} --json title,number,author,closedAt,isDraft --limit 50
 ```
 
 #### 2.6 Verify actual activity in the window
@@ -220,7 +220,7 @@ The jq filters below use lexicographic string compare against GitHub's UTC-`Z` t
 **Open PRs — verify user pushed commits in the window:**
 
 ```bash
-gh api repos/TracTru/thrive/pulls/<number>/commits --jq "[.[] | select(.commit.author.date >= \"$SINCE_DATE\" and .commit.author.date < \"$UNTIL_DATE\")] | length"
+gh api repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/<number>/commits --jq "[.[] | select(.commit.author.date >= \"$SINCE_DATE\" and .commit.author.date < \"$UNTIL_DATE\")] | length"
 ```
 
 If `> 0`, include. Otherwise skip.
@@ -230,7 +230,7 @@ If `> 0`, include. Otherwise skip.
 Filter out any where `author.login == $USERNAME`. Then verify a submitted review exists in the window:
 
 ```bash
-gh api repos/TracTru/thrive/pulls/<number>/reviews --jq "[.[] | select(.user.login == \"$USERNAME\" and .submitted_at >= \"$SINCE_DATE\" and .submitted_at < \"$UNTIL_DATE\")] | length"
+gh api repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/<number>/reviews --jq "[.[] | select(.user.login == \"$USERNAME\" and .submitted_at >= \"$SINCE_DATE\" and .submitted_at < \"$UNTIL_DATE\")] | length"
 ```
 
 If `> 0`, include. Otherwise skip.
@@ -252,7 +252,7 @@ If `isDraft` isn't in the query JSON for a particular path, fall back to `gh pr 
 For every PR authored by the user (from queries 2.2 and 2.3), query the PR's commit history and check whether any commits authored by `$USERNAME` predate `$SINCE_DATE`:
 
 ```bash
-gh api repos/TracTru/thrive/pulls/<number>/commits --jq "[.[] | select(.commit.author.email | contains(\"$USERNAME\")) | select(.commit.author.date < \"$SINCE_DATE\")] | length"
+gh api repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/<number>/commits --jq "[.[] | select(.commit.author.email | contains(\"$USERNAME\")) | select(.commit.author.date < \"$SINCE_DATE\")] | length"
 ```
 
 The `email | contains` check is a loose match — GitHub commit author identification varies, so the query looks for the username within the author's email field (e.g. `hunter@example.com` for username `hunter`). If the result is `> 0`, the PR has pre-window commits. Record this per-PR as `$HAS_PRIOR_COMMITS`.
@@ -277,13 +277,13 @@ If the same PR somehow appears as both authored and reviewed (rare — GitHub's 
 For each PR, emit the line format from the template. The entry shape:
 
 ```
-THR-NNNN: Title [#NNNN](url) [status][ — author]
+${TICKET_PREFIX}-NNNN: Title [#NNNN](url) [status][ — author]
 ```
 
 Where:
 
-- `THR-NNNN:` — ticket ID if present (colon-only split from the PR title)
-- `Title` — PR title with the `THR-NNNN:` prefix removed
+- `${TICKET_PREFIX}-NNNN:` — ticket ID if present (colon-only split from the PR title)
+- `Title` — PR title with the `${TICKET_PREFIX}-NNNN:` prefix removed
 - `[#NNNN](url)` — standard markdown link; same syntax whether Lilac posts or the user pastes
 - `[status]` — always present, from step 3.1
 - ` — author` — only on `Reviewed` entries
@@ -299,7 +299,7 @@ Render the Yesterday section for display in chat using the template's bold-label
 
 <ZWSP>
 
-Thrive
+${PROJECT}
 
 <ZWSP>
 
@@ -330,7 +330,7 @@ Thrive
 <entries>
 ```
 
-A U+200B spacer sits between every top-level prompt (`**What project(s) are you working on?**`, `**What did you do yesterday?**`, `**What are you going to do today?**`, `**Blockers:**`) and its content — whether that content is plain text like `Thrive` or another bold label like `**Merged:**` — and between adjacent top-level sections. Subsection labels inside Yesterday (`**Merged:**`, `**In Review:**`, `**Continued:**`, `**Reviewed:**`) keep a plain blank line to their entry lines; entries are non-bold so the paragraph break renders without a spacer. Slack's renderer collapses truly empty lines between any two bold paragraphs, so the zero-width space is the only thing that survives in those spots.
+A U+200B spacer sits between every top-level prompt (`**What project(s) are you working on?**`, `**What did you do yesterday?**`, `**What are you going to do today?**`, `**Blockers:**`) and its content — whether that content is plain text like `${PROJECT}` or another bold label like `**Merged:**` — and between adjacent top-level sections. Subsection labels inside Yesterday (`**Merged:**`, `**In Review:**`, `**Continued:**`, `**Reviewed:**`) keep a plain blank line to their entry lines; entries are non-bold so the paragraph break renders without a spacer. Slack's renderer collapses truly empty lines between any two bold paragraphs, so the zero-width space is the only thing that survives in those spots.
 
 Omit a subsection entirely when it has no entries — both the `**Label:**` line and the U+200B spacer that would have preceded it.
 
@@ -381,7 +381,7 @@ Record the tool name and the mapped parameter names for use in Phase 7. Do not h
 
 ### Phase 5.5 — Resolve the channel name to an ID
 
-If the chosen post tool takes a channel ID (the common case), resolve the default channel name `tractru-dev` (or the user's per-invocation override, stripping any leading `#`) via the Slack MCP's channel search tool — typically `slack_search_channels`:
+If the chosen post tool takes a channel ID (the common case), resolve the default channel name `${SLACK_CHANNEL}` (or the user's per-invocation override, stripping any leading `#`) via the Slack MCP's channel search tool — typically `slack_search_channels`:
 
 - Call the search tool with a query matching the channel name
 - Pick the matching channel and record its ID for this invocation
@@ -433,15 +433,15 @@ Never remove or alter words that carry meaning — only the explicit filler list
 
 **Example:**
 
-Input: `Thrive sprint planning and im watching out for mega menu issues`
-Split on `and`: `["Thrive sprint planning", "im watching out for mega menu issues"]`
-Strip filler: `["Thrive sprint planning", "watching out for mega menu issues"]`
-Capitalize: `["Thrive sprint planning", "Watching out for mega menu issues"]`
+Input: `${PROJECT} sprint planning and im watching out for mega menu issues`
+Split on `and`: `["${PROJECT} sprint planning", "im watching out for mega menu issues"]`
+Strip filler: `["${PROJECT} sprint planning", "watching out for mega menu issues"]`
+Capitalize: `["${PROJECT} sprint planning", "Watching out for mega menu issues"]`
 
 Rendered:
 
 ```
-Thrive sprint planning
+${PROJECT} sprint planning
 Watching out for mega menu issues
 ```
 
@@ -449,7 +449,7 @@ Watching out for mega menu issues
 
 #### 7.1 Decide the delivery path
 
-Ask: "Post to `#tractru-dev`, or would you rather paste it yourself?" (If no Slack MCP was found in Phase 5, skip straight to the paste path and tell the user why.) If the user names a different channel ("post to #planning"), use that channel instead — default is `#tractru-dev`, never inferred. If the user switched channels, loop back to Phase 5.5 to resolve the new channel's ID.
+Ask: "Post to `${SLACK_CHANNEL}`, or would you rather paste it yourself?" (If no Slack MCP was found in Phase 5, skip straight to the paste path and tell the user why.) If the user names a different channel ("post to #planning"), use that channel instead — default is `${SLACK_CHANNEL}`, never inferred. If the user switched channels, loop back to Phase 5.5 to resolve the new channel's ID.
 
 #### 7.2 Render the full standup
 
@@ -515,11 +515,11 @@ Report the failure reason in one line. Fall back to the paste path. Do not auto-
 
 ### Channel search returns no match or fails
 
-If `slack_search_channels` can't find `tractru-dev` (or the override), fall through to the paste path and explain why. The user can post it themselves while the channel-name issue is sorted.
+If `slack_search_channels` can't find `${SLACK_CHANNEL}` (or the override), fall through to the paste path and explain why. The user can post it themselves while the channel-name issue is sorted.
 
 ### User wants to post to a different channel
 
-Accept the override for this invocation. The default `#tractru-dev` stays unchanged for future runs. Re-run Phase 5.5 to resolve the override's channel ID.
+Accept the override for this invocation. The default `${SLACK_CHANNEL}` stays unchanged for future runs. Re-run Phase 5.5 to resolve the override's channel ID.
 
 ### Status label unclear
 
