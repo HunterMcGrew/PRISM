@@ -123,13 +123,13 @@ Supporting files that live alongside the tiers:
 
 ## Per-User Preferences
 
-`git config --global thrive.*` is the canonical namespace for per-user, machine-local Thrive preferences — behavioral overrides a developer sets on their own machine that layer on top of the tier defaults above.
+`git config --global ${PROJECT_LOWERCASE}.*` is the canonical namespace for per-user, machine-local ${PROJECT} preferences — behavioral overrides a developer sets on their own machine that layer on top of the tier defaults above.
 
 Preferences are not spec. They're user-scoped, not team-wide, and they don't bind anyone else. They sit adjacent to the tier system rather than inside it.
 
 Current preferences:
 
-- `thrive.pauseBeforeCommit` — per-user pre-commit pause. See [ADR-0003 § Per-User Overrides](./spec/adrs/0003-authors-ship-reviewers-review.md).
+- `${PROJECT_LOWERCASE}.pauseBeforeCommit` — per-user pre-commit pause. See [ADR-0003 § Per-User Overrides](./spec/adrs/0003-authors-ship-reviewers-review.md).
 
 If a second preference emerges, write an ADR first to generalize the mechanism before adding it here. Preferences earn a place in this namespace when they describe durable per-user behavior, not task-level toggles or per-skill tweaks.
 

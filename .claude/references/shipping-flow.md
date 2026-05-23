@@ -21,7 +21,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 2. Before committing, read the user's per-user pause preference:
 
    ```bash
-   pref=$(git config --global --get thrive.pauseBeforeCommit)
+   pref=$(git config --global --get prism.pauseBeforeCommit)
    ```
 
    Three branches:
@@ -34,9 +34,9 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
      > - **yes** → I'll pause before every commit going forward and wait for you to say "ship it" before pushing.
      > - **no** → I'll commit and push directly, no prompt. Matches the team default.
      >
-     > I'll save your answer so I won't ask again. You can change it anytime with `git config --global thrive.pauseBeforeCommit true` (or `false`).
+     > I'll save your answer so I won't ask again. You can change it anytime with `git config --global prism.pauseBeforeCommit true` (or `false`).
 
-     Persist with `git config --global thrive.pauseBeforeCommit <true|false>`.
+     Persist with `git config --global prism.pauseBeforeCommit <true|false>`.
 
    Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning.
 

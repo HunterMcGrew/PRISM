@@ -71,6 +71,126 @@
 		{
 			"path": ".generated/cursor-skills/prism-qa-test-plan/SKILL.md",
 			"reason": "platform-copy mirror of prism-qa-test-plan"
+		},
+		{
+			"path": ".claude/spec/adrs/0018-persona-lane-ownership.md",
+			"reason": "ADR cites THR-1632 task 8 as the originating incident"
+		},
+		{
+			"path": ".codex/spec/adrs/0018-persona-lane-ownership.md",
+			"reason": "platform-copy mirror of ADR-0018"
+		},
+		{
+			"path": ".cursor/spec/adrs/0018-persona-lane-ownership.md",
+			"reason": "platform-copy mirror of ADR-0018"
+		},
+		{
+			"path": ".claude/spec/adrs/0030-token-substitution-at-build-time.md",
+			"reason": "ADR discusses the literals (Thrive, tractru, THR-NNNN) that the guard checks for"
+		},
+		{
+			"path": ".codex/spec/adrs/0030-token-substitution-at-build-time.md",
+			"reason": "platform-copy mirror of ADR-0030"
+		},
+		{
+			"path": ".cursor/spec/adrs/0030-token-substitution-at-build-time.md",
+			"reason": "platform-copy mirror of ADR-0030"
+		},
+		{
+			"path": ".claude/spec/adrs/0032-canonical-skill-content-is-generic.md",
+			"reason": "ADR cites THR-1636 as the broken-pointer example that motivates the decision"
+		},
+		{
+			"path": ".codex/spec/adrs/0032-canonical-skill-content-is-generic.md",
+			"reason": "platform-copy mirror of ADR-0032"
+		},
+		{
+			"path": ".cursor/spec/adrs/0032-canonical-skill-content-is-generic.md",
+			"reason": "platform-copy mirror of ADR-0032"
+		},
+		{
+			"path": ".claude/spec/adrs/0035-rule-loading-tiers.md",
+			"reason": "ADR cites Thrive PR #1970 as the originating backport"
+		},
+		{
+			"path": ".codex/spec/adrs/0035-rule-loading-tiers.md",
+			"reason": "platform-copy mirror of ADR-0035"
+		},
+		{
+			"path": ".cursor/spec/adrs/0035-rule-loading-tiers.md",
+			"reason": "platform-copy mirror of ADR-0035"
+		},
+		{
+			"path": ".claude/spec/adrs/0036-security-as-distributed-rule.md",
+			"reason": "ADR cites Thrive PR #2001 as the originating backport"
+		},
+		{
+			"path": ".codex/spec/adrs/0036-security-as-distributed-rule.md",
+			"reason": "platform-copy mirror of ADR-0036"
+		},
+		{
+			"path": ".cursor/spec/adrs/0036-security-as-distributed-rule.md",
+			"reason": "platform-copy mirror of ADR-0036"
+		},
+		{
+			"path": ".claude/spec/adrs/0037-cadence-driven-personas.md",
+			"reason": "ADR cites Thrive PR #2003 as the originating cadence-persona variant"
+		},
+		{
+			"path": ".codex/spec/adrs/0037-cadence-driven-personas.md",
+			"reason": "platform-copy mirror of ADR-0037"
+		},
+		{
+			"path": ".cursor/spec/adrs/0037-cadence-driven-personas.md",
+			"reason": "platform-copy mirror of ADR-0037"
+		},
+		{
+			"path": ".claude/spec/adrs/0038-paired-dev-doc-gates.md",
+			"reason": "ADR cites Thrive PR #2016 as the originating paired-doc pattern"
+		},
+		{
+			"path": ".codex/spec/adrs/0038-paired-dev-doc-gates.md",
+			"reason": "platform-copy mirror of ADR-0038"
+		},
+		{
+			"path": ".cursor/spec/adrs/0038-paired-dev-doc-gates.md",
+			"reason": "platform-copy mirror of ADR-0038"
+		},
+		{
+			"path": ".claude/spec/adrs/0039-ai-prefix-namespace.md",
+			"reason": "ADR cites the extraction from Thrive and Thrive PR #2017 as origin"
+		},
+		{
+			"path": ".codex/spec/adrs/0039-ai-prefix-namespace.md",
+			"reason": "platform-copy mirror of ADR-0039"
+		},
+		{
+			"path": ".cursor/spec/adrs/0039-ai-prefix-namespace.md",
+			"reason": "platform-copy mirror of ADR-0039"
+		},
+		{
+			"path": ".claude/rules/architect-doc-verification.md",
+			"reason": "rule cites THR-1775 as the originating incident in the Why"
+		},
+		{
+			"path": ".codex/rules/architect-doc-verification.md",
+			"reason": "platform-copy mirror of architect-doc-verification"
+		},
+		{
+			"path": ".cursor/rules/architect-doc-verification.md",
+			"reason": "platform-copy mirror of architect-doc-verification"
+		},
+		{
+			"path": ".claude/rules/branch-plan.md",
+			"reason": "rule cites THR-1775 audit as the originating incident in the Why"
+		},
+		{
+			"path": ".codex/rules/branch-plan.md",
+			"reason": "platform-copy mirror of branch-plan"
+		},
+		{
+			"path": ".cursor/rules/branch-plan.md",
+			"reason": "platform-copy mirror of branch-plan"
 		}
 	]
 }

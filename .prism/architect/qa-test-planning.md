@@ -142,7 +142,7 @@ Writing thorough tests for simple features (they're easy to test) and cursory te
 
 ## Equipment Dealership Context
 
-Thrive serves equipment dealership websites. This shapes what a test plan covers:
+${PROJECT} serves equipment dealership websites. This shapes what a test plan covers:
 
 - **Multi-tenant testing.** Changes to shared blocks affect every dealer site. Regression scenarios should include spot-checks on representative dealer configurations, not just the development instance.
 - **Complex inventory filtering.** Equipment search has many filter combinations (make, model, year, hours, price, location). Decision table testing applies — the combinations are exponential and most teams only think of 2–3 paths.
