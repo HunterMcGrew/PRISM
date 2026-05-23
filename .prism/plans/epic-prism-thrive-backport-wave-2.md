@@ -62,7 +62,7 @@ Backport target: Track B of Thrive PR #2025 (Pixel mocks `.claude/design/mocks/`
 
 #### Clove
 
-1. **Rewrite Pixel skill canonical source.** In `.ai-skills/skills/prism-pixel/shared.md`, replace every occurrence of `.claude/design/mocks/` with `.prism/design/mocks/`. Verified occurrence count: 7 references at lines 337, 342, 417, 515, 525, 531, 572, 616, 658 (per pre-plan grep — re-verify line numbers at task execution since file may shift). Use Edit with `replace_all: true` on the literal string `.claude/design/mocks/` for an atomic single-file rewrite. No structural changes — path substitution only.
+1. **Rewrite Pixel skill canonical source.** In `.ai-skills/skills/prism-pixel/shared.md`, replace every occurrence of `.claude/design/mocks/` with `.prism/design/mocks/`. References at lines 337, 342, 417, 515, 525, 531, 572, 616, 658 (per pre-plan grep — re-verify line numbers at task execution since file may shift). Use Edit with `replace_all: true` on the literal string `.claude/design/mocks/` for an atomic single-file rewrite. No structural changes — path substitution only.
 
 2. **Rewrite Pixel skill frontmatter.** In `.ai-skills/skills/prism-pixel/frontmatter.yml`, replace the single reference to `.claude/design/mocks/` (line 3, inside the description string) with `.prism/design/mocks/`. Verify the resulting YAML still parses (`pnpm prism:check-types` covers this transitively).
 
@@ -340,6 +340,16 @@ Backport target: Track A + Track C of Thrive PR #2025 (collapse `.generated/` st
 | ---- | ----- | ------ | ---- | ------ |
 
 ---
+
+## Review Issues
+
+### Plan task #1 count typo (`7 references` listed 9 line numbers)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-prism-thrive-backport-wave-2.md` (PR-1.5f.1 task #1)
+- **Problem:** Plan task said "7 references at lines [9 line numbers]" — count mismatched the enumeration.
+- **Suggested fix:** Drop the count, let the enumeration stand (per writing-voice § Count rules, not numbers). Fixed in this PR per the goal directive.
 
 ## Cleanup Items
 
