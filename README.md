@@ -2,11 +2,15 @@
 
 A multi-team AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
-> **Status:** Phase 1 (foundation) shipped. Phase 1.5 (bifurcated install layout + tokenization) is the bridge to Phase 2. The skill generator works end-to-end on the dogfood install, and platform-agnostic content lives at `.prism/` with build-time copies into platform dirs. The Atlas onboarding skill (Phase 2) and Winston's codebase-scan integration (Phase 3) land in follow-up work. See [.prism/spec/adrs/](./.prism/spec/adrs/) for the architectural record.
+> **Status:** Phases 1, 1.5, and 2 shipped. Atlas onboarding (Phase 2) is end-to-end — stack detection, per-team rule generators, stub-anchor population, and config writing all work against the dogfood install. Theo (Phase 2.5, architect-doc walker) and Ren (Phase 2.6, refactor scout) followed. Parker (Phase 3, the PRD persona) is the current build — greenfield and brownfield modes are in. The skill generator runs end-to-end and platform-agnostic content lives at `.prism/` with build-time copies into platform dirs. See [.prism/spec/adrs/](./.prism/spec/adrs/) for the architectural record.
 
 ## What you get
 
-- **Named personas** (Winston, Clove, Eric, Briar, Sasha, Eli, Sage, Pixel, Reese, Lilac, Nora, Mira) — each owns a domain (architecture, implementation, review, debugging, docs, design, QA, standups, ticket setup, user stories, changelog).
+- **Named personas** — 17 personas, each owning a domain:
+  - **Build & ship:** Winston (architecture), Clove (implementation), Eric (PR review), Briar (self-review), Sasha (debugging)
+  - **Plan & spec:** Parker (PRDs), Mira (user stories), Nora (ticket setup), Pixel (UI/UX), Reese (QA test plans)
+  - **Document & decide:** Eli (documentation), Theo (architect-doc walker), Sage (changelog), Lilac (standups)
+  - **Maintain & onboard:** Atlas (onboarding), Ren (refactor scout), Zoe (cadence audit)
 - **Multi-platform skill generation** — author a skill once in `.ai-skills/`, generate platform-specific outputs for Claude Code (`.claude/skills/`), Codex (`.agents/skills/` + `.codex/agents/`), and Cursor (`.generated/cursor-skills/`).
 - **A tiered context system** — `.prism/rules/` for cross-cutting standards loaded into every conversation, `.prism/architect/` for path-scoped context loaded only when relevant files are touched, `.prism/spec/adrs/` for durable decisions.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, standup summaries, ticket types — shaped for cross-team consistency.
@@ -14,30 +18,28 @@ A multi-team AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills
 
 ## Quick start
 
-PRISM lives as a sibling repo next to your codebase, not inside it. Pull it down once, run the onboarding flow, and PRISM writes a customized `.claude/`, `.codex/`, or `.cursor/` setup into your repo.
+PRISM lives as a sibling repo next to your codebase, not inside it. Pull it down once, then invoke Atlas from your AI tool to write a customized `.claude/`, `.codex/`, or `.cursor/` setup into your repo.
 
 ```bash
 # One-time bootstrap (in a directory next to your codebase)
-git clone https://github.com/HunterMcGrew/agent-crew.git prism
+git clone https://github.com/HunterMcGrew/PRISM.git prism
 cd prism
 pnpm install
-
-# Phase 2 (coming): walk Atlas through onboarding for your codebase
-pnpm prism:onboard --target ../your-codebase
-
-# Pull updates later
-cd prism && git pull
-pnpm prism:sync --target ../your-codebase
+pnpm prism:build
 ```
 
-Until Phase 2 lands, PRISM is usable as a dogfood install in this repo itself — `pnpm prism:bootstrap`, `pnpm prism:build`, and the personas work on PRISM's own evolution.
+Then, from inside your target codebase, open Claude Code (or Codex / Cursor) and invoke Atlas:
+
+> "Atlas, onboard this repo."
+
+Atlas detects your stack, asks the questions it needs, generates per-team rules from your actual code, populates stub anchors in persona sources, writes `.ai-skills/config.json`, and tracks progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume. The `pnpm prism:sync` distribution-pull flow lands in a follow-up — until then, re-running `pnpm prism:build` in the PRISM repo regenerates the platform outputs.
 
 ## Repo shape
 
 The install layout is bifurcated: platform-agnostic content lives at `.prism/`, platform dirs hold build-time copies plus their own platform-specific outputs. See [docs/content/dev/architecture/install-layout.md](./docs/content/dev/architecture/install-layout.md) for the full reasoning.
 
 ```
-prism/                            (currently named agent-crew/ on disk)
+PRISM/
 ├── .ai-skills/                   # canonical multi-platform skill source
 │   ├── config.schema.json        # JSON Schema for per-team config.json
 │   ├── definitions/
@@ -73,11 +75,14 @@ prism/                            (currently named agent-crew/ on disk)
 │
 ├── scripts/ai-skills/            # generator + tooling (TypeScript via tsx)
 │   ├── build.ts                  # canonical → platform outputs + content copy
-│   ├── path-guard.ts             # build-time path-reference guard
 │   ├── bootstrap-from-claude.ts  # one-time importer
+│   ├── path-guard.ts             # build-time path-reference guard
+│   ├── literal-guard.ts          # detects unsubstituted literals leaking into canonical
+│   ├── lib/                      # Atlas helpers (stack detection, rule generators, anchors)
 │   ├── utils.ts
-│   ├── discovery-metadata.test.ts
-│   └── path-guard.test.ts
+│   └── *.test.ts                 # tsx --test suite (anchor substitution, atlas dogfood,
+│                                 #   content copy, discovery, literal guard, onboarding,
+│                                 #   path guard, rule generators, stack detect, tokens)
 │
 ├── docs/
 │   ├── parameterization.md       # config keys + token reference
@@ -95,12 +100,15 @@ prism/                            (currently named agent-crew/ on disk)
 | Command | What it does |
 |---------|-------------|
 | `pnpm prism:bootstrap` | One-time importer. Reads `.claude/skills/<id>/SKILL.md` and splits into the canonical `.ai-skills/skills/<id>/` shape. Renames `thrive-` prefixes to `prism-`. |
-| `pnpm prism:build` | Regenerate platform outputs from `.ai-skills/`. Writes `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.generated/cursor-skills/`. |
+| `pnpm prism:build` | Regenerate platform outputs from `.ai-skills/`. Writes `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.generated/cursor-skills/`. Runs `prism:test` on completion. |
 | `pnpm prism:check` | Drift detection. Fails if any generated output is out of sync with canonical. CI-ready. |
-| `pnpm prism:test` | Regression suite for canonical-source invariants (description length, role mapping, managed marker presence). |
+| `pnpm prism:test` | Regression suite (anchor substitution, Atlas dogfood, content copy, discovery metadata, literal guard, onboarding state/config, path guard, rule generators, stack detection, token substitution). |
 | `pnpm prism:check-types` | TypeScript check on the generator scripts. |
-| `pnpm prism:onboard --target <path>` | **Phase 2** — Atlas walks your codebase through onboarding. Not yet implemented. |
-| `pnpm prism:sync --target <path>` | **Phase 2** — copies the latest distribution into a target repo, with token substitution and three-way merge. Not yet implemented. |
+
+Onboarding and ongoing distribution-pull flows are now persona-driven, not CLI:
+
+- **Onboarding** — invoke Atlas from your AI tool inside the target repo. See _Quick start_ above.
+- **Distribution pull** — re-running `pnpm prism:build` regenerates platform outputs from the latest canonical sources. A dedicated `prism:sync` flow (three-way merge into a consumer repo) is planned follow-up work.
 
 ## Per-team config
 
@@ -126,10 +134,13 @@ See [docs/parameterization.md](./docs/parameterization.md) for the full schema, 
 
 ## Phased roadmap
 
-- **Phase 1 — Foundation** (in progress on `phase-1-foundation` branch). Project tooling, multi-platform skill generator, canonical sources for every named persona, parameterization layer, prune of source-codebase content, distribution surface populated.
-- **Phase 1.5 — Bridge work** (between Phase 1 and Phase 2, shipped through Phase 1.5e). Prepares the install for Atlas: (1.5a) `prism-install-layout` bifurcates content to `.prism/` canonical with build-time copies into platform dirs (so Codex/Cursor consumers aren't second-class); (1.5c) absorbs the Thrive `.claude/` backports — universal rules, persona upgrades, three-tier loading model, Zoe cadence persona; (1.5d) implements ADR-0030's build-time substitution layer + literal-Thrive guard and sweeps canonical sources clean per ADR-0032; (1.5e) absorbs the pattern absorptions. Lands before Atlas so Phase 2 writes the post-bridge layout from day one.
-- **Phase 2 — Atlas onboarding skill** (after Phase 1.5). Six-phase conversational install: identity → codebase context → rules selection → templates verification → architect handoff → final wiring. Resumable via `.prism/onboarding-state.json`.
-- **Phase 3 — Winston codebase-scan integration**. Winston scans the consumer's codebase, proposes 10–20 architect docs and a populated `manifest.json`, drafts a `verification-commands.md` from the team's actual tooling, and anchors a `0001-adopting-prism.md` ADR for the team's adoption.
+- **Phase 1 — Foundation** (shipped). Project tooling, multi-platform skill generator, canonical sources for every named persona, parameterization layer, distribution surface populated.
+- **Phase 1.5 — Bridge work** (shipped, 1.5a through 1.5e). Bifurcated install layout (`.prism/` canonical with build-time copies into platform dirs), Thrive `.claude/` backports, three-tier rule loading model, Zoe cadence persona, build-time token substitution + literal-Thrive guard.
+- **Phase 2 — Atlas onboarding skill** (shipped). Stack detection, per-team rule generators, stub-anchor population mechanism, conversational install with resumable state in `.ai-skills/registry/onboarding-state.json`. Dogfooded against this repo.
+- **Phase 2.5 — Theo** (shipped). Architect-doc walker. Walks a target directory, applies the Deletion Test to find load-bearing decisions, prompts write/skip/defer per candidate, drafts ADRs + paired dev docs on request. State persists in `.prism/theo-state.json`.
+- **Phase 2.6 — Ren** (shipped). Refactor scout. Walks the codebase, ranks refactor candidates by deletion-test strength, grills the chosen candidate through five passes, produces a refactor plan at `.prism/plans/refactor-<slug>.md`.
+- **Phase 3 — Parker** (in progress). The PRD persona. Greenfield mode (brain dump → stakes calibration → fast/coaching path → reviewer rubric → finalize) and brownfield mode (walks existing code and synthesizes a PRD) — both landed. Produces `.prism/prds/<slug>.md` plus an optional `decision-log.md`. Sits above Mira on grain.
+- **Phase 4 — Winston codebase-scan integration** (planned). Winston scans the consumer's codebase, proposes 10–20 architect docs and a populated `manifest.json`, drafts a `verification-commands.md` from the team's actual tooling, and anchors a `0001-adopting-prism.md` ADR for the team's adoption.
 
 ## Background
 
