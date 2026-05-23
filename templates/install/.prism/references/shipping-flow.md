@@ -75,6 +75,21 @@ If step 5 synced the PR body, add a one-liner before the two paths: "PR #<pr-num
 
 Offer this after every PR push. The user decides which path — the choice matters for review quality.
 
+## Draft-by-default
+
+Agent-authored PRs open as draft. The platform-level "you cannot merge a draft" rule is the load-bearing review gate — labels alone aren't reliable because the team lead doesn't always check them; the draft state is enforced by GitHub itself.
+
+**Per-PR-type flip path:**
+
+| PR type | Author | Flip path |
+| --- | --- | --- |
+| Code | Clove | Eric flips ready in his Phase 4 batch D label pipeline when state #3 (`confidence:high` or `confidence:needs-judgment`) fires. |
+| Docs | Eli | No agent reviewer. The human flips ready before merging. |
+| Changelog | Sage | No agent reviewer. The human flips ready before merging. |
+| QA checklist | Reese | No agent reviewer. The human flips ready before merging. |
+
+**Why:** Code PRs have an agent reviewer (Eric) who can flip ready with confidence. Doc/changelog/checklist PRs don't — the draft state stays until a human reviews. The platform enforces the gate either way.
+
 ## Release PR ownership (Sage / Reese)
 
 Sage's and Reese's PRs are **artifact PRs** — they add a file (changelog or QA checklist) to the repository. The **release PR itself** — cutting the release, tagging, etc. — is owned by the team lead, not Sage or Reese. Artifact PRs feed into the release workflow; they don't replace it.
