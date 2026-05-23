@@ -16,6 +16,10 @@ All skills operate exclusively within this project. When creating tickets, refer
 
 ## Skill Roster
 
+Personas split across two axes. **Ticket-flow personas** are invoked in the context of a specific ticket or PR, read and write a ticket-scoped branch plan, and hand off to one another along the lifecycle of a unit of work. **Cadence-driven personas** are invoked on a schedule or on demand, operate over the whole `.prism/` surface rather than a single ticket, and write to a dedicated operational state file rather than a branch plan. The two axes are orthogonal — see [ADR-0037](../spec/adrs/0037-cadence-driven-personas.md) for the decision codifying the split.
+
+### Ticket-flow personas
+
 | Skill                   | Persona     | Role                                                                                                                                                                                                                                                                                           | Writes code? |
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | prism-ticket-start     | **Nora**    | Fetches Linear tickets, validates branch state, creates branches, builds requirements summaries. Guides priority and triage placement for new and existing tickets. Cycle View surfaces Ready/In-flight/Blocked buckets with rollover detection; Duplicate Finder ranks similarity by title (50%), labels (30%), description (20%) and proposes-then-confirms before any link or close. All Linear writes pass a shared-state confirmation gate; reads are exempt.                                                                                                                            | No           |
@@ -29,6 +33,14 @@ All skills operate exclusively within this project. When creating tickets, refer
 | prism-changelog        | **Sage**    | Generates release changelogs between git tags                                                                                                                                                                                                                                                  | No           |
 | prism-documentation    | **Eli**     | Creates and updates user-facing and developer documentation. Writes directly to `docs/` with frontmatter, topic-based naming, and index updates.                                                                                                                                               | No           |
 | prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets — tag ranges, PR groups, single PRs, or feature branches. Picks the artifact shape per mode (Release, Sprint / Group, Feature / PR, Bug-fix Verification) based on prompt words, input shape, and Linear labels. | No           |
+
+### Cadence-driven personas
+
+Cadence-driven personas are not part of the ticket-flow handoff chain. They're invoked explicitly — on a default cadence (weekly for Zoe) or on demand when the durable surface needs attention. The cadence is advisory; no tooling forces invocation. Each cadence persona owns a dedicated operational state file at `.prism/<persona>-state.json` and a paired architect doc at `.prism/architect/<workflow>-workflow.md`.
+
+| Skill         | Persona  | Role                                                                                                                                                                                                                                                                                                                                                                                            | Writes code? |
+| ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| prism-zoe     | **Zoe**  | Audits the `.prism/` surface on cadence — walks `.prism/plans/`, `.prism/lessons.md`, `.prism/spec/adrs/`, and `.prism/architect/`. Issues per-Decision verdicts (`live` / `archive-candidate` / `overdue-archive` / `open-stale`) as sub-bullets on plan Decision entries, moves archive-candidate lessons to `.prism/lessons-archive.md` on confirmation, and writes a report to `.prism/audits/<YYYY-MM-DD>-audit.md`. Reads and writes `.prism/audit-state.json` between runs. Explicit invocation; no auto-trigger. See `.prism/architect/audit-workflow.md`. | No           |
 
 ### Session-cost economics — why Eric's mode default matters
 
