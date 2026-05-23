@@ -260,6 +260,8 @@ For every new or modified abstraction (generic parameter, utility function, wrap
 
 This does not apply to the existence of new files (components, tests, constants) — those are driven by the ticket. It applies to structural decisions _within_ any code, new or modified: generic parameters, shared utilities, abstraction layers, interface changes, wrapper components, and indirection that shapes how future code is written.
 
+When the justification questions land ambiguously — "maybe one consumer is enough" or "this could be useful later" — run the deletion test: imagine deleting the abstraction. If complexity vanishes, it was a pass-through; flag it as premature. If complexity reappears across multiple call sites, it was earning its keep; let it stand. The test is a tiebreaker for ambiguous cases, not a routine checklist item.
+
 ### Doc-Class Triage
 
 When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
