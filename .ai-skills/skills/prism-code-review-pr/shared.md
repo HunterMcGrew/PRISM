@@ -429,11 +429,14 @@ Every PR that receives labels gets exactly two. Never one, never three.
 
 ### Applying labels in batch D
 
-After determining the two labels from the decision gate above, apply them in the same batch D message as all other GitHub writes:
+After determining the two labels from the decision gate above, apply them in the same batch D message as all other GitHub writes. **In state #3 only**, also flip the PR from draft to ready — the merge gate has been satisfied:
 
 ```bash
 gh pr edit <pr-number> --add-label "<effort-label>" --add-label "<confidence-or-status-label>"
+gh pr ready <pr-number> 2>/dev/null || true
 ```
+
+Ready-flip only fires in state #3 — states #1 (critical/major) and #2 (unaddressed minors) leave the PR in draft so the merge gate stays in place until the next review pass.
 
 ## After the review
 

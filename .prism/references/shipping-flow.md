@@ -54,7 +54,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
    ```
 7. If step 4 returned empty, create the PR using `.github/pull_request_template.md` as the body scaffold and `.prism/rules/pr-description.md` for format:
    ```bash
-   gh pr create --title "<commit subject>" --body-file /tmp/pr-body.md
+   gh pr create --draft --title "<commit subject>" --body-file /tmp/pr-body.md
    ```
 8. If step 4 returned a PR number, skip `gh pr create` — the push updates the existing PR. This is the common path after Briar flags issues and the author amends: new commit, existing PR, no new PR needed.
 
@@ -74,6 +74,21 @@ After pushing (and creating the PR if needed), offer the user two paths. Include
 If step 5 synced the PR body, add a one-liner before the two paths: "PR #<pr-number> body synced to current scope." Keep it brief — the sync is silent-by-default, this is just a visible confirmation that the body isn't stale.
 
 Offer this after every PR push. The user decides which path — the choice matters for review quality.
+
+## Draft-by-default
+
+Agent-authored PRs open as draft. The platform-level "you cannot merge a draft" rule is the load-bearing review gate — labels alone aren't reliable because the team lead doesn't always check them; the draft state is enforced by GitHub itself.
+
+**Per-PR-type flip path:**
+
+| PR type | Author | Flip path |
+| --- | --- | --- |
+| Code | Clove | Eric flips ready in his Phase 4 batch D label pipeline when state #3 (`confidence:high` or `confidence:needs-judgment`) fires. |
+| Docs | Eli | No agent reviewer. The human flips ready before merging. |
+| Changelog | Sage | No agent reviewer. The human flips ready before merging. |
+| QA checklist | Reese | No agent reviewer. The human flips ready before merging. |
+
+**Why:** Code PRs have an agent reviewer (Eric) who can flip ready with confidence. Doc/changelog/checklist PRs don't — the draft state stays until a human reviews. The platform enforces the gate either way.
 
 ## Release PR ownership (Sage / Reese)
 
