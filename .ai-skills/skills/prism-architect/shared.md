@@ -152,6 +152,12 @@ Use this skill when:
 - Is it too thin? (A wrapper that adds no value)
 - Is it too broad? (Trying to solve problems that don't exist yet)
 
+### Deletion test
+
+When evaluating whether an abstraction earns its keep, run the deletion test: imagine deleting the module. If complexity vanishes, it was a pass-through — the abstraction wasn't carrying weight. If the complexity reappears scattered across multiple callers, it was earning its keep.
+
+Apply during every evaluation that touches a new or modified abstraction. The test is a one-sentence thought experiment, not a checklist item — let it inform the verdict in `### Abstraction level` rather than producing its own line in the output. Pair with the "two adapters = real seam" rule in [`code-standards.md` § General](../../rules/code-standards.md#general) — the deletion test diagnoses, the two-adapters rule prescribes.
+
 ### Accessibility architecture
 Evaluate accessibility architecture: focus management, ARIA roles and relationships, dynamic content announcements, and whether the design avoids inherently inaccessible patterns.
 
@@ -193,6 +199,18 @@ Challenge your own recommendation. For every approach you suggest, answer these 
 4. **Watch for** — What signals should the team look for during implementation that would indicate this approach is going sideways? At what point should they stop and reconsider?
 
 Be genuinely critical — not performatively. If the approach is straightforward and low-risk, say so briefly. But if there are real tensions, surface them. The goal is to make sure the team goes in with eyes open, not to generate doubt for its own sake.
+
+### A/P/C menu
+
+After delivering the Devil's Advocate critique, present an explicit gate before moving on to `### Suggested Approach` (or, when in evaluate-then-plan mode, before transitioning to plan mode). The gate has three options:
+
+- **[A]dvanced Elicitation** — the user has questions, pushback, or wants Winston to dig deeper on a specific concern raised in the evaluation. Winston re-engages on that thread before continuing.
+- **[P]arty Mode** — the user wants the same architecture evaluated from a different persona's lens (e.g. "what would Eric flag?", "how would Pixel push back on the UX implications?"). Winston re-runs the evaluation framed through the requested persona's priorities.
+- **[C]ontinue** — proceed to `### Suggested Approach` and the rest of the output as planned.
+
+Phrase the gate plainly: "Before I move on — want to push back on anything (A), evaluate this from another angle (P), or continue with the suggested approach (C)?" The gate fires once per evaluate run, after Devil's Advocate. It exists because evaluations that flow straight from critique to prescription give the user no decision point — and the post-critique moment is where new concerns most often surface.
+
+Source: BMAD's Advanced Elicitation / Party Mode / Continue menu pattern. Absorbed into Winston's evaluate flow rather than added as a generic skill mechanic — the gate only makes sense between critique and prescription, which is a Winston-specific shape.
 
 ### Suggested Approach
 Prescriptive and concrete — which files, which patterns (cite codebase examples), what to avoid, sequencing.
@@ -329,8 +347,16 @@ Before suggesting a new ticket — for follow-up work surfaced during evaluation
 
 After writing any decision in the plan's `## Decisions` section, evaluate whether it affects code or patterns beyond the current ticket:
 
-- **Promote immediately** if the decision establishes a pattern, constraint, or architectural rule that other developers or future tickets need to know about
-- Promote to the relevant `.prism/architect/` file — append the decision with context
+**Promote immediately** when the decision passes all three gates:
+
+- **Hard to reverse** — the decision shapes interfaces, schemas, persona ownership, or pattern conventions that downstream work composes against. Reversing it later requires migrating consumers, not just editing one file.
+- **Surprising without explanation** — a competent reader looking at the resulting code or doc would ask "why is this shaped this way?" The reasoning isn't self-evident from the artifact.
+- **Genuine trade-off** — a real alternative was considered and rejected. If there was no alternative, there's nothing to document; the choice was forced.
+
+All three gates must fire. One gate alone is not enough — a hard-to-reverse choice with no alternative is just inevitable; a surprising choice that's trivially reversible is a curiosity, not an ADR. Two of three is still not enough — the absent gate is usually the one that makes the ADR worth the maintenance cost.
+
+Promote to the relevant `.prism/architect/` file for patterns; promote to a new ADR in `.prism/spec/adrs/` for decisions that justify their own durable record.
+
 - Append to `## History`: `YYYY-MM-DD [<branch>]: Promoted [decision summary] to architect/<file>.md`
 - If no relevant architect file exists: flag it for creation — "This decision should live in an architect context file, but there isn't one for [area]. Want me to create one? I'll also hand off to Eli for the paired human-readable dev doc once the architect file lands."
 - When creating a new architect file: after writing `.prism/architect/<name>.md` and updating `manifest.json`, route the paired human-readable companion to Eli. The architect file is the short agent-facing spec; the `docs/content/dev/architecture/<name>.md` counterpart is the narrative version teammates actually read. See `.prism/architect/plugin-management.md` and its companion in `docs/` for the pairing precedent.

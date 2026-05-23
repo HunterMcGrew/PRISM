@@ -315,6 +315,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
 ## History
 
 - 2026-05-22 [main]: Plan created. Phase 1.5e scoped per roadmap.md — seven pattern absorptions from Matt Pocock (deletion test, two-adapters seam rule, triple-gated ADR criterion) and BMAD (micro-file step machine, stepsCompleted frontmatter, A/P/C menu, stakes calibration) into existing PRISM surfaces and two new reference docs. No new persona; no new ADR.
+- 2026-05-22 [hmcgrew/prism-1.5e-pattern-absorptions]: PR-1.5e implementation complete — deletion-test thought experiment added to Winston/Eric/Briar; two-adapters seam rule added to code-standards.md (canonical + templates); Winston's ADR-promotion criterion replaced with the triple-gate (hard-to-reverse + surprising + genuine trade-off); A/P/C menu inserted between Devil's Advocate and Suggested Approach; new reference docs at .prism/references/micro-file-step-machine.md and .prism/references/stakes-calibration.md (dual-written to templates). Paired dev docs deferred until Theo/Parker land per Eli's task 10/11 evaluation. All verification gates green.
 
 ---
 

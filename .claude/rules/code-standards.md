@@ -11,6 +11,7 @@ Universal standards that apply to all code in this repository. Language-specific
 - Follow existing repository patterns — read before writing.
 - Do not introduce new dependencies without approval.
 - Avoid premature abstraction — three similar lines are better than one speculative helper.
+- Two adapters serving the same port earn the abstraction; one adapter does not. The seam is real when a second concrete implementation forces the interface — until then, the "interface" is whatever the single caller needs, and inlining it produces clearer code.
 
 ### Refactor scope
 
