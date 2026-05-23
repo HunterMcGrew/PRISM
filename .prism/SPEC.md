@@ -100,7 +100,7 @@ These are in the `.claude/` tree but are not part of the spec hierarchy:
 - **In-progress plan edits** — a plan with `Status: proposed` AC or an open debugged issue is working state, not binding spec, until resolved.
 - **Ad-hoc conversation** — any reasoning or clarification that lives only in chat history. If it matters, it goes in the plan or lessons.
 - **Agent internal reasoning** — the "thinking" traces agents produce during a task. Not persisted, not spec.
-- **`.claude/design/mocks/`** — per-ticket Pixel deliverables. Scoped to the ticket they were produced for, not ecosystem guidance.
+- **`.prism/design/mocks/`** — per-ticket Pixel deliverables. Scoped to the ticket they were produced for, not ecosystem guidance.
 - **`.claude/changelogs/`** — per-release Sage artifacts. Historical record, not binding.
 - **`.claude/docs/qa/`** — per-release Reese artifacts. Same shape as changelogs.
 

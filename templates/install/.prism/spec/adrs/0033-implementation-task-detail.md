@@ -14,7 +14,7 @@ The latent model already exists in the dogfood — foundation-era tasks hit this
 Two artifact classes drive implementation:
 
 - **Winston's `## Implementation Tasks`** in branch plans — the procedural instructions Clove executes against.
-- **Pixel's mode 2 saved mock specs** at `.claude/design/mocks/<slug>.md` — the design instructions Clove (via Winston's tasks) implements against.
+- **Pixel's mode 2 saved mock specs** at `.prism/design/mocks/<slug>.md` — the design instructions Clove (via Winston's tasks) implements against.
 
 Both artifacts are read by an implementer who may be Sonnet on a fast pass, low-effort Opus, or any future model. Both need to meet a bar that eliminates judgment calls on what file, what change, what verification.
 

@@ -334,12 +334,12 @@ Run these steps automatically, in parallel where possible. Do not wait for furth
 
 2. **Read existing context** if any of these exist:
    - `<repo-root>/.prism/plans/<branch>*.md` — **this is the central nervous system of the ticket**. If it exists, read it fully. You'll write your output back to it.
-   - `<repo-root>/.claude/design/mocks/` — prior mock specs. See if related work exists you can restitch from.
+   - `<repo-root>/.prism/design/mocks/` — prior mock specs. See if related work exists you can restitch from.
    - `<repo-root>/.prism/references/frontend-components.md` — component inventory
    - `<repo-root>/.prism/references/frontend-blocks.md` — block inventory
    - `<repo-root>/.prism/rules/` and `<repo-root>/.prism/architect/` — team standards that may constrain UI choices
 
-3. **Ensure the output folder exists**: `<repo-root>/.claude/design/mocks/`. Create it if it doesn't.
+3. **Ensure the output folder exists**: `<repo-root>/.prism/design/mocks/`. Create it if it doesn't.
 
 ### Batch 2 — once context is loaded
 
@@ -414,7 +414,7 @@ Only save a spec to disk when one of these is clearly true:
 
 If the question is "where should Save go in this modal," **do not save a spec**. That's mode 1. Saving files and updating the plan for tiny riffs is noise — it pollutes the plan file and creates mock-spec sprawl for decisions that should live in the conversation.
 
-When mode 2 is warranted, save to: `<repo-root>/.claude/design/mocks/<ticket-or-feature-slug>.md`
+When mode 2 is warranted, save to: `<repo-root>/.prism/design/mocks/<ticket-or-feature-slug>.md`
 
 Use this template:
 
@@ -512,7 +512,7 @@ When asked, produce a single-file HTML document:
 - Medium fidelity: real typography and spacing, component shapes that read as real, but don't waste tokens on pixel-perfect polish
 - Mobile-first CSS: start with mobile layout, use `@media (min-width: ...)` to scale up
 - For visual styling, default to the **Kubota-derived palette** described in "Visual language defaults" below unless the user specifies otherwise
-- Save as `<slug>.html` in `<repo-root>/.claude/design/mocks/`
+- Save as `<slug>.html` in `<repo-root>/.prism/design/mocks/`
 
 The HTML is opened directly in a browser by the user. If they want a PDF from it, they Cmd+P → Save as PDF themselves — that's zero-dependency and works everywhere.
 
@@ -522,13 +522,13 @@ The HTML is opened directly in a browser by the user. If they want a PDF from it
 
 When a spec is saved (mode 2), the folder looks like:
 ```
-.claude/design/mocks/
+.prism/design/mocks/
 └── thr-1574-sortable-links-modal.md    ← source of truth
 ```
 
 If the user also asked for an HTML mockup (mode 3), the folder looks like:
 ```
-.claude/design/mocks/
+.prism/design/mocks/
 ├── thr-1574-sortable-links-modal.md    ← source of truth
 └── thr-1574-sortable-links-modal.html  ← on explicit request
 ```
@@ -569,7 +569,7 @@ Update `<repo-root>/.prism/plans/<branch>.md` with a `## Design` section. If it 
 ## Design
 
 **Status:** <Draft | Ready for Winston | Needs architecture review | Needs copy pass | Needs a11y review>
-**Mock:** `.claude/design/mocks/<slug>.md` (also `.html`)
+**Mock:** `.prism/design/mocks/<slug>.md` (also `.html`)
 **Author:** Pixel
 **Date:** <YYYY-MM-DD>
 
@@ -613,7 +613,7 @@ For a **conversational riff** — user was thinking out loud, didn't want anythi
 
 Whenever Pixel produces a mock spec, close with a handoff paragraph the dev can paste into a PR, ticket, or Slack message. Example:
 
-> **Handoff note:** Mock saved at `.claude/design/mocks/thr-1574-sortable-links-modal.{md,html}`. Covers default, empty, edit, loading, and error states. Reuses `Button`, `Modal`, `TextControl` from `@wordpress/components` and a restitched `SortableList`. Flagging for Winston: `SortableList` may need a formal slot pattern if this is the second consumer. Plan updated, status: Needs architecture review.
+> **Handoff note:** Mock saved at `.prism/design/mocks/thr-1574-sortable-links-modal.{md,html}`. Covers default, empty, edit, loading, and error states. Reuses `Button`, `Modal`, `TextControl` from `@wordpress/components` and a restitched `SortableList`. Flagging for Winston: `SortableList` may need a formal slot pattern if this is the second consumer. Plan updated, status: Needs architecture review.
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 
@@ -655,7 +655,7 @@ Before presenting your response, walk through the relevant checklist. Each item 
 
 **Mode 2 (saved spec):**
 - [ ] All of the above
-- [ ] Mock spec saved to `.claude/design/mocks/`
+- [ ] Mock spec saved to `.prism/design/mocks/`
 - [ ] Plan updated with `## Design` section
 - [ ] Handoff paragraph written with status
 - [ ] Spec includes Tailwind/rem/px annotations for measurable design choices
