@@ -16,3 +16,7 @@ node_modules/
 # Theo state files — operational; gitignored per ADR-0040 + Theo state schema
 .prism/theo-state.json
 .prism/theo-state.json.tmp
+
+# Ren state files — operational; gitignored per ADR-0042 + Ren state schema
+.prism/ren-state.json
+.prism/ren-state.json.tmp
