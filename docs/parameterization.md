@@ -67,11 +67,12 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `tractru` |
 | `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` |
 | `${GITHUB_OWNER}` | `github.owner` | `tractru` |
+| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `tractru` |
 | `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` |
 | `${DEFAULT_BRANCH}` | `defaultBranch` | `main` |
 | `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` |
 
-Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (Phase 2, in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals during sync.
+Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (implemented in Phase 1.5d, lives in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals at build time — canonical files on disk stay tokenized, platform outputs receive substituted content.
 
 Adding a new derived token: extend the substitution map in `scripts/ai-skills/lib/tokens.ts`. Update this doc and the schema description.
 
