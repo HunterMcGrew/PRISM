@@ -22,7 +22,7 @@ Each skill lives at `.ai-skills/skills/<skill-id>/`:
 ## Commands
 
 - `pnpm prism:bootstrap` — one-time importer. Reads `.claude/skills/<id>/SKILL.md` and splits each into the canonical shape. Renames `thrive-` prefixes to `prism-` during import. Skips files that already exist; pass `--force` to overwrite.
-- `pnpm prism:build` — regenerate platform outputs from `.ai-skills/`. Writes to `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.generated/cursor-skills/`, `.generated/codex-config.toml`.
+- `pnpm prism:build` — regenerate platform outputs from `.ai-skills/`. Writes to `.claude/skills/`, `.agents/skills/`, `.codex/agents/`, `.cursor/skills/`, `.codex/codex-config.toml`.
 - `pnpm prism:check` — drift detection. Fails if any generated output is out of sync with the canonical source. CI-ready.
 - `pnpm prism:test` — regression suite for canonical-source invariants (description length, role mapping, managed marker presence).
 - `pnpm prism:check-types` — TypeScript check on the generator scripts.

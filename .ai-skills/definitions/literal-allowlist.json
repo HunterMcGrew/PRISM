@@ -37,7 +37,7 @@
 			"reason": "platform-copy mirror of prism-architect"
 		},
 		{
-			"path": ".generated/cursor-skills/prism-architect/SKILL.md",
+			"path": ".cursor/skills/prism-architect/SKILL.md",
 			"reason": "platform-copy mirror of prism-architect"
 		},
 		{
@@ -53,7 +53,7 @@
 			"reason": "platform-copy mirror of prism-code-dev"
 		},
 		{
-			"path": ".generated/cursor-skills/prism-code-dev/SKILL.md",
+			"path": ".cursor/skills/prism-code-dev/SKILL.md",
 			"reason": "platform-copy mirror of prism-code-dev"
 		},
 		{
@@ -69,7 +69,7 @@
 			"reason": "platform-copy mirror of prism-qa-test-plan"
 		},
 		{
-			"path": ".generated/cursor-skills/prism-qa-test-plan/SKILL.md",
+			"path": ".cursor/skills/prism-qa-test-plan/SKILL.md",
 			"reason": "platform-copy mirror of prism-qa-test-plan"
 		},
 		{
@@ -167,6 +167,18 @@
 		{
 			"path": ".cursor/spec/adrs/0039-ai-prefix-namespace.md",
 			"reason": "platform-copy mirror of ADR-0039"
+		},
+		{
+			"path": ".claude/spec/adrs/0044-direct-write-tool-outputs.md",
+			"reason": "ADR cites Thrive PRs #2025 and #2026 as the originating direct-write backport"
+		},
+		{
+			"path": ".codex/spec/adrs/0044-direct-write-tool-outputs.md",
+			"reason": "platform-copy mirror of ADR-0044"
+		},
+		{
+			"path": ".cursor/spec/adrs/0044-direct-write-tool-outputs.md",
+			"reason": "platform-copy mirror of ADR-0044"
 		},
 		{
 			"path": ".claude/rules/architect-doc-verification.md",

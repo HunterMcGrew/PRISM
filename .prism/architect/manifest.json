@@ -31,6 +31,7 @@
 	"scripts/ai-skills/build.ts": "install-layout.md",
 	"scripts/ai-skills/path-guard.ts": "install-layout.md",
 	".ai-skills/definitions/paths.json": "install-layout.md",
+	".ai-skills/docs/**": "install-layout.md",
 	"docs/": "documentation.md",
 	"docs/content/dev/architecture/": "architecture-doc-shape.md",
 	"**": "skills-ecosystem.md"

@@ -2,15 +2,17 @@
 *.swp
 node_modules/
 
-.claude/worktrees/
-.claude/settings.local.json
-
-# PRISM build outputs (generated from .ai-skills/) — anchored to repo root so
-# `templates/install/.codex/`, `templates/install/.cursor/`, etc. stay tracked.
+# PRISM build outputs — committed-vs-ignored split per `.ai-skills/docs/compatibility.md § Per-Tool Directory Ownership`.
+# `.agents/` is the per-user Codex skills root — fully ignored.
 /.agents/
-/.codex/
-/.cursor/
-/.generated/
+# `.codex/codex-config.toml` is a per-user file (personality, projects, marketplaces) — committing it would clobber consumer customization.
+/.codex/codex-config.toml
+# Per-tool worktree state is operational, not generated — ignored on every tool namespace.
+.claude/worktrees/
+.codex/worktrees/
+.cursor/worktrees/
+# Per-user local overrides — ignored.
+.claude/settings.local.json
 
 
 # Theo state files — operational; gitignored per ADR-0040 + Theo state schema

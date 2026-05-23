@@ -29,7 +29,20 @@ Canonical-only (lives at `.prism/` and is not mirrored):
 - `.prism/plans/` — agent-written; mirroring would create write conflicts when an agent edits a plan and the next build overwrites the platform copy
 - `.prism/lessons.md` — same reason
 
-Skills are never under canonical at all — they're generated platform outputs from `.ai-skills/skills/<id>/` into `.claude/skills/<id>/`, `.agents/skills/<id>/`, and `.generated/cursor-skills/<id>/`. The skill build mechanism is older than the bifurcation and continues to work the same way.
+Skills are never under canonical at all — they're generated platform outputs from `.ai-skills/skills/<id>/` into `.claude/skills/<id>/`, `.agents/skills/<id>/`, and `.cursor/skills/<id>/`. The skill build mechanism is older than the bifurcation and continues to work the same way.
+
+## Direct-write tool outputs
+
+`pnpm prism:build` writes platform outputs directly to their tool-namespaced destinations — no staging directory. Cursor skills land at `.cursor/skills/<id>/SKILL.md`; Codex config lands at `.codex/codex-config.toml`. There is no `.generated/` staging surface.
+
+The committed-vs-ignored split inside each tool namespace is the consumer install contract — codified in [`.ai-skills/docs/compatibility.md`](../../.ai-skills/docs/compatibility.md) § Per-Tool Directory Ownership and recorded as [ADR-0044](../spec/adrs/0044-direct-write-tool-outputs.md). The short version:
+
+- `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
+- `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
+- `.agents/` is **ignored** — per-user Codex skills root; consumers populate it via `pnpm prism:install-codex`.
+- Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
+
+The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../.ai-skills/docs/compatibility.md) for the full reasoning.
 
 ## Cross-reference convention
 
@@ -63,7 +76,7 @@ When the guard fires, it prints `path-guard: <relative-path>:<line>: <text>` for
 
 The cleanup function under `removeDeletedManagedContent` handles the last case — it detects build copies whose canonical source no longer exists (recognized via the area-level `.ai-skill-generated` marker) and removes them.
 
-Platforms without managed content are treated as opt-out, not drift. The signal is the area-level `.ai-skill-generated` marker — if no copied area carries it inside `<platformDir>/`, `prism:build` has never run for that platform and `prism:check` skips it. This keeps fresh clones passing on platforms the contributor hasn't built locally yet (e.g. when `.codex/`/`.cursor/`/`.agents/` are gitignored). Once any area is built and the marker is written, drift detection picks the platform up on subsequent checks. Build mode always copies and writes the marker.
+Platforms without managed content are treated as opt-out, not drift. The signal is the area-level `.ai-skill-generated` marker — if no copied area carries it inside `<platformDir>/`, `prism:build` has never run for that platform and `prism:check` skips it. This keeps fresh clones passing on platforms the contributor hasn't built locally yet (e.g. `.codex/`/`.cursor/`/`.agents/` are gitignored in this repo's dogfood install). Once any area is built and the marker is written, drift detection picks the platform up on subsequent checks. Build mode always copies and writes the marker.
 
 ## Where to look
 
