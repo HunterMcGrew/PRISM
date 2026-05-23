@@ -86,7 +86,7 @@ Zoe walks four surfaces per run. Each surface produces a section in the run's ou
 
 ## Per-Decision verdict procedure
 
-For every `## Decisions` entry in every plan file, issue exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (Winston, Clove, Briar, Eric) need to see the verdict when they read the plan.
+For every `## Decisions` entry in every plan file, issue exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (Winston, Clove, Briar, Eric, Zoe) need to see the verdict when they read the plan.
 
 Four verdicts, mutually exclusive:
 
