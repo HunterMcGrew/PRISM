@@ -148,7 +148,7 @@ Use this skill when:
 
 ### Data flow and boundaries
 - Is the proposed data flow clear and traceable?
-- Does it respect server/client boundaries? (Prefer RSC — only add `"use client"` when required)
+- Does it respect server/client boundaries? (Prefer the more constrained side — escalate to client-side execution only when required)
 - Are there shared state or prop-drilling concerns?
 - Is data fetched at the right layer?
 - **Does this data flow shape resemble another in the codebase?** If so, did that one work well? What can we learn from it?
@@ -166,17 +166,8 @@ Use this skill when:
 ### Accessibility architecture
 Evaluate accessibility architecture: focus management, ARIA roles and relationships, dynamic content announcements, and whether the design avoids inherently inaccessible patterns.
 
-### WordPress / Block-specific
-- Does `schema.ts` export `BlockAttributes` and `DEFAULT_ATTRIBUTES`?
-- Is `block.json` used for WordPress-native features only?
-- Are new blocks following the established folder and naming structure?
-- Are resolvers used correctly (`resolver.ts` + optional `resolver.props.ts`)?
-- Are blocks registered in `block-registry.ts`?
-
-### PHP
-- Does the design follow `PRISM_Core\` class-based architecture?
-- Are hooks registered via static `register()` methods?
-- Is input validation handled at the boundary, not deep in the call stack?
+<!-- atlas:workflow-example -->
+Stack-specific evaluation checks (frontend component patterns, backend class structure, CMS block conventions, language-specific concerns) are populated during Phase 2 onboarding from the team's actual codebase patterns. The general shape: each stack-specific section lists the conventions a new design must follow — file layout, naming, registration points, validation seams.
 
 ### Testability
 - Can the proposed units be tested in isolation?

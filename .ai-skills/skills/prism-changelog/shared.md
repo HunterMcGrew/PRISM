@@ -145,9 +145,9 @@ The consolidation question: "Would a reader understand this as one change or mul
 
 Changes that require action from downstream consumers deserve special treatment:
 
-- **API contract changes** — REST endpoint shape, GraphQL schema modifications, response format changes
-- **Block attribute schema changes** — existing content may need migration
-- **PHP hook/filter removals or signature changes** — plugins or themes depending on them will break
+- **API contract changes** — endpoint shape, schema modifications, response format changes
+- **Content / data schema changes** — existing stored content may need migration
+- **Extension-point removals or signature changes** — downstream consumers (plugins, themes, integrations) depending on them will break
 - **Dependency version bumps with breaking changes** — the transitive break matters
 - **Configuration or environment changes** — new required env vars, changed defaults
 

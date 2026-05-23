@@ -213,7 +213,7 @@ Once context is resolved, ask:
 
 > "Who is this documentation for?
 >
-> 1. End users only (WordPress admin, non-technical)
+> 1. End users only (admins / non-technical product users)
 > 2. Developers only (components, APIs, integration)
 > 3. Both — I'll generate two separate files"
 
@@ -260,10 +260,10 @@ If the user declines, proceed with whatever they originally asked for. The nudge
 If the user chose interview mode or there's no diff to read, ask these one at a time:
 
 1. "What does this feature do? Give me a one-sentence summary."
-2. "Who uses it — an end user in WordPress admin, a developer integrating it, or both?"
+2. "Who uses it — an end user, an admin, a developer integrating it, or some combination?"
 3. "What's the main thing someone needs to do to use it?"
 4. "Any edge cases, limitations, or gotchas worth calling out?"
-5. "Are there any existing components, hooks, or PHP classes involved?"
+5. "Are there any existing components, modules, or classes involved?"
 
 Use the answers as the basis for documentation — same format, same standards.
 
@@ -279,15 +279,15 @@ $ARGUMENTS
 git diff main...<branch> --name-only
 ```
 
-Check whether the diff touches **both frontend and backend**:
+Check whether the diff touches **both frontend and backend**.
 
-- **Frontend files:** `.tsx`, `.ts`, `.jsx`, `config.ts`, `block.json`, frontend templates
-- **Backend files:** `.php`, REST endpoint files, server-side render files
+<!-- atlas:workflow-example -->
+Atlas populates the team's frontend / backend file-extension lists during Phase 2 onboarding. The general shape: frontend source extensions (component files, config, schemas) vs backend source extensions (server-side modules, endpoint files, server-rendered templates).
 
 **If it touches both → use 2 parallel sub-agents:**
 
-- **Agent A — Frontend context:** reads TypeScript components, hooks, block attributes, `config.ts`, block schema, editor controls. Returns a summary of what changed on the frontend surface.
-- **Agent B — Backend context:** reads PHP classes, REST endpoints, server-side rendering, `block.json` registrations. Returns a summary of what changed on the backend surface.
+- **Agent A — Frontend context:** reads frontend components, modules, attributes, config, schemas, UI controls. Returns a summary of what changed on the frontend surface.
+- **Agent B — Backend context:** reads backend modules, endpoints, server-side rendering, registrations. Returns a summary of what changed on the backend surface.
 
 Launch both simultaneously. Synthesize their findings before writing.
 
@@ -295,26 +295,14 @@ Launch both simultaneously. Synthesize their findings before writing.
 
 **What to focus on by audience:**
 
-_User docs_ — block attribute changes, WordPress admin UI, new editor controls, sidebar/toolbar options. Look for what the user can now configure or do.
+_User docs_ — attribute or UI changes, admin surfaces, new controls, configuration options. Look for what the user can now configure or do.
 
-_Developer docs_ — all changed files. Look for new vs. changed surfaces: components, hooks, TypeScript interfaces, PHP classes, REST endpoints, block schema.
+_Developer docs_ — all changed files. Look for new vs. changed surfaces: components, modules, interfaces, classes, endpoints, schemas.
 
 **For user docs, build a control inventory from the source code.** Before finishing the codebase read, build a table of every UI control — attribute name, its UI label string, its control type, and where it lives. This ensures the doc covers every option without relying on memory.
 
-For each inspector control found in the source (e.g. `config.ts`, edit component), record:
-
-```
-| Attribute       | UI Label          | Control type     | Location |
-|-----------------|-------------------|------------------|----------|
-| headlineText    | "Headline Text"   | TextControl      | sidebar  |
-| headlineLevel   | "Headline Level"  | SelectControl    | sidebar  |
-| imagePosition   | "Image Position"  | SelectControl    | sidebar  |
-| textAlign       | (alignment)       | AlignmentControl | toolbar  |
-```
-
-For toolbar controls, look for `BlockControls`, `AlignmentToolbar`, `BlockAlignmentToolbar`, `ToolbarButton`, and custom toolbar components. Note their `label` or `aria-label` props.
-
-This inventory drives the doc — every entry must have a corresponding **Block Options** section in the user guide. Nothing skipped.
+<!-- atlas:workflow-example -->
+Atlas populates the team's control-inventory shape during onboarding from the team's actual UI framework (sidebar panels, toolbars, inspector controls, settings dialogs — whatever the stack provides). The general pattern: enumerate every interactive control surfaced to the user, record its attribute name, displayed label, control type, and location, then ensure each appears in the user-facing documentation. Nothing skipped.
 
 ## Output paths
 
@@ -341,7 +329,7 @@ Docs are written directly to `docs/` using topic-based naming per `documentation
 | references | dev | Lookup tables, utility APIs, design mocks |
 | blocks | user | Block-by-block user guides |
 | byo | user | Build Your Own product guides |
-| configuration | user | WordPress settings, third-party setup |
+| configuration | user | Platform settings, third-party setup |
 | customization | user | CSS snippets, embed guides |
 
 ## Frontmatter
