@@ -13,6 +13,7 @@ Run the originally-planned PR #3 (token substitution layer) and PR #4 (canonical
 ## History
 
 - 2026-05-22 [main]: Plan created. Supersedes epic-phase-1-foundation.md tasks 13-28 which were authored pre-roadmap-revision. Tasks ported with paths refreshed for the post-Phase-1.5a bifurcated layout (`templates/claude/` → `templates/install/.prism/`) and re-sequenced behind Phase 1.5c backports.
+- 2026-05-22 [hmcgrew/prism-1.5d-tokenization-and-cleanup]: PR-1.5d implementation complete — substitution layer + literal-Thrive guard + allowlist landed, canonical sources and templates surface swept clean of identifiers, editorial cleanup per ADR-0032 added atlas stub anchors across persona sources, Problem-shape examples in architecture-doc-shape.md stubbed for Atlas to populate. Verification gates all green: `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, `pnpm prism:test`. Implemented across 5 sliced subagent dispatches (substitution infra → tokenization sweep → editorial canonical → editorial templates + stub anchor → docs final).
 
 ---
 
