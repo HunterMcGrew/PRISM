@@ -31,7 +31,11 @@ import { generate as generateCodeStandards } from "./lib/rule-generators/code-st
 import { generate as generateSecurity } from "./lib/rule-generators/security";
 import { generate as generateFrameworkGuidelines } from "./lib/rule-generators/framework-guidelines";
 import { REASONS } from "./lib/rule-generators/types";
-import { RULE_GENERATORS, runRuleGenerators } from "./lib/onboarding-run";
+import {
+	RULE_GENERATORS,
+	runAnchorSubstitution,
+	runRuleGenerators,
+} from "./lib/onboarding-run";
 import type { OnboardingConfig } from "./lib/onboarding-types";
 import type { DetectedStack } from "./lib/stack-detect";
 
@@ -519,4 +523,124 @@ test("runRuleGenerators reports skip-if-exists entries in the skipped bucket", a
 	for (const entry of secondRun.skipped) {
 		assert.equal(entry.result.reason, REASONS.exists);
 	}
+});
+
+test("runAnchorSubstitution populates specializes-in and domain-context anchors", async (t) => {
+	const repoRoot = await makeTempRepo();
+	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
+
+	const sharedPath = path.join(
+		repoRoot,
+		".ai-skills",
+		"skills",
+		"prism-test",
+		"shared.md"
+	);
+	await fs.mkdir(path.dirname(sharedPath), { recursive: true });
+	const content = [
+		"<!-- atlas:specializes-in -->",
+		"default stack content",
+		"<!-- atlas:end -->",
+		"",
+		"<!-- atlas:domain-context -->",
+		"default domain content",
+		"<!-- atlas:end -->",
+		"",
+	].join("\n");
+	await fs.writeFile(sharedPath, content, "utf8");
+
+	const config = buildConfig({
+		languages: [
+			{ name: "typescript", confidence: "high", evidence: ["package.json"] },
+		],
+		frameworks: [
+			{ name: "react", confidence: "high", evidence: ["package.json"] },
+		],
+	});
+
+	const summary = await runAnchorSubstitution(config, repoRoot);
+
+	assert.equal(summary.written.length, 1);
+	assert.deepEqual(summary.touchedAnchors.sort(), [
+		"domain-context",
+		"specializes-in",
+	]);
+
+	const after = await fs.readFile(sharedPath, "utf8");
+	assert.match(after, /Languages: typescript\./);
+	assert.match(after, /Frameworks: react\./);
+	assert.match(after, /test domain/);
+});
+
+test("runAnchorSubstitution leaves orphan anchors with no replacement key intact", async (t) => {
+	const repoRoot = await makeTempRepo();
+	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
+
+	const sharedPath = path.join(
+		repoRoot,
+		".ai-skills",
+		"skills",
+		"prism-test",
+		"shared.md"
+	);
+	await fs.mkdir(path.dirname(sharedPath), { recursive: true });
+	const content = [
+		"<!-- atlas:specializes-in -->",
+		"<!-- atlas:end -->",
+		"",
+		"<!-- atlas:examples -->",
+		"existing default examples — preserved",
+		"<!-- atlas:end -->",
+		"",
+	].join("\n");
+	await fs.writeFile(sharedPath, content, "utf8");
+
+	const config = buildConfig({
+		languages: [
+			{ name: "typescript", confidence: "high", evidence: ["package.json"] },
+		],
+		frameworks: [],
+	});
+
+	await runAnchorSubstitution(config, repoRoot);
+
+	const after = await fs.readFile(sharedPath, "utf8");
+	assert.match(
+		after,
+		/<!-- atlas:examples -->\nexisting default examples — preserved\n<!-- atlas:end -->/
+	);
+});
+
+test("runAnchorSubstitution skips files when both languages and frameworks are absent", async (t) => {
+	const repoRoot = await makeTempRepo();
+	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
+
+	const sharedPath = path.join(
+		repoRoot,
+		".ai-skills",
+		"skills",
+		"prism-test",
+		"shared.md"
+	);
+	await fs.mkdir(path.dirname(sharedPath), { recursive: true });
+	const content = [
+		"<!-- atlas:specializes-in -->",
+		"default content stays",
+		"<!-- atlas:end -->",
+		"",
+	].join("\n");
+	await fs.writeFile(sharedPath, content, "utf8");
+
+	const config = buildConfig({
+		languages: [{ name: "unknown", confidence: "high", evidence: [] }],
+		frameworks: [],
+	});
+	const emptyDomainConfig: OnboardingConfig = { ...config, productDomain: "" };
+
+	const summary = await runAnchorSubstitution(emptyDomainConfig, repoRoot);
+
+	assert.equal(summary.written.length, 0);
+
+	const after = await fs.readFile(sharedPath, "utf8");
+	assert.match(after, /default content stays/);
 });

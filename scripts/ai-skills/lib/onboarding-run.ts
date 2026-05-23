@@ -20,6 +20,10 @@
  * caller, which decides whether to abort the session or surface and
  * continue.
  */
+import {
+	substituteAnchorsAcrossSkills,
+	type AnchorResult,
+} from "./anchor-substitute";
 import { generate as generateCodeStandards } from "./rule-generators/code-standards";
 import { generate as generateSecurity } from "./rule-generators/security";
 import { generate as generateFrameworkGuidelines } from "./rule-generators/framework-guidelines";
@@ -93,4 +97,99 @@ export async function runRuleGenerators(
 		written: entries.filter((e) => e.result.written),
 		skipped: entries.filter((e) => !e.result.written),
 	};
+}
+
+/**
+ * Summary of a single anchor-substitution run. `entries` is one record per
+ * canonical persona-source file that contained at least one anchor;
+ * `written` and `touchedAnchors` are pre-filtered views the closing summary
+ * can use directly.
+ */
+export interface AnchorSubstitutionSummary {
+	entries: AnchorResult[];
+	written: AnchorResult[];
+	touchedAnchors: string[];
+}
+
+/**
+ * Runs Atlas's stub-anchor population step after rule generation. Builds the
+ * `contentByAnchor` map from `OnboardingConfig` — `specializes-in` from the
+ * detected stack, `domain-context` from the captured product domain — and
+ * runs `substituteAnchorsAcrossSkills` against the canonical persona-source
+ * surface. Examples-class anchors stay empty in v1 (future Atlas iterations
+ * fill them from team artifacts).
+ *
+ * The shape mirrors `runRuleGenerators` so the orchestration code at the
+ * Atlas-shared.md level can compose the two in a uniform way — one call per
+ * step, one summary per step, the closing summary stitches both together.
+ */
+export async function runAnchorSubstitution(
+	config: OnboardingConfig,
+	repoRoot: string
+): Promise<AnchorSubstitutionSummary> {
+	const contentByAnchor = buildContentByAnchor(config);
+	const results = await substituteAnchorsAcrossSkills(
+		repoRoot,
+		contentByAnchor
+	);
+
+	const entries = Array.from(results.values());
+	const written = entries.filter((e) => e.written);
+	const touchedAnchors = Array.from(
+		new Set(written.flatMap((e) => e.anchorsReplaced))
+	).sort();
+
+	return { entries, written, touchedAnchors };
+}
+
+/**
+ * Builds the replacement map from `OnboardingConfig`. Only anchors with a
+ * non-empty value are included — empty content would replace existing
+ * default content with a single newline, which the v1 spec treats as
+ * "leave the default until a future Atlas iteration fills it."
+ */
+function buildContentByAnchor(
+	config: OnboardingConfig
+): Record<string, string> {
+	const map: Record<string, string> = {};
+
+	const stackSummary = renderStackSummary(config);
+	if (stackSummary.length > 0) {
+		map["specializes-in"] = stackSummary;
+	}
+
+	const domain = config.productDomain.trim();
+	if (domain.length > 0) {
+		map["domain-context"] = domain;
+	}
+
+	return map;
+}
+
+/**
+ * Renders the detected-stack section content. Languages list first, then
+ * frameworks, both sorted by confidence-then-name. The `unknown` sentinel
+ * (an empty repo or unrecognized package files) collapses to an empty
+ * string so Atlas falls back to the canonical default.
+ */
+function renderStackSummary(config: OnboardingConfig): string {
+	const languages = config.techStack.languages.filter(
+		(l) => l.name !== "unknown"
+	);
+	const frameworks = config.techStack.frameworks;
+
+	if (languages.length === 0 && frameworks.length === 0) {
+		return "";
+	}
+
+	const lines: string[] = [];
+
+	if (languages.length > 0) {
+		lines.push(`Languages: ${languages.map((l) => l.name).join(", ")}.`);
+	}
+	if (frameworks.length > 0) {
+		lines.push(`Frameworks: ${frameworks.map((f) => f.name).join(", ")}.`);
+	}
+
+	return lines.join(" ");
 }
