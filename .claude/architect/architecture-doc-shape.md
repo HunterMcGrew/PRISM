@@ -85,7 +85,12 @@ When an architecture has multiple layers or subsystems, the doc should show how 
 
 **Why:** If the architecture has more layers than the problem has modes, it's probably over-abstracted. If it has fewer, something's being compressed that shouldn't be. Either way, naming the match between problem-shape and solution-shape in the opening lets the layer descriptions land as inevitability rather than preference. A reader who can't see the match has to trust the architecture instead of understanding it.
 
-**How to apply:** before describing the layers, name the shape of the problem. For CI: two operational scopes (fleet-wide + single-site) × two deployment targets (backend + frontend) = four operational modes. For the block system: two editor contexts (backend edit + frontend view). The layer descriptions then fall out naturally — "and here's which layer handles which shape."
+**How to apply:** before describing the layers, name the shape of the problem.
+
+<!-- atlas:problem-shape-examples -->
+Per-team examples are populated during onboarding from the team's actual architecture.
+
+The layer descriptions then fall out naturally once the problem-shape is named — "and here's which layer handles which shape."
 
 ---
 
