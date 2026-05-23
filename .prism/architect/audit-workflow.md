@@ -23,7 +23,7 @@ Zoe walks four surfaces in a single audit run. Each surface produces a section i
 
 ## Per-Decision verdict procedure
 
-For every `## Decisions` entry in every plan file, Zoe issues exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (Winston, Briar, Eric, Clove) need to see the verdict when they read the plan.
+For every `## Decisions` entry in every plan file, Zoe issues exactly one verdict. The verdict is written as a sub-bullet directly on the Decision entry — it does not live in a separate report-only artifact, because downstream personas (Winston, Clove, Briar, Eric, Zoe) need to see the verdict when they read the plan.
 
 The four verdicts:
 
@@ -148,4 +148,4 @@ A future Zoe revision that needs to change the schema increments `schemaVersion`
 
 Zoe doesn't hand off to ticket-flow personas the way they hand off to each other. She's invoked, she runs, she writes her report and updates her state, she exits. Downstream personas don't need to know Zoe ran — they discover her verdicts when they read the plans she annotated.
 
-The four personas that read plan `## Decisions` sections — Winston, Briar, Eric, Clove — carry a reflex bullet: "when reading a plan's `## Decisions`, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work." That reflex is how Zoe's output becomes load-bearing for the ticket flow without Zoe being in the ticket flow herself.
+The five personas that read plan `## Decisions` sections — Winston, Clove, Briar, Eric, Zoe — carry a reflex bullet: "when reading a plan's `## Decisions`, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work." That reflex is how Zoe's output becomes load-bearing for the ticket flow without Zoe being in the ticket flow herself.

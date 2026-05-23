@@ -35,13 +35,13 @@ Zoe walks four surfaces per audit run.
 - **`.prism/spec/adrs/`** — every ADR. Zoe scans for assumptions that may have shifted since the ADR shipped — a referenced PR closed without merging, a sibling decision since superseded.
 - **`.prism/architect/`** — every architect doc. Zoe scans for re-enumeration drift (a doc claims something one way while a sibling doc owns a different enumeration of the same concept) and stale source references.
 
-For each surface, Zoe produces verdicts. The verdicts are the durable output. They get written into the plan files directly — as sub-bullets on the Decision entries — so that downstream personas (Winston, Clove, Briar, Eric) see them when they read the plan. The audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` captures the full run for human reference; the per-Decision sub-bullets are what affects future agent context.
+For each surface, Zoe produces verdicts. The verdicts are the durable output. They get written into the plan files directly — as sub-bullets on the Decision entries — so that downstream personas (Winston, Clove, Briar, Eric, Zoe) see them when they read the plan. The audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` captures the full run for human reference; the per-Decision sub-bullets are what affects future agent context.
 
 ## Why verdicts live on the Decision, not in a separate report
 
-A standalone audit report has the cron-job problem in a different shape: the report exists but the downstream readers (Winston, Clove, Briar, Eric) never see it because they don't go looking for it. The plan is what they read. So the verdict has to live where they read.
+A standalone audit report has the cron-job problem in a different shape: the report exists but the downstream readers (Winston, Clove, Briar, Eric, Zoe) never see it because they don't go looking for it. The plan is what they read. So the verdict has to live where they read.
 
-The sub-bullet format on each Decision is the simplest version of that idea: the verdict travels with the Decision, the date travels with the verdict, the next audit run can tell whether the verdict has aged into a new bucket. Four personas carry a reflex bullet that says "when you read a plan's `## Decisions` section, note any Zoe-issued verdict sub-bullet and respect it during current work." That reflex makes Zoe's output load-bearing for ticket-flow work without putting Zoe in the ticket flow.
+The sub-bullet format on each Decision is the simplest version of that idea: the verdict travels with the Decision, the date travels with the verdict, the next audit run can tell whether the verdict has aged into a new bucket. Five personas carry a reflex bullet that says "when you read a plan's `## Decisions` section, note any Zoe-issued verdict sub-bullet and respect it during current work." That reflex makes Zoe's output load-bearing for ticket-flow work without putting Zoe in the ticket flow.
 
 ## What the verdicts mean
 

@@ -63,7 +63,7 @@ Zoe audits the `.prism/` surface on cadence to surface stale plans, archive-cand
 
 The audit produces three classes of output:
 
-- **Verdicts written into plan files** — per-Decision sub-bullets that downstream personas (Winston, Briar, Eric, Clove) see when they read the plan.
+- **Verdicts written into plan files** — per-Decision sub-bullets that downstream personas (Winston, Clove, Briar, Eric, Zoe) see when they read the plan.
 - **Archive moves** — lessons that have aged out of relevance, moved from `.prism/lessons.md` to `.prism/lessons-archive.md` after user confirmation.
 - **Flags for human review** — ADRs whose assumptions may have shifted, architect docs with re-enumeration drift or stale source references.
 
