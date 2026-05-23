@@ -34,7 +34,7 @@ Each inspector reads one package-file class and returns the languages and framew
 Every detected language and framework carries a `confidence: 'high' | 'medium' | 'low'` value:
 
 - **high** — the package file explicitly names the framework as a direct dependency (e.g. `react` in `package.json` dependencies; `johnpbloch/wordpress-core` in composer.json).
-- **medium** — the framework signal is indirect or partial (e.g. TypeScript inferred from a `tsconfig.json` sibling when the dependency block doesn't list `typescript` explicitly).
+- **medium** — reserved for future inspectors where the framework signal is indirect or partial (no manifest dependency, only a sibling-file or naming-convention signal). Not currently emitted at v1; all v1 detections return `high`.
 - **low** — currently unused at v1; reserved for inspectors that infer from file conventions only (no manifest signal).
 
 `detectStack` sorts results by confidence descending before returning.
