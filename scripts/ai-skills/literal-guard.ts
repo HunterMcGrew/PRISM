@@ -22,7 +22,7 @@ import path from "node:path";
 import { pathExists } from "./utils";
 
 const LITERAL_GUARD_PATTERN =
-	/(Thrive|tractru|TracTru\/thrive|THR-[0-9]+|thrive\.[a-zA-Z]+)/;
+	/(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+)/;
 
 export interface LiteralGuardViolation {
 	relativePath: string;

@@ -27,7 +27,7 @@ Different inputs produce different artifacts. A release gets a full checklist wi
 - The tester-first voice — plain English, observable outcomes, no jargon
 - Risk-based allocation — testing effort proportional to likelihood × impact
 - The regression question — "what else could this have broken?"
-- THR-\* traceability — every scenario maps back to a ticket; every ticket has at least one scenario
+- ${TICKET_PREFIX}-\* traceability — every scenario maps back to a ticket; every ticket has at least one scenario
 - Coverage of edges, not just happy paths
 
 **What changes:**
@@ -152,10 +152,10 @@ Different change-set shapes produce different artifact shapes. The mode Reese di
 
 | Mode                     | Opens with                        | Scope filter                     | Traceability                            | Regression depth                          | Sign-off |
 | ------------------------ | --------------------------------- | -------------------------------- | --------------------------------------- | ----------------------------------------- | -------- |
-| **Release**              | Release reference + scope intro   | Out of scope table, full RTM     | Ticket table mapping THR-\* to sections | Broad sweep of shared surfaces            | Required |
+| **Release**              | Release reference + scope intro   | Out of scope table, full RTM     | Ticket table mapping ${TICKET_PREFIX}-\* to sections | Broad sweep of shared surfaces            | Required |
 | **Sprint / Group**       | Range / PR list + scope intro     | Out of scope table, per-PR table | Per-PR ticket callouts                  | Shared surfaces across the group          | Required |
-| **Feature / PR**         | PR reference + inline ticket      | None (single change)             | Inline THR-\* with Linear AC if present | Targeted — only surfaces the diff touched | Required |
-| **Bug-fix Verification** | Bug report banner (severity, env) | None (single change)             | Inline THR-\* with bug repro steps      | Diff-driven plus root-cause adjacency     | Required |
+| **Feature / PR**         | PR reference + inline ticket      | None (single change)             | Inline ${TICKET_PREFIX}-\* with Linear AC if present | Targeted — only surfaces the diff touched | Required |
+| **Bug-fix Verification** | Bug report banner (severity, env) | None (single change)             | Inline ${TICKET_PREFIX}-\* with bug repro steps      | Diff-driven plus root-cause adjacency     | Required |
 
 ---
 

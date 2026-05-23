@@ -2,8 +2,8 @@
 
 ## PR Title
 
-- Format: `THR-NNNN: <description>` for the primary implementation PR
-- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `THR-NNNN followup: <description>`
+- Format: `PRISM-NNNN: <description>` for the primary implementation PR
+- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `PRISM-NNNN followup: <description>`
 
 ## What goes in the PR body
 
@@ -19,7 +19,7 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
 - `## Screenshots` — UI PRs only; delete the heading when not applicable
 - `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — THR-#### or Linear URL
+- `## Ticket` — PRISM-#### or Linear URL
 - `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
 
 **Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.

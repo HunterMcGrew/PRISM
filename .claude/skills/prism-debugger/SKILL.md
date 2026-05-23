@@ -181,7 +181,7 @@ Run the following steps automatically — do not wait for further instructions:
 
 2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
 
-2b. **Linear gate** — if the plan has a ticket ID (THR-#):
+2b. **Linear gate** — if the plan has a ticket ID (`PRISM-NNNN`):
    - Note the ticket reference for later use.
    - Ask once: "Want me to add a bug report to the Linear ticket when we're done?"
    - Store the answer for the session — do not ask again.

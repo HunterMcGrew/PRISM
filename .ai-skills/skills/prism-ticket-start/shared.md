@@ -312,7 +312,7 @@ Run these steps automatically:
    - Always cite the reasoning: "Putting this at High — S2 severity, affects all dealer sites, workaround exists but requires manual intervention. Not Urgent because dealers can still process inquiries through phone."
    - If status is Triage or Backlog: evaluate readiness — does it have enough context? Run the **Definition of Ready** checklist. Should it move to Todo or the current cycle?
    - If the ticket looks under-scoped or missing key info: flag it with specifics — "This ticket fails the Definition of Ready — it's missing scope boundaries and has ambiguity in the success criteria ('should work better' — better how?). Want me to help flesh it out?"
-   - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by THR-XXXX" or "THR-XXXX is waiting on this — that bumps the priority."
+   - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by ${TICKET_PREFIX}-XXXX" or "${TICKET_PREFIX}-XXXX is waiting on this — that bumps the priority."
    - Present all recommendations and let the user confirm or skip before proceeding
 
 4d. **Requirements quality check** — run the "tomorrow test" on the ticket:

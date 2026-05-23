@@ -41,7 +41,7 @@ Git commits are atomic units of development. Changelog entries are atomic units 
 
 The consolidation question: "Would a reader understand this as one change or multiple?" If a feature was implemented across three PRs, it's still one feature in the changelog. Cite all PR numbers, but write one entry.
 
-When multiple commits share a THR-\* ticket, they almost always represent one logical change. Consolidate by default, separate only when the commits address genuinely distinct user-facing outcomes.
+When multiple commits share a ${TICKET_PREFIX}-\* ticket, they almost always represent one logical change. Consolidate by default, separate only when the commits address genuinely distinct user-facing outcomes.
 
 ### 3. Categorization is judgment, not pattern matching
 
@@ -133,7 +133,7 @@ When keyword matching is ambiguous, apply this decision tree:
 
 Multiple commits that form one logical change should be one entry. Consolidation signals:
 
-- **Same THR-\* ticket** — almost always one entry. The ticket is the unit of work.
+- **Same ${TICKET_PREFIX}-\* ticket** — almost always one entry. The ticket is the unit of work.
 - **Same PR** — definitely one entry. A PR is a single shippable change.
 - **Sequential PRs on the same feature** — one entry citing all PRs. "Added equipment comparison feature ([#1450], [#1455], [#1462])."
 - **Follow-up fix for a feature in the same release** — merge into the feature entry. Don't list "Added X" and then "Fixed X" — that tells the reader X shipped broken. Present the final state: X works.
@@ -260,7 +260,7 @@ Anything that doesn't match goes into **Other**. Do not silently drop uncategori
 
 After categorization, apply consolidation rules:
 
-1. Group entries by THR-\* ticket. Multiple commits with the same ticket are almost always one change.
+1. Group entries by ${TICKET_PREFIX}-\* ticket. Multiple commits with the same ticket are almost always one change.
 2. Within each ticket group, verify: is this genuinely one logical change or multiple distinct outcomes?
 3. If one change: write one entry citing all PR numbers — "Added equipment comparison feature ([#1450], [#1455])."
 4. If a feature and its follow-up fix are both in this release: merge into one entry presenting the final state. Don't list "Added X" and "Fixed X" — that tells the reader X shipped broken.
