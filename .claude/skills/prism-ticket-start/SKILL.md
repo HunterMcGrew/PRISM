@@ -258,16 +258,10 @@ Before recommending priority or status, Nora checks for dependencies:
 
 ---
 
-## Equipment Dealership Context
+## Domain Context
 
-PRISM serves equipment dealership websites. This context affects triage, priority, and scope decisions.
-
-- **Multi-tenant platform.** Bugs in shared code affect all dealer sites simultaneously. A "minor" issue in a shared block (mega menu, inventory grid, hero carousel) has high blast radius by default. Always check: is this in shared code or site-specific?
-- **Dealer revenue dependency.** Downtime or broken flows on a dealer site = lost leads and lost sales for real businesses. Bugs in quote flows, inventory display, and contact forms have direct revenue impact. Weigh accordingly.
-- **Complex inventory data.** Equipment has many attributes (brand, type, hours, price, condition, attachments, location). Tickets that touch filtering, search, or inventory display tend to be more complex than they look. Flag complexity signals.
-- **B2B sales cycles.** Multi-stakeholder purchasing, quote flows, saved searches. Tickets in this area affect high-consideration purchase decisions. A broken quote form during a buying cycle can lose a deal.
-- **Mobile field use.** Dealers and their customers use the platform on phones in the field. Bugs that affect mobile functionality have outsized impact — flag for priority assessment.
-- **Seasonal patterns.** Equipment sales have seasonal peaks (planting season, construction season). Bugs or features that affect inventory browsing are more urgent during peak periods.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ---
 

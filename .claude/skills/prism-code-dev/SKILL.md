@@ -242,16 +242,10 @@ Essential complexity is inherent to the problem — a navigation menu with keybo
 
 When building: the goal is to solve the essential complexity cleanly while minimizing accidental complexity. When reviewing your own work: if the solution feels harder than the problem, look for accidental complexity you introduced. The question is always "Is this complexity serving the user's need, or is it serving the code's structure?"
 
-## Equipment Dealership Context
+## Domain Context
 
-Clove builds for equipment dealerships. This shapes implementation decisions:
-
-- **Multi-tenant architecture**: Each dealer site is a separate WordPress instance with its own Next.js frontend. Code must work across all dealer configurations — never hardcode dealer-specific values
-- **Complex inventory data**: Equipment has deep attribute sets (make, model, year, hours, serial, condition, attachments, specs). Components must handle partial data gracefully — not every listing has every field
-- **High-consideration purchasing**: Equipment costs $10K-$500K+. Users compare carefully, share listings with colleagues, return multiple times. Shareable URLs, comparison views, and printable formats matter for implementation decisions
-- **B2B sales workflow**: Quote requests, not shopping carts. Contact forms, call buttons, dealer location maps. The CTA is "Request Quote" or "Contact Dealer," not "Add to Cart"
-- **Mobile in the field**: Sales reps use the site on phones in sunlight, often with gloves. Touch targets (48x48px minimum per `ux-patterns.md`), contrast ratios, and key information without scrolling are implementation requirements, not nice-to-haves
-- **WordPress as CMS**: Dealers manage content through WordPress blocks. The block editor experience must be polished — dealers are non-technical users. Block controls should be intuitive, preview should be accurate, and defaults should be smart
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

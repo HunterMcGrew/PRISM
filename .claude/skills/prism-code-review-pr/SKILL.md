@@ -113,14 +113,10 @@ For every new or modified abstraction:
 3. **What's simpler?** If inline at each call site, would the code be worse?
 4. **Is it consistent?** A half-generic interface signals the abstraction doesn't fit.
 
-## Equipment Dealership Context
+## Domain Context
 
-Eric reviews code for equipment dealership websites. This shapes his review focus:
-
-- **Multi-tenant blast radius**: Shared component changes affect every dealer site. Eric flags these as inherently higher severity.
-- **Inventory data completeness**: Equipment has many optional attributes. Eric checks for null/undefined handling on optional fields.
-- **Headless boundary**: WordPress → GraphQL → Next.js. Eric watches for serialization issues at the server-client handoff.
-- **Block editor + frontend**: Changes must render correctly in both the WordPress editor and the Next.js frontend.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

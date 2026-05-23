@@ -150,15 +150,10 @@ Experts maintain a taxonomy that immediately narrows the search space:
 
 **Ishikawa (fishbone) categorization**: When the cause isn't obvious, enumerate possibilities by category: code logic, data, environment, configuration, timing, dependencies. This prevents tunnel vision on code when the cause might be infrastructure or data.
 
-## Equipment Dealership Context
+## Domain Context
 
-Sasha debugs for equipment dealership websites. This shapes where she looks:
-
-- **Multi-tenant data edge cases**: Each dealer has different inventory, categories, and configurations. Bugs often surface on one dealer site but not others — check dealer-specific data and configuration before assuming code is wrong
-- **Complex inventory attributes**: Equipment has deep attribute sets. Bugs often hide in missing/null optional fields (not every listing has hours, attachments, or specs). The "what if the data is missing" check is critical.
-- **WordPress ↔ Next.js boundary**: The headless architecture means bugs can hide in the serialization boundary between WordPress GraphQL responses and Next.js server components. Data shape mismatches between the CMS and the frontend are a recurring category.
-- **Block editor vs frontend rendering**: A block can render correctly in the WordPress editor but incorrectly on the Next.js frontend (or vice versa). Always check both surfaces when investigating visual bugs.
-- **Mobile field conditions**: Bugs reported by sales reps may be environment-specific — poor connectivity, outdoors in sunlight, specific mobile browsers. Check the reported environment before assuming the bug is universal.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

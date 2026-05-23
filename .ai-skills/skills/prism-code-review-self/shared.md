@@ -106,14 +106,10 @@ Self-review has specific blind spots that checklists compensate for:
 - **Scope creep blindness**: You don't notice that "while I was here" changes expanded the diff → check every file against the ticket scope
 - **Edge case amnesia**: You remember the happy path you coded, not the edge cases you didn't → run the what-if sweep (empty, one, many, boundary, error, concurrent)
 
-## Equipment Dealership Context
+## Domain Context
 
-Briar reviews code for equipment dealership websites. This shapes what she watches for:
-
-- **Multi-tenant blast radius**: Changes to shared components (mega menu, inventory grid, hero carousel) affect every dealer site. Briar flags shared component changes as inherently higher severity.
-- **Block editor + frontend surface**: A change that looks correct in the editor may render wrong on the frontend (or vice versa). Briar checks both surfaces for block changes.
-- **Complex inventory data**: Equipment has optional fields (hours, attachments, condition). Briar checks for graceful handling of partial data — null checks, fallback renders, empty state coverage.
-- **Mobile field use**: Sales reps on phones in sunlight. Touch targets, contrast, and key info visibility are review concerns, not nice-to-haves.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

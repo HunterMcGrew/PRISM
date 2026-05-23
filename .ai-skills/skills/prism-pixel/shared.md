@@ -300,27 +300,10 @@ Equipment buyers research for days. One deceptive experience destroys trust perm
 
 ---
 
-## Equipment Dealership Context
+## Domain Context
 
-${PROJECT} serves equipment dealership websites. This changes what "good UX" means in specific, measurable ways. Pixel applies these domain patterns whenever the work touches the frontend.
-
-### High-consideration purchasing
-Buyers research for days or weeks before deciding. They need depth (full specs, comparison tools, service history, financing calculators) delivered through progressive disclosure — not hidden, not overwhelming. The purchase funnel is long and non-linear; users revisit, compare, and loop back. Design for re-entry and saved state, not just first visit.
-
-### Complex filter hierarchies
-Equipment has many orthogonal attributes — brand, type, hours, price, condition, year, location, attachments. Hick's Law applies hard. Filters must support both exploration ("show me what's available") and precision ("Cat 320D under $100k within 50 miles"). Group filters under labeled headings, show result counts, make active filters visible as removable chips. Limit top-level visible filter categories to ~7 (Miller's Law); use progressive disclosure for deeper attributes.
-
-### Trust signals
-Dealers need credibility markers: inventory count, location, certifications, response time, reviews. These affect conversion before price does. Place them where skepticism peaks — near CTAs, on equipment detail pages, in quote request flows.
-
-### B2B workflows
-Multiple decision-makers per purchase. Quote flows, saved searches, PDF exports, comparison sharing. The "single user, single session" assumption breaks. Design for handoff — shareable URLs, printable views, email-a-quote functions.
-
-### Mobile in the field
-Sales reps and mechanics use the platform on phones in bright sunlight, often gloved, frequently distracted. Touch targets must be generous (48px minimum). Contrast must survive direct sun. One-handed thumb-zone reachability matters. Key actions (call dealer, get directions, view price) must be reachable without scrolling.
-
-### Mega menu navigation
-${PROJECT} uses a block-based mega menu. Column alignment, scan order, and visual hierarchy within panes are critical. Equipment categories can be deep — mega menus must balance breadth (showing all categories) with depth (showing subcategories) without overwhelming. Test against Hick's Law — if the menu presents more than 7 top-level categories, grouping and visual hierarchy must do the chunking work.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ---
 
@@ -550,29 +533,15 @@ If the user also asked for an HTML mockup (mode 3), the folder looks like:
 
 ## Visual language defaults (for HTML mockups)
 
-${PROJECT} ships multi-dealer sites — there is no single brand. Different dealers use different color systems on the front end, and the WordPress admin uses its own visual language via `@wordpress/components`. This means there's no "${PROJECT} brand" to encode into Pixel's visuals.
+<!-- atlas:domain-context -->
+The team's default palette, typography stack, and brand-language defaults are populated during onboarding from the team's actual product brand. Until Atlas writes them, ask the user which palette to mock against; if they have no preference, pick neutral grays + a single accent color and call out the placeholder explicitly in the spec.
 
-When producing an HTML mockup and the user hasn't specified a dealer or palette, **default to Kubota colors** — that's the team's standard reference palette when mocking without a specific brand target. Use these as the working palette:
+**Always ask in the spec or chat:** "Which surface and audience is this for?" The answer drives the entire visual direction — different surfaces (public-facing vs internal admin vs embedded widget) typically have different design conventions.
 
-- **Primary / accent:** Kubota orange (`#EA6B0B` or thereabouts — the warm construction-equipment orange)
-- **Text on light:** near-black (`#1A1A1A`)
-- **Text on dark / primary:** white (`#FFFFFF`)
-- **Surface:** white (`#FFFFFF`) for cards, `#F5F5F5` for page background
-- **Border / rule:** light gray (`#E0E0E0`)
-- **Muted text:** mid-gray (`#6B6B6B`)
+## Stack Awareness
 
-If the user says "mock this in [Dealer X] colors" or "use the admin palette," switch to those colors. For admin-panel mockups, default to `@wordpress/components` conventions instead: neutral grays, the WP accent blue (`#007CBA`), Segoe UI / system font stack.
-
-**Always ask in the spec or chat:** "Is this frontend (dealer-facing) or backend (admin)?" The answer drives the entire visual direction — front-end is dealer-branded and custom, admin is WP-native with `@wordpress/components`.
-
-## Stack Awareness (what Pixel knows about ${PROJECT})
-
-- **Frontend**: React + TypeScript. Components live in `frontend/components/`. Blocks live in `backend/plugins/*/src/blocks/`. Frontend uses RSC by default — `"use client"` only when required (interactivity, hooks, browser APIs).
-- **Gutenberg blocks**: Each block has `schema.ts` (BlockAttributes, DEFAULT_ATTRIBUTES), `block.json` for WP-native features, and a registered entry in `block-registry.ts`. Block UX has two audiences: the editor (admin) experience and the rendered (front-of-site) experience. Pixel designs for both.
-- **WordPress admin**: Settings panels, block editor sidebars, modals over the block canvas. These have their own conventions — sidebar form density, PanelBody grouping, `@wordpress/components` primitives (Button, TextControl, SelectControl, Modal, etc.). Prefer these over custom components for admin-side UI.
-- **Accessibility baseline**: WCAG 2.1 AA. Keyboard-navigable, screen-reader-friendly, focus visible, reduced-motion respected.
-- **Existing references**: The `.prism/references/frontend-components.md` and `.prism/references/frontend-blocks.md` files are the inventory. Consult them before proposing anything new.
-- **Design tokens**: spacing (4px/8px base), typography scale, and color follow system conventions — not one-off values. Proposals should reference token-level values when specifying spacing, not arbitrary pixel counts.
+<!-- atlas:domain-context -->
+Pixel's knowledge of the team's stack (frontend framework, component libraries, design tokens, accessibility baseline, existing component inventory) is populated during Phase 2 onboarding. The general shape: a frontend framework + component library, a backend / CMS layer with its own conventions where relevant, a documented accessibility baseline, and inventories of existing components and patterns Pixel must consult before proposing anything new.
 
 If a proposal assumes a component exists, verify it exists before presenting. If a proposal contradicts a documented convention in `.prism/rules/` or `.prism/architect/`, flag it explicitly and either revise or justify.
 

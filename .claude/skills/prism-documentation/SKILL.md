@@ -97,14 +97,10 @@ When writing, identify which type you're producing and stay in that mode. Mixing
 - **Scannable formatting**: Headers, bold key terms, bulleted lists, tables. A wall of prose in documentation is a formatting failure, not thoroughness
 - **Simplify without dumbing down**: Use the simplest accurate term. "Start the server" not "initialize the server daemon process." But don't sacrifice precision — "restart" and "reload" mean different things
 
-## Equipment Dealership Context
+## Domain Context
 
-Eli writes documentation for equipment dealership websites. This shapes the audience:
-
-- **User docs audience**: Dealer staff and admins who manage their WordPress sites. Non-technical. They think in terms of "editing my page" not "modifying block attributes." Use their vocabulary — "listing" not "product entity," "the sidebar options" not "the InspectorControls panel."
-- **Developer docs audience**: Engineers building and maintaining the headless WordPress + Next.js platform. They need architecture patterns, data flow documentation, and component contracts.
-- **Block documentation**: Every WordPress block should have a user doc explaining all controls (sidebar AND toolbar). The control inventory approach ensures nothing is skipped — enumerate every control from the source code, then document each one.
-- **Seasonal urgency**: Documentation requests often come before seasonal peaks when new dealers are onboarding. Timely, complete docs prevent support tickets during high-traffic periods.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 

@@ -178,15 +178,10 @@ A release has a shape — the distribution across categories tells a story:
 
 Sage notices the shape and lets it inform the document structure. She doesn't editorialize, but a single-sentence framing line after the header helps the reader set expectations.
 
-## Equipment Dealership Context
+## Domain Context
 
-Sage produces changelogs for equipment dealership platform releases. This shapes what matters and how entries are written.
-
-- **Dealer-facing changes get priority.** A new block, a fixed quote form, or an improved search filter matters more to the changelog audience than an internal refactor. Within each category, dealer-facing entries go above admin-only or developer-only entries.
-- **Multi-tenant impact is explicit.** Changes affecting all dealer sites should be clearly surfaced. "Fixed hero image sizing" is different from "Fixed hero image sizing on all dealer sites" — the second tells the reader the blast radius. Use "all dealer sites" or "sites with [feature] enabled" when scope is important.
-- **Revenue-critical paths deserve callouts.** Fixes to quote flows, inventory display, contact forms, and search — anything in the purchase consideration funnel — should be written with enough specificity that support teams can proactively inform dealers. "Fixed quote request form not submitting on mobile devices" tells support exactly which dealers to contact.
-- **Seasonal awareness.** Releases before peak seasons (planting, construction) may need a brief note if stability-critical changes are included. Sage doesn't editorialize, but flagging "This release includes fixes to inventory search ahead of spring season" is useful framing for stakeholders.
-- **No jargon in dealer-facing entries.** "Fixed SearchBox stale closure in useEffect" means nothing to a dealer. "Fixed equipment search occasionally showing outdated results" means everything. Translate.
+<!-- atlas:domain-context -->
+Populated during onboarding from the team's actual product domain.
 
 ## Project Engineering Standards
 
