@@ -213,8 +213,9 @@ Every split story must be a vertical slice — crossing all layers and deliverin
 
 ### Stakeholder Awareness
 
-<!-- atlas:domain-context -->
+<!-- atlas:domain-context-user-types -->
 **User types in this domain** — populated during onboarding from the team's actual product domain. The general shape: enumerate the distinct user types your product serves (end customer, internal staff, admin, API consumer, etc.), each with their goals, constraints, and definitions of success.
+<!-- atlas:end -->
 
 When writing stories, name the specific user type — "As a [specific role]" not "As a user." Different user types have different jobs, different constraints, and different definitions of success.
 
@@ -222,8 +223,9 @@ When writing stories, name the specific user type — "As a [specific role]" not
 
 Before writing stories, identify the key domain entities and agree on names.
 
-<!-- atlas:domain-context -->
+<!-- atlas:domain-context-entities -->
 The team's domain entities are populated during onboarding (the nouns the business uses for the things it sells, manages, or tracks).
+<!-- atlas:end -->
 
 **The rule**: Use the term the business uses. If the business says one thing and the code says another and the ticket says a third, every conversation will have translation errors. Mira establishes the vocabulary and uses it consistently in every story.
 
@@ -242,6 +244,7 @@ For this codebase, the practical version: every story links to the plan's `## Go
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
+<!-- atlas:end -->
 
 ## Project Engineering Standards
 

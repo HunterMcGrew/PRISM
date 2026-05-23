@@ -262,6 +262,7 @@ Before recommending priority or status, Nora checks for dependencies:
 
 <!-- atlas:domain-context -->
 Populated during onboarding from the team's actual product domain.
+<!-- atlas:end -->
 
 ---
 

@@ -42,8 +42,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const ANCHOR_NAME_PATTERN = /^[a-z0-9-]+$/;
-const OPEN_MARKER_PATTERN = /<!--\s*atlas:([a-z0-9-]+)\s*-->/g;
-const CLOSE_MARKER = "<!-- atlas:end -->";
+/**
+ * Markers must be on their own line — line-start (optionally indented) and
+ * line-end. This excludes inline prose references like `<!-- atlas:<name> -->`
+ * inside backticks, which would otherwise false-positive when persona sources
+ * discuss the convention (`prism-atlas/shared.md` does exactly that).
+ */
+const OPEN_MARKER_PATTERN = /(?:^|\n)[ \t]*<!--\s*atlas:([a-z0-9-]+)\s*-->[ \t]*(?=\r?\n|$)/g;
+const CLOSE_MARKER_PATTERN = /(?:^|\n)[ \t]*<!--\s*atlas:end\s*-->[ \t]*(?=\r?\n|$)/g;
+const CLOSE_MARKER_TEXT = "<!-- atlas:end -->";
 
 /**
  * Thrown by `findAnchors` when the content violates the anchor schema. The
@@ -103,10 +110,12 @@ export function findAnchors(content: string): Anchor[] {
 
 		const name = openMatch[1];
 
+		// `end` is the reserved close-marker keyword — finding it via the
+		// open-marker pattern is structurally invalid (close before open).
 		if (name === "end") {
 			throw new AnchorParseError(
 				"missing-close",
-				`encountered ${CLOSE_MARKER} with no matching open marker before it`
+				`encountered ${CLOSE_MARKER_TEXT} with no matching open marker before it`
 			);
 		}
 
@@ -124,18 +133,24 @@ export function findAnchors(content: string): Anchor[] {
 			);
 		}
 
-		const openStart = openMatch.index;
-		const openEnd = openMatch.index + openMatch[0].length;
+		// Pattern includes a leading `\n` when matched mid-document; the
+		// marker text itself starts at the first non-whitespace position
+		// inside the match.
+		const matchText = openMatch[0];
+		const matchStart = openMatch.index;
+		const leadingOffset = matchText.indexOf("<!--");
+		const openStart = matchStart + leadingOffset;
+		const openEnd = matchStart + matchText.length;
 
-		const closeStart = content.indexOf(CLOSE_MARKER, openEnd);
-		if (closeStart === -1) {
+		const closeRange = findCloseMarker(content, openEnd);
+		if (closeRange === null) {
 			throw new AnchorParseError(
 				"missing-close",
-				`anchor ${JSON.stringify(name)} has no matching ${CLOSE_MARKER}`
+				`anchor ${JSON.stringify(name)} has no matching ${CLOSE_MARKER_TEXT}`
 			);
 		}
 
-		const nextOpenMatch = findNextOpenMarker(content, openEnd, closeStart);
+		const nextOpenMatch = findNextOpenMarker(content, openEnd, closeRange.markerStart);
 		if (nextOpenMatch !== null) {
 			throw new AnchorParseError(
 				"nested-open",
@@ -143,20 +158,40 @@ export function findAnchors(content: string): Anchor[] {
 			);
 		}
 
-		const closeEnd = closeStart + CLOSE_MARKER.length;
-
 		anchors.push({
 			name,
 			start: openStart,
-			end: closeEnd,
-			range: { start: openEnd, end: closeStart },
+			end: closeRange.markerEnd,
+			range: { start: openEnd, end: closeRange.markerStart },
 		});
 		seenNames.add(name);
 
-		cursor = closeEnd;
+		cursor = closeRange.markerEnd;
 	}
 
 	return anchors;
+}
+
+/**
+ * Finds the next own-line close marker after `from`. Returns null when none
+ * exists. `markerStart` is the offset of the leading `<` of the marker text;
+ * `markerEnd` is the offset just after the closing `>`.
+ */
+function findCloseMarker(
+	content: string,
+	from: number
+): { markerStart: number; markerEnd: number } | null {
+	CLOSE_MARKER_PATTERN.lastIndex = from;
+	const match = CLOSE_MARKER_PATTERN.exec(content);
+	if (match === null) {
+		return null;
+	}
+	const matchText = match[0];
+	const leadingOffset = matchText.indexOf("<!--");
+	return {
+		markerStart: match.index + leadingOffset,
+		markerEnd: match.index + matchText.length,
+	};
 }
 
 /**
@@ -310,23 +345,24 @@ function renderInner(replacement: string): string {
 }
 
 /**
- * Helper for `findAnchors`. Scans for the next open marker between `start`
- * (exclusive) and `limit` (exclusive). Returns null when none is found.
- * Used to detect nested-open violations within an unterminated anchor.
+ * Helper for `findAnchors`. Scans for the next own-line open marker between
+ * `start` (exclusive) and `limit` (exclusive). Returns null when none is
+ * found. Used to detect nested-open violations within an unterminated
+ * anchor.
  */
 function findNextOpenMarker(
 	content: string,
 	start: number,
 	limit: number
 ): { name: string; index: number } | null {
-	const slice = content.slice(start, limit);
-	const localPattern = /<!--\s*atlas:([a-z0-9-]+)\s*-->/g;
-	const match = localPattern.exec(slice);
-	if (match === null) {
+	const localPattern = new RegExp(OPEN_MARKER_PATTERN.source, "g");
+	localPattern.lastIndex = start;
+	const match = localPattern.exec(content);
+	if (match === null || match.index >= limit) {
 		return null;
 	}
 	if (match[1] === "end") {
 		return null;
 	}
-	return { name: match[1], index: start + match.index };
+	return { name: match[1], index: match.index };
 }
