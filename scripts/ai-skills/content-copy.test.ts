@@ -50,7 +50,7 @@ test("copyContentToPlatformDir mirrors canonical files into platform dir", async
 		},
 		async (contentRoot, platformDir) => {
 			const changedPaths: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths, new Map());
 
 			const copiedPath = path.join(platformDir, "rules", "alpha.md");
 			const markerPath = path.join(platformDir, "rules", MANAGED_MARKER);
@@ -75,11 +75,11 @@ test("copyContentToPlatformDir is a no-op when copies match canonical", async ()
 				"utf8"
 			);
 			const firstPass: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, firstPass);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, firstPass, new Map());
 		},
 		async (contentRoot, platformDir) => {
 			const secondPass: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, secondPass);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, secondPass, new Map());
 			assert.equal(secondPass.length, 0, "no changes on second pass");
 		}
 	);
@@ -97,7 +97,7 @@ test("copyContentToPlatformDir reports drift but writes nothing in check mode", 
 		},
 		async (contentRoot, platformDir) => {
 			const changedPaths: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, true, changedPaths);
+			await copyContentToPlatformDir(contentRoot, platformDir, true, changedPaths, new Map());
 
 			assert.ok(changedPaths.length > 0, "drift reported");
 			const copiedPath = path.join(platformDir, "rules", "alpha.md");
@@ -122,7 +122,7 @@ test("removeDeletedManagedContent cleans up orphaned platform copies", async () 
 				"utf8"
 			);
 			const initial: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, initial);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, initial, new Map());
 
 			await fs.rm(path.join(contentRoot, "rules", "alpha.md"));
 		},
@@ -154,7 +154,7 @@ test("copyContentToPlatformDir copies the loose SPEC.md file", async () => {
 		},
 		async (contentRoot, platformDir) => {
 			const changedPaths: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths, new Map());
 
 			const copiedPath = path.join(platformDir, "SPEC.md");
 			const copied = await fs.readFile(copiedPath, "utf8");
@@ -162,7 +162,7 @@ test("copyContentToPlatformDir copies the loose SPEC.md file", async () => {
 			assert.ok(changedPaths.includes(copiedPath));
 
 			const idempotent: string[] = [];
-			await copyContentToPlatformDir(contentRoot, platformDir, false, idempotent);
+			await copyContentToPlatformDir(contentRoot, platformDir, false, idempotent, new Map());
 			assert.equal(idempotent.length, 0, "no changes on second pass");
 		}
 	);
@@ -184,7 +184,8 @@ test("syncPlatformContentCopy skips a platform with no managed content in check 
 				contentRoot,
 				platformDir,
 				true,
-				changedPaths
+				changedPaths,
+				new Map()
 			);
 
 			assert.equal(
@@ -213,7 +214,8 @@ test("syncPlatformContentCopy still skips when only an unrelated dir exists in t
 				contentRoot,
 				platformDir,
 				true,
-				changedPaths
+				changedPaths,
+				new Map()
 			);
 
 			assert.equal(
@@ -243,7 +245,8 @@ test("syncPlatformContentCopy creates an absent platform dir in build mode", asy
 				contentRoot,
 				platformDir,
 				false,
-				changedPaths
+				changedPaths,
+				new Map()
 			);
 
 			const copiedPath = path.join(platformDir, "rules", "alpha.md");
@@ -264,7 +267,7 @@ test("syncPlatformContentCopy drift-checks an existing platform dir in check mod
 				"utf8"
 			);
 			const initial: string[] = [];
-			await syncPlatformContentCopy(contentRoot, platformDir, false, initial);
+			await syncPlatformContentCopy(contentRoot, platformDir, false, initial, new Map());
 
 			await fs.writeFile(
 				path.join(contentRoot, "rules", "alpha.md"),
@@ -278,7 +281,8 @@ test("syncPlatformContentCopy drift-checks an existing platform dir in check mod
 				contentRoot,
 				platformDir,
 				true,
-				changedPaths
+				changedPaths,
+				new Map()
 			);
 			assert.ok(changedPaths.length > 0, "drift reported for existing platform dir");
 		}
