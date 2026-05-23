@@ -1,0 +1,28 @@
+{
+	"files": [
+		{
+			"path": ".claude/lessons.md",
+			"reason": "lessons cite originating incidents by ticket ID and project name"
+		},
+		{
+			"path": ".codex/lessons.md",
+			"reason": "platform-copy mirror of canonical lessons"
+		},
+		{
+			"path": ".cursor/lessons.md",
+			"reason": "platform-copy mirror of canonical lessons"
+		},
+		{
+			"path": ".claude/spec/adrs/0015-humane-language-over-mandates.md",
+			"reason": "ADR cites the originating incident that motivated the decision"
+		},
+		{
+			"path": ".codex/spec/adrs/0015-humane-language-over-mandates.md",
+			"reason": "platform-copy mirror of ADR-0015"
+		},
+		{
+			"path": ".cursor/spec/adrs/0015-humane-language-over-mandates.md",
+			"reason": "platform-copy mirror of ADR-0015"
+		}
+	]
+}

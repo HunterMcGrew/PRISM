@@ -20,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
+import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import {
 	ensureDirectory,
@@ -899,6 +900,28 @@ async function main(): Promise<void> {
 		changedPaths
 	);
 	await removeDeletedManagedAgentFiles(targetRoots.codexAgents, knownSkillIds);
+
+	const literalGuardRoots = [
+		targetRoots.claude,
+		targetRoots.codex,
+		targetRoots.cursor,
+		targetRoots.codexAgents,
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
+	];
+	const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
+	if (literalViolations.length > 0) {
+		for (const violation of literalViolations) {
+			console.error(
+				`literal-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`
+			);
+		}
+		console.error(
+			`literal-guard: ${literalViolations.length} non-allowlisted Thrive-flavored literal(s) found in platform outputs. Tokenize the canonical source or add the file to .ai-skills/definitions/literal-allowlist.json.`
+		);
+		process.exit(1);
+	}
 
 	if (checkMode) {
 		if (changedPaths.length > 0) {
