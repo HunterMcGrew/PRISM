@@ -48,6 +48,10 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 
 - When the user says "review pr", "review #<number>", "review pull request", or any PR review phrase, invoke `prism-code-review-pr` (Eric) — not the built-in `/review` skill. The built-in `/review` doesn't understand this project's conventions, architect context, or plan system.
 
+**Onboarding intent routing:**
+
+- When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-atlas` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
+
 **Skip auto-routing when:**
 
 - Trivial tasks (single-file rename, quick git command, formatting)

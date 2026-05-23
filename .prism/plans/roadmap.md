@@ -14,10 +14,10 @@ Meta-index for PRISM's phased work. Each phase below has (or will have) its own 
 
 | Phase | Scope | Status | Plan |
 |---|---|---|---|
-| **1.5c** | Thrive backports — universal rules, persona upgrades (Sasha, Nora, Eric), three-tier rule loading, Zoe persona | proposed, multi-PR | TBD: `epic-prism-thrive-backport.md` |
-| **1.5d** | Tokenization + content cleanup sweep — replaces original PR #3 + PR #4 | proposed | TBD: `epic-prism-tokenization.md` |
-| **1.5e** | Pattern absorptions — deletion test, two-adapters seam rule, micro-file step machine, triple-gated ADR criterion, A/P/C menu | proposed, small PR | TBD: `epic-prism-pattern-absorptions.md` |
-| **2** | Atlas — onboarding persona, stack detection, per-team rule generation (incl. `security.md`), stub-anchor population | proposed, multi-PR | TBD: `epic-prism-atlas.md` |
+| **1.5c** | Thrive backports — universal rules, persona upgrades (Sasha, Nora, Eric), three-tier rule loading, Zoe persona | shipped | [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) |
+| **1.5d** | Tokenization + content cleanup sweep — replaces original PR #3 + PR #4 | shipped | [`epic-prism-tokenization.md`](./epic-prism-tokenization.md) |
+| **1.5e** | Pattern absorptions — deletion test, two-adapters seam rule, micro-file step machine, triple-gated ADR criterion, A/P/C menu | shipped | [`epic-prism-pattern-absorptions.md`](./epic-prism-pattern-absorptions.md) |
+| **2** | Atlas — onboarding persona, stack detection, per-team rule generation (incl. `security.md`), stub-anchor population | in progress, multi-PR | [`epic-prism-atlas.md`](./epic-prism-atlas.md) |
 | **2.5** | **Theo** — architect-doc walker, codebase-walking, interactive, resumable | proposed | TBD: `epic-prism-theo.md` |
 | **2.6** | **Ren** — refactor scout, codebase-walking for refactor candidates, interactive grilling loop | proposed | TBD: `epic-prism-ren.md` |
 | **3** | **Parker** — PRD persona, one persona, two modes (greenfield + brownfield) | proposed | TBD: `epic-prism-parker.md` |
