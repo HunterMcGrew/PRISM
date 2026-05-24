@@ -248,110 +248,129 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Alternatives considered:** Rewrite items 1.5e already absorbed (rejected — duplicate work, merge conflict guaranteed); skip wave 2 entirely (rejected — 11+ items still novel); re-scope to persona-specific deepenings (chosen).
   - **Chosen approach:** Wave 2 as a sibling to Phase 1.5e — references the prior phase, intentionally scopes to persona-specific work the prior phase left out.
   - **Implementation guidance:** Subagent re-evaluation (2026-05-23) confirmed no further overlap with 1.5e beyond the triple-gate.
+  - → no promotion needed (process recovery, ticket-tactical)
 
 - **Standalone correct-course skill rejected — folded into Winston as Re-plan Mode (top-level mode, not end-of-flow step).**
   - **Root cause:** The "value" isn't the re-planning (Winston already does this); it's the multi-artifact propagation across Linear AC, user stories, PRD, in-flight Clove work. That's orchestration. **Subagent caught:** Winston's plan mode is one-shot today — there's no concept of mid-ticket re-planning to append to. Re-plan must be a new mode, not a step.
   - **Alternatives considered:** Standalone persona (rejected — orchestration without ownership), `/correct-course` slash command (rejected — breaks persona-naming convention), Winston end-of-plan step (rejected — fires for fresh plans that have nothing to propagate yet), Winston new mode (chosen).
   - **Chosen approach:** `## Re-plan Mode` as Winston's third top-level mode, alongside Evaluate and Plan.
   - **Implementation guidance:** Tasks 24–25.
+  - → no promotion needed (codified inline in Winston's shared.md)
 
 - **Sasha Phase 5 is design-only, not implementation. Preserves diagnose-only boundary.**
   - **Root cause:** Pocock's Phase 5 is "Fix + regression test" — Sasha's invariant is no source-file modifications (line 209: "Sasha diagnoses — she doesn't treat"). Adopting Pocock verbatim would break the Clove-owns-implementation boundary that the persona model depends on.
   - **Alternatives considered:** Adopt Pocock verbatim (rejected — breaks diagnose-only boundary), drop Phase 5 entirely (rejected — regression test design is a real diagnostic deliverable), adapt to design-only (chosen, user-confirmed 2026-05-23).
   - **Chosen approach:** Sasha designs the regression test (specifies what it covers, where it lives, what it asserts); Clove implements in their own pass. Pocock's "no correct seam" finding format adopted as-is.
   - **Implementation guidance:** Task 10, Phase 5 section.
+  - → no promotion needed (codified inline in Sasha's shared.md)
 
 - **Sasha case file is single-state lighter variant of micro-file pattern.**
   - **Root cause:** The full micro-file pattern fits 2 of 3 gates strongly; gate #2 ("outlasts a context window") is weak for diagnostic sessions — bugs rarely span days the way Theo walks span hundreds of files. Per-step files would duplicate the plan's `## Debugged Issues` entry without adding signal.
   - **Alternatives considered:** Full micro-file pattern (rejected — duplicate maintenance), no resumability (rejected — multi-day prod incidents are real), lighter single-state variant (chosen).
   - **Chosen approach:** Single `.prism/sasha-state.json` with `currentPhase` / `phasesCompleted` / hypothesis state / confirmed evidence / case slug / status. Update `.prism/references/micro-file-step-machine.md` to acknowledge the lighter variant.
   - **Implementation guidance:** Tasks 13–14.
+  - → no promotion needed (codified in `.prism/references/micro-file-step-machine.md` lighter-variant clarification)
 
 - **Eric is a 3-section output (Standards / Spec / Cross-cutting), not a strict 2-axis.**
   - **Root cause:** Eric covers more than two axes today — a11y, justification, doc-class triage, test coverage. **Subagent caught:** these flow INTO axes (a11y → Standards, justification → Standards, test coverage → Standards) — they're cross-cutting concerns, not axes themselves. Forcing strict 2-axis would lose them or duplicate them.
   - **Alternatives considered:** Strict 2-axis (rejected — loses concerns), 5-axis (rejected — proliferates), 3-section with axes + cross-cutting (chosen).
   - **Chosen approach:** Standards axis + Spec axis + Cross-cutting observations. Parallel subagents handle the two axes; cross-cutting outputs surface in the main thread.
   - **Implementation guidance:** Tasks 16, 18.
+  - → no promotion needed (codified inline in Eric's shared.md)
 
 - **Eric's parallel-subagent pattern uses context isolation, but reserves lightweight single-pass path for docs-only PRs.**
   - **Root cause:** Pocock's mechanism literally spawns two subagents — context isolation enforces non-merging beyond just a prompt instruction. But API cost roughly doubles, and docs-only PRs don't need the heavyweight path.
   - **Alternatives considered:** Always parallel (rejected — wasteful for trivial PRs), never parallel (rejected — defeats the non-merging mechanism), threshold-based opt-out (chosen).
   - **Chosen approach:** Full path uses parallel subagents; docs-only PRs (`.md` diff only) stay single-pass. Threshold documented in Eric's shared.md.
   - **Implementation guidance:** Tasks 17, 20.
+  - → no promotion needed (codified inline in Eric's shared.md)
 
 - **AFK/HITL tag defaults to unmarked (`[AFK]` implicit); only `[HITL]` is tagged.**
   - **Root cause:** Tagging every task as `[AFK]` or `[HITL]` is signal-to-noise drift — most tasks are AFK. Pocock himself prefers AFK; HITL is the exception. **Subagent caught:** Anchoring the definition in `.prism/rules/implementation-task-detail.md` (not in Winston's shared.md) prevents drift between the two files.
   - **Alternatives considered:** Tag every task explicitly (rejected — noise), tag only HITL explicitly with AFK as unmarked default (chosen), put definition in Winston's shared.md (rejected — drift risk).
   - **Chosen approach:** Definition lives in `.prism/rules/implementation-task-detail.md`; Winston's shared.md references it. `[HITL]` is the explicit tag; `[AFK]` is the unmarked default.
   - **Implementation guidance:** Tasks 5 (rule), 23 (Winston reference).
+  - → no promotion needed (codified in `.prism/rules/implementation-task-detail.md`)
 
 - **AFK/HITL composes with vertical slicing — slices are the AFK unit.**
   - **Root cause:** Pocock's tags exist *because* the unit is a vertical slice cutting through all layers. On horizontal lane tasks, "AFK for whom?" gets fuzzy (the human, Winston, Pixel?). On vertical slices, AFK means "this whole slice can ship without me" — a coherent claim.
   - **Alternatives considered:** Tag taxonomy is mode-agnostic (rejected — definitional drift), tags are mode-specific (chosen).
   - **Chosen approach:** Horizontal mode (default) uses tags sparingly (only `[HITL]` explicit). Vertical mode (opt-in) requires `[AFK]` or `[HITL]` on every slice — that's the slice's native question.
   - **Implementation guidance:** Tasks 5, 23, 27.
+  - → no promotion needed (codified inline in Winston's shared.md vertical-mode section)
 
 - **Vertical-slicing offer fires BEFORE task generation, not after.**
   - **Root cause:** **Subagent caught:** If Winston builds horizontal tasks then asks "would you like vertical?", he's done the work twice and the user picks horizontal because it's concrete. The offer dies on the vine.
   - **Alternatives considered:** Offer after task generation (rejected — see root cause), offer in parallel (rejected — double generation), offer before task generation as a gate (chosen).
   - **Chosen approach:** Decomposition-shape gate between plan-mode steps 2 and 3. Signals fire → Winston asks once → generates one shape only.
   - **Implementation guidance:** Task 26.
+  - → no promotion needed (codified inline in Winston's shared.md decomposition gate)
 
 - **Vertical-slicing signal set refined — original "3+ layers" alone was too noisy.**
   - **Root cause:** "Touches 3+ layers" fires constantly (most non-trivial work hits 3 layers). Better signals: tracer-bullet vocabulary in ticket/user stories, feature-flag / phased rollout, greenfield (no existing code), user stories outnumber implementation surfaces, epic decomposition into independently-shippable stories. The 3-layer test is a necessary condition (you can't slice vertically with one layer), not a sufficient one.
   - **Alternatives considered:** Single weak signal (rejected — noise), conjunctive signal set (chosen — multiple match before offering).
   - **Chosen approach:** Offer fires when 3+ signals match in pure plan mode, all signals in evaluate-then-plan (to avoid gate fatigue post-A/P/C).
   - **Implementation guidance:** Task 26.
+  - → no promotion needed (codified inline in Winston's shared.md decomposition gate)
 
 - **Vertical slices count as epic stories when slice count exceeds epic threshold (user-confirmed 2026-05-23).**
   - **Root cause:** Vertical slices are the natural story shape — they're independently demoable and shippable. When the slice count crosses the epic-detection threshold, each slice becomes its own story plan; the epic plan references the slice-story plans. This is the natural composition.
   - **Alternatives considered:** Keep vertical inside a single plan even at large slice count (rejected — duplicates story-plan ergonomics inside the plan), each slice becomes a story plan (chosen).
   - **Chosen approach:** Update Epic Detection to acknowledge vertical mode. Slice count > epic threshold → slices become epic stories.
   - **Implementation guidance:** Task 28.
+  - → no promotion needed (codified inline in Winston's shared.md Epic Detection section)
 
 - **Iris (formerly Echo) — name confirmed 2026-05-23 to avoid E-prefix collision with Eric and Eli.**
   - **Root cause:** Echo collides with Eric and Eli in the E-prefix cluster; Iris keeps eye/reflection imagery without collision.
   - **Alternatives considered:** Echo (rejected — E-prefix cluster), Vera (rejected — less natural fit), Rena (rejected — same), Iris (chosen).
   - **Chosen approach:** All references to Echo throughout the plan and downstream artifacts use Iris.
   - **Implementation guidance:** Tasks 37–41.
+  - → no promotion needed (naming choice, ticket-tactical)
 
 - **Iris uses the real PRISM persona roster — evidence-driven disagreements, not scripted characters.**
   - **Root cause:** BMAD's retrospective uses hardcoded characters (Amelia, Alice, Charlie, etc.) with scripted disagreements for "authentic team dynamics." That's theater. PRISM has a real persona roster; Iris should drive participation from evidence (the personas that actually touched the plan) and surface real disagreements (re-litigate `## Decisions` against `## Debugged Issues`).
   - **Alternatives considered:** Scripted characters (rejected — theater), single facilitator with no other voices (rejected — loses multi-voice mechanic), real-roster + evidence-based dialogue (chosen).
   - **Chosen approach:** Iris stages voices based on `## History` and persona-task ownership in the plan. Disagreements come from outcome-vs-prediction gaps in `## Decisions`.
   - **Implementation guidance:** Task 38, step-03 and step-04.
+  - → no promotion needed (codified inline in Iris's shared.md + step-04-facilitate.md)
 
 - **Iris proposes action items; Nora files them.** Preserves the Nora ownership boundary for follow-up tickets.
   - **Root cause:** Action items are follow-up ticket candidates; Nora owns follow-up filing (with the scope-fit gate from `.prism/rules/followup-scope.md`). Iris bypassing Nora would create scope-gate gaps.
   - **Alternatives considered:** Iris files directly (rejected — bypasses scope-fit gate), Iris proposes + offers handoff (chosen).
   - **Chosen approach:** Iris writes `## Action Items` to the retro report; closing offer is "want me to hand off to Nora to file these as follow-up tickets?" — user accepts or declines.
   - **Implementation guidance:** Task 38, step-05.
+  - → no promotion needed (codified inline in Iris's shared.md + step-05-action-items.md)
 
 - **Lazy-artifact audit scope shrunk — most personas are already lazy.**
   - **Root cause:** **Subagent caught:** scope was over-stated. Per-persona audit found Theo's state file returns null on absent (already lazy), Pixel's mock dir creates on demand (already lazy), Zoe's audits dir creates on first run (already lazy), Atlas writes state on first answer (already lazy). The single concrete eager seed: `templates/install/.prism/lessons-archive.md` (header-only placeholder).
   - **Alternatives considered:** Full audit + per-persona edits (rejected — manufactured work), rule + targeted single template fix (chosen).
   - **Chosen approach:** Write the rule at `.prism/rules/lazy-artifacts.md` codifying the existing pattern; remove the `lessons-archive.md` template seed; have Zoe create the file on first archive.
   - **Implementation guidance:** Tasks 2–4.
+  - → no promotion needed (codified in `.prism/rules/lazy-artifacts.md`)
 
 - **Closing-message routing synthesizes from existing AGENTS.md § 9, lives in architect doc (not rule).**
   - **Root cause:** **Subagent caught:** 80% of the routing data already exists in `AGENTS.md § 9 Ownership & Handoff`. The new file is synthesis + per-persona conditional elaboration (e.g., Briar → Clove if issues / "ready to ship" if clean). Closing-message routing is contextual guidance, not universally loaded — architect docs are the right home, not rules.
   - **Alternatives considered:** New file at `.prism/rules/closing-messages.md` (rejected — wrong category, universally loaded would be wasteful), inline per-persona (rejected — drift), architect doc (chosen).
   - **Chosen approach:** `.prism/architect/closing-messages.md`. Each persona's shared.md cites it; persona's row provides the conditional routing logic AGENTS.md doesn't cover.
   - **Implementation guidance:** Tasks 6–7.
+  - → no promotion needed (codified in `.prism/architect/closing-messages.md`)
 
 - **Recommend-without-auto-invoke posture for all persona closings.**
   - **Root cause:** Closing messages suggest the next persona; they never auto-invoke. Auto-routing would bypass user agency and conflict with explicit-invocation principles (Zoe, Theo, Iris). The existing Nora pattern (line 382 of shared.md) is the gold standard — "Handing off to Sasha to verify..." is phrased as a proposal, not an execution.
   - **Alternatives considered:** Auto-invoke (rejected — bypasses agency), recommend-only (chosen).
   - **Chosen approach:** Every persona's closing names the next persona and offers; user invokes or doesn't.
   - **Implementation guidance:** Task 6, posture documented in closing-messages.md.
+  - → no promotion needed (codified in `.prism/architect/closing-messages.md`)
 
 - **Wave 2 ships as 5 PRs, not 1 (user-confirmed 2026-05-23).**
   - **Root cause:** Phase 1.5e was 9 tasks in one PR — manageable but close to the line. Wave 2 has ~43 tasks across 6 personas + new persona + cross-cutting work. Single-PR shape would be bisect-hostile and merge-conflict-prone. Splitting by structural concern keeps each PR reviewable.
   - **Alternatives considered:** Single PR (rejected — too large), 8 PRs (rejected — too granular), 5 PRs grouped by structural concern (chosen).
   - **Chosen approach:** PR 1 (foundation: ref doc + lazy + closing + AFK/HITL rule + per-persona closing-message references), PR 2 (Sasha), PR 3 (Eric), PR 4 (Winston), PR 5 (Parker + Atlas STOPs + Iris).
   - **Implementation guidance:** PR sequence in `## Dependencies and Sequencing`.
+  - → no promotion needed (sequencing decision, ticket-tactical)
 
 - **No new ADR for wave 2.** Per the triple-gate (hard-to-reverse + surprising + genuine trade-off, all three must fire), wave 2's changes don't meet the bar. Persona deepenings absorb into existing surfaces; new persona (Iris) follows established precedent (Parker, Atlas, Theo, Zoe); cross-cutting patterns absorb into the architect/rules layer. ADR creation would fail its own gate.
+  - → no promotion needed (triple-gate fails by intent — this Decision is itself the application of the gate)
 
 ---
 
@@ -359,6 +378,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Plan created. Wave 2 of bmad-pocock pattern absorptions — re-scoped after discovering Phase 1.5e overlap. Targets 5 persona deepenings, 1 new persona, 2 cross-cutting patterns, 1 reference doc extraction.
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Subagent re-evaluation complete. Four parallel subagents deep-dove the proposed changes against current PRISM skills + source skills (Pocock diagnose/review/to-issues, BMAD investigate/code-review/retrospective). Major revisions: Sasha Phase 5 design-only (preserves diagnose-only); Sasha case file = lighter-variant micro-file pattern; Eric = 3-section output (not strict 2-axis); Eric uses parallel subagents but reserves lightweight single-pass for docs-only PRs; AFK/HITL composes with vertical slicing (slices are the AFK unit); vertical-slicing offer fires BEFORE task generation; refined signal set for vertical; vertical slices become epic stories when slice count > threshold; scope-change propagation is a NEW MODE (Re-plan Mode), not an end-of-flow step; Parker STOP at end of stakes step (not "between" stakes and rubric); Atlas STOP at end of Batch-2 survey (not "between" detection and rule generation); both STOPs conditional (hobby/dogfood skip); Iris (renamed from Echo per user 2026-05-23) uses real persona roster + evidence-driven disagreements; lazy-artifact scope shrunk to rule + one template fix (most personas already lazy); closing-messages synthesizes from existing AGENTS.md § 9 (architect doc, not rule).
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Pre-flight retrofit — added verdict sub-bullets to all 16 Decisions per the gate from #35; broadened AC mirror list to include `.cursor/skills/` and `.codex/agents/` per ADR-0044; captured three operational notes (label REST workaround, `confidence:standards-only` ready-flip, epic preservation).
 
 ---
 
@@ -398,7 +418,7 @@ _None yet._
 
 ### Non-behavioral
 
-- [ ] All canonical edits land in `.ai-skills/skills/<id>/shared.md` (not in generated `.claude/skills/<id>/SKILL.md` mirrors).
+- [ ] All canonical edits land in `.ai-skills/skills/<id>/shared.md` (not in generated `.claude/skills/<id>/SKILL.md`, `.cursor/skills/<id>/SKILL.md`, or `.codex/agents/<id>.toml` mirrors).
 - [ ] No new install-template file is created as an empty/header-only placeholder (lazy-artifact rule applied).
 - [ ] `templates/install/.prism/lessons-archive.md` no longer exists; Zoe creates it on first archive.
 - [ ] `pnpm prism:build` regenerates mirrors without errors after each PR.
@@ -442,6 +462,14 @@ _None yet._
 - [ ] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
 **Last updated:** 2026-05-23
+
+---
+
+## Operational notes
+
+- **Label-edit REST workaround.** `gh pr edit --add-label` fails silently on PRISM due to GitHub Projects Classic deprecation (see `.prism/lessons.md`). Use `gh api repos/HunterMcGrew/PRISM/issues/<num>/labels -X POST --input -` instead. Affects every wave-2 PR's Eric review batch D label step.
+- **`confidence:standards-only` ready-flip.** PR #36 introduced draft-by-default + Eric ready-flip on state #3 (`confidence:high` / `confidence:needs-judgment`). When PR 3 adds the `confidence:standards-only` label (task 19), it should be treated as state #3 for ready-flip purposes — Spec-axis-skip is a transparency label, not a blocking finding.
+- **Epic plan preservation at close-out.** Per `.prism/lessons.md`, shipped epic plans are preserved and marked `shipped` in `.prism/plans/roadmap.md` — not deleted (overrides the default `branch-plan.md` "delete on close" rule for epics). After all 5 PRs merge, mark this plan shipped in the roadmap; preserve the file.
 
 ---
 
