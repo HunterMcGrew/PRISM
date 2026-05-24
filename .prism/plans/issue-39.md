@@ -147,7 +147,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 - [x] `pnpm prism:check` exits 0 — confirmed via `tsx scripts/ai-skills/build.ts --check`; `prism:test` passes 116/116
 - [x] `.prism/lessons.md` updated to reference the fix
 - [x] No stray artifacts — `pnpm-workspace.yaml` deleted from working tree
-- [ ] PR description up to date — PR being opened now
+- [x] PR description up to date — opened as draft: https://github.com/HunterMcGrew/PRISM/pull/40
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Mirror sync — three tracked mirrors regenerated and verified against canonical (drift check passes)
 - [x] Scope discipline — diff is 5 files, mechanical swap only, no drive-by changes
