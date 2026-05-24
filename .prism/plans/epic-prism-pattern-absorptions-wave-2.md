@@ -390,6 +390,10 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: PR 3 (Eric) implemented on fresh branch off post-PR-2 main. Eric's `prism-code-review-pr/shared.md` restructured: Phase 3 ("Review") replaced with the two-axis split — spawn two parallel subagents with context-isolated inputs (Standards subagent gets diff + source + standards rules; Spec subagent gets diff + source + plan + AC + architect context). The existing "What to look for" flat list reorganized into `### Standards axis` and `### Spec axis` sub-sections, with Accessibility/Justification/Doc-Class/Test-Coverage folded under Standards as named sub-procedures. Added `### Missing spec handling` sub-section with full/partial/no-spec state table. Summary format restructured into 3 sections (`### Standards findings` / `### Spec findings` / `### Cross-cutting observations`) plus unchanged Summary and PR Readiness. New label `confidence:standards-only` added to Confidence table; Decision gate's state #3 expanded to three confidence variants (high / needs-judgment / standards-only); ready-flip treats standards-only as state #3 per wave-2 operational notes. Lightweight path (docs-only PRs) explicitly opts out of subagent fanout. Pre-fetch pattern documented in batch C — source files read once in Eric's main thread and passed inline into each subagent prompt to avoid double-reads. Build + check + check-types + test all green (116/116).
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Briar self-review on PR #43 found 0 Critical / 0 Major / 1 Minor — grammar break in the new Spec-axis "Scope creep" bullet ("Diffs that include files no task names is the canonical signal" — missing word, incoherent as written). Clove followup commit corrected the sentence to "Diffs that touch files not named in any implementation task are the canonical signal" via targeted Edit (no `replace_all` per the lesson). Build regenerated 4 platform mirrors; check + check-types + test re-run skipped (Clove's commit was the only change since the prior green run).
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Eric review on PR #43 — first application of the new two-axis pattern against itself. Found 1 Major (step-number collision: Phase 3 grew to four steps 6-9 but Phases 4 and 5 still started at 7 and 8, creating ambiguous `step 7` / `step 8` references) + 1 Minor pre-existing (line 551 cites nonexistent "step 12"). Clove followup commit: targeted Edits renumbered Phase 4 step 7 → 10, Phase 5 step 8 → 11, and repointed the 422-fallback citation to "step 10" (the new batch D number). Build regenerated 4 platform mirrors. Self-applicability of the new pattern verified — Eric found a real bug in its own restructure.
+- 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: PR 4 (Winston) implemented on fresh branch off post-PR-3 main. 11 targeted edits to `.ai-skills/skills/prism-architect/shared.md` — single-line AFK/HITL cite to `implementation-task-detail.md § 5` (task 23); new `## Re-plan Mode` as third top-level mode with triggers, flow, stale-artifact table, history line, and closing message (tasks 24-25); decomposition-shape gate inserted as Plan Mode step 3 with signal set + threshold + one-shot question (task 26); new `### Vertical-mode output format` sub-section with Implementation Slices and Slice Order (task 27); Epic Detection now acknowledges vertical-mode + epic threshold composition (task 28); Pocock's `decomposition-check` one-line gate inserted as Plan Mode step 5 (task 29); "Publish in dependency order" rule named under task generation (task 30); mode banners on Evaluate, Plan, Re-plan as quote callouts (task 31); new `## What Winston is not` boundary section preserving the no-code-written invariant explicitly across AFK/HITL, vertical, and Re-plan mechanics (task 32). Plan Mode steps renumbered to 1-9 with consistent internal references (step 6 = AC generation, step 8 = Linear sync); cross-references inside Re-plan Mode updated to step 8 to match the renumber. Build regenerated 4 platform mirrors; check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar self-review on PR 4 found 0 Critical / 2 Major / 2 Minor. Top finding: new `## What Winston is not` section at line 139 declares editable surface as `.prism/ + docs/` while pre-existing line 118 Ownership & Handoff sentence still claims `.claude/ + docs/` — internal contradiction in the canonical that future architect-mode invocations would hit. Also a structural gap in Re-plan Mode (flow documents propagate but never the plan-rewrite step the intro promises). Build re-verified via direct binary (pnpm unavailable in worktree per `ERR_PNPM_IGNORED_BUILDS`); 116/116 tests pass. Plan Mode renumber clean; mirror parity verified. Route to Clove for fixes before PR opens.
+- 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Clove fixed all 4 Briar findings (2 Major: editable-surface contradiction at line 118, Re-plan Mode missing plan-rewrite step; 2 Minor: Re-plan trigger over-fires, § 5 citation convention). Mirrors regenerated; check + check-types + test green.
+- 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar re-review on PR 4 fix commit 65d88db clean. All 4 prior findings verified resolved. Ready to open PR + route to Eric.
 
 ---
 
@@ -473,6 +477,38 @@ _None._
 - **Problem:** The two-axis restructure grew Phase 3 to four steps (6, 7, 8, 9) but left Phase 4 starting at step 7 and Phase 5 at step 8 — the original numbering from before the restructure. Result: steps 7 and 8 each appear twice with different meanings ("If lightweight" vs "Parallel batch D", "Assemble the 3-section output" vs "Plan update is skipped"). Future agents and the internal `step 12` citation at line 551 hit ambiguous references. The two-axis upgrade is functionally correct but the procedure is no longer linearly addressable.
 - **Suggested fix:** Renumber Phase 4 step 7 → 10 (Parallel batch D), Phase 5 step 8 → 11 (Plan update skipped). Repoint line 551 citation from "step 12" → "step 10" so the inline-comment 422 fallback points at the new batch D step. Targeted Edits (not `replace_all`) on the canonical, then rebuild platform mirrors via `pnpm prism:build`.
 
+### PR 4 Winston editable-surface claim conflicts with pre-existing Ownership & Handoff line
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:139` (new) vs `.ai-skills/skills/prism-architect/shared.md:118` (pre-existing)
+- **Problem:** The new `## What Winston is not` section (line 139) states "Winston's editable surface is `.prism/` (plans, architect docs, ADRs) and `docs/`". The pre-existing **Ownership & Handoff** sentence at line 118 states "Winston's editable scope is `.claude/` and `docs/` files only". The two claims disagree on the canonical editable surface. Winston's actual behavior writes plans/architect docs/ADRs under `.prism/`, so line 139 reflects reality and line 118 is stale — but with both present in the same file, downstream agents and reviewers will alternately get the wrong answer depending on which they hit first. Internal contradiction in a doc that every architect-mode invocation loads is a Major; the prior PR 3 step-collision finding was scored Major on the same shape (ambiguous references future agents trip on).
+- **Suggested fix:** Reconcile by editing line 118's Ownership & Handoff sentence to match the new section: change "`.claude/` and `docs/`" → "`.prism/` (plans, architect docs, ADRs) and `docs/`". Targeted Edit on the canonical only; rebuild regenerates the 3 mirrors.
+
+### PR 4 Re-plan Mode flow omits the "rewrite plan" step
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-architect/shared.md` — `## Re-plan Mode` flow (lines 367–380)
+- **Problem:** The intro at line 367 says "The mode's job is to **update the plan**, then propagate the changes to every artifact that depends on it." The numbered flow at lines 376–380 documents only the propagate half: (1) diff old vs new, (2) walk stale-artifact table, (3) output propagation report, (4) route stale artifacts, (5) auto-sync. There is no step that actually rewrites `## Implementation Tasks` and `## Acceptance Criteria` in the plan to match the new scope. As written, step 5's "auto-sync Linear AC per the standard plan-mode flow at step 8" would push whatever AC is currently in the plan — which by definition is the stale, pre-re-plan AC, since no step instructed Winston to rewrite it. The mode is structurally incomplete: the propagation steps assume an update that the procedure never performs.
+- **Suggested fix:** Insert a new step 2 between the diff (step 1) and the artifact walk (current step 2 → becomes 3): `**Rewrite the plan.** Update ## Implementation Tasks and ## Acceptance Criteria in the plan to reflect the new scope. Apply the detail bar from implementation-task-detail.md. Preserve completed-task markers so Clove can see what survived the re-scope.` Renumber the remaining steps (3–6). Update step 6 (current step 5)'s parenthetical reference to step 8 of plan-mode if needed (it still refers to plan-mode step 8, which is unaffected). The intro's "update the plan, then propagate" phrasing then matches the documented flow.
+
+### PR 4 Re-plan Mode implicit trigger fires falsely on plain plan revisions
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:372`
+- **Problem:** The implicit trigger says "Winston detects he's about to overwrite `## Implementation Tasks` on a plan whose `## History` is non-empty (i.e., implementation has started). In that case, switch to Re-plan Mode instead of overwriting silently." But the parenthetical equivalence is wrong: `## History` becomes non-empty as soon as Winston's own plan-mode step 7 appends `YYYY-MM-DD: Plan created — …`. So the trigger fires the moment Winston re-enters plan mode after initial plan creation, even if Clove hasn't touched a single file. The intended trigger is "**implementation** has started," not "history is non-empty." The over-trigger is a friction case — Re-plan Mode would run when the user just wants to revise pre-implementation scope.
+- **Suggested fix:** Tighten the implicit trigger to "history contains a Clove implementation entry" or "PR exists for the branch" — both signal real implementation start. Alternative: change the wording from "non-empty" to "contains entries past the initial `Plan created` entry." Either lands the correct semantic without false-firing on pre-Clove revisions.
+
+### PR 4 `implementation-task-detail.md § 5` citation references a list item, not a section
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:285, 329`
+- **Problem:** Two new citations in PR 4 use `[implementation-task-detail.md § 5](../../rules/implementation-task-detail.md)`. The `§ 5` notation conventionally maps to a `## 5` or `### 5` heading. The actual file has no such heading — item 5 of the numbered bullet list under `## The bar` (the `[HITL]` tag rule) is what's being referenced. Readers clicking the link land at the file root, not at item 5 — and section-search for "5" returns nothing useful. No other skill in the codebase uses `§ <number>` citation against this rule; the convention was invented in PR 4.
+- **Suggested fix:** Either (a) replace `§ 5` with the readable section anchor — `implementation-task-detail.md § The bar (item 5 — [HITL] tag)`; or (b) reformat to a deep-link by adding an explicit anchor in `implementation-task-detail.md` (`<a id="hitl-tag"></a>` near item 5) and citing the anchor. Option (a) is the lower-friction fix and matches the existing PRISM citation pattern (`branch-plan.md § Depth on Verified Fixes…`).
+
 ---
 
 ## Acceptance Criteria
@@ -533,16 +569,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 3 Eric review found 1 Major (step-number collision across Phases 3/4/5 from the restructure) + 1 Minor (pre-existing "step 12" citation pointing nowhere). Both fixed in followup commit (Phase 4 step 7 → 10, Phase 5 step 8 → 11, line 551 citation repointed). Ready for Eric re-review._
-- [x] Types correct — no `any`, no unsafe `as` — _PR 3: `check-types` clean_
-- [x] No stray console.logs or debug artifacts — _PR 3: content-only edits_
+- [x] No critical or major issues — _PR 4: Briar's 2 Major + 2 Minor all fixed by Clove; ready for Briar re-review._
+- [x] Types correct — no `any`, no unsafe `as` — _PR 4: `check-types` clean_
+- [x] No stray console.logs or debug artifacts — _PR 4: content-only edits to Winston's shared.md_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
-- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 3_
-- [x] Build passes — last run: 2026-05-23 (PR 3 — build, check, check-types, test all green)
-- [x] PR description up to date — _PR 3 opened as #43; body reflects current scope_
+- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 4_
+- [x] Build passes — last run: 2026-05-23 (PR 4 — Briar re-verified via direct-binary fallback: tsx check, tsc --noEmit, tsx --test all green; 116/116; pnpm unavailable due to `ERR_PNPM_IGNORED_BUILDS`)
+- [ ] PR description up to date — _PR 4 not yet opened; fixes precede PR creation_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (PR 3 Eric step-number collision fix complete; Eric re-review pending)
+**Last updated:** 2026-05-23 (PR 4 Briar re-review clean on fix commit 65d88db; ready to open PR + route to Eric)
 
 ---
 
