@@ -4,6 +4,10 @@
 
 Critical / High / Medium / Low
 
+## Confidence
+
+`High` (Confirmed root cause + deterministic repro) / `Medium` (Deduced) / `Low` (Hypothesized, named data gap)
+
 ## Environment
 
 [Staging / Production] — [URL]
@@ -25,7 +29,13 @@ Critical / High / Medium / Low
 
 ## Root Cause
 
-[What Nora found during verification, or user-supplied context. Mark as `verified` if Nora confirmed it, `suspected` if based on user context or code reading only.]
+`[Confirmed]` | `[Deduced]` | `[Hypothesized]` — [What Nora found during verification, or user-supplied context. Mark as `verified` if Nora confirmed it, `suspected` if based on user context or code reading only. The inline tag carries the evidence grade per the same principle in `branch-plan.md` § Debugged Issues.]
+
+## Refuted Hypotheses
+
+(Optional — list hypotheses tested and eliminated during diagnosis. Skip when there were no real alternatives.)
+
+- <hypothesis> — refuted by <evidence>
 
 ## Suspected Fix
 

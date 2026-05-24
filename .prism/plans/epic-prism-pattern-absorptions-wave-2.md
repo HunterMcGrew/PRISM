@@ -382,6 +382,8 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: PR 1 (Foundation) implemented. New canonical files: `.prism/references/triple-gated-adr-criterion.md` (extracted from Winston's inlined section per Phase 1.5e fallback), `.prism/rules/lazy-artifacts.md` (codifies create-on-first-use; documents manifest.stub.json exception), `.prism/architect/closing-messages.md` (synthesizes AGENTS.md § 9 with conditional routing). Added AFK/HITL tag rule to `.prism/rules/implementation-task-detail.md` (default unmarked; `[HITL]` only when human input blocks execution; cites Pocock's `to-issues`). Removed `templates/install/.prism/lessons-archive.md` seed; Zoe now creates the file with standard header on first archive. All 17 persona shared.md files got `## Next persona` sections citing closing-messages.md. Winston and Theo updated to cite the new triple-gate reference doc. Build + check + check-types + test all green (116 tests pass).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Briar self-review on PR #41. Four Major issues found (3 in closing-messages.md: two broken ADR links to wrong filenames, two fabricated quote examples citing wrong line numbers/content) + one Minor (stale line citation in lazy-artifacts.md). All routed to Clove for fix. Build/test re-run skipped (Clove ran clean minutes prior; no commits since).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Clove fixed all 5 Briar findings. closing-messages.md: corrected ADR-0034 + ADR-0011 link filenames; reframed Nora/Pixel example block as illustrative phrasings (dropped fabricated file:line citations rather than chasing the actual line content — patterns are the point). lazy-artifacts.md: replaced `prism-zoe/shared.md line 177` with section-name reference (`§ Output format`) per the rule's own "section headings when line numbers will drift" guidance. Build regenerated 6 platform mirrors (closing-messages + lazy-artifacts across .claude/.codex/.cursor); check + check-types + test all green (116/116).
+- 2026-05-23 [main]: PR #41 (Wave 2 PR 1 — Foundation) squash-merged at commit 98bd6bd. Briar re-review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 1 AC items verified delivered.
+- 2026-05-24 [hmcgrew/wave-2-pr-2-sasha]: PR 2 (Sasha) implemented on fresh branch off post-PR-1 main. Sasha shared.md restructured into six explicit phases (Feedback Loop signal construction → Reproduce → Hypothesize 3-5 ranked falsifiable → Instrument → Confirm + design regression test [DESIGN ONLY] → Cleanup + Post-Mortem). Phase 5 stays design-only — preserves Sasha's diagnose-only invariant. Evidence grading added to `## Debugged Issues` template in branch-plan.md (2 canonical surfaces in lockstep + 3 platform mirrors regenerated): `Confidence` field, inline `[Confirmed]`/`[Deduced]`/`[Hypothesized]` tag on root cause, optional `Refuted hypotheses` and `Missing evidence` fields. Bug-report.md template mirrored with `## Confidence` and `## Refuted Hypotheses` sections. Sasha case-file resumability added via single `.prism/sasha-state.json` (lighter variant of micro-file pattern — no per-step files since plan's `## Debugged Issues` entry is the durable artifact). `micro-file-step-machine.md` extended with the lighter-variant section + Sasha added to citers list. Build + check + check-types + test all green (116/116).
 
 ---
 
@@ -439,10 +441,10 @@ _None._
 
 ### Behavioral
 
-- [ ] Given Sasha is invoked to diagnose a bug, When she runs through the diagnostic flow, Then she produces a six-phase output with the feedback loop as the deliverable Phase 1 output (a pass/fail signal).
-- [ ] Given Sasha reaches Phase 5, When she designs a regression test, Then she specifies what it should cover without writing the test (preserving the diagnose-only boundary; Clove implements).
-- [ ] Given Sasha files a debug report in `## Debugged Issues`, When she states a root-cause claim, Then every claim is tagged `[Confirmed]`, `[Deduced]`, or `[Hypothesized]` and the entry carries a `Confidence:` field.
-- [ ] Given a multi-session debug is in progress, When the session is interrupted and resumed, Then Sasha reads `.prism/sasha-state.json` (single state file, no per-step files) and offers to continue from the prior `currentPhase`.
+- [x] Given Sasha is invoked to diagnose a bug, When she runs through the diagnostic flow, Then she produces a six-phase output with the feedback loop as the deliverable Phase 1 output (a pass/fail signal). _(PR 2 — six-phase frame replaces the old 5-stage debugging process; Phase 1 is signal-construction ladder)_
+- [x] Given Sasha reaches Phase 5, When she designs a regression test, Then she specifies what it should cover without writing the test (preserving the diagnose-only boundary; Clove implements). _(PR 2 — Phase 5 names what to assert / where it lives / what inputs trigger / failing-test output; "no correct seam" finding format adopted)_
+- [x] Given Sasha files a debug report in `## Debugged Issues`, When she states a root-cause claim, Then every claim is tagged `[Confirmed]`, `[Deduced]`, or `[Hypothesized]` and the entry carries a `Confidence:` field. _(PR 2 — branch-plan.md `## Debugged Issues` template extended in 2 surfaces in lockstep: `.prism/rules/`, `templates/install/.prism/rules/`; `.claude/`, `.codex/`, `.cursor/` mirrors regenerated by build)_
+- [x] Given a multi-session debug is in progress, When the session is interrupted and resumed, Then Sasha reads `.prism/sasha-state.json` (single state file, no per-step files) and offers to continue from the prior `currentPhase`. _(PR 2 — case-file schema, atomic-write protocol, and resume-detection logic added; lighter-variant clarification added to `micro-file-step-machine.md` with Sasha as new citer)_
 - [ ] Given Eric is reviewing a PR with a full spec, When he produces his review output, Then the output has three sections (Standards findings / Spec findings / Cross-cutting observations) and findings from one axis never mask findings from the other.
 - [ ] Given Eric is reviewing a PR with no branch plan or AC, When he produces his review output, Then the Spec axis is loudly skipped (`"Spec axis skipped — no spec available"`) and the confidence label reflects this (`confidence:standards-only`).
 - [ ] Given Eric is reviewing a docs-only PR, When he selects the review path, Then he uses the lightweight single-pass path (no parallel subagents) to avoid doubled API cost on trivial PRs.
@@ -474,7 +476,7 @@ _None._
 - [ ] Iris registered in `.prism/SPEC.md` persona roster and `AGENTS.md § 9` routing table.
 - [ ] Paired dev doc for Iris exists at `docs/content/dev/architecture/iris.md` per ADR-0038.
 - [ ] Templates mirror updates land in `templates/install/` per the canonical-template pairing convention (verified by `pnpm prism:check`).
-- [ ] Updates to `.prism/rules/branch-plan.md` (evidence grading in `## Debugged Issues`) land in lockstep across `.prism/`, `.claude/`, and `templates/install/` mirrors.
+- [x] Updates to `.prism/rules/branch-plan.md` (evidence grading in `## Debugged Issues`) land in lockstep across `.prism/`, `.claude/`, and `templates/install/` mirrors. _(PR 2 — `.prism/rules/` and `templates/install/.prism/rules/` edited manually; `.claude/`, `.codex/`, `.cursor/` regenerated by `pnpm prism:build`)_
 
 ### AC Adjustments
 
@@ -493,16 +495,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _4 Major + 1 Minor from Briar review all fixed in followup commit; ready for Briar re-review_
-- [x] Types correct — no `any`, no unsafe `as` — _PR 1: `check-types` clean_
-- [x] No stray console.logs or debug artifacts — _PR 1: content-only edits_
+- [ ] No critical or major issues — _PR 2 Briar self-review pending_
+- [x] Types correct — no `any`, no unsafe `as` — _PR 2: `check-types` clean (PR 1 also clean)_
+- [x] No stray console.logs or debug artifacts — _PR 2: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
-- [x] All debugged issues resolved (no `open` entries) — _none filed_
-- [x] Build passes — last run: 2026-05-23 (PR 1 — build, check, check-types, test all green; Briar review found no build-breaking issues, skipped re-running per "checks confirmed clean by prior skill")
-- [x] PR description up to date — _PR #41 opened as draft 2026-05-23_
+- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 2_
+- [x] Build passes — last run: 2026-05-24 (PR 2 — build, check, check-types, test all green)
+- [ ] PR description up to date — _PR 2 not yet opened_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (Clove followup fixes pushed; Briar re-review pending)
+**Last updated:** 2026-05-24 (PR 2 Sasha implementation complete; Briar self-review pending)
 
 ---
 

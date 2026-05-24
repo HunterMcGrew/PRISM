@@ -307,16 +307,22 @@ Add entries here via the debugger skill. Each entry has a structured format:
 
 - **Status:** `open` | `fixed`
 - **Severity:** Critical / High / Medium / Low
+- **Confidence:** `High` (Confirmed root cause + deterministic repro) | `Medium` (Deduced) | `Low` (Hypothesized, named data gap)
 - **Environment:** [where it was observed]
 - **File:** `<file>:<line>`
-- **Root cause:** one sentence
+- **Root cause:** `[Confirmed]` | `[Deduced]` | `[Hypothesized]` — one sentence
 - **Steps to Reproduce:**
   1. [step]
 - **Expected behavior:** one sentence
 - **Actual behavior:** one sentence
+- **Refuted hypotheses:** (optional — list hypotheses tested and eliminated; skip when there were no real alternatives)
+  - <hypothesis> — refuted by <evidence>
 - **Recommended fix:** minimal description
-- **Suggested tests:** what to cover, or "none needed"
+- **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston/Ren follow-up)
+- **Missing evidence:** (optional — Gap / Impact / How to Obtain mini-table for any unconfirmed claims that the diagnosis still depends on)
 - **Linear:** `synced` | `not synced` | `N/A`
+
+The inline tag on `Root cause` and the explicit `Confidence` field carry the same evidence grading principle: every claim names whether it's observed (`Confirmed`), inferred with named logical steps (`Deduced`), or unverified (`Hypothesized`). The `Refuted hypotheses` and `Missing evidence` fields keep eliminated alternatives and known gaps visible — a refuted hypothesis is data, and a missing-evidence note is itself a finding (not an admission that the investigation is incomplete).
 
 ---
 
