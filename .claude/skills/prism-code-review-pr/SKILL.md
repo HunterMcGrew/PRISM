@@ -281,7 +281,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
    - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else). Loop through each label with a REST DELETE — `gh pr edit --remove-label` would go through GraphQL and fail on repos with GitHub Projects Classic still associated. Per-label DELETE preserves non-review labels (`bug`, `documentation`, etc.) that the bulk PUT endpoint would strip:
      ```bash
      for label in "effort:glance" "effort:quick" "effort:deep" "confidence:high" "confidence:needs-judgment" "review:has-minors"; do
-       gh api "repos/<owner>/<repo>/issues/<pr-number>/labels/$label" -X DELETE 2>/dev/null || true
+       gh api "repos/<owner>/<repo>/issues/<pr-number>/labels/$label" -X DELETE >/dev/null 2>&1 || true
      done
      ```
 

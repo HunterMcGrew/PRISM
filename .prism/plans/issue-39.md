@@ -85,6 +85,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Plan created — fix Eric's batch D label commands to route through REST instead of `gh pr edit`, covering both add and strip paths.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Implemented label-apply fix in canonical `shared.md` (POST for add, per-label DELETE loop for strip), regenerated three tracked mirrors via `tsx scripts/ai-skills/build.ts`, updated lessons.md entry to point at issue #39. URL-encoding test confirmed `gh api` handles `:` in label paths natively; no manual encoding needed.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Briar caught a leaked `pnpm-workspace.yaml` artifact from the failed pnpm install attempt during build. Deleted before commit; not part of the fix's intentional diff.
+- 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Eric's PR-#40 batch D smoke test surfaced a Minor — `2>/dev/null` on the strip loop's DELETE call didn't catch `gh api`'s stdout error output, leaking 404 JSON on first-review runs. Patched to `>/dev/null 2>&1 || true`, mirrors regenerated, lessons.md entry added for the `gh api` stdout/stderr inversion.
 
 ---
 
@@ -117,6 +118,15 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 
 ## Review Issues
 
+### `2>/dev/null` doesn't silence `gh api` 404 errors on the strip loop
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md:240`
+- **Problem:** The DELETE call in the strip loop was wrapped in `2>/dev/null || true`, intending to silence "label not present" 404 errors. But `gh api` writes its error responses to stdout, not stderr — so the redirect didn't catch them. Verified by Eric in his batch D smoke test on PR #40: six 404 JSON lines printed to chat before the loop completed.
+- **Suggested fix:** Replace `2>/dev/null || true` with `>/dev/null 2>&1 || true` to catch both streams while still swallowing the non-zero exit code via `|| true`.
+- **Fixed in:** Canonical edit at `.ai-skills/skills/prism-code-review-pr/shared.md:240`, mirrors regenerated via `tsx scripts/ai-skills/build.ts`. Also added a lessons.md entry codifying the `gh api` stdout/stderr inversion so future agents writing `gh api` calls don't trip on the same wire.
+
 ### `pnpm-workspace.yaml` artifact left in working tree
 
 - **Severity:** `major`
@@ -142,14 +152,15 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 
 ## PR Readiness
 
-- [x] No critical or major issues — Briar's `pnpm-workspace.yaml` finding resolved
+- [x] No critical or major issues — Briar's `pnpm-workspace.yaml` finding resolved; Eric's `2>/dev/null` Minor resolved
 - [x] No `gh pr edit --add-label` or `--remove-label` invocations remain in canonical source or mirrors — verified via grep across `.ai-skills/`, `.claude/`, `.codex/`, `.cursor/`
 - [x] `pnpm prism:check` exits 0 — confirmed via `tsx scripts/ai-skills/build.ts --check`; `prism:test` passes 116/116
-- [x] `.prism/lessons.md` updated to reference the fix
+- [x] `.prism/lessons.md` updated to reference the fix and codify the `gh api` stdout/stderr inversion
 - [x] No stray artifacts — `pnpm-workspace.yaml` deleted from working tree
 - [x] PR description up to date — opened as draft: https://github.com/HunterMcGrew/PRISM/pull/40
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Mirror sync — three tracked mirrors regenerated and verified against canonical (drift check passes)
-- [x] Scope discipline — diff is 5 files, mechanical swap only, no drive-by changes
+- [x] Scope discipline — diff is mechanical swap only, no drive-by changes
+- [x] Strip loop redirect fixed — `>/dev/null 2>&1 || true` catches both streams
 
-**Last updated:** 2026-05-23 (Clove post-Briar cleanup)
+**Last updated:** 2026-05-23 (Clove post-Eric redirect fix)
