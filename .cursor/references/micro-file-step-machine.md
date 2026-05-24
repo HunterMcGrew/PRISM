@@ -20,6 +20,12 @@ When the workflow has more than three phases AND benefits from cross-session res
 
 Sasha uses the lighter variant — six phases, but findings land in the branch plan's `## Debugged Issues` entry, not in per-step files. Per-step files would duplicate the plan entry without adding signal.
 
+## Full variant — per-step files plus state
+
+The full variant — per-step files plus a state file — is the right shape when each phase produces a substantial output the next phase reads. Per-step files are worth the maintenance overhead because they carry artifact-grade content that downstream steps consume directly, and a reviewer auditing step N benefits from reading step N-1's file rather than reconstructing it from the state blob.
+
+Theo, Ren, Parker, and Iris cite the full variant. The output flowing between steps is large enough that inlining it into the state file would either bloat the JSON or force lossy summarization — neither acceptable when later steps need the full prior output to do their work.
+
 ## File naming convention
 
 - One file per step: `step-NN-<slug>.md` where `NN` is zero-padded (`step-01-scan.md`, `step-02-classify.md`, `step-10-finalize.md`).
@@ -57,6 +63,7 @@ The skill never silently overwrites a prior state file. Resumption is always off
 - **Ren** (Phase 2.6, refactor scout) — uses the pattern for the explore → categorize → present → grill loop. State at `.prism/ren-state.json`.
 - **Parker** (Phase 3, PRD persona) — uses the pattern for greenfield mode's brain-dump → stakes calibration → draft → rubric → finalize sequence. State at `.prism/prds/<slug>/state.yaml`.
 - **Winston** (existing) — does not currently use the pattern, but if plan mode grows beyond its current shape, this is the pattern it should grow into.
+- **Iris** (Wave 2 PR 5, retrospective persona) — uses the pattern for the detect-target → gather-evidence → stage-voices → facilitate → action-items → save-report flow. Each step's output feeds the next, so the full variant (per-step files plus state) fits. State at `.prism/iris-state.json`.
 - **Sasha** (existing, debugger persona) — uses the **lighter variant** of the pattern (state file only, no per-step files). Six diagnostic phases share a single state file at `.prism/sasha-state.json` for cross-session resume; findings land in the branch plan's `## Debugged Issues` entry, so per-step files would only duplicate that artifact. See the "Lighter variant" section above for the rationale.
 
 ## Why a reference doc rather than inlining
