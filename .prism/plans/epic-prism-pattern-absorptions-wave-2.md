@@ -393,6 +393,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: PR 4 (Winston) implemented on fresh branch off post-PR-3 main. 11 targeted edits to `.ai-skills/skills/prism-architect/shared.md` — single-line AFK/HITL cite to `implementation-task-detail.md § 5` (task 23); new `## Re-plan Mode` as third top-level mode with triggers, flow, stale-artifact table, history line, and closing message (tasks 24-25); decomposition-shape gate inserted as Plan Mode step 3 with signal set + threshold + one-shot question (task 26); new `### Vertical-mode output format` sub-section with Implementation Slices and Slice Order (task 27); Epic Detection now acknowledges vertical-mode + epic threshold composition (task 28); Pocock's `decomposition-check` one-line gate inserted as Plan Mode step 5 (task 29); "Publish in dependency order" rule named under task generation (task 30); mode banners on Evaluate, Plan, Re-plan as quote callouts (task 31); new `## What Winston is not` boundary section preserving the no-code-written invariant explicitly across AFK/HITL, vertical, and Re-plan mechanics (task 32). Plan Mode steps renumbered to 1-9 with consistent internal references (step 6 = AC generation, step 8 = Linear sync); cross-references inside Re-plan Mode updated to step 8 to match the renumber. Build regenerated 4 platform mirrors; check + check-types + test all green (116/116).
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar self-review on PR 4 found 0 Critical / 2 Major / 2 Minor. Top finding: new `## What Winston is not` section at line 139 declares editable surface as `.prism/ + docs/` while pre-existing line 118 Ownership & Handoff sentence still claims `.claude/ + docs/` — internal contradiction in the canonical that future architect-mode invocations would hit. Also a structural gap in Re-plan Mode (flow documents propagate but never the plan-rewrite step the intro promises). Build re-verified via direct binary (pnpm unavailable in worktree per `ERR_PNPM_IGNORED_BUILDS`); 116/116 tests pass. Plan Mode renumber clean; mirror parity verified. Route to Clove for fixes before PR opens.
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Clove fixed all 4 Briar findings (2 Major: editable-surface contradiction at line 118, Re-plan Mode missing plan-rewrite step; 2 Minor: Re-plan trigger over-fires, § 5 citation convention). Mirrors regenerated; check + check-types + test green.
+- 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar re-review on PR 4 fix commit 65d88db clean. All 4 prior findings verified resolved. Ready to open PR + route to Eric.
 
 ---
 
@@ -577,7 +578,7 @@ _None._
 - [ ] PR description up to date — _PR 4 not yet opened; fixes precede PR creation_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (PR 4 Clove review fixes complete; ready for Briar re-review)
+**Last updated:** 2026-05-23 (PR 4 Briar re-review clean on fix commit 65d88db; ready to open PR + route to Eric)
 
 ---
 
