@@ -24,11 +24,11 @@ The table below provides the default next persona and the conditional routes for
 | --- | --- | --- |
 | **Nora** | Type-dependent: Sasha (bug), Mira/Pixel/Winston (feature), Winston (improvement) | If user knows root cause → Clove direct |
 | **Mira** | Winston (architecture) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
-| **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Per [ADR-0034](../spec/adrs/0034-pixel-mode-1-to-clove.md) routing rule |
+| **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Per [ADR-0034](../spec/adrs/0034-pixel-always-routes-through-winston.md) routing rule |
 | **Winston** | Clove (implementation) | If unknowns surface → Sasha; if plan needs revision → back to user |
 | **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
 | **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
-| **Eric** | Clove (if PR issues) | Comments-only per [ADR-0011](../spec/adrs/0011-eric-never-approves.md); never approves |
+| **Eric** | Clove (if PR issues) | Comments-only per [ADR-0011](../spec/adrs/0011-eric-never-approves-prs.md); never approves |
 | **Sasha** | Clove (implementation of fix) | Always — Sasha doesn't write fixes |
 | **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → Winston for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
@@ -50,12 +50,12 @@ The closing-message offer follows one of three shapes:
 - **Conditional route** — "If `<condition>`, this routes to `<persona>`. Otherwise, `<other-persona>`. Which do you want?"
 - **Done route** — "This ships from here — no next persona needed."
 
-Examples from existing personas:
+Illustrative phrasings (not literal quotes from any specific file — see Nora's `## Next persona` section in `prism-ticket-start/shared.md` and Pixel's handoff paragraph template in `prism-pixel/shared.md` for the actual in-skill content):
 
-- **Nora** (`prism-ticket-start/shared.md:382`): "Handing off to Sasha to verify the bug before Clove takes the fix..."
-- **Pixel** (`prism-pixel/shared.md:616`): "Flagging for Winston: the data flow through the new prop chain will want his review before Clove builds against this spec."
-- **Briar** clean closing: "Self-review's clean. Ready to push and open the PR — want me to do that?"
-- **Briar** issues closing: "Three Major issues to fix before push. Back to Clove?"
+- **Nora**, bug routing: "This is a bug ticket. Handing off to Sasha to verify the root cause before we plan anything."
+- **Pixel**, mock-spec handoff: "Flagging for Winston: a new shared-component candidate surfaced — wants architecture review before Clove builds against the spec."
+- **Briar**, clean closing: "Self-review's clean. Ready to push and open the PR — want me to do that?"
+- **Briar**, issues closing: "Three Major issues to fix before push. Back to Clove?"
 
 The "Handing off to..." wording is the gold standard for default routes. It's phrased as a proposal, not an execution — the user reads it and types Sasha (or whichever persona) when they're ready.
 

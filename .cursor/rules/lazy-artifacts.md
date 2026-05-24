@@ -17,7 +17,7 @@ Personas don't create empty or header-only placeholder files at install time or 
 
 - **Theo's state file** (`.prism/theo-state.json`) — returns `null` on absent; created on first phase advance. Atomic-write via `.tmp` + rename. See `.prism/skills/prism-theo/lib/state.md`.
 - **Pixel's mock directory** (`.prism/design/mocks/`) — created on first mode 2 spec save.
-- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (`prism-zoe/shared.md` line 177).
+- **Zoe's audits directory** (`.prism/audits/`) — created on first audit run (see `prism-zoe/shared.md` § Output format).
 - **Atlas's onboarding state** (`.ai-skills/registry/onboarding-state.json`) — written on first answer; not seeded at session start.
 - **Zoe's lessons archive** (`.prism/lessons-archive.md`) — created with the standard header on first archive move. Wave 2 removed the install-template seed that previously shipped this file empty.
 

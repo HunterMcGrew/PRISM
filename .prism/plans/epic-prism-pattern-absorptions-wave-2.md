@@ -380,6 +380,8 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Subagent re-evaluation complete. Four parallel subagents deep-dove the proposed changes against current PRISM skills + source skills (Pocock diagnose/review/to-issues, BMAD investigate/code-review/retrospective). Major revisions: Sasha Phase 5 design-only (preserves diagnose-only); Sasha case file = lighter-variant micro-file pattern; Eric = 3-section output (not strict 2-axis); Eric uses parallel subagents but reserves lightweight single-pass for docs-only PRs; AFK/HITL composes with vertical slicing (slices are the AFK unit); vertical-slicing offer fires BEFORE task generation; refined signal set for vertical; vertical slices become epic stories when slice count > threshold; scope-change propagation is a NEW MODE (Re-plan Mode), not an end-of-flow step; Parker STOP at end of stakes step (not "between" stakes and rubric); Atlas STOP at end of Batch-2 survey (not "between" detection and rule generation); both STOPs conditional (hobby/dogfood skip); Iris (renamed from Echo per user 2026-05-23) uses real persona roster + evidence-driven disagreements; lazy-artifact scope shrunk to rule + one template fix (most personas already lazy); closing-messages synthesizes from existing AGENTS.md § 9 (architect doc, not rule).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Pre-flight retrofit — added verdict sub-bullets to all 16 Decisions per the gate from #35; broadened AC mirror list to include `.cursor/skills/` and `.codex/agents/` per ADR-0044; captured three operational notes (label REST workaround, `confidence:standards-only` ready-flip, epic preservation).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: PR 1 (Foundation) implemented. New canonical files: `.prism/references/triple-gated-adr-criterion.md` (extracted from Winston's inlined section per Phase 1.5e fallback), `.prism/rules/lazy-artifacts.md` (codifies create-on-first-use; documents manifest.stub.json exception), `.prism/architect/closing-messages.md` (synthesizes AGENTS.md § 9 with conditional routing). Added AFK/HITL tag rule to `.prism/rules/implementation-task-detail.md` (default unmarked; `[HITL]` only when human input blocks execution; cites Pocock's `to-issues`). Removed `templates/install/.prism/lessons-archive.md` seed; Zoe now creates the file with standard header on first archive. All 17 persona shared.md files got `## Next persona` sections citing closing-messages.md. Winston and Theo updated to cite the new triple-gate reference doc. Build + check + check-types + test all green (116 tests pass).
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Briar self-review on PR #41. Four Major issues found (3 in closing-messages.md: two broken ADR links to wrong filenames, two fabricated quote examples citing wrong line numbers/content) + one Minor (stale line citation in lazy-artifacts.md). All routed to Clove for fix. Build/test re-run skipped (Clove ran clean minutes prior; no commits since).
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Clove fixed all 5 Briar findings. closing-messages.md: corrected ADR-0034 + ADR-0011 link filenames; reframed Nora/Pixel example block as illustrative phrasings (dropped fabricated file:line citations rather than chasing the actual line content — patterns are the point). lazy-artifacts.md: replaced `prism-zoe/shared.md line 177` with section-name reference (`§ Output format`) per the rule's own "section headings when line numbers will drift" guidance. Build regenerated 6 platform mirrors (closing-messages + lazy-artifacts across .claude/.codex/.cursor); check + check-types + test all green (116/116).
 
 ---
 
@@ -391,7 +393,45 @@ _None._
 
 ## Review Issues
 
-_None yet._
+### closing-messages.md broken ADR-0011 link
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/closing-messages.md:31`
+- **Problem:** Link uses filename `0011-eric-never-approves.md`; actual filename is `0011-eric-never-approves-prs.md`. Link will 404. Per architect-doc-verification, broken links in architect docs mislead every future agent that loads the doc via manifest routing.
+- **Suggested fix:** Update link target to `0011-eric-never-approves-prs.md`.
+
+### closing-messages.md broken ADR-0034 link
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/closing-messages.md:27`
+- **Problem:** Link uses filename `0034-pixel-mode-1-to-clove.md`; actual filename is `0034-pixel-always-routes-through-winston.md`. Link will 404.
+- **Suggested fix:** Update link target to `0034-pixel-always-routes-through-winston.md`.
+
+### closing-messages.md fabricated Nora example
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/closing-messages.md:55`
+- **Problem:** Cites `prism-ticket-start/shared.md:382` with quote "Handing off to Sasha to verify the bug before Clove takes the fix...". Actual line containing the pattern is **384**, and the literal text is `"This is a bug ticket. Handing off to Sasha to verify the root cause and suspected fix before we plan anything."` Both the line number and the quoted text diverge from the source. Architect-doc-verification rule: claim contradicts the source → Major.
+- **Suggested fix:** Either (a) replace the quoted text with the actual line-384 content and update the line number, OR (b) drop the file:line citation and reframe as an illustrative example.
+
+### closing-messages.md fabricated Pixel example
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/closing-messages.md:56`
+- **Problem:** Cites `prism-pixel/shared.md:616` (line number correct) with quote "Flagging for Winston: the data flow through the new prop chain will want his review before Clove builds against this spec." Actual line 616 text is `"...Flagging for Winston: SortableList may need a formal slot pattern if this is the second consumer. Plan updated, status: Needs architecture review."` The "Flagging for Winston:" frame is real; the rest of the quoted sentence is fabricated. Same divergence finding as the Nora example.
+- **Suggested fix:** Either (a) replace with the actual line-616 quote, OR (b) drop the file:line citation and reframe as illustrative.
+
+### lazy-artifacts.md stale line citation for Zoe
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/lazy-artifacts.md:20`
+- **Problem:** Cites `prism-zoe/shared.md line 177` for the "audits dir created on first run" claim. Actual content is at line 187 — the Zoe edit earlier in PR 1 (adding the lessons-archive create-on-first-archive instruction) shifted line numbers. The claim's intent is correct; only the line number is stale.
+- **Suggested fix:** Update `177` → `187`, or drop the line number and reference by section name only (matches `implementation-task-detail.md` guidance: "reference section headings when line numbers will drift").
 
 ---
 
@@ -453,16 +493,16 @@ _None yet._
 
 ## PR Readiness
 
-- [ ] No critical or major issues — _Briar self-review pending_
+- [x] No critical or major issues — _4 Major + 1 Minor from Briar review all fixed in followup commit; ready for Briar re-review_
 - [x] Types correct — no `any`, no unsafe `as` — _PR 1: `check-types` clean_
 - [x] No stray console.logs or debug artifacts — _PR 1: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
 - [x] All debugged issues resolved (no `open` entries) — _none filed_
-- [x] Build passes — last run: 2026-05-23 (PR 1 — build, check, check-types, test all green)
-- [ ] PR description up to date — _pending PR open_
+- [x] Build passes — last run: 2026-05-23 (PR 1 — build, check, check-types, test all green; Briar review found no build-breaking issues, skipped re-running per "checks confirmed clean by prior skill")
+- [x] PR description up to date — _PR #41 opened as draft 2026-05-23_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (PR 1 complete; Briar review pending)
+**Last updated:** 2026-05-23 (Clove followup fixes pushed; Briar re-review pending)
 
 ---
 
