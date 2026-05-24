@@ -395,6 +395,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Clove fixed all 4 Briar findings (2 Major: editable-surface contradiction at line 118, Re-plan Mode missing plan-rewrite step; 2 Minor: Re-plan trigger over-fires, § 5 citation convention). Mirrors regenerated; check + check-types + test green.
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar re-review on PR 4 fix commit 65d88db clean. All 4 prior findings verified resolved. Ready to open PR + route to Eric.
 - 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: PR 5 (Iris + STOPs) implemented on fresh branch off post-PR-4 main at commit 97aa3b6. Parker STOP added at end of `greenfield-step-02-stakes.md` step 7 (hobby-skip conditional, mirrors auto-skipped rubric at step-06-review.md:11). Atlas STOP appended to Batch-2 step 6 in `prism-atlas/shared.md` (dogfood-self skip preserves smoke-test idempotency). Forward-looking configurable-checkpoint section added to `.prism/architect/onboarding.md` documenting `atlas.checkpoints: minimal | standard | aggressive` shape for future contributors. New Iris persona scaffolding landed at `.ai-skills/skills/prism-iris/` (frontmatter.yml, shared.md, claude.md, codex.md, cursor.md) plus six step files at `.prism/skills/prism-iris/` (full-variant micro-file pattern — each step's output feeds the next). State file at `.prism/iris-state.json`; reports to `.prism/retros/<YYYY-MM-DD>-<slug>.md`. Read-only on source plans; explicit-invocation only; routes to Nora for action-item filing. Iris added to `.ai-skills/definitions/roles.json` (persona registry), `.prism/architect/skills-ecosystem.md` + install template (cadence-driven tier alongside Atlas and Zoe), `AGENTS.md § 9 Ownership & Handoff` + install template (Iris row routing to Nora), `.prism/architect/closing-messages.md` (Iris row replacing the PR-5 placeholder paragraph). Eli paired dev doc at `docs/content/dev/architecture/iris.md` (note: persona paired docs typically land under `docs/content/dev/ai-skills/` — followed user's explicit path instruction). Frontmatter description trimmed from 1021 to under 1000 chars after build flagged Codex discovery limit. Build regenerated 16 mirror files including `.claude/skills/prism-iris/`, `.codex/agents/prism-iris.toml`, `.cursor/skills/prism-iris/`, plus three architect-doc mirrors (closing-messages, onboarding, skills-ecosystem) across all three platforms. check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: Briar self-review on PR 5 (HEAD b8b5dca) found 0 Critical / 1 Major / 0 Minor. Major: Iris paired dev doc landed at `docs/content/dev/architecture/iris.md` instead of `docs/content/dev/ai-skills/iris.md` — convention verified against Theo, Ren, Parker siblings; task 42 prescribed the wrong path and Clove flagged it but still followed. Verified clean: frontmatter trim preserves all required triggers at 852 chars; SPEC.md persona-roster claim (skills-ecosystem.md is canonical, SPEC.md has no roster); roles.json matches Zoe/Atlas pattern; closing-messages placeholder deleted with Iris in cadence group; AGENTS.md § 9 + install template parity; Parker STOP step 7 with hobby-skip; Atlas STOP on step 6 body with dogfood-self skip; all four platform mirrors (.claude, .codex, .cursor, .ai-skills) present. Route Major to Clove for `git mv` before PR opens.
 
 ---
 
@@ -510,6 +511,14 @@ _None._
 - **Problem:** Two new citations in PR 4 use `[implementation-task-detail.md § 5](../../rules/implementation-task-detail.md)`. The `§ 5` notation conventionally maps to a `## 5` or `### 5` heading. The actual file has no such heading — item 5 of the numbered bullet list under `## The bar` (the `[HITL]` tag rule) is what's being referenced. Readers clicking the link land at the file root, not at item 5 — and section-search for "5" returns nothing useful. No other skill in the codebase uses `§ <number>` citation against this rule; the convention was invented in PR 4.
 - **Suggested fix:** Either (a) replace `§ 5` with the readable section anchor — `implementation-task-detail.md § The bar (item 5 — [HITL] tag)`; or (b) reformat to a deep-link by adding an explicit anchor in `implementation-task-detail.md` (`<a id="hitl-tag"></a>` near item 5) and citing the anchor. Option (a) is the lower-friction fix and matches the existing PRISM citation pattern (`branch-plan.md § Depth on Verified Fixes…`).
 
+### PR 5 Iris paired dev doc landed under `docs/content/dev/architecture/` instead of `docs/content/dev/ai-skills/`
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `docs/content/dev/architecture/iris.md`
+- **Problem:** The convention for paired persona dev docs is `docs/content/dev/ai-skills/<persona>.md` — verified by the three existing persona docs at `docs/content/dev/ai-skills/parker.md`, `ren.md`, and `theo.md`, all of which carry the same frontmatter shape (`category: "ai-skills"`, `audience: "dev"`). The sibling `docs/content/dev/architecture/` directory holds topical architecture docs (`audit-workflow.md`, `onboarding.md`, `install-layout.md`, `rule-generation.md`, `stack-detection.md`, `anchor-substitution.md`) — none are persona-named. Task 42 itself prescribed the wrong path; Clove honored the task and flagged the divergence in the implementation note. The doc landed in the wrong directory, breaking discoverability — a teammate browsing `dev/ai-skills/` for the persona roster won't find Iris there.
+- **Suggested fix:** `git mv docs/content/dev/architecture/iris.md docs/content/dev/ai-skills/iris.md`. No content changes needed — the frontmatter already declares `category: "ai-skills"`, which now matches the directory. Update task 42 in the plan to record the correction so the historical record matches reality, and so future personas don't re-derive the wrong path from this plan.
+
 ---
 
 ## Acceptance Criteria
@@ -570,16 +579,16 @@ _None._
 
 ## PR Readiness
 
-- [ ] No critical or major issues — _PR 5: Briar self-review not yet run._
+- [ ] No critical or major issues — _PR 5: Briar self-review surfaced 1 Major (Iris paired dev doc in wrong directory); routed to Clove for `git mv`._
 - [x] Types correct — no `any`, no unsafe `as` — _PR 5: `tsc --noEmit` clean_
 - [x] No stray console.logs or debug artifacts — _PR 5: content-only edits + new markdown persona scaffolding_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits + persona scaffolding across all 5 PRs (116 existing tests pass)_
 - [x] All debugged issues resolved (no `open` entries) — _none filed in PR 5_
 - [x] Build passes — last run: 2026-05-23 (PR 5 — direct-binary verification: tsx build, tsx --check, tsc --noEmit, tsx --test all green; 116/116)
-- [ ] PR description up to date — _PR 5 not yet opened; Briar self-review precedes PR creation_
+- [ ] PR description up to date — _PR 5 not yet opened; awaiting Major fix before PR creation_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; Iris persona promoted into skills-ecosystem.md + closing-messages.md + AGENTS.md § 9 + install template mirrors_
 
-**Last updated:** 2026-05-23 (PR 5 Clove implementation complete; build + check + check-types + test all green; awaiting Briar self-review)
+**Last updated:** 2026-05-23 (PR 5 Briar self-review complete; 0 Critical / 1 Major / 0 Minor; routed to Clove for paired-dev-doc relocation before PR opens)
 
 ---
 
