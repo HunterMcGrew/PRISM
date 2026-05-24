@@ -100,6 +100,16 @@ When appending to `## History`, include the branch name for traceability:
 
 Each history entry must be at most 3 sentences. Longer entries indicate the change belongs in ## Decisions with sub-bullets, not in history narration.
 
+### History entries: cap at 3 sentences
+
+The cap is one rule with three reasons.
+
+- **Load time** — every plan in `.prism/plans/` is re-read at session start by the persona owning the branch. Long history narration inflates the read cost without adding signal a downstream persona can act on.
+- **Edit-time echo** — agents writing the next entry re-read prior history first. A 6-sentence entry costs every future appender twice: once to read, once to draft against. Write-time savings are tiny; read-time savings compound over the plan's lifetime.
+- **Scannability** — a human or agent skimming `## History` to reconstruct what happened reads top to bottom. Each entry is one bullet, so long entries break the rhythm and the reader loses the at-a-glance timeline.
+
+**Where depth belongs:** if the change has a verified-fix or non-trivial-decision story to tell, it belongs in `## Decisions` with the sub-bullet shape from § 5 (root cause, alternatives considered, chosen approach, implementation guidance). The History entry then becomes one line: `YYYY-MM-DD [branch]: <one-sentence change>; see Decision: <title>`.
+
 ---
 
 ## 5. Keep the Plan Clean and Concise
