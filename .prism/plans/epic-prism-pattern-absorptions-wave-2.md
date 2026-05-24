@@ -1,0 +1,472 @@
+# Plan: epic-prism-pattern-absorptions-wave-2
+
+## Ticket
+
+Wave 2 of pattern absorptions from Matt Pocock + BMAD-METHOD research. Builds on [Phase 1.5e](./epic-prism-pattern-absorptions.md), which absorbed seven non-persona patterns. Wave 2 covers the persona-specific deepenings Phase 1.5e intentionally scoped out — five existing personas get targeted upgrades, one new persona (Iris) lands, two cross-cutting patterns sweep across all personas. Ships as **five sequenced PRs** per the subagent re-evaluation finding.
+
+No Linear ticket yet — assign one before opening the first PR.
+
+## Goal
+
+Extend the BMAD/Pocock absorption pass with persona-specific changes:
+
+- **Sasha** — restructure into six explicit diagnostic phases (with Phase 5 adapted to design-only, preserving the diagnose-only boundary), add evidence grading (`[Confirmed]`/`[Deduced]`/`[Hypothesized]`), add lighter-variant case-file resumability via `.prism/sasha-state.json`.
+- **Eric** — restructure into a 3-section output (Standards / Spec / Cross-cutting) with parallel subagents enforcing non-merging; lightweight path stays single-pass.
+- **Winston** — three composing changes: tag `[HITL]` tasks (`[AFK]` is unmarked default), add Re-plan Mode as a top-level mode, offer vertical-slicing before task generation based on a refined signal set; vertical slices count as epic stories under Epic Detection.
+- **Parker + Atlas** — single pre-write STOP markers at the strongest correction points (end of Parker stakes step, end of Atlas Batch-2 survey), with stakes-aware and mode-aware skipping.
+- **Iris** — new retrospective persona, multi-voice format using the actual PRISM persona roster, evidence-driven disagreements (re-litigate `## Decisions` against `## Debugged Issues`), action items routed to Nora for follow-up filing.
+- **Cross-cutting** — extract triple-gate to `.prism/references/triple-gated-adr-criterion.md`, codify lazy-artifact rule (most personas already lazy — scope shrinks to rule + one template fix), synthesize closing-message routing from existing AGENTS.md § 9 table into `.prism/architect/closing-messages.md`.
+
+---
+
+## User Stories
+
+Not applicable — internal toolkit deepening. The "users" are the personas that pick up these patterns on the next invocation; no end-user behavior changes.
+
+---
+
+## Design
+
+Not applicable — no UI work.
+
+---
+
+## Scope this wave does NOT touch
+
+Items considered and explicitly skipped (rationale in `## Decisions`):
+
+- **Token-compression "caveman" mode** (Pocock) — conflicts with verbose-by-design handoff format
+- **PRFAQ Working-Backwards layer** (BMAD) — over-engineering above Parker
+- **Quick-dev fast-track lane** (BMAD) — undermines planning discipline (ADR-0009, ADR-0024)
+- **Standalone implementation-readiness gate** (BMAD) — Winston does this implicitly
+- **customize.toml three-layer overrides** (BMAD) — YAGNI; no team has asked
+- **Numbered lifecycle folder structure** (BMAD) — persona names already carry order
+- **HTML temp-dir reports** (Pocock) — markdown is diffable, repo-resident
+- **Standalone correct-course skill** (BMAD) — folded into Winston as Re-plan Mode
+- **Checkpoint-preview HITL walkthrough** (BMAD) — Clove's closing summary + diff already covers this
+- **Halt-at-checkpoints as configurable feature** — YAGNI; default-off skill features rot. Forward-looking note added to `.prism/architect/onboarding.md` only.
+- **BMAD's third adversarial-hunter layer (Edge Case Hunter)** — two axes is enough for PRISM PR sizes; third subagent triples API cost without clear payoff
+- **Scripted-character retrospective format** (BMAD) — Iris uses real persona roster instead; evidence-driven disagreement, not theater
+- **Per-step file machine for Sasha** — case file is single-state-file lighter variant; gate #2 of the micro-file pattern is weak for diagnostic sessions
+
+---
+
+## Implementation Tasks
+
+Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../rules/implementation-task-detail.md). All persona edits target canonical sources at `.ai-skills/skills/<id>/shared.md`. Tasks tagged `[HITL]` need a human decision before execution can start; default is unmarked (`[AFK]` per the new tag rule extracted in PR 1). Task numbers are stable across PRs — the PR split in `## Dependencies and Sequencing` references these numbers.
+
+### PR 1 — Foundation (small additive surface)
+
+**Clove (implementation)**
+
+1. **Extract triple-gate to `.prism/references/triple-gated-adr-criterion.md`** — Theo's shared.md (line 55) already points at this file; it doesn't exist. Phase 1.5e left the gate inlined in Winston with a roadmap fallback citation. Reference doc shape mirrors `stakes-calibration.md` and `micro-file-step-machine.md`. Update Winston's `## Immediate Decision Promotion` section to cite the new doc; update Theo's fallback note (line 55, line 92) to cite it directly.
+
+2. **Write `.prism/rules/lazy-artifacts.md`** — codify the lazy-creation pattern already followed by most personas. Rule content: (a) personas do not create empty/header-only files at install time or session start, (b) files are created when content is being written, never as placeholders, (c) state files return null/sentinel on absent rather than auto-initializing, (d) cite canonical patterns (Theo state, Pixel mocks dir, Zoe audits dir), (e) cite the anti-pattern (lessons-archive seed). Short prescriptive file.
+
+3. **Switch `templates/install/.prism/lessons-archive.md` to lazy creation** — current file is a 5-line header-only placeholder. Remove from install template; have Zoe's archive step create the file with the header on first archive. Verify by checking `wc -l templates/install/.prism/lessons-archive.md` post-edit (file should not exist) and that Zoe's shared.md instructs creation on first archive.
+
+4. **Quick read on `templates/install/.prism/architect/manifest.stub.json`** — subagent flagged this as a potential lazy candidate. If it contains only `{}` or trivial structural shape, switch to lazy following task 3's pattern. If it carries schema-required fields consumers depend on, leave it and document the exception in the lazy-artifacts rule. [HITL] — decision based on file contents.
+
+5. **Add the AFK/HITL tag rule to `.prism/rules/implementation-task-detail.md`** — extend the rule's "How to apply — Winston's Implementation Tasks" section with a 5th bullet defining the tag. Tag goes immediately after the task number, before the title. **Default is unmarked (`[AFK]` implicit); only `[HITL]` is tagged explicitly.** `[HITL]` definition: task needs human decision before execution can start (e.g., `OPEN —` Decision blocks it, stakeholder approval gate, benchmark needed before algorithm lock). Cite Pocock's `to-issues` as source. Note the deliberate contradiction with Pocock's "avoid file paths in issues" guidance — PRISM tasks are session-local execution units, not customer-facing tickets.
+
+6. **Write `.prism/architect/closing-messages.md`** — synthesize the routing data from `AGENTS.md § 9 Ownership & Handoff` into per-persona contextual routing tables. Each persona gets a row covering: default next persona, conditional routes, phrasing pattern. Document the recommend-without-auto-invoke posture (closing messages suggest; never auto-invoke the downstream persona). Architect doc, not rule — contextual guidance is not universally loaded. Iris omitted from initial table (added in PR 5).
+
+7. **Update each persona's `shared.md` with a `## Next persona` section** — 3–5 lines citing `.prism/architect/closing-messages.md` and providing that persona's specific routing row. Personas covered in PR 1: Nora, Mira, Pixel, Winston, Clove, Briar, Eric, Sasha, Eli, Sage, Reese, Parker, Theo, Ren, Zoe, Lilac, Atlas. (Iris's routing added with the persona itself in PR 5.) Use Nora's existing step 11 ("next steps") and Pixel's "Flagging for Winston" handoff as the phrasing template.
+
+8. **PR 1 build + verify** — run after tasks 1–7:
+   ```bash
+   pnpm prism:build
+   pnpm prism:check
+   pnpm prism:check-types
+   pnpm prism:test
+   ```
+
+**Eli (documentation)**
+
+9. **Update Eli's awareness of the closing-message pattern** — small note in Eli's `shared.md` acknowledging the cross-cutting closing pattern so future docs cite it.
+
+### PR 2 — Sasha upgrades
+
+**Clove (implementation)**
+
+10. **Restructure Sasha into six explicit phases, adapted for diagnose-only scope** — file: `.ai-skills/skills/prism-debugger/shared.md`. Phases:
+    - **Phase 1: Feedback Loop (deliverable, not precondition)** — produce a fast deterministic pass/fail signal. Rewrite the current "Feedback Loop" body (lines 211–225) to cover Pocock's signal-construction ladder (failing test, curl script, CLI w/ fixture diff, headless browser, replay trace, throwaway harness, fuzz loop, bisect harness, differential loop, HITL bash). Move the existing 10-rung *diagnostic-techniques* ladder (currently inside this section) into Phase 4 — those are instrumentation techniques, not feedback-loop construction.
+    - **Phase 2: Reproduce** — confirm the signal triggers consistently. Fold the existing "Categorize the bug" sub-step (line 272) into this phase. Add a one-liner: *"The user's description is Hypothesis #0 — verify independently."*
+    - **Phase 3: Hypothesize** — generate 3–5 ranked falsifiable hypotheses. Adopt Pocock's "show ranked hypotheses to user before testing" checkpoint. Add Pocock's "stronghold first" reflex as a one-liner: *"Anchor every hypothesis on one Confirmed piece of evidence and expand outward."*
+    - **Phase 4: Instrument** — gather evidence per the top hypothesis. Diagnostic-techniques ladder (moved from current Feedback Loop section) lives here.
+    - **Phase 5: Confirm root cause + design regression test** — name the cause with evidence; **design** (do not write) a regression test for Clove. Adopt Pocock's wording for the no-correct-seam case: a `Suggested tests:` value of `"no correct seam — architecture prevents lockdown"` is a legitimate finding that flags Winston/Ren follow-up. Phase 5 is design-only; Clove implements the test in their own pass.
+    - **Phase 6: Cleanup + Post-Mortem** — remove instrumentation, route to Lessons Check (which Sasha already has at line 426), formalize "missing evidence is a finding" with a `Gap / Impact / How to Obtain` mini-table for any unconfirmed claims.
+
+    Replace the existing "Debugging process" section (lines 264–337) with the six-phase frame. Preserve 5b/5c Linear sync flow inside Phase 6. Update Definition of Done (line 396 area) to reorder against the six phases.
+
+11. **Add evidence grading to `## Debugged Issues` plan section format** — extend the template defined in `.prism/rules/branch-plan.md`. Three changes to each entry:
+    - **Add `Confidence:` field** — `High` (Confirmed root cause + deterministic repro) / `Medium` (Deduced) / `Low` (Hypothesized, named data gap).
+    - **Inline-tag the Root cause line** — `[Confirmed]` / `[Deduced]` / `[Hypothesized]`. One-token cost, high-information.
+    - **Add optional `Refuted hypotheses:` sub-bullet** — keeps the "hypotheses are never deleted" principle without bloating the format. Skipped when there were no real alternatives.
+
+    **Touches 3 files in lockstep:** `.prism/rules/branch-plan.md`, `.claude/rules/branch-plan.md`, `templates/install/.prism/rules/branch-plan.md`. Verify all three carry the same template after edit.
+
+12. **Update `.prism/templates/bug-report.md`** if it exists — referenced from Sasha's shared.md (line 298, 330). Mirror the evidence-grading additions from task 11 so the template matches the new `## Debugged Issues` shape. Verify file exists before edit; if absent, no-op.
+
+13. **Add Sasha case-file resumability via `.prism/sasha-state.json`** — single state file (no per-step files — lighter variant of `micro-file-step-machine.md`). Schema: `currentPhase`, `phasesCompleted`, `hypotheses` (with status: Open/Confirmed/Refuted), `confirmedEvidence`, `caseSlug` (one per ticket/branch — keyed inside if multiple compound diagnoses surface), `status` (`not-started | in-progress | paused | complete | aborted`). Atomic-write protocol mirrors Theo's (write to `.tmp`, then rename). On Sasha invocation: check for existing state matching the current ticket/branch; if `status` is `in-progress` or `paused`, offer resume from `currentPhase`. Cleanup on `complete` — delete the file.
+
+14. **Update `.prism/references/micro-file-step-machine.md` with the lighter-variant clarification** — add a paragraph acknowledging that operational-state-only (no per-step files) is a valid lighter variant. Add Sasha to the citers list. Source: subagent finding that Sasha hits 2 of 3 gates strongly; per-step files would duplicate the plan's `## Debugged Issues` entry without adding signal.
+
+15. **PR 2 build + verify** — same `pnpm prism:build / check / check-types / test` sequence.
+
+### PR 3 — Eric two-axis restructure
+
+**Clove (implementation)**
+
+16. **Replace Eric's "What to look for" (lines 314–327) with two explicit axis sub-sections** — file: `.ai-skills/skills/prism-code-review-pr/shared.md`. Standards axis covers: logic, types, abstraction + deletion test (which stays where it is at lines 332–346 inside `### Justification Review`, with `### Justification Review` re-headered to mark it explicitly as a Standards-axis check), a11y, doc-class triage, test coverage, comment standards, visual regression. Spec axis covers: AC conformance, plan `## Decisions` respect, scope creep, architect context constraints.
+
+17. **Restructure phase 3 of Eric's flow (line 230 area) to spawn two parallel subagents per Pocock's pattern** — each subagent receives only its own context bundle (Standards subagent gets diff + standards-source files; Spec subagent gets diff + AC + plan + architect context). Context isolation enforces non-merging. The aggregator (Eric's main thread) reads both reports and assembles the summary without re-ranking across axes.
+
+18. **Rewrite Eric's Summary format (lines 362–386) into a 3-section output:**
+    - `### Summary` (unchanged — paragraph)
+    - `### Standards findings` — Critical / Major / Minor within axis
+    - `### Spec findings` — Critical / Major / Minor within axis (or `"Spec axis skipped — no spec available"` when missing-spec)
+    - `### Cross-cutting observations` — outputs worth surfacing together (test coverage gaps, doc-class triage results)
+    - `### PR Readiness` (unchanged — checklist)
+
+19. **Add a "Missing spec handling" sub-section to Eric's mode selection** — three states (full spec, partial spec, no spec) and what each means for the Spec subagent. The skip must be loud in the summary; silent skipping looks like a passing review. Add the new label `confidence:standards-only` for the spec-skipped case (alongside existing `confidence:high` and `confidence:needs-judgment`).
+
+20. **Add the lightweight-path opt-out** — full Eric path uses parallel subagents (doubles API cost); lightweight path (docs-only PRs) stays single-pass. Document the threshold for "lightweight" (e.g., diff is `.md`-only and under N files). Subagent suggested: docs-only diffs.
+
+21. **Implementation note for subagent context-fetching** — to avoid each subagent re-reading the same source files, pre-fetch all source files in Eric's main thread and pass content into each subagent prompt. Pre-fetching avoids redundant reads and keeps the two subagents from racing on filesystem reads.
+
+22. **PR 3 build + verify** — same sequence.
+
+### PR 4 — Winston upgrades
+
+**Clove (implementation)**
+
+23. **Reference the AFK/HITL tag rule from Winston's shared.md** — file: `.ai-skills/skills/prism-architect/shared.md`, line 257 area (existing "Apply the detail bar" bullet). Single-line reference to the new tag rule extracted in PR 1, task 5. Do not re-define the tag in shared.md.
+
+24. **Add `## Re-plan Mode` as a third top-level mode** — file: `.ai-skills/skills/prism-architect/shared.md`, new section after current line 313 (`---` separator before `## Epic Detection`). Mode fires when: (a) user explicitly says "scope changed, re-plan this" / "the ticket grew" / similar, OR (b) Winston detects mid-session that he's about to overwrite `## Implementation Tasks` on a plan with a non-empty `## History` (i.e., implementation has started). Flow:
+    1. Diff old vs new tasks/AC (what was added, removed, restated).
+    2. Walk the stale-artifact table (see task 25).
+    3. Output a propagation report — per-artifact verdict: `stale` / `clean` / `verify`.
+    4. For each `stale`, offer routing to the owning persona (Mira → user stories, Parker → PRD, Nora → Linear ticket desc, Clove → in-flight work coordination, Pixel → mock spec, Reese → AC checklist).
+    5. Auto-sync the artifacts Winston already owns (Linear AC, PR body via ADR-0020) without prompt; report what was synced.
+
+25. **Stale-artifact table for Re-plan Mode** — document inline in the Re-plan Mode section:
+
+    | Artifact | Owner | Stale when... |
+    |---|---|---|
+    | Linear AC | Winston (auto-sync) | Tasks change → AC changes |
+    | Linear ticket description | Nora | User stories or goal restate |
+    | `## User Stories` in plan | Mira | Scope shift adds/removes a user-facing capability |
+    | `.prism/prds/<slug>.md` | Parker | PRD-grain change (rare mid-ticket; possible on epic re-plans) |
+    | In-flight Clove work | Clove | Tasks Clove was executing got removed or restated |
+    | PR body | Winston (auto-sync per ADR-0020) | Tasks/Decisions/AC change |
+    | Pixel mock spec | Pixel | UI scope shifts |
+    | AC already QA-planned | Reese | AC drift after Reese wrote a test plan |
+
+26. **Add the decomposition-shape gate to plan mode** — file: `.ai-skills/skills/prism-architect/shared.md`, insert between current plan-mode steps 2 (read goal/decisions) and 3 (break into tasks) — around line 251. Step name: "Decomposition shape". Winston evaluates the signals:
+    - Tracer-bullet vocabulary in ticket/user stories ("end-to-end", "demo-able", "thin slice", "spike", "happy path first")
+    - Explicit feature-flag or phased rollout mentioned in ticket
+    - Greenfield (no existing code in the touched area)
+    - User stories outnumber implementation surfaces (5 stories, 3 layers → stories are the slice candidates)
+    - Epic-detection threshold met AND stories are independently shippable
+    - (Necessary condition, not sufficient): touches 3+ layers — required for vertical to be meaningful, but won't trigger the offer alone
+
+    If signals fire (3+ matches in pure plan mode, all signals in evaluate-then-plan to avoid gate fatigue), Winston asks once: "This looks slice-able — want horizontal lanes (default, persona-grouped) or vertical tracer-bullets (each slice cuts through all layers and is demoable on its own)?" Then generates one shape only. No retroactive reshape.
+
+27. **Define vertical-mode output format** — new sub-section under `## Plan Mode` in Winston's shared.md. In vertical mode, tracer-bullet slices replace persona groups. Each slice has: a name (one-line demoable capability), its own subset of AC, ordered list of touched layers, and a mandatory `[AFK]` or `[HITL]` tag (because that's the slice's native question — slice carrying the whole feature can either ship without me or not). Horizontal mode stays default; vertical is opt-in via the decomposition gate.
+
+28. **Update `## Epic Detection` to acknowledge vertical mode** — when in vertical mode and slice count exceeds the epic threshold (>5), each slice becomes an independent story plan. The epic plan references the slice-story plans. This is the natural composition; per the user decision, slices ARE the story shape when vertical mode and epic threshold both fire.
+
+29. **Add Pocock's "Quiz the user" decomposition-check gate** — after task generation (either horizontal or vertical), Winston pauses with a single confirmation: "Does this decomposition feel right — granularity, dependencies, merge/split, tag accuracy?" One-line gate; user accepts or pushes back; if pushback, reshape before AC sync. Catches over-slicing/under-slicing.
+
+30. **Add "publish in dependency order" as a documented rule in Winston** — Winston already orders tasks by dependency, but doesn't name this as a rule. One-line note in the Implementation Tasks section: "Order tasks so each task's prerequisites land before it." Pocock's source for naming the rule.
+
+31. **Add mode banners to all three modes' opening lines** — one-line `Running <mode> — [gates expected]` at session start so the user knows the session shape. Mitigates the gate-density concern across runs.
+    - Evaluate mode: `Running evaluate mode — Devil's Advocate, A/P/C decision point, then Suggested Approach.`
+    - Plan mode: `Running plan mode — decomposition shape question, optional task-check pause, then tasks + AC.`
+    - Re-plan mode: `Running re-plan mode — propagation report and routing offers.`
+
+32. **Update Winston's "What Winston is not" section** — Winston still doesn't write code. Note explicitly that AFK/HITL tagging and vertical-mode-and-epic-stories composition do not change Winston's no-code-written invariant.
+
+33. **PR 4 build + verify** — same sequence.
+
+### PR 5 — Parker + Atlas STOPs + Iris new persona
+
+**Clove (implementation)**
+
+34. **Add Parker STOP marker at end of `greenfield-step-02-stakes.md`** — file: `.prism/skills/prism-parker/greenfield-step-02-stakes.md`. Insertion point: after step 5 ("Append stakes to stepsCompleted"), before transition to `greenfield-step-03-mode.md`. Phrasing template (adapted from Sage's existing STOP precedent):
+
+    > "Stakes calibrated as `<level>`. Before I move to drafting, **STOP**: review the stakes call. The level drives review rigor, open-question requirements, and decision log mandate. Do you want to recalibrate, or proceed?"
+
+    **Conditional skip:** if `stakes == hobby`, skip the STOP (rubric is auto-skipped for hobby per `step-06-review.md:11`; recalibration moment has less consequence).
+
+35. **Add Atlas STOP marker at end of Batch 2 survey** — file: `.ai-skills/skills/prism-atlas/shared.md`. Insertion point: right after current line 55 (the survey-findings step), BEFORE question 1. Phrasing:
+
+    > "Detection found `<stack>` with evidence at `<paths>`. **STOP** before I start the question flow — confirm the detection looks right, or correct it now. Any misdetection here propagates into rule generation and anchor substitution."
+
+    **Conditional skip:** if Atlas is in `dogfood-self` mode (per `shared.md:80`), skip the STOP (preserves smoke-test idempotency).
+
+36. **Add forward-looking configurable-checkpoint note to `.prism/architect/onboarding.md`** — single paragraph noting that team-level config could enable `atlas.checkpoints: minimal | standard | aggressive` as a future feature. Today the STOP is fixed at post-detection; teams running Atlas in CI or smoke-tests want it suppressed; teams new to PRISM want more. No code; documentation only.
+
+**Iris — new retrospective persona**
+
+37. **Create Iris persona scaffolding** — new skill directory at `.ai-skills/skills/prism-iris/` with the standard layout:
+    - `frontmatter.yml` — name (`prism-iris`), description (with trigger phrases), argument-hint
+    - `shared.md` — the persona body (mirror Zoe's structure as scaffold)
+    - `claude.md`, `codex.md`, `cursor.md` — single-line placeholder comments per the platform-mirror convention
+
+    Trigger words: "Iris" by name + phrases ("let's run a retro", "retrospective on this epic", "what went well/badly on PRISM-####", "post-mortem this").
+
+38. **Create Iris step files** at `.prism/skills/prism-iris/`:
+    - `step-01-detect-target.md` — epic-plan (primary) vs date-range (fallback). Look for `.prism/plans/epic-<slug>.md`; fall back to date range when explicitly requested or no epic plan detected.
+    - `step-02-gather-evidence.md` — walk the plan's `## History`, `## Decisions`, `## Debugged Issues`, `## Review Issues`. For date-range mode, walk all plans with history entries in the range.
+    - `step-03-stage-voices.md` — identify which personas actually touched the plan (from `## History` branch names and persona-task ownership). Only those personas speak in the retro; absent personas don't get scripted in.
+    - `step-04-facilitate.md` — generate the multi-voice dialogue body. Format: `Name (Role): "dialogue"`. Disagreements are evidence-based — re-litigate `## Decisions` entries where actual outcome diverged from predicted (e.g. Decision said X beat Y because Y was expensive, but Debugged Issues shows X caused three regressions — that's a real disagreement worth surfacing).
+    - `step-05-action-items.md` — synthesize `## Action Items` section with proposed owners (`[ ] <action> — proposed owner: <persona>`). At end, offer: "Want me to hand off to Nora to file these as follow-up tickets? She'll run the scope-fit gate from `.prism/rules/followup-scope.md` on each one."
+    - `step-06-save-report.md` — write report to `.prism/retros/<YYYY-MM-DD>-<epic-slug>.md`. Read-only on the plan (don't modify the source plan's `## History`).
+
+39. **Write Iris's `shared.md` body** — covers identity, personality, when invoked, output format (the retro template), routing to Nora for action items, the no-write-on-source-plan invariant. Iris is explicit-invocation only (like Zoe) — no auto-routing. Add Iris's row to `.prism/architect/closing-messages.md` (created in PR 1, updated here): default next persona is Nora (for action items); user can decline the handoff.
+
+40. **Add Iris to `.prism/SPEC.md` persona roster** — under the cadence-driven tier (alongside Zoe). Update lifecycle/cadence taxonomy if needed.
+
+41. **Update `AGENTS.md § 9 Ownership & Handoff`** — add Iris row to the routing table: Owns retros at `.prism/retros/`; Routes to Nora (action-item filing). Mirror in `templates/install/AGENTS.md` per the install-template pattern.
+
+**Eli (documentation)**
+
+42. **Evaluate paired dev doc requirement for Iris** — per ADR-0038, every new persona evaluates whether `docs/content/dev/architecture/iris.md` warrants a paired dev doc. Iris is a retrospective persona; teammates touching epic retros will plausibly want a narrative doc. Current call: **write the paired doc** — retros are inherently human-facing. Use Zoe's paired doc as template structure.
+
+**Verification**
+
+43. **PR 5 build + verify** — same sequence.
+
+---
+
+## Decisions
+
+- **Re-scoped from initial exploration after discovering Phase 1.5e overlap.**
+  - **Root cause:** Initial exploration produced ~9 candidate items, but reading sibling plans revealed Phase 1.5e (epic-prism-pattern-absorptions, complete) already absorbed the triple-gated ADR test in Winston and Theo, plus six related patterns. Re-implementing absorbed items would have caused merge conflicts and duplicated work.
+  - **Alternatives considered:** Rewrite items 1.5e already absorbed (rejected — duplicate work, merge conflict guaranteed); skip wave 2 entirely (rejected — 11+ items still novel); re-scope to persona-specific deepenings (chosen).
+  - **Chosen approach:** Wave 2 as a sibling to Phase 1.5e — references the prior phase, intentionally scopes to persona-specific work the prior phase left out.
+  - **Implementation guidance:** Subagent re-evaluation (2026-05-23) confirmed no further overlap with 1.5e beyond the triple-gate.
+
+- **Standalone correct-course skill rejected — folded into Winston as Re-plan Mode (top-level mode, not end-of-flow step).**
+  - **Root cause:** The "value" isn't the re-planning (Winston already does this); it's the multi-artifact propagation across Linear AC, user stories, PRD, in-flight Clove work. That's orchestration. **Subagent caught:** Winston's plan mode is one-shot today — there's no concept of mid-ticket re-planning to append to. Re-plan must be a new mode, not a step.
+  - **Alternatives considered:** Standalone persona (rejected — orchestration without ownership), `/correct-course` slash command (rejected — breaks persona-naming convention), Winston end-of-plan step (rejected — fires for fresh plans that have nothing to propagate yet), Winston new mode (chosen).
+  - **Chosen approach:** `## Re-plan Mode` as Winston's third top-level mode, alongside Evaluate and Plan.
+  - **Implementation guidance:** Tasks 24–25.
+
+- **Sasha Phase 5 is design-only, not implementation. Preserves diagnose-only boundary.**
+  - **Root cause:** Pocock's Phase 5 is "Fix + regression test" — Sasha's invariant is no source-file modifications (line 209: "Sasha diagnoses — she doesn't treat"). Adopting Pocock verbatim would break the Clove-owns-implementation boundary that the persona model depends on.
+  - **Alternatives considered:** Adopt Pocock verbatim (rejected — breaks diagnose-only boundary), drop Phase 5 entirely (rejected — regression test design is a real diagnostic deliverable), adapt to design-only (chosen, user-confirmed 2026-05-23).
+  - **Chosen approach:** Sasha designs the regression test (specifies what it covers, where it lives, what it asserts); Clove implements in their own pass. Pocock's "no correct seam" finding format adopted as-is.
+  - **Implementation guidance:** Task 10, Phase 5 section.
+
+- **Sasha case file is single-state lighter variant of micro-file pattern.**
+  - **Root cause:** The full micro-file pattern fits 2 of 3 gates strongly; gate #2 ("outlasts a context window") is weak for diagnostic sessions — bugs rarely span days the way Theo walks span hundreds of files. Per-step files would duplicate the plan's `## Debugged Issues` entry without adding signal.
+  - **Alternatives considered:** Full micro-file pattern (rejected — duplicate maintenance), no resumability (rejected — multi-day prod incidents are real), lighter single-state variant (chosen).
+  - **Chosen approach:** Single `.prism/sasha-state.json` with `currentPhase` / `phasesCompleted` / hypothesis state / confirmed evidence / case slug / status. Update `.prism/references/micro-file-step-machine.md` to acknowledge the lighter variant.
+  - **Implementation guidance:** Tasks 13–14.
+
+- **Eric is a 3-section output (Standards / Spec / Cross-cutting), not a strict 2-axis.**
+  - **Root cause:** Eric covers more than two axes today — a11y, justification, doc-class triage, test coverage. **Subagent caught:** these flow INTO axes (a11y → Standards, justification → Standards, test coverage → Standards) — they're cross-cutting concerns, not axes themselves. Forcing strict 2-axis would lose them or duplicate them.
+  - **Alternatives considered:** Strict 2-axis (rejected — loses concerns), 5-axis (rejected — proliferates), 3-section with axes + cross-cutting (chosen).
+  - **Chosen approach:** Standards axis + Spec axis + Cross-cutting observations. Parallel subagents handle the two axes; cross-cutting outputs surface in the main thread.
+  - **Implementation guidance:** Tasks 16, 18.
+
+- **Eric's parallel-subagent pattern uses context isolation, but reserves lightweight single-pass path for docs-only PRs.**
+  - **Root cause:** Pocock's mechanism literally spawns two subagents — context isolation enforces non-merging beyond just a prompt instruction. But API cost roughly doubles, and docs-only PRs don't need the heavyweight path.
+  - **Alternatives considered:** Always parallel (rejected — wasteful for trivial PRs), never parallel (rejected — defeats the non-merging mechanism), threshold-based opt-out (chosen).
+  - **Chosen approach:** Full path uses parallel subagents; docs-only PRs (`.md` diff only) stay single-pass. Threshold documented in Eric's shared.md.
+  - **Implementation guidance:** Tasks 17, 20.
+
+- **AFK/HITL tag defaults to unmarked (`[AFK]` implicit); only `[HITL]` is tagged.**
+  - **Root cause:** Tagging every task as `[AFK]` or `[HITL]` is signal-to-noise drift — most tasks are AFK. Pocock himself prefers AFK; HITL is the exception. **Subagent caught:** Anchoring the definition in `.prism/rules/implementation-task-detail.md` (not in Winston's shared.md) prevents drift between the two files.
+  - **Alternatives considered:** Tag every task explicitly (rejected — noise), tag only HITL explicitly with AFK as unmarked default (chosen), put definition in Winston's shared.md (rejected — drift risk).
+  - **Chosen approach:** Definition lives in `.prism/rules/implementation-task-detail.md`; Winston's shared.md references it. `[HITL]` is the explicit tag; `[AFK]` is the unmarked default.
+  - **Implementation guidance:** Tasks 5 (rule), 23 (Winston reference).
+
+- **AFK/HITL composes with vertical slicing — slices are the AFK unit.**
+  - **Root cause:** Pocock's tags exist *because* the unit is a vertical slice cutting through all layers. On horizontal lane tasks, "AFK for whom?" gets fuzzy (the human, Winston, Pixel?). On vertical slices, AFK means "this whole slice can ship without me" — a coherent claim.
+  - **Alternatives considered:** Tag taxonomy is mode-agnostic (rejected — definitional drift), tags are mode-specific (chosen).
+  - **Chosen approach:** Horizontal mode (default) uses tags sparingly (only `[HITL]` explicit). Vertical mode (opt-in) requires `[AFK]` or `[HITL]` on every slice — that's the slice's native question.
+  - **Implementation guidance:** Tasks 5, 23, 27.
+
+- **Vertical-slicing offer fires BEFORE task generation, not after.**
+  - **Root cause:** **Subagent caught:** If Winston builds horizontal tasks then asks "would you like vertical?", he's done the work twice and the user picks horizontal because it's concrete. The offer dies on the vine.
+  - **Alternatives considered:** Offer after task generation (rejected — see root cause), offer in parallel (rejected — double generation), offer before task generation as a gate (chosen).
+  - **Chosen approach:** Decomposition-shape gate between plan-mode steps 2 and 3. Signals fire → Winston asks once → generates one shape only.
+  - **Implementation guidance:** Task 26.
+
+- **Vertical-slicing signal set refined — original "3+ layers" alone was too noisy.**
+  - **Root cause:** "Touches 3+ layers" fires constantly (most non-trivial work hits 3 layers). Better signals: tracer-bullet vocabulary in ticket/user stories, feature-flag / phased rollout, greenfield (no existing code), user stories outnumber implementation surfaces, epic decomposition into independently-shippable stories. The 3-layer test is a necessary condition (you can't slice vertically with one layer), not a sufficient one.
+  - **Alternatives considered:** Single weak signal (rejected — noise), conjunctive signal set (chosen — multiple match before offering).
+  - **Chosen approach:** Offer fires when 3+ signals match in pure plan mode, all signals in evaluate-then-plan (to avoid gate fatigue post-A/P/C).
+  - **Implementation guidance:** Task 26.
+
+- **Vertical slices count as epic stories when slice count exceeds epic threshold (user-confirmed 2026-05-23).**
+  - **Root cause:** Vertical slices are the natural story shape — they're independently demoable and shippable. When the slice count crosses the epic-detection threshold, each slice becomes its own story plan; the epic plan references the slice-story plans. This is the natural composition.
+  - **Alternatives considered:** Keep vertical inside a single plan even at large slice count (rejected — duplicates story-plan ergonomics inside the plan), each slice becomes a story plan (chosen).
+  - **Chosen approach:** Update Epic Detection to acknowledge vertical mode. Slice count > epic threshold → slices become epic stories.
+  - **Implementation guidance:** Task 28.
+
+- **Iris (formerly Echo) — name confirmed 2026-05-23 to avoid E-prefix collision with Eric and Eli.**
+  - **Root cause:** Echo collides with Eric and Eli in the E-prefix cluster; Iris keeps eye/reflection imagery without collision.
+  - **Alternatives considered:** Echo (rejected — E-prefix cluster), Vera (rejected — less natural fit), Rena (rejected — same), Iris (chosen).
+  - **Chosen approach:** All references to Echo throughout the plan and downstream artifacts use Iris.
+  - **Implementation guidance:** Tasks 37–41.
+
+- **Iris uses the real PRISM persona roster — evidence-driven disagreements, not scripted characters.**
+  - **Root cause:** BMAD's retrospective uses hardcoded characters (Amelia, Alice, Charlie, etc.) with scripted disagreements for "authentic team dynamics." That's theater. PRISM has a real persona roster; Iris should drive participation from evidence (the personas that actually touched the plan) and surface real disagreements (re-litigate `## Decisions` against `## Debugged Issues`).
+  - **Alternatives considered:** Scripted characters (rejected — theater), single facilitator with no other voices (rejected — loses multi-voice mechanic), real-roster + evidence-based dialogue (chosen).
+  - **Chosen approach:** Iris stages voices based on `## History` and persona-task ownership in the plan. Disagreements come from outcome-vs-prediction gaps in `## Decisions`.
+  - **Implementation guidance:** Task 38, step-03 and step-04.
+
+- **Iris proposes action items; Nora files them.** Preserves the Nora ownership boundary for follow-up tickets.
+  - **Root cause:** Action items are follow-up ticket candidates; Nora owns follow-up filing (with the scope-fit gate from `.prism/rules/followup-scope.md`). Iris bypassing Nora would create scope-gate gaps.
+  - **Alternatives considered:** Iris files directly (rejected — bypasses scope-fit gate), Iris proposes + offers handoff (chosen).
+  - **Chosen approach:** Iris writes `## Action Items` to the retro report; closing offer is "want me to hand off to Nora to file these as follow-up tickets?" — user accepts or declines.
+  - **Implementation guidance:** Task 38, step-05.
+
+- **Lazy-artifact audit scope shrunk — most personas are already lazy.**
+  - **Root cause:** **Subagent caught:** scope was over-stated. Per-persona audit found Theo's state file returns null on absent (already lazy), Pixel's mock dir creates on demand (already lazy), Zoe's audits dir creates on first run (already lazy), Atlas writes state on first answer (already lazy). The single concrete eager seed: `templates/install/.prism/lessons-archive.md` (header-only placeholder).
+  - **Alternatives considered:** Full audit + per-persona edits (rejected — manufactured work), rule + targeted single template fix (chosen).
+  - **Chosen approach:** Write the rule at `.prism/rules/lazy-artifacts.md` codifying the existing pattern; remove the `lessons-archive.md` template seed; have Zoe create the file on first archive.
+  - **Implementation guidance:** Tasks 2–4.
+
+- **Closing-message routing synthesizes from existing AGENTS.md § 9, lives in architect doc (not rule).**
+  - **Root cause:** **Subagent caught:** 80% of the routing data already exists in `AGENTS.md § 9 Ownership & Handoff`. The new file is synthesis + per-persona conditional elaboration (e.g., Briar → Clove if issues / "ready to ship" if clean). Closing-message routing is contextual guidance, not universally loaded — architect docs are the right home, not rules.
+  - **Alternatives considered:** New file at `.prism/rules/closing-messages.md` (rejected — wrong category, universally loaded would be wasteful), inline per-persona (rejected — drift), architect doc (chosen).
+  - **Chosen approach:** `.prism/architect/closing-messages.md`. Each persona's shared.md cites it; persona's row provides the conditional routing logic AGENTS.md doesn't cover.
+  - **Implementation guidance:** Tasks 6–7.
+
+- **Recommend-without-auto-invoke posture for all persona closings.**
+  - **Root cause:** Closing messages suggest the next persona; they never auto-invoke. Auto-routing would bypass user agency and conflict with explicit-invocation principles (Zoe, Theo, Iris). The existing Nora pattern (line 382 of shared.md) is the gold standard — "Handing off to Sasha to verify..." is phrased as a proposal, not an execution.
+  - **Alternatives considered:** Auto-invoke (rejected — bypasses agency), recommend-only (chosen).
+  - **Chosen approach:** Every persona's closing names the next persona and offers; user invokes or doesn't.
+  - **Implementation guidance:** Task 6, posture documented in closing-messages.md.
+
+- **Wave 2 ships as 5 PRs, not 1 (user-confirmed 2026-05-23).**
+  - **Root cause:** Phase 1.5e was 9 tasks in one PR — manageable but close to the line. Wave 2 has ~43 tasks across 6 personas + new persona + cross-cutting work. Single-PR shape would be bisect-hostile and merge-conflict-prone. Splitting by structural concern keeps each PR reviewable.
+  - **Alternatives considered:** Single PR (rejected — too large), 8 PRs (rejected — too granular), 5 PRs grouped by structural concern (chosen).
+  - **Chosen approach:** PR 1 (foundation: ref doc + lazy + closing + AFK/HITL rule + per-persona closing-message references), PR 2 (Sasha), PR 3 (Eric), PR 4 (Winston), PR 5 (Parker + Atlas STOPs + Iris).
+  - **Implementation guidance:** PR sequence in `## Dependencies and Sequencing`.
+
+- **No new ADR for wave 2.** Per the triple-gate (hard-to-reverse + surprising + genuine trade-off, all three must fire), wave 2's changes don't meet the bar. Persona deepenings absorb into existing surfaces; new persona (Iris) follows established precedent (Parker, Atlas, Theo, Zoe); cross-cutting patterns absorb into the architect/rules layer. ADR creation would fail its own gate.
+
+---
+
+## History
+
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Plan created. Wave 2 of bmad-pocock pattern absorptions — re-scoped after discovering Phase 1.5e overlap. Targets 5 persona deepenings, 1 new persona, 2 cross-cutting patterns, 1 reference doc extraction.
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Subagent re-evaluation complete. Four parallel subagents deep-dove the proposed changes against current PRISM skills + source skills (Pocock diagnose/review/to-issues, BMAD investigate/code-review/retrospective). Major revisions: Sasha Phase 5 design-only (preserves diagnose-only); Sasha case file = lighter-variant micro-file pattern; Eric = 3-section output (not strict 2-axis); Eric uses parallel subagents but reserves lightweight single-pass for docs-only PRs; AFK/HITL composes with vertical slicing (slices are the AFK unit); vertical-slicing offer fires BEFORE task generation; refined signal set for vertical; vertical slices become epic stories when slice count > threshold; scope-change propagation is a NEW MODE (Re-plan Mode), not an end-of-flow step; Parker STOP at end of stakes step (not "between" stakes and rubric); Atlas STOP at end of Batch-2 survey (not "between" detection and rule generation); both STOPs conditional (hobby/dogfood skip); Iris (renamed from Echo per user 2026-05-23) uses real persona roster + evidence-driven disagreements; lazy-artifact scope shrunk to rule + one template fix (most personas already lazy); closing-messages synthesizes from existing AGENTS.md § 9 (architect doc, not rule).
+
+---
+
+## Debugged Issues
+
+_None._
+
+---
+
+## Review Issues
+
+_None yet._
+
+---
+
+## Acceptance Criteria
+
+### Behavioral
+
+- [ ] Given Sasha is invoked to diagnose a bug, When she runs through the diagnostic flow, Then she produces a six-phase output with the feedback loop as the deliverable Phase 1 output (a pass/fail signal).
+- [ ] Given Sasha reaches Phase 5, When she designs a regression test, Then she specifies what it should cover without writing the test (preserving the diagnose-only boundary; Clove implements).
+- [ ] Given Sasha files a debug report in `## Debugged Issues`, When she states a root-cause claim, Then every claim is tagged `[Confirmed]`, `[Deduced]`, or `[Hypothesized]` and the entry carries a `Confidence:` field.
+- [ ] Given a multi-session debug is in progress, When the session is interrupted and resumed, Then Sasha reads `.prism/sasha-state.json` (single state file, no per-step files) and offers to continue from the prior `currentPhase`.
+- [ ] Given Eric is reviewing a PR with a full spec, When he produces his review output, Then the output has three sections (Standards findings / Spec findings / Cross-cutting observations) and findings from one axis never mask findings from the other.
+- [ ] Given Eric is reviewing a PR with no branch plan or AC, When he produces his review output, Then the Spec axis is loudly skipped (`"Spec axis skipped — no spec available"`) and the confidence label reflects this (`confidence:standards-only`).
+- [ ] Given Eric is reviewing a docs-only PR, When he selects the review path, Then he uses the lightweight single-pass path (no parallel subagents) to avoid doubled API cost on trivial PRs.
+- [ ] Given Winston writes implementation tasks, When a task requires a human decision before execution can start, Then that task carries the `[HITL]` tag immediately after its number; tasks without the tag default to `[AFK]`.
+- [ ] Given Winston is asked to re-plan a ticket whose plan has non-empty `## History`, When he runs Re-plan Mode, Then his output names which other artifacts (Linear AC, Linear ticket desc, Mira user stories, Parker PRD, in-flight Clove work, PR body, Pixel mock spec, Reese AC) are stale and offers persona routing for each.
+- [ ] Given Winston is starting plan mode and the vertical-slice signals fire (3+ signals in pure plan mode; all signals in evaluate-then-plan), When he transitions between plan-mode steps 2 and 3, Then he asks the decomposition-shape question once before generating tasks.
+- [ ] Given Winston is in vertical mode and the slice count exceeds the epic-detection threshold, When he completes the decomposition, Then each slice becomes its own story plan and the epic plan references the slice-story plans.
+- [ ] Given Parker is in greenfield mode at `stakes != hobby` transitioning out of stakes calibration, When the transition fires, Then Parker pauses with a STOP marker and waits for explicit user confirmation before advancing to mode/draft/rubric.
+- [ ] Given Atlas is transitioning out of Batch 2 survey, When the transition fires and Atlas is not in `dogfood-self` mode, Then Atlas pauses with a STOP marker and waits for explicit user confirmation before starting question 1.
+- [ ] Given an epic is complete and the user invokes Iris, When Iris runs the retro, Then she produces a multi-voice dialogue using only personas that actually touched the plan (evidence-based), surfaces disagreements from outcome-vs-prediction gaps in `## Decisions`, and closes with `## Action Items` proposing owners.
+- [ ] Given Iris finishes a retro with action items, When she presents the closing message, Then she offers to hand off to Nora to file the action items as follow-up tickets (recommend-without-auto-invoke).
+- [ ] Given any persona finishes its work, When the persona produces its closing message, Then the message names the natural next persona and offers handoff without auto-invoking.
+- [ ] Given Theo or Winston needs to apply the triple-gate ADR criterion, When they look up the criterion, Then they find it at `.prism/references/triple-gated-adr-criterion.md` and cite that doc instead of the roadmap fallback.
+
+### Non-behavioral
+
+- [ ] All canonical edits land in `.ai-skills/skills/<id>/shared.md` (not in generated `.claude/skills/<id>/SKILL.md` mirrors).
+- [ ] No new install-template file is created as an empty/header-only placeholder (lazy-artifact rule applied).
+- [ ] `templates/install/.prism/lessons-archive.md` no longer exists; Zoe creates it on first archive.
+- [ ] `pnpm prism:build` regenerates mirrors without errors after each PR.
+- [ ] `pnpm prism:check` reports no drift between canonical sources and mirrors after each PR.
+- [ ] `pnpm prism:check-types` exits clean after each PR.
+- [ ] `pnpm prism:test` exits clean after each PR.
+- [ ] No new ADR file is created — wave 2's changes don't meet the triple-gate.
+- [ ] New reference doc exists at `.prism/references/triple-gated-adr-criterion.md`.
+- [ ] New rule file exists at `.prism/rules/lazy-artifacts.md` and `.prism/rules/implementation-task-detail.md` has the AFK/HITL tag rule.
+- [ ] New architect doc exists at `.prism/architect/closing-messages.md`.
+- [ ] New persona files exist under `.ai-skills/skills/prism-iris/` and `.prism/skills/prism-iris/`.
+- [ ] Iris registered in `.prism/SPEC.md` persona roster and `AGENTS.md § 9` routing table.
+- [ ] Paired dev doc for Iris exists at `docs/content/dev/architecture/iris.md` per ADR-0038.
+- [ ] Templates mirror updates land in `templates/install/` per the canonical-template pairing convention (verified by `pnpm prism:check`).
+- [ ] Updates to `.prism/rules/branch-plan.md` (evidence grading in `## Debugged Issues`) land in lockstep across `.prism/`, `.claude/`, and `templates/install/` mirrors.
+
+### AC Adjustments
+
+### AC Sync Log
+
+| Date | Agent | Action | Plan | Linear |
+| ---- | ----- | ------ | ---- | ------ |
+
+---
+
+## Cleanup Items
+
+- `templates/install/.prism/architect/manifest.stub.json` — quick read in PR 1 task 4 to determine lazy-eligibility.
+
+---
+
+## PR Readiness
+
+- [ ] No critical or major issues
+- [ ] Types correct — no `any`, no unsafe `as`
+- [ ] No stray console.logs or debug artifacts
+- [ ] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs_
+- [ ] All debugged issues resolved (no `open` entries)
+- [ ] Build passes — last run: _pending_
+- [ ] PR description up to date
+- [ ] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
+
+**Last updated:** 2026-05-23
+
+---
+
+## Dependencies and Sequencing
+
+### PR sequence
+
+| PR | Scope | Tasks | Depends on |
+|---|---|---|---|
+| **PR 1** | Foundation (small additive surface) | 1–9 | None — lands first |
+| **PR 2** | Sasha (six-phase + evidence + case file) | 10–15 | PR 1 (branch-plan template changes coordinate) |
+| **PR 3** | Eric (3-section + parallel subagents) | 16–22 | PR 1 (closing-messages.md cited) |
+| **PR 4** | Winston (Re-plan Mode + AFK/HITL + vertical) | 23–33 | PR 1 (AFK/HITL rule extracted; closing-messages.md cited) |
+| **PR 5** | Parker + Atlas STOPs + Iris | 34–43 | PR 1 (closing-messages.md exists for Iris's row) |
+
+PR 1 is the gating PR — it lands the rules, references, and architect docs that PRs 2–5 cite. PRs 2–5 are parallel-safe once PR 1 merges.
+
+### Internal sequencing within PRs
+
+- PR 1: Tasks 1–6 parallel-safe (independent file edits). Task 7 (per-persona shared.md routing) runs after tasks 1–6 land. Task 8 (build + verify) runs last.
+- PR 2: Tasks 10–13 parallel-safe within Sasha. Task 14 (micro-file-step-machine.md update) parallel-safe. Task 15 last.
+- PR 3: Tasks 16–21 sequential (each modifies overlapping sections). Task 22 last.
+- PR 4: Tasks 23–32 mostly sequential (Re-plan Mode + decomposition gate touch overlapping sections). Task 33 last.
+- PR 5: Tasks 34–36 (Parker/Atlas STOPs + onboarding docs note) parallel-safe with tasks 37–42 (Iris). Task 43 last.
+
+### External dependencies
+
+- The other in-flight agent on `hmcgrew/prism-1.5f.1-pixel-mocks-relocation` is modifying overlapping files. Wave 2 implementation (PRs 2–5) must wait for that branch to merge OR explicitly rebase. PR 1 plan creation in this worktree does not conflict.
