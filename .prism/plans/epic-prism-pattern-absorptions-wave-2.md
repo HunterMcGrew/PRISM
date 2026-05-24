@@ -385,6 +385,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [main]: PR #41 (Wave 2 PR 1 — Foundation) squash-merged at commit 98bd6bd. Briar re-review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 1 AC items verified delivered.
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: PR 2 (Sasha) implemented on fresh branch off post-PR-1 main. Sasha shared.md restructured into six explicit phases (Feedback Loop signal construction → Reproduce → Hypothesize 3-5 ranked falsifiable → Instrument → Confirm + design regression test [DESIGN ONLY] → Cleanup + Post-Mortem). Phase 5 stays design-only — preserves Sasha's diagnose-only invariant. Evidence grading added to `## Debugged Issues` template in branch-plan.md (2 canonical surfaces in lockstep + 3 platform mirrors regenerated): `Confidence` field, inline `[Confirmed]`/`[Deduced]`/`[Hypothesized]` tag on root cause, optional `Refuted hypotheses` and `Missing evidence` fields. Bug-report.md template mirrored with `## Confidence` and `## Refuted Hypotheses` sections. Sasha case-file resumability added via single `.prism/sasha-state.json` (lighter variant of micro-file pattern — no per-step files since plan's `## Debugged Issues` entry is the durable artifact). `micro-file-step-machine.md` extended with the lighter-variant section + Sasha added to citers list. Build + check + check-types + test all green (116/116).
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar self-review on PR #42 found 0 Critical / 0 Major / 1 Minor — plan-history date drift (2026-05-24 vs actual session date 2026-05-23). Clove followup commit corrected the date in two places and marked the Review Issue `fixed`. Plan-only change; no build re-run needed (plans aren't in the mirrored area per install-layout.md).
+- 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar re-review on PR #42 caught one new Minor — Clove's followup `replace_all` had over-swept `2026-05-24` references inside the Review Issue documentation and the new History line, erasing the original-bad-date anchor. Restored the three `2026-05-24` references with targeted Edits (no `replace_all`). Lesson learned for the toolkit: when documenting a bad value's correction, the documentation needs both the wrong value (as evidence) and the right value (as the fix) — global text replacements that don't distinguish "value-in-use" from "value-as-evidence" damage the audit trail.
 
 ---
 
@@ -441,8 +442,16 @@ _None._
 - **Severity:** `minor`
 - **Status:** `fixed`
 - **File:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md` (PR 2 History entry + PR Readiness "Last updated" line)
-- **Problem:** Plan History entry for PR 2 is dated `2026-05-23` but the commit (`f52c07b`) is timestamped `2026-05-23 20:15:09 -0500` and the session's `Today's date` is `2026-05-23`. PR Readiness "Last updated" carries the same `2026-05-23` date. The History rule requires dates to match real events — this is a transcription drift, not a correctness issue, but it confuses anyone cross-referencing the plan against `git log`.
-- **Suggested fix:** Change both `2026-05-23` references to `2026-05-23` so the plan matches the commit timestamp.
+- **Problem:** Plan History entry for PR 2 was originally dated `2026-05-24` but the commit (`f52c07b`) is timestamped `2026-05-23 20:15:09 -0500` and the session's `Today's date` is `2026-05-23`. PR Readiness "Last updated" carried the same `2026-05-24` drifted date. The History rule requires dates to match real events — this was a transcription drift, not a correctness issue, but it confused anyone cross-referencing the plan against `git log`.
+- **Suggested fix:** Change both `2026-05-24` references to `2026-05-23` so the plan matches the commit timestamp.
+
+### PR 2 followup commit over-replaced `2026-05-24` references
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md` (`## Review Issues` entries + new Briar-followup `## History` line)
+- **Problem:** Clove's followup commit (`edca387`) used a global replace that swept ALL `2026-05-24` references — including the ones inside the prior Review Issue's `Problem:` and `Suggested fix:` descriptions that were *documenting* the bad date as evidence, plus the new History line that records the drift cause. After the global replace: Review Issue Problem reads "dated `2026-05-23` but the commit timestamped `2026-05-23`" (no drift described); Suggested fix reads "Change both `2026-05-23` references to `2026-05-23`" (tautology); History entry says "drift (`2026-05-23` vs actual session date `2026-05-23`)" (no drift described). The actual fix to the History and PR Readiness dates is correct — the audit trail in `## Review Issues` and the new History line lost the original-bad-date anchor.
+- **Suggested fix:** Restore `2026-05-24` references in three places: (1) the prior Review Issue's `Problem:` line where it says the entry "is dated `2026-05-23`" — change back to "was originally dated `2026-05-24`"; (2) the prior Review Issue's `Suggested fix:` line where it says "Change both `2026-05-23` references" — change back to "Change both `2026-05-24` references"; (3) the new Briar-followup History line where it says "drift (`2026-05-23` vs actual session date `2026-05-23`)" — change back to "drift (`2026-05-24` vs actual session date `2026-05-23`)". Use targeted `Edit` calls (not `replace_all`) so the corrections don't sweep historical anchors.
 
 ---
 
@@ -504,7 +513,7 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 2 Briar self-review: 0 Critical, 0 Major, 1 Minor (plan-history date drift) fixed in followup commit._
+- [x] No critical or major issues — _PR 2 Briar re-review: both Minors resolved. The over-swept `2026-05-24` anchor references in the Review Issue documentation + Briar-followup History line have been restored. Ready for Eric._
 - [x] Types correct — no `any`, no unsafe `as` — _PR 2: `check-types` clean (PR 1 also clean)_
 - [x] No stray console.logs or debug artifacts — _PR 2: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
