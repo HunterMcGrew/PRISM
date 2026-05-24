@@ -394,6 +394,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar self-review on PR 4 found 0 Critical / 2 Major / 2 Minor. Top finding: new `## What Winston is not` section at line 139 declares editable surface as `.prism/ + docs/` while pre-existing line 118 Ownership & Handoff sentence still claims `.claude/ + docs/` — internal contradiction in the canonical that future architect-mode invocations would hit. Also a structural gap in Re-plan Mode (flow documents propagate but never the plan-rewrite step the intro promises). Build re-verified via direct binary (pnpm unavailable in worktree per `ERR_PNPM_IGNORED_BUILDS`); 116/116 tests pass. Plan Mode renumber clean; mirror parity verified. Route to Clove for fixes before PR opens.
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Clove fixed all 4 Briar findings (2 Major: editable-surface contradiction at line 118, Re-plan Mode missing plan-rewrite step; 2 Minor: Re-plan trigger over-fires, § 5 citation convention). Mirrors regenerated; check + check-types + test green.
 - 2026-05-23 [hmcgrew/wave-2-pr-4-winston]: Briar re-review on PR 4 fix commit 65d88db clean. All 4 prior findings verified resolved. Ready to open PR + route to Eric.
+- 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: PR 5 (Iris + STOPs) implemented on fresh branch off post-PR-4 main at commit 97aa3b6. Parker STOP added at end of `greenfield-step-02-stakes.md` step 7 (hobby-skip conditional, mirrors auto-skipped rubric at step-06-review.md:11). Atlas STOP appended to Batch-2 step 6 in `prism-atlas/shared.md` (dogfood-self skip preserves smoke-test idempotency). Forward-looking configurable-checkpoint section added to `.prism/architect/onboarding.md` documenting `atlas.checkpoints: minimal | standard | aggressive` shape for future contributors. New Iris persona scaffolding landed at `.ai-skills/skills/prism-iris/` (frontmatter.yml, shared.md, claude.md, codex.md, cursor.md) plus six step files at `.prism/skills/prism-iris/` (full-variant micro-file pattern — each step's output feeds the next). State file at `.prism/iris-state.json`; reports to `.prism/retros/<YYYY-MM-DD>-<slug>.md`. Read-only on source plans; explicit-invocation only; routes to Nora for action-item filing. Iris added to `.ai-skills/definitions/roles.json` (persona registry), `.prism/architect/skills-ecosystem.md` + install template (cadence-driven tier alongside Atlas and Zoe), `AGENTS.md § 9 Ownership & Handoff` + install template (Iris row routing to Nora), `.prism/architect/closing-messages.md` (Iris row replacing the PR-5 placeholder paragraph). Eli paired dev doc at `docs/content/dev/architecture/iris.md` (note: persona paired docs typically land under `docs/content/dev/ai-skills/` — followed user's explicit path instruction). Frontmatter description trimmed from 1021 to under 1000 chars after build flagged Codex discovery limit. Build regenerated 16 mirror files including `.claude/skills/prism-iris/`, `.codex/agents/prism-iris.toml`, `.cursor/skills/prism-iris/`, plus three architect-doc mirrors (closing-messages, onboarding, skills-ecosystem) across all three platforms. check + check-types + test all green (116/116).
 
 ---
 
@@ -569,16 +570,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 4: Briar's 2 Major + 2 Minor all fixed by Clove; ready for Briar re-review._
-- [x] Types correct — no `any`, no unsafe `as` — _PR 4: `check-types` clean_
-- [x] No stray console.logs or debug artifacts — _PR 4: content-only edits to Winston's shared.md_
-- [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
-- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 4_
-- [x] Build passes — last run: 2026-05-23 (PR 4 — Briar re-verified via direct-binary fallback: tsx check, tsc --noEmit, tsx --test all green; 116/116; pnpm unavailable due to `ERR_PNPM_IGNORED_BUILDS`)
-- [ ] PR description up to date — _PR 4 not yet opened; fixes precede PR creation_
-- [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
+- [ ] No critical or major issues — _PR 5: Briar self-review not yet run._
+- [x] Types correct — no `any`, no unsafe `as` — _PR 5: `tsc --noEmit` clean_
+- [x] No stray console.logs or debug artifacts — _PR 5: content-only edits + new markdown persona scaffolding_
+- [x] Tests written for new logic and edge cases — _N/A, content-only edits + persona scaffolding across all 5 PRs (116 existing tests pass)_
+- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 5_
+- [x] Build passes — last run: 2026-05-23 (PR 5 — direct-binary verification: tsx build, tsx --check, tsc --noEmit, tsx --test all green; 116/116)
+- [ ] PR description up to date — _PR 5 not yet opened; Briar self-review precedes PR creation_
+- [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; Iris persona promoted into skills-ecosystem.md + closing-messages.md + AGENTS.md § 9 + install template mirrors_
 
-**Last updated:** 2026-05-23 (PR 4 Briar re-review clean on fix commit 65d88db; ready to open PR + route to Eric)
+**Last updated:** 2026-05-23 (PR 5 Clove implementation complete; build + check + check-types + test all green; awaiting Briar self-review)
 
 ---
 
