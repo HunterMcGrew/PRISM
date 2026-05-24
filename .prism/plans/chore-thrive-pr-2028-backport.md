@@ -1,4 +1,4 @@
-# Chore: Backport Thrive PR #2028 — shipping-flow agent hygiene
+# Chore: Backport TracTru/thrive#2028 — shipping-flow agent hygiene
 
 ## Ticket
 
@@ -6,7 +6,7 @@ No Linear ticket — chore PR. Source: [TracTru/thrive#2028 (THR-1882)](https://
 
 ## Goal
 
-Backport the four primary shipping-flow agent-hygiene changes from Thrive PR #2028 into PRISM: surface the per-push invariant in `shipping-flow.md`, add Clove "How I Think" bullets 9/10/11, codify the multi-commit triggers, and add the `#N` autolink escape rule to both `pr-description.md` and `git-conventions.md`.
+Backport the four primary shipping-flow agent-hygiene changes from TracTru/thrive#2028 into PRISM: surface the per-push invariant in `shipping-flow.md`, add Clove "How I Think" bullets 9/10/11, codify the multi-commit triggers, and add the `#N` autolink escape rule to both `pr-description.md` and `git-conventions.md`.
 
 ---
 
@@ -36,6 +36,13 @@ Backport the four primary shipping-flow agent-hygiene changes from Thrive PR #20
 
 - **No ADR for this chore.** Same call thrive made on THR-1882. Each change codifies in an existing rule or reference file; none introduces a new architectural pattern that passes the three-gate test (hard-to-reverse + surprising + genuine trade-off).
   - → no promotion needed (meta-decision about ADR scope within this chore)
+
+- **Latent template drift between `.prism/...` and `templates/install/.prism/...` resynced by the dual-write `cp`.** Acknowledging the side-effect, not adding new scope.
+  - Root cause: the dual-write `cp` from canonical to template (Decision 4) surfaced two pre-existing drifts in `templates/install/.prism/references/shipping-flow.md`: (1) the intro paragraph was missing the Round-10-framework cross-reference to `.prism/plans/4.7-skill-audit-strategy.md` that the canonical carried; (2) step 7 was missing the `--draft` flag on `gh pr create` that the wave-2 draft-by-default change added to the canonical. The template had drifted away from the canonical at some point between Phase 1.5 sub-PRs without any sync pass catching it.
+  - Alternatives considered: (a) hand-revert the `cp`-introduced changes on those two lines to keep this PR's scope tight — rejected, the divergence violates the dual-write invariant Decision 4 establishes and the next `cp` would re-introduce them. (b) split into a separate "template resync" chore — rejected, the diff is already part of the dual-write step; isolating it would be more overhead than acknowledging it here.
+  - Chosen approach: accept the `cp`-introduced drift fixes as a documented side-effect of Decision 4. PR body's `## Notes` section names the two specific lines so a reader scanning the templates diff doesn't have to reverse-engineer where they came from.
+  - Implementation guidance: no extra edits needed — the `cp` already landed the fixes. Future dual-write passes will continue to enforce the byte-identical invariant.
+  - → no promotion needed (one-off acknowledgment; the dual-write invariant in Decision 4 is the standing rule)
 
 - **Scope expansion: fold in the literal-guard worktree-skip fix and remove stale `.claude/worktrees/` content.**
   - Root cause: implementation surfaced a pre-existing bug — `scripts/ai-skills/literal-guard.ts:53` skips dot-prefixed dirs but not `worktrees/`, so the guard recurses into `.claude/worktrees/<id>/` (gitignored operational state — full checkouts of other branches that legitimately contain Thrive-flavored literals). A stale `.claude/worktrees/amazing-brahmagupta-b9e934` from wave-2 work made `pnpm prism:build` exit 1 with 22 false-positive violations. Without the fix, `pnpm prism:check` would fail any time a developer has an active worktree present.
@@ -183,11 +190,47 @@ DX/chore PR — no Linear ticket, so AC sync is skipped. Kept here for in-plan v
 
 ---
 
+## Review Issues
+
+### Briar — 2026-05-24 — self-review pass 1
+
+**Minor** — History entry 1 exceeds the 3-sentence cap
+
+- **Status:** `fixed` — Fixed in: Briar's pass-1 plan edit (rewrote entry 1 to 3 sentences using TracTru/thrive#2028 cross-repo form; "No ADR" sentence dropped — already captured in Decision 5's verdict sub-bullet).
+- **Location:** `.prism/plans/chore-thrive-pr-2028-backport.md` § History, first bullet
+- **Problem:** "2026-05-24 [main]: Plan created..." entry ran 4 sentences. Violates bullet 10 (Cap History entries at 3 sentences) — the rule WE'RE SHIPPING IN THIS PR. Dogfood gap caught at write-time discipline review.
+- **Suggested fix:** Collapse to 3 sentences. Option (a) drop the "No ADR" sentence (already captured in Decision 5's verdict sub-bullet). Option (b) merge bundle-rationale into the Winston-evaluated sentence with em-dash.
+
+**Minor** — Inconsistent `#N` escape in plan title + goal
+
+- **Status:** `fixed` — Fixed in: Clove pass-2 edit. Title and Goal normalized to `TracTru/thrive#2028`. History entry 1 was already fixed by Briar's pass-1 plan edit.
+- **Location:** `.prism/plans/chore-thrive-pr-2028-backport.md` § H1 title (line 1), Goal section, History entry 1
+- **Problem:** Plan title `# Chore: Backport Thrive PR #2028` and Goal `from Thrive PR #2028 into PRISM` used bare `#2028` while § Ticket uses the proper cross-repo form `TracTru/thrive#2028`. Inconsistent dogfooding of the new `#N` escape rule shipping in this PR.
+- **Suggested fix:** Normalize to `TracTru/thrive#2028` everywhere the thrive PR is mentioned (title, Goal, History entry 1).
+
+**Minor** — `cp` silently swept two pre-existing template drifts
+
+- **Status:** `fixed` — Fixed in: Clove pass-2 edit. Added Decision 6 ("Latent template drift...") documenting the two `cp`-resynced lines. PR body `## Notes` section also updated to name the same two lines (intro paragraph + `--draft` flag).
+- **Location:** `templates/install/.prism/references/shipping-flow.md` lines 2–4 (intro paragraph) and line 57 (`gh pr create` flag)
+- **Problem:** The dual-write `cp` from canonical to template fixed two pre-existing drifts that were not in the plan's scope: (1) intro paragraph added back the Round-10-framework cross-reference to `.prism/plans/4.7-skill-audit-strategy.md` that the template was missing; (2) step 7 added `--draft` to `gh pr create` that the template was missing. Both are correct fixes — they restore the dual-write byte-identical invariant Decision 4 establishes — but unstated drift fold-ins.
+- **Suggested fix:** Add a single bullet to the PR body's `## Notes` section (or a new Decision in the plan) acknowledging the resynced drifts. One-liner is enough.
+
+**Minor** — PR-template prettier checkbox checked without actually running prettier
+
+- **Status:** `fixed` — Fixed in: Clove pass-2 PR body edit. Unchecked the prettier checkbox; added Note explaining PRISM has no prettier script for markdown and that the dogfood relies on author hand-formatting + `pnpm prism:check` drift detection rather than prettier on .md files.
+- **Location:** PR #47 body, `## Before submitting...` pre-submit checklist
+- **Problem:** Clove checked `[x] All changes have been formatted using Prettier.` but didn't run prettier on the changed markdown files during implementation. PRISM doesn't expose a prettier script in `package.json`, so the check is aspirational — but checking it without running prettier (or noting the N/A) misrepresents the verification state.
+- **Suggested fix:** Either run `npx prettier --check` on the changed `.md` files and confirm clean (if PRISM has a prettier config), or uncheck the box and note in PR body's `## Notes` that PRISM doesn't run prettier on markdown.
+
+---
+
 ## History
 
-- 2026-05-24 [main]: Plan created. Winston evaluated Thrive PR #2028 (THR-1882) and scoped four primary changes for backport (per-push invariant preamble, Clove bullets 9/10/11, multi-commit triggers + squash-merge softening, `#N` autolink escape). Chose to bundle bullets 9/10/11 together rather than land bullet 11 alone — keeps the write-time-discipline trio cohesive. No ADR per matching thrive's THR-1882 call.
+- 2026-05-24 [main]: Plan created. Winston evaluated TracTru/thrive#2028 and scoped four primary changes for backport (per-push invariant preamble, Clove bullets 9/10/11, multi-commit triggers + squash-merge softening, `#N` autolink escape) — chose to bundle bullets 9/10/11 together rather than land bullet 11 alone. See `## Decisions` for the bundling and no-ADR calls.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Tasks 1–8 implementation complete. All 7 primary file edits applied; dual-write verified identical via `diff -q`; `pnpm prism:build` regenerated all 4 platform mirror sets (per-string grep verified). Surfaced pre-existing literal-guard false-positive on a stale `.claude/worktrees/<id>/` — initially flagged for separate ticket per Winston's scope-fit check.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Task 9 fold-in complete (user reversed Winston's scope-out ruling). Removed stale `.claude/worktrees/amazing-brahmagupta-b9e934` via `git worktree remove --force`; added `worktrees` skip clause to `listFilesRecursively` in `scripts/ai-skills/literal-guard.ts` with why-comment. `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, and `pnpm prism:test` all pass; 116/116 tests.
+- 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Briar self-review pass 1 — 4 Minor findings (history-cap violation in entry 1, `#N` escape inconsistency in plan title/goal, undocumented `cp`-swept template drift cleanups, prettier checkbox unchecked-vs-not-run). No critical or major issues. Hand back to Clove.
+- 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Clove pass-2 fixes for all 4 Briar Minors — normalized `TracTru/thrive#2028` in plan title + Goal; added Decision 6 documenting the `cp`-resynced template drifts (intro paragraph + `--draft` flag); updated PR body with `## Notes` for the template drifts and unchecked the prettier checkbox with explanation. Ready for Briar pass 2.
 
 ---
 
@@ -199,9 +242,9 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] No `any` introduced (N/A — content-only + 1 surgical script fix)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (existing tests cover; 116/116 pass)
-- [x] All debugged issues resolved (no `open` entries)
+- [x] All review issues resolved — Briar pass-1 Minors fixed in Clove pass-2 (see `## Review Issues`)
 - [x] Build passes — `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, `pnpm prism:test` all green
-- [ ] PR description up to date — pending PR open
+- [x] PR description up to date — `## Notes` added for template drift; prettier checkbox unchecked with explanation
 - [x] Lasting decisions promoted to architect context (N/A — all Decisions carry `→ no promotion needed` verdicts)
 
-**Last updated:** 2026-05-24
+**Last updated:** 2026-05-24 — Clove pass 2
