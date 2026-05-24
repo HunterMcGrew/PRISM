@@ -265,9 +265,11 @@ The full path performs **two parallel reviews along independent axes** — Stand
 
 10. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
 
-   - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else):
+   - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else). Loop through each label with a REST DELETE — `gh pr edit --remove-label` would go through GraphQL and fail on repos with GitHub Projects Classic still associated. Per-label DELETE preserves non-review labels (`bug`, `documentation`, etc.) that the bulk PUT endpoint would strip:
      ```bash
-     gh pr edit <pr-number> --remove-label "effort:glance" --remove-label "effort:quick" --remove-label "effort:deep" --remove-label "confidence:high" --remove-label "confidence:needs-judgment" --remove-label "review:has-minors" 2>/dev/null || true
+     for label in "effort:glance" "effort:quick" "effort:deep" "confidence:high" "confidence:needs-judgment" "review:has-minors"; do
+       gh api "repos/<owner>/<repo>/issues/<pr-number>/labels/$label" -X DELETE >/dev/null 2>&1 || true
+     done
      ```
 
    - **Resolve fixed threads** — For each unresolved thread, check whether the referenced code is fixed in the current diff.
@@ -515,9 +517,13 @@ Every PR that receives labels gets exactly two. Never one, never three.
 After determining the two labels from the decision gate above, apply them in the same batch D message as all other GitHub writes. **In state #3 only**, also flip the PR from draft to ready — the merge gate has been satisfied:
 
 ```bash
-gh pr edit <pr-number> --add-label "<effort-label>" --add-label "<confidence-or-status-label>"
+gh api repos/<owner>/<repo>/issues/<pr-number>/labels -X POST --input - <<EOF
+{"labels": ["<effort-label>", "<confidence-or-status-label>"]}
+EOF
 gh pr ready <pr-number> 2>/dev/null || true
 ```
+
+`gh pr edit --add-label` would go through GraphQL and fail on repos with GitHub Projects Classic still associated — the REST POST endpoint is unaffected. `gh pr ready` uses a different API path and works as-is.
 
 Ready-flip only fires in state #3 — states #1 (critical/major) and #2 (unaddressed minors) leave the PR in draft so the merge gate stays in place until the next review pass.
 
