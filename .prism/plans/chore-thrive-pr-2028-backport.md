@@ -222,6 +222,22 @@ DX/chore PR — no Linear ticket, so AC sync is skipped. Kept here for in-plan v
 - **Problem:** Clove checked `[x] All changes have been formatted using Prettier.` but didn't run prettier on the changed markdown files during implementation. PRISM doesn't expose a prettier script in `package.json`, so the check is aspirational — but checking it without running prettier (or noting the N/A) misrepresents the verification state.
 - **Suggested fix:** Either run `npx prettier --check` on the changed `.md` files and confirm clean (if PRISM has a prettier config), or uncheck the box and note in PR body's `## Notes` that PRISM doesn't run prettier on markdown.
 
+### Eric — 2026-05-24 — PR review pass 1
+
+**Minor** — Bullet 10 citation drift in shared.md
+
+- **Status:** `fixed` — Fixed in: commit 721547b. Added `### History entries: cap at 3 sentences` H3 sub-section to `.prism/rules/branch-plan.md` § 4 enumerating the three costs (load time, edit-time echo, scannability) plus where-depth-belongs reasoning; dual-written to `templates/install/`. Updated reflex bullet at `.ai-skills/skills/prism-code-dev/shared.md:495` to point at the new anchor (`#history-entries-cap-at-3-sentences`), resolving the § 4 vs § 5 pointer mismatch in the same pass.
+- **Location:** `.ai-skills/skills/prism-code-dev/shared.md:90`
+- **Problem:** Bullet 10 cited content (`three costs (load time, edit-time echo, scannability)`, `§ History entries: cap at 3 sentences`) that didn't exist in `branch-plan.md`; only the cap statement itself was present.
+- **Suggested fix:** Option (b) from Eric's inline comment — add the missing reasoning to `branch-plan.md` § 4 so the cite resolves. Chosen because it also fixes the related § 4 vs § 5 reflex-bullet pointer mismatch.
+
+**Minor** — `worktrees` skip broader than its why-comment in literal-guard
+
+- **Status:** `fixed` — Fixed in: commit 721547b. Added `&& currentPath === rootPath` to the guard clause and extended the comment to make the depth-1 scope choice explicit.
+- **Location:** `scripts/ai-skills/literal-guard.ts:62`
+- **Problem:** `entry.name === "worktrees"` skipped any directory named `worktrees` at any depth in the walk; the why-comment claimed per-tool root-level intent only.
+- **Suggested fix:** Option (a) from Eric's inline comment — scope the check to depth 1 by gating on `currentPath === rootPath`. Matches the why-comment intent and follows the existing dotdir-skip shape.
+
 ---
 
 ## History
@@ -232,6 +248,8 @@ DX/chore PR — no Linear ticket, so AC sync is skipped. Kept here for in-plan v
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Briar self-review pass 1 — 4 Minor findings (history-cap violation in entry 1, `#N` escape inconsistency in plan title/goal, undocumented `cp`-swept template drift cleanups, prettier checkbox unchecked-vs-not-run). No critical or major issues. Hand back to Clove.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Clove pass-2 fixes for all 4 Briar Minors — normalized `TracTru/thrive#2028` in plan title + Goal; added Decision 6 documenting the `cp`-resynced template drifts (intro paragraph + `--draft` flag); updated PR body with `## Notes` for the template drifts and unchecked the prettier checkbox with explanation. Ready for Briar pass 2.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Briar self-review pass 2 — delta-swept commit 2653558; all 4 pass-1 Minors verified fixed with proper Status/Fixed-in notes. No new findings; Decision 6 sub-bullets and verdict clean; History entries within 3-sentence cap. Routing PR #47 to Eric in fresh chat.
+- 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Eric PR review pass 1 — 2 Minor findings (bullet 10 citation drift in shared.md; `worktrees` skip broader than its why-comment in literal-guard). Posted inline + summary on PR #47; PR converted back to draft (state #2); labels `effort:quick` + `review:has-minors`. No critical or major issues.
+- 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Clove pass-3 fixes for Eric's two Minors in commit 721547b. Added `### History entries: cap at 3 sentences` H3 to `.prism/rules/branch-plan.md` § 4 (dual-written) enumerating the three costs and depth-routing, then repointed bullet 10's cite + the reflex bullet at shared.md:495 to the new anchor; tightened the literal-guard `worktrees` skip with `currentPath === rootPath` plus a comment update. `pnpm prism:build`/`check`/`check-types`/`test` all green; ready for Eric pass 2.
 
 ---
 
@@ -243,9 +261,9 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] No `any` introduced (N/A — content-only + 1 surgical script fix)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (existing tests cover; 116/116 pass)
-- [x] All review issues resolved — Briar pass-1 Minors fixed in Clove pass-2 (see `## Review Issues`)
+- [x] All review issues resolved — Briar pass-1 Minors fixed in Clove pass-2; Eric pass-1 Minors fixed in Clove pass-3 (see `## Review Issues`)
 - [x] Build passes — `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, `pnpm prism:test` all green
 - [x] PR description up to date — `## Notes` added for template drift; prettier checkbox unchecked with explanation
 - [x] Lasting decisions promoted to architect context (N/A — all Decisions carry `→ no promotion needed` verdicts)
 
-**Last updated:** 2026-05-24 — Briar pass 2 (clean, route to Eric)
+**Last updated:** 2026-05-24 — Clove pass 3 (Eric pass-1 fixes; ready for Eric pass 2)
