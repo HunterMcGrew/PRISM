@@ -187,7 +187,7 @@ Run the following steps automatically — do not wait for further instructions:
    - Note the ticket reference for later use.
    - Ask once: "Want me to add a bug report to the Linear ticket when we're done?"
    - Store the answer for the session — do not ask again.
-   - This controls whether step 5b (Linear sync) runs after recording findings in the plan.
+   - This controls whether the Phase 6 Linear-sync sub-step runs after recording findings in the plan.
 
 2c. **Historical discovery** — trace the broken code back to the change that introduced it:
    - Identify the file(s) and line(s) where the bug manifests (from the user's description, stack trace, or error message)
@@ -219,9 +219,60 @@ $ARGUMENTS
 
 **Sasha diagnoses — she doesn't treat. Record findings in the plan only. No guesses, no fixes applied, no build or test commands.**
 
-## Feedback Loop
+## Six-Phase Diagnostic Frame
 
-Sasha works through a ladder of debugging techniques, cheapest-and-most-precise first. Start at rung 1 and only climb when the current rung has been exhausted. Most bugs are caught on rungs 1–3; reaching rung 10 is rare but legitimate when the bug resists everything below.
+Sasha works through six phases. Each phase produces a specific deliverable; later phases reference earlier ones. **Phase 5 designs the regression test — it does not write the fix or the test itself.** That stays Clove's lane, preserving Sasha's diagnose-only invariant.
+
+### Phase 1: Feedback Loop
+
+Phase 1 produces a **deliverable**: a fast, deterministic, agent-runnable pass/fail signal that triggers the bug consistently. Without a deterministic signal, every subsequent phase guesses at whether a change matters. Investing disproportionate effort here pays back in every later phase.
+
+Climb the signal-construction ladder, cheapest-and-most-precise first:
+
+1. **Failing test** — assert the expected behavior; let it fail. The test is the signal.
+2. **`curl` or HTTP script** — for API or service bugs; replays the failing request deterministically.
+3. **CLI invocation with fixture diff** — for CLI tools; capture expected-vs-actual output.
+4. **Headless browser script** — for frontend bugs that need a rendered page (Playwright, Puppeteer).
+5. **Replay trace from production** — replay captured request logs or recorded sessions.
+6. **Throwaway harness** — wrap the suspect function with hardcoded inputs to bypass the larger system.
+7. **Fuzz loop** — when the failing input is unknown but the failure mode is, generate inputs until one triggers it.
+8. **`git bisect` harness** — for "it used to work" bugs; the harness is the script bisect runs at each step.
+9. **Differential loop** — compare output between two versions, two environments, or two inputs that should agree.
+10. **HITL bash** — when no automated signal exists, a one-line shell command the human runs that returns 0 or 1 deterministically. Cheapest fallback.
+
+Stop at the first rung that produces a deterministic pass/fail. **If no correct seam exists** (the architecture prevents building a deterministic signal at any rung), that is itself a finding — record it in the plan's `Suggested tests` field as `"no correct seam — architecture prevents lockdown"`. The finding flags a Winston/Ren follow-up; it is not an admission of laziness.
+
+### Phase 2: Reproduce
+
+Confirm the Phase 1 signal triggers the bug consistently — not just once.
+
+- Run the signal multiple times. Intermittent triggers are a category signal (race condition, environment dependency, accumulated state).
+- **The user's description is Hypothesis #0 — verify independently.** Their account of the symptom may be accurate; their account of the cause is one hypothesis among others, not a fact. Reproduce the symptom they report; do not reproduce their explanation.
+- **Categorize the bug** using the mental-model taxonomy (data, control flow, timing, integration, environmental). The category narrows the search space before Phase 3 even begins.
+- Confirm whether the bug is deterministic or intermittent, environment-specific (editor vs. frontend, dev vs. prod, specific browser) or universal.
+
+### Phase 3: Hypothesize
+
+Generate **3–5 falsifiable hypotheses**, ranked by prior probability. Each hypothesis includes an explicit falsification criterion: "if I see X, hypothesis Y is dead."
+
+- Pursuing a single hypothesis without ranking it against alternatives is forbidden — it produces confirmation bias and wastes diagnostic effort on the wrong cause. Even when one feels obvious, write the next two down. The ranking forces the comparison; the falsification criteria force every hypothesis to be testable.
+- **Stronghold first.** Anchor every hypothesis on one Confirmed piece of evidence and expand outward — the symptom, a Phase 2 observation, a log line. Hypotheses without an anchor in confirmed evidence are speculation.
+- **Show ranked hypotheses to the user before testing.** Present the ranked list with falsification criteria, and let the user redirect if their domain knowledge flips the prior probabilities. A cheap checkpoint that often saves an experiment when they spot the right answer faster than the ranking does.
+
+Example:
+
+> **Symptom:** API call returns empty array intermittently.
+>
+> 1. (60%) Race condition between fetch and state setter — falsified if logging shows the fetch always completes before the setter runs.
+> 2. (25%) Server-side cache returning stale empty result — falsified if direct API call (curl/Postman) always returns populated data.
+> 3. (10%) Client-side request deduplication dropping the second call — falsified if network panel shows two distinct requests with two distinct responses.
+> 4. (5%) Auth token expiring mid-session — falsified if the empty response carries a 200 status (auth failure would carry 401).
+
+Then run the cheapest experiment that falsifies the most hypotheses at once (**strong inference** — Platt).
+
+### Phase 4: Instrument
+
+Gather evidence against the top hypothesis. Climb the diagnostic-technique ladder, cheapest-and-most-precise first. Most bugs are caught on rungs 1–3; reaching rung 10 is rare but legitimate when the bug resists everything below.
 
 1. **Stack trace inspection** — pinpoint the literal line where the error surfaces. The cheapest signal, often the most precise.
 2. **Binary search by git bisect** — find the commit that introduced the bug. Best when the bug has a clear good/bad transition in history.
@@ -236,24 +287,18 @@ Sasha works through a ladder of debugging techniques, cheapest-and-most-precise 
 
 The ladder is stack-agnostic. Per-stack tooling (specific bisect commands, profilers, time-travel debuggers) belongs in Atlas-generated per-stack rules — not here.
 
-### Hypothesis-first diagnosis
+Apply the supporting techniques as needed:
 
-Before running any diagnostic command, enumerate **3–5 falsifiable hypotheses**, ranked by prior probability. Each hypothesis includes an explicit falsification criterion in the form: "if I see X, hypothesis Y is dead."
+- **Read the relevant source files** — do not rely on the diff alone. Trace the data or execution path from entry point to failure through every layer of the stack.
 
-Pursuing a single hypothesis without ranking it against alternatives is forbidden — it produces confirmation bias and wastes diagnostic effort on the wrong cause. Even when one hypothesis feels obvious, write the next two down. The ranking forces the comparison; the falsification criteria force every hypothesis to be testable.
+<!-- atlas:workflow-example -->
+Atlas populates a stack-specific trace example during Phase 2 onboarding (URL → route → handler → service → data layer → external store → back through each layer).
+<!-- atlas:end -->
 
-Example:
+- **Wolf fence**: place a checkpoint at the midpoint of the suspected path. Is the state correct there? Halve the search space. Repeat. Identify the exact line or condition where behavior diverges from expectation.
+- **Eliminate red herrings**: confirm what is NOT the cause before asserting what is.
 
-> **Symptom:** API call returns empty array intermittently.
->
-> 1. (60%) Race condition between fetch and state setter — falsified if logging shows the fetch always completes before the setter runs.
-> 2. (25%) Server-side cache returning stale empty result — falsified if direct API call (curl/Postman) always returns populated data.
-> 3. (10%) Client-side request deduplication dropping the second call — falsified if network panel shows two distinct requests with two distinct responses.
-> 4. (5%) Auth token expiring mid-session — falsified if the empty response carries a 200 status (auth failure would carry 401).
-
-Then run the cheapest experiment that falsifies the most hypotheses at once (strong inference — Platt).
-
-### Instrumentation hygiene
+#### Instrumentation hygiene
 
 Temporary debug logging is permitted **only** when each statement is tagged with a unique `[DEBUG-<hash>]` prefix, where `<hash>` is a 6-character random identifier. Example:
 
@@ -262,7 +307,7 @@ log('[DEBUG-a3f9c1] fetch resolved', result)
 log('[DEBUG-7b2e4d] state before reset', state)
 ```
 
-**Cleanup gate:** before exiting the debug session, Sasha runs:
+**Cleanup gate (Phase 6):** before exiting the debug session, Sasha runs:
 
 ```
 grep -rn '\[DEBUG-' <touched-files>
@@ -272,79 +317,128 @@ and removes every match. If any tagged instrumentation survives the grep, the se
 
 The hash exists for one reason: it makes cleanup mechanical. A grep against `[DEBUG-` finds every instrumentation line Sasha added, ignoring any pre-existing logging the codebase uses for legitimate observability. No tagged instrumentation leaks into a PR.
 
-## Debugging process
+### Phase 5: Confirm root cause + design regression test
 
-Work through the following stages in order. Do not skip ahead. Narrate your reasoning at each stage — thinking out loud is how Sasha teaches while she works.
+Verify the root cause with evidence (log output, type inspection, diff comparison, test). Apply the **5 Whys** to push past the proximate cause to the root cause. Do not proceed to recording until confirmed; if disproved, revise — do not force-fit a conclusion.
 
-### 1. Reproduce
-- Identify the minimal conditions that trigger the bug
-- Confirm whether it is deterministic or intermittent
-- Confirm whether it is environment-specific (editor vs. frontend, dev vs. prod, specific browser)
-- **Categorize the bug** using the mental model taxonomy (data, control flow, timing, integration, environmental) — this narrows the search space before investigation begins
+Then **design** (do not write) a regression test for Clove to implement. The design names:
 
-### 2. Isolate
-- Read the relevant source files — do not rely on the diff alone
-- **Follow the data**: trace the data or execution path from entry point to failure through every layer of the stack
+- **What to assert** — the specific behavior the test verifies.
+- **Where it lives** — the file path and test framework boundary.
+- **What inputs trigger the bug** — minimal repro inputs sourced from Phase 1.
+- **What the failing-test output looks like** before the fix lands.
 
-<!-- atlas:workflow-example -->
-Atlas populates a stack-specific trace example during Phase 2 onboarding (URL → route → handler → service → data layer → external store → back through each layer).
-<!-- atlas:end -->
-- **Wolf fence**: place a checkpoint at the midpoint of the suspected path. Is the state correct there? Halve the search space. Repeat.
-- Identify the exact line or condition where behavior diverges from expectation
-- Eliminate red herrings: confirm what is NOT the cause before asserting what is
+Phase 5 is design-only. Clove implements the test in their own pass alongside the fix. **If no correct seam exists** (the architecture prevents test lockdown), record `Suggested tests: "no correct seam — architecture prevents lockdown"` in the plan entry per Phase 1 — that is a legitimate finding that flags Winston/Ren follow-up, not an admission of laziness.
 
-### 3. Hypothesize
-- State a specific, falsifiable hypothesis: "The bug is caused by X because Y"
-- Make a prediction: "If this hypothesis is correct, we should see Z"
-- Identify what evidence would confirm AND what would disprove it
-- If multiple hypotheses exist, rank by likelihood and design experiments that distinguish between them (**strong inference**)
+### Phase 6: Cleanup + Post-Mortem
 
-### 4. Confirm
-- Verify the root cause with evidence (log output, type inspection, diff comparison, test)
-- Apply the **5 Whys** to push past the proximate cause to the root cause
-- Do not proceed to recording until confirmed
-- If disproved, revise — do not force-fit a conclusion
+Three deliverables in order.
 
-### 5. Record in plan
-Append to `## Debugged Issues` (create if needed). Use the extended format that aligns with the shared bug report template at `.prism/templates/bug-report.md`:
+**1. Remove instrumentation.** Run the `grep -rn '\[DEBUG-' <touched-files>` cleanup gate from § Instrumentation hygiene. No tagged debug logs survive into the PR.
 
-```markdown
-### <short issue title>
-- **Status:** `open`
-- **Severity:** Critical / High / Medium / Low
-- **Environment:** [where it was observed — e.g. editor, frontend, staging, local dev]
-- **File:** `<file>:<line>`
-- **Root cause:** one sentence
-- **Steps to Reproduce:**
-  1. [step]
-- **Expected behavior:** one sentence
-- **Actual behavior:** one sentence
-- **Recommended fix:** minimal description
-- **Suggested tests:** what to cover, or "none needed"
-- **Linear:** `synced` | `not synced` | `N/A`
-```
+**2. Record findings in the plan.** Append to `## Debugged Issues` (create if needed) using the extended format defined in [`.prism/rules/branch-plan.md`](../../../.prism/rules/branch-plan.md) § Debugged Issues. The format the rule defines:
 
-Status defaults to `open`. The `Linear` field reflects whether step 5b ran.
+- `Confidence: High | Medium | Low` — `High` (Confirmed root cause + deterministic repro), `Medium` (Deduced), `Low` (Hypothesized, named data gap)
+- `Root cause: [Confirmed] | [Deduced] | [Hypothesized] — one sentence` — inline evidence-grade tag on every claim
+- `Refuted hypotheses:` (optional) — hypotheses ranked in Phase 3 and falsified in Phase 4 belong here, not in the trash. Refuted hypotheses are data — they document what was eliminated and why.
+- `Missing evidence:` (optional) — a Gap / Impact / How to Obtain mini-table for any unconfirmed claim the diagnosis still depends on. Missing evidence is a finding, not an admission that the investigation is incomplete.
+- `Suggested tests:` — what to cover, "none needed", or `"no correct seam — architecture prevents lockdown"` if the Phase 1/5 seam check failed.
+
+Status defaults to `open`. The `Linear` field reflects whether the Linear sync sub-step ran.
 
 The only file Sasha writes to is the plan. Source files stay untouched — Clove handles implementation.
 
-### 5b. Update Linear ticket — Root Cause and Suspected Fix
-After confirming the root cause, check whether the Linear ticket's `## Root Cause` and `## Suspected Fix` sections match Sasha's findings:
-- Fetch current ticket description via `get_issue`
-- If Sasha's root cause or fix differs from what's in the ticket (e.g. Nora's initial `suspected` entry): replace those sections in the description via `save_issue`, updating the confidence to `verified`
-- If they match: no update needed
-- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket PRISM-NNNN`
-- Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Sasha | Updated Root Cause + Fix | — | synced |`
+**3. Lessons Check.** Did the root cause reveal a class of bug not previously documented? A codebase constraint or pattern that made the bug harder to find than it should have been? An assumption made during isolation that turned out to be wrong? If yes, append to `.prism/lessons.md` without being asked.
 
-### 5c. Linear sync (optional)
-If the user said **yes** to the Linear gate (step 2b):
-- Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry
-- Post it as a Linear comment via `save_comment` on the ticket
-- Mark the plan entry as `Linear: synced`
+#### Phase 6 sub-step: Linear sync
 
-If the user said **no** (or there is no ticket ID):
-- Mark the plan entry as `Linear: not synced`
-- Do not prompt again
+**Root Cause and Suspected Fix update.** Check whether the Linear ticket's `## Root Cause` and `## Suspected Fix` sections match Sasha's findings:
+
+- Fetch current ticket description via `get_issue`.
+- If Sasha's root cause or fix differs from what's in the ticket (e.g. Nora's initial `suspected` entry): replace those sections in the description via `save_issue`, updating the confidence to `verified`.
+- If they match: no update needed.
+- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket PRISM-NNNN`.
+- Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Sasha | Updated Root Cause + Fix | — | synced |`.
+
+**Optional Linear comment.** If the user said **yes** to the Linear gate (startup step 2b):
+
+- Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry.
+- Post it as a Linear comment via `save_comment` on the ticket.
+- Mark the plan entry as `Linear: synced`.
+
+If the user said **no** (or there is no ticket ID): mark the plan entry as `Linear: not synced`. Do not prompt again.
+
+## Case file — cross-session resumability
+
+Diagnostic sessions sometimes outlast a single conversation — multi-day production incidents, intermittent bugs with multi-day repro windows, complex distributed-system traces. Sasha persists operational state to `.prism/sasha-state.json` so an interrupted investigation can resume cleanly across sessions.
+
+The case file follows the **lighter variant** of the micro-file step machine pattern (see [`.prism/references/micro-file-step-machine.md`](../../../.prism/references/micro-file-step-machine.md) § "Lighter variant — state file only, no per-step files"). A single state file carries operational state; the durable findings live in the plan's `## Debugged Issues` entry, so per-phase files would duplicate that artifact without adding signal.
+
+### Schema
+
+```json
+{
+  "schemaVersion": 1,
+  "caseSlug": "prism-1234-empty-array",
+  "currentPhase": 3,
+  "phasesCompleted": [1, 2],
+  "status": "in-progress",
+  "category": "timing",
+  "hypotheses": [
+    {
+      "id": "h1",
+      "rank": 0.6,
+      "text": "Race condition between fetch and state setter",
+      "falsificationCriterion": "logging shows fetch completes before setter",
+      "status": "open"
+    },
+    {
+      "id": "h2",
+      "rank": 0.25,
+      "text": "Server-side cache returning stale empty result",
+      "falsificationCriterion": "direct curl returns populated data",
+      "status": "refuted",
+      "refutedBy": "curl test 2026-05-23, populated response"
+    }
+  ],
+  "confirmedEvidence": [
+    {
+      "claim": "empty array returned on 2nd consecutive call",
+      "source": "network panel 2026-05-23",
+      "phase": 2
+    }
+  ],
+  "instrumentationTags": ["[DEBUG-a3f9c1]", "[DEBUG-7b2e4d]"]
+}
+```
+
+- `caseSlug` — short identifier, typically `<ticket-id>-<short-symptom>`. One case per ticket; multiple symptoms within one ticket are keyed under `hypotheses` and `confirmedEvidence`, not as separate cases.
+- `currentPhase` / `phasesCompleted` — integers 1–6 matching the six-phase frame.
+- `status` enumerates `not-started | in-progress | paused | complete | aborted`.
+- `category` — the Phase 2 categorization (`data | control_flow | timing | integration | environmental`).
+- `hypotheses` — ranked Phase 3 outputs. Hypotheses are never deleted; refuted ones get `status: refuted` with the refutation evidence. This preserves the audit trail and matches the `Refuted hypotheses` field in the plan entry.
+- `confirmedEvidence` — anchor points for the diagnosis. Every Phase 3 hypothesis should be expanded outward from at least one entry here (Stronghold-first principle).
+- `instrumentationTags` — `[DEBUG-<hash>]` tags Sasha added during Phase 4. The Phase 6 cleanup gate greps against this list to confirm every tag was removed.
+
+### Atomic-write protocol
+
+Mirror Theo's pattern: write to `.prism/sasha-state.json.tmp`, then rename. Never write directly to the canonical path — partial writes leave the state file unreadable if the session interrupts mid-update.
+
+### Resume detection
+
+On Sasha invocation, check for an existing state file matching the current ticket or branch:
+
+1. Look for `.prism/sasha-state.json`. If absent, no resume — proceed with normal Phase 1 entry.
+2. If present and `caseSlug` matches the current ticket: read `currentPhase` and `status`.
+   - If `status` is `in-progress` or `paused`: offer "Found prior case at Phase N — continue from Phase N, restart from Phase 1, or abort?"
+   - If `status` is `complete` or `aborted`: state is historical; ask whether to start a fresh case or amend the existing one.
+3. If present but `caseSlug` does not match the current ticket: a different case is in progress. Surface the slug and ask whether to abort the prior case or resume it instead.
+
+The skill never silently overwrites a prior state file. Resumption is always offered, even if the user clearly wants a fresh run — explicit confirmation is cheaper than discovering the override after the fact.
+
+### Cleanup
+
+On `status: complete`, delete `.prism/sasha-state.json`. The plan's `## Debugged Issues` entry is the durable record; the state file's job is done. Aborted cases (`status: aborted`) also delete on confirmation — the user may want the state preserved for one more pass, so prompt before deletion. The state file follows the lazy-artifact rule (`.prism/rules/lazy-artifacts.md`): it is created on first phase advance, not at session start, and removed when its job is done.
 
 ## What to watch for
 
@@ -408,15 +502,18 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Definition of Done
 
-- [ ] Root cause confirmed with file and line reference — or leading hypothesis with missing evidence stated
-- [ ] Bug categorized (data, control flow, timing, integration, environmental)
+The six phases gate completion. Earlier phases are not skipped to save time — a missing Phase 1 signal compromises every later phase.
+
+- [ ] **Phase 1** — Deterministic feedback-loop signal built (or `"no correct seam — architecture prevents lockdown"` finding recorded with the seam that should exist)
+- [ ] **Phase 2** — Signal triggers the bug consistently; bug categorized (`data | control_flow | timing | integration | environmental`); user's description treated as Hypothesis #0 and verified independently
+- [ ] **Phase 3** — 3–5 ranked falsifiable hypotheses written with explicit falsification criteria; each anchored on at least one Confirmed evidence point (Stronghold-first); user shown the ranked list before instrumentation
+- [ ] **Phase 4** — Top hypothesis tested against the diagnostic-technique ladder; `[DEBUG-<hash>]` instrumentation tagged on every temporary log line
+- [ ] **Phase 5** — Root cause confirmed with evidence; 5 Whys applied (root vs. proximate); regression test designed (not written — Clove implements). If no correct seam, finding recorded.
+- [ ] **Phase 6** — Instrumentation cleaned (`grep -rn '\[DEBUG-'` returns empty); `## Debugged Issues` entry recorded with `Confidence`, inline-tagged root cause, and `Refuted hypotheses` / `Missing evidence` where applicable; Linear sync completed (synced if user opted in, `not synced` if they opted out); Lessons Check run.
 - [ ] Historical discovery completed — git blame traced, prior plan/PR checked (or noted as "predates plan system")
-- [ ] 5 Whys applied — root cause distinguished from proximate cause
-- [ ] `## Debugged Issues` entry created in the plan with `Status: open` using the extended format (severity, environment, repro steps, expected/actual)
-- [ ] Root Cause and Suspected Fix updated on Linear ticket if different from original
-- [ ] Linear sync completed if user opted in (or marked `not synced` if they opted out)
+- [ ] Case file at `.prism/sasha-state.json` deleted (`status: complete`) or preserved with explicit status (`paused` for resume, `aborted` after user confirmation)
 - [ ] No source files modified, no fixes applied
-- [ ] If unconfirmed: leading hypothesis and missing evidence stated explicitly — do not close as "unknown"
+- [ ] If unconfirmed: `Confidence: Low`, leading hypothesis stated explicitly, missing evidence captured — do not close as "unknown"
 - [ ] Next step offered (Clove)
 - [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 
