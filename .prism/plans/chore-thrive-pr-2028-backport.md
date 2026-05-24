@@ -231,6 +231,7 @@ DX/chore PR — no Linear ticket, so AC sync is skipped. Kept here for in-plan v
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Task 9 fold-in complete (user reversed Winston's scope-out ruling). Removed stale `.claude/worktrees/amazing-brahmagupta-b9e934` via `git worktree remove --force`; added `worktrees` skip clause to `listFilesRecursively` in `scripts/ai-skills/literal-guard.ts` with why-comment. `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, and `pnpm prism:test` all pass; 116/116 tests.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Briar self-review pass 1 — 4 Minor findings (history-cap violation in entry 1, `#N` escape inconsistency in plan title/goal, undocumented `cp`-swept template drift cleanups, prettier checkbox unchecked-vs-not-run). No critical or major issues. Hand back to Clove.
 - 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Clove pass-2 fixes for all 4 Briar Minors — normalized `TracTru/thrive#2028` in plan title + Goal; added Decision 6 documenting the `cp`-resynced template drifts (intro paragraph + `--draft` flag); updated PR body with `## Notes` for the template drifts and unchecked the prettier checkbox with explanation. Ready for Briar pass 2.
+- 2026-05-24 [hmcgrew/chore-thrive-2028-backport]: Briar self-review pass 2 — delta-swept commit 2653558; all 4 pass-1 Minors verified fixed with proper Status/Fixed-in notes. No new findings; Decision 6 sub-bullets and verdict clean; History entries within 3-sentence cap. Routing PR #47 to Eric in fresh chat.
 
 ---
 
@@ -247,4 +248,4 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] PR description up to date — `## Notes` added for template drift; prettier checkbox unchecked with explanation
 - [x] Lasting decisions promoted to architect context (N/A — all Decisions carry `→ no promotion needed` verdicts)
 
-**Last updated:** 2026-05-24 — Clove pass 2
+**Last updated:** 2026-05-24 — Briar pass 2 (clean, route to Eric)
