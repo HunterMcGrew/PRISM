@@ -399,6 +399,8 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: Clove fixed Briar's Major via `git mv docs/content/dev/architecture/iris.md docs/content/dev/ai-skills/iris.md`. No content changes — frontmatter `category: "ai-skills"` already matched the new directory. AC checklist updated to reflect the corrected path; Review Issue marked `fixed`. Ready for Briar re-review.
 - 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: Briar re-review on PR 5 fix commit 8d28a7d clean. Iris paired dev doc relocated; convention restored. Ready to open PR + route to Eric.
 - 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: Clove fixed Eric's 3 Minors — added Iris to `micro-file-step-machine.md` citers list; added `## Full variant` section so the previously-invented `§ full variant` anchor now resolves (parallel to existing `## Lighter variant`); corrected AC line referencing nonexistent `.prism/SPEC.md` persona roster to point at the actual roster surfaces (skills-ecosystem.md + closing-messages.md + AGENTS.md § 9). Mirrors regenerated; check + check-types + test green.
+- 2026-05-24 [main]: PR #45 (Wave 2 PR 5 — Iris + Parker/Atlas STOPs) squash-merged at commit 66373d8. Eric two-pass review: 3 Minors caught on first pass (Iris missing from micro-file citers list, `§ full variant` anchor invented, AC referencing nonexistent SPEC.md roster); all 3 fixed in followup; re-review clean (state #3, effort:quick + confidence:dual-axis).
+- 2026-05-24 [main]: **Wave 2 epic close-out.** All 5 PRs merged (#41 Foundation, #42 Sasha, #43 Eric, #44 Winston, #45 Iris + STOPs). Promotion audit per branch-plan rules § Before Closing: all 19 `## Decisions` entries carry `→ verdict` sub-bullets per the ADR-0024 / PR-#35 gate; every verdict reads `→ no promotion needed` with the canonical absorption surface named (Sasha shared.md, Eric shared.md, Winston shared.md, Iris shared.md, lazy-artifacts.md, closing-messages.md, implementation-task-detail.md, micro-file-step-machine.md). The wave's design premise — "absorb patterns INTO existing canonical surfaces" — means every promotion fired during PR implementation, not as a separate close-out step. Sample-verified each surface carries the claimed content (grep counts: Re-plan Mode 5, Sasha six-phase 4, Eric Standards/Spec/Cross-cutting 24, Iris real-roster pattern 2, micro-file Full variant + Iris 5, HITL/AFK 4, lazy-artifacts 1, recommend-without-auto-invoke 4). Plan preserved per user direction (not deleted). Two durable lessons appended to `.prism/lessons.md` during the epic — (1) `replace_all` damages audit trails when documenting corrected values; (2) self-restructure introduces step-number collisions (Eric reviewing Eric caught this in PR #43).
 
 ---
 
@@ -582,16 +584,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 5: Briar's 1 Major (Iris paired dev doc in wrong directory) fixed via `git mv`. Ready for Briar re-review._
-- [x] Types correct — no `any`, no unsafe `as` — _PR 5: `tsc --noEmit` clean_
-- [x] No stray console.logs or debug artifacts — _PR 5: content-only edits + new markdown persona scaffolding_
-- [x] Tests written for new logic and edge cases — _N/A, content-only edits + persona scaffolding across all 5 PRs (116 existing tests pass)_
-- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 5_
-- [x] Build passes — last run: 2026-05-23 (PR 5 — direct-binary verification: tsx build, tsx --check, tsc --noEmit, tsx --test all green; 116/116)
-- [ ] PR description up to date — _PR 5 not yet opened; awaiting Major fix before PR creation_
-- [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; Iris persona promoted into skills-ecosystem.md + closing-messages.md + AGENTS.md § 9 + install template mirrors_
+- [x] No critical or major issues — _All 5 PRs (#41-#45) shipped clean; Briar caught 5 Major + 4 Minor across the epic, Eric caught 1 Major + 4 Minor that survived Briar, all resolved before merge._
+- [x] Types correct — no `any`, no unsafe `as` — _`tsc --noEmit` clean on every PR_
+- [x] No stray console.logs or debug artifacts — _content-only edits + markdown persona scaffolding across all 5 PRs_
+- [x] Tests written for new logic and edge cases — _N/A, content-only edits + persona scaffolding (116 existing tests pass on every PR)_
+- [x] All debugged issues resolved (no `open` entries) — _none filed during the epic_
+- [x] Build passes — last run: 2026-05-24 (PR 5 close-out — direct-binary verification: tsx build, tsx --check, tsc --noEmit, tsx --test all green; 116/116)
+- [x] PR description up to date — _All 5 PR descriptions reflect final scope at merge_
+- [x] Lasting decisions promoted to architect context (if applicable) — _All 19 Decisions carry `→ no promotion needed` verdicts; absorption surfaces sample-verified (Re-plan Mode 5 hits in Winston, Eric three-section 24 hits in Eric, Iris real-roster pattern 2 hits, micro-file Full variant + Iris 5 hits, HITL/AFK 4 hits in implementation-task-detail, lazy-artifacts 1 hit, recommend-without-auto-invoke 4 hits in closing-messages)_
 
-**Last updated:** 2026-05-23 (Clove fixed Eric's 3 Minors on PR #45; check + check-types + test green)
+**Last updated:** 2026-05-24 (Wave 2 epic close-out — all 5 PRs merged, promotion verified, plan preserved per user direction)
 
 ---
 
