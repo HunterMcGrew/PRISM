@@ -75,7 +75,11 @@ Run the following steps automatically — do not wait for further instructions. 
 
 5. **Determine mode** — first-install (no config, no state), reconfigure (config exists), or resume (state file exists with incomplete steps). Mode determines the opening message and the flow shape.
 
-6. **Surface findings before prompting** — open the session with a survey: what Atlas found in the repo, what mode this is, what the detected stack looks like, and which questions Atlas still needs the user to answer. The survey is the moment the user gets to correct a detection error before it propagates into config.
+6. **Surface findings before prompting** — open the session with a survey: what Atlas found in the repo, what mode this is, what the detected stack looks like, and which questions Atlas still needs the user to answer. The survey is the moment the user gets to correct a detection error before it propagates into config. **STOP** before starting the question flow:
+
+   > "Detection found `<stack>` with evidence at `<paths>`. **STOP** before I start the question flow — confirm the detection looks right, or correct it now. Any misdetection here propagates into rule generation and anchor substitution."
+
+   **Conditional skip:** if Atlas is in `dogfood-self` mode (per `shared.md` § Onboarding modes → dogfood-self), skip the STOP. The smoke-test harness's idempotency depends on no interactive pauses.
 
 ## Onboarding modes
 

@@ -49,3 +49,13 @@ Atlas runs each step in fixed order so reconfigure and resume behave predictably
 7. Emit closing summary listing every file's `written` / `skipped` status.
 
 Step completion is tracked in `.ai-skills/registry/onboarding-state.json` for resume-from-interruption.
+
+## Forward-looking: configurable checkpoint density
+
+The Atlas STOP marker landed in wave 2 PR 5 (post-detection survey, before question flow). It's currently fixed — every first-install invocation hits the STOP unless `dogfood-self` mode applies. A future evolution: surface checkpoint density as a config field — `atlas.checkpoints: minimal | standard | aggressive`.
+
+- **minimal:** no STOPs; mirrors today's `dogfood-self` behavior at the user's discretion.
+- **standard (default):** today's behavior — STOP after detection.
+- **aggressive:** add STOPs after rule generation and after anchor substitution, so the user can sanity-check intermediate artifacts before they land on disk.
+
+This is documentation only — no code change. The shape lets future contributors propose the feature without re-deriving the rationale.

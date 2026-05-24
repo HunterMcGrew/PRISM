@@ -37,10 +37,9 @@ The table below provides the default next persona and the conditional routes for
 | **Theo** | Done (architect docs ship); Eli for paired dev doc | Per [ADR-0038](../spec/adrs/0038-paired-dev-doc-gates.md) paired-dev-doc gates |
 | **Ren** | Winston (evaluate refactor plan) or Clove (execute) | Refactor plan needs Winston review before Clove |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |
+| **Iris** | Nora (for action-item filing) | Done — user declines the handoff if they don't want tickets filed; no other routing |
 | **Lilac** | Done (standup posted) | None |
 | **Atlas** | Done (config written) | "Try `Winston, evaluate ...` or `Nora, start <ticket>`" |
-
-Iris's row is added when the persona lands in PR 5 — default next is Nora for action-item filing.
 
 ## Phrasing patterns
 

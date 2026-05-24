@@ -30,6 +30,11 @@ If the three answers don't agree (e.g. "internal tool" + "10,000 users" + "regul
 4. Propose `stakes` value based on the mapping. Confirm with user before writing.
 5. Update PRD frontmatter: `stakes: <hobby|internal|launch>`, `lastEdited: <ISO 8601>`.
 6. Append `greenfield-step-02-stakes` to `stepsCompleted`.
+7. **STOP** before advancing to step 03. Surface the calibrated stakes to the user with this phrasing template (adapted from Sage's existing STOP precedent):
+
+   > "Stakes calibrated as `<level>`. Before I move to drafting, **STOP**: review the stakes call. The level drives review rigor, open-question requirements, and decision log mandate. Do you want to recalibrate, or proceed?"
+
+   **Conditional skip:** if `stakes == hobby`, skip the STOP. Rubric is auto-skipped for hobby per `step-06-review.md:11`, so the recalibration moment has less consequence.
 
 ## Exit condition
 
