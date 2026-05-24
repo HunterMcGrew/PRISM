@@ -533,6 +533,14 @@ The email-based author match in step 3.3 can miss if the user's GitHub commit em
 
 The default assumption is `channel_id` + `message`, but some MCP variants may use `channel` + `text` or other shapes. The Phase 5.3 schema load catches this — do not skip that step.
 
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** None
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
+
 ## Definition of Done
 
 - [ ] Template read at the start of the run

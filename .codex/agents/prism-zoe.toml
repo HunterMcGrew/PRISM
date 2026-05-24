@@ -137,6 +137,16 @@ Lessons in `.prism/lessons.md` get classified into two buckets on each audit run
 
 Archive-candidate lessons get moved to `.prism/lessons-archive.md` on the user's confirmation — never move silently. Each archived entry retains its original date and content; an archive timestamp is appended on move. The archive file is append-only — lessons don't come back out of the archive.
 
+**Create `.prism/lessons-archive.md` with the standard header on first archive move if the file doesn't exist** — per [`.prism/rules/lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md), the archive file is not seeded as an install-template placeholder; it comes into existence when Zoe has the first lesson to archive. The header to use:
+
+```markdown
+# Lessons Archive
+
+Lessons that were once active in `.prism/lessons.md` and have been archived by Zoe. Each entry retains its original date and content; archive timestamp added on move.
+
+---
+```
+
 ## Open-question Decision variant
 
 Some Decisions name an open question the team hasn't resolved yet. The variant format is:
@@ -210,6 +220,14 @@ The expected schema version is `1`. If the file's `schemaVersion` is newer, halt
 - **No silent edits.** Zoe never archives a lesson, deletes a plan, or modifies an ADR without explicit user confirmation. Verdicts get written to plan files (they're a kind of annotation); everything else waits for go-ahead.
 - **No ticket-flow handoff.** Zoe doesn't recommend the next persona at the end of her run. She isn't part of the handoff chain, by construction. Downstream personas discover her verdicts when they read the plans she annotated.
 - **No code changes.** Zoe writes to markdown plans (verdict sub-bullets), the lessons archive, the audit report, and the state file. She doesn't touch source code, tests, configs, or any other file class.
+
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** None — cadence persona, not part of handoff chain. User decides on archive actions surfaced in the report.
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
 ## Context reuse across skills
 

@@ -379,6 +379,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Plan created. Wave 2 of bmad-pocock pattern absorptions — re-scoped after discovering Phase 1.5e overlap. Targets 5 persona deepenings, 1 new persona, 2 cross-cutting patterns, 1 reference doc extraction.
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Subagent re-evaluation complete. Four parallel subagents deep-dove the proposed changes against current PRISM skills + source skills (Pocock diagnose/review/to-issues, BMAD investigate/code-review/retrospective). Major revisions: Sasha Phase 5 design-only (preserves diagnose-only); Sasha case file = lighter-variant micro-file pattern; Eric = 3-section output (not strict 2-axis); Eric uses parallel subagents but reserves lightweight single-pass for docs-only PRs; AFK/HITL composes with vertical slicing (slices are the AFK unit); vertical-slicing offer fires BEFORE task generation; refined signal set for vertical; vertical slices become epic stories when slice count > threshold; scope-change propagation is a NEW MODE (Re-plan Mode), not an end-of-flow step; Parker STOP at end of stakes step (not "between" stakes and rubric); Atlas STOP at end of Batch-2 survey (not "between" detection and rule generation); both STOPs conditional (hobby/dogfood skip); Iris (renamed from Echo per user 2026-05-23) uses real persona roster + evidence-driven disagreements; lazy-artifact scope shrunk to rule + one template fix (most personas already lazy); closing-messages synthesizes from existing AGENTS.md § 9 (architect doc, not rule).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Pre-flight retrofit — added verdict sub-bullets to all 16 Decisions per the gate from #35; broadened AC mirror list to include `.cursor/skills/` and `.codex/agents/` per ADR-0044; captured three operational notes (label REST workaround, `confidence:standards-only` ready-flip, epic preservation).
+- 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: PR 1 (Foundation) implemented. New canonical files: `.prism/references/triple-gated-adr-criterion.md` (extracted from Winston's inlined section per Phase 1.5e fallback), `.prism/rules/lazy-artifacts.md` (codifies create-on-first-use; documents manifest.stub.json exception), `.prism/architect/closing-messages.md` (synthesizes AGENTS.md § 9 with conditional routing). Added AFK/HITL tag rule to `.prism/rules/implementation-task-detail.md` (default unmarked; `[HITL]` only when human input blocks execution; cites Pocock's `to-issues`). Removed `templates/install/.prism/lessons-archive.md` seed; Zoe now creates the file with standard header on first archive. All 17 persona shared.md files got `## Next persona` sections citing closing-messages.md. Winston and Theo updated to cite the new triple-gate reference doc. Build + check + check-types + test all green (116 tests pass).
 
 ---
 
@@ -413,22 +414,22 @@ _None yet._
 - [ ] Given Atlas is transitioning out of Batch 2 survey, When the transition fires and Atlas is not in `dogfood-self` mode, Then Atlas pauses with a STOP marker and waits for explicit user confirmation before starting question 1.
 - [ ] Given an epic is complete and the user invokes Iris, When Iris runs the retro, Then she produces a multi-voice dialogue using only personas that actually touched the plan (evidence-based), surfaces disagreements from outcome-vs-prediction gaps in `## Decisions`, and closes with `## Action Items` proposing owners.
 - [ ] Given Iris finishes a retro with action items, When she presents the closing message, Then she offers to hand off to Nora to file the action items as follow-up tickets (recommend-without-auto-invoke).
-- [ ] Given any persona finishes its work, When the persona produces its closing message, Then the message names the natural next persona and offers handoff without auto-invoking.
-- [ ] Given Theo or Winston needs to apply the triple-gate ADR criterion, When they look up the criterion, Then they find it at `.prism/references/triple-gated-adr-criterion.md` and cite that doc instead of the roadmap fallback.
+- [x] Given any persona finishes its work, When the persona produces its closing message, Then the message names the natural next persona and offers handoff without auto-invoking. _(PR 1 — 17 persona shared.md files updated with `## Next persona` sections citing `.prism/architect/closing-messages.md`)_
+- [x] Given Theo or Winston needs to apply the triple-gate ADR criterion, When they look up the criterion, Then they find it at `.prism/references/triple-gated-adr-criterion.md` and cite that doc instead of the roadmap fallback. _(PR 1)_
 
 ### Non-behavioral
 
-- [ ] All canonical edits land in `.ai-skills/skills/<id>/shared.md` (not in generated `.claude/skills/<id>/SKILL.md`, `.cursor/skills/<id>/SKILL.md`, or `.codex/agents/<id>.toml` mirrors).
-- [ ] No new install-template file is created as an empty/header-only placeholder (lazy-artifact rule applied).
-- [ ] `templates/install/.prism/lessons-archive.md` no longer exists; Zoe creates it on first archive.
-- [ ] `pnpm prism:build` regenerates mirrors without errors after each PR.
-- [ ] `pnpm prism:check` reports no drift between canonical sources and mirrors after each PR.
-- [ ] `pnpm prism:check-types` exits clean after each PR.
-- [ ] `pnpm prism:test` exits clean after each PR.
+- [x] All canonical edits land in `.ai-skills/skills/<id>/shared.md` (not in generated `.claude/skills/<id>/SKILL.md`, `.cursor/skills/<id>/SKILL.md`, or `.codex/agents/<id>.toml` mirrors). _(PR 1 — all 17 persona edits in canonical; mirrors regenerated by build)_
+- [x] No new install-template file is created as an empty/header-only placeholder (lazy-artifact rule applied). _(PR 1 — lazy-artifacts.md rule landed; manifest.stub.json exception documented)_
+- [x] `templates/install/.prism/lessons-archive.md` no longer exists; Zoe creates it on first archive. _(PR 1)_
+- [x] `pnpm prism:build` regenerates mirrors without errors after each PR. _(PR 1 verified)_
+- [x] `pnpm prism:check` reports no drift between canonical sources and mirrors after each PR. _(PR 1 verified — "Generated outputs are in sync")_
+- [x] `pnpm prism:check-types` exits clean after each PR. _(PR 1 verified)_
+- [x] `pnpm prism:test` exits clean after each PR. _(PR 1 verified — 116/116 tests pass)_
 - [ ] No new ADR file is created — wave 2's changes don't meet the triple-gate.
-- [ ] New reference doc exists at `.prism/references/triple-gated-adr-criterion.md`.
-- [ ] New rule file exists at `.prism/rules/lazy-artifacts.md` and `.prism/rules/implementation-task-detail.md` has the AFK/HITL tag rule.
-- [ ] New architect doc exists at `.prism/architect/closing-messages.md`.
+- [x] New reference doc exists at `.prism/references/triple-gated-adr-criterion.md`. _(PR 1)_
+- [x] New rule file exists at `.prism/rules/lazy-artifacts.md` and `.prism/rules/implementation-task-detail.md` has the AFK/HITL tag rule. _(PR 1)_
+- [x] New architect doc exists at `.prism/architect/closing-messages.md`. _(PR 1 — Iris's row added in PR 5)_
 - [ ] New persona files exist under `.ai-skills/skills/prism-iris/` and `.prism/skills/prism-iris/`.
 - [ ] Iris registered in `.prism/SPEC.md` persona roster and `AGENTS.md § 9` routing table.
 - [ ] Paired dev doc for Iris exists at `docs/content/dev/architecture/iris.md` per ADR-0038.
@@ -452,16 +453,16 @@ _None yet._
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs_
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: _pending_
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
+- [ ] No critical or major issues — _Briar self-review pending_
+- [x] Types correct — no `any`, no unsafe `as` — _PR 1: `check-types` clean_
+- [x] No stray console.logs or debug artifacts — _PR 1: content-only edits_
+- [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
+- [x] All debugged issues resolved (no `open` entries) — _none filed_
+- [x] Build passes — last run: 2026-05-23 (PR 1 — build, check, check-types, test all green)
+- [ ] PR description up to date — _pending PR open_
+- [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-23 (PR 1 complete; Briar review pending)
 
 ---
 

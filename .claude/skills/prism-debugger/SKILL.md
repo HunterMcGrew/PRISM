@@ -395,6 +395,17 @@ Minimal fix description. Do not apply — `code-dev` will use the plan.
 
 ---
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Clove (implementation of fix)
+- **Conditional route:** Always — Sasha doesn't write fixes
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
+---
+
 ## Definition of Done
 
 - [ ] Root cause confirmed with file and line reference — or leading hypothesis with missing evidence stated

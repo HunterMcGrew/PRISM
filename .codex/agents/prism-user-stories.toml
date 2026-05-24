@@ -378,6 +378,15 @@ Acceptance criteria hints use Gherkin `Given / When / Then` format for behaviora
 
 Before recommending Winston, assess context load per AGENTS.md § Context Window Handoff Check.
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Winston (architecture) — or Pixel first if UI/UX surface
+- **Conditional route:** If single-file scope → Clove direct
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
 ## Definition of Done
 
 - [ ] Ticket type detected (bug, feature, or improvement)

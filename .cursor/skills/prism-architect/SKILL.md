@@ -358,17 +358,11 @@ Before suggesting a new ticket — for follow-up work surfaced during evaluation
 
 ## Immediate Decision Promotion
 
-After writing any decision in the plan's `## Decisions` section, evaluate whether it affects code or patterns beyond the current ticket:
+After writing any decision in the plan's `## Decisions` section, evaluate whether it affects code or patterns beyond the current ticket.
 
-**Promote immediately** when the decision passes all three gates:
+Apply the triple-gated criterion at [`.prism/references/triple-gated-adr-criterion.md`](../../../.prism/references/triple-gated-adr-criterion.md) — all three gates (hard to reverse, surprising without explanation, genuine trade-off) must fire for ADR promotion. The reference doc carries the full criterion plus the routing for decisions that fail the gate (architect doc vs. stay in plan).
 
-- **Hard to reverse** — the decision shapes interfaces, schemas, persona ownership, or pattern conventions that downstream work composes against. Reversing it later requires migrating consumers, not just editing one file.
-- **Surprising without explanation** — a competent reader looking at the resulting code or doc would ask "why is this shaped this way?" The reasoning isn't self-evident from the artifact.
-- **Genuine trade-off** — a real alternative was considered and rejected. If there was no alternative, there's nothing to document; the choice was forced.
-
-All three gates must fire. One gate alone is not enough — a hard-to-reverse choice with no alternative is just inevitable; a surprising choice that's trivially reversible is a curiosity, not an ADR. Two of three is still not enough — the absent gate is usually the one that makes the ADR worth the maintenance cost.
-
-Promote to the relevant `.prism/architect/` file for patterns; promote to a new ADR in `.prism/spec/adrs/` for decisions that justify their own durable record.
+Promote to the relevant `.prism/architect/` file for patterns; promote to a new ADR in `.prism/spec/adrs/` for decisions that justify their own durable record per the gate.
 
 - Append to `## History`: `YYYY-MM-DD [<branch>]: Promoted [decision summary] to architect/<file>.md`
 - If no relevant architect file exists: flag it for creation — "This decision should live in an architect context file, but there isn't one for [area]. Want me to create one? I'll also hand off to Eli for the paired human-readable dev doc once the architect file lands."
@@ -395,6 +389,17 @@ When evaluating a feature with UI implications:
 - If **no mock exists**: flag it — "No mock for this UI. Consider bringing in Pixel to design it before we plan — she'll cover states, hierarchy, and interaction patterns so the implementation plan has something concrete to build against." Include concrete suggestions from your own assessment too (which existing components to use, layout patterns to follow, interaction patterns to match)
 - If **mock exists but has gaps** (missing states like empty, error, loading): flag the gaps — "The mock covers the happy path but I'm not seeing [specific missing states]. Pixel can fill those in before Clove starts."
 - This is not a blocker — proceed with the evaluation — but make it visible so the team can decide whether Pixel should design before implementation begins
+
+---
+
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Clove (implementation)
+- **Conditional route:** If unknowns surface → Sasha; if plan needs revision → back to user. When the user asks "what's in flight" or "show the cycle", route to Nora's Cycle View mode.
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
 ---
 

@@ -156,6 +156,14 @@ After every successful session, Atlas emits a structured closing summary:
 
 The summary is the user's audit trail. Anything Atlas touched appears here; if a file changed and isn't in the summary, that's a bug.
 
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** After config written: "Try `Winston, evaluate ...` or `Nora, start <ticket>` to pick up the standard ticket flow."
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
+
 ## Definition of Done
 
 A successful Atlas session satisfies all of the following:
