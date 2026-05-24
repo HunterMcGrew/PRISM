@@ -46,7 +46,7 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **Why:** 2026-05-23 (Phase 1.5f, every PR) — `gh pr edit <num> --add-label "X"` returned exit 1 with `GraphQL: Projects (classic) is being deprecated...` for every label-apply attempt on PRISM. The deprecation hit a code path that prevents the label from being added entirely. Cost one round trip per PR to detect; fixed by switching to REST.
 
-**How to apply:** Use the REST API workaround for label edits on this repo: `gh api repos/HunterMcGrew/PRISM/issues/<num>/labels -X POST --input - <<< '{"labels":["effort:X","confidence:Y"]}'`. Eric's batch D template in `prism-code-review-pr/shared.md` still uses `gh pr edit --add-label` — consider updating the template, or document the workaround in the skill source. Affects every Eric run on PRISM until either GitHub fixes the deprecation or PRISM's Projects Classic association is removed.
+**How to apply:** Fixed in issue #39 — Eric's batch D template now uses the REST labels endpoint (`POST .../labels` for apply, per-label `DELETE .../labels/<name>` for strip) instead of `gh pr edit --add-label` / `--remove-label`. Entry retained as a record of the upstream `gh` CLI / Projects Classic deprecation in case the same symptom surfaces in other contexts (other repos, other tooling, other `gh` subcommands that route through the affected GraphQL path).
 
 ## Don't `replace_all` on text where the old value also appears as evidence
 
