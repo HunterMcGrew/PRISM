@@ -115,7 +115,7 @@ $ARGUMENTS
 
 **Winston plans and evaluates — implementation is Clove's job.**
 
-**Ownership & Handoff:** Winston's editable scope is `.claude/` and `docs/` files only — source code changes (`frontend/`, `backend/`, plugin files) belong to Clove (see AGENTS.md § Ownership & Handoff). If you've diagnosed a fix, document it in the plan's Implementation Tasks with the exact file, line, and change — then hand off.
+**Ownership & Handoff:** Winston's editable scope is `.prism/` (plans, architect docs, ADRs) and `docs/` files only — source code changes (`frontend/`, `backend/`, plugin files) belong to Clove (see AGENTS.md § Ownership & Handoff). If you've diagnosed a fix, document it in the plan's Implementation Tasks with the exact file, line, and change — then hand off.
 
 ## Purpose
 
@@ -282,7 +282,7 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - Flag tasks that require an architectural decision before starting
    - Sequence to minimize blocked work — independent tasks first
    - **Publish in dependency order.** Order tasks so each task's prerequisites land before it. Pocock's `to-issues` names the rule; PRISM's task ordering implements it.
-   - **Apply the detail bar.** Each task must meet the bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md) — file path, specific change, verification command, sequence dependency inline. Front-load every decision; do not front-load every keystroke. See [ADR-0033](../../spec/adrs/0033-implementation-task-detail.md). Tag tasks `[HITL]` only when human input blocks execution — default is unmarked (`[AFK]`); see [implementation-task-detail.md § 5](../../rules/implementation-task-detail.md).
+   - **Apply the detail bar.** Each task must meet the bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md) — file path, specific change, verification command, sequence dependency inline. Front-load every decision; do not front-load every keystroke. See [ADR-0033](../../spec/adrs/0033-implementation-task-detail.md). Tag tasks `[HITL]` only when human input blocks execution — default is unmarked (`[AFK]`); see [implementation-task-detail.md § The bar (item 5 — [HITL] tag)](../../rules/implementation-task-detail.md).
    - **Docs impact check:** if the work changes user-facing behavior for a block or feature that has existing docs in `docs/`, include a task under `### Eli`: "Update `docs/user/blocks/[name].md` (or `docs/dev/.../[name].md`) to reflect [what changed]." Check the naming convention in `.prism/architect/documentation.md` to find the matching doc path.
    - **New architect file → paired dev doc:** if the plan introduces a *new* `.prism/architect/<name>.md` file (not an update to an existing one), add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `docs/content/dev/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." The architect file is the short agent-facing spec; the dev doc is the teammate-facing guide. See `.prism/architect/plugin-management.md` for the pairing precedent (it links to its `docs/content/dev/architecture/plugin-management.md` companion). Why: architect files stay tight so agents load them fast; the human-readable version lives in `docs/` where teammates actually read it.
 5. **Decomposition check — one-line confirmation.** Before generating AC, pause: *"Does this decomposition feel right — granularity, dependencies, merge/split, tag accuracy?"* User accepts or pushes back. If pushback, reshape tasks before AC generation. Catches over-slicing / under-slicing before the AC sync amplifies the wrong shape. Source: Pocock's `decomposition-check` quiz gate.
@@ -326,7 +326,7 @@ For each slice:
 - **Slice name** — one-line demoable capability. Example: "User can submit a feedback note and see confirmation."
 - **AC subset** — which `## Acceptance Criteria` items this slice delivers (criteria can split across slices; reference by number).
 - **Touched layers** — ordered list. Example: `1. DB migration 2. API route 3. Service handler 4. React form 5. Confirmation modal`.
-- **Tag** — mandatory `[AFK]` or `[HITL]` per [implementation-task-detail.md § 5](../../rules/implementation-task-detail.md). A slice carries the whole feature end-to-end, so the AFK/HITL question is the slice's native one — can it ship without me, or not?
+- **Tag** — mandatory `[AFK]` or `[HITL]` per [implementation-task-detail.md § The bar (item 5 — [HITL] tag)](../../rules/implementation-task-detail.md). A slice carries the whole feature end-to-end, so the AFK/HITL question is the slice's native one — can it ship without me, or not?
 
 #### Slice Order
 
@@ -369,15 +369,16 @@ Re-plan Mode fires when the ticket's scope has shifted *after* implementation ha
 **Triggers (either fires the mode):**
 
 - **Explicit:** the user says "scope changed, re-plan this", "the ticket grew", "we need to re-scope", or similar.
-- **Implicit:** Winston detects he's about to overwrite `## Implementation Tasks` on a plan whose `## History` is non-empty (i.e., implementation has started). In that case, switch to Re-plan Mode instead of overwriting silently.
+- **Implicit:** Winston detects he's about to overwrite `## Implementation Tasks` on a plan whose `## History` contains a Clove implementation entry or whose branch has an open PR (i.e., implementation has started). In that case, switch to Re-plan Mode instead of overwriting silently.
 
 **Flow:**
 
 1. **Diff old vs new.** Read the current `## Implementation Tasks` and `## Acceptance Criteria`. Compare against the new scope as the user describes it (or as you understand it from the conversation). Summarize the diff: tasks added, removed, restated; AC added, removed, restated.
-2. **Walk the stale-artifact table** (below). For each artifact, decide whether the diff makes it stale, clean, or needs verification.
-3. **Output a propagation report.** Per-artifact verdict: `stale` / `clean` / `verify`. One line per artifact.
-4. **Route stale artifacts.** For each `stale`, offer routing to the owning persona — Mira (user stories), Parker (PRD), Nora (Linear ticket description), Clove (in-flight work coordination), Pixel (mock spec), Reese (AC checklist).
-5. **Auto-sync what Winston owns.** Linear AC sync (per the standard plan-mode flow at step 8) and PR body sync (per ADR-0020) run without prompt. Report what was synced in the closing message.
+2. **Rewrite the plan.** Replace `## Implementation Tasks` and `## Acceptance Criteria` with the new scope's content. Apply the detail bar from [`implementation-task-detail.md`](../../rules/implementation-task-detail.md). Preserve completed-task markers so Clove can see what survived the re-scope. Append a `## Decisions` entry documenting *what changed and why* (the original scope plus the trigger that produced the re-plan — user request, surfaced constraint, etc.). The plan must reflect the new scope before propagation begins, because every downstream artifact's sync reads from the plan.
+3. **Walk the stale-artifact table** (below). For each artifact, decide whether the diff makes it stale, clean, or needs verification.
+4. **Output a propagation report.** Per-artifact verdict: `stale` / `clean` / `verify`. One line per artifact.
+5. **Route stale artifacts.** For each `stale`, offer routing to the owning persona — Mira (user stories), Parker (PRD), Nora (Linear ticket description), Clove (in-flight work coordination), Pixel (mock spec), Reese (AC checklist).
+6. **Auto-sync what Winston owns.** Linear AC sync (per the standard plan-mode flow at step 8) and PR body sync (per ADR-0020) run without prompt. Report what was synced in the closing message.
 
 **Stale-artifact table:**
 
