@@ -388,6 +388,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar re-review on PR #42 caught one new Minor — Clove's followup `replace_all` had over-swept `2026-05-24` references inside the Review Issue documentation and the new History line, erasing the original-bad-date anchor. Restored the three `2026-05-24` references with targeted Edits (no `replace_all`). Lesson learned for the toolkit: when documenting a bad value's correction, the documentation needs both the wrong value (as evidence) and the right value (as the fix) — global text replacements that don't distinguish "value-in-use" from "value-as-evidence" damage the audit trail.
 - 2026-05-23 [main]: PR #42 (Wave 2 PR 2 — Sasha) squash-merged at commit 93955b2. Briar two-pass review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 2 AC items verified delivered.
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: PR 3 (Eric) implemented on fresh branch off post-PR-2 main. Eric's `prism-code-review-pr/shared.md` restructured: Phase 3 ("Review") replaced with the two-axis split — spawn two parallel subagents with context-isolated inputs (Standards subagent gets diff + source + standards rules; Spec subagent gets diff + source + plan + AC + architect context). The existing "What to look for" flat list reorganized into `### Standards axis` and `### Spec axis` sub-sections, with Accessibility/Justification/Doc-Class/Test-Coverage folded under Standards as named sub-procedures. Added `### Missing spec handling` sub-section with full/partial/no-spec state table. Summary format restructured into 3 sections (`### Standards findings` / `### Spec findings` / `### Cross-cutting observations`) plus unchanged Summary and PR Readiness. New label `confidence:standards-only` added to Confidence table; Decision gate's state #3 expanded to three confidence variants (high / needs-judgment / standards-only); ready-flip treats standards-only as state #3 per wave-2 operational notes. Lightweight path (docs-only PRs) explicitly opts out of subagent fanout. Pre-fetch pattern documented in batch C — source files read once in Eric's main thread and passed inline into each subagent prompt to avoid double-reads. Build + check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Briar self-review on PR #43 found 0 Critical / 0 Major / 1 Minor — grammar break in the new Spec-axis "Scope creep" bullet ("Diffs that include files no task names is the canonical signal" — missing word, incoherent as written). Clove followup commit corrected the sentence to "Diffs that touch files not named in any implementation task are the canonical signal" via targeted Edit (no `replace_all` per the lesson). Build regenerated 4 platform mirrors; check + check-types + test re-run skipped (Clove's commit was the only change since the prior green run).
 
 ---
 
@@ -446,6 +447,14 @@ _None._
 - **File:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md` (PR 2 History entry + PR Readiness "Last updated" line)
 - **Problem:** Plan History entry for PR 2 was originally dated `2026-05-24` but the commit (`f52c07b`) is timestamped `2026-05-23 20:15:09 -0500` and the session's `Today's date` is `2026-05-23`. PR Readiness "Last updated" carried the same `2026-05-24` drifted date. The History rule requires dates to match real events — this was a transcription drift, not a correctness issue, but it confused anyone cross-referencing the plan against `git log`.
 - **Suggested fix:** Change both `2026-05-24` references to `2026-05-23` so the plan matches the commit timestamp.
+
+### PR 3 Eric Spec-axis "Scope creep" bullet has broken grammar
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md` — in the new `### Spec axis — what to check` section, the "Scope creep" bullet
+- **Problem:** Sentence reads `"Diffs that include files no task names is the canonical signal."` — missing a verb/word. Intent is decipherable from surrounding context (diffs touching files not mentioned in any plan task signal scope creep), but the sentence as written is incoherent. Future Spec-axis subagents reading this rule as their checklist will trip on the ambiguity.
+- **Suggested fix:** Replace with `"Diffs that touch files not named in any implementation task are the canonical signal."` Targeted Edit (not `replace_all`) — only this one occurrence of the phrase. Platform mirrors regenerate via `pnpm prism:build`.
 
 ### PR 2 followup commit over-replaced `2026-05-24` references
 
@@ -515,7 +524,7 @@ _None._
 
 ## PR Readiness
 
-- [ ] No critical or major issues — _PR 3 Briar self-review pending_
+- [x] No critical or major issues — _PR 3 Briar self-review: 0 Critical, 0 Major, 1 Minor (Spec-axis Scope-creep grammar break) fixed in followup commit. Ready for Briar re-review._
 - [x] Types correct — no `any`, no unsafe `as` — _PR 3: `check-types` clean_
 - [x] No stray console.logs or debug artifacts — _PR 3: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_

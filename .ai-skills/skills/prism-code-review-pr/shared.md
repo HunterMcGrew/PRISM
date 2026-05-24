@@ -404,7 +404,7 @@ Whether the code does what the ticket says, against the branch plan and architec
 
 - **AC conformance** — every behavioral AC in the plan has corresponding code that delivers it. Missing AC coverage → Major. Code that delivers something the AC doesn't require → scope creep, flag as Minor or surface in Cross-cutting.
 - **`## Decisions` respect** — every Decision in the plan is intentional and load-bearing. Code that contradicts a Decision is a regression, not a clever shortcut — flag as Major and cite the Decision being undone. **Do not flag the Decision itself** as a problem; that's Winston's lane.
-- **Scope creep** — implementation that extends past the plan's `## Implementation Tasks` without a corresponding Decision entry or AC item. Compare the diff against what the plan says was supposed to ship. Diffs that include files no task names is the canonical signal.
+- **Scope creep** — implementation that extends past the plan's `## Implementation Tasks` without a corresponding Decision entry or AC item. Compare the diff against what the plan says was supposed to ship. Diffs that touch files not named in any implementation task are the canonical signal.
 - **Architect context constraints** — the architect docs loaded via manifest describe patterns and conventions this PR must compose with. Code that breaks a documented pattern without a Decision entry explaining the deviation gets flagged. The Decision-entry-with-reason path is the legitimate override — silent deviation is what gets flagged.
 
 The Spec subagent does **not** evaluate the rules themselves (that's Standards). It evaluates the diff's alignment with the ticket contract.
