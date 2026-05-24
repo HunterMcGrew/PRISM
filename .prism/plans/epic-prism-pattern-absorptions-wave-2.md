@@ -383,7 +383,8 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Briar self-review on PR #41. Four Major issues found (3 in closing-messages.md: two broken ADR links to wrong filenames, two fabricated quote examples citing wrong line numbers/content) + one Minor (stale line citation in lazy-artifacts.md). All routed to Clove for fix. Build/test re-run skipped (Clove ran clean minutes prior; no commits since).
 - 2026-05-23 [hmcgrew/epic-skill-improvements-bmad-pocock]: Clove fixed all 5 Briar findings. closing-messages.md: corrected ADR-0034 + ADR-0011 link filenames; reframed Nora/Pixel example block as illustrative phrasings (dropped fabricated file:line citations rather than chasing the actual line content — patterns are the point). lazy-artifacts.md: replaced `prism-zoe/shared.md line 177` with section-name reference (`§ Output format`) per the rule's own "section headings when line numbers will drift" guidance. Build regenerated 6 platform mirrors (closing-messages + lazy-artifacts across .claude/.codex/.cursor); check + check-types + test all green (116/116).
 - 2026-05-23 [main]: PR #41 (Wave 2 PR 1 — Foundation) squash-merged at commit 98bd6bd. Briar re-review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 1 AC items verified delivered.
-- 2026-05-24 [hmcgrew/wave-2-pr-2-sasha]: PR 2 (Sasha) implemented on fresh branch off post-PR-1 main. Sasha shared.md restructured into six explicit phases (Feedback Loop signal construction → Reproduce → Hypothesize 3-5 ranked falsifiable → Instrument → Confirm + design regression test [DESIGN ONLY] → Cleanup + Post-Mortem). Phase 5 stays design-only — preserves Sasha's diagnose-only invariant. Evidence grading added to `## Debugged Issues` template in branch-plan.md (2 canonical surfaces in lockstep + 3 platform mirrors regenerated): `Confidence` field, inline `[Confirmed]`/`[Deduced]`/`[Hypothesized]` tag on root cause, optional `Refuted hypotheses` and `Missing evidence` fields. Bug-report.md template mirrored with `## Confidence` and `## Refuted Hypotheses` sections. Sasha case-file resumability added via single `.prism/sasha-state.json` (lighter variant of micro-file pattern — no per-step files since plan's `## Debugged Issues` entry is the durable artifact). `micro-file-step-machine.md` extended with the lighter-variant section + Sasha added to citers list. Build + check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: PR 2 (Sasha) implemented on fresh branch off post-PR-1 main. Sasha shared.md restructured into six explicit phases (Feedback Loop signal construction → Reproduce → Hypothesize 3-5 ranked falsifiable → Instrument → Confirm + design regression test [DESIGN ONLY] → Cleanup + Post-Mortem). Phase 5 stays design-only — preserves Sasha's diagnose-only invariant. Evidence grading added to `## Debugged Issues` template in branch-plan.md (2 canonical surfaces in lockstep + 3 platform mirrors regenerated): `Confidence` field, inline `[Confirmed]`/`[Deduced]`/`[Hypothesized]` tag on root cause, optional `Refuted hypotheses` and `Missing evidence` fields. Bug-report.md template mirrored with `## Confidence` and `## Refuted Hypotheses` sections. Sasha case-file resumability added via single `.prism/sasha-state.json` (lighter variant of micro-file pattern — no per-step files since plan's `## Debugged Issues` entry is the durable artifact). `micro-file-step-machine.md` extended with the lighter-variant section + Sasha added to citers list. Build + check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar self-review on PR #42 found 0 Critical / 0 Major / 1 Minor — plan-history date drift (2026-05-24 vs actual session date 2026-05-23). Clove followup commit corrected the date in two places and marked the Review Issue `fixed`. Plan-only change; no build re-run needed (plans aren't in the mirrored area per install-layout.md).
 
 ---
 
@@ -434,6 +435,14 @@ _None._
 - **File:** `.prism/rules/lazy-artifacts.md:20`
 - **Problem:** Cites `prism-zoe/shared.md line 177` for the "audits dir created on first run" claim. Actual content is at line 187 — the Zoe edit earlier in PR 1 (adding the lessons-archive create-on-first-archive instruction) shifted line numbers. The claim's intent is correct; only the line number is stale.
 - **Suggested fix:** Update `177` → `187`, or drop the line number and reference by section name only (matches `implementation-task-detail.md` guidance: "reference section headings when line numbers will drift").
+
+### PR 2 plan history date off by one day
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md` (PR 2 History entry + PR Readiness "Last updated" line)
+- **Problem:** Plan History entry for PR 2 is dated `2026-05-23` but the commit (`f52c07b`) is timestamped `2026-05-23 20:15:09 -0500` and the session's `Today's date` is `2026-05-23`. PR Readiness "Last updated" carries the same `2026-05-23` date. The History rule requires dates to match real events — this is a transcription drift, not a correctness issue, but it confuses anyone cross-referencing the plan against `git log`.
+- **Suggested fix:** Change both `2026-05-23` references to `2026-05-23` so the plan matches the commit timestamp.
 
 ---
 
@@ -495,16 +504,16 @@ _None._
 
 ## PR Readiness
 
-- [ ] No critical or major issues — _PR 2 Briar self-review pending_
+- [x] No critical or major issues — _PR 2 Briar self-review: 0 Critical, 0 Major, 1 Minor (plan-history date drift) fixed in followup commit._
 - [x] Types correct — no `any`, no unsafe `as` — _PR 2: `check-types` clean (PR 1 also clean)_
 - [x] No stray console.logs or debug artifacts — _PR 2: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
 - [x] All debugged issues resolved (no `open` entries) — _none filed in PR 2_
-- [x] Build passes — last run: 2026-05-24 (PR 2 — build, check, check-types, test all green)
+- [x] Build passes — last run: 2026-05-23 (PR 2 — build, check, check-types, test all green)
 - [ ] PR description up to date — _PR 2 not yet opened_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-24 (PR 2 Sasha implementation complete; Briar self-review pending)
+**Last updated:** 2026-05-23 (PR 2 Sasha implementation complete; Briar self-review pending)
 
 ---
 
