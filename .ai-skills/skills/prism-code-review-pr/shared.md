@@ -263,7 +263,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
 
 ### Phase 4: GitHub writes (one batch — all writes together)
 
-7. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
+10. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
 
    - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else):
      ```bash
@@ -305,7 +305,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
 
 ### Phase 5: Plan update
 
-8. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
+11. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
 
    If the user wants the plan updated as part of the review, that's the trigger to opt into worktree mode — call out the missing plan update in the summary comment and offer to re-run in worktree mode.
 
@@ -548,7 +548,7 @@ The `resolveReviewThread` mutation can fail if the thread ID is stale or the tok
 - Do not retry. Leave the thread open, and note in the summary that auto-resolve failed for that thread — the author can resolve it manually.
 
 ### Inline comment rejected with 422
-Means the target line is outside the diff hunk. Already handled in step 12 — move the observation to the summary comment. Do not retry with a different line number.
+Means the target line is outside the diff hunk. Already handled in step 10 — move the observation to the summary comment. Do not retry with a different line number.
 
 ### Prettier/ESLint "Cannot find package" error
 Prettier plugins are installed per-package, not at the monorepo root. Always run from the package context: `pnpm -r --filter <package-name> exec npx prettier --check <files>`, or `cd` into the package directory. See **Formatting Check** for exact commands. (Worktree mode only — in-branch mode does not run formatters.)

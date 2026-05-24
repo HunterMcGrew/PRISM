@@ -389,6 +389,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [main]: PR #42 (Wave 2 PR 2 — Sasha) squash-merged at commit 93955b2. Briar two-pass review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 2 AC items verified delivered.
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: PR 3 (Eric) implemented on fresh branch off post-PR-2 main. Eric's `prism-code-review-pr/shared.md` restructured: Phase 3 ("Review") replaced with the two-axis split — spawn two parallel subagents with context-isolated inputs (Standards subagent gets diff + source + standards rules; Spec subagent gets diff + source + plan + AC + architect context). The existing "What to look for" flat list reorganized into `### Standards axis` and `### Spec axis` sub-sections, with Accessibility/Justification/Doc-Class/Test-Coverage folded under Standards as named sub-procedures. Added `### Missing spec handling` sub-section with full/partial/no-spec state table. Summary format restructured into 3 sections (`### Standards findings` / `### Spec findings` / `### Cross-cutting observations`) plus unchanged Summary and PR Readiness. New label `confidence:standards-only` added to Confidence table; Decision gate's state #3 expanded to three confidence variants (high / needs-judgment / standards-only); ready-flip treats standards-only as state #3 per wave-2 operational notes. Lightweight path (docs-only PRs) explicitly opts out of subagent fanout. Pre-fetch pattern documented in batch C — source files read once in Eric's main thread and passed inline into each subagent prompt to avoid double-reads. Build + check + check-types + test all green (116/116).
 - 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Briar self-review on PR #43 found 0 Critical / 0 Major / 1 Minor — grammar break in the new Spec-axis "Scope creep" bullet ("Diffs that include files no task names is the canonical signal" — missing word, incoherent as written). Clove followup commit corrected the sentence to "Diffs that touch files not named in any implementation task are the canonical signal" via targeted Edit (no `replace_all` per the lesson). Build regenerated 4 platform mirrors; check + check-types + test re-run skipped (Clove's commit was the only change since the prior green run).
+- 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Eric review on PR #43 — first application of the new two-axis pattern against itself. Found 1 Major (step-number collision: Phase 3 grew to four steps 6-9 but Phases 4 and 5 still started at 7 and 8, creating ambiguous `step 7` / `step 8` references) + 1 Minor pre-existing (line 551 cites nonexistent "step 12"). Clove followup commit: targeted Edits renumbered Phase 4 step 7 → 10, Phase 5 step 8 → 11, and repointed the 422-fallback citation to "step 10" (the new batch D number). Build regenerated 4 platform mirrors. Self-applicability of the new pattern verified — Eric found a real bug in its own restructure.
 
 ---
 
@@ -464,6 +465,14 @@ _None._
 - **Problem:** Clove's followup commit (`edca387`) used a global replace that swept ALL `2026-05-24` references — including the ones inside the prior Review Issue's `Problem:` and `Suggested fix:` descriptions that were *documenting* the bad date as evidence, plus the new History line that records the drift cause. After the global replace: Review Issue Problem reads "dated `2026-05-23` but the commit timestamped `2026-05-23`" (no drift described); Suggested fix reads "Change both `2026-05-23` references to `2026-05-23`" (tautology); History entry says "drift (`2026-05-23` vs actual session date `2026-05-23`)" (no drift described). The actual fix to the History and PR Readiness dates is correct — the audit trail in `## Review Issues` and the new History line lost the original-bad-date anchor.
 - **Suggested fix:** Restore `2026-05-24` references in three places: (1) the prior Review Issue's `Problem:` line where it says the entry "is dated `2026-05-23`" — change back to "was originally dated `2026-05-24`"; (2) the prior Review Issue's `Suggested fix:` line where it says "Change both `2026-05-23` references" — change back to "Change both `2026-05-24` references"; (3) the new Briar-followup History line where it says "drift (`2026-05-23` vs actual session date `2026-05-23`)" — change back to "drift (`2026-05-24` vs actual session date `2026-05-23`)". Use targeted `Edit` calls (not `replace_all`) so the corrections don't sweep historical anchors.
 
+### PR 3 Eric in-branch procedure has step-number collisions across Phase 3/4/5
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md` — in-branch mode procedure, Phases 3, 4, 5
+- **Problem:** The two-axis restructure grew Phase 3 to four steps (6, 7, 8, 9) but left Phase 4 starting at step 7 and Phase 5 at step 8 — the original numbering from before the restructure. Result: steps 7 and 8 each appear twice with different meanings ("If lightweight" vs "Parallel batch D", "Assemble the 3-section output" vs "Plan update is skipped"). Future agents and the internal `step 12` citation at line 551 hit ambiguous references. The two-axis upgrade is functionally correct but the procedure is no longer linearly addressable.
+- **Suggested fix:** Renumber Phase 4 step 7 → 10 (Parallel batch D), Phase 5 step 8 → 11 (Plan update skipped). Repoint line 551 citation from "step 12" → "step 10" so the inline-comment 422 fallback points at the new batch D step. Targeted Edits (not `replace_all`) on the canonical, then rebuild platform mirrors via `pnpm prism:build`.
+
 ---
 
 ## Acceptance Criteria
@@ -524,16 +533,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 3 Briar self-review: 0 Critical, 0 Major, 1 Minor (Spec-axis Scope-creep grammar break) fixed in followup commit. Ready for Briar re-review._
+- [x] No critical or major issues — _PR 3 Eric review found 1 Major (step-number collision across Phases 3/4/5 from the restructure) + 1 Minor (pre-existing "step 12" citation pointing nowhere). Both fixed in followup commit (Phase 4 step 7 → 10, Phase 5 step 8 → 11, line 551 citation repointed). Ready for Eric re-review._
 - [x] Types correct — no `any`, no unsafe `as` — _PR 3: `check-types` clean_
 - [x] No stray console.logs or debug artifacts — _PR 3: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
 - [x] All debugged issues resolved (no `open` entries) — _none filed in PR 3_
 - [x] Build passes — last run: 2026-05-23 (PR 3 — build, check, check-types, test all green)
-- [ ] PR description up to date — _PR 3 not yet opened_
+- [x] PR description up to date — _PR 3 opened as #43; body reflects current scope_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (PR 3 Eric implementation complete; Briar self-review pending)
+**Last updated:** 2026-05-23 (PR 3 Eric step-number collision fix complete; Eric re-review pending)
 
 ---
 
