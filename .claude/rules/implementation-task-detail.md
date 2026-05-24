@@ -52,8 +52,22 @@ Each task names:
 2. **The specific change.** For edits: the exact `old_string` → `new_string` replacement (or describe it precisely enough that Edit tool input writes itself). For new files: full content or a content outline tight enough that the writer doesn't have to invent structure. For deletions: name the lines or sections to delete.
 3. **Verification command** when the change has runtime or build implications (`pnpm prism:check`, `pnpm prism:test`, `npx jest --testPathPatterns=...`). When the change is content-only with no build effect, state that explicitly so the implementer doesn't waste time guessing.
 4. **Sequence dependencies** noted inline when applicable — "after task 3", "blocks task 7", "parallel with task 4–6".
+5. **`[HITL]` tag when applicable.** Default is unmarked — every task is implicitly `[AFK]` (agent-runnable end-to-end). Tag a task `[HITL]` only when human input is required before execution can start. The tag goes immediately after the task number and before the title: `1. [HITL] **Stakeholder approves copy direction** — ...`. Source: Pocock's `to-issues` skill, which prefers AFK and treats HITL as the exception. PRISM adopts the tag for the same reason — most implementation tasks are AFK; calling out the exceptions keeps signal-to-noise high.
 
 The model to study is `.prism/plans/epic-phase-1-foundation.md` tasks 13–19. They name files, line numbers, exact replacements, and verification — they read like the artifact this rule is asking for.
+
+### When to apply `[HITL]`
+
+Tag a task `[HITL]` when execution genuinely requires a human input that the implementer can't substitute. Common triggers:
+
+- An `OPEN —` Decision in the plan (per [`.prism/rules/branch-plan.md`](./branch-plan.md)) blocks the task — the open question must resolve before work can start.
+- Stakeholder approval gate — copy direction, brand decisions, customer-facing language that needs a named approver.
+- Benchmark required before algorithm or architecture lock — when the right answer depends on data the implementer can't generate inline.
+- Cross-team coordination — work that needs another team's input or sign-off.
+
+Tags are part of the task line, not a separate field. The implementer scans the task list, sees which tasks they can pick up immediately (unmarked `[AFK]`-default tasks) and which ones are blocked on a named input (`[HITL]` tasks with the blocking input stated in the task body).
+
+**Note on the source's contradiction:** Pocock's `to-issues` skill explicitly says "avoid specific file paths or code snippets — they go stale fast." PRISM's tasks contradict this deliberately — file paths and exact changes are required (per the rest of this rule). The contradiction holds because Pocock's issues are customer-facing tickets that live in Linear/GitHub long-term, while PRISM tasks are session-local execution units deleted with the plan. The detail bar fits PRISM's lifetime; Pocock's terseness fits his.
 
 ### Example — good
 

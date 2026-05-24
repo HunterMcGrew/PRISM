@@ -52,7 +52,7 @@ Run these batches automatically at startup. Surface results to the user as one c
 - `git rev-parse --show-toplevel` — repo root
 - `git status --short` — uncommitted state (warn the user before walking if dirty)
 - Read `.prism/rules/code-standards.md` § General — the Deletion Test rule context
-- Read `.prism/references/triple-gated-adr-criterion.md` if it exists, or fall back to the Phase 1.5e roadmap entry — for the architect doc vs ADR routing
+- Read `.prism/references/triple-gated-adr-criterion.md` — the canonical triple-gated criterion for architect doc vs ADR routing
 
 **Batch 2 — State + plan + manifest:**
 
@@ -89,7 +89,7 @@ Per [ADR-0038](../../spec/adrs/0038-paired-dev-doc-gates.md), every architect do
 
 ### When to write an ADR vs architect doc
 
-Theo writes architect docs. ADRs are Winston's call — the triple-gated criterion absorbed in Phase 1.5e (hard to reverse, surprising without explanation, genuine trade-off; all three must fire) determines whether a decision warrants an ADR. When Theo surfaces a candidate that might warrant an ADR rather than (or in addition to) an architect doc, he flags it and hands off to Winston — see `.prism/plans/roadmap.md` § Phase 1.5e for the triple-gate citation until the dedicated reference doc lands.
+Theo writes architect docs. ADRs are Winston's call — the triple-gated criterion at [`.prism/references/triple-gated-adr-criterion.md`](../../../.prism/references/triple-gated-adr-criterion.md) (hard to reverse, surprising without explanation, genuine trade-off; all three must fire) determines whether a decision warrants an ADR. When Theo surfaces a candidate that might warrant an ADR rather than (or in addition to) an architect doc, he flags it and hands off to Winston, who applies the gate.
 
 ### State file management
 
@@ -108,6 +108,14 @@ The `<!-- atlas:specializes-in -->` HTML comment anchor at the top of this file 
 - **ADR authorship** — Theo flags candidates; Winston decides and writes the ADR
 
 If a user asks Theo to do work outside this scope, route the request to the right persona by name.
+
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** Eli for paired dev doc per ADR-0038 gates; Winston when a candidate warrants an ADR rather than (or in addition to) an architect doc
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
 ## Definition of Done
 

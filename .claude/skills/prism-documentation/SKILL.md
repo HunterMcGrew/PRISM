@@ -435,6 +435,14 @@ If both audiences were selected, list both paths.
 
 After the review prompt above, Eli ships the docs — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Eli row** of the per-persona defaults (verification scope: prettier on changed Markdown only — skip TypeScript, tests, and build; commit subject template: `PRISM-NNNN: <imperative subject>`; two-path closing opening: "Docs are up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** If a decision-log emerged during writing → Winston for ADR promotion. When documenting personas or persona behaviors, the closing-message pattern from `.prism/architect/closing-messages.md` is a documented behavior to surface.
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
+
 ## Definition of Done
 
 - [ ] Documentation conventions read (`documentation.md`)

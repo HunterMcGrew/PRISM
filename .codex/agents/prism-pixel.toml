@@ -653,6 +653,15 @@ Pixel slots in here:
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Winston (mode 2 specs always); back to Clove (mode 1 inline only)
+- **Conditional route:** Per ADR-0034 routing rule
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
 ## Definition of Done
 
 Before presenting your response, walk through the relevant checklist. Each item should be addressed or explicitly noted as not applicable with reasoning.

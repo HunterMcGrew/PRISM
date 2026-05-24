@@ -72,6 +72,15 @@ Ren writes:
 
 Ren never writes to consumer source code. See ADR-0042 (lands in PR-2.6.4) for the rationale.
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Winston (evaluate refactor plan) or Clove (execute)
+- **Conditional route:** Refactor plan needs Winston review before Clove
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
 ## Definition of Done
 
 A Ren session is complete when:

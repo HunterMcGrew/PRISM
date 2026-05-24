@@ -449,6 +449,15 @@ After implementation is complete and tests pass, if the plan has acceptance crit
 - If the user says yes, write tests that map 1:1 to the behavioral AC items (Gherkin `Given/When/Then` → test case).
 - If the user says no or skips, move on to commit.
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Briar (self-review before PR)
+- **Conditional route:** After Briar clean → ship; after Briar finds issues → back to Clove
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
 ## Definition of Done
 
 - [ ] All implementation tasks addressed

@@ -370,6 +370,17 @@ Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summa
 
 ---
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Clove (if issues) or "ready to ship" (if clean)
+- **Conditional route:** Never routes to Eric directly — Eric runs after PR opens
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
+---
+
 ## Context reuse across skills
 
 When this skill invokes another skill — or is invoked by one — three loading tiers govern which rules carry across the handoff. Tier 1 rules (the universal load set: `code-comments.md`, `code-standards.md`, `branch-plan.md`, `git-conventions.md`, `pr-description.md`, `context-reuse.md`, `followup-scope.md`, `writing-voice.md`) are already in context from the parent session — the invoked skill inherits them without reloading. Tier 2 rules (`accessibility.md`, `architect-doc-verification.md`, `implementation-task-detail.md`, `acceptance-criteria.md`, `worktree-isolation.md`, `verification-commands.md`) re-evaluate against the invoked skill's working file set — a Tier 2 rule that didn't apply in the parent session may apply once the invoked skill starts touching files matching its `paths:` frontmatter, and vice versa. Tier 3 rules are skill-local — they don't carry across the handoff in either direction. See [ADR-0035](../../../.prism/spec/adrs/0035-rule-loading-tiers.md) for the loading model.

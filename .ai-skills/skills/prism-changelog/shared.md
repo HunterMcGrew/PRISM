@@ -365,6 +365,14 @@ Merge into one entry. The reader doesn't need to know the feature shipped with a
 
 After the changelog file is generated, Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `${TICKET_PREFIX}-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
 
+## Next persona
+
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+
+- **Conditional route:** None — changelog ships from here.
+
+Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
+
 ## Definition of Done
 
 - [ ] Both tags validated and commit count confirmed

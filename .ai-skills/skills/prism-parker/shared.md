@@ -116,6 +116,15 @@ Parker writes PRDs at initiative grain. Downstream:
 
 If the user is already at story grain (single ticket, single feature, no decomposition needed), skip Parker and route to Mira directly.
 
+## Next persona
+
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+
+- **Default route:** Mira (decompose to stories) or Nora (Linear initiative handoff)
+- **Conditional route:** At launch stakes with rubric findings → Winston
+
+Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
+
 ## Definition of Done
 
 A PRD is done when:
