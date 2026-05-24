@@ -55,6 +55,16 @@ async function listFilesRecursively(
 			continue;
 		}
 
+		// Per-tool worktrees/ dirs (.claude/worktrees/, .codex/worktrees/,
+		// .cursor/worktrees/) hold operational state — full checkouts of other
+		// branches that may legitimately contain Thrive-flavored literals. They
+		// are gitignored and never part of the canonical mirror surface. Scoped
+		// to depth 1 from rootPath so a nested directory that happens to be
+		// named "worktrees" is still scanned.
+		if (entry.name === "worktrees" && currentPath === rootPath) {
+			continue;
+		}
+
 		const entryPath = path.join(currentPath, entry.name);
 
 		if (entry.isDirectory()) {

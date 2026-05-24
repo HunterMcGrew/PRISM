@@ -2,7 +2,11 @@
 
 Shared reference for the authoring personas that own their own PR creation: **Clove** (code), **Eli** (docs), **Sage** (changelog), **Reese** (QA checklist).
 
-The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../../AGENTS.md) and the "Prefer Action, Guard Against Destruction" framework. Pushing a completed branch is reversible, predictable, and in-lane, so it's action rather than question. No prompt before pushing.
+The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../../AGENTS.md) and the Round 10 framework ("Prefer Action, Guard Against Destruction") in [.prism/plans/4.7-skill-audit-strategy.md](../plans/4.7-skill-audit-strategy.md). Pushing a completed branch is reversible, predictable, and in-lane, so it's action rather than question. No prompt before pushing.
+
+## Per-push invariant
+
+This flow runs on every `git push`, not once per session. Fix-up commits after Briar-flagged issues, sync regenerations, `lessons.md` appends, and any follow-up commit on the branch all re-enter the flow from step 1 — each commit is a separate diff worth reviewing. If you've already pushed once on this branch, do not treat steps 1–6 as past tense on the next commit.
 
 ## Per-persona defaults
 
@@ -38,9 +42,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 
      Persist with `git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit <true|false>`.
 
-   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning.
-
-   The step fires on every commit, including re-commits after Briar-flagged fixes — each commit is a separate diff worth reviewing.
+   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning. The pause fires on every commit per the per-push invariant above.
 
 3. Stage and commit per `.prism/rules/git-conventions.md` — HEREDOC format, subject from the template above, body explains the why (not the what — the diff shows that).
 4. Check whether a PR already exists for this branch:
@@ -54,7 +56,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
    ```
 7. If step 4 returned empty, create the PR using `.github/pull_request_template.md` as the body scaffold and `.prism/rules/pr-description.md` for format:
    ```bash
-   gh pr create --title "<commit subject>" --body-file /tmp/pr-body.md
+   gh pr create --draft --title "<commit subject>" --body-file /tmp/pr-body.md
    ```
 8. If step 4 returned a PR number, skip `gh pr create` — the push updates the existing PR. This is the common path after Briar flags issues and the author amends: new commit, existing PR, no new PR needed.
 
