@@ -386,6 +386,10 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: PR 2 (Sasha) implemented on fresh branch off post-PR-1 main. Sasha shared.md restructured into six explicit phases (Feedback Loop signal construction → Reproduce → Hypothesize 3-5 ranked falsifiable → Instrument → Confirm + design regression test [DESIGN ONLY] → Cleanup + Post-Mortem). Phase 5 stays design-only — preserves Sasha's diagnose-only invariant. Evidence grading added to `## Debugged Issues` template in branch-plan.md (2 canonical surfaces in lockstep + 3 platform mirrors regenerated): `Confidence` field, inline `[Confirmed]`/`[Deduced]`/`[Hypothesized]` tag on root cause, optional `Refuted hypotheses` and `Missing evidence` fields. Bug-report.md template mirrored with `## Confidence` and `## Refuted Hypotheses` sections. Sasha case-file resumability added via single `.prism/sasha-state.json` (lighter variant of micro-file pattern — no per-step files since plan's `## Debugged Issues` entry is the durable artifact). `micro-file-step-machine.md` extended with the lighter-variant section + Sasha added to citers list. Build + check + check-types + test all green (116/116).
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar self-review on PR #42 found 0 Critical / 0 Major / 1 Minor — plan-history date drift (2026-05-24 vs actual session date 2026-05-23). Clove followup commit corrected the date in two places and marked the Review Issue `fixed`. Plan-only change; no build re-run needed (plans aren't in the mirrored area per install-layout.md).
 - 2026-05-23 [hmcgrew/wave-2-pr-2-sasha]: Briar re-review on PR #42 caught one new Minor — Clove's followup `replace_all` had over-swept `2026-05-24` references inside the Review Issue documentation and the new History line, erasing the original-bad-date anchor. Restored the three `2026-05-24` references with targeted Edits (no `replace_all`). Lesson learned for the toolkit: when documenting a bad value's correction, the documentation needs both the wrong value (as evidence) and the right value (as the fix) — global text replacements that don't distinguish "value-in-use" from "value-as-evidence" damage the audit trail.
+- 2026-05-23 [main]: PR #42 (Wave 2 PR 2 — Sasha) squash-merged at commit 93955b2. Briar two-pass review clean; Eric review clean (zero issues, state #3, effort:glance + confidence:high). All PR 2 AC items verified delivered.
+- 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: PR 3 (Eric) implemented on fresh branch off post-PR-2 main. Eric's `prism-code-review-pr/shared.md` restructured: Phase 3 ("Review") replaced with the two-axis split — spawn two parallel subagents with context-isolated inputs (Standards subagent gets diff + source + standards rules; Spec subagent gets diff + source + plan + AC + architect context). The existing "What to look for" flat list reorganized into `### Standards axis` and `### Spec axis` sub-sections, with Accessibility/Justification/Doc-Class/Test-Coverage folded under Standards as named sub-procedures. Added `### Missing spec handling` sub-section with full/partial/no-spec state table. Summary format restructured into 3 sections (`### Standards findings` / `### Spec findings` / `### Cross-cutting observations`) plus unchanged Summary and PR Readiness. New label `confidence:standards-only` added to Confidence table; Decision gate's state #3 expanded to three confidence variants (high / needs-judgment / standards-only); ready-flip treats standards-only as state #3 per wave-2 operational notes. Lightweight path (docs-only PRs) explicitly opts out of subagent fanout. Pre-fetch pattern documented in batch C — source files read once in Eric's main thread and passed inline into each subagent prompt to avoid double-reads. Build + check + check-types + test all green (116/116).
+- 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Briar self-review on PR #43 found 0 Critical / 0 Major / 1 Minor — grammar break in the new Spec-axis "Scope creep" bullet ("Diffs that include files no task names is the canonical signal" — missing word, incoherent as written). Clove followup commit corrected the sentence to "Diffs that touch files not named in any implementation task are the canonical signal" via targeted Edit (no `replace_all` per the lesson). Build regenerated 4 platform mirrors; check + check-types + test re-run skipped (Clove's commit was the only change since the prior green run).
+- 2026-05-23 [hmcgrew/wave-2-pr-3-eric]: Eric review on PR #43 — first application of the new two-axis pattern against itself. Found 1 Major (step-number collision: Phase 3 grew to four steps 6-9 but Phases 4 and 5 still started at 7 and 8, creating ambiguous `step 7` / `step 8` references) + 1 Minor pre-existing (line 551 cites nonexistent "step 12"). Clove followup commit: targeted Edits renumbered Phase 4 step 7 → 10, Phase 5 step 8 → 11, and repointed the 422-fallback citation to "step 10" (the new batch D number). Build regenerated 4 platform mirrors. Self-applicability of the new pattern verified — Eric found a real bug in its own restructure.
 
 ---
 
@@ -445,6 +449,14 @@ _None._
 - **Problem:** Plan History entry for PR 2 was originally dated `2026-05-24` but the commit (`f52c07b`) is timestamped `2026-05-23 20:15:09 -0500` and the session's `Today's date` is `2026-05-23`. PR Readiness "Last updated" carried the same `2026-05-24` drifted date. The History rule requires dates to match real events — this was a transcription drift, not a correctness issue, but it confused anyone cross-referencing the plan against `git log`.
 - **Suggested fix:** Change both `2026-05-24` references to `2026-05-23` so the plan matches the commit timestamp.
 
+### PR 3 Eric Spec-axis "Scope creep" bullet has broken grammar
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md` — in the new `### Spec axis — what to check` section, the "Scope creep" bullet
+- **Problem:** Sentence reads `"Diffs that include files no task names is the canonical signal."` — missing a verb/word. Intent is decipherable from surrounding context (diffs touching files not mentioned in any plan task signal scope creep), but the sentence as written is incoherent. Future Spec-axis subagents reading this rule as their checklist will trip on the ambiguity.
+- **Suggested fix:** Replace with `"Diffs that touch files not named in any implementation task are the canonical signal."` Targeted Edit (not `replace_all`) — only this one occurrence of the phrase. Platform mirrors regenerate via `pnpm prism:build`.
+
 ### PR 2 followup commit over-replaced `2026-05-24` references
 
 - **Severity:** `minor`
@@ -452,6 +464,14 @@ _None._
 - **File:** `.prism/plans/epic-prism-pattern-absorptions-wave-2.md` (`## Review Issues` entries + new Briar-followup `## History` line)
 - **Problem:** Clove's followup commit (`edca387`) used a global replace that swept ALL `2026-05-24` references — including the ones inside the prior Review Issue's `Problem:` and `Suggested fix:` descriptions that were *documenting* the bad date as evidence, plus the new History line that records the drift cause. After the global replace: Review Issue Problem reads "dated `2026-05-23` but the commit timestamped `2026-05-23`" (no drift described); Suggested fix reads "Change both `2026-05-23` references to `2026-05-23`" (tautology); History entry says "drift (`2026-05-23` vs actual session date `2026-05-23`)" (no drift described). The actual fix to the History and PR Readiness dates is correct — the audit trail in `## Review Issues` and the new History line lost the original-bad-date anchor.
 - **Suggested fix:** Restore `2026-05-24` references in three places: (1) the prior Review Issue's `Problem:` line where it says the entry "is dated `2026-05-23`" — change back to "was originally dated `2026-05-24`"; (2) the prior Review Issue's `Suggested fix:` line where it says "Change both `2026-05-23` references" — change back to "Change both `2026-05-24` references"; (3) the new Briar-followup History line where it says "drift (`2026-05-23` vs actual session date `2026-05-23`)" — change back to "drift (`2026-05-24` vs actual session date `2026-05-23`)". Use targeted `Edit` calls (not `replace_all`) so the corrections don't sweep historical anchors.
+
+### PR 3 Eric in-branch procedure has step-number collisions across Phase 3/4/5
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md` — in-branch mode procedure, Phases 3, 4, 5
+- **Problem:** The two-axis restructure grew Phase 3 to four steps (6, 7, 8, 9) but left Phase 4 starting at step 7 and Phase 5 at step 8 — the original numbering from before the restructure. Result: steps 7 and 8 each appear twice with different meanings ("If lightweight" vs "Parallel batch D", "Assemble the 3-section output" vs "Plan update is skipped"). Future agents and the internal `step 12` citation at line 551 hit ambiguous references. The two-axis upgrade is functionally correct but the procedure is no longer linearly addressable.
+- **Suggested fix:** Renumber Phase 4 step 7 → 10 (Parallel batch D), Phase 5 step 8 → 11 (Plan update skipped). Repoint line 551 citation from "step 12" → "step 10" so the inline-comment 422 fallback points at the new batch D step. Targeted Edits (not `replace_all`) on the canonical, then rebuild platform mirrors via `pnpm prism:build`.
 
 ---
 
@@ -463,9 +483,9 @@ _None._
 - [x] Given Sasha reaches Phase 5, When she designs a regression test, Then she specifies what it should cover without writing the test (preserving the diagnose-only boundary; Clove implements). _(PR 2 — Phase 5 names what to assert / where it lives / what inputs trigger / failing-test output; "no correct seam" finding format adopted)_
 - [x] Given Sasha files a debug report in `## Debugged Issues`, When she states a root-cause claim, Then every claim is tagged `[Confirmed]`, `[Deduced]`, or `[Hypothesized]` and the entry carries a `Confidence:` field. _(PR 2 — branch-plan.md `## Debugged Issues` template extended in 2 surfaces in lockstep: `.prism/rules/`, `templates/install/.prism/rules/`; `.claude/`, `.codex/`, `.cursor/` mirrors regenerated by build)_
 - [x] Given a multi-session debug is in progress, When the session is interrupted and resumed, Then Sasha reads `.prism/sasha-state.json` (single state file, no per-step files) and offers to continue from the prior `currentPhase`. _(PR 2 — case-file schema, atomic-write protocol, and resume-detection logic added; lighter-variant clarification added to `micro-file-step-machine.md` with Sasha as new citer)_
-- [ ] Given Eric is reviewing a PR with a full spec, When he produces his review output, Then the output has three sections (Standards findings / Spec findings / Cross-cutting observations) and findings from one axis never mask findings from the other.
-- [ ] Given Eric is reviewing a PR with no branch plan or AC, When he produces his review output, Then the Spec axis is loudly skipped (`"Spec axis skipped — no spec available"`) and the confidence label reflects this (`confidence:standards-only`).
-- [ ] Given Eric is reviewing a docs-only PR, When he selects the review path, Then he uses the lightweight single-pass path (no parallel subagents) to avoid doubled API cost on trivial PRs.
+- [x] Given Eric is reviewing a PR with a full spec, When he produces his review output, Then the output has three sections (Standards findings / Spec findings / Cross-cutting observations) and findings from one axis never mask findings from the other. _(PR 3 — Phase 3 rewritten to spawn two parallel subagents with context-isolated inputs; Summary format restructured with three named sections; explicit "do not merge across axes" rule)_
+- [x] Given Eric is reviewing a PR with no branch plan or AC, When he produces his review output, Then the Spec axis is loudly skipped (`"Spec axis skipped — no spec available"`) and the confidence label reflects this (`confidence:standards-only`). _(PR 3 — Missing spec handling sub-section added with full/partial/no-spec state table; new `confidence:standards-only` label added to label definitions and decision gate; standards-only treated as state #3 for ready-flip)_
+- [x] Given Eric is reviewing a docs-only PR, When he selects the review path, Then he uses the lightweight single-pass path (no parallel subagents) to avoid doubled API cost on trivial PRs. _(PR 3 — PR classification step augmented with explicit "lightweight stays single-pass" branch; full path's parallel-subagent dispatch is opt-in via the classification gate)_
 - [ ] Given Winston writes implementation tasks, When a task requires a human decision before execution can start, Then that task carries the `[HITL]` tag immediately after its number; tasks without the tag default to `[AFK]`.
 - [ ] Given Winston is asked to re-plan a ticket whose plan has non-empty `## History`, When he runs Re-plan Mode, Then his output names which other artifacts (Linear AC, Linear ticket desc, Mira user stories, Parker PRD, in-flight Clove work, PR body, Pixel mock spec, Reese AC) are stale and offers persona routing for each.
 - [ ] Given Winston is starting plan mode and the vertical-slice signals fire (3+ signals in pure plan mode; all signals in evaluate-then-plan), When he transitions between plan-mode steps 2 and 3, Then he asks the decomposition-shape question once before generating tasks.
@@ -513,16 +533,16 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues — _PR 2 Briar re-review: both Minors resolved. The over-swept `2026-05-24` anchor references in the Review Issue documentation + Briar-followup History line have been restored. Ready for Eric._
-- [x] Types correct — no `any`, no unsafe `as` — _PR 2: `check-types` clean (PR 1 also clean)_
-- [x] No stray console.logs or debug artifacts — _PR 2: content-only edits_
+- [x] No critical or major issues — _PR 3 Eric review found 1 Major (step-number collision across Phases 3/4/5 from the restructure) + 1 Minor (pre-existing "step 12" citation pointing nowhere). Both fixed in followup commit (Phase 4 step 7 → 10, Phase 5 step 8 → 11, line 551 citation repointed). Ready for Eric re-review._
+- [x] Types correct — no `any`, no unsafe `as` — _PR 3: `check-types` clean_
+- [x] No stray console.logs or debug artifacts — _PR 3: content-only edits_
 - [x] Tests written for new logic and edge cases — _N/A, content-only edits across all 5 PRs (116 existing tests pass)_
-- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 2_
-- [x] Build passes — last run: 2026-05-23 (PR 2 — build, check, check-types, test all green)
-- [ ] PR description up to date — _PR 2 not yet opened_
+- [x] All debugged issues resolved (no `open` entries) — _none filed in PR 3_
+- [x] Build passes — last run: 2026-05-23 (PR 3 — build, check, check-types, test all green)
+- [x] PR description up to date — _PR 3 opened as #43; body reflects current scope_
 - [x] Lasting decisions promoted to architect context (if applicable) — _wave 2 itself is the absorption; no further promotion_
 
-**Last updated:** 2026-05-23 (PR 2 Sasha implementation complete; Briar self-review pending)
+**Last updated:** 2026-05-23 (PR 3 Eric step-number collision fix complete; Eric re-review pending)
 
 ---
 

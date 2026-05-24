@@ -173,6 +173,8 @@ The default path. Read the diff, read the changed files at HEAD, review.
    - If **ANY** file falls outside these patterns → **full** review path (conservative default)
    - Store the classification as `<review-path>` (`lightweight` or `full`)
 
+   **Lightweight vs full — what differs:** The lightweight path runs a **single-pass** review (Eric's own analysis, no subagent fanout). The full path spawns two parallel subagents — one for the Standards axis, one for the Spec axis — for context-isolated reviews. Subagent fanout roughly doubles per-PR API cost, so the threshold matters. Lightweight is correct when the diff is docs-only (`.md` files, README updates, copy changes, plan edits) — the subagent isolation has no axes to separate because there's no code logic to evaluate against standards in the first place. The lightweight `<review-path>` is the cheap common path for docs-only PRs; the full path is the conservative default for anything touching code.
+
 3. **No checkout.** In-branch mode reads files at the PR head via `gh pr diff` and direct reads against the PR's branch ref. The current working tree is not modified.
 
 ### Phase 2: Context gathering (two batches — B then C)
@@ -224,15 +226,44 @@ The default path. Read the diff, read the changed files at HEAD, review.
 
    c. **All source files at the PR head** — from the file list, identify every file you'll need to read for review context (new/modified source files, not deleted files or config-only changes like `.claude/` files). Read them ALL in this batch using `git show origin/<branch>:<path>` so the read reflects the PR head, not the current working tree. Do not spread source file reads across multiple rounds — that is the single biggest time waste in this workflow.
 
+   **Why pre-fetch every source file in Eric's main thread:** When the full path spawns subagents (Phase 3 below), the source-file content is passed *into each subagent's prompt* rather than re-fetched inside the subagent. Two reasons: (1) Each subagent re-reading the same files duplicates the read cost — pre-fetching once lets both subagents work from identical source material. (2) Subagents may have inconsistent filesystem access; passing content into the prompt removes any race condition between the two subagent contexts trying to read the same path. Batch C is the canonical pre-fetch.
+
    **Why no formatting checks in in-branch mode:** Formatters and linters need files on disk and per-package plugin resolution. In-branch mode reads from refs, not disk. Formatting/linting checks are deferred to CI on the PR — Eric flags only formatting issues visible in the diff itself (e.g. trailing whitespace, obvious style drift). For full formatter/linter runs against the PR's branch, the user opts into worktree mode.
 
-### Phase 3: Review (sequential — requires batch C results)
+### Phase 3: Review — the two-axis split
 
-6. If the diff or source files from batch C reveal additional files needed for context (e.g., a shared utility imported by a changed file), read those now via `git show origin/<branch>:<path>`. This should be rare — batch C should have covered the primary files. Do not re-read files already loaded.
+The full path performs **two parallel reviews along independent axes** — Standards and Spec — and explicitly refuses to merge findings across them. The lightweight path skips the subagent fanout and does a single-pass Eric review.
+
+6. **If `<review-path>` is `lightweight`:** Eric performs the review himself in a single pass, applying the Standards-axis checks below. The Spec axis is skipped silently — docs-only PRs typically have no AC/plan/architect-context to test against. Findings go in the summary comment under `### Standards findings` and `### Cross-cutting observations` (if any). Skip ahead to Phase 4.
+
+7. **If `<review-path>` is `full`:** Spawn two parallel subagents with context-isolated inputs. The isolation is the mechanism that enforces non-merging — each subagent sees only its own context, so their findings can't influence each other.
+
+   - **Standards subagent** receives:
+     - The full diff (from batch C)
+     - The pre-fetched source files (from batch C, passed inline in the prompt)
+     - The Standards-axis checks (see § Standards axis below)
+     - Standards-source files matched via manifest (`.prism/rules/code-standards.md`, `.prism/rules/code-comments.md`, `.prism/rules/accessibility.md`, language/framework-specific rules)
+     - **No access to** plan, AC, or architect context — Standards is about how the code is written, not what it's supposed to do.
+
+   - **Spec subagent** receives:
+     - The full diff (from batch C)
+     - The pre-fetched source files (from batch C, passed inline in the prompt)
+     - The Spec-axis checks (see § Spec axis below)
+     - The branch plan content (or the "no plan found" sentinel — see § Missing spec handling)
+     - The plan's `## Acceptance Criteria` section (if present)
+     - The plan's `## Decisions` section (intentional constraints — do not flag these as bugs)
+     - The architect context docs matched via manifest
+     - **No access to** the standards files — Spec is about whether the code does what the ticket says, not about how it's styled.
+
+   Spawn both subagents in **one parallel batch** so they run concurrently. Wait for both responses before assembling the summary.
+
+8. **Assemble the 3-section output without merging.** Eric's main thread receives both subagent reports verbatim and presents them under separate headings (`### Standards findings`, `### Spec findings`) in the summary comment. Findings from one axis NEVER move into the other section, even when they look related — the axes describe different review dimensions, and merging would defeat the context-isolation guarantee. Cross-cutting observations (test coverage gaps, doc-class triage results, observations that emerged from one axis but apply across both) land under `### Cross-cutting observations` — explicitly labeled as cross-cutting so the reader knows they bridge the two.
+
+9. If either subagent or Eric's main thread discovers additional files needed for context (e.g., a shared utility imported by a changed file), read those now via `git show origin/<branch>:<path>`. This should be rare — batch C should have covered the primary files. Do not re-read files already loaded.
 
 ### Phase 4: GitHub writes (one batch — all writes together)
 
-7. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
+10. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
 
    - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else):
      ```bash
@@ -274,7 +305,7 @@ The default path. Read the diff, read the changed files at HEAD, review.
 
 ### Phase 5: Plan update
 
-8. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
+11. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
 
    If the user wants the plan updated as part of the review, that's the trigger to opt into worktree mode — call out the missing plan update in the summary comment and offer to re-run in worktree mode.
 
@@ -313,23 +344,32 @@ If either reports violations, include them in the review:
 Leave the fix to the author — it's their branch.
 ## What to look for
 
-- Logic errors or edge cases
-- Type safety issues (unsafe casts, escape-hatch types)
-- Server/client boundary violations
-- Abstraction level — flag both directions: missed abstractions AND premature abstractions (generic params, wrappers, helpers with only 1 consumer). For duplication: flag identical data/logic over shared state (same constants, same business logic reading the same storage) at **2 sites**; flag similar code patterns at **3+ sites**. Dead code, stray debug output
-- Performance — unnecessary recomputation, memoization gaps, N+1 patterns
-- Comment standards — JSDoc on declarations, no ALL CAPS, no tags/prefixes, Delete Test applied (see `code-comments` rule)
-- Visual-regression / component-explorer coverage exists for touched UI (see `code-standards` rule)
-- Plan intentional decisions — do not flag these
+The review splits along two axes that are reviewed independently and never merged. The Standards axis checks how the code is written against the team's intentional engineering standards. The Spec axis checks whether the code does what the ticket says, against the branch plan and architect context. Each axis has its own subagent in the full path; both run in parallel from context-isolated inputs.
 
 <!-- atlas:workflow-example -->
-Stack-specific review checks (e.g. block-system entries, PHP type hints, CMS hook signatures, framework-specific anti-patterns) are populated during Phase 2 onboarding from the team's actual codebase patterns.
+Stack-specific review checks (e.g. block-system entries, PHP type hints, CMS hook signatures, framework-specific anti-patterns) are populated during Phase 2 onboarding from the team's actual codebase patterns. These are Standards-axis checks.
 <!-- atlas:end -->
 
-### Accessibility Review
+### Standards axis — what to check
+
+How the code is written, against the team's intentional engineering standards. Source files for this axis: `.prism/rules/code-standards.md`, `.prism/rules/code-comments.md`, `.prism/rules/accessibility.md`, and any language- or framework-specific rules generated for the team during onboarding.
+
+- **Logic errors and edge cases** — the code's correctness against its own claimed behavior. Stack traces, null safety, off-by-one, missing branches.
+- **Type safety** — unsafe casts, escape-hatch types (`any`, `unknown` without narrowing), missing types where the language requires them.
+- **Server/client boundary violations** — DOM access in server-only code, serialization errors at the boundary.
+- **Abstraction level** — flag both directions: missed abstractions AND premature abstractions (generic params, wrappers, helpers with only 1 consumer). For duplication: flag identical data/logic over shared state (same constants, same business logic reading the same storage) at **2 sites**; flag similar code patterns at **3+ sites**.
+- **Dead code, stray debug output, debug artifacts.**
+- **Performance** — unnecessary recomputation, memoization gaps, N+1 patterns.
+- **Comment standards** — JSDoc on declarations, no ALL CAPS, no tags/prefixes, Delete Test applied. See `code-comments` rule.
+- **Visual-regression / component-explorer coverage** exists for touched UI. See `code-standards` rule.
+
+The following sub-procedures are Standards-axis checks too — they live as their own sub-headings because each carries enough detail to need its own framing.
+
+#### Accessibility Review (Standards axis)
+
 For every UI change, check: semantic HTML, keyboard accessibility, focus management, ARIA attributes, color contrast, and `prefers-reduced-motion` support.
 
-### Justification Review
+#### Justification Review (Standards axis)
 
 After the correctness sweep, step back and evaluate whether each structural change in the diff earns its complexity:
 
@@ -344,7 +384,7 @@ This does not apply to the existence of new files (components, tests, constants)
 
 When the justification questions land ambiguously — "maybe one consumer is enough" or "this could be useful later" — run the deletion test: imagine deleting the abstraction. If complexity vanishes, it was a pass-through; flag it as premature. If complexity reappears across multiple call sites, it was earning its keep; let it stand. The test is a tiebreaker for ambiguous cases, not a routine checklist item.
 
-### Doc-Class Triage
+#### Doc-Class Triage (Standards axis)
 
 When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
 
@@ -354,25 +394,64 @@ When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/*
 
 The doc routes into agent context via `manifest.json`, so a confident-sounding drift misleads every future agent that loads it — wider blast radius than a typical correctness issue.
 
-## Test Coverage
+#### Test Coverage (Standards axis)
 
 Flag missing tests, suggest specific cases, flag missing a11y assertions. Goal: 100% on new code.
 
+### Spec axis — what to check
+
+Whether the code does what the ticket says, against the branch plan and architect context. Source files for this axis: the branch plan (`## Decisions`, `## Acceptance Criteria`, `## Implementation Tasks`), the architect context docs matched via manifest, and the ticket description if available.
+
+- **AC conformance** — every behavioral AC in the plan has corresponding code that delivers it. Missing AC coverage → Major. Code that delivers something the AC doesn't require → scope creep, flag as Minor or surface in Cross-cutting.
+- **`## Decisions` respect** — every Decision in the plan is intentional and load-bearing. Code that contradicts a Decision is a regression, not a clever shortcut — flag as Major and cite the Decision being undone. **Do not flag the Decision itself** as a problem; that's Winston's lane.
+- **Scope creep** — implementation that extends past the plan's `## Implementation Tasks` without a corresponding Decision entry or AC item. Compare the diff against what the plan says was supposed to ship. Diffs that touch files not named in any implementation task are the canonical signal.
+- **Architect context constraints** — the architect docs loaded via manifest describe patterns and conventions this PR must compose with. Code that breaks a documented pattern without a Decision entry explaining the deviation gets flagged. The Decision-entry-with-reason path is the legitimate override — silent deviation is what gets flagged.
+
+The Spec subagent does **not** evaluate the rules themselves (that's Standards). It evaluates the diff's alignment with the ticket contract.
+
+### Missing spec handling
+
+Many PRISM PRs lack one or more of: branch plan, AC, architect context. The Spec subagent handles each state distinctly — and surfaces the skip loudly so a reviewer doesn't mistake "Spec axis skipped" for "Spec axis clean."
+
+| State | What's present | Spec subagent behavior |
+| --- | --- | --- |
+| **Full spec** | Plan + AC + architect context for the touched paths | Run normally. Flag AC misses, Decision violations, scope creep, architect-context deviations. |
+| **Partial spec** | Some of plan / AC / architect docs, not all | Run the checks that have inputs. Loudly note in the report which check was skipped and why (e.g. "AC conformance check skipped — no `## Acceptance Criteria` section in plan."). |
+| **No spec** | No plan, no AC, no architect docs for the touched paths | Skip the Spec axis entirely. Report `"Spec axis skipped — no spec available (no plan / AC / architect context for the touched paths)."` Apply the `confidence:standards-only` label instead of `confidence:high` or `confidence:needs-judgment` — see § PR Label below. |
+
+The skip must be **loud** in the summary comment, not silent. A reader scanning the PR for the Spec axis must see explicit "skipped" text. Silent skipping looks like "Eric reviewed and found nothing on the Spec side," which is wrong by omission — Eric didn't review the Spec side at all.
+
 ## Summary format
 
+The summary comment carries the two-axis structure explicitly. Findings under `### Standards findings` and `### Spec findings` stay in their axes — they never get re-ranked or merged across axes (the context-isolation guarantee from Phase 3 carries through to the output). Cross-axis observations get their own section to keep them visible without contaminating either axis.
+
 ### Summary
+
 One paragraph: what this branch does and readiness.
 
-### Issues
-**Critical**, **Major**, **Minor** — file + line, problem, suggested fix.
+### Standards findings
 
-### Accessibility Issues
-A11y problems. Omit if no UI changes.
+**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding includes the Standards-rule or code-standards concern it violates (e.g. "`code-standards.md` § Refactor scope", "`code-comments` § JSDoc on declarations").
 
-### Test Coverage Gaps
-Missing tests with suggestions.
+### Spec findings
+
+**Critical**, **Major**, **Minor** within the Spec axis — file + line, problem, suggested fix. Each finding cites the spec element it's testing against (e.g. "AC item 3: Given X, When Y, Then Z — implementation does W instead", "`## Decisions` entry [N]: <decision title> — diff at `<file>:<line>` undoes this decision").
+
+When the Spec axis is skipped (no plan / AC / architect context — see § Missing spec handling), this section contains the explicit skip line: `Spec axis skipped — no spec available (no plan / AC / architect context for the touched paths).` The confidence label flips to `confidence:standards-only` in this case.
+
+### Cross-cutting observations
+
+Findings that span axes or surface things worth calling out separately:
+
+- Test coverage gaps (often emerge from Standards-axis logic checks but apply across the change set)
+- Doc-class triage results (Standards-axis source-verification flags that the author may want to address as docs even if the diff isn't `.prism/architect/**`)
+- Security concerns, shared-code blast radius observations, new-pattern callouts
+- A11y observations that don't fit cleanly into a single line of code
+
+Cross-cutting findings carry no severity tag of their own — if they're severe enough to gate the merge, they belong in the appropriate axis (Standards or Spec) with a Critical/Major. This section is for observations the author should know about that don't fit the gate-the-merge framing.
 
 ### PR Readiness
+
 - [ ] No critical or major issues found
 - [ ] Type-checks clean — no unsafe casts or escape-hatch types
 - [ ] No stray debug output or artifacts
@@ -409,15 +488,19 @@ gh label create "<label-name>" --description "<description>" --color "<hex>" 2>/
 |---|---|---|
 | `confidence:high` | `0E8A16` | Eric found zero issues, or all issues are minor and clearly actionable. No ambiguity in requirements, no UX judgment calls, no untestable behavior. |
 | `confidence:needs-judgment` | `E4E669` | Eric couldn't make the call — UX tradeoffs, business logic correctness, ambiguous requirements, or behavior Eric couldn't verify (no tests, visual changes). |
+| `confidence:standards-only` | `BFD4F2` | The Spec axis was skipped (no plan / AC / architect context for the touched paths). Standards axis cleared with zero issues, but the Spec-axis check did not run. This is a transparency label, not a blocking finding — a Spec-axis skip is expected for PRs that don't have a corresponding ticket-spec contract. Human reviewer decides whether the missing spec matters for this change. |
 | `review:has-minors` | `FBCA04` | Minor issues remain that the developer has not yet addressed (fixed or acknowledged). Replaces the confidence label — the reviewer needs to check whether the minors matter. |
 
 ### Decision gate — three states
 
 Eric evaluates the PR and lands in exactly one of three states:
 
-1. **Critical or major issues exist** — skip labels entirely. The absence of labels signals "not ready — dev needs to fix first."
+1. **Critical or major issues exist** (in either axis) — skip labels entirely. The absence of labels signals "not ready — dev needs to fix first."
 2. **Unaddressed minors remain** — apply **effort + `review:has-minors`**. The `review:has-minors` label takes the confidence slot — minors need human eyes.
-3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**. Pick `confidence:high` or `confidence:needs-judgment` based on the criteria above.
+3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**. Pick the confidence label by axis state:
+   - `confidence:high` — both axes ran and both came back clean.
+   - `confidence:needs-judgment` — both axes ran but a judgment call remains (UX tradeoff, untestable behavior, ambiguous requirement).
+   - `confidence:standards-only` — Spec axis was skipped (no plan / AC / architect context); Standards axis cleared. Treated as state #3 for ready-flip purposes — a Spec-axis skip is a transparency label, not a blocking finding.
 
 Every PR that receives labels gets exactly two. Never one, never three.
 
@@ -446,7 +529,13 @@ If critical or major issues came up, the PR isn't ready for labels yet. Say: "I'
 
 If only minor issues remain and the dev hasn't addressed them yet, apply effort + `review:has-minors`. Say: "I've flagged a few minor items on PR #<pr-number>. Take a look and either fix them or reply on the threads if you're good with them — once they're all addressed, run me again and I'll mark it ready for human review. Labels: `effort:quick`, `review:has-minors`."
 
-If everything looks good — zero issues, or all minors have been addressed — apply effort + confidence. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`." That's the end of Eric's job. Approval is a human responsibility — Eric flags, labels, and gets out of the way.
+If everything looks good — zero issues, or all minors have been addressed — apply effort + confidence. Pick the confidence label by axis state:
+
+- Both axes ran clean → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
+- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`."
+- Spec axis was skipped (no plan / AC / architect context for the touched paths) and Standards axis cleared → `confidence:standards-only`. Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
+
+That's the end of Eric's job. Approval is a human responsibility — Eric flags, labels, and gets out of the way.
 
 ---
 
@@ -459,7 +548,7 @@ The `resolveReviewThread` mutation can fail if the thread ID is stale or the tok
 - Do not retry. Leave the thread open, and note in the summary that auto-resolve failed for that thread — the author can resolve it manually.
 
 ### Inline comment rejected with 422
-Means the target line is outside the diff hunk. Already handled in step 12 — move the observation to the summary comment. Do not retry with a different line number.
+Means the target line is outside the diff hunk. Already handled in step 10 — move the observation to the summary comment. Do not retry with a different line number.
 
 ### Prettier/ESLint "Cannot find package" error
 Prettier plugins are installed per-package, not at the monorepo root. Always run from the package context: `pnpm -r --filter <package-name> exec npx prettier --check <files>`, or `cd` into the package directory. See **Formatting Check** for exact commands. (Worktree mode only — in-branch mode does not run formatters.)
