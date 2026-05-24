@@ -4,6 +4,10 @@ Shared reference for the authoring personas that own their own PR creation: **Cl
 
 The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../../AGENTS.md) and the Round 10 framework ("Prefer Action, Guard Against Destruction") in [.prism/plans/4.7-skill-audit-strategy.md](../plans/4.7-skill-audit-strategy.md). Pushing a completed branch is reversible, predictable, and in-lane, so it's action rather than question. No prompt before pushing.
 
+## Per-push invariant
+
+This flow runs on every `git push`, not once per session. Fix-up commits after Briar-flagged issues, sync regenerations, `lessons.md` appends, and any follow-up commit on the branch all re-enter the flow from step 1 — each commit is a separate diff worth reviewing. If you've already pushed once on this branch, do not treat steps 1–6 as past tense on the next commit.
+
 ## Per-persona defaults
 
 Each authoring persona inherits the same mechanical flow and the same two-path closing structure, but brings its own verification scope, commit subject template, and opening line.
@@ -38,9 +42,7 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 
      Persist with `git config --global prism.pauseBeforeCommit <true|false>`.
 
-   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning.
-
-   The step fires on every commit, including re-commits after Briar-flagged fixes — each commit is a separate diff worth reviewing.
+   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning. The pause fires on every commit per the per-push invariant above.
 
 3. Stage and commit per `.prism/rules/git-conventions.md` — HEREDOC format, subject from the template above, body explains the why (not the what — the diff shows that).
 4. Check whether a PR already exists for this branch:

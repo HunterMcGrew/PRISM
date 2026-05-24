@@ -48,6 +48,7 @@ When updating an existing PR description:
 - Alternatively, write the body to a temporary file and use `gh pr edit --body-file /tmp/pr-body.md` — this also prevents bash from escaping backticks and breaking markdown formatting
 - Preserve any existing screenshot section (`## Screenshots`, `## Before/After`, or similar) — do not delete or overwrite screenshots that were previously added
 - Do not delete the base template footer (`## Ticket`, `## Type of Change`, and the pre-submit checklist)
+- Escape bare `#N` references when they aren't real PR/issue links. GitHub autolinks `#N` in PR bodies to PR/issue N in this repo. When referencing internal items — plan step numbers, comment numbers, list positions — wrap them in backticks: write `` `#3` ``, not `#3`. The same rule applies to commit message bodies — see `git-conventions.md` § Body
 
 ## Keeping the PR in sync with scope
 

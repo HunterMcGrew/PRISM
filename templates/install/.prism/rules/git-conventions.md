@@ -25,6 +25,8 @@ Use the body when:
 - Multiple files changed for a non-obvious reason
 - A decision was made that someone reading `git log` would question
 
+When writing a body, escape bare `#N` references (plan step numbers, list positions) by wrapping them in backticks: write `` `#3` ``, not `#3`. GitHub autolinks `#N` in commit message displays to PR/issue N. Leave unescaped only when it's a genuine PR or issue reference. Same rule for PR bodies — see `.prism/rules/pr-description.md` § Writing mechanics.
+
 ### Formatting
 
 Always pass the commit message via HEREDOC to preserve formatting:
@@ -43,7 +45,7 @@ EOF
 ### Not allowed
 
 - `WIP` or `wip` commits — commit when the unit of work is complete
-- `fixup!` or `squash!` prefixes — we squash-merge PRs; intermediate commit structure doesn't matter
+- `fixup!` or `squash!` prefixes — we squash-merge PRs, so the prefix is purely cosmetic. Branch-level commit structure is still read during review (see `.ai-skills/skills/prism-code-dev/shared.md` § Git for when multiple commits are right)
 - Emoji prefixes — the ticket ID and description carry the intent
 - Generic messages ("update", "changes", "fix stuff") — every commit should be traceable to a reason
 
