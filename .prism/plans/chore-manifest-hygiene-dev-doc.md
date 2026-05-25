@@ -299,7 +299,7 @@ _None yet._
 
 **Minor** — `doubleStarToken` could collide with user content
 
-- **Status:** `fixed` — Fixed in: Clove pass-2. Source line now reads `const doubleStarToken = String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0);` — plain ASCII source, runtime string is null-byte delimited. (Discovered during the fix: the original file had been written with null bytes from the very first Write call due to Edit/Write tool JSON-decoding ` ` → null. The Read tool displayed null bytes as spaces, hiding the actual content. The `String.fromCharCode(0)` form is unambiguously ASCII in source, eliminating the tool-encoding fragility.)
+- **Status:** `fixed` — Fixed in: Clove pass-2. Source line now reads `const doubleStarToken = String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0);` — plain ASCII source, runtime string is null-byte delimited. (Discovered during the fix: the original file had been written with null bytes from the very first Write call due to Edit/Write tool JSON-decoding `` → null. The Read tool displayed null bytes as spaces, hiding the actual content. The `String.fromCharCode(0)` form is unambiguously ASCII in source, eliminating the tool-encoding fragility.)
 - **File:** `scripts/ai-skills/verify-manifest-coverage.ts:104`
 - **Problem:** `const doubleStarToken = " DOUBLE_STAR ";` — if a future manifest key contains the literal string `" DOUBLE_STAR "`, the matcher would mis-tokenize. Current manifest doesn't have this; defensive concern only.
 - **Suggested fix:** Change the token to use null-byte delimiters around the `DOUBLE_STAR` literal — define it as `String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0)`, or use a unicode-escape string literal that places `\` `u0000` before and after `DOUBLE_STAR` (split-rendered to avoid corrupting this markdown file). Null bytes can't appear in normal file paths, so the token becomes unmistakable.
@@ -347,4 +347,4 @@ _None yet._
 - [ ] PR description up to date — not yet authored; Clove opens the PR after Briar pass-2 clears
 - [x] Lasting decisions promoted — Cross-Reference Map ADR ↔ dev-doc pairing category landed in `.prism/architect/documentation.md` via task 7. Other Decisions carry `→ no promotion needed` verdicts; matcher contract stays in `.prism/references/architect-context.md`. The schema-change follow-up Decision is forward-pointing (rides on the persona-splits ticket).
 
-**Last updated:** 2026-05-25 — Clove pass-3 re-applied Minor 3; ready for Briar pass 3
+**Last updated:** 2026-05-25 — Briar pass 3 clean (all 6 findings `fixed`, line-42 fix verified). Plan has a stray null byte stripped during pass-3 review (housekeeping; not a code change — Clove can include in the PR-open commit). Ready for Clove to ship.
