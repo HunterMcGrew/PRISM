@@ -39,7 +39,7 @@ const PERSONA_SCOPES: PersonaScope[] = [
 		name: "nora",
 		files: [
 			".claude/skills/prism-ticket-start/SKILL.md",
-			".prism/plans/example-plan.md",
+			".prism/plans/chore-manifest-hygiene-dev-doc.md",
 		],
 	},
 	{

@@ -268,6 +268,8 @@ Branch: `hmcgrew/chore-manifest-hygiene-dev-doc` (branched from `origin/main`).
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove tasks 1–9 complete. Wrote `verify-manifest-coverage.ts` + paired test (12 cases — matcher rules + coverage validation); swapped manifest's `**` catch-all for 7 explicit globs (syntactic variants for the four entries that already collided with `.claude/skills/**`, `.ai-skills/skills/**`, `.prism/**`, `scripts/ai-skills/**` — see Decision "Derived explicit-glob replacement set"); wired `prism:verify-manifest` into `prism:check`; wrote the dev doc per the four-beat arc plus ADR-0035 back-link plus Cross-Reference Map row. All checks pass — `prism:check` 128/128 tests, `prism:check-types` clean, diff between `/tmp/manifest-baseline.json` and `/tmp/manifest-postswap.json` shows exactly `fallthrough` (package.json) losing `skills-ecosystem.md` and every expected-positive preserved.
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Briar self-review pass 1 — 1 Major (dev doc Tier 1 list diverges from ADR-0035; writing-voice is Tier 2 via `paths:` frontmatter) + 4 Minors (doubleStarToken token-collision risk, fictional plan path in scope, non-standard `**.md`/`**.ts` shorthand, missing test for `**/` in middle). Hand back to Clove.
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove pass-2 fixes for all 5 Briar findings. Dev doc Tier 1 list now matches ADR-0035 exactly (7 rules, no writing-voice); `doubleStarToken` rewritten as `String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0)` (clean ASCII source, same null-delimited runtime — also surfaced a previously-hidden truth that the file had null bytes from initial Write, masked by Read-tool display); Nora's scope points at a real plan file; the two non-standard manifest globs split into standard root+nested pairs; matcher test added for `**/` in middle. `prism:check` 129/129 (one new test); coverage diff stays clean — fallthrough still empty, expected positives preserved.
+- 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Briar self-review pass 2 caught one regression — pass-1 Minor 3 (Nora's fictional plan path) silently reverted during the sed-rescue mid-pass-2. The Edit landed earlier but `git checkout HEAD --` rolled it back, and the follow-up Python replacement only re-touched lines 99-100. Reopening Minor 3, hand back to Clove.
+- 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove pass-3 re-applied the line-42 Edit as a standalone fix-up — `.prism/plans/example-plan.md` → `.prism/plans/chore-manifest-hygiene-dev-doc.md`. `pnpm prism:verify-manifest` confirms Nora's loaded-doc set unchanged from the pass-2 baseline (install-layout.md, skills-ecosystem.md, spec-editing.md). `pnpm prism:check` still 129/129; ready for Briar pass 3.
 
 ---
 
@@ -278,6 +280,12 @@ _None yet._
 ---
 
 ## Review Issues
+
+### Briar — 2026-05-25 — self-review pass 2
+
+**Minor** — Pass-1 Minor 3 regressed during sed-rescue
+
+- **Status:** `fixed` — Fixed in: Clove pass-3 (commit to follow this plan update). The line-42 Edit was re-applied as a standalone fix-up commit. `pnpm prism:verify-manifest` confirms Nora's loaded-doc set is identical to pre-fix state; `pnpm prism:check` still 129/129. The pass-1 Minor 3 entry's Status has also been updated to `fixed` with the same Fixed-in note.
 
 ### Briar — 2026-05-25 — self-review pass 1
 
@@ -298,7 +306,7 @@ _None yet._
 
 **Minor** — Fictional file path in `PERSONA_SCOPES`
 
-- **Status:** `fixed` — Fixed in: Clove pass-2. Replaced `.prism/plans/example-plan.md` with `.prism/plans/chore-manifest-hygiene-dev-doc.md` in Nora's scope — a real plan path that exists on disk.
+- **Status:** `fixed` — Fixed in: Clove pass-3 (commit to follow this plan update). Re-applied the Edit on line 42; the path now reads `.prism/plans/chore-manifest-hygiene-dev-doc.md`. `pnpm prism:verify-manifest` confirms Nora's loaded-doc set is unchanged (`install-layout.md`, `skills-ecosystem.md`, `spec-editing.md` — identical to pre-fix). `pnpm prism:check` still 129/129.
 - **File:** `scripts/ai-skills/verify-manifest-coverage.ts:39`
 - **Problem:** Nora's scope includes `.prism/plans/example-plan.md`, which doesn't exist on disk. The matcher works against pattern strings regardless of file existence, so the verification logic is sound — but a reader landing on the file cold might wonder why the path is named.
 - **Suggested fix:** Use a real existing plan path (e.g. `.prism/plans/chore-manifest-hygiene-dev-doc.md`) OR add a one-line inline comment explaining the path is illustrative for matcher testing.
@@ -330,7 +338,7 @@ _None yet._
 
 ## PR Readiness
 
-- [x] No critical or major issues — Briar pass-1 Major and 4 Minors all `fixed` in Clove pass-2 (see `## Review Issues`)
+- [x] No critical or major issues — Briar pass-2 caught a Minor 3 regression which Clove re-applied in pass-3 (see `## Review Issues`). All findings `fixed`.
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — 13 cases now (12 from initial pass + 1 from Clove pass-2 covering `**/` in middle of pattern)
@@ -339,4 +347,4 @@ _None yet._
 - [ ] PR description up to date — not yet authored; Clove opens the PR after Briar pass-2 clears
 - [x] Lasting decisions promoted — Cross-Reference Map ADR ↔ dev-doc pairing category landed in `.prism/architect/documentation.md` via task 7. Other Decisions carry `→ no promotion needed` verdicts; matcher contract stays in `.prism/references/architect-context.md`. The schema-change follow-up Decision is forward-pointing (rides on the persona-splits ticket).
 
-**Last updated:** 2026-05-25 — Clove pass-2 fixes complete; ready for Briar pass 2
+**Last updated:** 2026-05-25 — Clove pass-3 re-applied Minor 3; ready for Briar pass 3
