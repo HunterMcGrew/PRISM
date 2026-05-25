@@ -196,6 +196,32 @@ Branch: `hmcgrew/chore-manifest-hygiene-dev-doc` (branched from `origin/main`).
   - **Implementation guidance:** task 1 is now a confirmation-only task — no code change needed. Task 3 framing updates to "implements the architect-context.md matcher contract".
   - → no promotion needed (contract already lives in architect-context.md as the source of truth)
 
+- **Derived explicit-glob replacement set (Clove task 2, 2026-05-25).**
+  - **Structural constraint discovered during implementation:** JSON keys must be unique. Four of the initially-proposed globs (`.claude/skills/**`, `.ai-skills/skills/**`, `.prism/**`, `scripts/ai-skills/**`) already exist in the manifest mapped to other architect docs (`spec-editing.md`, `install-layout.md`). Adding them again would either be a duplicate key (silently deduped) or require a manifest-schema change to support array values (out of scope for this PR). Resolution: use syntactically different but semantically equivalent glob expressions for the colliding categories. This is a workaround, not architecturally pure — see the next Decision-class follow-up call.
+  - **Final glob set (7 entries replacing the single `**` catch-all):**
+    - `AGENTS.md` — top-level routing doc; exact path, no collision
+    - `.claude/skills/**/SKILL.md` — Claude skill startup (narrowed from `.claude/skills/**` to avoid the existing `spec-editing.md` collision)
+    - `.codex/agents/**` — Codex agent adapter files (TOML); no collision
+    - `.cursor/skills/**` — Cursor skill startup; no collision
+    - `.ai-skills/skills/**/shared.md` — canonical skill sources (narrowed from `.ai-skills/skills/**` to avoid the existing `spec-editing.md` collision)
+    - `.prism/**.md` — markdown files in `.prism/` (narrowed from `.prism/**` to avoid the existing `install-layout.md` collision; matches plans, architect docs, rules, ADRs, references, lessons, SPEC.md, audit reports)
+    - `scripts/ai-skills/**.ts` — TypeScript tooling (narrowed from `scripts/ai-skills/**` to avoid the existing `spec-editing.md` collision)
+  - **Rationale:** the catch-all `**` matched every file in the working tree, including consumer-app files in a PRISM install. The replacement set covers PRISM-internal markdown/skill/code paths and excludes consumer-app paths. Architectural clarity gain: an edit to `package.json`, `README.md`, `.gitignore`, or other root files does NOT trigger `skills-ecosystem.md` loading — those edits don't need the persona roster.
+  - **Known coverage gaps from the narrowed globs (acceptable for this PR):**
+    - Non-markdown, non-JSON files in `.prism/` (none exist today; future binary assets wouldn't load the roster)
+    - Non-SKILL.md files under `.claude/skills/<id>/` or `.cursor/skills/<id>/` (assets, references — they don't drive persona-roster needs)
+    - Non-`shared.md` files under `.ai-skills/skills/<id>/` (frontmatter.yml, claude.md, codex.md — edits to these are platform-specific tweaks that don't need the full roster at the same fidelity as a `shared.md` rewrite)
+    - Non-`.ts` files under `scripts/ai-skills/` (only `tsconfig.json` exists today; doesn't need the roster)
+  - **"Sage control" adjustment from the plan:** the original task 3 framing suggested sage might lose `skills-ecosystem.md` to prove the swap is doing real work. With `.claude/skills/**/SKILL.md` in the glob set, sage's startup file (`.claude/skills/prism-changelog/SKILL.md`) still matches, so sage continues to load it. The actual architectural-clarity control is the `fallthrough` persona's file scope (`package.json`) — it matches none of the explicit globs and loses `skills-ecosystem.md` post-swap, proving the swap removed real catch-all coverage outside PRISM-internal paths. Sage is reclassified as an expected-positive in the verification script.
+  - → no promotion needed (the manifest file IS the durable record; the rationale lives here in the plan and ships with the merge)
+
+- **Follow-up: manifest schema change for multi-value routing (out of scope for this PR; deferred to the persona-splits follow-up ticket).**
+  - **Root cause:** during this implementation, JSON's unique-key constraint forced collision-avoiding glob variants for 4 of the 7 explicit-route categories. The cleaner architectural answer would be a manifest-schema change to allow array values (e.g. `{".claude/skills/**": ["spec-editing.md", "skills-ecosystem.md"]}`), which would let any number of architect docs route to the same path pattern under a single semantic key. That's a schema change that affects every manifest consumer (the LLM at runtime, the verification script, any future tooling) and isn't scoped to this PR.
+  - **Alternatives considered:** (a) Use array-value schema now and bundle into this PR; (b) Use syntactic workaround (chosen — current PR); (c) Defer the whole manifest cleanup until after the schema change.
+  - **Chosen approach:** (b) for this PR. The persona-splits follow-up ticket (mentioned in plan Decision 4) is the natural carrier for the schema change because it'll be touching manifest routing for lazy-load behavior anyway. Cross-link from the persona-splits ticket when it opens.
+  - **Implementation guidance:** none for this PR. The follow-up ticket inherits this Decision as the carrier rationale.
+  - → no promotion needed (forward-looking note; lives on the next ticket)
+
 - **Cross-Reference Map adds a third pairing category: `.prism/spec/adrs/` ↔ `docs/content/dev/architecture/`.**
   - **Root cause:** `.prism/architect/documentation.md` § Cross-Reference Map currently shows two sample categories — `.prism/rules/` ↔ `docs/content/dev/standards/` and `.prism/architect/` ↔ `docs/content/dev/architecture/`. ADR-0035 is in `.prism/spec/adrs/`, not the existing categories. Eli's task 9 pairs an ADR with a dev doc — establishing a third category.
   - **Alternatives considered:** (a) Put the back-link only in the ADR itself, skip the Cross-Reference Map row; (b) Add a row to documentation.md establishing the new category.
@@ -239,6 +265,7 @@ Branch: `hmcgrew/chore-manifest-hygiene-dev-doc` (branched from `origin/main`).
 
 - 2026-05-24 [hmcgrew/chore-manifest-hygiene-dev-doc]: Plan created — manifest catch-all replaced with explicit globs preserving `skills-ecosystem.md` coverage, verification script wired into `pnpm prism:check`, paired dev doc for ADR-0035 written. Carries forward the salvageable portion of abandoned PR #4 (`hmcgrew/context-optimization-thrive-learnings`); persona-splits work deferred to a follow-up ticket that opens after this merges.
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Winston re-evaluated the plan after branch creation; verified `scripts/ai-skills/build.ts` has no `manifest.json` consumer (the matcher contract lives in `.prism/references/architect-context.md`), resolving the OPEN Decision into a normal Decision. Tightened tasks 1, 3, 4, 6, 7, 9 to the detail bar — exact `package.json` edit, exact Cross-Reference Map row, corrected ADR-0035 § References section name, added paired `verify-manifest-coverage.test.ts`. Added task 11 (post-merge close PR #4) to surface a previously silent action from Decision 5.
+- 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove tasks 1–9 complete. Wrote `verify-manifest-coverage.ts` + paired test (12 cases — matcher rules + coverage validation); swapped manifest's `**` catch-all for 7 explicit globs (syntactic variants for the four entries that already collided with `.claude/skills/**`, `.ai-skills/skills/**`, `.prism/**`, `scripts/ai-skills/**` — see Decision "Derived explicit-glob replacement set"); wired `prism:verify-manifest` into `prism:check`; wrote the dev doc per the four-beat arc plus ADR-0035 back-link plus Cross-Reference Map row. All checks pass — `prism:check` 128/128 tests, `prism:check-types` clean, diff between `/tmp/manifest-baseline.json` and `/tmp/manifest-postswap.json` shows exactly `fallthrough` (package.json) losing `skills-ecosystem.md` and every expected-positive preserved.
 
 ---
 
@@ -262,13 +289,13 @@ _None yet._
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (`verify-manifest-coverage.test.ts` covers the matcher rules)
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — `pnpm prism:check` end-to-end with new `verify-manifest` step
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted — N/A. Winston re-eval ruled out a separate `.prism/architect/manifest-routing.md`: the matcher contract lives in `.prism/references/architect-context.md`, and the human-readable narrative is Eli's task-9 dev doc. The Cross-Reference Map pairing-category addition (task 7) IS the architect-doc promotion for the ADR ↔ dev-doc convention this PR establishes.
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` clean)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`verify-manifest-coverage.test.ts` — 12 cases covering exact, prefix, glob matcher rules; multi-route collection; dedup; multi-file scope; no-match empty; findMissingCoverage positive and negative cases)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:check` 128/128 tests with new `verify-manifest` step in the chain
+- [ ] PR description up to date — not yet authored; Clove opens the PR after Briar pass clears
+- [x] Lasting decisions promoted — Cross-Reference Map ADR ↔ dev-doc pairing category landed in `.prism/architect/documentation.md` via task 7. Other Decisions carry `→ no promotion needed` verdicts; matcher contract stays in `.prism/references/architect-context.md`. The schema-change follow-up Decision is forward-pointing (rides on the persona-splits ticket).
 
-**Last updated:** 2026-05-25 — Winston re-eval pass 1
+**Last updated:** 2026-05-25 — Clove implementation pass complete; ready for Briar

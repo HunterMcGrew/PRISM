@@ -34,5 +34,11 @@
 	".ai-skills/docs/**": "install-layout.md",
 	"docs/": "documentation.md",
 	"docs/content/dev/architecture/": "architecture-doc-shape.md",
-	"**": "skills-ecosystem.md"
+	"AGENTS.md": "skills-ecosystem.md",
+	".claude/skills/**/SKILL.md": "skills-ecosystem.md",
+	".codex/agents/**": "skills-ecosystem.md",
+	".cursor/skills/**": "skills-ecosystem.md",
+	".ai-skills/skills/**/shared.md": "skills-ecosystem.md",
+	".prism/**.md": "skills-ecosystem.md",
+	"scripts/ai-skills/**.ts": "skills-ecosystem.md"
 }
