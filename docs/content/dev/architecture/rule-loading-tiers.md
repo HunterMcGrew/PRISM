@@ -28,7 +28,7 @@ Loading happens at session start. The agent reads the manifest at `.prism/archit
 
 The three-tier model is what fell out of those requirements.
 
-**Tier 1 — Always loaded.** Rules that apply universally. The manifest registers them with no path filter; the loader fires them on every session. The current set includes the comment standard, the code standard, the branch-plan rule, git conventions, PR-description rules, context-reuse, follow-up scope, and writing voice. These are the load-bearing universals — the rules that govern voice, structure, and process across every piece of work.
+**Tier 1 — Always loaded.** Rules that apply universally. The manifest registers them with no path filter; the loader fires them on every session. The current set includes the comment standard, the code standard, the branch-plan rule, git conventions, PR-description rules, context-reuse, and follow-up scope. These are the load-bearing universals — the rules that govern voice, structure, and process across every piece of work.
 
 **Tier 2 — Path-scoped.** Rules that apply only when the diff touches certain paths. The manifest still registers them, but each rule carries its own `paths:` YAML frontmatter as a list of glob patterns. The loader checks the patterns against the working file set and fires only when one matches. Accessibility carries `paths: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html"]`; architect-doc verification carries `paths: [".prism/architect/**/*.md", "docs/content/dev/architecture/**/*.md"]`. The frontmatter shape follows the convention already in use by `.prism/rules/writing-voice.md` — same file format, same load mechanic.
 

@@ -33,6 +33,14 @@ test("compileMatcher: ** matches across path segments", () => {
 	assert.equal(matcher(".codex/skills/foo/SKILL.md"), false);
 });
 
+test("compileMatcher: ** in the middle of a pattern matches multi-segment", () => {
+	const matcher = compileMatcher(".claude/skills/**/SKILL.md");
+	assert.equal(matcher(".claude/skills/prism-architect/SKILL.md"), true);
+	assert.equal(matcher(".claude/skills/foo/bar/SKILL.md"), true);
+	assert.equal(matcher(".codex/skills/prism-architect/SKILL.md"), false);
+	assert.equal(matcher(".claude/skills/prism-architect/other.md"), false);
+});
+
 test("compileMatcher: * matches within a single segment", () => {
 	const matcher = compileMatcher("*.md");
 	assert.equal(matcher("foo.md"), true);

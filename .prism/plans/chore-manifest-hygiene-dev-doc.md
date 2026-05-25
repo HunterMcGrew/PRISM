@@ -266,6 +266,8 @@ Branch: `hmcgrew/chore-manifest-hygiene-dev-doc` (branched from `origin/main`).
 - 2026-05-24 [hmcgrew/chore-manifest-hygiene-dev-doc]: Plan created — manifest catch-all replaced with explicit globs preserving `skills-ecosystem.md` coverage, verification script wired into `pnpm prism:check`, paired dev doc for ADR-0035 written. Carries forward the salvageable portion of abandoned PR #4 (`hmcgrew/context-optimization-thrive-learnings`); persona-splits work deferred to a follow-up ticket that opens after this merges.
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Winston re-evaluated the plan after branch creation; verified `scripts/ai-skills/build.ts` has no `manifest.json` consumer (the matcher contract lives in `.prism/references/architect-context.md`), resolving the OPEN Decision into a normal Decision. Tightened tasks 1, 3, 4, 6, 7, 9 to the detail bar — exact `package.json` edit, exact Cross-Reference Map row, corrected ADR-0035 § References section name, added paired `verify-manifest-coverage.test.ts`. Added task 11 (post-merge close PR #4) to surface a previously silent action from Decision 5.
 - 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove tasks 1–9 complete. Wrote `verify-manifest-coverage.ts` + paired test (12 cases — matcher rules + coverage validation); swapped manifest's `**` catch-all for 7 explicit globs (syntactic variants for the four entries that already collided with `.claude/skills/**`, `.ai-skills/skills/**`, `.prism/**`, `scripts/ai-skills/**` — see Decision "Derived explicit-glob replacement set"); wired `prism:verify-manifest` into `prism:check`; wrote the dev doc per the four-beat arc plus ADR-0035 back-link plus Cross-Reference Map row. All checks pass — `prism:check` 128/128 tests, `prism:check-types` clean, diff between `/tmp/manifest-baseline.json` and `/tmp/manifest-postswap.json` shows exactly `fallthrough` (package.json) losing `skills-ecosystem.md` and every expected-positive preserved.
+- 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Briar self-review pass 1 — 1 Major (dev doc Tier 1 list diverges from ADR-0035; writing-voice is Tier 2 via `paths:` frontmatter) + 4 Minors (doubleStarToken token-collision risk, fictional plan path in scope, non-standard `**.md`/`**.ts` shorthand, missing test for `**/` in middle). Hand back to Clove.
+- 2026-05-25 [hmcgrew/chore-manifest-hygiene-dev-doc]: Clove pass-2 fixes for all 5 Briar findings. Dev doc Tier 1 list now matches ADR-0035 exactly (7 rules, no writing-voice); `doubleStarToken` rewritten as `String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0)` (clean ASCII source, same null-delimited runtime — also surfaced a previously-hidden truth that the file had null bytes from initial Write, masked by Read-tool display); Nora's scope points at a real plan file; the two non-standard manifest globs split into standard root+nested pairs; matcher test added for `**/` in middle. `prism:check` 129/129 (one new test); coverage diff stays clean — fallthrough still empty, expected positives preserved.
 
 ---
 
@@ -277,7 +279,46 @@ _None yet._
 
 ## Review Issues
 
-_None yet._
+### Briar — 2026-05-25 — self-review pass 1
+
+**Major** — Dev doc Tier 1 list diverges from ADR-0035 source
+
+- **Status:** `fixed` — Fixed in: Clove pass-2 (see History 2026-05-25 entry 4). Removed "writing voice" from the Tier 1 sentence; count drops to 7 rules matching ADR-0035 § Decision exactly.
+- **File:** `docs/content/dev/architecture/rule-loading-tiers.md:43`
+- **Problem:** The dev doc names 8 Tier 1 rules (code-comments, code-standards, branch-plan, git-conventions, pr-description, context-reuse, follow-up scope, **writing voice**). ADR-0035 § Decision lists 7 (no writing-voice). `.prism/rules/writing-voice.md` carries `paths: [".claude/**/*.md", "docs/**/*.md"]` frontmatter — per ADR-0035's classification rule ("Tier 2 — Registered in the manifest, but the rule's own `paths:` YAML frontmatter governs when the loader fires"), the presence of `paths:` makes writing-voice Tier 2, not Tier 1.
+- **Suggested fix:** Remove "writing voice" from the dev doc's Tier 1 sentence (count drops to 7, matches ADR-0035). Optionally add a one-line note that writing-voice is Tier 2 with broad markdown coverage that approaches always-loaded in practice.
+- **Note for the user:** `.ai-skills/skills/prism-code-dev/shared.md` § "Context reuse across skills" ALSO lists writing-voice in the Tier 1 universal load set. That's a pre-existing inconsistency with ADR-0035, outside this PR's local frame. Worth filing as a follow-up so shared.md and the ADR stop disagreeing (the fix is either dropping writing-voice from shared.md's list, or removing the `paths:` frontmatter from writing-voice.md — the latter requires re-evaluation of intent).
+
+**Minor** — `doubleStarToken` could collide with user content
+
+- **Status:** `fixed` — Fixed in: Clove pass-2. Source line now reads `const doubleStarToken = String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0);` — plain ASCII source, runtime string is null-byte delimited. (Discovered during the fix: the original file had been written with null bytes from the very first Write call due to Edit/Write tool JSON-decoding ` ` → null. The Read tool displayed null bytes as spaces, hiding the actual content. The `String.fromCharCode(0)` form is unambiguously ASCII in source, eliminating the tool-encoding fragility.)
+- **File:** `scripts/ai-skills/verify-manifest-coverage.ts:104`
+- **Problem:** `const doubleStarToken = " DOUBLE_STAR ";` — if a future manifest key contains the literal string `" DOUBLE_STAR "`, the matcher would mis-tokenize. Current manifest doesn't have this; defensive concern only.
+- **Suggested fix:** Change the token to use null-byte delimiters around the `DOUBLE_STAR` literal — define it as `String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0)`, or use a unicode-escape string literal that places `\` `u0000` before and after `DOUBLE_STAR` (split-rendered to avoid corrupting this markdown file). Null bytes can't appear in normal file paths, so the token becomes unmistakable.
+
+**Minor** — Fictional file path in `PERSONA_SCOPES`
+
+- **Status:** `fixed` — Fixed in: Clove pass-2. Replaced `.prism/plans/example-plan.md` with `.prism/plans/chore-manifest-hygiene-dev-doc.md` in Nora's scope — a real plan path that exists on disk.
+- **File:** `scripts/ai-skills/verify-manifest-coverage.ts:39`
+- **Problem:** Nora's scope includes `.prism/plans/example-plan.md`, which doesn't exist on disk. The matcher works against pattern strings regardless of file existence, so the verification logic is sound — but a reader landing on the file cold might wonder why the path is named.
+- **Suggested fix:** Use a real existing plan path (e.g. `.prism/plans/chore-manifest-hygiene-dev-doc.md`) OR add a one-line inline comment explaining the path is illustrative for matcher testing.
+
+**Minor** — Non-standard glob syntax in two manifest entries
+
+- **Status:** `fixed` — Fixed in: Clove pass-2. `.prism/**.md` → `.prism/*.md` + `.prism/**/*.md`. `scripts/ai-skills/**.ts` → `scripts/ai-skills/*.ts` + `scripts/ai-skills/**/*.ts`. Manifest now uses 9 explicit entries (7 unique categories, with 2 categories using two-entry pairs for root+nested coverage). `pnpm prism:build` regenerated mirrors; `pnpm prism:verify-manifest` confirms coverage preserved (expected positives still load `skills-ecosystem.md`; fallthrough still empty).
+- **File:** `.prism/architect/manifest.json` — `.prism/**.md` and `scripts/ai-skills/**.ts`
+- **Problem:** The `**.md` and `**.ts` shorthand isn't standard glob convention. Most glob libraries treat `**` as recursive across path segments; `**.md` is typically parsed as a single path segment containing `.md`, not "any path ending in `.md`". The custom matcher in `verify-manifest-coverage.ts` handles it as the latter via `.*\.md` regex. Runtime LLM consumers probably handle it via common sense, but a strict-glob library or a human reading the manifest could interpret differently. The other 5 new entries (`AGENTS.md`, `.claude/skills/**/SKILL.md`, `.codex/agents/**`, `.cursor/skills/**`, `.ai-skills/skills/**/shared.md`) use standard syntax — the two non-standard ones stand out.
+- **Suggested fix:** Replace each non-standard entry with the standard pair:
+  - `.prism/**.md` → `.prism/*.md` + `.prism/**/*.md`
+  - `scripts/ai-skills/**.ts` → `scripts/ai-skills/*.ts` + `scripts/ai-skills/**/*.ts`
+  - Then `pnpm prism:build` to regen mirrors and `pnpm prism:verify-manifest` to confirm coverage is preserved (expected positives still load `skills-ecosystem.md`).
+
+**Minor** — Matcher tests don't cover the actual manifest pattern shapes
+
+- **Status:** `fixed` — Fixed in: Clove pass-2. Added `compileMatcher: ** in the middle of a pattern matches multi-segment` test — asserts `.claude/skills/**/SKILL.md` matches `.claude/skills/prism-architect/SKILL.md` and `.claude/skills/foo/bar/SKILL.md`; rejects `.codex/skills/prism-architect/SKILL.md` (wrong prefix) and `.claude/skills/prism-architect/other.md` (wrong suffix). Test count is now 129 (was 128). The `**.md` shorthand test became redundant — Minor #4 fixed the manifest to use standard syntax, so the shorthand patterns are gone.
+- **File:** `scripts/ai-skills/verify-manifest-coverage.test.ts`
+- **Problem:** Test cases cover exact path, prefix-with-slash, `**` at end, `*` within a segment, catch-all, and regex-metachar escaping. They don't cover `**/` in the middle of a pattern (used in `.claude/skills/**/SKILL.md`, `.ai-skills/skills/**/shared.md`) or `**.md`/`**.ts` shorthand (used in two manifest entries). The matcher correctly handles both shapes (mentally traced during review — `.claude/skills/**/SKILL.md` → `\.claude/skills/.*/SKILL\.md`), but the test gap leaves them uncovered by the regression suite — a future change to the matcher could break those shapes without any test failing.
+- **Suggested fix:** Add two test cases — one for `**/` in the middle of a pattern (e.g. assert that `.claude/skills/**/SKILL.md` matches `.claude/skills/prism-architect/SKILL.md` and does NOT match `.codex/skills/prism-architect/SKILL.md`), one for `**.md` shorthand (if kept per Minor on non-standard syntax above; otherwise this test gap disappears with the fix).
 
 ---
 
@@ -289,13 +330,13 @@ _None yet._
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues — Briar pass-1 Major and 4 Minors all `fixed` in Clove pass-2 (see `## Review Issues`)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`verify-manifest-coverage.test.ts` — 12 cases covering exact, prefix, glob matcher rules; multi-route collection; dedup; multi-file scope; no-match empty; findMissingCoverage positive and negative cases)
+- [x] Tests written for new logic and edge cases — 13 cases now (12 from initial pass + 1 from Clove pass-2 covering `**/` in middle of pattern)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — `pnpm prism:check` 128/128 tests with new `verify-manifest` step in the chain
-- [ ] PR description up to date — not yet authored; Clove opens the PR after Briar pass clears
+- [x] Build passes — `pnpm prism:check` 129/129 tests with the `verify-manifest` step in the chain
+- [ ] PR description up to date — not yet authored; Clove opens the PR after Briar pass-2 clears
 - [x] Lasting decisions promoted — Cross-Reference Map ADR ↔ dev-doc pairing category landed in `.prism/architect/documentation.md` via task 7. Other Decisions carry `→ no promotion needed` verdicts; matcher contract stays in `.prism/references/architect-context.md`. The schema-change follow-up Decision is forward-pointing (rides on the persona-splits ticket).
 
-**Last updated:** 2026-05-25 — Clove implementation pass complete; ready for Briar
+**Last updated:** 2026-05-25 — Clove pass-2 fixes complete; ready for Briar pass 2

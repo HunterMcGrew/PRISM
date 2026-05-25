@@ -39,6 +39,8 @@
 	".codex/agents/**": "skills-ecosystem.md",
 	".cursor/skills/**": "skills-ecosystem.md",
 	".ai-skills/skills/**/shared.md": "skills-ecosystem.md",
-	".prism/**.md": "skills-ecosystem.md",
-	"scripts/ai-skills/**.ts": "skills-ecosystem.md"
+	".prism/*.md": "skills-ecosystem.md",
+	".prism/**/*.md": "skills-ecosystem.md",
+	"scripts/ai-skills/*.ts": "skills-ecosystem.md",
+	"scripts/ai-skills/**/*.ts": "skills-ecosystem.md"
 }
