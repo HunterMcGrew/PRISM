@@ -7,9 +7,10 @@
 	"scripts": {
 		"prism:bootstrap": "tsx scripts/ai-skills/bootstrap-from-claude.ts",
 		"prism:build": "tsx scripts/ai-skills/build.ts && pnpm run prism:test",
-		"prism:check": "tsx scripts/ai-skills/build.ts --check && pnpm run prism:test",
+		"prism:check": "tsx scripts/ai-skills/build.ts --check && pnpm run prism:test && pnpm run prism:verify-manifest",
 		"prism:check-types": "tsc --noEmit -p scripts/ai-skills/tsconfig.json",
-		"prism:test": "tsx --test scripts/ai-skills/*.test.ts"
+		"prism:test": "tsx --test scripts/ai-skills/*.test.ts",
+		"prism:verify-manifest": "tsx scripts/ai-skills/verify-manifest-coverage.ts"
 	},
 	"devDependencies": {
 		"@types/node": "^25.6.0",
