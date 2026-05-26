@@ -1,6 +1,6 @@
 # Doc-Class Triage
 
-Shared source-verification triage consumed by Briar (self-review — [prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and Eric (PR review — [prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)).
+Shared source-verification triage consumed by Briar (self-review, `prism-code-review-self`) and Eric (PR review, `prism-code-review-pr`).
 
 When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
 

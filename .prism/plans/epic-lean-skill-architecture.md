@@ -256,4 +256,16 @@ Per-slice — each slice is its own PR.
 - [x] Lasting decisions promoted (ADR-0045 + skill-authoring.md) — shipped in Slice 0
 - [x] Referenced paths resolve on the shipped `templates/install/.prism/` surface — backported; all session-close + architect trigger/link targets resolve
 
-**Last updated:** 2026-05-26 (Briar self-review + Clove fixes, PR #54)
+**Last updated:** 2026-05-26 (Briar self-review of PR #56 — Slice 3 Briar + Task group A; clean, no issues)
+
+### PR #56 (Slice 3 — prism-code-review-self + shared review refs)
+
+- [x] No critical or major issues — clean sweep
+- [x] No voice/lens/router/DoD externalized — only catalogs/procedures moved; How Briar Thinks #4/#6, Phases 1–5, Review format, Clean-Review Closing all pinned
+- [x] Every externalized section has a one-line imperative trigger naming exact file + condition — all 4 verified in generated SKILL.md
+- [x] No `atlas:*` anchor moved into a reference — anchor count 8/8 unchanged; refs contain zero anchors
+- [x] Every referenced path resolves on BOTH dogfood `.prism/` and shipped `templates/install/.prism/` — trigger targets + internal ref links (`../rules/`, `../architect/`) verified on all 5 surfaces
+- [x] Shared refs are genuine Briar∪Eric supersets — Briar's fuller wording used; deletion-test, blast-radius, all 4 compensation techniques, 400-line cliff present; no content lost
+- [x] 4 refs byte-identical across `.prism`/`.claude`/`.codex`/`.cursor`/`templates/install` — md5 match
+- [x] Build + tests pass — `pnpm prism:check`: 129/129 tests pass, no drift
+- [x] Generated SKILL.md 444→391 lines

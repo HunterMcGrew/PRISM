@@ -1,6 +1,6 @@
 # Docs Impact Check
 
-Briar-owned (self-review — [prism-code-review-self](../skills/prism-code-review-self/SKILL.md)). Lives in the shared `review-` namespace because Eric may adopt the same check later; until then only Briar triggers it.
+Briar-owned (self-review, `prism-code-review-self`). Lives in the shared `review-` namespace because Eric may adopt the same check later; until then only Briar triggers it.
 
 After completing the review analysis, check whether the diff touches areas that have corresponding documentation in `docs/`:
 

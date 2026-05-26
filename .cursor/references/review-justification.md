@@ -1,6 +1,6 @@
 # Justification Review
 
-Shared abstraction-justification procedure consumed by Briar (self-review — [prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and Eric (PR review — [prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)). The "justify every abstraction" lens stays pinned in each skill's "How X Thinks" section; this file holds the four-question procedure and the deletion-test tiebreaker.
+Shared abstraction-justification procedure consumed by Briar (self-review, `prism-code-review-self`) and Eric (PR review, `prism-code-review-pr`). The "justify every abstraction" lens stays pinned in each skill's "How X Thinks" section; this file holds the four-question procedure and the deletion-test tiebreaker.
 
 After the correctness sweep, step back and evaluate whether each structural change in the diff earns its complexity.
 

@@ -1,6 +1,6 @@
 # Review Frameworks
 
-Shared review catalog consumed by Briar (self-review — [prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and Eric (PR review — [prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)). The reasoning lenses — design-before-correctness, severity calibration, the adversarial mindset — stay pinned in each skill's "How X Thinks" section. This file holds the reference tables and procedures both reviewers apply.
+Shared review catalog consumed by Briar (self-review, `prism-code-review-self`) and Eric (PR review, `prism-code-review-pr`). The reasoning lenses — design-before-correctness, severity calibration, the adversarial mindset — stay pinned in each skill's "How X Thinks" section. This file holds the reference tables and procedures both reviewers apply.
 
 ## The Two-Pass Model
 
