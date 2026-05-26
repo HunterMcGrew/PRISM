@@ -187,6 +187,8 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Fanned out 8 subagents to plan Slice 3 (the 11 remaining skills); audited and merged into per-skill Clove-ready tasks. Verified via `anchor-substitute.ts` that atlas anchors are substituted only in skill-source files — never references — so the keep-anchors-inline rule is now fact, not assumption. Locked reference-home convention to `.prism/references/<skill>/` sub-dirs and re-homed architect's 3 pilot refs to match (build + tests green).
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Slice 0 done — wrote ADR-0045 (Skill Content Disclosure Model) and `.prism/rules/skill-authoring.md` (Tier 2, `paths:` scoped to `.ai-skills/skills/**` + `.prism/references/**`), registered in `manifest.json`. The disclosure gate, always-pin list, atlas-anchor hard rule, sub-dir reference convention, and the wrap-a-lens-in-a-step pattern are now the written standard Slices 1–4 execute against. Build + tests green.
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Slice 1 done — extracted the shared session-close boilerplate (context-reuse + lessons mechanic + promotion taxonomy) to `.prism/references/session-close.md` and pointed the 13 standard-block skills + iris at it behind a one-line trigger, keeping each skill's persona-specific lesson signals and reflex bullets inline. parker/ren/theo/atlas left untouched (no shared boilerplate); build + 129 tests + `prism:check` green, atlas anchor counts unchanged. See Decision: Session-close extraction.
+- 2026-05-26 [hmcgrew/lean-skill-architecture]: Briar self-review of PR #54 — 1 Major (new canonical refs/rules/ADR not backported to `templates/install/.prism/`, so fresh consumer installs dangle on the session-close + architect triggers; fails AC install-surface check) and 1 Minor (ADR-0045 names post-rename ID `prism-refactor-scout` pre-Slice-4). Routed to Clove. See Review Issues.
+- 2026-05-26 [hmcgrew/lean-skill-architecture]: Clove fixed both Briar findings — backported the 8 dependency-closed artifacts (session-close, architect refs, triple-gated, skill-authoring, lazy-artifacts, ADR-0045) into `templates/install/.prism/` + added the stub-manifest route; corrected ADR-0045's `prism-refactor-scout` forward-ref to `prism-ren` and rebuilt mirrors. All install targets resolve; `prism:check` + 129 tests green.
 
 ---
 
@@ -219,15 +221,38 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 
 ---
 
+## Review Issues
+
+### New canonical references/rules/ADR not shipped to the install template
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/` (consumer install seed, hand-maintained — no build step populates it)
+- **Problem:** Slice 1's `.prism/references/session-close.md`, the pilot's `.prism/references/architect/{plan-mode,replan-mode,evaluate-checks}.md`, Slice 0's `.prism/rules/skill-authoring.md`, and ADR-0045 exist in canonical (and mirror to `.claude/.codex/.cursor`) but are absent from `templates/install/.prism/`. A fresh consumer install seeds `.prism/` from that surface, so the 14 skills' session-close trigger (and Winston's externalized-mode triggers) would point at files not on the consumer's disk — the agent wings the procedure from training. Fails the non-behavioral AC "every referenced file path resolves … against the shipped `templates/install/.prism/` surface, not just the dogfood repo."
+- **Suggested fix:** Backport the new canonical artifacts into `templates/install/.prism/` (byte-identical copies), then re-verify each trigger target resolves under `templates/install/`.
+- **Fixed in:** backported `references/session-close.md`, `references/architect/{plan-mode,replan-mode,evaluate-checks}.md`, `references/triple-gated-adr-criterion.md`, `rules/skill-authoring.md`, `rules/lazy-artifacts.md`, `spec/adrs/0045-…md` byte-identically; added `.prism/rules/skill-authoring.md` → `spec-editing.md` to `manifest.stub.json`. `triple-gated-adr-criterion.md` and `lazy-artifacts.md` were pulled in as link dependencies of shipped files (plan-mode and skill-authoring), so the shipped files are self-consistent; any other pre-existing install lag (e.g. rule→skill nav links) stays a separate backport chore. All install-side targets resolve; `prism:check` + 129 tests green.
+
+### ADR-0045 names a post-rename skill ID before the rename ships
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/0045-skill-content-disclosure-model.md:20` (+ 3 platform mirrors)
+- **Problem:** Line 20 names a phase-machine persona as `prism-refactor-scout` — a post-Slice-4 rename ID. The skill dir doesn't exist until the rename slice lands (still `prism-ren`), so it reads as a dangling ID in durable agent context meanwhile.
+- **Suggested fix:** Use the current ID `prism-ren` now; Slice 4's old→new grep-sweep will flip it to `prism-refactor-scout` along with every other reference, keeping the repo internally consistent at each slice. Rebuild to refresh the 3 mirrors.
+- **Fixed in:** ADR-0045 line 20 now reads `prism-ren`/`prism-theo`/`prism-iris`/`prism-parker` (current IDs); rebuilt to refresh the 3 platform mirrors. 0 `prism-refactor-scout` hits remain in any ADR surface.
+
+---
+
 ## PR Readiness
 
 Per-slice — each slice is its own PR.
 
-- [ ] No critical or major issues
+- [x] No critical or major issues — Major (install-template backport) + Minor (ADR-0045 forward-ref) both `fixed`; see Review Issues
 - [x] Build passes — last run: 2026-05-26 — Slice 1: `pnpm prism:build` + `pnpm prism:test` (129 pass) + `pnpm prism:check` (no drift)
-- [ ] Every externalized section has a deterministic inline trigger
-- [ ] No lens/voice/router/DoD externalized
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted (ADR-0045 + skill-authoring.md)
+- [x] Every externalized section has a deterministic inline trigger — verified (session-close + architect triggers name file + condition)
+- [x] No lens/voice/router/DoD externalized — verified (session-close is procedure/catalog; conditions are signals, not lens; architect lenses pinned)
+- [x] PR description up to date — PR #54 body written
+- [x] Lasting decisions promoted (ADR-0045 + skill-authoring.md) — shipped in Slice 0
+- [x] Referenced paths resolve on the shipped `templates/install/.prism/` surface — backported; all session-close + architect trigger/link targets resolve
 
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-26 (Briar self-review + Clove fixes, PR #54)
