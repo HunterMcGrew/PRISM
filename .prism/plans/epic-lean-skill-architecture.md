@@ -272,3 +272,13 @@ Per-slice — each slice is its own PR.
 - [x] 4 refs byte-identical across `.prism`/`.claude`/`.codex`/`.cursor`/`templates/install` — md5 match
 - [x] Build + tests pass — `pnpm prism:check`: 129/129 tests pass, no drift
 - [x] Generated SKILL.md 444→391 lines
+
+### Slice 3 COMPLETE — all 11 skills merged (PRs #56, #57, #58, #59)
+
+- [x] All 11 skills refactored to scaffolding+references and merged to `main` (e99e0b1). Generated SKILL.md sizes: architect 361, code-review-self 391, code-review-pr 390, pixel 457, ticket-start 418, standup-summary 225, qa-test-plan 247, debugger 376, code-dev 359, documentation 284, changelog 295, user-stories 311.
+- [x] Both review gates passed on every PR (Briar self-review → Eric PR review). Only finding across the whole slice was one Minor on #56 (dangling `../skills/` attribution links) — fixed, and the no-`../skills/` precedent held for all later refs.
+- [x] Full-set `pnpm prism:check` green on `main`; no `<!-- atlas: -->` anchor in any reference; 11 ref sub-dirs present on both dogfood and `templates/install/.prism/` surfaces; all Slice-3-authored reference citations resolve on both surfaces.
+- [ ] **Pre-existing install-surface gaps (NOT introduced by Slice 3 — separate backport follow-up):** (a) `closing-messages.md` is absent from `templates/install/.prism/architect/`, so every skill's `## Next persona` trigger dangles on a fresh install; (b) `prism-documentation` cites `dev-block-doc-template.md`/`user-block-doc-template.md` and `prism-pixel` cites `frontend-blocks.md`/`frontend-components.md` — flat-namespace refs that predate Slice 3 and don't exist on either surface; (c) documentation's output-paths category table + the `docs/content`-vs-`docs` path mismatch aren't covered by `documentation.md` and `docs/README.md` is absent. All pre-existing; the epic defers pre-existing install lag to a dedicated backport chore.
+- [ ] **CUT candidates still pending Hunter/Winston sign-off (NOT done in Slice 3):** standup `## Standup Standards` anti-pattern wall, code-review-self `## Formatting Check` (left pinned on #56), code-review-pr line-1 large-PR note. Decide separately.
+
+**Last updated:** 2026-05-26 (Slice 3 complete — all 11 skills merged via PRs #56–#59)
