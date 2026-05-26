@@ -65,6 +65,16 @@ cd <repo-root> && git worktree remove /tmp/<persona>-<branch-slug> --force
 
 The `cd <repo-root>` first is non-negotiable — it ensures the shell is outside the worktree before the remove. `--force` is used because the worktree may have transient build artifacts (`node_modules`, `.next/`) that `git worktree remove` refuses to discard without it; the worktree exists only for this session, so forcing the discard is correct.
 
+## Formatting checks (review personas)
+
+A reviewing persona in worktree mode runs formatting and linting checks on all files in the PR diff — **check only, no auto-fix**, since this is someone else's branch. (In-branch mode does not run formatters or linters — those require files on disk and per-package plugin resolution; CI catches formatting on the PR, and the in-branch reviewer flags only what's visible in the diff itself.)
+
+**Critical:** Formatter and linter plugin resolution is team-specific (per-package vs repo-root, plugin location, working-directory requirement). The team's formatter invocation is set during onboarding — see [`verification-commands.md`](../rules/verification-commands.md). Use the `cd` and return-to-root pattern from § Operate (use `;` not `&&` before the return-to-root so a non-zero formatter exit does not cancel the return).
+
+Run prettier and eslint in parallel (they are independent). They can safely run in the same batch as file reads — formatting checks and Read tool calls do not interfere with each other.
+
+If either reports violations, include them in the review: post inline comments on specific issues, summarize under **Minor** severity, and note in the summary "Run `prettier --write` and `eslint --fix` on the flagged files to resolve." Leave the fix to the author — it's their branch.
+
 ## Cleanup contract
 
 The persona that creates a worktree owns its removal. The contract is defined in [`.prism/rules/worktree-isolation.md`](../rules/worktree-isolation.md) § Cleanup contract — three exit paths, all of which must tear down:
