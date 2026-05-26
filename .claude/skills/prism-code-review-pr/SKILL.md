@@ -92,27 +92,9 @@ Terse, unhelpful comments ("This is bad," "Why?," "No") that create friction wit
 
 ## Framework Knowledge
 
-### Review Heuristics by Code Type
+> _Code-type review heuristics and the 400-line cliff._
 
-| Code type | Focus on |
-|-----------|----------|
-| **Components** | SRP (one reason to change), prop interface design, state management, accessibility |
-| **Utility functions** | Edge cases (empty, null, boundary), error handling, naming accuracy |
-| **Type definitions** | Completeness, consistency, no `any` or unsafe `as` hiding real problems |
-| **Tests** | Behavior-not-implementation, assertion quality, edge case coverage, test isolation |
-| **Configuration** | Correctness, no secrets, safe defaults |
-
-### The 400-Line Cliff
-
-Review effectiveness drops below 70% after 400 lines (SmartBear/Cisco research). For large PRs: first pass for design, second for critical-path correctness, third for edge cases. Don't try to catch everything in one scan.
-
-### Justification Review Framework
-
-For every new or modified abstraction:
-1. **Why does this exist?** What concrete problem does it solve?
-2. **Who uses it?** One consumer = indirection, not abstraction.
-3. **What's simpler?** If inline at each call site, would the code be worse?
-4. **Is it consistent?** A half-generic interface signals the abstraction doesn't fit.
+**Before reviewing by code type or sizing review passes, read [`.prism/references/review-frameworks.md`](../../../.prism/references/review-frameworks.md).** Severity calibration and the intent/design passes are pinned as lenses in § How Eric Thinks; the abstraction-justification procedure lives in `review-justification.md`, triggered from § Justification Review (Standards axis).
 
 ## Domain Context
 
@@ -168,80 +150,13 @@ If none apply, Eric runs in-branch. The mode decision is announced in the greeti
 
 The default path. Read the diff, read the changed files at HEAD, review.
 
-### Phase 1: Setup (sequential — each step depends on the previous)
+### Phases 1–2: Setup + context gathering
 
-1. Parse `$ARGUMENTS` to extract `<pr-number>`.
+> _Batch A (repo/PR metadata + file list + PR classification), batch B (plan, manifest, review threads, summary-comment check, commit SHA), batch C (full diff, architect docs, all source files at HEAD)._
 
-2. **Parallel batch A** — repo info + PR metadata + file list (all independent):
-   ```
-   gh repo view --json owner,name
-   gh pr view <pr-number> --json number,title,headRefName,baseRefName
-   gh pr diff <pr-number> --name-only
-   ```
-   Store `headRefName` as `<branch>`. Store the file list for classification and batch B.
+**Execute the batch A/B/C command bodies in [`.prism/references/code-review-pr/context-gathering.md`](../../../.prism/references/code-review-pr/context-gathering.md).** No checkout — in-branch reads from refs. Batch A also classifies the PR into `<review-path>`: if every changed file matches the non-code patterns (`.claude/**`, `docs/**`, `*.md`, `.github/**`, `.vscode/**`) it's **lightweight**; any file outside them makes it **full** (conservative default).
 
-2b. **PR classification** — classify the PR based on the file list from batch A:
-   - **Non-code patterns:** `.claude/**`, `docs/**`, `*.md`, `.github/**`, `.vscode/**`
-   - If **ALL** changed files match non-code patterns → **lightweight** review path
-   - If **ANY** file falls outside these patterns → **full** review path (conservative default)
-   - Store the classification as `<review-path>` (`lightweight` or `full`)
-
-   **Lightweight vs full — what differs:** The lightweight path runs a **single-pass** review (Eric's own analysis, no subagent fanout). The full path spawns two parallel subagents — one for the Standards axis, one for the Spec axis — for context-isolated reviews. Subagent fanout roughly doubles per-PR API cost, so the threshold matters. Lightweight is correct when the diff is docs-only (`.md` files, README updates, copy changes, plan edits) — the subagent isolation has no axes to separate because there's no code logic to evaluate against standards in the first place. The lightweight `<review-path>` is the cheap common path for docs-only PRs; the full path is the conservative default for anything touching code.
-
-3. **No checkout.** In-branch mode reads files at the PR head via `gh pr diff` and direct reads against the PR's branch ref. The current working tree is not modified.
-
-### Phase 2: Context gathering (two batches — B then C)
-
-4. **Parallel batch B** — metadata + file list + plan. Run ALL of these in a single message:
-
-   a. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. Use the PR head ref (`origin/<branch>`) when fetching the plan content — `git show origin/<branch>:.prism/plans/<plan-file>` reads the plan as it exists on the PR's branch.
-      - **Override:** Never write a plan during in-branch mode — this is someone else's branch. If no plan exists, note "no plan found" and proceed. All findings go into the GitHub PR comment only.
-      - If a plan exists: check `## Debugged Issues` and `## Review Issues` for open/fixed status, and respect `## Decisions` as intentional constraints.
-
-   b. **Manifest** — read `<repo-root>/.prism/architect/manifest.json`. The file list is already available from batch A (`gh pr diff --name-only`).
-
-   c. **Review threads** via GraphQL:
-      ```
-      gh api graphql -f query='{
-        repository(owner: "<owner>", name: "<repo>") {
-          pullRequest(number: <pr-number>) {
-            reviewThreads(first: 50) {
-              nodes {
-                id
-                isResolved
-                comments(first: 1) {
-                  nodes { databaseId body path }
-                }
-              }
-            }
-          }
-        }
-      }'
-      ```
-
-   d. **Existing summary comment check** — fetch early so you know whether to create or update:
-      ```
-      gh api repos/<owner>/<repo>/issues/<pr-number>/comments --jq '.[] | select(.body | contains("<!-- code-review-pr-summary -->")) | .id'
-      ```
-
-   e. **Commit SHA** for inline comments:
-      ```
-      gh pr view <pr-number> --json headRefOid --jq '.headRefOid'
-      ```
-
-   **Why batch all of these:** Plan, manifest, file list, threads, summary check, and commit SHA are completely independent. Running them sequentially wastes round trips.
-
-5. **Parallel batch C — the big read.** Immediately after batch B returns, use the manifest + file list to compute everything needed, then issue ONE parallel batch containing ALL of the following:
-
-   a. **Full diff**: `gh pr diff <pr-number>`
-
-   b. **Architect docs** — read `<repo-root>/.prism/references/architect-context.md` and execute fully against the changed file list from batch B. Every matching pattern must be loaded — partial loads miss constraints. Skip any that don't exist.
-
-   c. **All source files at the PR head** — from the file list, identify every file you'll need to read for review context (new/modified source files, not deleted files or config-only changes like `.claude/` files). Read them ALL in this batch using `git show origin/<branch>:<path>` so the read reflects the PR head, not the current working tree. Do not spread source file reads across multiple rounds — that is the single biggest time waste in this workflow.
-
-   **Why pre-fetch every source file in Eric's main thread:** When the full path spawns subagents (Phase 3 below), the source-file content is passed *into each subagent's prompt* rather than re-fetched inside the subagent. Two reasons: (1) Each subagent re-reading the same files duplicates the read cost — pre-fetching once lets both subagents work from identical source material. (2) Subagents may have inconsistent filesystem access; passing content into the prompt removes any race condition between the two subagent contexts trying to read the same path. Batch C is the canonical pre-fetch.
-
-   **Why no formatting checks in in-branch mode:** Formatters and linters need files on disk and per-package plugin resolution. In-branch mode reads from refs, not disk. Formatting/linting checks are deferred to CI on the PR — Eric flags only formatting issues visible in the diff itself (e.g. trailing whitespace, obvious style drift). For full formatter/linter runs against the PR's branch, the user opts into worktree mode.
+**Lightweight vs full — what differs:** The lightweight path runs a **single-pass** review (Eric's own analysis, no subagent fanout). The full path spawns two parallel subagents — one for the Standards axis, one for the Spec axis — for context-isolated reviews. Subagent fanout roughly doubles per-PR API cost, so the threshold matters. Lightweight is correct when the diff is docs-only (`.md` files, README updates, copy changes, plan edits) — the subagent isolation has no axes to separate because there's no code logic to evaluate against standards in the first place. The full path is the conservative default for anything touching code.
 
 ### Phase 3: Review — the two-axis split
 
@@ -276,47 +191,9 @@ The full path performs **two parallel reviews along independent axes** — Stand
 
 ### Phase 4: GitHub writes (one batch — all writes together)
 
-10. **Parallel batch D — all thread replies, resolves, inline comments, labels, AND summary comment in one message:**
+> _Batch D: strip old labels, resolve fixed threads, post inline comments, update the single summary comment, apply the two labels (+ draft→ready flip in state #3)._
 
-   - **Strip old review labels** — remove all review labels before applying new ones. Run this first in the batch (it's independent of everything else). Loop through each label with a REST DELETE — `gh pr edit --remove-label` would go through GraphQL and fail on repos with GitHub Projects Classic still associated. Per-label DELETE preserves non-review labels (`bug`, `documentation`, etc.) that the bulk PUT endpoint would strip:
-     ```bash
-     for label in "effort:glance" "effort:quick" "effort:deep" "confidence:high" "confidence:needs-judgment" "review:has-minors"; do
-       gh api "repos/<owner>/<repo>/issues/<pr-number>/labels/$label" -X DELETE >/dev/null 2>&1 || true
-     done
-     ```
-
-   - **Resolve fixed threads** — For each unresolved thread, check whether the referenced code is fixed in the current diff.
-     - If the fix is confirmed: reply with a short confirmation, then resolve via GraphQL mutation:
-       ```
-       gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread-id>"}) { thread { isResolved } } }'
-       ```
-     - If the fix is **not** confirmed: leave the thread open. Do not resolve threads without evidence.
-
-   - **Post new inline comments** — use the REST API (not `gh pr review`, which lacks file/line flags):
-     ```
-     gh api repos/<owner>/<repo>/pulls/<pr-number>/comments \
-       -f body="Comment text" \
-       -f commit_id="$COMMIT_SHA" \
-       -f path="frontend/path/to/file.ts" \
-       -F line=42 \
-       -f side="RIGHT"
-     ```
-     **Important:** The `line` must fall within a diff hunk — you cannot comment on unchanged lines. If the line you want to comment on isn't in the diff, include the observation in the summary comment instead.
-
-   - **Update the summary comment** — write the summary to a temp file using a bash heredoc (do not use the Write tool for temp files — it requires a prior Read), then post/update it in the same batch as inline comments:
-     ```bash
-     cat > /tmp/pr-review-summary.md << 'EOF'
-     <!-- code-review-pr-summary -->
-     ...summary content...
-     EOF
-     BODY=$(cat /tmp/pr-review-summary.md)
-     ```
-     - If a comment exists (from step 4d): **update it** via `gh api repos/<owner>/<repo>/issues/comments/<comment-id> -X PATCH -f body="$BODY"`
-     - If no comment exists: **create one** via `gh api repos/<owner>/<repo>/issues/<pr-number>/comments -f body="$BODY"`
-     - Always include the `<!-- code-review-pr-summary -->` marker at the top of the body.
-     - Never create duplicate summary comments — there must be exactly one per PR.
-
-   **Why one batch:** Every thread reply, resolve mutation, inline comment, and summary comment update is an independent GitHub API call. The summary content is fully determined by the review analysis — it does not depend on whether inline comments succeed. Posting them all in one message eliminates an extra round trip.
+**Execute the batch D writes in [`.prism/references/code-review-pr/github-writes.md`](../../../.prism/references/code-review-pr/github-writes.md) — all in one parallel message.** Every thread reply, resolve mutation, inline comment, label, and the summary comment is an independent GitHub API call; the summary content doesn't depend on inline-comment success, so posting them together eliminates a round trip.
 
 ### Phase 5: Plan update
 
@@ -341,22 +218,6 @@ The review-specific worktree adaptations:
 - **Plan update is included.** Worktree mode can commit and push back to the PR branch. After review, update `## Review Issues` and `## PR Readiness` in the worktree's plan file, then commit and push from the worktree per the push-from-detached-HEAD pattern in the reference.
 - **Cleanup is mandatory** per [`.prism/rules/worktree-isolation.md`](../../rules/worktree-isolation.md) § Cleanup contract. Tear down the worktree on success, on error, and on interruption.
 
-## Formatting Check
-
-**Worktree mode only.** In-branch mode does not run formatters or linters — those require files on disk and per-package plugin resolution. CI catches formatting/linting on the PR; Eric in in-branch mode flags only what's visible in the diff itself (trailing whitespace, obvious style drift).
-
-In worktree mode, run formatting and linting checks on all files in the PR diff (check only, no auto-fix, since this is someone else's branch).
-
-**Critical:** Formatter and linter plugin resolution is team-specific (per-package vs repo-root, plugin location, working-directory requirement). The team's formatter invocation is set during onboarding — see [`.prism/rules/verification-commands.md`](../../rules/verification-commands.md). See [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) § Operate for the `cd` and return-to-root pattern (use `;` not `&&` before the return-to-root so a non-zero formatter exit does not cancel the return).
-
-Run prettier and eslint in parallel (they are independent). They can safely run in the same batch as file reads (batch C) — formatting checks and Read tool calls do not interfere with each other.
-
-If either reports violations, include them in the review:
-- Post inline comments on specific formatting/linting issues (same as any other review comment)
-- Summarize in the **Issues** section under **Minor** severity
-- Note in the summary: "Run `prettier --write` and `eslint --fix` on the flagged files to resolve."
-
-Leave the fix to the author — it's their branch.
 ## What to look for
 
 The review splits along two axes that are reviewed independently and never merged. The Standards axis checks how the code is written against the team's intentional engineering standards. The Spec axis checks whether the code does what the ticket says, against the branch plan and architect context. Each axis has its own subagent in the full path; both run in parallel from context-isolated inputs.
@@ -386,28 +247,15 @@ For every UI change, check: semantic HTML, keyboard accessibility, focus managem
 
 #### Justification Review (Standards axis)
 
-After the correctness sweep, step back and evaluate whether each structural change in the diff earns its complexity:
+> _Four-question abstraction-justification procedure + deletion-test tiebreaker._
 
-For every new or modified abstraction (generic parameter, utility function, wrapper component, shared type, interface change):
-
-1. **Why does this exist?** What concrete problem does it solve? If you can't articulate the problem in one sentence, the abstraction may be speculative.
-2. **Who uses it?** Count the consumers. If only one call site uses a generic parameter, shared utility, or type — the logic likely belongs at that call site, not in a shared layer. One consumer is not an abstraction; it's indirection.
-3. **What's the simpler alternative?** If you removed this abstraction and solved the problem inline at each call site, would the code be worse? If not, flag the abstraction as premature.
-4. **Is it internally consistent?** When a shared interface or type is modified, check that all methods use the change uniformly. A half-generic interface (some methods use the parameter, others don't) signals the abstraction doesn't fit the contract.
-
-This does not apply to the existence of new files (components, tests, constants) — those are driven by the ticket. It applies to structural decisions *within* any code, new or modified: generic parameters, shared utilities, abstraction layers, interface changes, wrapper components, and indirection that shapes how future code is written.
-
-When the justification questions land ambiguously — "maybe one consumer is enough" or "this could be useful later" — run the deletion test: imagine deleting the abstraction. If complexity vanishes, it was a pass-through; flag it as premature. If complexity reappears across multiple call sites, it was earning its keep; let it stand. The test is a tiebreaker for ambiguous cases, not a routine checklist item.
+**When the diff introduces or modifies an abstraction (generic parameter, utility, wrapper component, shared type, interface change), read [`.prism/references/review-justification.md`](../../../.prism/references/review-justification.md) and apply it.**
 
 #### Doc-Class Triage (Standards axis)
 
-When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
+> _Verified / Diverged / Missing source-verification triage for architect docs._
 
-- **Verified** — the claim matches the source as written.
-- **Diverged** — the claim contradicts the source. Flag as **Major** or higher.
-- **Missing** — the claim references something the source doesn't show. Flag as **Major** or higher.
-
-The doc routes into agent context via `manifest.json`, so a confident-sounding drift misleads every future agent that loads it — wider blast radius than a typical correctness issue.
+**When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, read [`.prism/references/review-doc-class-triage.md`](../../../.prism/references/review-doc-class-triage.md) and classify every claim against its cited source.**
 
 #### Test Coverage (Standards axis)
 
@@ -438,73 +286,15 @@ The skip must be **loud** in the summary comment, not silent. A reader scanning 
 
 ## Summary format
 
-The summary comment carries the two-axis structure explicitly. Findings under `### Standards findings` and `### Spec findings` stay in their axes — they never get re-ranked or merged across axes (the context-isolation guarantee from Phase 3 carries through to the output). Cross-axis observations get their own section to keep them visible without contaminating either axis.
+> _Two-axis summary comment: Summary / Standards findings / Spec findings / Cross-cutting observations / PR Readiness._
 
-### Summary
-
-One paragraph: what this branch does and readiness.
-
-### Standards findings
-
-**Critical**, **Major**, **Minor** within the Standards axis — file + line, problem, suggested fix. Each finding includes the Standards-rule or code-standards concern it violates (e.g. "`code-standards.md` § Refactor scope", "`code-comments` § JSDoc on declarations").
-
-### Spec findings
-
-**Critical**, **Major**, **Minor** within the Spec axis — file + line, problem, suggested fix. Each finding cites the spec element it's testing against (e.g. "AC item 3: Given X, When Y, Then Z — implementation does W instead", "`## Decisions` entry [N]: <decision title> — diff at `<file>:<line>` undoes this decision").
-
-When the Spec axis is skipped (no plan / AC / architect context — see § Missing spec handling), this section contains the explicit skip line: `Spec axis skipped — no spec available (no plan / AC / architect context for the touched paths).` The confidence label flips to `confidence:standards-only` in this case.
-
-### Cross-cutting observations
-
-Findings that span axes or surface things worth calling out separately:
-
-- Test coverage gaps (often emerge from Standards-axis logic checks but apply across the change set)
-- Doc-class triage results (Standards-axis source-verification flags that the author may want to address as docs even if the diff isn't `.prism/architect/**`)
-- Security concerns, shared-code blast radius observations, new-pattern callouts
-- A11y observations that don't fit cleanly into a single line of code
-
-Cross-cutting findings carry no severity tag of their own — if they're severe enough to gate the merge, they belong in the appropriate axis (Standards or Spec) with a Critical/Major. This section is for observations the author should know about that don't fit the gate-the-merge framing.
-
-### PR Readiness
-
-- [ ] No critical or major issues found
-- [ ] Type-checks clean — no unsafe casts or escape-hatch types
-- [ ] No stray debug output or artifacts
-- [ ] Accessibility requirements met for UI changes
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged/review issues resolved
-- [ ] Lasting decisions promoted to architect context (if applicable)
-- [ ] PR description accurately reflects changes
-- [ ] Visual-regression / component-explorer coverage exists for touched UI
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+**When composing the summary comment, follow the template in [`.prism/references/code-review-pr/summary-template.md`](../../../.prism/references/code-review-pr/summary-template.md).** The two-axis structure is load-bearing: findings under `### Standards findings` and `### Spec findings` stay in their axes — they never get re-ranked or merged across axes (the Phase 3 context-isolation guarantee carries through to the output).
 
 ## PR Label
 
 Eric applies exactly **two** GitHub labels to every PR he reviews — one **effort** label and one **confidence** label. Two labels, two signals — the lead dev scans the PR list and immediately knows how long the review takes and how much trust to place in Eric's verdict. When critical or major issues exist, Eric applies **no labels** — the absence of labels signals "not ready."
 
-**Label creation:** If the label doesn't exist in the repo, create it before applying:
-```bash
-gh label create "<label-name>" --description "<description>" --color "<hex>" 2>/dev/null || true
-```
-
-### Label definitions
-
-#### Effort — how long will the human review take?
-
-| Label | Color | Criteria |
-|---|---|---|
-| `effort:glance` | `0E8A16` | Only plan files, docs, config, or copy changed. No logic changes. |
-| `effort:quick` | `FBCA04` | Single concern, 3 or fewer files with logic changes. Tests present for new logic. |
-| `effort:deep` | `D93F0B` | More than 3 files with logic changes, multiple concerns, cross-cutting (frontend + backend). Default when criteria are ambiguous. |
-
-#### Confidence — how much should the reviewer trust Eric's verdict?
-
-| Label | Color | Criteria |
-|---|---|---|
-| `confidence:high` | `0E8A16` | Eric found zero issues, or all issues are minor and clearly actionable. No ambiguity in requirements, no UX judgment calls, no untestable behavior. |
-| `confidence:needs-judgment` | `E4E669` | Eric couldn't make the call — UX tradeoffs, business logic correctness, ambiguous requirements, or behavior Eric couldn't verify (no tests, visual changes). |
-| `confidence:standards-only` | `BFD4F2` | The Spec axis was skipped (no plan / AC / architect context for the touched paths). Standards axis cleared with zero issues, but the Spec-axis check did not run. This is a transparency label, not a blocking finding — a Spec-axis skip is expected for PRs that don't have a corresponding ticket-spec contract. Human reviewer decides whether the missing spec matters for this change. |
-| `review:has-minors` | `FBCA04` | Minor issues remain that the developer has not yet addressed (fixed or acknowledged). Replaces the confidence label — the reviewer needs to check whether the minors matter. |
+**Label definitions** — the effort + confidence tables, and the `gh label create` fallback for labels missing from the repo — live in [`.prism/references/code-review-pr/labels.md`](../../../.prism/references/code-review-pr/labels.md). **Read it when selecting which labels to apply.**
 
 ### Decision gate — three states
 
@@ -527,18 +317,7 @@ Every PR that receives labels gets exactly two. Never one, never three.
 
 ### Applying labels in batch D
 
-After determining the two labels from the decision gate above, apply them in the same batch D message as all other GitHub writes. **In state #3 only**, also flip the PR from draft to ready — the merge gate has been satisfied:
-
-```bash
-gh api repos/<owner>/<repo>/issues/<pr-number>/labels -X POST --input - <<EOF
-{"labels": ["<effort-label>", "<confidence-or-status-label>"]}
-EOF
-gh pr ready <pr-number> 2>/dev/null || true
-```
-
-`gh pr edit --add-label` would go through GraphQL and fail on repos with GitHub Projects Classic still associated — the REST POST endpoint is unaffected. `gh pr ready` uses a different API path and works as-is.
-
-Ready-flip only fires in state #3 — states #1 (critical/major) and #2 (unaddressed minors) leave the PR in draft so the merge gate stays in place until the next review pass.
+The label-apply command and the state-#3 draft→ready flip are part of the batch D writes in [`.prism/references/code-review-pr/github-writes.md`](../../../.prism/references/code-review-pr/github-writes.md) § Applying labels in batch D. Ready-flip fires only in state #3 — states #1 (critical/major) and #2 (unaddressed minors) leave the PR in draft so the merge gate stays in place until the next review pass.
 
 ## After the review
 
@@ -562,29 +341,9 @@ That's the end of Eric's job. Approval is a human responsibility — Eric flags,
 
 For worktree-specific gotchas (creation failures, cleanup `getcwd` errors, formatter cascade failures, detached-HEAD push failures), see [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) § Common worktree gotchas.
 
-### GraphQL mutation to resolve thread fails
-The `resolveReviewThread` mutation can fail if the thread ID is stale or the token lacks `write:discussion` scope.
-- Do not retry. Leave the thread open, and note in the summary that auto-resolve failed for that thread — the author can resolve it manually.
+> _In-branch tooling/API gotchas: GraphQL resolve failures, 422 inline comments, prettier package resolution, `gh pr diff --stat`, write-batching, temp-file Write tool, source-read fan-out._
 
-### Inline comment rejected with 422
-Means the target line is outside the diff hunk. Already handled in step 10 — move the observation to the summary comment. Do not retry with a different line number.
-
-### Prettier/ESLint "Cannot find package" error
-Prettier plugins are installed per-package, not at the monorepo root. Always run from the package context: `pnpm -r --filter <package-name> exec npx prettier --check <files>`, or `cd` into the package directory. See **Formatting Check** for exact commands. (Worktree mode only — in-branch mode does not run formatters.)
-
-### `gh pr diff --stat` does not exist
-The `gh pr diff` command does not support `--stat`. Use `--name-only` to get a list of changed file paths. Do not use `--stat` — it will error.
-
-### Sequential GitHub API calls waste round trips
-Thread replies, thread resolves, inline comments, and the summary comment update are all independent GitHub API calls. Batch ALL of them into a single message (batch D) instead of posting them in separate rounds. The summary comment does not depend on inline comment success — compose and post it in the same batch. The summary comment check (step 4d) and commit SHA fetch (step 4e) are fetched in batch B so they're available when needed.
-
-### Write tool fails on temp files with "File has not been read yet"
-The Write tool requires a prior Read on existing files, but also fails on new files in `/tmp/`.
-- Always use bash heredoc (`cat > /tmp/file.md << 'EOF' ... EOF`) for temp files.
-- Reserve the Write tool for repo files only.
-
-### Source file reads spread across multiple rounds
-Reading files incrementally (a few per round, discovering more as you go) is the single biggest time waste. After batch B returns the file list and manifest, compute the full set of files to read and issue them ALL in batch C alongside the diff, architect docs, and formatting checks. The only acceptable reason for an additional read round is discovering a dependency not in the diff (e.g., a shared utility imported by a changed file).
+**When a GitHub API or tooling call behaves unexpectedly, check [`.prism/references/code-review-pr/gotchas.md`](../../../.prism/references/code-review-pr/gotchas.md).**
 
 ---
 
