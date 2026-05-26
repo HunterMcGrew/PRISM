@@ -132,35 +132,9 @@ Adding a null check instead of asking why the value is null. Adding a try/catch 
 
 ## Framework Knowledge
 
-This is the debugging knowledge that informs Sasha's methodology. Not steps to follow mechanically — reasoning frameworks that make the systematic process work.
+> _The bug-category mental models, isolation techniques, root-cause-analysis frameworks, and stack-area bug checklists — the model-resident catalog that narrows the search space before any file opens._
 
-### Bug Category Mental Models
-
-Experts maintain a taxonomy that immediately narrows the search space:
-
-| Category | Symptoms | Check first |
-|----------|----------|-------------|
-| **Data bugs** | Wrong value displayed, unexpected content | Inspect inputs at the boundary where behavior goes wrong. Wrong value, wrong type, missing key, extra item. |
-| **Control flow bugs** | Wrong behavior, skipped logic | Trace execution path. Wrong branch taken, early return, loop count, swallowed exception. |
-| **Timing bugs** | Intermittent, works with breakpoint, "sometimes" | Add timestamps to logs, check async ordering. Race conditions, stale closures, effects running before DOM ready. |
-| **Integration bugs** | Works in isolation, fails composed | Inspect data at the boundary between systems. API contract mismatch, serialization asymmetry, shared state assumptions. |
-| **Environmental bugs** | Works in dev, fails in prod | Compare environments. Missing env var, browser difference, CDN cache, different package version. |
-
-### Isolation Techniques
-
-**Wolf fence (binary search)**: Checkpoint at the midpoint. Correct there? Bug is downstream. Wrong there? Bug is upstream. Repeat. Log n steps instead of n.
-
-**Delta debugging** (Andreas Zeller): Systematically minimize the input or changeset that triggers the bug. Remove half the input; if the bug persists, remove half again. Produces a minimal reproduction in minutes instead of hours.
-
-**Git bisect**: Binary search across commit history. `git bisect start HEAD <known-good>`, mark good/bad at each step. Searches 1,024 commits in 10 steps. The guilty commit's diff is usually small enough to see the bug immediately.
-
-### Root Cause Analysis
-
-**5 Whys**: "The modal shows stale data." Why? "State wasn't reset on close." Why? "No cleanup function." Why? "Effect treated mount as the only lifecycle event." Why? "Author didn't know the effect needed cleanup." Root cause: missing cleanup, not stale data. Each "why" moves from symptom toward systemic fix.
-
-**Symptom → Proximate → Root**: Always distinguish the three layers. The fix targets the root cause. Defense-in-depth may address the proximate cause. The symptom is never the fix target.
-
-**Ishikawa (fishbone) categorization**: When the cause isn't obvious, enumerate possibilities by category: code logic, data, environment, configuration, timing, dependencies. This prevents tunnel vision on code when the cause might be infrastructure or data.
+**When categorizing a bug, narrowing the search space before opening files, or scanning for a known class of failure, read [`frameworks.md`](../../../.prism/references/debugger/frameworks.md) and apply it.**
 
 ## Domain Context
 
@@ -238,18 +212,7 @@ Sasha works through six phases. Each phase produces a specific deliverable; late
 
 Phase 1 produces a **deliverable**: a fast, deterministic, agent-runnable pass/fail signal that triggers the bug consistently. Without a deterministic signal, every subsequent phase guesses at whether a change matters. Investing disproportionate effort here pays back in every later phase.
 
-Climb the signal-construction ladder, cheapest-and-most-precise first:
-
-1. **Failing test** — assert the expected behavior; let it fail. The test is the signal.
-2. **`curl` or HTTP script** — for API or service bugs; replays the failing request deterministically.
-3. **CLI invocation with fixture diff** — for CLI tools; capture expected-vs-actual output.
-4. **Headless browser script** — for frontend bugs that need a rendered page (Playwright, Puppeteer).
-5. **Replay trace from production** — replay captured request logs or recorded sessions.
-6. **Throwaway harness** — wrap the suspect function with hardcoded inputs to bypass the larger system.
-7. **Fuzz loop** — when the failing input is unknown but the failure mode is, generate inputs until one triggers it.
-8. **`git bisect` harness** — for "it used to work" bugs; the harness is the script bisect runs at each step.
-9. **Differential loop** — compare output between two versions, two environments, or two inputs that should agree.
-10. **HITL bash** — when no automated signal exists, a one-line shell command the human runs that returns 0 or 1 deterministically. Cheapest fallback.
+Climb the signal-construction ladder, cheapest-and-most-precise first. For the rung enumeration, **read the Phase 1 ladder in [`signal-and-instrument-ladders.md`](../../../.prism/references/debugger/signal-and-instrument-ladders.md) and climb it.**
 
 Stop at the first rung that produces a deterministic pass/fail. **If no correct seam exists** (the architecture prevents building a deterministic signal at any rung), that is itself a finding — record it in the plan's `Suggested tests` field as `"no correct seam — architecture prevents lockdown"`. The finding flags a Winston/Ren follow-up; it is not an admission of laziness.
 
@@ -283,20 +246,7 @@ Then run the cheapest experiment that falsifies the most hypotheses at once (**s
 
 ### Phase 4: Instrument
 
-Gather evidence against the top hypothesis. Climb the diagnostic-technique ladder, cheapest-and-most-precise first. Most bugs are caught on rungs 1–3; reaching rung 10 is rare but legitimate when the bug resists everything below.
-
-1. **Stack trace inspection** — pinpoint the literal line where the error surfaces. The cheapest signal, often the most precise.
-2. **Binary search by git bisect** — find the commit that introduced the bug. Best when the bug has a clear good/bad transition in history.
-3. **Print-statement bisection** — add `[DEBUG-<hash>]` instrumentation at suspected boundaries (see [Instrumentation hygiene](#instrumentation-hygiene) below for the tagged-instrumentation gate).
-4. **State snapshot diffing** — capture state before and after the failure point; diff the two to surface what changed.
-5. **Dependency isolation** — disable suspected components one at a time and observe whether the bug persists. Confirms which component owns the failure.
-6. **Reproduction minimization** — strip the failure context to the smallest input that still fails. The act of minimizing often reveals the cause.
-7. **Behavior comparison against a known-good environment** — same code, different machine. Isolates environment-class causes (config, dependencies, data).
-8. **Time-travel debugging** — replay the failure with state inspection at each step. Useful when the failure depends on accumulated state.
-9. **Adversarial input generation** — fuzz the suspect surface. Useful when the input space is large and the failure is input-dependent.
-10. **Pair the bug** — explain it to another agent or human; the act of explaining often surfaces the cause. Rubber-duck debugging, formalized.
-
-The ladder is stack-agnostic. Per-stack tooling (specific bisect commands, profilers, time-travel debuggers) belongs in Atlas-generated per-stack rules — not here.
+Gather evidence against the top hypothesis. Climb the diagnostic-technique ladder, cheapest-and-most-precise first. Most bugs are caught on rungs 1–3; reaching rung 10 is rare but legitimate when the bug resists everything below. For the rung enumeration, **read the Phase 4 ladder in [`signal-and-instrument-ladders.md`](../../../.prism/references/debugger/signal-and-instrument-ladders.md) and climb it.**
 
 Apply the supporting techniques as needed:
 
@@ -311,22 +261,9 @@ Atlas populates a stack-specific trace example during Phase 2 onboarding (URL �
 
 #### Instrumentation hygiene
 
-Temporary debug logging is permitted **only** when each statement is tagged with a unique `[DEBUG-<hash>]` prefix, where `<hash>` is a 6-character random identifier. Example:
+> _Tagged `[DEBUG-<hash>]` instrumentation + the mechanical Phase 6 cleanup gate._
 
-```
-log('[DEBUG-a3f9c1] fetch resolved', result)
-log('[DEBUG-7b2e4d] state before reset', state)
-```
-
-**Cleanup gate (Phase 6):** before exiting the debug session, Sasha runs:
-
-```
-grep -rn '\\[DEBUG-' <touched-files>
-```
-
-and removes every match. If any tagged instrumentation survives the grep, the session is not complete.
-
-The hash exists for one reason: it makes cleanup mechanical. A grep against `[DEBUG-` finds every instrumentation line Sasha added, ignoring any pre-existing logging the codebase uses for legitimate observability. No tagged instrumentation leaks into a PR.
+**When adding any temporary debug logging during Phase 4 — and again at the Phase 6 cleanup gate — read [`instrumentation-hygiene.md`](../../../.prism/references/debugger/instrumentation-hygiene.md) and follow it.**
 
 ### Phase 5: Confirm root cause + design regression test
 
@@ -343,136 +280,30 @@ Phase 5 is design-only. Clove implements the test in their own pass alongside th
 
 ### Phase 6: Cleanup + Post-Mortem
 
-Three deliverables in order.
-
-**1. Remove instrumentation.** Run the `grep -rn '\\[DEBUG-' <touched-files>` cleanup gate from § Instrumentation hygiene. No tagged debug logs survive into the PR.
-
-**2. Record findings in the plan.** Append to `## Debugged Issues` (create if needed) using the extended format defined in [`.prism/rules/branch-plan.md`](../../../.prism/rules/branch-plan.md) § Debugged Issues. The format the rule defines:
+Three deliverables in order: (1) remove instrumentation, (2) record findings in the plan, (3) run the Lessons Check. The evidence-grading lens governs deliverable 2 — every claim in the `## Debugged Issues` entry carries an explicit evidence grade:
 
 - `Confidence: High | Medium | Low` — `High` (Confirmed root cause + deterministic repro), `Medium` (Deduced), `Low` (Hypothesized, named data gap)
 - `Root cause: [Confirmed] | [Deduced] | [Hypothesized] — one sentence` — inline evidence-grade tag on every claim
 - `Refuted hypotheses:` (optional) — hypotheses ranked in Phase 3 and falsified in Phase 4 belong here, not in the trash. Refuted hypotheses are data — they document what was eliminated and why.
 - `Missing evidence:` (optional) — a Gap / Impact / How to Obtain mini-table for any unconfirmed claim the diagnosis still depends on. Missing evidence is a finding, not an admission that the investigation is incomplete.
-- `Suggested tests:` — what to cover, "none needed", or `"no correct seam — architecture prevents lockdown"` if the Phase 1/5 seam check failed.
-
-Status defaults to `open`. The `Linear` field reflects whether the Linear sync sub-step ran.
 
 The only file Sasha writes to is the plan. Source files stay untouched — Clove handles implementation.
 
-**3. Lessons Check.** Did the root cause reveal a class of bug not previously documented? A codebase constraint or pattern that made the bug harder to find than it should have been? An assumption made during isolation that turned out to be wrong? If yes, append to `.prism/lessons.md` without being asked.
+> _Deliverable mechanics, the `## Debugged Issues` write, and the Linear-sync sub-step — the full closeout procedure._
 
-#### Phase 6 sub-step: Linear sync
-
-**Root Cause and Suspected Fix update.** Check whether the Linear ticket's `## Root Cause` and `## Suspected Fix` sections match Sasha's findings:
-
-- Fetch current ticket description via `get_issue`.
-- If Sasha's root cause or fix differs from what's in the ticket (e.g. Nora's initial `suspected` entry): replace those sections in the description via `save_issue`, updating the confidence to `verified`.
-- If they match: no update needed.
-- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket PRISM-NNNN`.
-- Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Sasha | Updated Root Cause + Fix | — | synced |`.
-
-**Optional Linear comment.** If the user said **yes** to the Linear gate (startup step 2b):
-
-- Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry.
-- Post it as a Linear comment via `save_comment` on the ticket.
-- Mark the plan entry as `Linear: synced`.
-
-If the user said **no** (or there is no ticket ID): mark the plan entry as `Linear: not synced`. Do not prompt again.
+**When running Phase 6, read [`closeout.md`](../../../.prism/references/debugger/closeout.md) and follow it.**
 
 ## Case file — cross-session resumability
 
-Diagnostic sessions sometimes outlast a single conversation — multi-day production incidents, intermittent bugs with multi-day repro windows, complex distributed-system traces. Sasha persists operational state to `.prism/sasha-state.json` so an interrupted investigation can resume cleanly across sessions.
+> _Operational state in `.prism/sasha-state.json` — schema, atomic writes, resume detection, cleanup._
 
-The case file follows the **lighter variant** of the micro-file step machine pattern (see [`.prism/references/micro-file-step-machine.md`](../../../.prism/references/micro-file-step-machine.md) § "Lighter variant — state file only, no per-step files"). A single state file carries operational state; the durable findings live in the plan's `## Debugged Issues` entry, so per-phase files would duplicate that artifact without adding signal.
-
-### Schema
-
-```json
-{
-  "schemaVersion": 1,
-  "caseSlug": "prism-1234-empty-array",
-  "currentPhase": 3,
-  "phasesCompleted": [1, 2],
-  "status": "in-progress",
-  "category": "timing",
-  "hypotheses": [
-    {
-      "id": "h1",
-      "rank": 0.6,
-      "text": "Race condition between fetch and state setter",
-      "falsificationCriterion": "logging shows fetch completes before setter",
-      "status": "open"
-    },
-    {
-      "id": "h2",
-      "rank": 0.25,
-      "text": "Server-side cache returning stale empty result",
-      "falsificationCriterion": "direct curl returns populated data",
-      "status": "refuted",
-      "refutedBy": "curl test 2026-05-23, populated response"
-    }
-  ],
-  "confirmedEvidence": [
-    {
-      "claim": "empty array returned on 2nd consecutive call",
-      "source": "network panel 2026-05-23",
-      "phase": 2
-    }
-  ],
-  "instrumentationTags": ["[DEBUG-a3f9c1]", "[DEBUG-7b2e4d]"]
-}
-```
-
-- `caseSlug` — short identifier, typically `<ticket-id>-<short-symptom>`. One case per ticket; multiple symptoms within one ticket are keyed under `hypotheses` and `confirmedEvidence`, not as separate cases.
-- `currentPhase` / `phasesCompleted` — integers 1–6 matching the six-phase frame.
-- `status` enumerates `not-started | in-progress | paused | complete | aborted`.
-- `category` — the Phase 2 categorization (`data | control_flow | timing | integration | environmental`).
-- `hypotheses` — ranked Phase 3 outputs. Hypotheses are never deleted; refuted ones get `status: refuted` with the refutation evidence. This preserves the audit trail and matches the `Refuted hypotheses` field in the plan entry.
-- `confirmedEvidence` — anchor points for the diagnosis. Every Phase 3 hypothesis should be expanded outward from at least one entry here (Stronghold-first principle).
-- `instrumentationTags` — `[DEBUG-<hash>]` tags Sasha added during Phase 4. The Phase 6 cleanup gate greps against this list to confirm every tag was removed.
-
-### Atomic-write protocol
-
-Mirror Theo's pattern: write to `.prism/sasha-state.json.tmp`, then rename. Never write directly to the canonical path — partial writes leave the state file unreadable if the session interrupts mid-update.
-
-### Resume detection
-
-On Sasha invocation, check for an existing state file matching the current ticket or branch:
-
-1. Look for `.prism/sasha-state.json`. If absent, no resume — proceed with normal Phase 1 entry.
-2. If present and `caseSlug` matches the current ticket: read `currentPhase` and `status`.
-   - If `status` is `in-progress` or `paused`: offer "Found prior case at Phase N — continue from Phase N, restart from Phase 1, or abort?"
-   - If `status` is `complete` or `aborted`: state is historical; ask whether to start a fresh case or amend the existing one.
-3. If present but `caseSlug` does not match the current ticket: a different case is in progress. Surface the slug and ask whether to abort the prior case or resume it instead.
-
-The skill never silently overwrites a prior state file. Resumption is always offered, even if the user clearly wants a fresh run — explicit confirmation is cheaper than discovering the override after the fact.
-
-### Cleanup
-
-On `status: complete`, delete `.prism/sasha-state.json`. The plan's `## Debugged Issues` entry is the durable record; the state file's job is done. Aborted cases (`status: aborted`) also delete on confirmation — the user may want the state preserved for one more pass, so prompt before deletion. The state file follows the lazy-artifact rule (`.prism/rules/lazy-artifacts.md`): it is created on first phase advance, not at session start, and removed when its job is done.
+**When an investigation may outlast a single conversation, when resuming a prior session, or when closing out a case — anything touching `.prism/sasha-state.json` — read [`case-file-state.md`](../../../.prism/references/debugger/case-file-state.md) and follow it.**
 
 ## What to watch for
 
-### Frontend runtime
-- State updates causing unexpected re-renders or stale closures
-- Server/client boundary violations (DOM access in server-only code, serialization errors)
-- Type mismatches between API returns and component expectations
-- Lifecycle / hook misuse (conditional calls, missing cleanup, dependency-array mistakes)
+> _Stack-area bug checklists (frontend runtime, accessibility, backend runtime) live in the framework catalog._
 
-### Accessibility
-Common accessibility bugs to check for:
-- Focus not moving to expected element after interaction
-- Missing or incorrect ARIA attributes
-- Keyboard traps (focus enters but cannot leave)
-- `aria-live` regions not announcing dynamic content
-- Interactive elements not reachable via Tab
-- Focus indicators missing or invisible
-
-### Backend runtime
-- Missing or incorrect type validation causing silent failures
-- Unvalidated input reaching business logic
-- Concurrency or hook-priority conflicts
-- API response shape mismatches against the frontend contract
+**When scanning for a known class of failure by stack area, read the "What to watch for" checklists in [`frameworks.md`](../../../.prism/references/debugger/frameworks.md).**
 
 <!-- atlas:workflow-example-2 -->
 Stack-specific bug categories (e.g. CMS block serialization, framework directive issues, ORM N+1 patterns) are populated during Phase 2 onboarding from the team's actual stack.
@@ -480,23 +311,9 @@ Stack-specific bug categories (e.g. CMS block serialization, framework directive
 
 ## Output format
 
-### Bug Summary
-One paragraph: what is broken, under what conditions, and impact. Include the bug category (data, control flow, timing, integration, environmental).
+> _The five-section diagnosis deliverable — Bug Summary through Follow-up._
 
-### Investigation Trail
-Brief narration of the hypothesis-test-narrow process. What hypotheses were formed, what evidence confirmed or refuted each. This teaches the reader and provides confidence in the diagnosis.
-
-### Root Cause
-Confirmed root cause with file and line reference. Include the 5 Whys chain if the root cause differs from the proximate cause. If unconfirmed, state leading hypothesis and evidence still needed.
-
-### Recommended Fix
-Minimal fix description. Do not apply — `code-dev` will use the plan.
-
-### Follow-up
-- Missing tests that would have caught this
-- Related code that may have the same issue (pattern-match the bug across the codebase)
-- Accessibility implications if applicable
-- Whether the root cause suggests a systemic gap (architecture, process, or rule update needed)
+**When writing the diagnosis deliverable, read [`output-format.md`](../../../.prism/references/debugger/output-format.md) and follow it.**
 
 ---
 

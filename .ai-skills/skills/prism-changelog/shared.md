@@ -90,83 +90,9 @@ Listing every commit as its own entry when multiple commits form one logical cha
 
 ## Framework Knowledge
 
-This is the release communication knowledge that informs Sage's decisions. Not templates to follow mechanically — reasoning frameworks that produce changelogs people actually read.
+> _Audience layering, the three-layer entry test, the categorization decision tree, consolidation rules, breaking-change detection, and release-shape recognition — the reasoning behind the operational steps below._
 
-### Audience Layering
-
-Different readers scan changelogs for different things. Sage writes for all of them simultaneously through structure and language:
-
-| Audience               | What they scan for                                      | What matters                                                                |
-| ---------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Stakeholders / PMs** | Features, high-impact fixes, release themes             | Business impact, user-facing changes, what to communicate to dealers        |
-| **Developers**         | Technical changes, breaking changes, dependency updates | PR links, specifics of what changed, migration notes                        |
-| **QA / Support**       | Bug fixes, behavioral changes, regression risk          | What was broken, what's fixed, what to retest, what dealers might ask about |
-| **Dealer support**     | Dealer-facing changes, known issues resolved            | What dealers will notice, what to tell dealers who ask "what changed"       |
-
-The structure (New Features → Bug Fixes → Improvements → Other) serves all audiences because it answers the four questions they each care about in a predictable order.
-
-### Entry Writing — The Three-Layer Test
-
-Every changelog entry has three layers. Good entries nail all three:
-
-1. **What changed** — the observable difference. "Equipment detail pages now show the dealer's business hours" not "Added business hours component to equipment detail resolver."
-2. **Who it affects** — implied or stated. "All dealer sites" vs "admin users only" vs "sites with Advanced Search enabled."
-3. **Traceability** — the PR link and ticket ID that let someone dig deeper if they need to.
-
-Every entry needs Layer 1. Layer 2 is needed when the scope isn't obvious. Layer 3 is always needed — no entry without a PR link.
-
-### Categorization Decision Tree
-
-When keyword matching is ambiguous, apply this decision tree:
-
-1. **Was something broken before?** → Bug Fix (regardless of whether the commit says "add," "update," or "fix")
-2. **Can the user do something new that they couldn't before?** → New Feature
-3. **Does an existing thing work better, faster, or differently?** → Improvement
-4. **Is this purely internal with no user-visible effect?** → Other or omit (with explicit note)
-5. **Still unclear after checking the PR?** → Other, with a flag
-
-"Add missing validation for equipment price field" → Bug Fix (validation was missing = something was broken).
-"Add equipment comparison feature" → New Feature (users can do something new).
-"Update filter panel to load results without page refresh" → Improvement (existing feature works better).
-"Refactor carousel test utilities" → Other / internal (no user-visible change).
-
-### Change Consolidation Rules
-
-Multiple commits that form one logical change should be one entry. Consolidation signals:
-
-- **Same ${TICKET_PREFIX}-\* ticket** — almost always one entry. The ticket is the unit of work.
-- **Same PR** — definitely one entry. A PR is a single shippable change.
-- **Sequential PRs on the same feature** — one entry citing all PRs. "Added equipment comparison feature ([#1450], [#1455], [#1462])."
-- **Follow-up fix for a feature in the same release** — merge into the feature entry. Don't list "Added X" and then "Fixed X" — that tells the reader X shipped broken. Present the final state: X works.
-- **Separate follow-up fix** — if the feature shipped in a prior release and the fix is in this one, they're separate entries. The fix is a Bug Fix.
-
-The consolidation question: "Would a reader understand this as one change or multiple?" Trust the answer.
-
-### Breaking Change Detection
-
-Changes that require action from downstream consumers deserve special treatment:
-
-- **API contract changes** — endpoint shape, schema modifications, response format changes
-- **Content / data schema changes** — existing stored content may need migration
-- **Extension-point removals or signature changes** — downstream consumers (plugins, themes, integrations) depending on them will break
-- **Dependency version bumps with breaking changes** — the transitive break matters
-- **Configuration or environment changes** — new required env vars, changed defaults
-
-When detected, add a `⚠️ Breaking Changes` section at the top of the changelog, before New Features. Each entry describes: what changed, what breaks, and what to do about it.
-
-### Release Shape Recognition
-
-A release has a shape — the distribution across categories tells a story:
-
-| Shape                 | Signal                | Framing                                                        |
-| --------------------- | --------------------- | -------------------------------------------------------------- |
-| **Feature-heavy**     | 60%+ New Features     | "This release introduces several new capabilities..."          |
-| **Stability-focused** | 60%+ Bug Fixes        | "This release focuses on stability and bug fixes..."           |
-| **Polish release**    | 60%+ Improvements     | "This release improves existing functionality..."              |
-| **Mixed**             | No dominant category  | No framing needed — the structure speaks                       |
-| **Maintenance**       | Mostly internal/infra | "This release includes infrastructure and maintenance work..." |
-
-Sage notices the shape and lets it inform the document structure. She doesn't editorialize, but a single-sentence framing line after the header helps the reader set expectations.
+**When categorizing commits, consolidating related changes, deciding whether a change is breaking, or framing the release shape, read [`frameworks.md`](../../../.prism/references/changelog/frameworks.md) and apply the matching framework.**
 
 ## Domain Context
 
@@ -256,11 +182,11 @@ Match the description (lowercase) against these keyword groups **in order** — 
 
 Anything that doesn't match goes into **Other**. Do not silently drop uncategorized commits — flag them in the output.
 
-**When keyword matching is ambiguous** — apply the Categorization Decision Tree from Framework Knowledge: check if something was broken (→ Bug Fix), if users can do something new (→ New Feature), if an existing thing works better (→ Improvement), or if it's purely internal (→ Other). When still unclear, read the PR title or diff. If still unclear, use Other with a flag.
+**When keyword matching is ambiguous** — apply the Categorization Decision Tree from [`frameworks.md`](../../../.prism/references/changelog/frameworks.md) § Categorization Decision Tree. When still unclear after the tree, read the PR title or diff. If still unclear, use Other with a flag.
 
 ## Change consolidation
 
-After categorization, apply consolidation rules:
+After categorization, run these steps in order — the full consolidation signal list and the "would a reader understand this as one change or multiple?" test live in [`frameworks.md`](../../../.prism/references/changelog/frameworks.md) § Change Consolidation Rules:
 
 1. Group entries by ${TICKET_PREFIX}-\* ticket. Multiple commits with the same ticket are almost always one change.
 2. Within each ticket group, verify: is this genuinely one logical change or multiple distinct outcomes?
@@ -291,75 +217,15 @@ Within each category, order entries by impact (dealer-facing > admin-facing > in
 
 ## Document generation
 
-### Google Docs (if MCP available)
+> _Per-format recipes for Google Docs, .docx, PDF, and Markdown, plus the output directory._
 
-Create a new Google Doc using the MCP. Format headings and bullet points using available formatting tools. Share URL when done.
-
-### .docx
-
-Generate using `docx` npm package (`npm install -g docx`). Use the following structure:
-
-- **Title:** "Release Notes: \<old-tag\> → \<new-tag\>" — Heading 1 style, bold
-- **Subtitle:** date — Normal style, gray
-- **Section headers:** category name + count — Heading 2 style
-- **Entries:** bullet list — ticket bold, description normal, PR number as `ExternalHyperlink`
-- **Page:** US Letter (12240 × 15840 DXA), 1-inch margins
-- **Font:** Arial throughout
-- Use `LevelFormat.BULLET` with numbering config — never unicode bullets
-- Use `ShadingType.CLEAR` for any table shading
-- Validate with `scripts/office/validate.py` after generation
-
-Save to: `<repo-root>/.claude/changelogs/<old-tag>-to-<new-tag>.docx`
-
-### PDF
-
-Convert the `.docx` output to PDF using LibreOffice:
-
-```bash
-python scripts/office/soffice.py --headless --convert-to pdf <file>.docx
-```
-
-Save to: `<repo-root>/.claude/changelogs/<old-tag>-to-<new-tag>.pdf`
-
-### Markdown
-
-Write the document structure directly as a `.md` file. Use `##` for section headers and `-` for list entries. PR numbers as `[#XXXX](<pr-url>)` inline links.
-
-Save to: `<repo-root>/.claude/changelogs/<old-tag>-to-<new-tag>.md`
-
----
-
-Create the directory if it doesn't exist:
-
-```bash
-mkdir -p <repo-root>/.claude/changelogs/
-```
+**Once the output format is confirmed, read [`doc-generation.md`](../../../.prism/references/changelog/doc-generation.md) and follow the recipe for that format.**
 
 ## Common Issues
 
-### Tag not found
+> _Edge cases: missing tags, off-format subjects, empty ranges, ambiguous categorization, multi-commit features, feature-plus-fix in one release._
 
-Run `git fetch --tags` first — the tag may exist on origin but not locally.
-
-### Commit subject doesn't match expected format
-
-Some commits (e.g. "agents md and lesson md files") won't have a THR prefix. Include them as-is in **Other**, with the raw commit subject.
-
-### No commits between tags
-
-Inform the user — the tags may be the same or in the wrong order.
-
-### Ambiguous categorization after keyword check
-
-Apply the Categorization Decision Tree. If still ambiguous after checking the PR, place in **Other** and flag: "Categorization unclear — placed in Other pending review."
-
-### Multiple commits for one feature
-
-Consolidate into one entry. Cite all PR numbers. Present the final shipped state, not the development history.
-
-### Feature + fix for that feature in the same release
-
-Merge into one entry. The reader doesn't need to know the feature shipped with a bug that was immediately fixed — they need to know the feature works.
+**When generation hits an edge case — a tag not found, an off-format commit subject, an empty range, ambiguous categorization after the keyword check, multiple commits for one feature, or a feature and its fix in the same release — read [`common-issues.md`](../../../.prism/references/changelog/common-issues.md) and apply the matching resolution.**
 
 ## Post-Delivery Closing
 
