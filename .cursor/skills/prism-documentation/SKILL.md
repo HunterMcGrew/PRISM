@@ -77,26 +77,9 @@ If a setting has a maximum value, document what happens when the maximum is exce
 
 ## Framework Knowledge
 
-### The Divio Documentation System
+> _The Divio documentation system (Tutorial / How-to / Explanation / Reference) and the readability techniques._
 
-Four distinct documentation types, each with a different purpose and writing style:
-
-| Type             | Orientation   | Reader needs               | Style                                                                                                                   |
-| ---------------- | ------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Tutorial**     | Learning      | Confidence and context     | Walk the reader through a complete experience. Omit edge cases deliberately — the goal is confidence, not completeness. |
-| **How-to guide** | Task          | Steps to accomplish a goal | Assumes the reader knows the basics. Structured steps with a clear outcome.                                             |
-| **Explanation**  | Understanding | Context and reasoning      | Answers "why" questions. Design decisions, tradeoffs, history. Not step-by-step.                                        |
-| **Reference**    | Information   | Exhaustive lookup          | Every parameter, option, return value. Consistent, terse, complete. Not a place for narrative.                          |
-
-When writing, identify which type you're producing and stay in that mode. Mixing tutorial-style narrative into reference documentation confuses both audiences.
-
-### Readability Techniques
-
-- **Active voice**: "The system rejects invalid tokens" not "Invalid tokens are rejected by the system"
-- **Short sentences**: If a sentence has more than one idea, split it
-- **Parallel structure**: Lists where each item follows the same grammatical pattern scan dramatically faster
-- **Scannable formatting**: Headers, bold key terms, bulleted lists, tables. A wall of prose in documentation is a formatting failure, not thoroughness
-- **Simplify without dumbing down**: Use the simplest accurate term. "Start the server" not "initialize the server daemon process." But don't sacrifice precision — "restart" and "reload" mean different things
+**When choosing a documentation type or shaping prose, read [`frameworks.md`](../../../.prism/references/documentation/frameworks.md) and apply it.**
 
 ## Domain Context
 
@@ -126,72 +109,11 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 
 ## Startup
 
-Run these steps in order. **Confirm context and audience before writing** — docs written for the wrong audience waste everyone's time.
+> _Numbered startup sequence — read conventions, determine context, check branch activity, determine audience, existing-doc and sibling-overlap checks, missing-doc nudge, interview mode._
 
-### Step 1 — Read documentation conventions
+**At the start of every documentation run, read [`startup.md`](../../../.prism/references/documentation/startup.md) and execute every step in order.** Run Step 2c below first — it is a run-wide verification lens, not a startup step.
 
-Read `<repo-root>/.prism/architect/documentation.md`. This is the source of truth for:
-
-- Naming conventions (topic-based, kebab-case)
-- Frontmatter schema (title, description, category, audience, last_updated)
-- Category list (getting-started, architecture, standards, testing, operations, ai-skills, references, blocks, byo, configuration, customization)
-- Cross-reference map between `.claude/` and `docs/` files
-- Writing guidelines for dev vs. user audiences
-- Docs-to-code mapping convention
-
-Also read `docs/README.md` to understand what docs already exist and where they're organized.
-
-### Step 2 — Determine what to document
-
-Check for context in this order:
-
-**A. `$ARGUMENTS` provided** — if a branch name, PR number, tag range, doc path, or feature description was passed, use that as the source.
-
-**B. Active feature branch** — run:
-
-```bash
-git branch --show-current
-git rev-parse --show-toplevel
-```
-
-If the current branch is not `main`/`master`/`develop` and has a diff against main, use it. Store as `<branch>` and `<repo-root>`.
-
-**C. No clear context** — ask:
-
-> "What should I document? You can give me:
->
-> - A branch name (e.g. `feature/PRISM-1234-my-feature`)
-> - A PR number (e.g. `#456`)
-> - A tag range (e.g. `v1.1.0..v1.2.0`)
-> - An existing doc to update (e.g. `docs/user/blocks/colophon.md`)
-> - Or just describe the topic and I'll interview you"
-
-Wait for the answer before continuing.
-
-**Resolving context by source:**
-
-- _Branch name_ → `git diff main...<branch>` + check for `.prism/plans/` file
-- _PR number_ → `gh pr diff <number>` + `gh pr view <number>` for description
-- _Tag range_ → `git diff <old>..<new>`
-- _Existing doc path_ → read the file, understand current content, prepare to update
-- _Interview mode_ → skip the diff; use answers to interview questions below as the source of truth
-
-**Plan lookup** (branch context only) — read `<repo-root>/.prism/references/plan-lookup.md` and execute to find the plan. If a plan exists, **read it fully** — not just `## Goal` and `## Implementation Tasks`, but also `## Decisions` and `## History`. The plan is the source of truth for intent and constraints:
-
-- `## Decisions` tells you what choices were made and why — these are implicit do-not-undo rules that apply to your writing (e.g. tone decisions, structural choices, language constraints).
-- `## History` tells you what already happened on this branch — what was written, what was restructured, what was consolidated. This prevents you from contradicting or undoing earlier work.
-
-### Step 2b — Check recent branch activity
-
-Run `git log --oneline -10` to see what's already happened on this branch. This catches:
-
-- Tone or language decisions already made (e.g. "remove jargon" commits mean your output must follow suit)
-- Structural changes (e.g. pages consolidated or renamed — so you don't reference stale filenames)
-- What was already shipped vs. what's still in progress
-
-This takes 5 seconds and prevents writing something that contradicts work already done on the branch.
-
-### Step 2c — Codebase verification (do this before writing)
+### Step 2c — Codebase verification (run-wide lens)
 
 **The plan is context, not truth.** Plans may contain stale identifiers — file paths, component names, block names, and directory structures change during implementation. Before writing any documentation that references specific code:
 
@@ -203,102 +125,17 @@ This takes 5 seconds and prevents writing something that contradicts work alread
 
 Do not copy identifiers from the plan into documentation without verifying them in the source. This is the single most common doc accuracy failure — it produces confident-sounding documentation that points to things that don't exist.
 
----
-
-### Step 3 — Determine audience
-
-Once context is resolved, ask:
-
-> "Who is this documentation for?
->
-> 1. End users only (admins / non-technical product users)
-> 2. Developers only (components, APIs, integration)
-> 3. Both — I'll generate two separate files"
-
-Wait for the answer before writing anything.
-
----
-
-### Step 4 — Check for existing docs and sibling overlap
-
-Before writing anything new:
-
-**Existing doc check:**
-
-1. Scan `docs/README.md` for a matching entry
-2. Check the relevant category directory (`docs/content/dev/{category}/` or `docs/content/user/{category}/`)
-3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
-4. If no existing doc: determine the output path using the naming convention from `documentation.md`
-
-**Sibling overlap check (required for new pages):** 5. Read the `_meta.js` in the target directory to see what pages already exist 6. Scan the **headings** of each sibling page for sections that overlap with what you're about to write. You don't need to read every page in full — read the TOC or skim the `##` headings. 7. If a sibling already covers a topic you plan to write about: **don't duplicate it.** Write a brief summary (2-3 sentences) and link to the sibling page. The sibling owns the full description. 8. Check the Doc-to-Doc Overlap table in `documentation.md` — if you're creating overlap, add an entry so Briar can track staleness.
-
----
-
-### Step 4b — Nudge for missing docs
-
-When context involves a block (branch diff touches `frontend/blocks/{name}/` or `backend/.../blocks/{name}/`), check whether docs exist:
-
-- **User doc:** check for `docs/content/user/blocks/{name}.md`
-- **Dev doc:** check for `docs/content/dev/architecture/{name}.md` or a relevant dev doc
-
-If a doc is missing, nudge the user — don't auto-create:
-
-> "I notice there's no user doc for the **{Block Name}** block yet. Every block should have one — even a short guide helps. Want me to create it while I'm here?"
-
-or for dev docs:
-
-> "There's no developer doc for **{feature/area}** yet. Want me to write one alongside the user doc?"
-
-If the user declines, proceed with whatever they originally asked for. The nudge is informational, not blocking.
-
----
-
-### Step 5 — Interview mode (if no diff context)
-
-If the user chose interview mode or there's no diff to read, ask these one at a time:
-
-1. "What does this feature do? Give me a one-sentence summary."
-2. "Who uses it — an end user, an admin, a developer integrating it, or some combination?"
-3. "What's the main thing someone needs to do to use it?"
-4. "Any edge cases, limitations, or gotchas worth calling out?"
-5. "Are there any existing components, modules, or classes involved?"
-
-Use the answers as the basis for documentation — same format, same standards.
-
----
-
 $ARGUMENTS
 
 ## Reading the codebase
 
-**First — assess the diff surface:**
+> _Diff-surface assessment, the parallel sub-agent split, what to focus on by audience, and the control-inventory instruction._
 
-```bash
-git diff main...<branch> --name-only
-```
-
-Check whether the diff touches **both frontend and backend**.
+**Once context is resolved and you need to read the diff before writing, read [`codebase-read.md`](../../../.prism/references/documentation/codebase-read.md) and follow it.** The two team-specific catalogs it depends on are pinned below.
 
 <!-- atlas:workflow-example -->
 Atlas populates the team's frontend / backend file-extension lists during Phase 2 onboarding. The general shape: frontend source extensions (component files, config, schemas) vs backend source extensions (server-side modules, endpoint files, server-rendered templates).
 <!-- atlas:end -->
-
-**If it touches both → use 2 parallel sub-agents:**
-
-- **Agent A — Frontend context:** reads frontend components, modules, attributes, config, schemas, UI controls. Returns a summary of what changed on the frontend surface.
-- **Agent B — Backend context:** reads backend modules, endpoints, server-side rendering, registrations. Returns a summary of what changed on the backend surface.
-
-Launch both simultaneously. Synthesize their findings before writing.
-
-**If it's single-surface (all frontend OR all backend) → read straight through**, no sub-agents needed.
-
-**What to focus on by audience:**
-
-_User docs_ — attribute or UI changes, admin surfaces, new controls, configuration options. Look for what the user can now configure or do.
-
-_Developer docs_ — all changed files. Look for new vs. changed surfaces: components, modules, interfaces, classes, endpoints, schemas.
-
-**For user docs, build a control inventory from the source code.** Before finishing the codebase read, build a table of every UI control — attribute name, its UI label string, its control type, and where it lives. This ensures the doc covers every option without relying on memory.
 
 <!-- atlas:workflow-example-2 -->
 Atlas populates the team's control-inventory shape during onboarding from the team's actual UI framework (sidebar panels, toolbars, inspector controls, settings dialogs — whatever the stack provides). The general pattern: enumerate every interactive control surfaced to the user, record its attribute name, displayed label, control type, and location, then ensure each appears in the user-facing documentation. Nothing skipped.
@@ -334,19 +171,9 @@ Docs are written directly to `docs/` using topic-based naming per `documentation
 
 ## Frontmatter
 
-Every doc file must include frontmatter:
+> _The frontmatter schema (title, description, category, audience, last_updated) lives in the architect doc._
 
-```yaml
----
-title: "Page Title"
-description: "One-line description for search and future static site generation"
-category: "category-name"
-audience: "dev | user"
-last_updated: "YYYY-MM-DD"
----
-```
-
-Set `last_updated` to today's date when creating or updating a doc.
+**When writing or updating a doc file, follow the frontmatter schema in [`.prism/architect/documentation.md`](../../../.prism/architect/documentation.md) § Frontmatter schema.** Set `last_updated` to today's date when creating or updating a doc.
 
 ## Doc templates
 
@@ -381,55 +208,9 @@ Writing rules live in the templates (`.prism/references/user-doc-template.md` an
 
 ## After writing
 
-### Conditional sub-flows (fire only when their trigger fires)
+> _Conditional sub-flows (new-template breadcrumbs, doc-collection handoffs) and the always-run steps: sidebar nav, landing index, cross-reference map, plan update, review prompt._
 
-**When creating a new template at `.prism/references/*-template.md`:**
-
-1. Add a **Category-specific rules** bullet to the parent base template (`user-doc-template.md` or `dev-doc-template.md`) pointing down to the new specialization — this is the breadcrumb that routes future Eli sessions to the right template.
-2. Add an entry to `.prism/architect/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
-3. Mention the new template in `SKILL.md § Doc templates § Category-specific templates` so the skill itself knows it exists.
-
-**When creating a doc collection (N ≥ 3 docs sharing a topic, not a single standalone page):**
-
-1. Add a `## Per-Block Documentation` section to the paired `.prism/architect/<topic>.md` file listing the collection — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
-2. Add a Cross-Reference Map row in `documentation.md` per audience — if both user and dev per-block docs exist, add both rows.
-3. Add audience-parallel intros to `docs/content/index.mdx` — if both user and dev sides have a section for the category, both need a drill-down intro sentence, not just one.
-
-### 1. Update sidebar navigation (`_meta.js`)
-
-**Required for every new page.** Add the new page's slug and display name to the `_meta.js` file in the target directory. Pages not in `_meta.js` appear alphabetically at the bottom of the sidebar with their raw filename as the label — that's not acceptable.
-
-Example — adding a new block doc:
-
-```js
-// docs/content/user/blocks/_meta.js
-export default {
-	colophon: "Colophon",
-	"mega-menu": "Mega Menu", // ← new entry
-};
-```
-
-Place the entry in logical order (alphabetical within its section, or grouped by category if the section has established groupings).
-
-### 2. Update the landing page index
-
-If the doc is new and the audience section on `docs/content/index.mdx` doesn't have a link for it, add one. Keep the index concise — only add links for docs that a new reader would want to find from the home page.
-
-### 3. Update the cross-reference map
-
-If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.prism/architect/documentation.md`.
-
-### 4. Update the branch plan
-
-If a plan exists for this branch (found during Step 2), append a History entry describing what was written or updated. This is required for any meaningful doc change — new pages, restructured pages, fixed links, updated content. The plan is the shared memory across skills; if Eli doesn't log what he did, the next skill has a blind spot.
-
-### 5. Prompt for review
-
-After saving, present the file path(s) and prompt:
-
-> "Docs written to `{path}`. Give them a look and let me know if anything needs adjusting — happy to revise."
-
-If both audiences were selected, list both paths.
+**After the doc content is written, read [`after-writing.md`](../../../.prism/references/documentation/after-writing.md) and run the post-write steps before closing.**
 
 ## Post-Docs Closing
 

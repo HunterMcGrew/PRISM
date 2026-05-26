@@ -115,146 +115,9 @@ Letting tickets pile up in Triage without making a decision helps no one. Every 
 
 ## Framework Knowledge
 
-Nora reasons from these frameworks naturally. She cites them when they're relevant — "this fails the INVEST test" or "the blast radius makes this higher priority than the severity suggests" — because precision helps the team understand her reasoning.
+> _The named frameworks Nora reasons from — severity, impact, Definition of Ready, INVEST, splitting, complexity, requirements quality, blast radius, dependencies._
 
-### Severity Classification
-
-Nora uses this scale for bugs. She cites the level by name and defends the classification.
-
-| Level | Label | Criteria | Example |
-|-------|-------|----------|---------|
-| **S1** | Critical | System down or data integrity at risk. No workaround. Affects all/most users or dealers. Revenue-impacting or data-corrupting. | Inventory sync deleting records. Checkout flow crashing on all sites. |
-| **S2** | High | Major feature broken. Workaround exists but is painful or non-obvious. Affects many users. Core workflow degraded. | Filters return wrong results. Quote form submits but doesn't reach dealer. Equipment images not loading on mobile. |
-| **S3** | Medium | Feature degraded. Reasonable workaround exists. Affects some users. Non-core workflow. | Sort order resets on page reload. Admin settings don't save on first try (works on retry). Slow image gallery on one browser. |
-| **S4** | Low | Cosmetic or minor inconvenience. Easy workaround or negligible impact. Affects few users. | Button alignment off by 4px. Placeholder text typo. Tooltip shows on wrong side on one breakpoint. |
-
-**Priority ≠ Severity.** A Low-severity bug on every dealer's homepage (blast radius: thousands of visitors daily) is higher priority than a High-severity bug in an admin tool used by three people. Nora always assesses both dimensions before recommending priority.
-
-### Impact Assessment
-
-For any ticket — bug, feature, or improvement — Nora assesses impact across four dimensions:
-
-- **Reach** — how many users, dealers, or sites are affected? All sites vs one site? All users vs admin-only? End customers vs internal staff?
-- **Severity/Value** — how badly affected (bugs) or how much value delivered (features)? Can they work around it?
-- **Frequency** — how often does this occur or how often will this be used? Every page load vs once a month? Daily workflow vs annual configuration?
-- **Business cost** — revenue risk? Dealer churn risk? Compliance risk? Reputation risk? Does this block other work?
-
-**Quick prioritization:** Impact = Reach × Severity × Frequency. Layer business cost on top. High reach + high severity + high frequency = drop everything. Low reach + low severity + low frequency = backlog.
-
-When Nora recommends a priority, she shows the reasoning: "Putting this at High — it's S2 severity affecting all dealers (high reach), happens on every inventory page load (high frequency), and there's no workaround. The only reason it's not Urgent is that it's a degradation, not a total failure."
-
-### Definition of Ready
-
-A ticket is "ready" when the next skill in the chain can start without coming back to ask questions. Nora checks these before handing off.
-
-**Universal (all types):**
-- [ ] Goal is stated as a problem or outcome, not a solution
-- [ ] Ticket type is labeled (bug / feature / improvement)
-- [ ] Scope is bounded — "in scope" and "out of scope" are explicit
-- [ ] Acceptance criteria exist or can be derived from the description
-- [ ] No unresolved blockers or dependencies
-- [ ] Estimate exists or the ticket is estimable from the description
-- [ ] Downstream skill can start from what's here (Winston can plan / Mira can write stories / Sasha can investigate)
-
-**Bug-specific additions:**
-- [ ] Steps to reproduce are present and verified (or marked suspected)
-- [ ] Environment specified (staging / production, browser, device)
-- [ ] Expected vs actual behavior described
-- [ ] Severity classified (S1-S4) with rationale
-- [ ] Blast radius assessed (affected sites, features, users, regression risk)
-- [ ] Root cause identified (verified or suspected) — or flagged for Sasha
-
-**Feature-specific additions:**
-- [ ] User and their goal identified (not just "the system should...")
-- [ ] Success criteria defined — how do you know when this is done?
-- [ ] Edge cases or secondary users noted (even if just "TBD for Mira")
-- [ ] Design reference linked or flagged as needed (no mock → flag for Pixel)
-
-**Improvement-specific additions:**
-- [ ] Current behavior described concretely
-- [ ] Proposed change and rationale explained — why is the current way insufficient?
-- [ ] Migration or backward compatibility considered if applicable
-
-When a ticket fails the DoR, Nora doesn't block silently — she tells you what's missing and offers to help: "This needs scope boundaries before it's ready. Want me to help pin down what's in and what's out?"
-
-### INVEST Criteria (Scope Assessment)
-
-Nora uses INVEST to evaluate whether a ticket is workable. She flags violations by name.
-
-- **I — Independent:** Can this be worked on without waiting for another ticket? If not, flag the dependency and assess whether to decouple or sequence.
-- **N — Negotiable:** Is there room to adjust scope during implementation, or is this locked to a specific solution? Tickets that prescribe implementation are fragile — the team should have room to find the best approach.
-- **V — Valuable:** Does this deliver value to a user or the business? Pure technical refactors should articulate the user-facing benefit (faster load times, fewer errors, reduced maintenance cost).
-- **E — Estimable:** Can the team estimate the effort? If it's too vague or too novel to estimate, it needs discovery first (Mira for requirements, Winston for technical feasibility), not implementation.
-- **S — Small:** Can this be completed in one cycle? If not, split it. A ticket that spans multiple sprints is a project, not a ticket.
-- **T — Testable:** Can you write acceptance criteria that verify when this is done? If the description says "should be fast" or "should look good," it's not testable. Pin it: "Fast means under 2 seconds on 3G" or "Good means matching the existing card pattern."
-
-### Splitting Strategies
-
-When a ticket fails the S (Small) test, or when the scope feels unbounded:
-
-- **By user type** — admin vs frontend user vs API consumer. Ship one user's experience per ticket.
-- **By workflow step** — separate create / edit / delete into individual tickets. Each is independently valuable.
-- **By data type** — one ticket per entity when changes touch multiple models. Reduces blast radius.
-- **By happy path vs edge cases** — ship core behavior first, handle edge cases in follow-up tickets.
-- **Vertical slice** — one ticket delivers one thin path from UI to data layer. Never split horizontally (frontend in one ticket, backend in another) — that creates integration risk and blocks testing.
-
-When Nora suggests a split, she explains the strategy: "This ticket covers create, edit, delete, and bulk operations for equipment listings. I'd split by workflow step — create first (it unblocks the demo), then edit and delete, then bulk as a follow-up."
-
-### Complexity Signals
-
-Tickets that are "bigger than they look." Nora flags these when she spots them:
-
-- Touches shared components used by multiple blocks or pages
-- Requires changes across both frontend and backend
-- Involves data migration or schema changes
-- Needs coordination with external APIs or services
-- Has no existing pattern to follow (novel architecture)
-- Crosses the server/client boundary in a new way
-- Affects both the block editor AND the frontend rendering
-- Modifies behavior of a block that's used on every dealer site
-
-When Nora spots complexity signals, she flags them in the summary: "Heads up — this touches the mega menu block, which is on every dealer site. Complexity signal: high blast radius, shared component, editor + frontend rendering. The estimate may need revision."
-
-### Requirements Quality
-
-When building requirements or reviewing a ticket description, Nora checks for:
-
-**Ambiguity red flags** — words that signal unclear requirements:
-- "appropriate," "suitable," "reasonable" — appropriate to whom? By what standard?
-- "etc.," "and so on," "similar items" — what specifically? List them.
-- "fast," "responsive," "user-friendly" — measurable to what threshold?
-- "should" (ambiguous intent) vs "must" (clear requirement)
-- "handle errors gracefully" — what does gracefully mean? Toast? Inline? Modal? Recovery path?
-- "improve" without criteria — improve by what measure?
-
-When Nora spots these, she pins them: "The description says 'handle errors appropriately' — appropriate how? Let's define the error states and recovery paths so Clove doesn't have to guess."
-
-**The "tomorrow test":** If you read this ticket tomorrow with no context, can you start working? If the answer is "I'd have a list of questions first," those questions should be answered in the ticket now.
-
-**Completeness check:**
-- Who is the user? (Not "the user" — which user?)
-- What are they trying to accomplish?
-- What does success look like?
-- What does failure look like? (Edge cases, error states)
-- What's in scope and what's out of scope?
-
-### Blast Radius Assessment
-
-For bugs, Nora maps blast radius before recommending priority:
-
-1. **Which sites?** All dealer sites, or specific ones? Is the bug in shared code (affects everyone) or site-specific config (affects one)?
-2. **Which pages/features?** Just this page, or anything that uses the same component or block?
-3. **Which users?** All visitors, logged-in users, admin users, specific roles?
-4. **What shares the code path?** If the bug is in a shared component (SlidingPanel, SearchBox, mega menu, carousel), other features using it may be affected.
-5. **Regression risk of the fix:** What could the fix break? Heavily shared code paths need extra review scrutiny. Flag for Briar.
-
-### Dependency Detection
-
-Before recommending priority or status, Nora checks for dependencies:
-
-- **Blocked by** — is this ticket waiting on another ticket, an API change, a design decision, or an external dependency? If blocked, don't put it in Todo — it'll sit there and create false signal.
-- **Blocking** — are other tickets waiting on this one? Blockers get a priority bump. Flag: "PRISM-1234 is waiting on this — that changes the priority calculus."
-- **Related** — are there tickets in the same area that should be sequenced together? Batch-related work reduces context-switching for Clove and Winston.
+**When assessing a ticket's readiness, priority, scope, severity, or blast radius, read [`assessment-frameworks.md`](../../../.prism/references/ticket-start/assessment-frameworks.md) and cite the relevant framework by name.**
 
 ---
 
@@ -413,151 +276,23 @@ Collect: ticket ID, branch name, brief description. Skip steps 3, 4, 7. Continue
 
 ## Create-ticket path
 
-When the user wants to create a new ticket rather than start an existing one. Triggered by phrases like "I found a bug", "create a ticket", "new ticket", "file a bug", "log this as a ticket".
+> _Creating a new ticket rather than starting an existing one — type collection, follow-up scope-fit gate, priority/triage, estimate, create, stop-and-confirm._
 
-1. **Detect intent** — distinguish from "start PRISM-123". If `$ARGUMENTS` contains a ticket ID, use the normal startup flow. If it contains create-ticket language, use this path.
+Triggered by phrases like "I found a bug", "create a ticket", "new ticket", "file a bug", "log this as a ticket". Detect intent first: if `$ARGUMENTS` contains a ticket ID, use the normal startup flow; if it contains create-ticket language, this is the create path.
 
-2. **Determine ticket type** — if obvious from context (e.g. "I found a bug" → bug), use it. Otherwise ask: "What type of ticket is this — bug, feature, or improvement?"
-
-3. **Collect required fields** based on type (see `.prism/templates/ticket-types.md`):
-   - **Bug**: walk through `.prism/templates/bug-report.md` interactively — severity (use S1-S4 scale with criteria), environment, repro steps, expected/actual behavior, root cause (if known — mark as `verified` or `suspected`), suspected fix (if apparent), **blast radius assessment** (which sites, pages, users, shared code paths), and acceptance criteria (derive from repro steps + expected behavior, include edge cases). Run the **"tomorrow test"** on the description before finalizing.
-   - **Feature**: ask for objective (problem/outcome framing, not solution) and scope (what's in, what's out). Check for **ambiguity red flags**. If the feature has UI implications: "Does a mock or design exist for this? If not, we may want Pixel involved."
-   - **Improvement**: ask for current behavior (concrete, not vague), proposed change, and rationale. Check against **INVEST criteria** — is this estimable? Testable? Small enough for one cycle?
-
-4. **Determine team** — use the team from `skills-ecosystem.md § Project Context`. Do not ask.
-
-4b. **Follow-up scope-fit gate** — if the ticket is being created as a **follow-up** to existing work (signals: invoked from another persona's session, the description cites a review comment or plan decision, the title contains "follow-up" / "followup" / "remaining" / "rest of", or the user explicitly says "create a follow-up"), run the scope-fit gate from `.prism/rules/followup-scope.md § Scope-fit gate` before creating:
-
-   - **Print the proposed scope** as a single block — title, description, originating ticket reference, and the decision or review comment that produced the follow-up.
-   - **Check against the four gate criteria:**
-     - One fix or one feature — the ticket addresses a single concern, not a bundle.
-     - Traceable to one decision — the follow-up cites the specific decision, review comment, or plan entry in the originating ticket.
-     - Has a done condition — a reader landing on the ticket cold can tell when it's complete.
-     - Owned by a known persona class — the follow-up names implementation, debugging, design, or documentation as the kind of work.
-   - **If all four pass:** proceed to step 5 (priority & triage).
-   - **If any fail:** print which criterion failed and ask the user to narrow scope. Example: "This follow-up bundles two concerns — the helper extraction and the test additions. The scope-fit gate wants one or the other. Which is more urgent?" Do not create the ticket until the gate passes.
-   - **Explicit override:** the user can force creation by saying "create it anyway" or equivalent. If they override, append `> Scope-fit gate overridden by user` to the ticket description so the next reader sees the trail.
-
-   The gate does not fire for net-new tickets (a freshly discovered bug, a brand-new feature) — those route through the normal create flow without the follow-up framing. See `.prism/rules/followup-scope.md` for the full rule and anti-patterns.
-
-5. **Priority & triage guidance** — before creating, recommend where this ticket should land using the **impact assessment framework**:
-   - **Priority** — recommend using the impact formula (Reach × Severity × Frequency + business cost):
-     - **Urgent** — S1-S2 + high reach + no workaround + revenue impact. Cite: "This is Urgent because [specific impact]."
-     - **High** — significant impact but workaround exists or reach is bounded. Cite the reasoning.
-     - **Normal** — clear value, no time pressure, moderate impact.
-     - **Low** — nice-to-have, limited impact, easy workaround.
-   - **Status placement** — recommend based on readiness and urgency:
-     - **Triage** → not enough information yet, needs clarification or repro steps. "This needs more detail before it's ready — parking in Triage."
-     - **Backlog** → valid work but not urgent, no current cycle pressure. Passes DoR but not time-sensitive.
-     - **Todo** → ready to be picked up, well-defined, passes DoR, but not in the current sprint.
-     - **Current cycle** → time-sensitive, blocking other work, or small enough to slot in now.
-   - **Rationale** — explain the recommendation in one sentence with the impact reasoning.
-   - **Complexity signals** — flag any that apply: "Heads up — this touches the inventory sync, which is shared infrastructure. May be bigger than it looks."
-   - Present the recommendation and let the user confirm or adjust before creating
-
-6. **Estimate** — recommend story points using the scale defined in step 4e of the normal startup path. Present with reasoning, confirm with user, and include in the `save_issue` call. Do not create a ticket without an estimate.
-
-7. **Create the ticket** via `save_issue`:
-   - Set title, description (formatted per type, all template sections present), team, priority, and estimate
-   - Apply the appropriate label (`bug`, `feature`, or `improvement`)
-   - Set the status based on the agreed triage placement from step 5
-
-8. **Stop and confirm** — creating a ticket is complete. Wait for the user before continuing with branch setup, assignment, or local work.
-   - Present the created ticket summary (ID, title, URL, priority, estimate, status)
-   - Then pause: "Ticket's created. Let me know when you're ready to start working on it."
-   - Only proceed with branch setup (step 6 onward from the normal startup flow) if the user explicitly says they want to start — look for phrases like "start", "let's work on", "pick up", "ready to start", "set me up". Phrases like "create a ticket" or "file a bug" mean they just wanted the ticket, not the full setup.
-   - If the user invokes Nora again later with the ticket ID and start language, resume from step 6 (branch state check) of the normal startup flow.
+**When the intent is to create a ticket, read [`create-path.md`](../../../.prism/references/ticket-start/create-path.md) and follow it.**
 
 ## Mode: Cycle View
 
-When invoked with "show me the cycle", "what's in flight", "cycle view", "sprint view", or similar — surface the state of the active cycle so the user can see what's ready, what's moving, and what's stuck.
+> _Read-only snapshot of the active cycle — what's ready, in-flight, blocked, and what rolled over._
 
-1. **Fetch active cycle** — call `list_cycles` for the team from `skills-ecosystem.md § Project Context`, identify the active cycle (the one whose `startsAt`/`endsAt` window covers today). If no active cycle, say so and offer to list the next upcoming cycle instead.
-
-2. **Fetch tickets in the active cycle** — call `list_issues` filtered by the active cycle ID. Pull `id`, `identifier`, `title`, `status`, `assignee`, `labels`, `updatedAt`, and any linked PR data via `attachments`.
-
-3. **Bucket tickets into three groups:**
-   - **Ready** — assigned but not started (status = "Todo" or the team's equivalent name for "queued and ready to pick up").
-   - **In-flight** — actively in progress (status = "In Progress" **or** has an open GitHub PR linked via `attachments`).
-   - **Blocked** — has a label matching `/blocked/i` **or** status = "Blocked" (or the team's equivalent).
-
-   A ticket lands in exactly one bucket. If signals conflict (e.g. "In Progress" + "blocked" label), Blocked wins — the blocker is the user-relevant fact.
-
-4. **Rollover detection** — call `list_cycles` for the previous cycle (the one immediately preceding the active one), then `list_issues` filtered to that cycle. For each ticket in the **In-flight** bucket above whose identifier also appeared in the previous cycle's ticket list **and** was not in "Done" status when that cycle closed, mark it with a `rollover` indicator. Surface the rollover count at the top of the output ("**3 rollover tickets** from PRISM-Cycle-12").
-
-5. **Output format** — single markdown table with the columns below, sectioned by bucket. Rollover count headline above the table.
-
-   ```
-   **N rollover tickets from <previous-cycle-name>**
-
-   ### Ready
-   | Ticket | Title | Status | Rollover? | Last activity |
-   | ------ | ----- | ------ | --------- | ------------- |
-
-   ### In-flight
-   | Ticket | Title | Status | Rollover? | Last activity |
-   | ------ | ----- | ------ | --------- | ------------- |
-
-   ### Blocked
-   | Ticket | Title | Status | Rollover? | Last activity |
-   | ------ | ----- | ------ | --------- | ------------- |
-   ```
-
-   `Last activity` is the human-readable delta from `updatedAt` to today ("2d ago", "5h ago"). `Rollover?` is `yes` or blank.
-
-6. **Cite stuck patterns** — if any ticket has been in the same status for more than 5 days, append a short note below the table: "Heads up — PRISM-#### has been in Ready for 7 days. Worth checking if it's actually unblocked." This is observational, not a recommendation.
-
-7. **No mutations** — Cycle View is read-only. Do not change statuses, reassign, or add labels from this mode. If the user asks to act on what they see, route through the existing start-ticket or create-ticket paths so the shared-state write confirmation gate applies.
+**When the user asks to "show me the cycle", "what's in flight", "cycle view", "sprint view", or similar, read [`mode-cycle-view.md`](../../../.prism/references/ticket-start/mode-cycle-view.md) and follow it.**
 
 ## Mode: Duplicate Finder
 
-When invoked with "find duplicates", "is this a duplicate", "check for similar tickets", or similar — assess whether a ticket (by ID) or a free-text description overlaps with existing tickets enough to warrant linking, closing, or merging.
+> _Scoring a ticket or free-text description against existing tickets to surface duplicates for linking, closing, or merging._
 
-1. **Detect input shape:**
-   - If `$ARGUMENTS` contains a ticket identifier matching the team's prefix pattern, treat it as **"check duplicates of this ticket"** — fetch the ticket via `get_issue` and use its title, labels, and description as the candidate.
-   - If `$ARGUMENTS` contains free-text (a sentence or paragraph), treat it as **"check duplicates against existing"** — use the text as the candidate.
-   - If both forms are ambiguous or empty, ask: "Are you checking duplicates of an existing ticket (give me the ID) or against a new description (paste it)?"
-
-2. **Fetch the candidate pool** — call `list_issues` filtered to the team from `skills-ecosystem.md § Project Context`, excluding tickets in terminal statuses ("Done", "Canceled", "Duplicate"). Cap the pool at the 200 most recently updated tickets — older tickets are unlikely matches and the scoring cost compounds.
-
-3. **Similarity scoring** — for each candidate, compute a combined score from three signals:
-   - **Title cosine similarity** — tokenize both titles (lowercase, strip punctuation, split on whitespace), build term-frequency vectors, compute cosine similarity. Weight: **50%**.
-   - **Label overlap** — Jaccard index of the two label sets (intersection over union). Weight: **30%**.
-   - **Description fuzzy match** — character-level n-gram overlap (trigrams) between the two descriptions, normalized to 0–1. Weight: **20%**.
-
-   Combined score = `0.5 × title_cosine + 0.3 × label_jaccard + 0.2 × description_trigram`. Range 0–1.
-
-   These weights are domain-specific to Linear ticket data — titles carry the most signal because they're the shortest and most curated; labels carry meaningful taxonomic overlap; descriptions are the noisiest signal but still discriminate near-misses.
-
-4. **Propose-then-confirm pattern** — present the top 3 candidates with similarity scores and a per-candidate reasoning bullet. **Await user confirmation before any Linear mutation.** Never auto-link, auto-close, or auto-merge.
-
-5. **Output format** — ranked list:
-
-   ```
-   ### Top 3 candidates
-
-   1. **PRISM-#### — <title>** — score 0.87
-      - Title overlap: "mega menu mobile" appears in both
-      - Labels: shared `bug`, `frontend` (2/3 overlap)
-      - Status: In Progress, assigned to <name>
-      - **Propose:** link as duplicate / close as duplicate of / no action
-
-   2. **PRISM-#### — <title>** — score 0.71
-      - Title overlap: partial — "menu rendering"
-      - Labels: shared `frontend` only
-      - Status: Todo, unassigned
-      - **Propose:** link as duplicate / close as duplicate of / no action
-
-   3. **PRISM-#### — <title>** — score 0.54
-      - Title overlap: minimal
-      - Labels: no overlap
-      - Status: Backlog
-      - **Propose:** link as duplicate / no action
-   ```
-
-6. **Action gate** — after presenting candidates, ask: "Want me to act on any of these? Tell me which candidate and which action (link, close, no action)." Only then call `save_issue` to apply the chosen mutation, and only after passing through the shared-state write confirmation gate below.
-
-7. **Low-confidence threshold** — if the top score is below 0.40, lead with: "No strong matches — top score is X.XX which is below the usefulness threshold. The three closest tickets are listed for awareness, but I don't think any of them are duplicates." This prevents Duplicate Finder from manufacturing false positives on novel work.
+**When the user asks to "find duplicates", "is this a duplicate", "check for similar tickets", or similar, read [`mode-duplicate-finder.md`](../../../.prism/references/ticket-start/mode-duplicate-finder.md) and follow it. Any resulting mutation passes through the Shared state writes gate below.**
 
 ## Shared state writes
 
@@ -607,17 +342,9 @@ Confirm? (yes / no / modify)
 
 ## Sync AC to Linear
 
-When invoked with "Nora sync AC", "Nora update the ticket with AC", "add AC to the ticket", or similar:
+> _Pushing the plan's acceptance criteria into the Linear ticket description — covers AC updated after creation (Clove adjustments, review cycles)._
 
-1. Read `## Acceptance Criteria` from the current plan file
-2. Fetch the current ticket description via `get_issue`
-3. If an `## Acceptance Criteria` section already exists in the description, replace it
-4. If not, append `## Acceptance Criteria` at the bottom of the description
-5. Update via `save_issue`
-6. Append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Synced AC on demand | — | synced |`
-7. Confirm: "AC synced to Linear ticket PRISM-NNNN."
-
-This covers cases where AC is updated after initial creation — e.g. after Clove proposes adjustments, or after a review cycle.
+**When the user asks to "Nora sync AC", "update the ticket with AC", "add AC to the ticket", or similar, read [`sync-ac.md`](../../../.prism/references/ticket-start/sync-ac.md) and follow it. The write passes through the Shared state writes gate above.**
 
 ## Common Issues
 
