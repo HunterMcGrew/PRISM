@@ -40,7 +40,7 @@ Sequencing rationale lives in `## Decisions` (Sequencing). Slices ship as indepe
 
 ### Clove (implementation) — Slice 3: per-skill refactors
 
-**Status:** `prism-architect` done (pilot). 11 skills remain. This slice absorbs the per-skill catalog externalization originally sketched as Slice 2 — each skill is refactored holistically in one PR (its catalogs + its modes together), since the deep audit showed that's the natural unit. The only genuinely cross-skill catalog is the shared review references (task group A below); everything else is skill-local. Ship one PR per skill.
+**Status:** `prism-architect` (pilot) done; Task group A shared refs + `prism-code-review-self` (Briar) refactored — PR open. 10 skills remain. This slice absorbs the per-skill catalog externalization originally sketched as Slice 2 — each skill is refactored holistically in one PR (its catalogs + its modes together), since the deep audit showed that's the natural unit. The only genuinely cross-skill catalog is the shared review references (task group A below); everything else is skill-local. Ship one PR per skill.
 
 Each skill replicates the shipped `prism-architect` precedent exactly: pin voice / "How X Thinks" lens / router / DoD; externalize conditional procedures + catalogs to `.prism/references/<skill-id-without-prism>-<topic>.md` behind a `## Heading` + `> _one-line note_` + an imperative trigger naming the exact file and condition. Each skill ends with `pnpm prism:build` (runs tests) + a **cold** before/after invocation smoke check (fresh session — confirm it loads referenced files at the trigger and covers its DoD).
 
@@ -189,6 +189,7 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Slice 1 done — extracted the shared session-close boilerplate (context-reuse + lessons mechanic + promotion taxonomy) to `.prism/references/session-close.md` and pointed the 13 standard-block skills + iris at it behind a one-line trigger, keeping each skill's persona-specific lesson signals and reflex bullets inline. parker/ren/theo/atlas left untouched (no shared boilerplate); build + 129 tests + `prism:check` green, atlas anchor counts unchanged. See Decision: Session-close extraction.
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Briar self-review of PR #54 — 1 Major (new canonical refs/rules/ADR not backported to `templates/install/.prism/`, so fresh consumer installs dangle on the session-close + architect triggers; fails AC install-surface check) and 1 Minor (ADR-0045 names post-rename ID `prism-refactor-scout` pre-Slice-4). Routed to Clove. See Review Issues.
 - 2026-05-26 [hmcgrew/lean-skill-architecture]: Clove fixed both Briar findings — backported the 8 dependency-closed artifacts (session-close, architect refs, triple-gated, skill-authoring, lazy-artifacts, ADR-0045) into `templates/install/.prism/` + added the stub-manifest route; corrected ADR-0045's `prism-refactor-scout` forward-ref to `prism-ren` and rebuilt mirrors. All install targets resolve; `prism:check` + 129 tests green.
+- 2026-05-26 [hmcgrew/slice3-code-review-self]: Slice 3 — created Task group A shared review refs (`review-frameworks`, `review-justification`, `review-doc-class-triage`) + Briar's `review-docs-impact`, refactored `prism-code-review-self` to cite them behind inline triggers, and backported all 4 to `templates/install/.prism/references/`. Generated SKILL.md 444→391 (`## Formatting Check` left pinned pending CUT sign-off, so above the ~330 estimate). Build + 129 tests + `prism:check` green; atlas anchor count unchanged.
 
 ---
 
@@ -255,4 +256,16 @@ Per-slice — each slice is its own PR.
 - [x] Lasting decisions promoted (ADR-0045 + skill-authoring.md) — shipped in Slice 0
 - [x] Referenced paths resolve on the shipped `templates/install/.prism/` surface — backported; all session-close + architect trigger/link targets resolve
 
-**Last updated:** 2026-05-26 (Briar self-review + Clove fixes, PR #54)
+**Last updated:** 2026-05-26 (Briar self-review of PR #56 — Slice 3 Briar + Task group A; clean, no issues)
+
+### PR #56 (Slice 3 — prism-code-review-self + shared review refs)
+
+- [x] No critical or major issues — clean sweep
+- [x] No voice/lens/router/DoD externalized — only catalogs/procedures moved; How Briar Thinks #4/#6, Phases 1–5, Review format, Clean-Review Closing all pinned
+- [x] Every externalized section has a one-line imperative trigger naming exact file + condition — all 4 verified in generated SKILL.md
+- [x] No `atlas:*` anchor moved into a reference — anchor count 8/8 unchanged; refs contain zero anchors
+- [x] Every referenced path resolves on BOTH dogfood `.prism/` and shipped `templates/install/.prism/` — trigger targets + internal ref links (`../rules/`, `../architect/`) verified on all 5 surfaces
+- [x] Shared refs are genuine Briar∪Eric supersets — Briar's fuller wording used; deletion-test, blast-radius, all 4 compensation techniques, 400-line cliff present; no content lost
+- [x] 4 refs byte-identical across `.prism`/`.claude`/`.codex`/`.cursor`/`templates/install` — md5 match
+- [x] Build + tests pass — `pnpm prism:check`: 129/129 tests pass, no drift
+- [x] Generated SKILL.md 444→391 lines
