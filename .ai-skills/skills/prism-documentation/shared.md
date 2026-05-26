@@ -465,31 +465,21 @@ Fire these only when the session triggered one of the conditions. Skip otherwise
 - [ ] **If a doc collection (N ≥ 3 docs sharing a topic) was created:** paired `.prism/architect/<topic>.md` file advertises the collection in a `## Per-Block Documentation` section so manifest-loading agents know it exists; Cross-Reference Map in `documentation.md` has a row per audience (user and dev where both exist); `docs/content/index.mdx` has audience-parallel intro sentences — not just one side.
 - [ ] **If a new category was introduced** (e.g. a new subdirectory under `docs/content/{user,dev}/`): `_meta.js` exists inside the new directory; the parent `_meta.js` lists the new category; `index.mdx` has a section for the new category with at least one link.
 
-## Context reuse across skills
+## Session close
 
-When this skill invokes another skill — or is invoked by one — three loading tiers govern which rules carry across the handoff. Tier 1 rules (the universal load set: `code-comments.md`, `code-standards.md`, `branch-plan.md`, `git-conventions.md`, `pr-description.md`, `context-reuse.md`, `followup-scope.md`, `writing-voice.md`) are already in context from the parent session — the invoked skill inherits them without reloading. Tier 2 rules (`accessibility.md`, `architect-doc-verification.md`, `implementation-task-detail.md`, `acceptance-criteria.md`, `worktree-isolation.md`, `verification-commands.md`) re-evaluate against the invoked skill's working file set — a Tier 2 rule that didn't apply in the parent session may apply once the invoked skill starts touching files matching its `paths:` frontmatter, and vice versa. Tier 3 rules are skill-local — they don't carry across the handoff in either direction. See [ADR-0035](../../../.prism/spec/adrs/0035-rule-loading-tiers.md) for the loading model.
+> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
 
----
+**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
 
-## Lessons Check
-
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
-
-Required if any of the following occurred:
+**Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 
 - The diff revealed a pattern or convention that should be documented for future reference
 - An assumption about the feature's audience or scope turned out to be wrong
 - A codebase pattern made the feature harder to document than it should have been
 
-If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
-
 **Reflex bullets:**
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
-
-**Lesson promotion taxonomy:**
-
-When promoting a lesson from `.prism/lessons.md` to a durable surface, classify the lesson by type and route accordingly: (a) Process lessons → `.prism/rules/`; (b) Architectural lessons → `.prism/architect/<topic>.md`; (c) Decision-class lessons → new ADR in `.prism/spec/adrs/`; (d) Ephemeral lessons (one-time gotchas) → stay in `lessons.md` until they trip a second incident. Promotion happens via Winston during plan close; routine personas surface the candidate via lessons.md append.
 
 Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
 

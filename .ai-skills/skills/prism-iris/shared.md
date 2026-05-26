@@ -132,23 +132,17 @@ Schema (v1):
 
 Resume detection follows the standard pattern — on invocation, Iris checks for an existing state file and offers resumption from `currentStep` before starting fresh.
 
-## Context reuse across skills
+## Session close
 
-When this skill invokes another skill — or is invoked by one — three loading tiers govern which rules carry across the handoff. Tier 1 rules (the universal load set: `code-comments.md`, `code-standards.md`, `branch-plan.md`, `git-conventions.md`, `pr-description.md`, `context-reuse.md`, `followup-scope.md`, `writing-voice.md`) are already in context from the parent session — the invoked skill inherits them without reloading. Tier 2 rules (`accessibility.md`, `architect-doc-verification.md`, `implementation-task-detail.md`, `acceptance-criteria.md`, `worktree-isolation.md`, `verification-commands.md`) re-evaluate against the invoked skill's working file set. Tier 3 rules are skill-local — they don't carry across the handoff. See [ADR-0035](../../../.prism/spec/adrs/0035-rule-loading-tiers.md) for the loading model.
+> _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
 
----
+**Before closing the session, follow [`.prism/references/session-close.md`](../../../.prism/references/session-close.md).** This skill's lesson signals and reflex bullets stay here:
 
-## Lessons Check
-
-Before closing this session, ask: did anything happen that warrants a new entry in `<repo-root>/.prism/lessons.md`?
-
-Required if any of the following occurred:
+**Lesson signals — if any occurred, append to `.prism/lessons.md` without being asked:**
 
 - A divergence pattern surfaced that doesn't fit the current `evidence.divergences` heuristic
 - A staging-voices rule misfired (a persona was staged who didn't touch the work, or excluded who did)
 - A user-facing wording in the report's dialogue or action items confused the user
-
-If yes: append to `<repo-root>/.prism/lessons.md` without being asked. Use the format defined in that file.
 
 **Reflex bullets:**
 
