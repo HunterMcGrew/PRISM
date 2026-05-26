@@ -71,41 +71,9 @@ Spending disproportionate time on trivial details (variable naming debates, impo
 
 ## Framework Knowledge
 
-### Review Strategy — The Two-Pass Model
+> _Severity table, code-type heuristics, the two-pass model, the 400-line cliff, and self-review compensation techniques._
 
-1. **Intent pass**: Read the PR description, plan decisions, and test files first to understand what the author intended. Tests reveal expected behavior and — critically — edge cases the author didn't consider.
-2. **Implementation pass**: Read the diff to evaluate whether the implementation achieves the intent. This is where correctness, design, and edge cases get scrutinized.
-
-Self-review adds a third layer: the **adversarial pass**. After confirming intent and correctness, actively try to break it.
-
-### Severity Classification
-
-| Level        | Meaning                                                                          | Action                  |
-| ------------ | -------------------------------------------------------------------------------- | ----------------------- |
-| **Critical** | Will cause production bugs, data loss, security issues, or crashes               | Must fix before merge   |
-| **Major**    | Significant problem — wrong approach, missing edge case, accessibility violation | Should fix before merge |
-| **Minor**    | Real improvement — naming, style, small optimization, documentation              | Can be follow-up        |
-
-**Impact × Likelihood**: A null reference in a rarely-called admin function is lower severity than the same bug in the inventory display. Same bug class, different severity because of different blast radius.
-
-### Review Heuristics by Code Type
-
-| Code type             | Focus on                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------- |
-| **Components**        | SRP (one reason to change), prop interface design, state management, accessibility |
-| **Utility functions** | Edge cases (empty, null, boundary), error handling, naming accuracy                |
-| **Type definitions**  | Completeness, consistency with existing types, no `any` or unsafe `as`             |
-| **Tests**             | Behavior-not-implementation, assertion quality, edge case coverage, test isolation |
-| **Configuration**     | Correctness, no secrets, safe defaults                                             |
-
-### Self-Review Compensation Techniques
-
-Self-review has specific blind spots that checklists compensate for:
-
-- **Familiarity bias**: You skip verifying intent because you already know it → use diff-only reading
-- **Confirmation bias**: You see evidence that your code works and ignore evidence it doesn't → use adversarial mindset
-- **Scope creep blindness**: You don't notice that "while I was here" changes expanded the diff → check every file against the ticket scope
-- **Edge case amnesia**: You remember the happy path you coded, not the edge cases you didn't → run the what-if sweep (empty, one, many, boundary, error, concurrent)
+**Before classifying findings by severity or deciding how many passes a diff needs, read [`.prism/references/review-frameworks.md`](../../../.prism/references/review-frameworks.md).** The reasoning behind these — severity calibration, the 400-line cliff, the adversarial mindset — is pinned in § How Briar Thinks; the reference holds the tables and procedures.
 
 ## Domain Context
 
@@ -253,28 +221,15 @@ For every UI change in the diff, check: semantic HTML, keyboard accessibility, f
 
 ### Justification Review
 
-After the correctness sweep, step back and evaluate whether each structural change in the diff earns its complexity:
+> _Four-question abstraction-justification procedure + deletion-test tiebreaker._
 
-For every new or modified abstraction (generic parameter, utility function, wrapper component, shared type, interface change):
-
-1. **Why does this exist?** What concrete problem does it solve? If you can't articulate the problem in one sentence, the abstraction may be speculative.
-2. **Who uses it?** Count the consumers. If only one call site uses a generic parameter, shared utility, or type — the logic likely belongs at that call site, not in a shared layer. One consumer is not an abstraction; it's indirection.
-3. **What's the simpler alternative?** If you removed this abstraction and solved the problem inline at each call site, would the code be worse? If not, flag the abstraction as premature.
-4. **Is it internally consistent?** When a shared interface or type is modified, check that all methods use the change uniformly. A half-generic interface (some methods use the parameter, others don't) signals the abstraction doesn't fit the contract.
-
-This does not apply to the existence of new files (components, tests, constants) — those are driven by the ticket. It applies to structural decisions _within_ any code, new or modified: generic parameters, shared utilities, abstraction layers, interface changes, wrapper components, and indirection that shapes how future code is written.
-
-When the justification questions land ambiguously — "maybe one consumer is enough" or "this could be useful later" — run the deletion test: imagine deleting the abstraction. If complexity vanishes, it was a pass-through; flag it as premature. If complexity reappears across multiple call sites, it was earning its keep; let it stand. The test is a tiebreaker for ambiguous cases, not a routine checklist item.
+**When the diff introduces or modifies an abstraction (generic parameter, utility, wrapper component, shared type, interface change), read [`.prism/references/review-justification.md`](../../../.prism/references/review-justification.md) and apply it.** The "justify every abstraction" lens is pinned in § How Briar Thinks #6.
 
 ### Doc-Class Triage
 
-When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
+> _Verified / Diverged / Missing source-verification triage for architect docs._
 
-- **Verified** — the claim matches the source as written.
-- **Diverged** — the claim contradicts the source. Flag as **Major** or higher.
-- **Missing** — the claim references something the source doesn't show. Flag as **Major** or higher.
-
-The doc routes into agent context via `manifest.json`, so a confident-sounding drift misleads every future agent that loads it — wider blast radius than a typical correctness issue.
+**When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, read [`.prism/references/review-doc-class-triage.md`](../../../.prism/references/review-doc-class-triage.md) and classify every claim against its cited source.**
 
 ## Test Coverage
 
@@ -308,17 +263,9 @@ Report what was fixed in the review output under **Cleanup Items**. If `eslint -
 
 ## Docs Impact Check
 
-After completing the review analysis, check whether the diff touches areas that have corresponding documentation in `docs/`:
+> _Code→docs and agent-spec→human-docs staleness scan; recommends Eli when docs lag._
 
-1. **Code → docs staleness:** scan changed files for blocks, components, or features that have a matching `docs/user/` or `docs/dev/` file. Use the naming convention from `.prism/architect/documentation.md` (e.g. `frontend/blocks/{name}/` → `docs/user/blocks/{name}.md`).
-
-2. **Agent spec → human docs staleness:** scan changed files for `.prism/rules/` or `.prism/architect/` files that have a corresponding `docs/dev/` file. Check the cross-reference map in `.prism/architect/documentation.md`.
-
-3. **If a match exists and the change is substantive** (not just formatting), add a **Docs Impact** section to the review output:
-
-   > "This change modifies [X]. The docs at [path] may need updating. Consider bringing in Eli."
-
-4. **If no docs match**, skip silently — do not mention docs impact.
+**After the review analysis, read [`.prism/references/review-docs-impact.md`](../../../.prism/references/review-docs-impact.md) and run the staleness scan against the changed files.**
 
 ## After completing the review — write to plan BEFORE chat summary
 
