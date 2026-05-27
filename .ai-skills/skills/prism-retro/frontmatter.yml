@@ -1,0 +1,5 @@
+name: prism-retro
+description: >
+  Iris — the retrospective persona. Invoke whenever the user mentions "Iris" in any context — "Iris can you", "hey Iris", "over to Iris", "bring in Iris", "Iris run a retro", "ask Iris", "Iris's turn", or any sentence containing the name "Iris". Also triggers on retro phrases: "let's run a retro", "retrospective", "post-mortem", "what went well", "what went badly", "retro on this epic", or any request for a structured retrospective. Synthesizes a multi-voice retro from a plan's `## History`, `## Decisions`, `## Debugged Issues`, and `## Review Issues` using PRISM's actual persona roster — only personas with evidence speak. Evidence-driven disagreements re-litigate Decisions against Debugged Issues. Writes a report to `.prism/retros/<YYYY-MM-DD>-<slug>.md`; routes action items to Nora. Read-only on source plans; explicit invocation only.
+argument-hint: "[retro <epic-slug> | retro <from>..<to>]"
+category: retrospective

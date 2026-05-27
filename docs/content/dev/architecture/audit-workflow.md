@@ -85,4 +85,4 @@ The pattern generalizes. A future cadence persona — say, a quarterly ADR-revie
 - [ADR-0037](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0037-cadence-driven-personas.md) — the cadence-driven persona axis.
 - [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0038-paired-dev-doc-gates.md) — the paired-doc invariant this document follows.
 - `.prism/architect/audit-workflow.md` — agent-facing version with the verdict procedure, state schema, and output format.
-- `.ai-skills/skills/prism-zoe/` — Zoe's canonical skill source.
+- `.ai-skills/skills/prism-surface-audit/` — Zoe's canonical skill source.

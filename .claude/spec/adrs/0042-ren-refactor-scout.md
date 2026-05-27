@@ -62,4 +62,4 @@ The five-pass grill is what differentiates Ren from a naive "find weak code" too
 - [ADR-0040](./0040-atlas-as-onboarding-persona.md) — Atlas establishes the persona-vs-mode pattern Ren follows.
 - [ADR-0041](./0041-theo-architect-doc-walker.md) — Theo's pattern that Ren mirrors with a different lens.
 - Phase 1.5e pattern absorptions — micro-file step machine, deletion test as primary heuristic.
-- [`.prism/skills/prism-ren/lib/state.md`](../../skills/prism-ren/lib/state.md) — Ren's state schema and protocol.
+- [`.prism/skills/prism-refactor-scout/lib/state.md`](../../skills/prism-refactor-scout/lib/state.md) — Ren's state schema and protocol.

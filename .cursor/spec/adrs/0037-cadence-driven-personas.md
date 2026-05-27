@@ -50,4 +50,4 @@ The axis is durable, not Zoe-specific. Future cadence personas — for example, 
 - [ADR-0035](./0035-rule-loading-tiers.md) — related: three-tier rule loading. Zoe loads Tier 1 (universal rules) plus archive-specific rules at Tier 3 (skill-internal).
 - [ADR-0038](./0038-paired-dev-doc-gates.md) — related: every architect doc ships paired with a dev doc. Zoe's `audit-workflow.md` follows the paired-doc invariant.
 - `.prism/architect/audit-workflow.md` — Zoe's workflow doc and state-file schema.
-- `.ai-skills/skills/prism-zoe/` — Zoe's canonical skill source.
+- `.ai-skills/skills/prism-surface-audit/` — Zoe's canonical skill source.

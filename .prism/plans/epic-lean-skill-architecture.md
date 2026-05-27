@@ -132,6 +132,8 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 
 ### Clove (implementation) — Slice 4: rename migration
 
+**Status:** `done` (2026-05-27). All 7 persona skills renamed (pixel→design, theo→doc-walker, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro, ren→refactor-scout) across `.ai-skills/skills/`, `.prism/skills/` step-file dirs, `roles.json`, frontmatter `name` fields, and every live cross-reference (scripts, `.prism/architect/`, `.prism/rules/`, `.prism/references/`, ADRs, `AGENTS.md`, `docs/content/`, and the `templates/install/.prism/` mirror). Build regenerated the 4 platform mirrors and auto-removed the old-named generated dirs. `manifest.json` needed no change (routes only `prism-qa-test-plan`). Persona-name triggers preserved; reference sub-dirs (`references/pixel/` etc.) left as-is — out of the rename scope, which is skill IDs only. Historical `.prism/plans/` left as append-only record (Hunter's call), so the repo-wide grep's only non-plan residual is one intentional `epic-prism-atlas` plan-filename citation in `stack-detect.ts`. `pnpm prism:check` + 129 tests + verify-manifest green.
+
 21. Rename the 7 skill directories in all three locations they appear — `.ai-skills/skills/<old>/`, `.claude/skills/<old>/`, and `.prism/skills/<old>/` (where step files exist):
     - `prism-pixel` → `prism-design`
     - `prism-theo` → `prism-doc-walker`
@@ -193,6 +195,8 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 - 2026-05-26 [hmcgrew/slice3-code-review-pr]: Slice 3 — refactored `prism-code-review-pr` (Eric) to consume the group-A shared refs and externalized its command bodies to 5 sub-dir refs (`code-review-pr/{context-gathering,github-writes,summary-template,labels,gotchas}.md`); folded the worktree-only Formatting Check into `worktree-mode.md` § Formatting. Pinned: How Eric Thinks, two-axis split, Phase skeleton, three-state label gate, missing-spec handling, never-approves. Generated SKILL.md 631→390; atlas anchors 6→6; build + 129 tests + `prism:check` green; install copies byte-identical.
 - 2026-05-26 [hmcgrew/slice3-design]: Slice 3 — refactored `prism-pixel` (Pixel) to 3 sub-dir refs (`pixel/{frameworks,pattern-vocabulary,mock-spec-template}.md`, the last also holding the plan `## Design` template); pinned all lens sections, convention/deep-audit axes, mode-1 default, interview protocol, HTML-mode detection, handoff/ADR-0034, and DoD. Generated SKILL.md 706→457; atlas anchors 8→8 unchanged; build + 129 tests + `prism:check` green; 3 refs backported byte-identical to `templates/install/.prism/references/pixel/`.
 - 2026-05-26 [hmcgrew/slice3-remaining-skills]: Slice 3 — refactored the final 8 skills in ONE combined PR (per Hunter's call to consolidate): ticket-start (691→418), standup-summary (605→225), qa-test-plan (594→247), debugger (559→376), code-dev (512→359), documentation (503→284), changelog (429→295), user-stories (414→311). 33 new sub-dir refs created + backported byte-identical to `templates/install`; all atlas anchor counts preserved (debugger/code-dev/documentation/user-stories used split-keep for in-section anchors); build + 129 tests + `prism:check` green. Surfaced a pre-existing gap: documentation's output-paths category table + the `docs/content` vs `docs` path mismatch aren't covered by `documentation.md` and `docs/README.md` doesn't exist, so that detail was kept inline (not deleted) — flagged for a follow-up.
+- 2026-05-27 [hmcgrew/lean-skill-architecture]: Slice 4 done — renamed the 7 persona skills (pixel→design, theo→doc-walker, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro, ren→refactor-scout) across source dirs, `.prism/skills/` step files, `roles.json`, frontmatter `name`, scripts (`bootstrap`/`anchor-substitute`/`verify-manifest`), and every live cross-ref in architect/rules/references/ADRs/AGENTS/docs + the `templates/install` mirror; the build regenerated all 4 platform mirrors and removed the old-named generated dirs. Persona-name triggers preserved, reference sub-dirs left out of scope, and historical `.prism/plans/` left as append-only record — so the only non-plan grep residual is one intentional `epic-prism-atlas` plan-filename citation in `stack-detect.ts`. `pnpm prism:check` + 129 tests + verify-manifest green.
+- 2026-05-27 [hmcgrew/slice4-rename-migration]: Briar self-review of PR #62 — clean, no issues. Verified completeness (only intentional residuals: historical plans + the `epic-prism-atlas` plan-filename ref in `stack-detect.ts`), no over-reach (`atlas:` anchor counts 6/6·1/1·7/7 unchanged, ADR persona-filenames + `*-state.json` names preserved, frontmatter persona-name triggers intact), and content integrity (`prism-design/shared.md` byte-identical to main's `prism-pixel/shared.md`; `prism-refactor-scout/shared.md` differs only in path segments). `prism:check` + 129 tests + `check-types` green.
 
 ---
 
@@ -211,7 +215,7 @@ Deletion-test failures the agents surfaced. These are content removals, not relo
 - [ ] `pnpm prism:build` and `pnpm prism:test` pass on the branch.
 - [ ] Every referenced file path resolves — no dangling citations — verified against the shipped `templates/install/.prism/` surface, not just the dogfood repo.
 - [ ] All `<!-- atlas:* -->` anchors preserved (grep count unchanged before/after).
-- [ ] The 7 renamed skills: all cross-references updated, persona-name triggers preserved, no orphaned old IDs in a repo-wide grep.
+- [x] The 7 renamed skills: all cross-references updated, persona-name triggers preserved, no orphaned old IDs in a repo-wide grep (Slice 4 — only intentional residuals remain: historical `.prism/plans/` and one `epic-prism-atlas` plan-filename citation in `stack-detect.ts`).
 - [ ] ADR-0045 and `.prism/rules/skill-authoring.md` authored; both use "level/stage," never "tier."
 - [ ] Each previously-over-cap skill's generated `SKILL.md` lands at or under ~250 pinned lines (target, not a hard gate — a justified larger pin is acceptable if it's all lens).
 
@@ -281,4 +285,13 @@ Per-slice — each slice is its own PR.
 - [ ] **Pre-existing install-surface gaps (NOT introduced by Slice 3 — separate backport follow-up):** (a) `closing-messages.md` is absent from `templates/install/.prism/architect/`, so every skill's `## Next persona` trigger dangles on a fresh install; (b) `prism-documentation` cites `dev-block-doc-template.md`/`user-block-doc-template.md` and `prism-pixel` cites `frontend-blocks.md`/`frontend-components.md` — flat-namespace refs that predate Slice 3 and don't exist on either surface; (c) documentation's output-paths category table + the `docs/content`-vs-`docs` path mismatch aren't covered by `documentation.md` and `docs/README.md` is absent. All pre-existing; the epic defers pre-existing install lag to a dedicated backport chore.
 - [ ] **CUT candidates still pending Hunter/Winston sign-off (NOT done in Slice 3):** standup `## Standup Standards` anti-pattern wall, code-review-self `## Formatting Check` (left pinned on #56), code-review-pr line-1 large-PR note. Decide separately.
 
-**Last updated:** 2026-05-26 (Slice 3 complete — all 11 skills merged via PRs #56–#59)
+### PR #62 (Slice 4 — rename migration)
+
+- [x] No critical or major issues — Briar self-review clean
+- [x] Completeness: repo-wide grep returns no stale old IDs outside historical plans + the intentional `epic-prism-atlas` plan-filename ref in `stack-detect.ts`
+- [x] No over-reach: `atlas:` anchor counts unchanged, ADR persona-named filenames + `*-state.json` names preserved, frontmatter persona-name triggers intact
+- [x] Content integrity: renamed skills' bodies byte-identical to source except intended path-segment swaps
+- [x] Build + tests + types — `pnpm prism:check` (129 tests, no drift) + `prism:check-types` green; generated mirrors in sync, old-named generated dirs removed
+- [x] PR description up to date — PR #62 body written by Clove
+
+**Last updated:** 2026-05-27 (Briar self-review of PR #62 — Slice 4 rename; clean, no issues)

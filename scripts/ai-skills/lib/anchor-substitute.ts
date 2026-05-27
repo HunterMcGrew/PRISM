@@ -46,7 +46,7 @@ const ANCHOR_NAME_PATTERN = /^[a-z0-9-]+$/;
  * Markers must be on their own line — line-start (optionally indented) and
  * line-end. This excludes inline prose references like `<!-- atlas:<name> -->`
  * inside backticks, which would otherwise false-positive when persona sources
- * discuss the convention (`prism-atlas/shared.md` does exactly that).
+ * discuss the convention (`prism-onboarding/shared.md` does exactly that).
  */
 const OPEN_MARKER_PATTERN = /(?:^|\n)[ \t]*<!--\s*atlas:([a-z0-9-]+)\s*-->[ \t]*(?=\r?\n|$)/g;
 const CLOSE_MARKER_PATTERN = /(?:^|\n)[ \t]*<!--\s*atlas:end\s*-->[ \t]*(?=\r?\n|$)/g;

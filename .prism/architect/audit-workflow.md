@@ -4,7 +4,7 @@ Human-facing version: `docs/content/dev/architecture/audit-workflow.md`.
 
 This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs.
 
-Zoe is the first cadence-driven persona in PRISM. See [ADR-0037](../spec/adrs/0037-cadence-driven-personas.md) for the axis the persona class sits on, and the canonical Zoe skill source at `.ai-skills/skills/prism-zoe/` for her invocation prompts and run-time procedure.
+Zoe is the first cadence-driven persona in PRISM. See [ADR-0037](../spec/adrs/0037-cadence-driven-personas.md) for the axis the persona class sits on, and the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
 
 ## Cadence
 

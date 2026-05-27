@@ -5,7 +5,7 @@
 			"persona": "Winston"
 		},
 		{
-			"id": "prism-atlas",
+			"id": "prism-onboarding",
 			"persona": "Atlas"
 		},
 		{
@@ -29,7 +29,7 @@
 			"persona": "Sasha"
 		},
 		{
-			"id": "prism-iris",
+			"id": "prism-retro",
 			"persona": "Iris"
 		},
 		{
@@ -37,11 +37,11 @@
 			"persona": "Eli"
 		},
 		{
-			"id": "prism-pixel",
+			"id": "prism-design",
 			"persona": "Pixel"
 		},
 		{
-			"id": "prism-parker",
+			"id": "prism-prd",
 			"persona": "Parker"
 		},
 		{
@@ -49,7 +49,7 @@
 			"persona": "Reese"
 		},
 		{
-			"id": "prism-ren",
+			"id": "prism-refactor-scout",
 			"persona": "Ren"
 		},
 		{
@@ -57,7 +57,7 @@
 			"persona": "Lilac"
 		},
 		{
-			"id": "prism-theo",
+			"id": "prism-doc-walker",
 			"persona": "Theo"
 		},
 		{
@@ -69,7 +69,7 @@
 			"persona": "Mira"
 		},
 		{
-			"id": "prism-zoe",
+			"id": "prism-surface-audit",
 			"persona": "Zoe"
 		}
 	]

@@ -26,7 +26,7 @@ Parker runs as a multi-phase, resumable workflow with **two modes**:
 - **Greenfield** — interview-driven. Brain dump → stakes calibration → fast/coaching path → draft → reviewer rubric → finalize → optional Linear handoff.
 - **Brownfield** — code-walking, no interview. Walks named code area → sketch confirmation → test scope → draft (with `[INFERRED]` markers, not `[ASSUMPTION]`) → review → finalize.
 
-The phases live in `.prism/skills/prism-parker/step-*.md` per the micro-file step machine pattern from Phase 1.5e.
+The phases live in `.prism/skills/prism-prd/step-*.md` per the micro-file step machine pattern from Phase 1.5e.
 
 ## Rationale
 

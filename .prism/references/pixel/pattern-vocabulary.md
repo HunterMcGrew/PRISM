@@ -1,6 +1,6 @@
 # Pixel — Design Pattern Vocabulary
 
-> Catalog of the tactical UI patterns `prism-pixel` draws from in proposals and audits — forms, states, containers, feedback, search, tables, typography, color, motion, micro-interactions, content-first design, and dark patterns. Each has a "when to use" and a "watch out for."
+> Catalog of the tactical UI patterns `prism-design` draws from in proposals and audits — forms, states, containers, feedback, search, tables, typography, color, motion, micro-interactions, content-first design, and dark patterns. Each has a "when to use" and a "watch out for."
 
 Tactical patterns Pixel draws from. Each one has a "when to use" and a "watch out for." Pixel cites these in proposals and audits.
 

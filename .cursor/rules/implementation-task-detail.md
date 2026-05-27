@@ -40,7 +40,7 @@ When you can't tell whether something is a decision or a keystroke, ask: "If two
 
 When the artifact restates a concept defined elsewhere — a doctrine, a template, an established enumeration — cite the source rather than re-enumerate it. Restated content drifts the moment either side moves; cited content can't.
 
-**Why:** Same divergence failure mode the bar already addresses, just upstream. A rule or spec that re-enumerates "the five states" instead of citing Pixel's doctrine at [prism-pixel § States](../skills/prism-pixel/SKILL.md#states) will eventually disagree with it — and downstream artifacts get generated against whichever version the author read first. This rule's first-pass version shipped that exact bug: the rule enumerated states differently from Pixel's doctrine and the mode 2 template, three docs out of sync on day one. Caught by Eric on PR #3 review; fix re-pointed the rule at Pixel's doctrine.
+**Why:** Same divergence failure mode the bar already addresses, just upstream. A rule or spec that re-enumerates "the five states" instead of citing Pixel's doctrine at [prism-design § States](../skills/prism-design/SKILL.md#states) will eventually disagree with it — and downstream artifacts get generated against whichever version the author read first. This rule's first-pass version shipped that exact bug: the rule enumerated states differently from Pixel's doctrine and the mode 2 template, three docs out of sync on day one. Caught by Eric on PR #3 review; fix re-pointed the rule at Pixel's doctrine.
 
 **How to apply:** When authoring a rule, ADR, architect doc, or skill section that touches a concept owned by another doc, link to the owning doc and quote at most a sentence for context. Don't re-enumerate. If you find yourself writing "the five [things] are: a, b, c, d, e" and another doc already enumerates them, replace the list with `per [doc] § [section]`.
 
@@ -48,7 +48,7 @@ When the artifact restates a concept defined elsewhere — a doctrine, a templat
 
 Each task names:
 
-1. **Target file path** with relative path from repo root (e.g. `.ai-skills/skills/prism-pixel/shared.md`). Include line numbers when stable; reference section headings when line numbers will drift.
+1. **Target file path** with relative path from repo root (e.g. `.ai-skills/skills/prism-design/shared.md`). Include line numbers when stable; reference section headings when line numbers will drift.
 2. **The specific change.** For edits: the exact `old_string` → `new_string` replacement (or describe it precisely enough that Edit tool input writes itself). For new files: full content or a content outline tight enough that the writer doesn't have to invent structure. For deletions: name the lines or sections to delete.
 3. **Verification command** when the change has runtime or build implications (`pnpm prism:check`, `pnpm prism:test`, `npx jest --testPathPatterns=...`). When the change is content-only with no build effect, state that explicitly so the implementer doesn't waste time guessing.
 4. **Sequence dependencies** noted inline when applicable — "after task 3", "blocks task 7", "parallel with task 4–6".
@@ -85,7 +85,7 @@ A spec at this bar gives Winston enough fidelity to write `## Implementation Tas
 
 1. **Measurable units in every wireframe.** Use Tailwind tokens (`text-lg`, `p-4`, `gap-2`, `max-w-md`) when they fit; explicit px or rem when they don't. Spacing, typography scale, color tokens, layout dimensions — all named.
 2. **Cited principles for each interaction or layout decision.** Name the framework: Hick's Law, Fitts's Law, Miller's Law, Nielsen heuristic by number (Nielsen #4, Nielsen #8), Gestalt principle by name (proximity, common region). The intuition explains why the design feels right; the citation makes it auditable.
-3. **All five states with annotated wireframes.** Per Pixel's five-state doctrine ([prism-pixel § States](../skills/prism-pixel/SKILL.md#states)). Each state gets its own wireframe with measurable units and cited principles. Skipping a state in the spec means Clove will guess.
+3. **All five states with annotated wireframes.** Per Pixel's five-state doctrine ([prism-design § States](../skills/prism-design/SKILL.md#states)). Each state gets its own wireframe with measurable units and cited principles. Skipping a state in the spec means Clove will guess.
 4. **Copy direction precise enough to write final strings without judgment.** Not the final strings — the direction. "The delete confirmation should feel like a pause, not a warning. Use 'Remove link' not 'Delete link forever' — it's reversible." Final strings can be written from this direction without needing a second design pass.
 5. **Keyboard flow, focus order, ARIA roles named.** Tab order through interactive elements. Focus trap behavior on dialogs. ARIA roles (`role="dialog"`, `aria-labelledby`, `aria-describedby`). Escape key behavior. Where focus moves on dismiss.
 6. **Reused components named with file paths.** `frontend/components/Button.tsx`, `backend/plugins/.../blocks/<name>/`. Include server/client classification — RSC default; mark `'use client'` requirement explicitly when local state, hooks, or browser APIs are involved.
@@ -110,7 +110,7 @@ The bad version leaves: which Tailwind classes? Which principles justify which c
 ## Who runs this rule
 
 - **[Winston](../skills/prism-architect/SKILL.md)** — applies the bar when authoring `## Implementation Tasks` in plan mode. The bar is a baseline for every task Winston writes.
-- **[Pixel](../skills/prism-pixel/SKILL.md)** — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
+- **[Pixel](../skills/prism-design/SKILL.md)** — applies the bar when authoring mode 2 saved mock specs. Mode 1 inline sketches and mode 3 HTML mocks are exempt.
 - **[Briar](../skills/prism-code-review-self/SKILL.md)** and **[Eric](../skills/prism-code-review-pr/SKILL.md)** — flag tasks or specs that fail the bar during self-review and PR review.
 
 ## Severity

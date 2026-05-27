@@ -2,7 +2,7 @@
 
 The architect-level record of how Atlas onboards a consuming team into PRISM. This doc captures the lasting decisions from the Phase 2 epic so future contributors don't have to reconstruct them from the plan file.
 
-See [ADR-0040](../spec/adrs/0040-atlas-as-onboarding-persona.md) for the persona-level decision and [`prism-atlas/shared.md`](../../.ai-skills/skills/prism-atlas/shared.md) for the workflow.
+See [ADR-0040](../spec/adrs/0040-atlas-as-onboarding-persona.md) for the persona-level decision and [`prism-onboarding/shared.md`](../../.ai-skills/skills/prism-onboarding/shared.md) for the workflow.
 
 ## Atlas is a dedicated persona
 

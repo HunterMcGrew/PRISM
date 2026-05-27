@@ -50,7 +50,7 @@ The Deletion Test from Phase 1.5e is Theo's primary heuristic in cartographic mo
 - Ren (Phase 2.6) will follow the same step-machine pattern Theo establishes here.
 - PRISM gains a reference implementation of the micro-file step machine pattern from Phase 1.5e — future persona authors can model their multi-phase workflows on Theo's shape.
 - Atlas's `<!-- atlas:specializes-in -->` anchor in Theo's `shared.md` is the integration point: Atlas fills the anchor during onboarding with team-specific walking priorities; Theo reads whatever Atlas wrote.
-- The 8 step files at `.prism/skills/prism-theo/step-NN-*.md` are individually replaceable — a future smarter scanner swaps step-02-scan without touching the other 7. The micro-file pattern bears the maintenance load.
+- The 8 step files at `.prism/skills/prism-doc-walker/step-NN-*.md` are individually replaceable — a future smarter scanner swaps step-02-scan without touching the other 7. The micro-file pattern bears the maintenance load.
 
 ## References
 
@@ -58,4 +58,4 @@ The Deletion Test from Phase 1.5e is Theo's primary heuristic in cartographic mo
 - [ADR-0038](./0038-paired-dev-doc-gates.md) — paired dev doc gates that Theo applies before drafting.
 - [ADR-0040](./0040-atlas-as-onboarding-persona.md) — Atlas establishes the persona-vs-mode pattern Theo follows.
 - [Phase 1.5e pattern absorptions](../../../plans/roadmap.md) — micro-file step machine + Deletion Test absorbed from research.
-- [`.prism/skills/prism-theo/lib/state.md`](../../skills/prism-theo/lib/state.md) — Theo's state schema and protocol.
+- [`.prism/skills/prism-doc-walker/lib/state.md`](../../skills/prism-doc-walker/lib/state.md) — Theo's state schema and protocol.

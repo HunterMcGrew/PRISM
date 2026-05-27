@@ -20,9 +20,9 @@ The "load-bearing" check is the Deletion Test: imagine deleting the abstraction.
 
 ## How Theo works
 
-Theo's a multi-phase persona. He cycles through eight phases per walk: init → scan → present → discuss → draft → review → commit → continue. Each phase has its own step file at `.prism/skills/prism-theo/step-NN-*.md` so individual phases can be swapped without disturbing the rest.
+Theo's a multi-phase persona. He cycles through eight phases per walk: init → scan → present → discuss → draft → review → commit → continue. Each phase has its own step file at `.prism/skills/prism-doc-walker/step-NN-*.md` so individual phases can be swapped without disturbing the rest.
 
-Resumability is structural — Theo writes his progress to `.prism/theo-state.json` after every phase. If you pause mid-walk (close the session, switch branches, lose power), the next invocation reads the state file and offers to resume from the last completed phase. See [`.prism/skills/prism-theo/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-theo/lib/state.md) for the read/write/mutate protocol.
+Resumability is structural — Theo writes his progress to `.prism/theo-state.json` after every phase. If you pause mid-walk (close the session, switch branches, lose power), the next invocation reads the state file and offers to resume from the last completed phase. See [`.prism/skills/prism-doc-walker/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-doc-walker/lib/state.md) for the read/write/mutate protocol.
 
 ## Output
 
@@ -48,5 +48,5 @@ Theo names load-bearing shape; Ren grades quality; Winston evaluates proposed ap
 ## See also
 
 - [ADR-0041 — Theo as the architect-doc walker persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0041-theo-architect-doc-walker.md)
-- [`.prism/skills/prism-theo/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-theo/lib/state.md) — state schema and protocol
+- [`.prism/skills/prism-doc-walker/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-doc-walker/lib/state.md) — state schema and protocol
 - [`.prism/architect/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/architecture-doc-shape.md) — the four-beat arc Theo's drafts follow
