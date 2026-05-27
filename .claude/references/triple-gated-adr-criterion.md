@@ -34,7 +34,7 @@ A decision that fails the triple-gate still goes somewhere — just not into an 
 Apply the gate at decision-promotion time — typically Winston during plan close, sometimes Theo when surfacing a walking candidate that might warrant an ADR rather than (or in addition to) an architect doc.
 
 - **Winston** — `.ai-skills/skills/prism-architect/shared.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
-- **Theo** — `.ai-skills/skills/prism-theo/shared.md` § "When to write an ADR vs architect doc" cites this reference; Theo flags ADR candidates during walks and hands off to Winston, who applies the gate and writes the ADR.
+- **Theo** — `.ai-skills/skills/prism-doc-walker/shared.md` § "When to write an ADR vs architect doc" cites this reference; Theo flags ADR candidates during walks and hands off to Winston, who applies the gate and writes the ADR.
 
 ## Who cites this pattern
 

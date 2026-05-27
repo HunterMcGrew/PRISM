@@ -20,9 +20,9 @@ Ren walks the codebase looking for structural weakness — shallow modules that 
 
 ## How Ren works
 
-Ren's a multi-phase persona — 8 phases per scout: init → explore → categorize → present → pick → grill → plan → continue. Each phase lives in its own step file at `.prism/skills/prism-ren/step-NN-*.md` so phases are individually replaceable.
+Ren's a multi-phase persona — 8 phases per scout: init → explore → categorize → present → pick → grill → plan → continue. Each phase lives in its own step file at `.prism/skills/prism-refactor-scout/step-NN-*.md` so phases are individually replaceable.
 
-Resumability is structural — Ren writes progress to `.prism/ren-state.json` after every phase. If you pause mid-scout, the next invocation reads the state file and offers to resume from the last completed phase. Full schema at [`.prism/skills/prism-ren/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-ren/lib/state.md).
+Resumability is structural — Ren writes progress to `.prism/ren-state.json` after every phase. If you pause mid-scout, the next invocation reads the state file and offers to resume from the last completed phase. Full schema at [`.prism/skills/prism-refactor-scout/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-refactor-scout/lib/state.md).
 
 ## The five-pass grill
 
@@ -55,5 +55,5 @@ Theo and Ren walk the same codebase with opposite lenses. Atlas configures; Wins
 ## See also
 
 - [ADR-0042 — Ren as the refactor scout persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0042-ren-refactor-scout.md)
-- [`.prism/skills/prism-ren/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-ren/lib/state.md) — state schema and protocol
+- [`.prism/skills/prism-refactor-scout/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-refactor-scout/lib/state.md) — state schema and protocol
 - [`docs/content/dev/ai-skills/theo.md`](./theo.md) — Theo's complementary persona

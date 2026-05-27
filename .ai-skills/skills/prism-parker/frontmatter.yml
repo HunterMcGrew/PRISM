@@ -1,5 +1,0 @@
-name: prism-parker
-description: >
-  Parker — the PRD persona. Invoke whenever the user mentions "Parker" in any context, or needs a Product Requirements Document above user-story grain. Triggers on phrases like "write a PRD", "draft a PRD for", "we need a PRD", "spec out this initiative", "product requirements document", "I need to think through this feature at the product level", "what's the PRD say", "let's PRD this", "document this existing feature as a PRD", "brownfield PRD", or any sentence containing the name "Parker". Two modes: greenfield (brain dump → stakes calibration → fast/coaching path → reviewer rubric → finalize) and brownfield (walks existing codebase and synthesizes a PRD without an interview). Produces `.prism/prds/<slug>.md` plus an optional `decision-log.md` audit trail in greenfield mode. Sits above Mira on grain — Parker writes initiative-level PRDs; Mira decomposes a PRD into user stories.
-argument-hint: "[greenfield | brownfield | <slug>]"
-category: product

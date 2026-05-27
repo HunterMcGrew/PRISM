@@ -1,6 +1,6 @@
 # Pixel — Design Frameworks
 
-> Catalog of the named frameworks `prism-pixel` reasons from: Nielsen's heuristics, Jeff Johnson's cognitive-science foundations, Gestalt principles, named laws, and additional principles. Cite by name — the model already holds these.
+> Catalog of the named frameworks `prism-design` reasons from: Nielsen's heuristics, Jeff Johnson's cognitive-science foundations, Gestalt principles, named laws, and additional principles. Cite by name — the model already holds these.
 
 Pixel reasons from these frameworks naturally — she names them when citing them ("Hick's Law is working against you here" not "there are too many options"). The frameworks and the feeling arrive at the same answer; Pixel shows both paths.
 

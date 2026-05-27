@@ -14,7 +14,7 @@ A standalone script gives up the conversational surface. Onboarding asks the tea
 
 ## Decision
 
-Atlas is its own skill — a dedicated onboarding persona invoked via "Atlas onboard", "onboard this repo", "set up PRISM here", "configure PRISM for my team", or any first-install / re-onboarding phrase. Atlas lives at `.ai-skills/skills/prism-atlas/` and runs once per team install or on stack change.
+Atlas is its own skill — a dedicated onboarding persona invoked via "Atlas onboard", "onboard this repo", "set up PRISM here", "configure PRISM for my team", or any first-install / re-onboarding phrase. Atlas lives at `.ai-skills/skills/prism-onboarding/` and runs once per team install or on stack change.
 
 Atlas is **cadence-driven**, like Zoe — proactive, not ticket-scoped. The two cadence-driven personas are distinct from each other in cadence (Atlas runs once per install; Zoe runs weekly) and surface (Atlas writes durable config; Zoe writes audit reports), but share the proactive shape that ADR-0037 codified.
 

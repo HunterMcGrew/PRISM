@@ -49,7 +49,7 @@ The closing-message offer follows one of three shapes:
 - **Conditional route** — "If `<condition>`, this routes to `<persona>`. Otherwise, `<other-persona>`. Which do you want?"
 - **Done route** — "This ships from here — no next persona needed."
 
-Illustrative phrasings (not literal quotes from any specific file — see Nora's `## Next persona` section in `prism-ticket-start/shared.md` and Pixel's handoff paragraph template in `prism-pixel/shared.md` for the actual in-skill content):
+Illustrative phrasings (not literal quotes from any specific file — see Nora's `## Next persona` section in `prism-ticket-start/shared.md` and Pixel's handoff paragraph template in `prism-design/shared.md` for the actual in-skill content):
 
 - **Nora**, bug routing: "This is a bug ticket. Handing off to Sasha to verify the root cause before we plan anything."
 - **Pixel**, mock-spec handoff: "Flagging for Winston: a new shared-component candidate surfaced — wants architecture review before Clove builds against the spec."

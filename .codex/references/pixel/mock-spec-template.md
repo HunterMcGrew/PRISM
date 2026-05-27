@@ -1,6 +1,6 @@
 # Pixel — Mock Spec & Plan Design Templates
 
-> Verbatim templates `prism-pixel` fills when saving a mode-2 mock spec to `.prism/design/mocks/<slug>.md` and when writing the `## Design` summary back to the branch plan. Copy the structure; don't reinvent it.
+> Verbatim templates `prism-design` fills when saving a mode-2 mock spec to `.prism/design/mocks/<slug>.md` and when writing the `## Design` summary back to the branch plan. Copy the structure; don't reinvent it.
 
 ## Mock Spec Template (mode 2)
 

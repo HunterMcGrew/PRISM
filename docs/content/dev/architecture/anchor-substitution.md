@@ -24,7 +24,7 @@ The open marker names the anchor. The close marker is the un-named `<!-- atlas:e
 
 HTML comments are invisible in rendered markdown, so a reader opening the canonical source sees only the default content between the markers. The markers themselves don't render. This is the property that lets canonical sources stay readable to authors: they look like normal markdown until you reach for the substitution mechanism.
 
-Markers must be on their own line — line-start (optionally indented) and line-end. This excludes inline prose references like `` `<!-- atlas:<name> -->` `` inside backticks, which is what lets `prism-atlas/shared.md` itself document the convention without triggering the parser. (The persona that owns the convention needs to write about it.)
+Markers must be on their own line — line-start (optionally indented) and line-end. This excludes inline prose references like `` `<!-- atlas:<name> -->` `` inside backticks, which is what lets `prism-onboarding/shared.md` itself document the convention without triggering the parser. (The persona that owns the convention needs to write about it.)
 
 ## The three layers
 

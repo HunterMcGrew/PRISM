@@ -31,4 +31,4 @@ Pixel herself auto-triggers on the signal phrases in her skill description ("wha
 ## References
 
 - `.prism/architect/skills-ecosystem.md` § Skill Roster and § Cross-skill Handoffs
-- `.claude/skills/prism-pixel/SKILL.md` — Pixel's own skill description
+- `.claude/skills/prism-design/SKILL.md` — Pixel's own skill description

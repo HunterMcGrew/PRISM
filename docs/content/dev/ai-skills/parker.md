@@ -23,7 +23,7 @@ The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision
 
 ## How Parker works
 
-Multi-phase, resumable. State lives in the PRD's YAML frontmatter — no separate state file. Each phase is its own step file at `.prism/skills/prism-parker/step-*.md` so phases are individually replaceable.
+Multi-phase, resumable. State lives in the PRD's YAML frontmatter — no separate state file. Each phase is its own step file at `.prism/skills/prism-prd/step-*.md` so phases are individually replaceable.
 
 **Greenfield flow:** init → stakes calibration → fast/coaching mode → draft → decision log (if stakes ≥ internal) → review → finalize → optional Linear handoff.
 

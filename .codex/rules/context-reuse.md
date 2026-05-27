@@ -27,7 +27,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-code-review-self (Briar)
 - prism-debugger (Sasha)
 - prism-documentation (Eli)
-- prism-pixel (Pixel)
+- prism-design (Pixel)
 - prism-qa-test-plan (Reese)
 - prism-ticket-start (Nora)
 - prism-user-stories (Mira)

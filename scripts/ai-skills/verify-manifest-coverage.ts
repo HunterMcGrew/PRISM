@@ -45,7 +45,7 @@ const PERSONA_SCOPES: PersonaScope[] = [
 	{
 		name: "zoe",
 		files: [
-			".claude/skills/prism-zoe/SKILL.md",
+			".claude/skills/prism-surface-audit/SKILL.md",
 			".prism/lessons.md",
 			".prism/spec/adrs/0035-rule-loading-tiers.md",
 		],

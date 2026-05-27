@@ -7,7 +7,7 @@ Date: 2026-05-26
 
 ## Context
 
-PRISM skills accreted through iterative patching — each "add a Lessons Check," "make the DoD include X," "inline the framework catalog" felt small at the time. The result: 9 of 18 skills sat at or over the skill-creator guide's 500-line soft cap, with `prism-pixel` at 703.
+PRISM skills accreted through iterative patching — each "add a Lessons Check," "make the DoD include X," "inline the framework catalog" felt small at the time. The result: 9 of 18 skills sat at or over the skill-creator guide's 500-line soft cap, with `prism-design` at 703.
 
 Skill content loads at three **levels** (the disclosure model's term — deliberately *not* "tier," which [ADR-0035](./0035-rule-loading-tiers.md) already owns for rule loading across handoffs):
 
@@ -17,7 +17,7 @@ Skill content loads at three **levels** (the disclosure model's term — deliber
 
 The failure mode is attention dilution, not token cost alone. A 200-line skill with five sharp rules treats them as load-bearing because they're the whole document. A 700-line skill with the same five rules plus thirty nice-to-haves flattens the importance hierarchy — critical rules compete with nice-to-haves for attention and get followed less reliably, and not predictably less. Opus 4.7's instruction-hierarchy sensitivity amplifies this: more competing signals to weight, less reliable weighting.
 
-The phase-machine personas (`prism-ren`/Ren, `prism-theo`/Theo, `prism-iris`/Iris, `prism-parker`/Parker) already externalize their per-phase procedure into step files and stay lean (83–161 lines). The large judgment-and-procedure skills did not — they inlined modes, command bodies, and reference catalogs the model already holds from training.
+The phase-machine personas (`prism-refactor-scout`/Ren, `prism-doc-walker`/Theo, `prism-retro`/Iris, `prism-prd`/Parker) already externalize their per-phase procedure into step files and stay lean (83–161 lines). The large judgment-and-procedure skills did not — they inlined modes, command bodies, and reference catalogs the model already holds from training.
 
 Two alternatives were considered and rejected:
 
