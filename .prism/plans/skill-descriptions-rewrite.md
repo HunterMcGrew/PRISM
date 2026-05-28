@@ -315,6 +315,7 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 4 — added `MAX_SKILL_BODY_LINES=500` to `utils.ts` and a body-line assertion to `discovery-metadata.test.ts` (130 tests pass). Description guard already existed at 1000; only the body guard was net-new.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Pilot routing validated (Hunter, fresh sessions). Bare "clove" invokes `prism-code-dev`; "clove are you there" correctly stays conversational (presence ping ≠ work) — no §0 persona-name rule needed. Gate passed; the 17 rewrites stand.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove addressed Briar's 2 findings — relaxed `skill-authoring.md` guidance to ~250–400 chars / ≈3–8 keywords (it had contradicted the shipped descriptions) and commented the body-line test's intentional scope. Both rule copies + regenerated mirrors; 130 tests pass.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Briar re-review (delta `d6c5e3d`) — both findings resolved, no new issues. Guidance now matches the 283–397-char / 3–7-keyword reality and the AC. Self-review clean; no PR yet, so back to Clove to ship.
 
 ---
 
@@ -325,7 +326,7 @@ Gated on pilot validation passing.
 - [x] All 18 descriptions between 250–400 chars — 283–397 (Clove, 2026-05-28)
 - [x] `skill-authoring.md` updated with new shape guidance (both canonical + platform copies) — Clove, 2026-05-28
 - [x] CI guard added and passing — body-line guard, 130 tests green (Clove, 2026-05-28)
-- [ ] Briar self-review clean — 1 Major + 1 Minor found 2026-05-28, both `fixed` by Clove (guidance relaxed; test scope comment); re-review pending
+- [x] Briar self-review clean — re-review 2026-05-28 confirmed both fixes (guidance now matches shipped descriptions + AC; test scope comment accurate); no new issues
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
