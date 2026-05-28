@@ -2,7 +2,7 @@
 
 ## Ticket
 
-_Needs Linear ticket — Nora to file. Working slug: `agents-md-slim`._
+GitHub issue #64 — https://github.com/HunterMcGrew/PRISM/issues/64
 
 ## Goal
 
@@ -79,6 +79,8 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - **Token economics.** Externalizing short sections does not save chat-load tokens — AGENTS.md is loaded every chat, and Tier 1 rules are also loaded every chat. The win is structural: cleaner authority hierarchy (rules live in `.prism/rules/`, not in the agent-behavior-router file), better scannability of AGENTS.md, and ability for other personas to cite a specific rule by path rather than "AGENTS.md `§5`."
   - → no promotion needed (planning rationale, not a durable invariant).
 
+- **OPEN — TBD, needs Hunter input.** Slice 4 §N numbering: whether AGENTS.md `§§ 1–6` keep their section numbering as discovery shells (each body becomes a one-line citation to `.prism/rules/<file>.md`), or shed numbering entirely so the file is structured around `.prism/rules/<file>.md` citations alone. **Default path (used until resolved):** keep numbering. Preserves existing in-tree `AGENTS.md §N` cross-references; less disruption to Slice 4 execution. Trade-off: shedding numbering aligns more cleanly with the externalization direction (rules live in `.prism/rules/`, AGENTS.md doesn't number-own them), but expands Slice 4 task #4 and Briar self-review task #5 to sweep and rewrite existing `AGENTS.md §N` references across `.prism/`, `.claude/`, `.codex/`, `.cursor/`.
+
 ---
 
 ## Implementation Tasks
@@ -119,7 +121,7 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 1. Open `/Users/hunter/Documents/PRISM/PRISM/AGENTS.md`. Working from the section-by-section verdict table:
 2. **Header (1–19):** Keep `## Skills Ecosystem` intro paragraph. Cut `Key files` block (move to new `.prism/architect/spec-map.md` if Hunter wants it preserved; otherwise drop — most paths are findable via `.prism/SPEC.md`).
 3. **`§0` (21–61):** Keep table. Tighten signal-phrases column — trim phrases longer than ~80 characters to the 1–2 most representative examples. Keep the routing-instructions, built-in-skill-overrides, onboarding-intent-routing, skip-conditions, and authors-ship-reviewers-review paragraph verbatim.
-4. **`§§ 1–6` (65–95):** Replace each section body with a one-line citation: `See [.prism/rules/<file>.md](.prism/rules/<file>.md).` Keep the section headings so existing references (`AGENTS.md §3`) still resolve, OR remove the numbering entirely and direct citations to `.prism/rules/<file>.md` — Hunter to confirm during sign-off.
+4. **`§§ 1–6` (65–95):** Keep the section headings (§1–§6) so existing `AGENTS.md §N` cross-references in the repo still resolve. Replace each section body with a one-line citation: `See [.prism/rules/<file>.md](.prism/rules/<file>.md).` (Numbering retention is the default path of an OPEN Decision — see `## Decisions` → "Slice 4 §N numbering". If Hunter resolves to remove numbering, this task and Briar self-review task #5 both expand to sweep the in-tree references.)
 5. **`Task Management` (99–108):** Replace with single line: `See [.prism/rules/branch-plan.md](.prism/rules/branch-plan.md) for the full workflow.`
 6. **`Core Principles` (110–116):** Replace with citation to `.prism/rules/core-principles.md`.
 7. **`§7` (118–128):** Tighten to ~4 lines. Drop the "Framing" paragraph (the citations belong in the rules themselves, not in AGENTS.md).
@@ -142,6 +144,26 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 1. Source-verify per `.prism/rules/architect-doc-verification.md` since the diff touches a routed architect doc (`skills-ecosystem.md`) — walk every claim in the new "Handoff phrases" sub-section against the original `§9` source.
 2. Flag any rule file that ships with only a header and no body (per `.prism/rules/lazy-artifacts.md`).
 3. Confirm the manifest registration matches every new rule file (orphan check).
+
+---
+
+## Review Issues
+
+### Slice 4 task #4 has an unresolved OR-clause
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/agents-md-slim.md` → `## Implementation Tasks > ### Clove (implementation) — Slice 4: rewrite AGENTS.md` task #4
+- **Problem:** Task offered two paths ("Keep the section headings so existing references (`AGENTS.md §3`) still resolve, OR remove the numbering entirely and direct citations to `.prism/rules/<file>.md` — Hunter to confirm during sign-off") instead of front-loading the decision. Per `.prism/rules/implementation-task-detail.md`, decisions belong in `## Decisions`; task options leave divergence room across LLM runs.
+- **Fixed in:** PR #66, commit on hmcgrew/agents-md-slim. Wrapped as a new `OPEN — TBD, needs Hunter input.` Decision (see `## Decisions` → "Slice 4 §N numbering"). Default path: keep numbering (preserves existing in-tree `AGENTS.md §N` cross-references). Slice 4 task #4 rewritten to follow the default path with a back-link to the Decision.
+
+### Ticket field references Linear; should reference GitHub issue #64
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/agents-md-slim.md:5`
+- **Problem:** Plan's `## Ticket` read "_Needs Linear ticket — Nora to file. Working slug: `agents-md-slim`._" — but the work is tracked on GitHub issue #64 (PRISM is GitHub-only, not Linear). Plan should reflect actual ticket location.
+- **Fixed in:** PR #66, commit on hmcgrew/agents-md-slim. Replaced with `GitHub issue #64 — https://github.com/HunterMcGrew/PRISM/issues/64`.
 
 ---
 
@@ -176,6 +198,8 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - 2026-05-28 [hmcgrew/agents-md-slim]: Nora opened the ticket. Branched from `origin/main` after committing in-flight Slice 6 self-review edit. OPEN decision (bundle vs. scatter for behavioral norm rules) resolved → scatter; Slice 2 unblocked.
 - 2026-05-28 [hmcgrew/agents-md-slim]: Slice 1 — Clove moved the 11 handoff phrases from AGENTS.md §9 into a new `### Handoff phrases` sub-section under `## Cross-skill Handoffs` in `.prism/architect/skills-ecosystem.md`. Verbatim move with the plan-specified preamble; verified no §9-internal context dependencies. No duplication with the existing handoff table — phrases are routing language, the table is routing logic.
 - 2026-05-28 [hmcgrew/agents-md-slim]: Mid-Slice-1, Hunter flagged "Sage handles changelogs — want me to bring him in?" as mis-pronouned (Sage is she/her). Fixed across all four `skills-ecosystem.md` surfaces + `AGENTS.md §9`; grep surfaced a third occurrence in `.ai-skills/skills/prism-changelog/shared.md` ("When he's unsure"), fixed at source. Rebuilt — 129/129 tests pass.
+- 2026-05-28 [hmcgrew/agents-md-slim]: Briar self-review of PR #66 — 2 Minor found, no Critical/Major. Doc-class triage clean (11 phrases verified verbatim vs AGENTS.md §9 post-Sage-fix, 4 mirror surfaces coherent). Build skipped (markdown-only diff; prior `pnpm prism:build` clean).
+- 2026-05-28 [hmcgrew/agents-md-slim]: Clove addressed both Briar Minor — `## Ticket` now points at GitHub issue #64, Slice 4 task #4 OR-clause replaced by a new `OPEN — TBD, needs Hunter input.` Decision (default: keep §N numbering) with task #4 rewritten to follow the default path. Plan-only fixes; no source changes.
 
 ---
 
@@ -191,3 +215,15 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - [ ] PR description up to date
 
 **Last updated:** 2026-05-28 (Slice 1 complete)
+
+### PR #66 (Slice 1 — gap-fill handoff phrases)
+
+- [x] No critical or major issues — Briar self-review caught 2 Minor (see `## Review Issues`)
+- [x] Doc-class triage clean — 11 phrases verified verbatim against AGENTS.md §9 (post-Sage-fix); preamble change is directional instruction, not a source claim
+- [x] Cross-platform mirror coherence — handoff sub-section added identically to 4 mirrored `skills-ecosystem.md` surfaces; Sage Tone fix propagated to 4 changelog surfaces
+- [x] Sage pronoun fix symmetric — `§9` source and new sub-section both updated; aligned with persona frontmatter `Sage (she/her)`
+- [x] Plan structure follows `branch-plan.md` — 4 Decisions with verdicts, 4 History entries each within 3-sentence cap, OPEN→scatter recorded with chosen approach
+- [x] Build skipped — markdown-only diff; `pnpm prism:build` ran clean during implementation (129/129)
+- [x] 2 Minor findings fixed — Ticket field now points at GitHub issue #64; Slice 4 task #4 OR-clause wrapped as `OPEN` Decision with default path
+
+**Last updated:** 2026-05-28 (Clove addressed Briar's 2 Minor; re-review pending)
