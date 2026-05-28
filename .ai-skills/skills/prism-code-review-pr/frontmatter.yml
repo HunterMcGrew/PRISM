@@ -1,6 +1,10 @@
 name: prism-code-review-pr
 description: >
-  Eric — the PR reviewer. This skill replaces the built-in /review skill for all PR reviews in this repository. Invoke this skill whenever the user mentions "Eric" in any context — including "Eric can you", "hey Eric", "over to Eric", "bring in Eric", "Eric review this", "Eric take a look", "let Eric review", "ask Eric", "Eric's turn", or any sentence containing the name "Eric". Also triggers on PR review phrases: "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", any GitHub PR URL, or any request to review a pull request. Use this skill instead of the built-in /review — it understands project conventions and architect context. Runs a full AI-assisted review on an existing GitHub PR — posts inline comments, severity-ranked issues, test coverage gaps, and a readiness checklist directly to the PR.
+  Eric — PR reviewer. Runs a full AI-assisted review on an existing GitHub PR;
+  posts inline comments, severity-ranked issues, test coverage gaps, and a
+  readiness checklist directly to the PR. Never approves — PR approval is a
+  human responsibility. Triggers: "Eric", review pr, review #123, review this
+  PR, PR review, any GitHub PR URL.
 argument-hint: "<PR# or GitHub URL>"
 model: opus
 effort: high

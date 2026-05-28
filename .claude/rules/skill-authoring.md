@@ -20,6 +20,33 @@ Use "level" or "stage" here — never "tier." [ADR-0035](../spec/adrs/0035-rule-
 2. **Body** (`shared.md` + the platform file → generated `SKILL.md`) — loaded every trigger. This is where the cost and the dilution live.
 3. **References** (`.prism/references/…`) — free until the body instructs a read.
 
+## Description field shape
+
+The `description` field is the routing surface — the auto-routing layer reads it to decide which skill fires. Write it as **WHAT the skill does + WHEN to use it + compact discovery keywords**, not as an enumeration of trigger phrases. A list of name-permutations (`"hey Pixel", "over to Pixel", "ask Pixel"`) all collapse to the single keyword `Pixel`; spelling them out spends permanent per-session context without adding routing coverage.
+
+**Why:** `description` is loaded every session for every installed skill (loading level 1 above) — it's the most expensive surface in the skill. The enforced cap is **1000 characters** (`MAX_FRONTMATTER_DESCRIPTION_LENGTH` in `scripts/ai-skills/utils.ts`, asserted for every skill by `discovery-metadata.test.ts` so Codex skill discovery can expose the skill). Trigger-phrase enumeration crowds that budget while the persona-name keyword and the AGENTS.md §0 signal-phrase table already carry the routing.
+
+### The four parts
+
+1. **Sentence 1 — persona name + role.** `"Pixel — UI/UX designer."`
+2. **Sentence 2 — WHAT.** One or two clauses naming the core actions, the artifacts produced, and the key context the skill reads or pre-conditions it needs.
+3. **Sentence 3 (optional) — load-bearing exclusion.** Only when a behavioral constraint changes routing — see below.
+4. **`Triggers:` line — persona name in quotes + a handful of distinctive keywords or short phrases (≈3–8).** The label is cosmetic; routing depends on the keyword content, not on the word "Triggers." Quality beats count — three sharp keywords route better than eight vague ones.
+
+Target roughly **250–400 characters** — well under the 1000 cap, above the floor where the WHAT stops carrying real signal.
+
+### Persona name appears twice
+
+The name goes in sentence 1 (as role) and again in the `Triggers:` line. This is double-coverage for named-invocation routing: if keyword extraction favors prose mentions, sentence 1 catches it; if it favors keyword lists, the trigger line catches it. Cheap insurance against a routing miss on a named handoff — and every persona's `## Next persona` section depends on named handoffs working.
+
+### Exclusions stay when they're concrete behavioral constraints
+
+The general preference is positive framing. Negation clauses are the exception when they're load-bearing for routing — `"Never writes code"` (Pixel, Sasha), `"Reports in chat only — never posts to GitHub"` (Briar), `"Never approves"` (Eric). These steer the router away from the wrong skill when a user asks for code, a GitHub post, or a PR approval. Keep one short exclusion on the skills where it marks a real behavioral boundary; drop it everywhere else. The test: does omitting the clause let the router pick this skill for work it doesn't do? If yes, the exclusion is load-bearing — it's a behavioral constraint, not a stylistic preference.
+
+### Example
+
+> Briar — self-review specialist. Runs a self-review on the current branch covering types, logic, accessibility, tests, and build. Reports findings in chat only — never posts to GitHub. Triggers: "Briar", review my changes, self review, check my work, am I ready to open a PR, validate branch state.
+
 ## The disclosure gate
 
 Sort every section by **load-frequency × trigger-determinism**:

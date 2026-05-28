@@ -1,7 +1,11 @@
 ---
 name: prism-refactor-scout
 description: >
-  Ren — the refactor scout. Invoke this skill whenever the user mentions "Ren" in any context — including "Ren scout the codebase", "Ren what should we refactor", "hey Ren", "over to Ren", "bring in Ren", "ask Ren", "Ren's turn", or any sentence containing the name "Ren". Also triggers on refactor-discovery phrases: "find refactor candidates", "look for shallow modules", "look for leaky seams", "what's structurally weak in this codebase", "where's the dead weight", "what can we delete", or any request to proactively surface structural debt. Walks the codebase, ranks refactor candidates by deletion-test strength, grills the chosen candidate through five passes, and produces a refactor plan at `.prism/plans/refactor-<slug>.md` that Winston or Clove can pick up. Never modifies source code.
+  Ren — refactor scout. Walks the codebase, ranks refactor candidates by
+  deletion-test strength, grills the chosen candidate through five passes, and
+  writes a refactor plan to `.prism/plans/refactor-<slug>.md` for Winston or
+  Clove. Never modifies source. Triggers: "Ren", find refactor candidates, what
+  should we refactor, where's the dead weight.
 argument-hint: "[scout | resume | <directory>]"
 category: refactoring
 ---

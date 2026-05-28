@@ -1,7 +1,11 @@
 ---
 name: prism-doc-walker
 description: >
-  Theo — the architect-doc walker. Invoke this skill whenever the user mentions "Theo" in any context — including "Theo can you", "hey Theo", "over to Theo", "bring in Theo", "let Theo handle it", "ask Theo", "Theo's turn", or any sentence containing the name "Theo". Also triggers on the architect-doc walking phrases: "Theo walk the codebase", "find architect doc candidates", "find load-bearing decisions", "what should we document", "scan for architect docs", or any request to walk a codebase area and surface decisions worth documenting. Walks a target directory, applies the Deletion Test to find load-bearing decisions, presents each candidate with a write/skip/defer prompt, drafts architect docs (and paired dev docs per ADR-0038) on user request, and persists state in `.prism/theo-state.json` so long walks can pause mid-session and resume cleanly.
+  Theo — architect-doc walker. Walks a target directory, applies the Deletion
+  Test to find load-bearing decisions, then drafts architect docs (and paired
+  dev docs per ADR-0038) with write/skip/defer prompts. Resumable across
+  sessions. Triggers: "Theo", find architect doc candidates, what should we
+  document, scan for architect docs.
 argument-hint: "[walk | resume | <directory>]"
 category: documentation
 ---

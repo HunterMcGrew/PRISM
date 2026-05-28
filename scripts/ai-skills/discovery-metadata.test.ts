@@ -6,6 +6,7 @@
  *   - missing required canonical files
  *   - missing role definition for a canonical skill
  *   - description longer than Codex's discovery limit
+ *   - generated Claude body longer than Anthropic's line cap
  *   - generated files written without the managed marker
  *   - role IDs that don't match the canonical skill folder names
  */
@@ -23,6 +24,7 @@ import {
 	loadPathDefinitions,
 	MANAGED_MARKER,
 	MAX_FRONTMATTER_DESCRIPTION_LENGTH,
+	MAX_SKILL_BODY_LINES,
 	normalizeFrontmatter,
 	parseFrontmatter,
 	pathExists,
@@ -108,6 +110,30 @@ test("frontmatter descriptions stay under Codex discovery limit", async () => {
 		assert.ok(
 			description.length <= MAX_FRONTMATTER_DESCRIPTION_LENGTH,
 			`Description for '${skillId}' is ${description.length} chars (max ${MAX_FRONTMATTER_DESCRIPTION_LENGTH})`
+		);
+	}
+});
+
+test("generated Claude skill bodies stay under Anthropic's line cap", async () => {
+	// Checks every Claude skill body, not just canonical-sourced ones like the
+	// managed-marker test below — Anthropic's line cap degrades discovery for any
+	// skill it loads, so an unmanaged hand-authored skill is in scope too.
+	const skillsRoot = path.join(repoRoot, ".claude", "skills");
+	if (!(await pathExists(skillsRoot))) {
+		// Pre-build state — generated bodies don't exist yet.
+		return;
+	}
+	const skillIds = await listDirectories(skillsRoot);
+	for (const skillId of skillIds) {
+		const bodyPath = path.join(skillsRoot, skillId, "SKILL.md");
+		if (!(await pathExists(bodyPath))) {
+			continue;
+		}
+		const body = await fs.readFile(bodyPath, "utf8");
+		const lineCount = body.split("\n").length;
+		assert.ok(
+			lineCount <= MAX_SKILL_BODY_LINES,
+			`Body for '${skillId}' is ${lineCount} lines (max ${MAX_SKILL_BODY_LINES})`
 		);
 	}
 });

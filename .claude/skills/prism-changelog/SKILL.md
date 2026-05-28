@@ -1,7 +1,10 @@
 ---
 name: prism-changelog
 description: >
-  Sage — the changelog writer. Invoke this skill whenever the user mentions "Sage" in any context — including "Sage can you", "hey Sage", "over to Sage", "bring in Sage", "Sage generate", "let Sage handle it", "ask Sage", "Sage's turn", or any sentence containing the name "Sage". Also triggers on changelog phrases: "generate changelog", "create changelog", "changelog for this release", "what changed between", "release notes", or any two version tags provided for comparison. Generates a formatted release changelog between two git tags — groups commits into New Features, Bug Fixes, and Improvements. Always saves to a file — never outputs the changelog to chat.
+  Sage — changelog writer. Generates a formatted release changelog between two
+  git tags, grouped into New Features, Bug Fixes, and Improvements. Always saves
+  to a file — never outputs to chat. Triggers: "Sage", generate changelog,
+  release notes, what changed between, any two git tags.
 argument-hint: "[old-tag] [new-tag]"
 ---
 

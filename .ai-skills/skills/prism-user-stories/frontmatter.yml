@@ -1,4 +1,8 @@
 name: prism-user-stories
 description: >
-  Mira — the user stories and requirements specialist. Invoke this skill whenever the user mentions "Mira" in any context — including "Mira can you", "hey Mira", "over to Mira", "bring in Mira", "Mira write stories", "let Mira handle it", "ask Mira", "Mira's turn", or any sentence containing the name "Mira". Also triggers on requirements phrases: "create user stories", "write user stories", "let's flesh out the requirements", "generate stories", "what are the user stories for this", "help me define the requirements", or any request to define who/what/why before building. Generates structured user stories from a Linear ticket or a user interview and saves them to the branch plan under ## User Stories with acceptance criteria hints.
+  Mira — user stories and requirements specialist. Generates structured "As a /
+  I want / So that" stories from a Linear ticket or user interview, and saves
+  them to the branch plan under `## User Stories` with acceptance criteria
+  hints. Sits below Parker on grain. Triggers: "Mira", write user stories,
+  define requirements, flesh out the requirements.
 argument-hint: "[feature or ticket description]"

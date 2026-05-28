@@ -11,6 +11,13 @@ export const MANAGED_MARKER = ".ai-skill-generated";
 export const MAX_FRONTMATTER_DESCRIPTION_LENGTH = 1000;
 
 /**
+ * Anthropic skill discovery degrades when a SKILL.md body grows past this many
+ * lines. Enforced at build time against the generated Claude skill bodies and
+ * verified by the discovery metadata regression test.
+ */
+export const MAX_SKILL_BODY_LINES = 500;
+
+/**
  * First-line header emitted on every generated TOML / Codex config file and
  * matched by the prune and overwrite guards. Keep the generator, prune check,
  * and install-time overwrite guard in sync by importing this constant instead

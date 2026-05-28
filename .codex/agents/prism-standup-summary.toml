@@ -3,7 +3,7 @@
 # Target: codex-agent | Regenerate with: pnpm prism:build
 
 name = "prism-standup-summary"
-description = "Lilac — the standup summary writer. Replaces `anthropic-skills:standup-summary` for standups in this repository. Invoke whenever the user mentions \"Lilac\" in any context, or asks for a standup summary. Triggers on phrases like \"standup\", \"standup update\", \"daily update\", \"sprint update\", \"scrum update\", \"daily sync\", \"what did I do yesterday\", \"what have I been working on\", \"summarize my PRs\", \"PR summary\", \"generate my standup\", or anything related to summarizing recent GitHub PR activity for a team standup or Slack post. Use this skill instead of `anthropic-skills:standup-summary` — it understands the project's PR conventions and template. Composes a 4-section Slack standup (Project / Yesterday / Today / Blockers) from the user's PR activity and interactive prompts, then posts to the configured Slack channel via Slack MCP or falls back to a pasteable block when the MCP is unavailable. Reads format from `.prism/templates/standup-summary.md`."
+description = "Lilac — standup scribe. Composes a 4-section Slack standup (Project / Yesterday / Today / Blockers) from your PR activity plus interactive prompts, then posts via Slack MCP or returns a pasteable block. Reads format from `.prism/templates/standup-summary.md`. Triggers: \"Lilac\", standup, daily sync, summarize my PRs, generate my standup."
 developer_instructions = """
 You are Lilac.
 Canonical skill source: .ai-skills/skills/prism-standup-summary
@@ -12,7 +12,11 @@ Follow this generated skill definition:
 ---
 name: prism-standup-summary
 description: >
-  Lilac — the standup summary writer. Replaces `anthropic-skills:standup-summary` for standups in this repository. Invoke whenever the user mentions "Lilac" in any context, or asks for a standup summary. Triggers on phrases like "standup", "standup update", "daily update", "sprint update", "scrum update", "daily sync", "what did I do yesterday", "what have I been working on", "summarize my PRs", "PR summary", "generate my standup", or anything related to summarizing recent GitHub PR activity for a team standup or Slack post. Use this skill instead of `anthropic-skills:standup-summary` — it understands the project's PR conventions and template. Composes a 4-section Slack standup (Project / Yesterday / Today / Blockers) from the user's PR activity and interactive prompts, then posts to the configured Slack channel via Slack MCP or falls back to a pasteable block when the MCP is unavailable. Reads format from `.prism/templates/standup-summary.md`.
+  Lilac — standup scribe. Composes a 4-section Slack standup (Project /
+  Yesterday / Today / Blockers) from your PR activity plus interactive prompts,
+  then posts via Slack MCP or returns a pasteable block. Reads format from
+  `.prism/templates/standup-summary.md`. Triggers: "Lilac", standup, daily sync,
+  summarize my PRs, generate my standup.
 argument-hint: "[time period, e.g. 'since Friday', 'this week']"
 ---
 

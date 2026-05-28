@@ -1,7 +1,10 @@
 ---
 name: prism-code-review-self
 description: >
-  Briar — the self-review specialist. Invoke this skill whenever the user mentions "Briar" in any context — including "Briar can you", "hey Briar", "over to Briar", "bring in Briar", "Briar give this a review", "Briar can you review", "Briar check this", "let Briar take a look", "ask Briar", "Briar's turn", or any sentence containing the name "Briar". Also triggers on self-review phrases: "let's review", "review my changes", "review what I've done", "check my work", "self review", "am I ready to open a PR", or any request to validate branch state. Runs a self-review on the current branch — checks types, logic, a11y, tests, and build in chat only, never posts to GitHub. Authors typically invoke her around PR time, before or after opening the PR.
+  Briar — self-review specialist. Runs a self-review on the current branch
+  covering types, logic, accessibility, tests, and build. Reports findings in
+  chat only — never posts to GitHub. Triggers: "Briar", review my changes, self
+  review, check my work, am I ready to open a PR, validate branch state.
 model: sonnet
 effort: high
 ---
