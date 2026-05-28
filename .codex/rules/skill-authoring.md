@@ -41,6 +41,14 @@ Never externalize these, regardless of length:
 - The workflow router — startup batch + the at-a-glance phase/mode index.
 - The Definition of Done.
 
+## Persona name vs. slash-command ID
+
+The skill's slash-command ID is function-descriptive (`prism-design`, `prism-doc-walker`, `prism-surface-audit`, `prism-onboarding`, `prism-prd`, `prism-retro`, `prism-refactor-scout`). It describes what the skill does, so a user who doesn't know the persona name can still find and route to it. The persona keeps her human name and announces it on intro — that's how voice and continuity show up in conversation.
+
+Persona-name trigger phrases (`"invoke whenever the user mentions 'Pixel'"`) live in the frontmatter `description` field, not in the ID. The auto-routing layer reads `description` for the name match; the slash-command surface reads the ID for the function match. Both paths reach the same skill.
+
+**Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on. The Slice 4 rename in `epic-lean-skill-architecture` (pixel→design, theo→doc-walker, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro, ren→refactor-scout) is the establishing precedent — see that epic's `## Decisions` → "Naming."
+
 ## Externalization mechanics
 
 Replace the moved section with its `## Heading`, a one-line `> _italic note_`, and an imperative trigger. Copy the shape from `prism-architect` (the worked precedent):
@@ -64,4 +72,4 @@ A lens that's present but not *placed* fires only when the run's reasoning path 
 ## Who runs this rule
 
 - **Skill authors** apply the gate when writing or editing any skill, on every section.
-- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) flag violations in review: a lens externalized to a reference (Major — it degrades adherence), a vague pointer with no deterministic trigger, an `atlas:*` anchor moved into a reference, or a CUT bundled silently into a relocation.
+- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) flag violations in review: a lens externalized to a reference (Major — it degrades adherence), a vague pointer with no deterministic trigger, an `atlas:*` anchor moved into a reference, or a CUT bundled silently into a relocation. Deletion candidates flagged for cut get read for incident-derived "why" before sign-off — line count alone never justifies a cut. (Slice 3's audit nearly cut two load-bearing walls — the standup-summary anti-pattern guardrails and the code-review-pr large-PR escape-hatch note — on a line-count basis; see `epic-lean-skill-architecture` § Decisions → "CUT sign-off.")
