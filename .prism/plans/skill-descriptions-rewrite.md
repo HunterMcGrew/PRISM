@@ -316,6 +316,7 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Pilot routing validated (Hunter, fresh sessions). Bare "clove" invokes `prism-code-dev`; "clove are you there" correctly stays conversational (presence ping ≠ work) — no §0 persona-name rule needed. Gate passed; the 17 rewrites stand.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove addressed Briar's 2 findings — relaxed `skill-authoring.md` guidance to ~250–400 chars / ≈3–8 keywords (it had contradicted the shipped descriptions) and commented the body-line test's intentional scope. Both rule copies + regenerated mirrors; 130 tests pass.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Briar re-review (delta `d6c5e3d`) — both findings resolved, no new issues. Guidance now matches the 283–397-char / 3–7-keyword reality and the AC. Self-review clean; no PR yet, so back to Clove to ship.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove shipped — pushed branch, opened PR #67 against main (one PR after pilot, per Decision). Prettier box left unchecked: `scripts/ai-skills/*.ts` are tab-style, not root-prettier-managed; `--write` would churn untouched lines.
 
 ---
 
@@ -327,7 +328,7 @@ Gated on pilot validation passing.
 - [x] `skill-authoring.md` updated with new shape guidance (both canonical + platform copies) — Clove, 2026-05-28
 - [x] CI guard added and passing — body-line guard, 130 tests green (Clove, 2026-05-28)
 - [x] Briar self-review clean — re-review 2026-05-28 confirmed both fixes (guidance now matches shipped descriptions + AC; test scope comment accurate); no new issues
-- [ ] PR description up to date
+- [x] PR description up to date — PR #67 opened with full template body (Clove, 2026-05-28)
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
 **Last updated:** 2026-05-28 (Clove Slices 2–4)
