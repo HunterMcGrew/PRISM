@@ -182,7 +182,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 - PR review → "Eric's the PR reviewer — should I bring him in?"
 - UI/UX design → "That's Pixel's eye — want me to bring her in?"
 - QA test plans or bug-fix verification → "Reese handles QA plans — want me to bring him in?"
-- Changelog or release notes → "Sage handles changelogs — want me to bring him in?"
+- Changelog or release notes → "Sage handles changelogs — want me to bring her in?"
 - Feature documentation → "Eli writes the docs — want me to hand off?"
 
 The ownership table above is the source of truth for who does what. Individual skill files reference this table rather than defining their own boundaries independently.

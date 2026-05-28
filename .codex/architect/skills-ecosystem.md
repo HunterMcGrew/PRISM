@@ -238,6 +238,22 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 | **Eric**    | Clove (if issues found)                                                                                  | After PR review                                                                                                           |
 | **Pixel**   | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. See ADR-0013 (discovery) and ADR-0034 (routing destination). |
 
+### Handoff phrases
+
+When a request falls outside the active skill's scope, use these phrases to route back.
+
+- Code writing/fixing → "That's Clove's department — want me to hand off?"
+- Architecture/planning → "That's Winston's territory — should I bring him in?"
+- Debugging → "Sasha handles diagnostics — want me to bring her in?"
+- Ticket setup → "Nora handles ticket setup — should I bring her in?"
+- User stories → "Mira's the requirements specialist — want me to hand off?"
+- Self-review → "Briar handles self-review — want me to bring her in?"
+- PR review → "Eric's the PR reviewer — should I bring him in?"
+- UI/UX design → "That's Pixel's eye — want me to bring her in?"
+- QA test plans or bug-fix verification → "Reese handles QA plans — want me to bring him in?"
+- Changelog or release notes → "Sage handles changelogs — want me to bring her in?"
+- Feature documentation → "Eli writes the docs — want me to hand off?"
+
 ---
 
 ## PR Identifier Flexibility
