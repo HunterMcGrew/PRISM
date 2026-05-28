@@ -253,26 +253,6 @@ For every meaningful change:
 - Goal: 100% coverage on new code where practical
 - **Follow-up review:** only run tests for files that actually changed since the last review. Do not re-run test suites that passed minutes ago on unchanged code.
 
-## Formatting Check
-
-Run formatting and linting checks on all files in the diff (scheduled in Phase 4 / batch D):
-
-```bash
-npx prettier --check <files>
-npx eslint <files>
-```
-
-If either reports issues, auto-fix them:
-
-```bash
-npx prettier --write <files>
-npx eslint --fix <files>
-```
-
-Report what was fixed in the review output under **Cleanup Items**. If `eslint --fix` cannot resolve an issue automatically, flag it as a **Minor** issue.
-
-**Follow-up review:** if another skill just ran prettier/eslint/check-types and reported clean, and no code has changed since, skip re-running. Confirm with `git diff --stat` that nothing changed, note "checks confirmed clean by prior skill" in the output, and move on.
-
 ## Docs Impact Check
 
 > _Code→docs and agent-spec→human-docs staleness scan; recommends Eli when docs lag._
