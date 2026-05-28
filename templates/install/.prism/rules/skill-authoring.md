@@ -31,9 +31,9 @@ The `description` field is the routing surface — the auto-routing layer reads 
 1. **Sentence 1 — persona name + role.** `"Pixel — UI/UX designer."`
 2. **Sentence 2 — WHAT.** One or two clauses naming the core actions, the artifacts produced, and the key context the skill reads or pre-conditions it needs.
 3. **Sentence 3 (optional) — load-bearing exclusion.** Only when a behavioral constraint changes routing — see below.
-4. **`Triggers:` line — persona name in quotes + 5–9 distinctive keywords or short phrases.** The label is cosmetic; routing depends on the keyword content, not on the word "Triggers."
+4. **`Triggers:` line — persona name in quotes + a handful of distinctive keywords or short phrases (≈3–8).** The label is cosmetic; routing depends on the keyword content, not on the word "Triggers." Quality beats count — three sharp keywords route better than eight vague ones.
 
-Target **280–340 characters** — well under the 1000 cap, above the floor where the WHAT stops carrying real signal.
+Target roughly **250–400 characters** — well under the 1000 cap, above the floor where the WHAT stops carrying real signal.
 
 ### Persona name appears twice
 

@@ -115,6 +115,9 @@ test("frontmatter descriptions stay under Codex discovery limit", async () => {
 });
 
 test("generated Claude skill bodies stay under Anthropic's line cap", async () => {
+	// Checks every Claude skill body, not just canonical-sourced ones like the
+	// managed-marker test below — Anthropic's line cap degrades discovery for any
+	// skill it loads, so an unmanaged hand-authored skill is in scope too.
 	const skillsRoot = path.join(repoRoot, ".claude", "skills");
 	if (!(await pathExists(skillsRoot))) {
 		// Pre-build state — generated bodies don't exist yet.

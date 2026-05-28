@@ -253,6 +253,26 @@ Gated on pilot validation passing.
 
 ---
 
+## Review Issues
+
+### Slice 1 guidance numbers contradict the Slice 2–3 implementation
+
+- **Severity:** `major`
+- **Status:** `fixed` — relaxed to "Target roughly 250–400 characters" and "a handful of distinctive keywords (≈3–8)" in both `.prism` and `templates/install` copies; `pnpm prism:build` regenerated the `.codex`/`.cursor` mirrors (Clove, 2026-05-28).
+- **File:** `.prism/rules/skill-authoring.md` (§ Description field shape) + `templates/install/.prism/rules/skill-authoring.md`
+- **Problem:** The guidance shipped in Slice 1 states "Target **280–340 characters**" and "**5–9** distinctive keywords," but the Slice 2–3 descriptions break both: `prism-architect` is 397 chars (also `prism-refactor-scout` 345, `prism-user-stories` 348), and 9 of 18 descriptions carry only 3–4 trigger keywords (`doc-walker`, `prd`, `refactor-scout`, `user-stories` at 3; `changelog`, `design`, `onboarding`, `retro`, `surface-audit` at 4). The PR ships a rule and violates it in half the cases — Eric's source-verification lane will flag the same.
+- **Suggested fix:** Align the guidance numbers to the validated implementation rather than padding/trimming descriptions (they capture the WHAT and route correctly). Relax to roughly "Target ~250–400 characters" and "a handful of distinctive keywords (≈3–8)." Apply to both `.prism` and `templates/install` copies, then `pnpm prism:build` to regenerate the `.codex`/`.cursor` mirrors.
+
+### Body-line test scopes differently from its sibling managed-marker test
+
+- **Severity:** `minor`
+- **Status:** `fixed` — added a comment to the body-line test explaining the intentional scope difference from the managed-marker test (Clove, 2026-05-28).
+- **File:** `scripts/ai-skills/discovery-metadata.test.ts` (generated-Claude-body test)
+- **Problem:** The new test iterates every `.claude/skills/*/SKILL.md`, while the managed-marker test directly below it deliberately scopes to dirs with a canonical source ("hand-authored skill directories ... are intentional and unmanaged"). No current impact — all 18 Claude skills are canonical-sourced — but a future intentional unmanaged skill would be policed by the body-line test and not the marker test, an undocumented inconsistency.
+- **Suggested fix:** Add a one-line comment noting the scope difference is intentional (Anthropic's body cap applies to any Claude skill regardless of origin), so a future reader doesn't "fix" it to match the sibling.
+
+---
+
 ## Acceptance Criteria
 
 ### Behavioral
@@ -274,7 +294,7 @@ Gated on pilot validation passing.
 
 ### AC Adjustments
 
-- **2026-05-28 (Clove):** The exclusion AC listed "Pixel, Sasha, Briar, Eric, Ren, Mira, Sage." Actual load-bearing `never`-exclusions after the rewrite: **Winston, Pixel, Sasha, Briar, Eric, Ren, Sage** (7). Mira carries none — no wrong-routing a negation would prevent (her positive WHAT + name route cleanly), so she was dropped; Winston's "Never writes code" is load-bearing (same rationale as Pixel/Sasha), so he was added. The implementation matches Winston's validated drafts; this amends the AC text to match. **Status: awaiting Hunter accept/reject.**
+- **2026-05-28 (Clove):** The exclusion AC listed "Pixel, Sasha, Briar, Eric, Ren, Mira, Sage." Actual load-bearing `never`-exclusions after the rewrite: **Winston, Pixel, Sasha, Briar, Eric, Ren, Sage** (7). Mira carries none — no wrong-routing a negation would prevent (her positive WHAT + name route cleanly), so she was dropped; Winston's "Never writes code" is load-bearing (same rationale as Pixel/Sasha), so he was added. The implementation matches Winston's validated drafts; this amends the AC text to match. **Status: moot — Hunter confirmed AC is not required for this ticket (2026-05-28). Descriptions match the validated drafts; entry kept for the record.**
 
 ### AC Sync Log
 
@@ -294,6 +314,7 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 3 — rewrote the remaining 17 (each draft validated against its `shared.md` via Explore agents; drafts held). Total across 18 dropped 14,848→5,916 (~60%), all 283–397 chars. Build also regenerated the stale `.codex`/`.cursor` `skill-authoring.md` mirrors Slice 1 missed.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 4 — added `MAX_SKILL_BODY_LINES=500` to `utils.ts` and a body-line assertion to `discovery-metadata.test.ts` (130 tests pass). Description guard already existed at 1000; only the body guard was net-new.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Pilot routing validated (Hunter, fresh sessions). Bare "clove" invokes `prism-code-dev`; "clove are you there" correctly stays conversational (presence ping ≠ work) — no §0 persona-name rule needed. Gate passed; the 17 rewrites stand.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove addressed Briar's 2 findings — relaxed `skill-authoring.md` guidance to ~250–400 chars / ≈3–8 keywords (it had contradicted the shipped descriptions) and commented the body-line test's intentional scope. Both rule copies + regenerated mirrors; 130 tests pass.
 
 ---
 
@@ -304,7 +325,7 @@ Gated on pilot validation passing.
 - [x] All 18 descriptions between 250–400 chars — 283–397 (Clove, 2026-05-28)
 - [x] `skill-authoring.md` updated with new shape guidance (both canonical + platform copies) — Clove, 2026-05-28
 - [x] CI guard added and passing — body-line guard, 130 tests green (Clove, 2026-05-28)
-- [ ] Briar self-review clean
+- [ ] Briar self-review clean — 1 Major + 1 Minor found 2026-05-28, both `fixed` by Clove (guidance relaxed; test scope comment); re-review pending
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
