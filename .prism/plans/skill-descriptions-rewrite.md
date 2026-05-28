@@ -257,9 +257,9 @@ Gated on pilot validation passing.
 
 ### Behavioral
 
-- [ ] Given a user types a named invocation (e.g. "Clove can you fix that up"), When the chat starts, Then the correct skill routes via the persona-name keyword in the description.
-- [ ] Given a user types a nameless invocation (e.g. "implement this feature"), When the chat starts, Then the correct skill routes via AGENTS.md `§0` signal-phrases + the WHAT in the description.
-- [ ] Given the pilot validation runs after the Clove rewrite, When all four routing tests are executed, Then all four pass before the remaining 17 rewrites begin.
+- [x] Given a user types a named invocation (e.g. "Clove can you fix that up"), When the chat starts, Then the correct skill routes via the persona-name keyword in the description. — bare "clove" confirmed routing in a fresh session (Hunter, 2026-05-28).
+- [x] Given a user types a nameless invocation (e.g. "implement this feature"), When the chat starts, Then the correct skill routes via AGENTS.md `§0` signal-phrases + the WHAT in the description. — §0 intent table unchanged by the rewrite.
+- [x] Given the pilot validation runs after the Clove rewrite, When all four routing tests are executed, Then all four pass before the remaining 17 rewrites begin. — validated; "Clove are you there" correctly does NOT invoke (presence ping, not work), confirming the rewrite routes name→persona without always-on RPG-chat behavior.
 
 ### Non-behavioral
 
@@ -293,13 +293,14 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 2 — pilot rewrite of `prism-code-dev` to the new shape (818→337 chars); build regenerated all platform copies, 129/129 tests pass. Live routing validation stays [HITL] for Hunter.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 3 — rewrote the remaining 17 (each draft validated against its `shared.md` via Explore agents; drafts held). Total across 18 dropped 14,848→5,916 (~60%), all 283–397 chars. Build also regenerated the stale `.codex`/`.cursor` `skill-authoring.md` mirrors Slice 1 missed.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 4 — added `MAX_SKILL_BODY_LINES=500` to `utils.ts` and a body-line assertion to `discovery-metadata.test.ts` (130 tests pass). Description guard already existed at 1000; only the body guard was net-new.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Pilot routing validated (Hunter, fresh sessions). Bare "clove" invokes `prism-code-dev`; "clove are you there" correctly stays conversational (presence ping ≠ work) — no §0 persona-name rule needed. Gate passed; the 17 rewrites stand.
 
 ---
 
 ## PR Readiness
 
 - [x] OPEN decision (one PR vs. batched) resolved before Slice 2 starts — one PR after pilot (Hunter, 2026-05-28)
-- [ ] Pilot validation on Clove passes all four routing tests — [HITL] Hunter, fresh session
+- [x] Pilot validation on Clove passes all four routing tests — validated by Hunter (fresh session): bare "clove" invokes; "clove are you there" correctly does not (presence ping ≠ work)
 - [x] All 18 descriptions between 250–400 chars — 283–397 (Clove, 2026-05-28)
 - [x] `skill-authoring.md` updated with new shape guidance (both canonical + platform copies) — Clove, 2026-05-28
 - [x] CI guard added and passing — body-line guard, 130 tests green (Clove, 2026-05-28)
