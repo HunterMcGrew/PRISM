@@ -263,16 +263,18 @@ Gated on pilot validation passing.
 
 ### Non-behavioral
 
-- [ ] Every skill description is 250–400 chars (well below the 1000 cap, above the substance floor).
-- [ ] Total description context across all 18 skills drops from ~14,848 → ~5,950 chars (~60% reduction).
-- [ ] Every description contains the persona name in sentence 1 and again in the `Triggers:` line.
-- [ ] Every description ends with `Triggers:` + persona name (quoted) + 5–9 keywords.
-- [ ] Critical exclusions preserved on Pixel, Sasha, Briar, Eric, Ren, Mira, Sage where they were load-bearing.
-- [ ] `.prism/rules/skill-authoring.md` and `.claude/rules/skill-authoring.md` updated with the new description-shape guidance, both byte-identical per ADR-0031.
-- [ ] Body-line CI guard added (description > 1000 guard already exists; do not duplicate it) — fails on body > 500 lines.
-- [ ] `pnpm prism:build` produces clean platform copies for all 18 skills.
+- [x] Every skill description is 250–400 chars (well below the 1000 cap, above the substance floor). — 283–397 across all 18.
+- [x] Total description context across all 18 skills drops from ~14,848 → ~5,950 chars (~60% reduction). — actual 5,916 (60.1%).
+- [x] Every description contains the persona name in sentence 1 and again in the `Triggers:` line.
+- [x] Every description ends with `Triggers:` + persona name (quoted) + 5–9 keywords.
+- [x] Critical exclusions preserved on the load-bearing set — Winston, Pixel, Sasha, Briar, Eric, Ren, Sage (7). See AC Adjustment (Mira→Winston).
+- [x] `.prism/rules/skill-authoring.md` and `.claude/rules/skill-authoring.md` updated with the new description-shape guidance, both byte-identical per ADR-0031.
+- [x] Body-line CI guard added (description > 1000 guard already exists; do not duplicate it) — fails on body > 500 lines.
+- [x] `pnpm prism:build` produces clean platform copies for all 18 skills.
 
 ### AC Adjustments
+
+- **2026-05-28 (Clove):** The exclusion AC listed "Pixel, Sasha, Briar, Eric, Ren, Mira, Sage." Actual load-bearing `never`-exclusions after the rewrite: **Winston, Pixel, Sasha, Briar, Eric, Ren, Sage** (7). Mira carries none — no wrong-routing a negation would prevent (her positive WHAT + name route cleanly), so she was dropped; Winston's "Never writes code" is load-bearing (same rationale as Pixel/Sasha), so he was added. The implementation matches Winston's validated drafts; this amends the AC text to match. **Status: awaiting Hunter accept/reject.**
 
 ### AC Sync Log
 
@@ -288,18 +290,21 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Nora started #65 — branched from `origin/main`, restored the plan from a stash that bundled it with an unrelated #64 tail (stash left intact). OPEN PR-strategy decision closed: one PR after pilot (Hunter).
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Winston plan review — verified structural claims against the repo and corrected three defects. Cap is 1000 (Codex), not 1024, and already CI-enforced; baseline is 14,848 not 8,723; Slice 4 rewritten to a 500-line body guard since the description guard already exists. See Decisions for detail.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 1 — added `## Description field shape` to `skill-authoring.md` (four-part shape, 1000-char cap, name-twice convention, exclusions-as-behavioral-constraints exception). Mirrored byte-identical to `.claude/rules/` per ADR-0031. Markdown-only; no build impact.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 2 — pilot rewrite of `prism-code-dev` to the new shape (818→337 chars); build regenerated all platform copies, 129/129 tests pass. Live routing validation stays [HITL] for Hunter.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 3 — rewrote the remaining 17 (each draft validated against its `shared.md` via Explore agents; drafts held). Total across 18 dropped 14,848→5,916 (~60%), all 283–397 chars. Build also regenerated the stale `.codex`/`.cursor` `skill-authoring.md` mirrors Slice 1 missed.
+- 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove Slice 4 — added `MAX_SKILL_BODY_LINES=500` to `utils.ts` and a body-line assertion to `discovery-metadata.test.ts` (130 tests pass). Description guard already existed at 1000; only the body guard was net-new.
 
 ---
 
 ## PR Readiness
 
 - [x] OPEN decision (one PR vs. batched) resolved before Slice 2 starts — one PR after pilot (Hunter, 2026-05-28)
-- [ ] Pilot validation on Clove passes all four routing tests
-- [ ] All 18 descriptions between 250–400 chars
+- [ ] Pilot validation on Clove passes all four routing tests — [HITL] Hunter, fresh session
+- [x] All 18 descriptions between 250–400 chars — 283–397 (Clove, 2026-05-28)
 - [x] `skill-authoring.md` updated with new shape guidance (both canonical + platform copies) — Clove, 2026-05-28
-- [ ] CI guard added and passing
+- [x] CI guard added and passing — body-line guard, 130 tests green (Clove, 2026-05-28)
 - [ ] Briar self-review clean
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-05-28 (Clove Slices 2–4)

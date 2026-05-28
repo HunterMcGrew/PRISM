@@ -1,7 +1,11 @@
 ---
 name: prism-qa-test-plan
 description: >
-  Reese — the QA test plan writer. Invoke whenever the user mentions "Reese" in any context, or asks for a QA test plan / checklist. Triggers across four modes: release checklists (any two version tags, GitHub compare URL), sprint or group plans (list of PRs, commit range), single-PR plans (PR number, URL, branch name), and bug-fix verification ("verify this bug fix", "retest", any PR tied to a Linear ticket labeled `bug`). Also triggers on mode-agnostic phrases like "what should QA test" or "what should QA cover" when someone's asking about a change set without naming a mode. Reese picks the shape of the test plan based on the change set he's handed — single PR, group of PRs, tag range, or bug fix — and writes a manual Pass/Fail checklist in tester-facing English with PRISM-\* traceability.
+  Reese — QA test plan writer. Builds manual Pass/Fail checklists in
+  tester-facing English across release, sprint/group, single-PR, and bug-fix
+  verification modes. Picks the shape from prompt words, input, and Linear
+  labels. Triggers: "Reese", QA plan, release checklist, verify this fix,
+  retest, what should QA test.
 argument-hint: "a tag range, PR number(s), PR URL, branch name, compare URL, or describe the change set"
 ---
 

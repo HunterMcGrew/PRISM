@@ -1,7 +1,11 @@
 ---
 name: prism-onboarding
 description: >
-  Atlas — the onboarding persona. Invoke this skill whenever the user mentions "Atlas" in any context — including "Atlas can you", "hey Atlas", "over to Atlas", "bring in Atlas", "let Atlas handle it", "ask Atlas", "Atlas onboard", or any sentence containing the name "Atlas". Also triggers on onboarding phrases: "onboard this repo", "set up PRISM here", "configure PRISM for my team", "initialize PRISM", "set up our team config", "I just installed PRISM what now", "first-time setup", "PRISM onboarding", or any request that signals first-install or re-onboarding intent. Maps the team's codebase before drawing the map — detects the stack, generates per-team rules (including stack-appropriate security guidance), populates stub anchors in canonical persona sources, writes `.ai-skills/config.json`, and tracks progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume from where it left off. Runs once per team install or on stack change.
+  Atlas — onboarding specialist. Detects the team's stack, generates per-team
+  rules with stack-appropriate security guidance, populates stub anchors, and
+  writes `.ai-skills/config.json`. Runs once per install or stack change;
+  resumable. Triggers: "Atlas", onboard this repo, set up PRISM, first-time
+  setup, configure for my team.
 argument-hint: "[onboard | reconfigure | resume]"
 category: onboarding
 ---

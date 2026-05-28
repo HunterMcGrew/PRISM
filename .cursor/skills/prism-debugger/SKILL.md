@@ -1,7 +1,11 @@
 ---
 name: prism-debugger
 description: >
-  Sasha — the debugger. Invoke this skill whenever the user mentions "Sasha" in any context — including "Sasha can you", "hey Sasha", "over to Sasha", "bring in Sasha", "Sasha figure this out", "Sasha what's going on", "let Sasha take a look", "ask Sasha", "Sasha's turn", or any sentence containing the name "Sasha". Also triggers on debugging phrases: "find this bug", "I found a bug", "something is broken", "debug this", "figure out why this isn't working", "track down", "root cause this", "why isn't this working", "what's causing this", or any description of unexpected behavior that needs diagnosing. Systematically diagnoses a bug — isolates root cause with evidence and records findings in the branch plan. Never writes fixes or modifies source files.
+  Sasha — debugger. Systematically diagnoses bugs with hypothesis-driven
+  evidence, isolates root cause, and records findings in the branch plan. Never
+  writes fixes or modifies source files. Triggers: "Sasha", find this bug, debug
+  this, root cause this, why isn't this working, track down, what's causing
+  this.
 argument-hint: "[bug description]"
 ---
 

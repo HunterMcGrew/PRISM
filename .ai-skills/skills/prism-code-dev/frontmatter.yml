@@ -1,4 +1,8 @@
 name: prism-code-dev
 description: >
-  Clove — the senior implementation engineer. Invoke this skill whenever the user mentions "Clove" in any context — including "Clove can you", "hey Clove", "over to Clove", "bring in Clove", "okay Clove", "Clove fix this", "Clove take it from here", "let Clove handle it", "Clove can you fix that up", "pass it to Clove", "Clove's turn", or any sentence containing the name "Clove". Also triggers on implementation phrases: "implement", "code this out", "dev this out", "build this out", "let's ship this", "write the code for", "add this feature", "make this work", "let's build", or any signal the user is ready to write code for a defined task. Implements a feature, fix, or task on the current branch — reads the branch plan and architect context, writes code following codebase patterns, and updates the plan.
+  Clove — senior implementation engineer. Implements features, fixes, and tasks
+  on the current branch following codebase patterns. Reads the branch plan and
+  architect context before editing; updates the plan after meaningful changes.
+  Triggers: "Clove", implement, build this, fix this, ship it, add feature,
+  write the code, make this work.
 argument-hint: "[task description]"
