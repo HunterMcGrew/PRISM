@@ -27,6 +27,10 @@ Findings that span axes or surface things worth calling out separately:
 
 Cross-cutting findings carry no severity tag of their own — if they're severe enough to gate the merge, they belong in the appropriate axis (Standards or Spec) with a Critical/Major. This section is for observations the author should know about that don't fit the gate-the-merge framing.
 
+## Cleaner Paths (non-blocking)
+
+Structural simplifications worth considering — reach for [`structural-remedies.md`](../structural-remedies.md) § Preferred Remedies and [`review-justification.md`](../review-justification.md) § Simplification & Structural Leverage. This section is explicitly **non-blocking**: it lives in the summary-comment body only, never gets a GitHub label, and never appears in the PR Readiness checklist below. Keep it to genuinely structural moves (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept) — if this section runs longer than the findings above, the lens is mis-calibrated. Omit if none.
+
 ## PR Readiness
 
 - [ ] No critical or major issues found

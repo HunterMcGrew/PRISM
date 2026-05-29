@@ -227,6 +227,8 @@ If errors found, add to `## Debugged Issues` as `open` entries. The build can ru
 
 - Logic errors or edge cases
 - Type safety issues (unsafe casts, escape-hatch types, missing types)
+- "Magic" or brittle behavior — ad-hoc or magical mechanisms, or generic abstractions that hide simple data-shape assumptions; prefer direct, boring, explicit code over clever indirection that buys no clarity
+- Silent fallback over an unclear invariant — a branch that quietly defaults (e.g. on `undefined`/`unknown`) to avoid confronting an unclear contract; ask whether the boundary should be made explicit with a typed model or shared contract instead
 - Server/client boundary violations
 - Unintended side effects or regressions
 - Abstraction level — flag both directions: missed abstractions AND premature abstractions (generic params, wrappers, helpers with only 1 consumer). For duplication: flag identical data/logic over shared state (same constants, same business logic reading the same storage) at **2 sites**; flag similar code patterns at **3+ sites**
@@ -249,7 +251,7 @@ For every UI change in the diff, check: semantic HTML, keyboard accessibility, f
 
 > _Four-question abstraction-justification procedure + deletion-test tiebreaker._
 
-**When the diff introduces or modifies an abstraction (generic parameter, utility, wrapper component, shared type, interface change), read [`.prism/references/review-justification.md`](../../../.prism/references/review-justification.md) and apply it.** The "justify every abstraction" lens is pinned in § How Briar Thinks #6.
+**When the diff introduces or modifies an abstraction (generic parameter, utility, wrapper component, shared type, interface change), read [`.prism/references/review-justification.md`](../../../.prism/references/review-justification.md) and apply it.** The "justify every abstraction" lens is pinned in § How Briar Thinks #6. When you flag a structural problem, also apply its § Simplification & Structural Leverage lens and reach for a concrete remedy from [`structural-remedies.md`](../../../.prism/references/structural-remedies.md) § Preferred Remedies — push for the reframe that deletes complexity rather than settling for a naming nit.
 
 ### Doc-Class Triage
 
@@ -306,6 +308,8 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 **Docs:** None (or list files needing updates)
 
 **Cleanup:** None (or list items)
+
+**Cleaner paths:** None (or list non-blocking structural simplifications — see [`structural-remedies.md`](../../../.prism/references/structural-remedies.md) § Preferred Remedies; these don't affect the verdict)
 
 Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
 
