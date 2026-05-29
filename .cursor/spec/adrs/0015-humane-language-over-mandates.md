@@ -11,6 +11,8 @@ The original skill files used compliance-contract vocabulary: `NON-NEGOTIABLE`, 
 
 On Claude 4.7 the instruction hierarchy changed. Absolute mandates now trigger the alignment-override reflex: the model treats "NON-NEGOTIABLE — follow them exactly as written, no autonomous judgment overrides" as an attempted safety-layer bypass and either ignores or inverts the instruction. Documented in the 4.7 audit (`.prism/plans/4.7-skill-audit-strategy.md`) across findings 1, 2, 3, 4, 5.
 
+Although first observed on Claude 4.7, the reflex is not version-specific — later Claude models (4.8+) and non-Claude agents on other tools exhibit the same pattern. That is why this decision lives in the model-agnostic shared layer rather than a Claude-specific config; see [ADR-0005](./0005-cross-model-portability.md) (Cross-Model Portability).
+
 Anthropic's own skill-creator guidance validates the alternative framing: _"Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs"_ and _"If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — reframe and explain the reasoning."_
 
 ## Decision
@@ -29,7 +31,7 @@ The constraint is not softer — the framing is. "Apply every applicable rule" s
 
 - Positive: instructions land on 4.7 without triggering alignment override. The compliance outcome matches 4.6 while the framing cooperates with 4.7's hierarchy.
 - Positive: skill files read like onboarding docs for a teammate, not compliance contracts for a machine. More maintainable and more correct.
-- Negative: reviewers new to the pattern may think the language is "too soft" and push for mandates. The reasoning in this ADR and the 4.7 audit is the answer — restore 4.6-era absolutes and 4.7 will invert them.
+- Negative: reviewers new to the pattern may think the language is "too soft" and push for mandates. The reasoning in this ADR and the 4.7 audit is the answer — restore absolute mandates and later models will invert them.
 - Neutral: lowercase natural usage ("every matching pattern must be loaded — partial loads miss constraints") is allowed. The problem is absolute mandates as behavioral constraints, not lowercase English.
 
 ## References
