@@ -63,6 +63,14 @@ None — DX/chore backport, AC-exempt. Verification is developer-owned:
 - **[Local-env artifact — not a real gate failure] `atlas-dogfood` test fails on this Windows checkout only.** The `rule generators write expected files for react+next stack` assertion expects a forward-slash path literal but Windows `path.join` produces backslashes. Pre-existing and unrelated — zero overlap with the review/architect files this backport touched.
   - Status: closed — local-env only, no action needed.
 
+### History entry over-narrates (Briar self-review, 2026-05-28)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/chore-thrive-pr-2039-backport.md` § History
+- **Problem:** The single History entry's third sentence re-enumerates the full final shape (six items) already recorded in `## Decisions`, making History do summary work the branch-plan rule reserves for Decisions. History should stay scannable; depth lives in Decisions.
+- **Suggested fix:** Trim to a one-line change summary that points at Decisions rather than re-listing them.
+
 ## PR Readiness
 
 - [x] `build --check` green; `verify-manifest` passes
@@ -80,4 +88,4 @@ None — DX/chore backport, AC-exempt. Verification is developer-owned:
 
 ## History
 
-- 2026-05-28 [hmcgrew/backport-2039-structural-leverage]: Backported thrive#2039. First draft was built against PRISM's old inline review skills; the lean-skill epic (PRs #54–#67) merged to `main` mid-session and created the shared review-reference layer, so the branch was reset to the new `main` and rebuilt against it. Final shape: simplification procedure single-homed in shared `review-justification.md`, remedy menu in new `structural-remedies.md`, Winston lens pinned in the architect body, Cleaner Paths in both reviewer output formats, Eric's escape hatch removed per Hunter; follow-up #68 closed as already-delivered by the epic.
+- 2026-05-28 [hmcgrew/backport-2039-structural-leverage]: Backported thrive#2039 onto PRISM's post-lean-epic shared-reference structure; see `## Decisions` for the final shape and routing. Rebuilt after the lean-skill epic (PRs #54–#67) moved the base mid-session and delivered the shared review layer that closed follow-up #68.
