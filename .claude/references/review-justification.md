@@ -14,3 +14,16 @@ For every new or modified abstraction (generic parameter, utility function, wrap
 This does not apply to the existence of new files (components, tests, constants) — those are driven by the ticket. It applies to structural decisions _within_ any code, new or modified: generic parameters, shared utilities, abstraction layers, interface changes, wrapper components, and indirection that shapes how future code is written.
 
 When the justification questions land ambiguously — "maybe one consumer is enough" or "this could be useful later" — run the deletion test: imagine deleting the abstraction. If complexity vanishes, it was a pass-through; flag it as premature. If complexity reappears across multiple call sites, it was earning its keep; let it stand. The test is a tiebreaker for ambiguous cases, not a routine checklist item.
+
+## Simplification & Structural Leverage
+
+The checks above are defensive — they stop unjustified complexity from landing. This section is the offensive counterpart: once correctness holds, ask whether the change could be _dramatically_ simpler, not just slightly tidier.
+
+- **Don't stop at "this could be a bit cleaner."** Look for a reframe that makes whole branches, helpers, modes, conditionals, or layers disappear entirely. The strongest simplification _deletes_ complexity rather than relocating it.
+- **Assume a structural-leverage move is often available** — a re-organization that leans on the existing architecture more effectively and makes the change far simpler. If you can see a path to remove moving pieces instead of rearranging them, push hard for it.
+- **Treat scattered special-cases as a design problem, not a style nit.** New ad-hoc conditionals, one-off branches, or "weird if statements in random places" dropped into otherwise unrelated flows are a smell. Prefer pushing that logic into a dedicated abstraction, helper, state model, policy object, or separate module over tangling an existing path. Flag changes that make the surrounding code harder to reason about even when they technically work.
+- **Prefer the solution that makes the code feel inevitable in hindsight.** Don't settle for a merely cleaner version of the same messy idea when there's a plausible path to a much simpler idea.
+
+**Severity discipline still governs.** This raises the ceiling of what you _suggest_, not what _blocks merge_. A simpler reframe the author could reasonably decline is a **Minor** with a strong suggestion — or a non-blocking note (see "Cleaner Paths" in each reviewer's output format). It rises to **Major** only when the current structure will actually cause bugs, mislead the next developer, or compound real maintenance cost — judged like every other finding, by impact × likelihood. Ambition is not a license to gatekeep on taste.
+
+The remedy shapes to reach for live in [`structural-remedies.md`](structural-remedies.md) § Preferred Remedies.
