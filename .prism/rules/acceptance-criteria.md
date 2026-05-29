@@ -15,10 +15,10 @@ Always output as a markdown checklist.
 
 ## Writing style
 
-AC is written for non-technical testers with access to WordPress admin and the live frontend only. Each item should:
+AC is written for non-technical testers with access to the running application and its admin or configuration surface only. Each item should:
 
-- Describe a specific, observable behavior verifiable in the browser or WordPress admin
-- Include where to find the relevant WordPress setting when it's not obvious
+- Describe a specific, observable behavior verifiable in the running application or its admin surface
+- Include where to find the relevant setting in the admin or configuration surface when it's not obvious
 - Use plain English — no technical jargon, code references, or file names
 - Be independently testable — each item can pass or fail on its own
 - Start with an action verb (e.g. "Navigate to...", "Click...", "Verify that...")
@@ -58,3 +58,15 @@ Example:
 - [ ] Given the saved-cart cookie is malformed, When the page loads, Then the cart falls back to empty without an error toast (Debug-2)
 - [ ] Color contrast meets WCAG 2.1 AA ratio (4.5:1 for text, 3:1 for large text) (REQ-1)
 ```
+
+---
+
+## One concept, one word
+
+Within a single AC set, give each distinct visual behavior one word and reuse it everywhere that behavior appears. When one item calls a behavior "clipped" and another calls it "clamped," a tester can't tell whether they're the same thing or two separate things to check. (Distinct from "Items that duplicate each other with different wording" under What NOT to include — that rule says don't write two items testing the same behavior; this one says when separate items legitimately reference the same behavior, name it the same way.)
+
+For the jargon half, run the translation test from [`writing-voice.md` § Plain language over jargon](writing-voice.md) over the set: read each item and ask whether the reader has to translate any word into a plainer one before the meaning lands. Lean on the test — don't keep a separate jargon list here.
+
+**Why:** Every drifted or jargon-laden AC costs a tester a round-trip. When a reviewer can't verify an item without asking what the wording means, the clarification happens later and slower than it would have at write time.
+
+**How to apply:** Before finishing an AC set, pick one word for each visual behavior and confirm every item uses it, then run the translation test over the set for jargon. If you reach for a second word for a behavior you've already named, change it back.

@@ -17,7 +17,7 @@ The principle is _durable_ communication — anything a future reader will load 
 
 Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE` — reads as a contract written for someone who needs to be controlled. Onboarding voice reads as guidance from a colleague who already trusts you to do the right thing once you understand it. The constraint is the same; the framing changes how the reader receives it.
 
-**Why:** On Claude 4.7, absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md).
+**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md).
 
 **How to apply:**
 
@@ -91,10 +91,10 @@ When spec refers to a collection that grows over time — per-block docs, rules,
 
 ---
 
-## Anti-pattern: Session-context leakage in generated artifacts
+## Anti-pattern: Session-context leakage
 
-Skill-generated artifacts (docs, ADRs, plan entries, PR bodies, anything durable) describe the subject only — never the session that produced them. Comparative language across other artifacts in the run ("largest so far," "third one I've written," "unlike the others"), progress markers ("in the loop," "in this batch," "next up"), and any framing that requires knowing the run's order or scope to make sense — all leak the moment of writing into content that gets read cold months later.
+A durable artifact — anything a future reader loads cold, with no memory of the work that produced it — describes its subject only, never the session that wrote it. The principle is the test, not the list. Comparative language across other artifacts in the run ("largest so far," "third one I've written," "unlike the others"), progress markers ("in the loop," "in this batch," "next up"), and any framing that requires knowing the run's order or scope to make sense leak the moment of writing into content that gets read cold months later. The same leak shows up in docs, ADRs, plan entries, PR bodies, source comments and JSDoc, and test descriptions (`describe`/`it` strings) — the list is illustrative, not exhaustive.
 
 **Why:** Eli wrote `docs/content/dev/blocks/feature.md` during a batch run documenting many blocks in sequence. The Overview included the line _"This is the largest single-block editor in the loop so far (~410 lines of `edit.tsx`)... The frontend block (~230 lines)..."_ — comparison ("largest so far") that only made sense inside that generation session, paired with hard line counts that drift the moment the file changes. Caught on read-through, after the doc shipped. lessons.md 2026-04-27.
 
-**How to apply:** Before saving a generated artifact, re-read it as someone landing on it cold from search six months from now. If a sentence only makes sense given the session that wrote it — delete it. The Overview should land for a reader who has no idea other docs were generated in the same sitting. This pairs with the "Count rules, not numbers" section above — both are observations about the moment of writing, not specifications about the subject.
+**How to apply:** Before saving a durable artifact, re-read it as someone landing on it cold from search six months from now. If a sentence only makes sense given the session that wrote it — delete it. The Overview should land for a reader who has no idea other docs were generated in the same sitting. Test descriptions are durable too: name the contract under test, not the change that produced it or the implementation token it happens to use — prefer `it("renders the newest size", ...)` over a name pinned to a specific token or the edit that introduced it. This pairs with the "Count rules, not numbers" section above — both are observations about the moment of writing, not specifications about the subject.

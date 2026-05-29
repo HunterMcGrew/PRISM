@@ -16,7 +16,7 @@ The "include, but aren't limited to" framing is load-bearing — don't collapse 
 
 The `**` catch-all in `manifest.json` routes spec edits to `skills-ecosystem.md`, which covers the skill roster and lifecycle — not the voice or reasoning rules. Without a dedicated spec-content route, writing-voice and explain-the-why only reach the agent via preload context (CLAUDE.md / AGENTS.md), which is easy to pattern-match around when an agent is mid-edit on an existing spec file. Routing through the manifest puts these rules in the same context window as the file being edited, at the moment of the edit.
 
-See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md) (humane language over mandates) — absolute mandates invert on Claude 4.7, so the voice itself carries the constraint. And [ADR-0016](../spec/adrs/0016-explain-the-why.md) (explain the why) — a rule without its reason gets treated as arbitrary and skipped in edge cases.
+See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md) (humane language over mandates) — absolute mandates invert across models, so the voice itself carries the constraint. And [ADR-0016](../spec/adrs/0016-explain-the-why.md) (explain the why) — a rule without its reason gets treated as arbitrary and skipped in edge cases.
 
 ## Scope
 
