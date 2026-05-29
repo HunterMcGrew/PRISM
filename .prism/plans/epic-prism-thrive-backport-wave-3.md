@@ -27,6 +27,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-05-29 [main]: Hunter resolved the OPEN decision — remove Eric's large-PR escape-hatch note (PR-wave3.2 task 7, with a `skill-authoring.md:102` referrer fix Winston caught) — and absorbed the AC WordPress generalization into PR-wave3.1 task 6. Both recorded as Decisions with verdicts; AC + Cleanup Items updated.
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Clove implemented PR-wave3.1 tasks 1–8 — de-staled the Claude 4.7 pins in writing-voice.md + spec-editing.md, restructured the session-context-leakage rule principle-first (heading shortened to "Session-context leakage", ADR-0032 citation fixed), added the one-concept-one-word AC rule, generalized the AC rule's WordPress phrasing, and added the test-description cross-ref in code-standards § Tests. All edits mirrored to `templates/install/`; `pnpm prism:build && prism:check && prism:check-types && prism:test` all pass. Task 9 (ADR-0015 forward-annotation) left for Eli.
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.1 task 9 — annotated ADR-0015 forward for cross-model framing (new Context paragraph citing ADR-0005, generalized the Consequences "restore mandates" line) on both surfaces, historical 4.6→4.7 narrative preserved. Mirrors regenerated; build/check/check-types/test all pass. PR-wave3.1 Clove + Eli tasks now complete (REQ-3 and US-1 ADR-0015 portion satisfied).
+- 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar self-reviewed PR-wave3.1 — clean (content/markdown only, all 4 surfaces + install seed in sync, build green, heading rename propagated with no dangling refs). Flagged one out-of-scope carryover from merged PR-wave3.2 (#69): the install-seed `structural-remedies.md` and two stale refs (REQ-5 still open). Logged under Review Issues.
 
 ---
 
@@ -180,6 +181,18 @@ Backport target: Thrive PR #2039 (THR-1909). Port the *offensive* simplification
 9. **Document the simplification lens in skills-ecosystem.md.** Edit `.prism/architect/skills-ecosystem.md` AND `templates/install/.prism/architect/skills-ecosystem.md`. Add a one-line note to the Eric, Briar, and Winston rows/sections that they now carry the offensive-simplification lens (non-blocking for reviewers; recommend-not-block for Winston), citing `structural-remedies.md`.
 
 10. **(Optional) Annotate ADR-0017.** If Hunter wants the durable record, add a one-line Consequences note to `.prism/spec/adrs/0017-dual-axis-review-correctness-and-necessity.md` (+ templates mirror): the Necessity axis now includes an offensive-simplification lens, surfaced non-blockingly via the Cleaner Paths bucket and `structural-remedies.md`. Skip if keeping the diff minimal — the references are the durable home.
+
+---
+
+## Review Issues
+
+### Install-seed `structural-remedies.md` missing; two shipped refs stale (PR-wave3.2 / #69 carryover)
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/.prism/references/structural-remedies.md` (absent); `templates/install/.prism/references/review-justification.md`; `templates/install/.prism/references/code-review-pr/summary-template.md`
+- **Problem:** PR-wave3.2 (#69, already merged to `origin/main`) added `structural-remedies.md` and edited `review-justification.md` + `summary-template.md` on canonical `.prism/` and the build-generated surfaces, but did not backport to the `templates/install/` consumer seed — which ships those last two refs. A fresh install therefore gets `review-justification.md` and `summary-template.md` that cite a `structural-remedies.md § Preferred Remedies` file that isn't present. This is REQ-5 (`exists on both surfaces, byte-identical`), still open. Out of PR-wave3.1 scope; logged here because this epic plan owns REQ-5.
+- **Suggested fix:** Copy `.prism/references/structural-remedies.md` to `templates/install/.prism/references/structural-remedies.md` (byte-identical), and sync the install-seed copies of `review-justification.md` and `code-review-pr/summary-template.md` to canonical. Verify with `diff` across both surfaces, then check REQ-5. Clove (or whoever closes PR-wave3.2).
 
 ---
 
