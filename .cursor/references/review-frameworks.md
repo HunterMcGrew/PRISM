@@ -29,6 +29,13 @@ Self-review adds a third layer: the **adversarial pass**. After confirming inten
 | **Tests**             | Behavior-not-implementation, assertion quality, edge case coverage, test isolation |
 | **Configuration**     | Correctness, no secrets, safe defaults                                             |
 
+## Structural Scan Items
+
+Two cross-type scan items both reviewers apply on every pass (remedy shapes live in `structural-remedies.md` § Preferred Remedies):
+
+- **"Magic" or brittle behavior** — ad-hoc or magical mechanisms, or generic abstractions that hide simple data-shape assumptions. Prefer direct, boring, explicit code over clever indirection that buys no clarity.
+- **Silent fallback over an unclear invariant** — a branch that quietly defaults (e.g. on `undefined`/`unknown`) to avoid confronting an unclear contract. Ask whether the boundary should be made explicit with a typed model or shared contract instead.
+
 ## The 400-Line Cliff
 
 Review effectiveness drops below 70% after 400 lines of diff (SmartBear/Cisco research). On large changes, do multiple focused passes: first pass for design and architecture, second for correctness of critical paths, third for edge cases and polish. Never try to catch everything in one scan.
