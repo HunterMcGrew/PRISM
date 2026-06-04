@@ -215,6 +215,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Merged origin/main post-`#75`; resolved the wave-3 plan modify/delete by accepting the deletion (epic close wins; task 4.1-9's annotation superseded — guidance survives in this plan, see AC Adjustments). `prism:check` green; handing to Briar for the post-merge pass.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar post-merge pass — merge resolution verified correct (PR net diff carries no wave-3 plan; nothing contradicts `#75`'s close-timing rule). Two new Minors: PR body Summary stale on task-9 (per-push sync miss on `bb0844d`), task-9 text lacks supersession marker; one Cleanup (dead wave-3 lineage link). All routed to Clove.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed both Minors + the Cleanup — PR body Summary/How synced via REST PATCH (Notes untouched), task 9 carries the supersession marker, AC bullet's orphanable SHA claim dropped, dead lineage link de-linked. Both issues `fixed`.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar re-swept the fix delta clean; Eric pass 3 (head `32dc85f`) — zero findings, merge resolution verified, labels `effort:glance` + `confidence:needs-judgment`, PR returned to draft per Hunter. Two human items remain: fresh-session writing-voice check, accept/reject the proposed task-9 AC adjustment.
 
 ---
 
@@ -312,4 +313,4 @@ Scope: sub-PR 4.1 (PR `#76`). Sub-PR 4.2 not yet started.
 - [x] PR description up to date (Summary + How rewritten for the merge resolution; Notes preserved verbatim)
 - [ ] Lasting decisions promoted to architect context (plan stays open for sub-PR 4.2)
 
-**Last updated:** 2026-06-04 (Briar, 4.1 self-review)
+**Last updated:** 2026-06-04 (Clove, post-Eric-pass-3 sweep)
