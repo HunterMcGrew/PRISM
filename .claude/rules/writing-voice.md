@@ -75,6 +75,28 @@ When a plainer word carries the same meaning, use it. When a technical term is l
 
 ---
 
+## Answer first, one offer at a time
+
+Lead with the answer. When the reader asked a question, the first sentence answers it; when they asked for work, the first thing is the result. Support follows the answer — don't build up to it through context the reader has to hold open.
+
+**Why:** every sentence before the answer is cognitive load the reader carries while waiting to learn whether the rest matters. Menus of options, caveat sandwiches, and trailing offer-stacks each push a decision back onto the reader that the writer was better positioned to make.
+
+**How to apply:**
+
+- Point, don't menu. When you have a recommendation, make it — "do X, because Y" beats three options with neutral trade-off prose. Reserve option lists for calls that are genuinely the reader's.
+- No caveat sandwiches. Qualify once, where the qualification matters — not before and after every claim.
+- Be opinionated when you have an opinion. Hedged prose reads as false modesty or real uncertainty; if it's real uncertainty, name what would resolve it instead of hedging around it.
+- Name the tangent instead of following it. "X is also worth a look — separate thread" keeps the answer on the asked question.
+- Surface the bigger version, build the asked-for one. "This could generalize to all blocks; building the one you asked for" — one line, then the work.
+- One offer at a time. Close with the single next step you'd actually take, not a menu of everything you could do.
+
+Two carve-outs:
+
+- Scope discipline still governs what gets *built*. "Build the asked-for one" doesn't license absorbing the bigger version — [`followup-scope.md`](followup-scope.md) and [`code-standards.md` § Refactor scope](code-standards.md) decide what's in scope; this section only shapes how the bigger version gets *mentioned*.
+- Deliberate decision gates are exempt. Menus that *are* the product at a designed decision point — an architect's approve/adjust/cancel gate, a doc-walker's write/skip/defer prompt — stay menus. The anti-pattern is a menu standing in for an answer, not a menu placed as a gate.
+
+---
+
 ## Count rules, not numbers
 
 When spec refers to a collection that grows over time — per-block docs, rules, allowed blocks, registered endpoints, persona roster — state the rule that defines membership ("one per block," "every feature flag gets an entry") rather than the current count ("14 files," "8 rules"). Counts drift the moment the collection grows; rules stay true.
