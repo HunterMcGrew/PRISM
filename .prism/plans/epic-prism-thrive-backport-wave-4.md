@@ -217,6 +217,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed both Minors + the Cleanup — PR body Summary/How synced via REST PATCH (Notes untouched), task 9 carries the supersession marker, AC bullet's orphanable SHA claim dropped, dead lineage link de-linked. Both issues `fixed`.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar re-swept the fix delta clean; Eric pass 3 (head `32dc85f`) — zero findings, merge resolution verified, labels `effort:glance` + `confidence:needs-judgment`, PR returned to draft per Hunter. Two human items remain: fresh-session writing-voice check, accept/reject the proposed task-9 AC adjustment.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Hunter ran the fresh-session check on this branch — writing-voice.md auto-loads (4.2k tokens in Memory files); AC checked off. One human item remains: the proposed task-9 AC adjustment. Worktree removed; branch now checked out in the main working copy.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: `#74` merged on main → squash-already-upstream conflicts on plan + lessons; resolved keeping branch versions (newer on both counts — plan evolved through the review loop, lessons heading carries Eric's de-caps fix). PR `#76` mergeable again, checks green, still draft.
 
 ---
 
