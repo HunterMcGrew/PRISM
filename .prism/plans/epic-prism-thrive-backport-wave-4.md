@@ -2,7 +2,7 @@
 
 ## Ticket
 
-PRISM Thrive backports, fourth wave (no Linear ticket; phase work). Follows [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) (Wave 1, Thrive PRs through ~#2024), [`epic-prism-thrive-backport-wave-2.md`](./epic-prism-thrive-backport-wave-2.md) (#2025–#2027), and [`epic-prism-thrive-backport-wave-3.md`](./epic-prism-thrive-backport-wave-3.md) (#2032–#2043).
+PRISM Thrive backports, fourth wave (no Linear ticket; phase work). Follows [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) (Wave 1, Thrive PRs through ~#2024), [`epic-prism-thrive-backport-wave-2.md`](./epic-prism-thrive-backport-wave-2.md) (#2025–#2027), and wave 3 (#2032–#2043 — epic closed in `#75`, plan deleted).
 
 ## Goal
 
@@ -46,7 +46,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 8. **Promote `writing-voice.md` to the always-on tier** (wave-4 audit finding; Thrive `#2037` Phase 1E parity; **resolves issue #51 via its Option B**). Remove the frontmatter gating from `.prism/rules/writing-voice.md` and all four mirrors so the rule loads every session — match the shape of the existing always-on rules per surface (compare `git-conventions.md` across all five copies and mirror that shape exactly). Per `#51` Option B, also update ADR-0035's Tier 1 example list (`.prism/spec/adrs/0035-rule-loading-tiers.md` + templates mirror + the paired dev doc `docs/content/dev/architecture/rule-loading-tiers.md`, which PR `#49` set to the 7-rule list) to include writing-voice; verify `prism-code-dev/shared.md`'s existing 8-rule Tier 1 list now matches without edit. No body edit to writing-voice itself: it already claims commit messages, PR bodies, and Linear comments — surfaces that are not file edits and can never match a `paths:` gate. Put `Closes #51` in the sub-PR body. Verify post-change that a fresh session lists writing-voice in its loaded rules.
 
-9. **Annotate the wave-3 `#2042` deferral** (bookkeeping). In `.prism/plans/epic-prism-thrive-backport-wave-3.md`, Decision "#2042 (preamble generator) deferred": append a sub-bullet noting Thrive `#2047` (merged 2026-06-01) deleted the manifest × `paths:` join engine and added a fail-loud link-rebase guard — if the revisit trigger ever fires, port the post-`#2047` end-state, not the `#2042`-era shape.
+9. **Annotate the wave-3 `#2042` deferral** (bookkeeping). *(Superseded — wave-3 epic closed in `#75` and its plan was deleted after this task's annotation was committed; see AC Adjustments 2026-06-04. The post-`#2047` guidance lives in this plan's Scope boundary and Decisions.)* Original task: append a sub-bullet to the wave-3 plan's "#2042 deferred" Decision noting Thrive `#2047` (merged 2026-06-01) deleted the manifest × `paths:` join engine and added a fail-loud link-rebase guard — if the revisit trigger ever fires, port the post-`#2047` end-state, not the `#2042`-era shape.
 
 ### Sub-PR wave 4.2 — utility-skill support + `/prism-handoff`
 
@@ -213,6 +213,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar follow-up review of the `5d24d21` delta — clean; no remaining Tier 1 enumerations missing lazy-artifacts anywhere in the tree, PR body sync verified. Both review issues now `fixed`; handing to Eric for PR review.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Eric PR review pass 1 — no Critical/Major, two Minors (ALL-CAPS lesson heading; PR-body lead overstating "each on all five surfaces"). Clove fixed both: heading now italics matching the file's emphasis style, body lead softened to Eric's wording.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Merged origin/main post-`#75`; resolved the wave-3 plan modify/delete by accepting the deletion (epic close wins; task 4.1-9's annotation superseded — guidance survives in this plan, see AC Adjustments). `prism:check` green; handing to Briar for the post-merge pass.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar post-merge pass — merge resolution verified correct (PR net diff carries no wave-3 plan; nothing contradicts `#75`'s close-timing rule). Two new Minors: PR body Summary stale on task-9 (per-push sync miss on `bb0844d`), task-9 text lacks supersession marker; one Cleanup (dead wave-3 lineage link). All routed to Clove.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed both Minors + the Cleanup — PR body Summary/How synced via REST PATCH (Notes untouched), task 9 carries the supersession marker, AC bullet's orphanable SHA claim dropped, dead lineage link de-linked. Both issues `fixed`.
 
 ---
 
@@ -235,6 +237,24 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - **Suggested fix:** Add `lazy-artifacts.md` to the ADR and dev-doc lists (both lines already in this diff's local frame), or restate the lists per writing-voice § Count rules, not numbers; session-close.md's omission is pre-existing and may ride along or go to a follow-up.
 - **Fixed in:** Clove follow-up commit on `hmcgrew/prism-wave4.1-governance-git-rule-ports` — `lazy-artifacts.md` added to all three lists; session-close.md absorbed (same one-rule gap, its list reads exhaustive so it was the most-wrong of the three). All five surfaces synced; `prism:check` + `check-types` green.
 
+### PR body Summary stale after merge resolution dropped the task-9 annotation
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** body PATCH 2026-06-04 — Summary bullet rewritten to current scope; merge-resolution context added to "How did you achieve it?" (Notes preserved verbatim per seed-once)
+- **File:** PR `#76` body, Summary last bullet
+- **Problem:** The bullet still claims "wave-3 plan's `#2042` deferral annotated with the post-`#2047` source state," but the merge resolution (8d759ef) dropped that annotation when it accepted `#75`'s deletion — the PR no longer ships it. The `bb0844d` push changed scope without the per-push body sync (`pr-description.md` § Keeping the PR in sync with scope).
+- **Suggested fix:** Rewrite the bullet to state what ships now (deferral-annotation superseded by `#75`'s epic close; AC adjusted) and add a Notes line on the merge resolution.
+
+### Task 4.1-9 text lacks a supersession marker
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** plan commit on this branch — task 9 carries the supersession marker up front; SHA claim dropped from the AC bullet; dead lineage link replaced with "closed in `#75`" text (Cleanup item resolved in the same pass)
+- **File:** `.prism/plans/epic-prism-thrive-backport-wave-4.md:49` (also the adjusted AC bullet's bare `1442c5b` reference)
+- **Problem:** The task still instructs editing `.prism/plans/epic-prism-thrive-backport-wave-3.md`, which `#75` deleted — a cold reader of the task list can't tell it's been superseded; the AC Adjustments entry holds the truth but the task doesn't point there. The adjusted AC bullet also cites branch SHA `1442c5b` as a durable record, but squash-merge + branch deletion will orphan that SHA while the plan lives on into sub-PR 4.2.
+- **Suggested fix:** Append "(superseded — wave-3 epic closed in `#75`; see AC Adjustments 2026-06-04)" to task 9; drop or soften the SHA claim in the AC bullet — the plan's own Scope boundary + Decisions are the durable record.
+
 ---
 
 ## Acceptance Criteria
@@ -256,7 +276,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
 - [ ] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; mechanism confirmed by parity — frontmatter-less rules load always-on in live sessions. Fresh-session spot check still pending per PR `#76` Notes.)
 - [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
-- [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions, and the annotated text in branch history at `1442c5b`).
+- [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions).
 - [ ] ADR-0046 exists, records the rejected alternatives, and is indexed.
 
 ### AC Adjustments
@@ -273,17 +293,23 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ---
 
+## Cleanup Items
+
+- ~~`.prism/plans/epic-prism-thrive-backport-wave-4.md:5` — lineage link to `epic-prism-thrive-backport-wave-3.md` went dead when `#75` deleted the file~~ — resolved: link replaced with "epic closed in `#75`, plan deleted" text.
+
+---
+
 ## PR Readiness
 
 Scope: sub-PR 4.1 (PR `#76`). Sub-PR 4.2 not yet started.
 
-- [x] No critical or major issues (two Minors found in self-review — both fixed)
+- [x] No critical or major issues (post-merge pass found two Minors — both `fixed`; see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (no runtime code in diff; `pnpm prism:check-types` green)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (N/A — markdown-only diff; mirror fidelity guarded by `pnpm prism:check`)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-04 (`pnpm prism:check` + `prism:check-types`; full app build N/A for rule/doc content)
-- [x] PR description up to date (stacked-on-`#74` note accurate; `#74` still open — refresh branch once it merges, picking up `#75` on main at the same time)
+- [x] Build passes — last run: 2026-06-04 post-merge (`pnpm prism:check` green after the `#75` merge resolution)
+- [x] PR description up to date (Summary + How rewritten for the merge resolution; Notes preserved verbatim)
 - [ ] Lasting decisions promoted to architect context (plan stays open for sub-PR 4.2)
 
 **Last updated:** 2026-06-04 (Briar, 4.1 self-review)
