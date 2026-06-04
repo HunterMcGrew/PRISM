@@ -211,6 +211,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar self-review of PR `#76` — two Minors: AC's `#51` third leg mislocated (fixed, see AC Adjustments) and Tier 1 roster enumerations omit always-on `lazy-artifacts.md` (open, for Clove). Removal-sweep, five-surface, and ADR-claim checks all pass; `prism:check` + `check-types` green.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed Briar's open Minor — `lazy-artifacts.md` added to the Tier 1 roster lists in ADR-0035, the paired dev doc, and `session-close.md` (absorbed — same gap, exhaustive-reading list), on all five surfaces. Checks green.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar follow-up review of the `5d24d21` delta — clean; no remaining Tier 1 enumerations missing lazy-artifacts anywhere in the tree, PR body sync verified. Both review issues now `fixed`; handing to Eric for PR review.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Eric PR review pass 1 — no Critical/Major, two Minors (ALL-CAPS lesson heading; PR-body lead overstating "each on all five surfaces"). Clove fixed both: heading now italics matching the file's emphasis style, body lead softened to Eric's wording.
 
 ---
 
