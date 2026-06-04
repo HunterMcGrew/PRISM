@@ -212,6 +212,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed Briar's open Minor — `lazy-artifacts.md` added to the Tier 1 roster lists in ADR-0035, the paired dev doc, and `session-close.md` (absorbed — same gap, exhaustive-reading list), on all five surfaces. Checks green.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar follow-up review of the `5d24d21` delta — clean; no remaining Tier 1 enumerations missing lazy-artifacts anywhere in the tree, PR body sync verified. Both review issues now `fixed`; handing to Eric for PR review.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Eric PR review pass 1 — no Critical/Major, two Minors (ALL-CAPS lesson heading; PR-body lead overstating "each on all five surfaces"). Clove fixed both: heading now italics matching the file's emphasis style, body lead softened to Eric's wording.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Merged origin/main post-`#75`; resolved the wave-3 plan modify/delete by accepting the deletion (epic close wins; task 4.1-9's annotation superseded — guidance survives in this plan, see AC Adjustments). `prism:check` green; handing to Briar for the post-merge pass.
 
 ---
 
@@ -255,12 +256,13 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
 - [ ] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; mechanism confirmed by parity — frontmatter-less rules load always-on in live sessions. Fresh-session spot check still pending per PR `#76` Notes.)
 - [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
-- [x] Wave-3 plan's `#2042` deferral carries the post-`#2047` end-state annotation.
+- [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions, and the annotated text in branch history at `1442c5b`).
 - [ ] ADR-0046 exists, records the rejected alternatives, and is indexed.
 
 ### AC Adjustments
 
 - 2026-06-04 (Briar): Re-pointed the `#51` done-condition bullet from `prism-code-dev/shared.md` (which has no Tier 1 list) to `.prism/references/session-close.md`'s universal-load-set enumeration — matches what was actually built and verified. See Review Issues.
+- 2026-06-04 (Clove): **Status: proposed.** Task 4.1-9's bullet ("Wave-3 plan's `#2042` deferral carries the annotation") became unsatisfiable when PR `#75` closed the wave-3 epic and deleted its plan after the annotation was committed. Rewrote the bullet to name the surviving durable record (this plan's Scope boundary + Decisions; branch history `1442c5b`). No implementation rides on this — flagged for user accept at review-loop close.
 
 ### AC Sync Log
 
