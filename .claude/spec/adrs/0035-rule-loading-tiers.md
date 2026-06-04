@@ -23,7 +23,7 @@ Three approaches were considered:
 
 PRISM rules load through a three-tier model:
 
-- **Tier 1 — Always loaded.** Rules that apply universally across all sessions. Registered in the manifest with no path filter; loaded on every invocation. Examples: `.prism/rules/code-comments.md`, `.prism/rules/code-standards.md`, `.prism/rules/branch-plan.md`, `.prism/rules/git-conventions.md`, `.prism/rules/pr-description.md`, `.prism/rules/context-reuse.md`, `.prism/rules/followup-scope.md`.
+- **Tier 1 — Always loaded.** Rules that apply universally across all sessions. Registered in the manifest with no path filter; loaded on every invocation. Examples: `.prism/rules/code-comments.md`, `.prism/rules/code-standards.md`, `.prism/rules/branch-plan.md`, `.prism/rules/git-conventions.md`, `.prism/rules/pr-description.md`, `.prism/rules/context-reuse.md`, `.prism/rules/followup-scope.md`, `.prism/rules/writing-voice.md` (Tier 1 because its most common surfaces — commit messages, PR bodies, Linear comments — are not file edits and can never match a `paths:` gate).
 
 - **Tier 2 — Path-scoped.** Rules that apply only when the diff touches certain paths. Registered in the manifest, but the rule's own `paths:` YAML frontmatter governs when the loader fires. Examples: `.prism/rules/accessibility.md` with `paths: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html"]`; `.prism/rules/architect-doc-verification.md` with `paths: [".prism/architect/**/*.md", "docs/content/dev/architecture/**/*.md"]`.
 
@@ -31,7 +31,7 @@ PRISM rules load through a three-tier model:
 
 Rule authors classify a new rule by tier on creation. The classification belongs in the rule's frontmatter (Tier 2 frontmatter is the `paths:` field itself; Tier 1 has no frontmatter and lives in the manifest's universal section; Tier 3 has no manifest entry and is referenced from one skill).
 
-The `paths:` frontmatter convention follows the shape already used by `.prism/rules/writing-voice.md` — a YAML list of glob patterns at the top of the rule file. The format is byte-identical between `.prism/rules/<file>` and `templates/install/.prism/rules/<file>`.
+The `paths:` frontmatter convention follows the shape used by `.prism/rules/accessibility.md` — a YAML list of glob patterns at the top of the rule file. The format is byte-identical between `.prism/rules/<file>` and `templates/install/.prism/rules/<file>`.
 
 ## Consequences
 
