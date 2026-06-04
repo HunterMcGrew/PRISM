@@ -207,6 +207,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Cross-runtime tier-honoring gap routed to issue #73 (not absorbed); discovered task 4.1-8 resolves pre-existing issue #51 via its Option B — task and AC updated to carry the ADR-0035 list sync and `Closes #51`.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: `/prism-handoff` design explored with Hunter and approved — full frontmatter + body drafts embedded verbatim in tasks 4.2-6/7; see Decision "`/prism-handoff` design extends THR-1912". AGENTS.md task 13 gains the Context Window Handoff Check remedy line.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Dry-ran the handoff spec by hand (doc handed to Clove for wave-4 implementation); caught a path-join footgun (`$TMPDIR` trailing-separator assumption) and patched the embedded draft's Step 3 with the explicit-join guard.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Implemented all nine 4.1 tasks, commit-per-task — four new git-conventions sections, writing-voice § Answer first + always-on promotion (ADR-0035 + dev doc synced; their Tier 2 frontmatter example re-pointed at accessibility.md since writing-voice no longer carries one), removal/rename gates, new design-governance.md, wave-3 `#2042` deferral annotated. Plan + lessons landed on main first via chore PR `#74` (wave-3 precedent); branch merged post-`#72` main mid-flight when wave 3.1 squashed. `pnpm prism:check` and `prism:check-types` green.
 
 ---
 
