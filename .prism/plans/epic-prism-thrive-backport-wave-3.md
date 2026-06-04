@@ -31,6 +31,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Closed REQ-5 — backported the missed PR-wave3.2 (#69) install seed by hand (`prism:build` doesn't regenerate `templates/install/`). Copied `structural-remedies.md` into the seed and synced `review-justification.md` + `code-review-pr/summary-template.md` byte-identical to canonical; all three `diff` clean and `pnpm prism:check` green (130/130). Review Issues entry set to `fixed`.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Regenerated PR #72 body — folded the REQ-5 install-seed close-out into Summary/What/How/Notes (the body predated the final commit and still called REQ-5 a follow-up). Flipped #72 from draft to ready for review; Eric review next.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eric reviewed PR #72 clean (`effort:glance` + `confidence:high`), then re-tested the wave3.2 ACs and found three #69 misses. Absorbed all three — review-frameworks scan items, skill-authoring referrer fix (REQ-8), skills-ecosystem simplification notes — on both surfaces; build/check/types/test green. See Decision: #69 carryover absorption.
+- 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.2 task 10 (Hunter opted in) — annotated ADR-0017's Consequences with the offensive-simplification complement to the Necessity axis, both surfaces, mirrors regenerated. All wave3.2 Eli tasks now closed.
 
 ---
 
