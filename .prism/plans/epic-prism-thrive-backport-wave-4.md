@@ -210,6 +210,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Implemented all nine 4.1 tasks, commit-per-task — four new git-conventions sections, writing-voice § Answer first + always-on promotion (ADR-0035 + dev doc synced; their Tier 2 frontmatter example re-pointed at accessibility.md since writing-voice no longer carries one), removal/rename gates, new design-governance.md, wave-3 `#2042` deferral annotated. Plan + lessons landed on main first via chore PR `#74` (wave-3 precedent); branch merged post-`#72` main mid-flight when wave 3.1 squashed. `pnpm prism:check` and `prism:check-types` green.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar self-review of PR `#76` — two Minors: AC's `#51` third leg mislocated (fixed, see AC Adjustments) and Tier 1 roster enumerations omit always-on `lazy-artifacts.md` (open, for Clove). Removal-sweep, five-surface, and ADR-claim checks all pass; `prism:check` + `check-types` green.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed Briar's open Minor — `lazy-artifacts.md` added to the Tier 1 roster lists in ADR-0035, the paired dev doc, and `session-close.md` (absorbed — same gap, exhaustive-reading list), on all five surfaces. Checks green.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar follow-up review of the `5d24d21` delta — clean; no remaining Tier 1 enumerations missing lazy-artifacts anywhere in the tree, PR body sync verified. Both review issues now `fixed`; handing to Eric for PR review.
 
 ---
 
@@ -273,7 +274,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 Scope: sub-PR 4.1 (PR `#76`). Sub-PR 4.2 not yet started.
 
-- [x] No critical or major issues (two Minors — one fixed in-plan, one open: lazy-artifacts roster omission)
+- [x] No critical or major issues (two Minors found in self-review — both fixed)
 - [x] Types correct — no `any`, no unsafe `as` (no runtime code in diff; `pnpm prism:check-types` green)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (N/A — markdown-only diff; mirror fidelity guarded by `pnpm prism:check`)
