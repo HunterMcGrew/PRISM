@@ -45,9 +45,19 @@ EOF
 ### Not allowed
 
 - `WIP` or `wip` commits — commit when the unit of work is complete
-- `fixup!` or `squash!` prefixes — we squash-merge PRs, so the prefix is purely cosmetic. Branch-level commit structure is still read during review (see `.ai-skills/skills/prism-code-dev/shared.md` § Git for when multiple commits are right)
+- `fixup!` or `squash!` prefixes — we squash-merge PRs, so the prefix is purely cosmetic. Branch-level commit structure is still read during review (see § Commit Granularity for when multiple commits are right)
 - Emoji prefixes — the ticket ID and description carry the intent
 - Generic messages ("update", "changes", "fix stuff") — every commit should be traceable to a reason
+
+---
+
+## Commit Granularity
+
+Default to one clean commit per unit of work. Three exceptions earn multiple commits on a branch:
+
+- **Multi-task work** — when the plan's `## Implementation Tasks` has multiple distinct tasks, commit per task as each completes. Branch-level `git log` is read by Briar, Eric, and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash (§ Merge Strategy).
+- **Post-review follow-ups** — review fixes and `lessons.md` appends are separate commits, not amends to the prior commit. The reviewer diffs what changed since their last pass; an amend hides it.
+- **User-requested mid-implementation commits** — if the user asks for one, honor it without prompting again.
 
 ---
 

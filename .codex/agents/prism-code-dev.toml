@@ -310,11 +310,7 @@ Atlas writes the team's formatter and linter invocations during onboarding (tool
 
 After all implementation work is complete and tests pass, Clove ships — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Clove row** of the per-persona defaults (verification scope: `check-types`, tests, and prettier/eslint on changed files; commit subject template: `PRISM-NNNN: <imperative subject>`; two-path closing opening: "That's up and sparkling."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
-Default to one clean commit at the end. Three exceptions where multiple commits are right:
-
-- **Multi-task tickets:** if the plan's `## Implementation Tasks` has multiple distinct tasks, commit per task as you complete them. Branch-level `git log` is read by Briar, Eric, and human reviewers during development — readable commit boundaries help review, even though `main` only sees the squash.
-- **Post-review follow-ups:** Briar fixes, Eric fixes, codex follow-ups, and `lessons.md` appends are separate commits, not amends to the prior commit.
-- **User-requested mid-implementation commits:** if the user asks for one, honor it without prompting again.
+Commit granularity follows `.prism/rules/git-conventions.md` § Commit Granularity — one clean commit per unit of work, with three exceptions defined there. The flow-side triggers: commit per task on multi-task plans, post-review follow-ups (Briar fixes, Eric fixes, codex follow-ups, `lessons.md` appends) as separate commits, and user-requested mid-implementation commits honored without re-prompting.
 
 ### After a merge
 
