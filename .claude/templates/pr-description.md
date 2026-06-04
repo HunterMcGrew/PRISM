@@ -14,7 +14,7 @@ File-level change details live in the GitHub diff, and acceptance criteria live 
 
 ## Summary
 
-[One-line TL;DR — the PR's essence in a single sentence.]
+[BLUF, scaled to the PR's size — one line for a small PR; for a large one, a lead line plus a few bullets naming the major moving parts. The reviewer should know what they're walking into before they scroll.]
 
 ## What did you do?
 
