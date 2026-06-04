@@ -30,6 +30,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar self-reviewed PR-wave3.1 — clean (content/markdown only, all 4 surfaces + install seed in sync, build green, heading rename propagated with no dangling refs). Flagged one out-of-scope carryover from merged PR-wave3.2 (#69): the install-seed `structural-remedies.md` and two stale refs (REQ-5 still open). Logged under Review Issues.
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Closed REQ-5 — backported the missed PR-wave3.2 (#69) install seed by hand (`prism:build` doesn't regenerate `templates/install/`). Copied `structural-remedies.md` into the seed and synced `review-justification.md` + `code-review-pr/summary-template.md` byte-identical to canonical; all three `diff` clean and `pnpm prism:check` green (130/130). Review Issues entry set to `fixed`.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Regenerated PR #72 body — folded the REQ-5 install-seed close-out into Summary/What/How/Notes (the body predated the final commit and still called REQ-5 a follow-up). Flipped #72 from draft to ready for review; Eric review next.
+- 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eric reviewed PR #72 clean (`effort:glance` + `confidence:high`), then re-tested the wave3.2 ACs and found three #69 misses. Absorbed all three — review-frameworks scan items, skill-authoring referrer fix (REQ-8), skills-ecosystem simplification notes — on both surfaces; build/check/types/test green. See Decision: #69 carryover absorption.
 
 ---
 
@@ -83,6 +84,12 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
   - **Chosen approach:** Delete the blockquote. **Referrer fix required:** `.prism/rules/skill-authoring.md:102` (+ templates mirror) cites this note as a canonical example of a load-bearing wall "nearly cut on a line-count basis." That citation goes stale on removal — but the *principle* it illustrates ("line count alone never justifies a cut") still holds, because this removal is an obsolescence cut, not a line-count cut. Update line 102 to drop the escape-hatch example and keep the standup-summary one, so the illustration isn't a note that no longer exists.
   - **Implementation guidance:** Removal + referrer fix live in PR-wave3.2 (task 7). The closed `epic-lean-skill-architecture` § Decisions reference is historical (git-history territory) — do not edit a closed plan; only the live `skill-authoring.md` referrer matters.
   - → no promotion needed (skill-content decision; the skill source + skill-authoring.md referrer are the durable surface).
+
+- **#69 carryover absorption: wave3.2 tasks 3, 7 (referrer half), and 9 ship on the wave3.1 branch** (approved by Hunter 2026-06-04).
+  - **Root cause:** PR #69 implemented the #2039 backport from a narrower parallel plan (`chore-thrive-pr-2039-backport.md`) that omitted four epic tasks — the install seed (REQ-5, closed on this branch), the review-frameworks scan items, the skill-authoring referrer fix, and the skills-ecosystem notes. Surfaced by Eric's AC re-test of the wave3.2 items.
+  - **Chosen approach:** Absorb all three remaining gaps into PR #72 — same content-only edit class, and the branch already carries the REQ-5 close-out. Alternative — a third PR — rejected as redundant handoff for work this PR is already adjacent to.
+  - **Cross-lane note:** epic task 9 is Eli's lane; absorbed by Clove under this entry per `branch-plan.md` cross-lane absorption.
+  - → no promotion needed (process scoping; the shipped edits are the durable surface).
 
 ---
 
@@ -222,7 +229,7 @@ Backport target: Thrive PR #2039 (THR-1909). Port the *offensive* simplification
 - [x] `structural-remedies.md` exists on both surfaces (`.prism/references/` + `templates/install/.prism/references/`), byte-identical (REQ-5).
 - [ ] No "Cleaner Paths" checkbox exists in any `## PR Readiness` surface (REQ-6).
 - [ ] No new ADR created; no ADR renumbering performed (REQ-7).
-- [ ] The large-PR escape-hatch blockquote is gone from `prism-code-review-pr/shared.md`, and `skill-authoring.md:102` no longer cites it as an example (referrer fixed, principle preserved) (REQ-8).
+- [x] The large-PR escape-hatch blockquote is gone from `prism-code-review-pr/shared.md`, and `skill-authoring.md:102` no longer cites it as an example (referrer fixed, principle preserved) (REQ-8).
 
 ### AC Adjustments
 
@@ -256,4 +263,4 @@ Living checklist — updated by each sub-PR's self-review run.
 - [x] PR descriptions up to date for each sub-PR (3.2/#69 merged; 3.1/#72 body regenerated 2026-06-04)
 - [ ] Lasting decisions promoted to architect context (no new ADRs this wave; reference files are the durable home — confirm at close)
 
-**Last updated:** 2026-06-04 (PR #72 body regenerated, flipped to ready for review)
+**Last updated:** 2026-06-04 (#69 carryover absorption: scan items, referrer fix, ecosystem notes)
