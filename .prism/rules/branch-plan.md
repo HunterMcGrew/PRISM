@@ -162,7 +162,11 @@ For each ticket or epic:
 
 # Before Closing
 
-When the ticket or epic is complete (all PRs merged, work is done):
+Run the close on the ticket's **final PR branch** — after implementation is done and reviews have passed, before that PR merges. The promotion edits and the plan deletion then ride the final PR instead of requiring a standalone close-out PR after merge.
+
+**Why:** a plan that outlives its last PR costs an extra PR whose only diff is deleting an already-shipped plan. Closing on the final branch makes the plan's removal part of the work that completed it. AC items conditioned on merge ("Given the PR has merged…") are verified as holding-at-merge during the close — the squash makes them true atomically.
+
+When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
 2. **Delete the plan** — once decisions are promoted, delete the plan file. Git history preserves it if you ever need to look back.
