@@ -28,6 +28,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Clove implemented PR-wave3.1 tasks 1–8 — de-staled the Claude 4.7 pins in writing-voice.md + spec-editing.md, restructured the session-context-leakage rule principle-first (heading shortened to "Session-context leakage", ADR-0032 citation fixed), added the one-concept-one-word AC rule, generalized the AC rule's WordPress phrasing, and added the test-description cross-ref in code-standards § Tests. All edits mirrored to `templates/install/`; `pnpm prism:build && prism:check && prism:check-types && prism:test` all pass. Task 9 (ADR-0015 forward-annotation) left for Eli.
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.1 task 9 — annotated ADR-0015 forward for cross-model framing (new Context paragraph citing ADR-0005, generalized the Consequences "restore mandates" line) on both surfaces, historical 4.6→4.7 narrative preserved. Mirrors regenerated; build/check/check-types/test all pass. PR-wave3.1 Clove + Eli tasks now complete (REQ-3 and US-1 ADR-0015 portion satisfied).
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar self-reviewed PR-wave3.1 — clean (content/markdown only, all 4 surfaces + install seed in sync, build green, heading rename propagated with no dangling refs). Flagged one out-of-scope carryover from merged PR-wave3.2 (#69): the install-seed `structural-remedies.md` and two stale refs (REQ-5 still open). Logged under Review Issues.
+- 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Closed REQ-5 — backported the missed PR-wave3.2 (#69) install seed by hand (`prism:build` doesn't regenerate `templates/install/`). Copied `structural-remedies.md` into the seed and synced `review-justification.md` + `code-review-pr/summary-template.md` byte-identical to canonical; all three `diff` clean and `pnpm prism:check` green (130/130). Review Issues entry set to `fixed`.
 
 ---
 
@@ -189,7 +190,7 @@ Backport target: Thrive PR #2039 (THR-1909). Port the *offensive* simplification
 ### Install-seed `structural-remedies.md` missing; two shipped refs stale (PR-wave3.2 / #69 carryover)
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/references/structural-remedies.md` (absent); `templates/install/.prism/references/review-justification.md`; `templates/install/.prism/references/code-review-pr/summary-template.md`
 - **Problem:** PR-wave3.2 (#69, already merged to `origin/main`) added `structural-remedies.md` and edited `review-justification.md` + `summary-template.md` on canonical `.prism/` and the build-generated surfaces, but did not backport to the `templates/install/` consumer seed — which ships those last two refs. A fresh install therefore gets `review-justification.md` and `summary-template.md` that cite a `structural-remedies.md § Preferred Remedies` file that isn't present. This is REQ-5 (`exists on both surfaces, byte-identical`), still open. Out of PR-wave3.1 scope; logged here because this epic plan owns REQ-5.
 - **Suggested fix:** Copy `.prism/references/structural-remedies.md` to `templates/install/.prism/references/structural-remedies.md` (byte-identical), and sync the install-seed copies of `review-justification.md` and `code-review-pr/summary-template.md` to canonical. Verify with `diff` across both surfaces, then check REQ-5. Clove (or whoever closes PR-wave3.2).
@@ -217,7 +218,7 @@ Backport target: Thrive PR #2039 (THR-1909). Port the *offensive* simplification
 - [ ] No "Claude 4.7" version pin remains in `.prism/rules/writing-voice.md` or `.prism/architect/spec-editing.md` (or their templates mirrors) (REQ-2).
 - [ ] ADR-0015's historical 4.6→4.7 narrative is preserved (annotated forward, not rewritten) (REQ-3).
 - [ ] No Thrive-session specifics ported: no THR-1874 reference in the AC rule, no recurrence tally in the session-leakage `**Why:**`, no WordPress/block/PHP examples in the simplification content (REQ-4, ADR-0032).
-- [ ] `structural-remedies.md` exists on both surfaces (`.prism/references/` + `templates/install/.prism/references/`), byte-identical (REQ-5).
+- [x] `structural-remedies.md` exists on both surfaces (`.prism/references/` + `templates/install/.prism/references/`), byte-identical (REQ-5).
 - [ ] No "Cleaner Paths" checkbox exists in any `## PR Readiness` surface (REQ-6).
 - [ ] No new ADR created; no ADR renumbering performed (REQ-7).
 - [ ] The large-PR escape-hatch blockquote is gone from `prism-code-review-pr/shared.md`, and `skill-authoring.md:102` no longer cites it as an example (referrer fixed, principle preserved) (REQ-8).
