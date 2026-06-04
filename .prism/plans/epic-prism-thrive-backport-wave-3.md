@@ -32,6 +32,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Regenerated PR #72 body — folded the REQ-5 install-seed close-out into Summary/What/How/Notes (the body predated the final commit and still called REQ-5 a follow-up). Flipped #72 from draft to ready for review; Eric review next.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eric reviewed PR #72 clean (`effort:glance` + `confidence:high`), then re-tested the wave3.2 ACs and found three #69 misses. Absorbed all three — review-frameworks scan items, skill-authoring referrer fix (REQ-8), skills-ecosystem simplification notes — on both surfaces; build/check/types/test green. See Decision: #69 carryover absorption.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.2 task 10 (Hunter opted in) — annotated ADR-0017's Consequences with the offensive-simplification complement to the Necessity axis, both surfaces, mirrors regenerated. All wave3.2 Eli tasks now closed.
+- 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar follow-up self-review of the post-Eric delta (2ca438e + 577489f) — seeds in sync, ecosystem-row claims source-verified, referrer fix clean. One minor logged: scan items stated verbatim in three surfaces; decide accept-or-dedup at epic close.
 
 ---
 
@@ -90,6 +91,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
   - **Root cause:** PR #69 implemented the #2039 backport from a narrower parallel plan (`chore-thrive-pr-2039-backport.md`) that omitted four epic tasks — the install seed (REQ-5, closed on this branch), the review-frameworks scan items, the skill-authoring referrer fix, and the skills-ecosystem notes. Surfaced by Eric's AC re-test of the wave3.2 items.
   - **Chosen approach:** Absorb all three remaining gaps into PR #72 — same content-only edit class, and the branch already carries the REQ-5 close-out. Alternative — a third PR — rejected as redundant handoff for work this PR is already adjacent to.
   - **Cross-lane note:** epic task 9 is Eli's lane; absorbed by Clove under this entry per `branch-plan.md` cross-lane absorption.
+  - **Scan-item triplication accepted (resolves Briar's minor):** the two scan items live verbatim in Eric's body, Briar's body, and the shared catalog. Deduping by having the bodies cite the catalog would externalize an every-run check — `skill-authoring.md` flags an externalized lens as Major, so the bodies stay pinned and the catalog carries the shared lookup + remedies pointer. Drift guard: any wording change to the scan items updates all three surfaces in the same commit.
   - → no promotion needed (process scoping; the shipped edits are the durable surface).
 
 ---
@@ -196,6 +198,14 @@ Backport target: Thrive PR #2039 (THR-1909). Port the *offensive* simplification
 
 ## Review Issues
 
+### Structural scan items stated verbatim in three surfaces
+
+- **Severity:** `minor`
+- **Status:** `fixed` — resolved by decision, not by edit; see Decision § "#69 carryover absorption" → "Scan-item triplication accepted"
+- **File:** `.prism/references/review-frameworks.md:32` (+ `.ai-skills/skills/prism-code-review-pr/shared.md`, `.ai-skills/skills/prism-code-review-self/shared.md`)
+- **Problem:** The two structural scan items exist word-for-word in Eric's skill body, Briar's skill body (both via #69), and the shared review-frameworks catalog (epic task 3) — three copies that can drift independently, the same mechanism behind the REQ-5 seed miss.
+- **Suggested fix:** Decide and record: either accept the triplication with a one-line note on the absorption Decision (skill bodies pin every-run checks per `skill-authoring.md`; the catalog is the shared lookup with the remedies pointer), or follow up by having the bodies cite the catalog. Don't leave it undecided at epic close.
+
 ### Install-seed `structural-remedies.md` missing; two shipped refs stale (PR-wave3.2 / #69 carryover)
 
 - **Severity:** `major`
@@ -255,7 +265,7 @@ Flagged during discovery — out of scope for this epic, candidate follow-up tic
 
 Living checklist — updated by each sub-PR's self-review run.
 
-- [ ] No critical or major issues across both sub-PRs
+- [x] No critical or major issues across both sub-PRs (Briar's scan-item-triplication minor resolved by Decision — triplication accepted, bodies stay pinned)
 - [ ] Types correct — no `any`, no unsafe `as` (N/A — content/markdown only, no TS source touched)
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (N/A — no executable logic; verification is `pnpm prism:check` drift detection)
@@ -264,4 +274,4 @@ Living checklist — updated by each sub-PR's self-review run.
 - [x] PR descriptions up to date for each sub-PR (3.2/#69 merged; 3.1/#72 body regenerated 2026-06-04)
 - [ ] Lasting decisions promoted to architect context (no new ADRs this wave; reference files are the durable home — confirm at close)
 
-**Last updated:** 2026-06-04 (#69 carryover absorption: scan items, referrer fix, ecosystem notes)
+**Last updated:** 2026-06-04 (Briar follow-up self-review of the post-Eric delta — one minor logged)
