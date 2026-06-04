@@ -33,6 +33,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eric reviewed PR #72 clean (`effort:glance` + `confidence:high`), then re-tested the wave3.2 ACs and found three #69 misses. Absorbed all three — review-frameworks scan items, skill-authoring referrer fix (REQ-8), skills-ecosystem simplification notes — on both surfaces; build/check/types/test green. See Decision: #69 carryover absorption.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.2 task 10 (Hunter opted in) — annotated ADR-0017's Consequences with the offensive-simplification complement to the Necessity axis, both surfaces, mirrors regenerated. All wave3.2 Eli tasks now closed.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar follow-up self-review of the post-Eric delta (2ca438e + 577489f) — seeds in sync, ecosystem-row claims source-verified, referrer fix clean. One minor logged: scan items stated verbatim in three surfaces; decide accept-or-dedup at epic close.
+- 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Scan-item minor resolved by decision — triplication accepted, bodies stay pinned per `skill-authoring.md`; see Decision § "#69 carryover absorption". Briar re-review of the resolution commit: clean.
 
 ---
 
