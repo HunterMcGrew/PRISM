@@ -69,6 +69,7 @@ Use blank lines to separate logical units and improve scannability. Remove doubl
 - Do not delete tests to make changes pass.
 - Add tests when changes introduce meaningful risk.
 - Explain verification steps when behavior changes.
+- Test descriptions state the contract under test in the present tense, not the change that added them — see `writing-voice.md § Anti-pattern: Session-context leakage`.
 - For UI work: visual regressions are caught at the visual layer (Storybook, Chromatic, Percy, screenshot diffing — whichever your team uses), not in unit tests. The team's tech-stack rules in `code-standards-*.md` (when included) cover the specific tooling.
 
 ## Comments

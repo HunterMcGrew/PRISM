@@ -43,5 +43,5 @@ Composes with ADR-0029: skills stay generic process definitions; rules carry tea
 
 - ADR-0029 (Rules Self-Declare Their Applicability) — sibling principle covering rule references.
 - ADR-0030 (Token Substitution at Build Time) — sibling mechanism covering identifier substitution.
-- `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage in generated artifacts — the same principle applied to authoring artifacts in a session.
+- `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage — the same principle applied to authoring artifacts in a session.
 - `.prism/plans/epic-phase-1-foundation.md` § Implementation Tasks > PR #4 — the editorial sweep that implements this ADR across canonical sources and templates.

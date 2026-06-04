@@ -35,6 +35,7 @@ Flag both directions: **missed abstractions** (duplicated logic across 3+ sites,
 
 - Positive: review catches premature abstractions before they calcify. Wrong abstractions are expensive to remove once code depends on them.
 - Positive: reviewers stay adversarial on structure, not just lines. "Is this correct?" and "should this exist?" are different questions; both get asked.
+- Positive: the Necessity axis carries an offensive complement — reviewers hunt the reframe that deletes complexity, not just unjustified additions, surfaced non-blockingly via the Cleaner Paths bucket and `.prism/references/structural-remedies.md` § Preferred Remedies. Severity discipline still governs what blocks merge.
 - Negative: review takes longer. Structural questions require more thought than correctness questions.
 - Neutral: the 3-site threshold for pattern duplication vs. 2-site for shared state duplication is a calibration based on lessons (2026-04-08). May shift with more data.
 
