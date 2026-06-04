@@ -216,6 +216,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar post-merge pass — merge resolution verified correct (PR net diff carries no wave-3 plan; nothing contradicts `#75`'s close-timing rule). Two new Minors: PR body Summary stale on task-9 (per-push sync miss on `bb0844d`), task-9 text lacks supersession marker; one Cleanup (dead wave-3 lineage link). All routed to Clove.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed both Minors + the Cleanup — PR body Summary/How synced via REST PATCH (Notes untouched), task 9 carries the supersession marker, AC bullet's orphanable SHA claim dropped, dead lineage link de-linked. Both issues `fixed`.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar re-swept the fix delta clean; Eric pass 3 (head `32dc85f`) — zero findings, merge resolution verified, labels `effort:glance` + `confidence:needs-judgment`, PR returned to draft per Hunter. Two human items remain: fresh-session writing-voice check, accept/reject the proposed task-9 AC adjustment.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Hunter ran the fresh-session check on this branch — writing-voice.md auto-loads (4.2k tokens in Memory files); AC checked off. One human item remains: the proposed task-9 AC adjustment. Worktree removed; branch now checked out in the main working copy.
 
 ---
 
@@ -275,7 +276,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [ ] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2 pending)
 - [x] Every rule edit present on all five surfaces (canonical + four mirrors).
 - [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
-- [ ] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; mechanism confirmed by parity — frontmatter-less rules load always-on in live sessions. Fresh-session spot check still pending per PR `#76` Notes.)
+- [x] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; Hunter ran the fresh-session spot check 2026-06-04 on this branch — writing-voice.md listed in the auto-loaded Memory files at 4.2k tokens.)
 - [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
 - [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions).
 - [ ] ADR-0046 exists, records the rejected alternatives, and is indexed.
