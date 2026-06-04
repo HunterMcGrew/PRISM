@@ -13,7 +13,7 @@ The PR description carries reasoning the diff can't show. File-level change deta
 
 The canonical shape lives in `.prism/templates/pr-description.md`. Sections in order:
 
-- `## Summary` — one-line TL;DR
+- `## Summary` — a BLUF scaled to the PR's size: one line for a small PR, a lead line plus a few bullets for a large one. The reviewer should know what they're walking into before the first heading scroll.
 - `## What did you do?` — concrete description of the change
 - `## Why did you do it?` — motivation or problem
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes

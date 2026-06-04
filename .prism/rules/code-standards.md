@@ -28,6 +28,12 @@ Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unr
 
 For the implementation-mode framing of the same rule, see `.claude/skills/prism-code-dev/SKILL.md` § Scope discipline and `### Anti-pattern: Drive-by refactoring`.
 
+### Removal and rename completeness
+
+When removing or renaming a concept — a function, type, config key, rule section, anything other code or docs reference — sweep every reference by searching the tree for the old name. Compiler errors and the diff are not the sweep: the compiler only sees code it type-checks, and the diff only shows files you already touched. The reference you missed lives in a file the change never opened — docs, templates, string literals, generated mirrors, sibling configs.
+
+**Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in `.prism/references/review-frameworks.md` § Structural Scan Items).
+
 ## Whitespace
 
 Use blank lines to separate logical units and improve scannability. Remove double blank lines and trailing whitespace.

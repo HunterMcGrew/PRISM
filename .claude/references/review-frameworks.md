@@ -31,10 +31,11 @@ Self-review adds a third layer: the **adversarial pass**. After confirming inten
 
 ## Structural Scan Items
 
-Two cross-type scan items both reviewers apply on every pass (remedy shapes live in `structural-remedies.md` § Preferred Remedies):
+Cross-type scan items both reviewers apply on every pass (remedy shapes for the structural items live in `structural-remedies.md` § Preferred Remedies):
 
 - **"Magic" or brittle behavior** — ad-hoc or magical mechanisms, or generic abstractions that hide simple data-shape assumptions. Prefer direct, boring, explicit code over clever indirection that buys no clarity.
 - **Silent fallback over an unclear invariant** — a branch that quietly defaults (e.g. on `undefined`/`unknown`) to avoid confronting an unclear contract. Ask whether the boundary should be made explicit with a typed model or shared contract instead.
+- **Removals and renames verified by search, not by diff** — diff-only review structurally cannot catch a missed reconciliation: the file still referencing the old name never appears in the diff. When the PR removes or renames a concept, search the tree for the old name before signing off (author-side gate: `.prism/rules/code-standards.md` § Removal and rename completeness).
 
 ## The 400-Line Cliff
 

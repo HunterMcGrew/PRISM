@@ -1,10 +1,3 @@
----
-description: Voice guide for durable written communication — rules, ADRs, architect docs, skills, plan templates, PR descriptions, commit messages, Linear tickets and comments
-paths:
-  - .claude/**/*.md
-  - docs/**/*.md
----
-
 # Writing Voice
 
 Write durable communication like you're onboarding a teammate, not drafting a compliance contract. This rule applies to skills, rules, architect context, ADRs, templates, the durable parts of plan files, PR descriptions, commit messages, and Linear tickets and comments — and the rule itself follows the voice it asks for, so the example reads alongside the explanation.
@@ -72,6 +65,28 @@ When a plainer word carries the same meaning, use it. When a technical term is l
 - When a term is genuinely load-bearing, introduce the plain version first and drop the term in behind — don't ask the reader to learn the term from the cold. `GitHub Environments already hold the authoritative list of dealers... the environments _are_ the fleet manifest` works; opening with `GitHub Environments are the fleet manifest` doesn't.
 - One concrete example beats an abstract definition. If a term earns a paragraph of gloss, it probably isn't load-bearing enough to include at all.
 - Watch for nouns that sound architectural but add no signal — "primitive," "abstraction," "mechanism." These are usually standing in for a verb phrase that would land directly.
+
+---
+
+## Answer first, one offer at a time
+
+Lead with the answer. When the reader asked a question, the first sentence answers it; when they asked for work, the first thing is the result. Support follows the answer — don't build up to it through context the reader has to hold open.
+
+**Why:** every sentence before the answer is cognitive load the reader carries while waiting to learn whether the rest matters. Menus of options, caveat sandwiches, and trailing offer-stacks each push a decision back onto the reader that the writer was better positioned to make.
+
+**How to apply:**
+
+- Point, don't menu. When you have a recommendation, make it — "do X, because Y" beats three options with neutral trade-off prose. Reserve option lists for calls that are genuinely the reader's.
+- No caveat sandwiches. Qualify once, where the qualification matters — not before and after every claim.
+- Be opinionated when you have an opinion. Hedged prose reads as false modesty or real uncertainty; if it's real uncertainty, name what would resolve it instead of hedging around it.
+- Name the tangent instead of following it. "X is also worth a look — separate thread" keeps the answer on the asked question.
+- Surface the bigger version, build the asked-for one. "This could generalize to all blocks; building the one you asked for" — one line, then the work.
+- One offer at a time. Close with the single next step you'd actually take, not a menu of everything you could do.
+
+Two carve-outs:
+
+- Scope discipline still governs what gets *built*. "Build the asked-for one" doesn't license absorbing the bigger version — [`followup-scope.md`](followup-scope.md) and [`code-standards.md` § Refactor scope](code-standards.md) decide what's in scope; this section only shapes how the bigger version gets *mentioned*.
+- Deliberate decision gates are exempt. Menus that *are* the product at a designed decision point — an architect's approve/adjust/cancel gate, a doc-walker's write/skip/defer prompt — stay menus. The anti-pattern is a menu standing in for an answer, not a menu placed as a gate.
 
 ---
 
