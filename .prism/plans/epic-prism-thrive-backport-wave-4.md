@@ -208,12 +208,29 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: `/prism-handoff` design explored with Hunter and approved — full frontmatter + body drafts embedded verbatim in tasks 4.2-6/7; see Decision "`/prism-handoff` design extends THR-1912". AGENTS.md task 13 gains the Context Window Handoff Check remedy line.
 - 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Dry-ran the handoff spec by hand (doc handed to Clove for wave-4 implementation); caught a path-join footgun (`$TMPDIR` trailing-separator assumption) and patched the embedded draft's Step 3 with the explicit-join guard.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Implemented all nine 4.1 tasks, commit-per-task — four new git-conventions sections, writing-voice § Answer first + always-on promotion (ADR-0035 + dev doc synced; their Tier 2 frontmatter example re-pointed at accessibility.md since writing-voice no longer carries one), removal/rename gates, new design-governance.md, wave-3 `#2042` deferral annotated. Plan + lessons landed on main first via chore PR `#74` (wave-3 precedent); branch merged post-`#72` main mid-flight when wave 3.1 squashed. `pnpm prism:check` and `prism:check-types` green.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar self-review of PR `#76` — two Minors: AC's `#51` third leg mislocated (fixed, see AC Adjustments) and Tier 1 roster enumerations omit always-on `lazy-artifacts.md` (open, for Clove). Removal-sweep, five-surface, and ADR-claim checks all pass; `prism:check` + `check-types` green.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed Briar's open Minor — `lazy-artifacts.md` added to the Tier 1 roster lists in ADR-0035, the paired dev doc, and `session-close.md` (absorbed — same gap, exhaustive-reading list), on all five surfaces. Checks green.
 
 ---
 
 ## Review Issues
 
-(none yet)
+### AC cites a Tier 1 list that doesn't exist in shared.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-prism-thrive-backport-wave-4.md` (AC, issue `#51` done-condition bullet)
+- **Problem:** Task 4.1-8 and the AC name `prism-code-dev/shared.md`'s "8-rule Tier 1 list" as `#51`'s third leg, but shared.md carries no such list — the universal-load-set enumeration lives in `.prism/references/session-close.md` (the PR body already identifies it correctly).
+- **Suggested fix:** Re-point the AC bullet at session-close.md — done in this review pass (see AC Adjustments).
+
+### Tier 1 roster enumerations omit lazy-artifacts.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/0035-rule-loading-tiers.md:26` (also `docs/content/dev/architecture/rule-loading-tiers.md:31`, `.prism/references/session-close.md:9`)
+- **Problem:** `lazy-artifacts.md` carries no `paths:` frontmatter and ships in install templates — Tier 1 by the ADR's own mechanism (it loads always-on in live sessions) — yet all three roster enumerations omit it, including the two lines this PR edits to add writing-voice.
+- **Suggested fix:** Add `lazy-artifacts.md` to the ADR and dev-doc lists (both lines already in this diff's local frame), or restate the lists per writing-voice § Count rules, not numbers; session-close.md's omission is pre-existing and may ride along or go to a follow-up.
+- **Fixed in:** Clove follow-up commit on `hmcgrew/prism-wave4.1-governance-git-rule-ports` — `lazy-artifacts.md` added to all three lists; session-close.md absorbed (same one-rule gap, its list reads exhaustive so it was the most-wrong of the three). All five surfaces synced; `prism:check` + `check-types` green.
 
 ---
 
@@ -231,33 +248,38 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:check` green after each sub-PR.
-- [ ] Every rule edit present on all five surfaces (canonical + four mirrors).
-- [ ] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
-- [ ] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces.
-- [ ] ADR-0035's Tier 1 example list, its paired dev doc, and `prism-code-dev/shared.md`'s Tier 1 list all agree that writing-voice is Tier 1 (issue `#51` done condition).
-- [ ] Wave-3 plan's `#2042` deferral carries the post-`#2047` end-state annotation.
+- [ ] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2 pending)
+- [x] Every rule edit present on all five surfaces (canonical + four mirrors).
+- [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
+- [ ] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; mechanism confirmed by parity — frontmatter-less rules load always-on in live sessions. Fresh-session spot check still pending per PR `#76` Notes.)
+- [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
+- [x] Wave-3 plan's `#2042` deferral carries the post-`#2047` end-state annotation.
 - [ ] ADR-0046 exists, records the rejected alternatives, and is indexed.
 
 ### AC Adjustments
+
+- 2026-06-04 (Briar): Re-pointed the `#51` done-condition bullet from `prism-code-dev/shared.md` (which has no Tier 1 list) to `.prism/references/session-close.md`'s universal-load-set enumeration — matches what was actually built and verified. See Review Issues.
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-04 | Winston | Generated AC | updated | N/A — no Linear ticket (phase work) |
+| 2026-06-04 | Briar | Refined AC from 4.1 self-review (re-pointed `#51` third leg; ticked verified items) | updated | N/A — no Linear ticket (phase work) |
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+Scope: sub-PR 4.1 (PR `#76`). Sub-PR 4.2 not yet started.
 
-**Last updated:** 2026-06-04
+- [x] No critical or major issues (two Minors — one fixed in-plan, one open: lazy-artifacts roster omission)
+- [x] Types correct — no `any`, no unsafe `as` (no runtime code in diff; `pnpm prism:check-types` green)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (N/A — markdown-only diff; mirror fidelity guarded by `pnpm prism:check`)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-04 (`pnpm prism:check` + `prism:check-types`; full app build N/A for rule/doc content)
+- [x] PR description up to date (stacked-on-`#74` note accurate; `#74` still open — refresh branch once it merges, picking up `#75` on main at the same time)
+- [ ] Lasting decisions promoted to architect context (plan stays open for sub-PR 4.2)
+
+**Last updated:** 2026-06-04 (Briar, 4.1 self-review)
