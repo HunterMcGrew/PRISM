@@ -29,6 +29,7 @@ Discovery (6 parallel deep-dives) triaged Thrive PRs #2032–#2043. Four PRs are
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Eli completed PR-wave3.1 task 9 — annotated ADR-0015 forward for cross-model framing (new Context paragraph citing ADR-0005, generalized the Consequences "restore mandates" line) on both surfaces, historical 4.6→4.7 narrative preserved. Mirrors regenerated; build/check/check-types/test all pass. PR-wave3.1 Clove + Eli tasks now complete (REQ-3 and US-1 ADR-0015 portion satisfied).
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Briar self-reviewed PR-wave3.1 — clean (content/markdown only, all 4 surfaces + install seed in sync, build green, heading rename propagated with no dangling refs). Flagged one out-of-scope carryover from merged PR-wave3.2 (#69): the install-seed `structural-remedies.md` and two stale refs (REQ-5 still open). Logged under Review Issues.
 - 2026-05-29 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Closed REQ-5 — backported the missed PR-wave3.2 (#69) install seed by hand (`prism:build` doesn't regenerate `templates/install/`). Copied `structural-remedies.md` into the seed and synced `review-justification.md` + `code-review-pr/summary-template.md` byte-identical to canonical; all three `diff` clean and `pnpm prism:check` green (130/130). Review Issues entry set to `fixed`.
+- 2026-06-04 [hmcgrew/prism-wave3.1-writing-ac-refinements]: Regenerated PR #72 body — folded the REQ-5 install-seed close-out into Summary/What/How/Notes (the body predated the final commit and still called REQ-5 a follow-up). Flipped #72 from draft to ready for review; Eric review next.
 
 ---
 
@@ -252,7 +253,7 @@ Living checklist — updated by each sub-PR's self-review run.
 - [ ] Tests written for new logic and edge cases (N/A — no executable logic; verification is `pnpm prism:check` drift detection)
 - [ ] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-05-29 (PR-wave3.1: build/check/check-types/test all green)
-- [ ] PR descriptions up to date for each sub-PR
+- [x] PR descriptions up to date for each sub-PR (3.2/#69 merged; 3.1/#72 body regenerated 2026-06-04)
 - [ ] Lasting decisions promoted to architect context (no new ADRs this wave; reference files are the durable home — confirm at close)
 
-**Last updated:** 2026-05-29 (PR-wave3.1 Clove tasks 1–8 implemented)
+**Last updated:** 2026-06-04 (PR #72 body regenerated, flipped to ready for review)
