@@ -61,6 +61,14 @@ Default to one clean commit per unit of work. Three exceptions earn multiple com
 
 ---
 
+## When to Commit
+
+Commit your own work before handing off — to another persona, another session, or another person.
+
+**Why:** uncommitted changes are invisible everywhere except the working tree they sit in. A handoff that leaves work uncommitted hands over a branch that misstates its own state — the next session can't tell finished work from forgotten scraps, and a concurrent session on the same checkout can sweep your changes into its own commits.
+
+---
+
 ## Branch Naming
 
 Format: `<username>/thr-NNNN-<slug>`
@@ -91,6 +99,16 @@ Merging and approving PRs is a human responsibility — on every tool (GitHub UI
 Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the handoff* — push the final commits, sync the PR body, report the PR ready to merge. They are never an instruction to run the merge.
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
+
+---
+
+## Keeping a Branch Current
+
+Refresh a branch from `main` by merging — `git merge origin/main`. Merge never rewrites commits another checkout may already hold, so it's always safe on a branch you share with reviewers, other sessions, or CI.
+
+One trap earns a rebase instead: **the squash-already-upstream trap**. After a PR from your branch squash-merges, `main` carries a single commit with your changes while your branch still holds the individual commits. Merging `main` back in replays your own changes against their squashed copy — every subsequent edit to the same lines becomes a conflict with yourself. When continuing work on a branch whose PR already squash-merged, rebase the unmerged remainder onto `origin/main` (the already-merged commits drop out as empty) — or start a fresh branch from `origin/main`. This trap is live here because PRs squash-merge (§ Merge Strategy).
+
+Never rebase a shared branch. Rewriting commits that exist in someone else's checkout forks the branch's identity, and reconciling afterward requires the force-push damage § Force Push Policy exists to prevent.
 
 ---
 
