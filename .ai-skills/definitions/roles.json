@@ -75,6 +75,10 @@
 		{
 			"id": "prism-handoff",
 			"type": "utility"
+		},
+		{
+			"id": "prism-review-loop",
+			"type": "utility"
 		}
 	]
 }
