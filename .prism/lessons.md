@@ -113,3 +113,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-05 — Zoe's first full audit found 14 of 21 plans shipped-but-never-closed, so 119 of 138 Decision verdicts were the same `archive-candidate` with plan-level evidence. Two procedure gaps surfaced that `audit-workflow.md` doesn't cover: (a) a plan closed the *same day* with its own verdict gate (wave-4) — re-annotating it adds noise, skip it and note the skip in the report; (b) on the first run ever, every lesson is technically "on its first audit," so the new-lesson grace period would block archiving even a 33-day-old unreferenced entry — age + reference-absence is the intent, first-run literalism isn't.
 
 **How to apply:** When a plan's whole epic shipped, issue uniform per-Decision verdicts with the plan-level evidence and route the close-out to Winston rather than crafting per-Decision narratives. Skip re-annotation on plans closed within the current audit window. Read the lesson grace period as "young lessons are safe," not "nothing archives on run one."
+
+## Meta-mentions of token syntax break the build in copied content areas
+
+**Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
+
+**How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied).
