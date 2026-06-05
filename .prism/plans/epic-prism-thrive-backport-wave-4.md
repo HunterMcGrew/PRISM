@@ -1,12 +1,14 @@
 # Plan: epic-prism-thrive-backport-wave-4
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Thrive backports, fourth wave (no Linear ticket; phase work). Follows [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) (Wave 1, Thrive PRs through ~#2024), [`epic-prism-thrive-backport-wave-2.md`](./epic-prism-thrive-backport-wave-2.md) (#2025–#2027), and wave 3 (#2032–#2043 — epic closed in `#75`, plan deleted).
 
 ## Goal
 
-Absorb the incident-born governance and git-workflow rules from Thrive PRs `#2047`–`#2049` and `#2056`, and break PRISM's all-skills-are-personas assumption by implementing utility-skill support natively — shipping `/prism-handoff` as the first utility skill from the architecture resolved in Thrive's THR-1912 plan — across two ordered sub-PRs.
+Absorb the incident-born governance and git-workflow rules from Thrive PRs `#2047`–`#2049` and `#2056`, and break PRISM's all-skills-are-personas assumption by implementing utility-skill support natively — shipping `/prism-handoff` as the first utility skill from the architecture resolved in Thrive's THR-1912 plan, and `/prism-review-loop` (issue `#77`) as the second — across three ordered sub-PRs.
 
 ---
 
@@ -24,7 +26,7 @@ Discovery triaged Thrive PRs `#2044`–`#2056` (Hunter-authored: `#2045`, `#2047
 
 ## Implementation Tasks
 
-Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no further split). Rule-edit mechanics for every 4.1 task: edit the canonical `.prism/rules/<file>`, propagate to the four mirrors (`templates/install/.prism/rules/`, `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` — wave 3.1 precedent shows all five surfaces move together; if `pnpm prism:build` does not regenerate the rule mirrors, mirror manually with token substitution as 3.1 did), then `pnpm prism:check` green.
+Three ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no further split). Sub-PR 4.3 was added 2026-06-05 when issue `#77` slotted into the wave (plan survives per ADR-0047). Rule-edit mechanics for every 4.1 task: edit the canonical `.prism/rules/<file>`, propagate to the four mirrors (`templates/install/.prism/rules/`, `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` — wave 3.1 precedent shows all five surfaces move together; if `pnpm prism:build` does not regenerate the rule mirrors, mirror manually with token substitution as 3.1 did), then `pnpm prism:check` green.
 
 ### Sub-PR wave 4.1 — governance + git-workflow rule ports
 
@@ -166,6 +168,32 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 13. **`AGENTS.md`** — two edits: (a) add `prism-handoff` to the skill roster, marked as a *utility* skill: explicit `/prism-handoff` invocation, no persona; (b) in § Context Window Handoff Check, add one line naming `/prism-handoff` as the remedy when the check fires — personas suggest it in the closing message on long/mixed-context sessions. Coordinate with issue #64 (agents-md-slim owns AGENTS.md restructuring).
 
+### Sub-PR wave 4.3 — `prism-review-loop` utility skill (issue `#77`)
+
+Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0046). Skill sources ship verbatim from issue `#77`'s embedded drafts, pending normal review. The issue's dry-run done condition is already satisfied — the ladder was hand-run as PR `#78`'s review process (2026-06-04/05; recorded in issue `#77` § Dry-run findings).
+
+#### Winston (plan bookkeeping)
+
+1. **Add this 4.3 section to the plan.** Goal amended ("two" → "three ordered sub-PRs"), task group + Decisions + AC added, History appended. *(Done at plan write — this section.)*
+
+#### Clove (implementation)
+
+2. **`roles.json` — add the entry.** Append `{ "id": "prism-review-loop", "type": "utility" }` to the `skills` array in `.ai-skills/definitions/roles.json`. Existing entries unchanged. Build stays red until tasks 3–4 land — sequence within the same commit; verification is task 7.
+
+3. **New skill source: `.ai-skills/skills/prism-review-loop/frontmatter.yml`.** The issue `#77` draft with one mechanical change: the `description` value uses the folded (`>`) scalar style rendering the identical string — `parseFrontmatter` truncates plain multi-line continuations to their first line (see Decisions; prism-handoff precedent). `argument-hint` unchanged.
+
+4. **New skill source: `.ai-skills/skills/prism-review-loop/shared.md`.** Ship the issue `#77` body verbatim — the ladder, four guardrails (pass budget, three-strike, disagreement fast-path, phase-boundary gate, state-travels), closing scoreboard. No `You are X` opener; no platform files unless a platform delta surfaces (prism-handoff precedent).
+
+5. **Promote the parseFrontmatter constraint into `skill-authoring.md`** (second trip = promotion per the lesson taxonomy — the issue `#77` draft itself re-tripped the 2026-06-04 lesson). In `.prism/rules/skill-authoring.md` § Description field shape, add a short mechanics note: multi-line `description` values use the YAML folded (`>`) scalar — `parseFrontmatter` (`scripts/ai-skills/utils.ts`) reads single-line and folded scalars only; a plain continuation silently truncates to its first line. Incident shape, no wave narration (ADR-0032). Canonical + four mirrors via `pnpm prism:build`.
+
+6. **Doc surfaces gain the second utility skill.** (a) `.prism/architect/skills-ecosystem.md` § Utility skills (+ install seed `templates/install/.prism/architect/skills-ecosystem.md`; platform mirrors regenerate): after the prism-handoff sentence, add `prism-review-loop` — orchestrates the review gauntlet (self-review → fix → PR-review loops to zero findings), user-initiated, runs in the invoking persona's voice. (b) `AGENTS.md` skill roster: add a `prism-review-loop` utility line adjacent to prism-handoff's, same shape. Verify issue `#64` (agents-md-slim, owns AGENTS.md) is still unmoved before editing — last verified 2026-05-28.
+
+7. **Regenerate + verify.** `pnpm prism:build`; commit generated `.claude/skills/prism-review-loop/` and `.cursor/skills/prism-review-loop/`; confirm no `.codex/agents/prism-review-loop.toml`; confirm the generated SKILL.md description carries the full string (grep for `review until clean`); `pnpm prism:check` and `pnpm prism:test` green. No new tests — the 4.2 suite locks the discriminator generically; a second utility entry exercises already-locked paths. 137/137 expected.
+
+#### Winston (close)
+
+8. **Run the epic close on this branch** (after review passes, before merge — 4.3 is the wave's final PR). Verdict sub-bullets on the 4.3 Decisions, promote anything lasting, `> Closed:` marker + History entry per `branch-plan.md § Before Closing`. The plan file stays in `.prism/plans/` (ADR-0047).
+
 ---
 
 ## Decisions
@@ -217,6 +245,14 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
   - → no promotion needed (documented absorption per ADR-0018; ticket-tactical)
 - **Plans are never deleted — preserve and mark closed (Hunter, 2026-06-05).** Retires the staged close's deletion step; this plan survives as living memory and stays open for 4.3, which dissolves the `#77` scope conflict (the plan gains a 4.3 section when that work starts). Only Zoe may later move a plan out of `.prism/plans/` (cadence-audit archive on confirmation); no persona deletes one. Deletion language reconciled tree-wide in the close pass — `branch-plan.md` § Before Closing, `skills-ecosystem.md` § Lessons, ADR-0001's consequence line, each on canonical + install seed (rule edits absorbed by Winston per ADR-0018: spec-only, coupled to the close that surfaced them); the 2026-05-23 lesson's second trip is the recurrence that triggered promotion per the taxonomy.
   - → promoted to ADR-0047 (and codified in branch-plan.md § Before Closing)
+- **4.3 frontmatter ships in folded scalar style, not the issue draft's plain multiline.** The issue `#77` `frontmatter.yml` draft writes `description` as a plain YAML multi-line continuation, which `parseFrontmatter` truncates to its first line — the same constraint the 4.2 Decision above records for prism-handoff. Identical rendered string; only the YAML scalar style differs. Caught at planning (Winston, 2026-06-05); second occurrence → promoted to `skill-authoring.md` in task 4.3-5 per the lesson taxonomy.
+  - → promoted to `.prism/rules/skill-authoring.md` § Description field shape (in-flight, task 4.3-5)
+- **4.3 skill body ships verbatim, pending normal review.** The gauntlet policy (zero-findings exit, 20-pass budget, three-strike rule, phase-boundary user gate) was calibrated against the real 4.1 run and dry-run-validated on PR `#78`; review may amend prose, not policy, without a new Hunter call.
+  - → no promotion needed (shipping tactic for this PR; the prose-amendment carve-out was exercised once — Eric pass-1 citation fix, recorded in AC Adjustments and Review Issues — and the policy itself lives in the shipped skill body)
+- **4.3 doc updates ride with implementation, not a separate Eli lane** — same shape as the 4.2 absorption Decision: ~10 lines of prose tightly coupled to the registry change, same PR. Assigned to Clove at planning time, not absorbed mid-flight.
+  - → no promotion needed (documented absorption per ADR-0018; ticket-tactical)
+- **No new pipeline tests for 4.3.** The zero-pipeline-edit contract (ADR-0046) means there is no new behavior to lock; the second utility entry is a consumer of paths the 4.2 suite already locks (utility-adapter gate, utility+persona rejection, unknown-type rejection).
+  - → no promotion needed (the zero-pipeline-edit contract is ADR-0046's Decision section; 4.3 is its first exercised proof, recorded in this plan)
 
 ---
 
@@ -250,6 +286,13 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Eric gauntlet PR-review pass 1 (head `22dcade`) — no Critical/Major, two Minors (buildRoleMap silently accepts unrecognized `type` values; PR body counts stale since `d5daf65`); labels `effort:quick` + `review:has-minors`, PR stays draft. Clove fix pass 2: both fixed — unknown discriminators rejected with a locking test (137/137 green), PR body agent-owned counts synced via REST PATCH. Both recorded in Review Issues as `fixed`.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Eric re-review (head `93e5581`) — zero findings, both fixes verified, thread resolved; labels `effort:quick` + `confidence:needs-judgment` (the `#77` plan-survival call), draft flipped ready.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Winston ran the 4.2 close under Hunter's ruling — plans are never deleted; this plan survives and stays open for 4.3, dissolving the `#77` scope conflict. Deletion language reconciled tree-wide (branch-plan.md, skills-ecosystem § Lessons, ADR-0001, both surfaces each) and promoted to ADR-0047; final `prism:check` AC ticked. See Decision: "Plans are never deleted — preserve and mark closed".
+- 2026-06-05 [main]: PR `#78` merged (`2cd308a`); Nora filed the six accumulated follow-up flags as GitHub issues `#79`–`#84` through the scope-fit gate — `#79` config.json identifiers (widened to cover the ticketSystem block pointing at a nonexistent Linear team), `#80` Zoe's plan-archive lane, `#81` worktree-isolation tier inversion, `#82` ADR README index, `#83` reviewer model pins (cross-linked to `#73`), `#84` install-layout gitignore claim. Filing tracker verified against reality first (GitHub issues, not the configured Linear team); see lessons.md 2026-06-05.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Plan gained sub-PR 4.3 (issue `#77`, `prism-review-loop` utility skill) — Goal now reads three ordered sub-PRs. Winston caught the issue draft's plain-multiline frontmatter re-tripping the parseFrontmatter truncation lesson; folded-scalar fix + skill-authoring.md promotion folded into the tasks. AC extended with 4.3 criteria; dry-run AC pre-satisfied via PR `#78`'s hand-run gauntlet.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Implemented 4.3 tasks 2–7, commit-per-task — registry entry + skill sources (folded-scalar divergence only), parseFrontmatter constraint promoted into skill-authoring.md § Description field shape, both utility-skill doc surfaces updated, platform outputs regenerated. Zero pipeline edits and zero new tests, per the ADR-0046 contract; `prism:check` + `prism:test` green, 137/137. All five open 4.3 AC items verified and ticked.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Briar self-review pass 1 (PR `#85`) — zero findings. shared.md byte-diffed identical to the issue `#77` draft, frontmatter divergence confirmed sole, the skill-authoring rule's parseFrontmatter claims source-verified, tree-wide sweep found no stale utility enumerations; checks green at HEAD. Self-review phase closes at zero findings; verdict sub-bullets on the 4.3 Decisions deferred to Winston's task-8 close.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Eric gauntlet PR-review pass 1 — no Critical/Major, two Minors (stale "first utility skill" ordinal in `docs/content` compatibility doc; bare git-conventions citations in the review-loop skill body); labels `effort:glance` + `review:has-minors`, PR stays draft. Clove fix pass 3: both fixed, AC source-match wording adjusted with Hunter's acceptance; `prism:check` + `prism:test` green, 137/137. Both recorded in Review Issues as `fixed`.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Eric re-review (head `8a0d5a4`) — zero findings, both fixes verified, thread resolved; labels `effort:glance` + `confidence:needs-judgment` (task-8 merge sequencing), PR stays draft per the gauntlet closing policy. Gauntlet closed at 4/20 passes, no strikes; the skill's own first invocation ran this gauntlet. Winston's task-8 epic close remains before merge.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Winston ran the wave-4 epic close (task 8) — verdict gate passed 20/20 (four 4.3 verdicts issued: one promoted in-flight to skill-authoring.md, three no-promotion-needed with reasons), `> Closed:` marker added. Plan preserved in `.prism/plans/` per ADR-0047; PR `#85` is the wave's final PR and merges with this close aboard.
 
 ---
 
@@ -353,6 +396,24 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - **Problem:** Summary said "Five new tests" and the checklist "135/135" after `d5daf65` added the sixth test (136/136) — a per-push body-sync miss; squash-merge would freeze the stale counts into main history.
 - **Suggested fix:** Sync the agent-owned sections on the next push. The Notes manual-QA bullet is user-owned/seed-once — Hunter may clear it now that the 2026-06-05 invocation verified both items.
 
+### Published compatibility doc carries a stale utility-skill ordinal
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 3 — reworded to the example form (`e.g. prism-handoff, prism-review-loop`), matching the canonical doc's count-rule-safe phrasing
+- **File:** `docs/content/dev/ai-skills/compatibility.md:19`
+- **Problem:** The published doc said "`prism-handoff` is the first" utility skill — a roster claim this PR's second utility skill makes false on arrival; the 4.3 tree-wide sweep covered `.prism/`/`.ai-skills/` but not `docs/content/`.
+- **Suggested fix:** Example form per `writing-voice.md` § Count rules, not numbers — done this pass.
+
+### Review-loop skill body cites git-conventions without a resolvable path
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 3 — both citations expanded to `` `.prism/rules/git-conventions.md` § ... `` in canonical shared.md; platform outputs regenerated
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:10,54`
+- **Problem:** Bare `git-conventions § ...` citations give the runtime agent no path to the rule, unlike peer skill bodies that cite the full `.prism/rules/` path.
+- **Suggested fix:** Expand both citations; AC "sole divergence" wording adjusted with Hunter's acceptance (see AC Adjustments) since this is a second documented divergence from the issue `#77` draft — prose amendment sanctioned by the verbatim-shipment Decision.
+
 ---
 
 ## Acceptance Criteria
@@ -366,6 +427,9 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [x] Given the existing persona skills, when the build re-runs after the change, then their generated outputs are unchanged. (Verified 2026-06-04: `prism:check` green with zero diffs to pre-existing generated files.)
 - [x] Given `/prism-handoff` is invoked, when it completes, then a handoff document exists at a unique branch-namespaced path under the OS temp directory and that absolute path is reported back as the final output. (Verified 2026-06-05: first real invocation, on this branch — doc at `$TMPDIR/prism-handoffs/<branch-slug>/20260605T145545Z-f94871f2.md`, path reported as final output; the explicit-join guard handled macOS's `/var/folders/...` TMPDIR.)
 - [x] Given a handoff document, when it is written, then it references existing artifacts by path rather than duplicating them and contains no secrets. (Verified 2026-06-05: same invocation — Artifacts section is paths/URLs only; no credentials or PII.)
+- [x] Given the role registry carries the review-loop utility entry, when the build runs, then skill adapters generate for all three runtimes and no Codex agent adapter is created for it (REQ — issue `#77` done condition) (Verified 2026-06-05: build run — SKILL.md generated under `.claude/`, `.cursor/`, and the gitignored `.agents/`; no `.codex/agents/prism-review-loop.toml`.)
+- [x] Given the generated review-loop skill files, when discovery metadata reads the description, then the full description — through "review until clean" — is present, not truncated to the first line (REQ — parseFrontmatter constraint, see Decisions) (Verified 2026-06-05: grep on both committed SKILL.md files; the live session roster also surfaced the full description.)
+- [x] Dry-run validation: one real invocation of the gauntlet flow on a draft PR (satisfied pre-implementation — hand-run as PR `#78`'s review process, 2026-06-04/05; recorded in issue `#77` § Dry-run findings)
 
 ### Non-behavioral
 
@@ -376,11 +440,16 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
 - [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions).
 - [x] ADR-0046 exists, records the rejected alternatives, and is indexed. (Both surfaces; index gap for 0027–0045 is pre-existing — see Cleanup Items.)
+- [x] `pnpm prism:check` and `pnpm prism:test` green after sub-PR 4.3 (Verified 2026-06-05: both green at implementation HEAD, 137/137 tests.)
+- [x] 4.3 skill source matches the issue `#77` drafts, with documented divergences only: the frontmatter description's YAML scalar style and the review-amended citation paths in shared.md (REQ — see Decisions and Review Issues) (Verified 2026-06-05: shared.md otherwise verbatim; frontmatter line content identical, only `description: >` added; citation amendment accepted by Hunter in the Eric pass-1 fix.)
+- [x] Every always-loaded surface that enumerates utility skills (AGENTS.md, skills-ecosystem.md) names `prism-review-loop` (Verified 2026-06-05: AGENTS.md roster bullet + skills-ecosystem § Utility skills, canonical + install seed + regenerated mirrors.)
+- [x] The wave-4 plan carries a sub-PR 4.3 section referencing issue `#77`; Goal reads three ordered sub-PRs (issue `#77` done condition — satisfied at plan write, 2026-06-05)
 
 ### AC Adjustments
 
 - 2026-06-04 (Briar): Re-pointed the `#51` done-condition bullet from `prism-code-dev/shared.md` (which has no Tier 1 list) to `.prism/references/session-close.md`'s universal-load-set enumeration — matches what was actually built and verified. See Review Issues.
 - 2026-06-04 (Clove): **Status: accepted** (Hunter, 2026-06-04, post-`#76`-merge). Task 4.1-9's bullet ("Wave-3 plan's `#2042` deferral carries the annotation") became unsatisfiable when PR `#75` closed the wave-3 epic and deleted its plan after the annotation was committed. Rewrote the bullet to name the surviving durable record (this plan's Scope boundary + Decisions; branch history `1442c5b`). No implementation rides on this.
+- 2026-06-05 (Clove): **Status: accepted** (Hunter, 2026-06-05, Eric pass-1 fix). Reworded the 4.3 source-match bullet from "YAML scalar style as the sole, documented divergence" to "documented divergences only" (scalar style + review-amended citation paths in shared.md) — Eric's citation-path Minor is a prose amendment the verbatim-shipment Decision sanctions, but it makes a second divergence the AC wording had ruled out.
 
 ### AC Sync Log
 
@@ -389,6 +458,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 | 2026-06-04 | Winston | Generated AC | updated | N/A — no Linear ticket (phase work) |
 | 2026-06-04 | Briar | Refined AC from 4.1 self-review (re-pointed `#51` third leg; ticked verified items) | updated | N/A — no Linear ticket (phase work) |
 | 2026-06-04 | Clove | Task-9 adjustment accepted by Hunter; ticked 4.2 items verified by build + tests | updated | N/A — no Linear ticket (phase work) |
+| 2026-06-05 | Winston | Generated 4.3 AC (issue `#77` done conditions; dry-run item pre-satisfied) | updated | N/A — no Linear ticket (phase work) |
+| 2026-06-05 | Clove | Citation-divergence adjustment accepted by Hunter; source-match bullet reworded | updated | N/A — no Linear ticket (phase work) |
 
 ---
 
@@ -401,15 +472,15 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ## PR Readiness
 
-Scope: sub-PR 4.2 (PR `#78`, draft). Sub-PR 4.1 (PR `#76`) merged 2026-06-04.
+Scope: sub-PR 4.3 (PR `#85`, draft). Sub-PRs 4.1 (PR `#76`) and 4.2 (PR `#78`) merged 2026-06-04/05.
 
-- [x] No critical or major issues (pass-1 findings — 2 Majors + 3 Minors — all `fixed` in d5daf65; pass 2 swept the fix delta clean)
-- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green)
+- [x] No critical or major issues (Briar pass 1: zero findings — shared.md byte-identical to the issue `#77` draft, frontmatter divergence confirmed sole, parseFrontmatter rule claims source-verified against `utils.ts`)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green; diff carries no TS)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (six new tests, including the utility+persona rejection lock)
+- [x] Tests written for new logic and edge cases (none needed per Decisions — zero pipeline edits; the 4.2 suite locks the utility paths generically)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 136/136 green at the fix-pass HEAD)
-- [x] PR description up to date (synced through the staged close)
-- [x] Lasting decisions promoted to architect context (verdict gate passed 16/16; plan preserved per ADR-0047 — stays open for 4.3, no deletion)
+- [x] Build passes — last run: 2026-06-05 (`prism:build` + `prism:check` + `prism:test` 137/137 green at implementation HEAD)
+- [x] PR description up to date (authored this session at PR open)
+- [x] Lasting decisions promoted to architect context (verdict gate passed 20/20 — sixteen 4.1/4.2 verdicts from the 4.2 close, four 4.3 verdicts issued at this close; plan preserved per ADR-0047)
 
-**Last updated:** 2026-06-05 (Winston, 4.2 close — plan preserved, ADR-0047)
+**Last updated:** 2026-06-05 (Winston, wave-4 epic close — plan closed, ADR-0047)

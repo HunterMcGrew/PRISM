@@ -26,6 +26,8 @@ The `description` field is the routing surface — the auto-routing layer reads 
 
 **Why:** `description` is loaded every session for every installed skill (loading level 1 above) — it's the most expensive surface in the skill. The enforced cap is **1000 characters** (`MAX_FRONTMATTER_DESCRIPTION_LENGTH` in `scripts/ai-skills/utils.ts`, asserted for every skill by `discovery-metadata.test.ts` so Codex skill discovery can expose the skill). Trigger-phrase enumeration crowds that budget while the persona-name keyword and the AGENTS.md §0 signal-phrase table already carry the routing.
 
+Multi-line `description` values use the YAML folded (`>`) scalar. `parseFrontmatter` (`scripts/ai-skills/utils.ts`) reads single-line values and folded scalars only — a plain multi-line continuation silently parses as its first line, truncating the description that the length check and discovery metadata read.
+
 ### The four parts
 
 1. **Sentence 1 — persona name + role.** `"Pixel — UI/UX designer."`
