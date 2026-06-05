@@ -20,14 +20,14 @@ One gate alone is not enough:
 - **Surprising + trivially reversible** — a curiosity, not an ADR.
 - **Two of three** — the absent gate is usually the one that makes the ADR worth the maintenance cost.
 
-The gate has teeth because absent gates are the failure mode. A "hard to reverse" decision with no rejected alternative is a forced choice — there's no reasoning to preserve. A "surprising" decision that's trivially reversible isn't load-bearing — git history is enough. A "genuine trade-off" that doesn't shape downstream work belongs in the plan's `## Decisions` and gets deleted with the plan.
+The gate has teeth because absent gates are the failure mode. A "hard to reverse" decision with no rejected alternative is a forced choice — there's no reasoning to preserve. A "surprising" decision that's trivially reversible isn't load-bearing — git history is enough. A "genuine trade-off" that doesn't shape downstream work belongs in the plan's `## Decisions`, carrying a no-promotion verdict when the plan closes (ADR-0047).
 
 ## Where decisions go when the gate fails
 
 A decision that fails the triple-gate still goes somewhere — just not into an ADR:
 
 - **Promote to architect doc** (`.prism/architect/<file>.md`) — patterns and constraints other personas need to know about, without the rejected-alternatives history. Architect docs explain *how the system works*; ADRs explain *why we chose this path*.
-- **Stay in plan `## Decisions`** — implementation tactics specific to this ticket, bug workarounds self-evident from the code, temporary scaffolding decisions. Git history preserves these once the plan closes.
+- **Stay in plan `## Decisions`** — implementation tactics specific to this ticket, bug workarounds self-evident from the code, temporary scaffolding decisions. The closed plan preserves these — plans are never deleted (ADR-0047).
 
 ## When to apply
 

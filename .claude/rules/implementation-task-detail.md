@@ -67,7 +67,7 @@ Tag a task `[HITL]` when execution genuinely requires a human input that the imp
 
 Tags are part of the task line, not a separate field. The implementer scans the task list, sees which tasks they can pick up immediately (unmarked `[AFK]`-default tasks) and which ones are blocked on a named input (`[HITL]` tasks with the blocking input stated in the task body).
 
-**Note on the source's contradiction:** Pocock's `to-issues` skill explicitly says "avoid specific file paths or code snippets — they go stale fast." PRISM's tasks contradict this deliberately — file paths and exact changes are required (per the rest of this rule). The contradiction holds because Pocock's issues are customer-facing tickets that live in Linear/GitHub long-term, while PRISM tasks are session-local execution units deleted with the plan. The detail bar fits PRISM's lifetime; Pocock's terseness fits his.
+**Note on the source's contradiction:** Pocock's `to-issues` skill explicitly says "avoid specific file paths or code snippets — they go stale fast." PRISM's tasks contradict this deliberately — file paths and exact changes are required (per the rest of this rule). The contradiction holds because Pocock's issues are customer-facing tickets that live in Linear/GitHub long-term, while PRISM tasks live in the branch plan and go inert once the ticket closes (the plan is preserved — ADR-0047). The detail bar fits PRISM tasks' short working lifetime; Pocock's terseness fits his.
 
 ### Example — good
 

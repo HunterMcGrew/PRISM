@@ -1,5 +1,7 @@
 # Plan: epic-prism-thrive-backport-wave-2
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 1.5f — Thrive backports, second wave (no Linear ticket; phase work). Follows [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) which absorbed the first wave (Thrive PRs through ~#2024).
@@ -17,6 +19,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
 - 2026-05-23 [hmcgrew/prism-1.5f.2-decisions-verdict-pattern]: PR-1.5f.2 implementation complete — all 6 tasks done plus Eli task #6 absorbed (one-line edit to skills-ecosystem Winston row, faster than handoff). Added `## Decision verdict gate` subsection to `.prism/rules/branch-plan.md` + templates mirror; appended verdict-gate reflex bullets to Winston (close-side), Briar, and Eric (surface-as-Minor side); updated skills-ecosystem Winston row with verdict-gate reference. `pnpm prism:build` regenerated `.claude/` mirrors for the three personas; all verification green.
 - 2026-05-23 [hmcgrew/prism-1.5f.3-draft-prs-by-default]: PR-1.5f.3 implementation complete — Clove tasks 1-3 + 5-6 done, task 4 was a no-op (Clove source references shipping-flow.md, doesn't inline `gh pr create`), Eli task #7 absorbed (5 one-line row updates in skills-ecosystem, no other surface than skills-ecosystem affected so handoff would have been pure overhead). Added `--draft` to `gh pr create` at `shipping-flow.md:57` + templates mirror, added new `## Draft-by-default` subsection with per-PR-type flip table, added state-#3-only `gh pr ready` to Eric's batch D label pipeline, updated skills-ecosystem Clove/Eric/Sage/Eli/Reese rows. All verification green; this PR opens non-draft (changes take effect for future PRs).
 - 2026-05-23 [hmcgrew/prism-1.5f.4-generated-collapse]: PR-1.5f.4 implementation complete — all 15 tasks done. Flipped paths.json + build.ts JSDoc + README to direct-write `.cursor/skills/` and `.codex/codex-config.toml`; surgical gitignore commits the full `.cursor/` and `.codex/` content trees (223 new tracked files) while keeping `.agents/`, `.codex/codex-config.toml`, and tool worktrees ignored; deleted `.generated/`; authored ADR-0044 (dual-written canonical + templates), `.ai-skills/docs/compatibility.md`, paired `docs/content/dev/ai-skills/compatibility.md`, narrative `docs/content/dev/ai-skills/syncing.md`; added `.ai-skills/docs/**` manifest route; updated install-layout.md with Direct-write tool outputs section; added verdict sub-bullets to all 5 epic Decisions per the verdict-gate rule. Drift fixes: stale `.generated/cursor-skills/` paths in `literal-allowlist.json` rewritten to `.cursor/skills/`. All verification green; plan now complete and ready for Winston to close.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out. Verdict gate verified complete (all 5 Decisions carried promotion verdicts since ship); `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

@@ -1,5 +1,7 @@
 # Plan: Skill description rewrite
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 GitHub issue: [#65](https://github.com/HunterMcGrew/PRISM/issues/65) — _no Linear ticket per repo convention; GitHub issues are source of truth for PRISM_.
@@ -324,6 +326,7 @@ Gated on pilot validation passing.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove addressed Briar's 2 findings — relaxed `skill-authoring.md` guidance to ~250–400 chars / ≈3–8 keywords (it had contradicted the shipped descriptions) and commented the body-line test's intentional scope. Both rule copies + regenerated mirrors; 130 tests pass.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Briar re-review (delta `d6c5e3d`) — both findings resolved, no new issues. Guidance now matches the 283–397-char / 3–7-keyword reality and the AC. Self-review clean; no PR yet, so back to Clove to ship.
 - 2026-05-28 [hmcgrew/skill-descriptions-rewrite]: Clove shipped — pushed branch, opened PR #67 against main (one PR after pilot, per Decision). Prettier box left unchecked: `scripts/ai-skills/*.ts` are tab-style, not root-prettier-managed; `--write` would churn untouched lines.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out. Verdict gate verified complete (all 7 Decisions carried promotion verdicts since ship); `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

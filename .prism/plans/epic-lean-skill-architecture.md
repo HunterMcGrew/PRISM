@@ -1,5 +1,7 @@
 # Plan: epic-lean-skill-architecture
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 No Linear (this team doesn't use it). Tracked by branch `hmcgrew/lean-skill-architecture`.
@@ -261,6 +263,7 @@ Final slice. Closes loose ends from Slices 0–4 and prepares the epic for plan 
 - 2026-05-27 [hmcgrew/slice4-rename-migration]: Briar self-review of PR #62 — clean, no issues. Verified completeness (only intentional residuals: historical plans + the `epic-prism-atlas` plan-filename ref in `stack-detect.ts`), no over-reach (`atlas:` anchor counts 6/6·1/1·7/7 unchanged, ADR persona-filenames + `*-state.json` names preserved, frontmatter persona-name triggers intact), and content integrity (`prism-design/shared.md` byte-identical to main's `prism-pixel/shared.md`; `prism-refactor-scout/shared.md` differs only in path segments). `prism:check` + 129 tests + `check-types` green.
 - 2026-05-28 [hmcgrew/slice6-close-out]: Slice 6 plan written — epic close-out. Eight ordered tasks across Winston (rules + plan edits — 30–33) and Clove (install backport, Formatting Check collapse, rebuild, plan delete — 34–37); Slice 5 formal benchmark skipped per Hunter's call. CUT verdicts decided after reading content: standup wall KEEP, code-review-self `## Formatting Check` CUT, code-review-pr large-PR note KEEP.
 - 2026-05-28 [hmcgrew/slice6-close-out]: Slice 6 — epic close-out. Promoted Naming convention to skill-authoring.md, added line-count-driven-cut review-guard, recorded 4 missing Decision verdicts + Slice 5 skip + CUT sign-off, marked AC accepted informally. Plan to delete after Clove's backport + collapse land (task 36).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out — the Slice 6 close ran everything except the marker (the deletion step was retired by ADR-0047; plans are preserved at close). Verdict gate verified complete; `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

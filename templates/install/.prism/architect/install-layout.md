@@ -46,7 +46,7 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 ## The templates/install seed surface
 
-`templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. Every addition to a shipped canonical area (rules, ADRs, architect docs, templates, references) dual-writes: author the canonical at `.prism/<area>/`, then write the seed copy at `templates/install/.prism/<area>/`, byte-identical except for content that doesn't ship (plan-file references are stripped; team identifiers stay in `${TOKEN}` form).
+`templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. Every addition to a shipped canonical area (rules, ADRs, architect docs, templates, references) dual-writes: author the canonical at `.prism/<area>/`, then write the seed copy at `templates/install/.prism/<area>/`, byte-identical except for content that doesn't ship (plan-file references are stripped; team identifiers stay in tokenized form per ADR-0030).
 
 **Why:** drift detection covers canonical ↔ platform copies only. The seed legitimately diverges from canonical (tokens, stripped references), so no tooling flags a forgotten seed write — the only gate is the author remembering. Treat "new canonical artifact" as a two-write operation.
 

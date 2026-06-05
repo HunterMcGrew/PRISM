@@ -72,7 +72,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **Change cadence:** Fast. Plans update constantly during implementation.
 
-**Promotion:** When a plan decision describes how the system works going forward (not just how this ticket was implemented), promote it to the relevant Tier 2 or Tier 3 file at ticket close. Then delete the plan — git history preserves it.
+**Promotion:** When a plan decision describes how the system works going forward (not just how this ticket was implemented), promote it to the relevant Tier 2 or Tier 3 file at ticket close. The plan is then marked closed and preserved in `.prism/plans/` — plans are never deleted (ADR-0047).
 
 ---
 

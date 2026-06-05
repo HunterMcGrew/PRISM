@@ -1,5 +1,7 @@
 # Plan: issue-39
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/39
@@ -90,6 +92,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Implemented label-apply fix in canonical `shared.md` (POST for add, per-label DELETE loop for strip), regenerated three tracked mirrors via `tsx scripts/ai-skills/build.ts`, updated lessons.md entry to point at issue #39. URL-encoding test confirmed `gh api` handles `:` in label paths natively; no manual encoding needed.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Briar caught a leaked `pnpm-workspace.yaml` artifact from the failed pnpm install attempt during build. Deleted before commit; not part of the fix's intentional diff.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Eric's PR-#40 batch D smoke test surfaced a Minor — `2>/dev/null` on the strip loop's DELETE call didn't catch `gh api`'s stdout error output, leaking 404 JSON on first-review runs. Patched to `>/dev/null 2>&1 || true`, mirrors regenerated, lessons.md entry added for the `gh api` stdout/stderr inversion.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out. Verdict gate verified complete (all 4 Decisions carried promotion verdicts since ship); `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

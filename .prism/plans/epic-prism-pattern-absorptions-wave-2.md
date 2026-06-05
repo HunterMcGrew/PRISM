@@ -1,5 +1,7 @@
 # Plan: epic-prism-pattern-absorptions-wave-2
 
+> Closed: 2026-05-24
+
 ## Ticket
 
 Wave 2 of pattern absorptions from Matt Pocock + BMAD-METHOD research. Builds on [Phase 1.5e](./epic-prism-pattern-absorptions.md), which absorbed seven non-persona patterns. Wave 2 covers the persona-specific deepenings Phase 1.5e intentionally scoped out — five existing personas get targeted upgrades, one new persona (Iris) lands, two cross-cutting patterns sweep across all personas. Ships as **five sequenced PRs** per the subagent re-evaluation finding.
@@ -420,6 +422,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
 - 2026-05-23 [hmcgrew/wave-2-pr-5-iris-stops]: Clove fixed Eric's 3 Minors — added Iris to `micro-file-step-machine.md` citers list; added `## Full variant` section so the previously-invented `§ full variant` anchor now resolves (parallel to existing `## Lighter variant`); corrected AC line referencing nonexistent `.prism/SPEC.md` persona roster to point at the actual roster surfaces (skills-ecosystem.md + closing-messages.md + AGENTS.md § 9). Mirrors regenerated; check + check-types + test green.
 - 2026-05-24 [main]: PR #45 (Wave 2 PR 5 — Iris + Parker/Atlas STOPs) squash-merged at commit 66373d8. Eric two-pass review: 3 Minors caught on first pass (Iris missing from micro-file citers list, `§ full variant` anchor invented, AC referencing nonexistent SPEC.md roster); all 3 fixed in followup; re-review clean (state #3, effort:quick + confidence:dual-axis).
 - 2026-05-24 [main]: **Wave 2 epic close-out.** All 5 PRs merged (#41 Foundation, #42 Sasha, #43 Eric, #44 Winston, #45 Iris + STOPs). Promotion audit per branch-plan rules § Before Closing: all 19 `## Decisions` entries carry `→ verdict` sub-bullets per the ADR-0024 / PR-#35 gate; every verdict reads `→ no promotion needed` with the canonical absorption surface named (Sasha shared.md, Eric shared.md, Winston shared.md, Iris shared.md, lazy-artifacts.md, closing-messages.md, implementation-task-detail.md, micro-file-step-machine.md). The wave's design premise — "absorb patterns INTO existing canonical surfaces" — means every promotion fired during PR implementation, not as a separate close-out step. Sample-verified each surface carries the claimed content (grep counts: Re-plan Mode 5, Sasha six-phase 4, Eric Standards/Spec/Cross-cutting 24, Iris real-roster pattern 2, micro-file Full variant + Iris 5, HITL/AFK 4, lazy-artifacts 1, recommend-without-auto-invoke 4). Plan preserved per user direction (not deleted). Two durable lessons appended to `.prism/lessons.md` during the epic — (1) `replace_all` damages audit trails when documenting corrected values; (2) self-restructure introduces step-number collisions (Eric reviewing Eric caught this in PR #43).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Backfilled the `> Closed: 2026-05-24` marker per the 2026-06-05 audit close-out — the 2026-05-24 close predated the marker convention (ADR-0047). No verdict work; the original close ran the full gate.
 
 ---
 

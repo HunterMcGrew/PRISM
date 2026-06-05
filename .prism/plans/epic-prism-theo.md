@@ -1,5 +1,7 @@
 # Plan: epic-prism-theo
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 2.5 — Theo (architect-doc walker persona). No Linear ticket; tracked via the PRISM roadmap at `.prism/plans/roadmap.md` § Phase 2.5.
@@ -297,6 +299,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Atlas mode (rejected — dilutes onboarding); Winston mode (rejected — different posture, reactive vs proactive); shared utility with Ren (rejected for v1 — premature abstraction; revisit after both ship).
   - **Chosen approach:** Standalone persona with own state file, own skill directory, own ADR. Composes well with Atlas (post-onboarding) and Ren (parallel-safe).
   - **Implementation guidance:** Theo's skill directory is `.ai-skills/skills/prism-theo/`; state file is `.prism/theo-state.json`; ADR is `.prism/spec/adrs/0041-theo-architect-doc-walker.md`.
+  - → promoted to ADR-0041 (authored during this epic)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo uses the micro-file step machine pattern, not a monolithic SKILL.md.**
@@ -304,6 +307,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Single monolithic SKILL.md (rejected — pure waste during phases that don't need other phases' instructions); single SKILL.md with conditional includes (rejected — adds complexity without solving the load problem).
   - **Chosen approach:** Per-phase step files at `.prism/skills/prism-theo/step-01-init.md` through `step-08-continue.md`, each 30–100 lines. The canonical `shared.md` cites the step files rather than restating them.
   - **Implementation guidance:** Follow the pattern from Phase 1.5e (BMAD's `bmad-create-architecture` reference); each step file is a single workflow phase with clear entry/exit conditions named in the file.
+  - → no promotion needed (instance of `.prism/references/micro-file-step-machine.md`; the skill's structure is the record)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **State file uses JSON, not YAML.**
@@ -311,6 +315,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** YAML (rejected — significant whitespace risk during atomic writes; no expressiveness benefit for this schema).
   - **Chosen approach:** JSON with 2-space indent; atomic write via tmp-then-rename pattern.
   - **Implementation guidance:** See `.prism/skills/prism-theo/lib/state.md` for the schema and write protocol.
+  - → no promotion needed (codified in the skill's `lib/state.md`; `lazy-artifacts.md` cites Theo's state file as the canonical atomic-write pattern)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo writes architect docs vs. ADRs against the triple-gated criterion.**
@@ -318,6 +323,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Theo writes only architect docs and lets Winston decide ADR status (rejected — Winston isn't in the walking loop; Theo has the candidate's context fresh); Theo writes both indiscriminately (rejected — produces ADR sprawl).
   - **Chosen approach:** Apply the triple-gated criterion from Phase 1.5e — a candidate becomes an ADR when (1) it's hard to reverse, (2) it's surprising to a new reader, AND (3) there was a genuine tradeoff. Otherwise it's an architect doc.
   - **Implementation guidance:** Step-05-draft.md branches the draft format on the suggested-shape field; suggestedShape is set in step-02-scan.md when the candidate is allocated.
+  - → no promotion needed (the skill cites `.prism/references/triple-gated-adr-criterion.md`; the citation is the codification)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Atlas integration uses an HTML comment anchor, not fuzzy text matching.**
@@ -325,6 +331,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Fuzzy text matching (rejected — fragile); separate per-team file Theo reads at startup (rejected — adds another file to track; anchor pattern is already established for Atlas in other personas).
   - **Chosen approach:** `<!-- atlas:specializes-in -->` HTML comment anchor in `shared.md`; Atlas inserts team-specific walking guidance at that exact location during Phase 2 onboarding.
   - **Implementation guidance:** Place the anchor in `shared.md`'s "When this skill is invoked" or a dedicated subsection — match the placement Atlas uses in other personas (verify against Phase 2 work once Atlas lands).
+  - → no promotion needed (instance of the anchor-substitution convention in `.prism/architect/anchor-substitution.md`)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Paired-dev-doc decisions apply ADR-0038's two gates verbatim.**
@@ -332,6 +339,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Theo defines his own gates (rejected — divergence drift); Theo skips paired dev docs entirely (rejected — defeats one of the persona's primary outputs).
   - **Chosen approach:** Cite ADR-0038 in shared.md; apply the two gates (category-fit + pairing-value) in step-02-scan.md when allocating the candidate's `pairedDevDoc` field.
   - **Implementation guidance:** Do not restate the gates in Theo's persona body; cite ADR-0038 (`.prism/spec/adrs/0038-paired-dev-doc-gates.md`). Per the cite-don't-restate rule in `.prism/rules/implementation-task-detail.md`.
+  - → no promotion needed (ADR-0038 owns the gates; note ADR-0038's supersession is pending via the docs-overhaul Epic A)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo's scope is cartographic, not evaluative.**
@@ -339,6 +347,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Theo grades quality too (rejected — duplicates Ren's job; one persona can't be both cartographer and critic without diluting both roles).
   - **Chosen approach:** Theo names shape; Ren grades quality. Surface the boundary explicitly in Theo's Cognitive Approach section.
   - **Implementation guidance:** When Theo encounters a candidate that's structurally weak (Ren's lane), he notes it as a candidate worth documenting (because the weakness is itself a load-bearing fact) but does not propose a refactor — that's Ren's output type, not Theo's.
+  - → no promotion needed (the Theo/Ren boundary is codified in ADR-0041/ADR-0042 and both skills' cognitive-approach sections)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 ---
@@ -346,6 +355,7 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
 ## History
 
 - 2026-05-22 [main]: Plan created. Outlines four sub-PRs (scaffold + skill source, step files, state-file management, ADR + paired dev doc) for shipping Theo as Phase 2.5 of PRISM. Theo is the second proactive codebase-walking persona (after the Phase 1.5e patterns land) and the first reference implementation of the micro-file step machine pattern absorbed in Phase 1.5e.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out — implementation shipped by 2026-05-27 (`prism-doc-walker` skill, ADR-0041, `theo.md` dev doc) but History was not maintained during implementation. Verdict gate run on all 7 Decisions; ADR-0041 promotion recorded, rest codified in references/architect docs. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
