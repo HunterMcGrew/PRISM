@@ -1,5 +1,7 @@
 # Plan: epic-prism-thrive-backport-wave-4
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Thrive backports, fourth wave (no Linear ticket; phase work). Follows [`epic-prism-thrive-backport.md`](./epic-prism-thrive-backport.md) (Wave 1, Thrive PRs through ~#2024), [`epic-prism-thrive-backport-wave-2.md`](./epic-prism-thrive-backport-wave-2.md) (#2025–#2027), and wave 3 (#2032–#2043 — epic closed in `#75`, plan deleted).
@@ -244,9 +246,13 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - **Plans are never deleted — preserve and mark closed (Hunter, 2026-06-05).** Retires the staged close's deletion step; this plan survives as living memory and stays open for 4.3, which dissolves the `#77` scope conflict (the plan gains a 4.3 section when that work starts). Only Zoe may later move a plan out of `.prism/plans/` (cadence-audit archive on confirmation); no persona deletes one. Deletion language reconciled tree-wide in the close pass — `branch-plan.md` § Before Closing, `skills-ecosystem.md` § Lessons, ADR-0001's consequence line, each on canonical + install seed (rule edits absorbed by Winston per ADR-0018: spec-only, coupled to the close that surfaced them); the 2026-05-23 lesson's second trip is the recurrence that triggered promotion per the taxonomy.
   - → promoted to ADR-0047 (and codified in branch-plan.md § Before Closing)
 - **4.3 frontmatter ships in folded scalar style, not the issue draft's plain multiline.** The issue `#77` `frontmatter.yml` draft writes `description` as a plain YAML multi-line continuation, which `parseFrontmatter` truncates to its first line — the same constraint the 4.2 Decision above records for prism-handoff. Identical rendered string; only the YAML scalar style differs. Caught at planning (Winston, 2026-06-05); second occurrence → promoted to `skill-authoring.md` in task 4.3-5 per the lesson taxonomy.
+  - → promoted to `.prism/rules/skill-authoring.md` § Description field shape (in-flight, task 4.3-5)
 - **4.3 skill body ships verbatim, pending normal review.** The gauntlet policy (zero-findings exit, 20-pass budget, three-strike rule, phase-boundary user gate) was calibrated against the real 4.1 run and dry-run-validated on PR `#78`; review may amend prose, not policy, without a new Hunter call.
+  - → no promotion needed (shipping tactic for this PR; the prose-amendment carve-out was exercised once — Eric pass-1 citation fix, recorded in AC Adjustments and Review Issues — and the policy itself lives in the shipped skill body)
 - **4.3 doc updates ride with implementation, not a separate Eli lane** — same shape as the 4.2 absorption Decision: ~10 lines of prose tightly coupled to the registry change, same PR. Assigned to Clove at planning time, not absorbed mid-flight.
+  - → no promotion needed (documented absorption per ADR-0018; ticket-tactical)
 - **No new pipeline tests for 4.3.** The zero-pipeline-edit contract (ADR-0046) means there is no new behavior to lock; the second utility entry is a consumer of paths the 4.2 suite already locks (utility-adapter gate, utility+persona rejection, unknown-type rejection).
+  - → no promotion needed (the zero-pipeline-edit contract is ADR-0046's Decision section; 4.3 is its first exercised proof, recorded in this plan)
 
 ---
 
@@ -286,6 +292,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Briar self-review pass 1 (PR `#85`) — zero findings. shared.md byte-diffed identical to the issue `#77` draft, frontmatter divergence confirmed sole, the skill-authoring rule's parseFrontmatter claims source-verified, tree-wide sweep found no stale utility enumerations; checks green at HEAD. Self-review phase closes at zero findings; verdict sub-bullets on the 4.3 Decisions deferred to Winston's task-8 close.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Eric gauntlet PR-review pass 1 — no Critical/Major, two Minors (stale "first utility skill" ordinal in `docs/content` compatibility doc; bare git-conventions citations in the review-loop skill body); labels `effort:glance` + `review:has-minors`, PR stays draft. Clove fix pass 3: both fixed, AC source-match wording adjusted with Hunter's acceptance; `prism:check` + `prism:test` green, 137/137. Both recorded in Review Issues as `fixed`.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Eric re-review (head `8a0d5a4`) — zero findings, both fixes verified, thread resolved; labels `effort:glance` + `confidence:needs-judgment` (task-8 merge sequencing), PR stays draft per the gauntlet closing policy. Gauntlet closed at 4/20 passes, no strikes; the skill's own first invocation ran this gauntlet. Winston's task-8 epic close remains before merge.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Winston ran the wave-4 epic close (task 8) — verdict gate passed 20/20 (four 4.3 verdicts issued: one promoted in-flight to skill-authoring.md, three no-promotion-needed with reasons), `> Closed:` marker added. Plan preserved in `.prism/plans/` per ADR-0047; PR `#85` is the wave's final PR and merges with this close aboard.
 
 ---
 
@@ -474,6 +481,6 @@ Scope: sub-PR 4.3 (PR `#85`, draft). Sub-PRs 4.1 (PR `#76`) and 4.2 (PR `#78`) m
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-05 (`prism:build` + `prism:check` + `prism:test` 137/137 green at implementation HEAD)
 - [x] PR description up to date (authored this session at PR open)
-- [ ] Lasting decisions promoted to architect context — in-flight promotion done (parseFrontmatter → skill-authoring.md, task 5); verdict sub-bullets on the four 4.3 Decisions land with Winston's task-8 epic close on this branch
+- [x] Lasting decisions promoted to architect context (verdict gate passed 20/20 — sixteen 4.1/4.2 verdicts from the 4.2 close, four 4.3 verdicts issued at this close; plan preserved per ADR-0047)
 
-**Last updated:** 2026-06-05 (Briar, 4.3 self-review pass 1 — clean)
+**Last updated:** 2026-06-05 (Winston, wave-4 epic close — plan closed, ADR-0047)
