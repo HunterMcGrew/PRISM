@@ -283,6 +283,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - 2026-06-05 [main]: PR `#78` merged (`2cd308a`); Nora filed the six accumulated follow-up flags as GitHub issues `#79`–`#84` through the scope-fit gate — `#79` config.json identifiers (widened to cover the ticketSystem block pointing at a nonexistent Linear team), `#80` Zoe's plan-archive lane, `#81` worktree-isolation tier inversion, `#82` ADR README index, `#83` reviewer model pins (cross-linked to `#73`), `#84` install-layout gitignore claim. Filing tracker verified against reality first (GitHub issues, not the configured Linear team); see lessons.md 2026-06-05.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Plan gained sub-PR 4.3 (issue `#77`, `prism-review-loop` utility skill) — Goal now reads three ordered sub-PRs. Winston caught the issue draft's plain-multiline frontmatter re-tripping the parseFrontmatter truncation lesson; folded-scalar fix + skill-authoring.md promotion folded into the tasks. AC extended with 4.3 criteria; dry-run AC pre-satisfied via PR `#78`'s hand-run gauntlet.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Implemented 4.3 tasks 2–7, commit-per-task — registry entry + skill sources (folded-scalar divergence only), parseFrontmatter constraint promoted into skill-authoring.md § Description field shape, both utility-skill doc surfaces updated, platform outputs regenerated. Zero pipeline edits and zero new tests, per the ADR-0046 contract; `prism:check` + `prism:test` green, 137/137. All five open 4.3 AC items verified and ticked.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Briar self-review pass 1 (PR `#85`) — zero findings. shared.md byte-diffed identical to the issue `#77` draft, frontmatter divergence confirmed sole, the skill-authoring rule's parseFrontmatter claims source-verified, tree-wide sweep found no stale utility enumerations; checks green at HEAD. Self-review phase closes at zero findings; verdict sub-bullets on the 4.3 Decisions deferred to Winston's task-8 close.
 
 ---
 
@@ -442,15 +443,15 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 
 ## PR Readiness
 
-Scope: sub-PR 4.2 (PR `#78`, draft). Sub-PR 4.1 (PR `#76`) merged 2026-06-04.
+Scope: sub-PR 4.3 (PR `#85`, draft). Sub-PRs 4.1 (PR `#76`) and 4.2 (PR `#78`) merged 2026-06-04/05.
 
-- [x] No critical or major issues (pass-1 findings — 2 Majors + 3 Minors — all `fixed` in d5daf65; pass 2 swept the fix delta clean)
-- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green)
+- [x] No critical or major issues (Briar pass 1: zero findings — shared.md byte-identical to the issue `#77` draft, frontmatter divergence confirmed sole, parseFrontmatter rule claims source-verified against `utils.ts`)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green; diff carries no TS)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (six new tests, including the utility+persona rejection lock)
+- [x] Tests written for new logic and edge cases (none needed per Decisions — zero pipeline edits; the 4.2 suite locks the utility paths generically)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 136/136 green at the fix-pass HEAD)
-- [x] PR description up to date (synced through the staged close)
-- [x] Lasting decisions promoted to architect context (verdict gate passed 16/16; plan preserved per ADR-0047 — stays open for 4.3, no deletion)
+- [x] Build passes — last run: 2026-06-05 (`prism:build` + `prism:check` + `prism:test` 137/137 green at implementation HEAD)
+- [x] PR description up to date (authored this session at PR open)
+- [ ] Lasting decisions promoted to architect context — in-flight promotion done (parseFrontmatter → skill-authoring.md, task 5); verdict sub-bullets on the four 4.3 Decisions land with Winston's task-8 epic close on this branch
 
-**Last updated:** 2026-06-05 (Winston, 4.2 close — plan preserved, ADR-0047)
+**Last updated:** 2026-06-05 (Briar, 4.3 self-review pass 1 — clean)
