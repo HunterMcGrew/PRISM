@@ -217,6 +217,16 @@ test("buildRoleMap rejects a utility entry that carries a persona", () => {
 	);
 });
 
+test("buildRoleMap rejects an unrecognized type value", () => {
+	// Built via JSON.parse to mirror the production path — roles.json arrives
+	// as an unchecked cast, so a typo'd discriminator reaches buildRoleMap at
+	// runtime even though the compile-time union forbids it.
+	const definitions = JSON.parse(
+		'{"skills": [{"id": "prism-mystery", "persona": "Ghost", "type": "utilty"}]}'
+	) as RolesDefinitions;
+	assert.throws(() => buildRoleMap(definitions), /unrecognized type 'utilty'/);
+});
+
 test("buildCodexAgentToml opens with the persona line for persona entries", () => {
 	const toml = buildCodexAgentToml({
 		codexSkillMarkdown: "# Skill body",

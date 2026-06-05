@@ -648,6 +648,18 @@ export function buildRoleMap(
 ): Map<string, RoleDefinition> {
 	const roleMap = new Map<string, RoleDefinition>();
 	for (const role of roleDefinitions.skills ?? []) {
+		// The registry arrives through an unchecked JSON cast, so the
+		// discriminator is validated here — an unrecognized value would
+		// otherwise fall through to persona semantics silently.
+		if (
+			role.type !== undefined &&
+			role.type !== "persona" &&
+			role.type !== "utility"
+		) {
+			throw new Error(
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", or omit type.`
+			);
+		}
 		if (!role.id || (role.type !== "utility" && !role.persona)) {
 			throw new Error(
 				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".'

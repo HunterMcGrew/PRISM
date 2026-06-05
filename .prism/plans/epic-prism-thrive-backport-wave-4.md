@@ -245,6 +245,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Gauntlet dry-run surfaced two 4.3 design inputs (mid-gauntlet handoffs must carry the orchestrator's rules + state; the self-review→PR-review phase boundary is a session boundary, which is also what engages the reviewer model pins) — recorded in the handoff doc's Gauntlet state section. Discovered the reviewer skills carry frontmatter model pins (self-review: sonnet, PR review: opus) that in-session Skill invocations don't switch to — a second exists-vs-honored instance (recurrence: promotion candidate per the lesson taxonomy); flagged for follow-up filing alongside the worktree-isolation and ADR-index items.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Third 4.3 design input (Hunter): the self-review→PR-review boundary is a user gate, not a fixed rule — fresh-chat-via-handoff as the recommended default (cold context + pin engagement; required on runtimes without per-skill model honoring), continue-in-session offered where pins are honored and context is quiet, anchoring tradeoff stated. Recorded in the handoff doc's Gauntlet state; the accumulated 4.3 inputs need a durable home (issue or 4.3 plan seed) before this plan deletes at close.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: All 4.3 dry-run inputs consolidated into issue `#77` (gate + state-travels guardrails folded into its embedded draft; dry-run record satisfies its validation done-condition). Surfaced a scope conflict needing Hunter's call: `#77` slots the gauntlet as wave-4 sub-PR 4.3 with this plan surviving to gain a 4.3 section, while the plan's Goal says two sub-PRs and the staged close treats `#78` as final — plan-deletion timing depends on the resolution.
+- 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Eric gauntlet PR-review pass 1 (head `22dcade`) — no Critical/Major, two Minors (buildRoleMap silently accepts unrecognized `type` values; PR body counts stale since `d5daf65`); labels `effort:quick` + `review:has-minors`, PR stays draft. Clove fix pass 2: both fixed — unknown discriminators rejected with a locking test (137/137 green), PR body agent-owned counts synced via REST PATCH. Both recorded in Review Issues as `fixed`.
 
 ---
 
@@ -329,6 +330,24 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - **File:** `docs/content/dev/ai-skills/compatibility.md`
 - **Problem:** The agent-facing `.ai-skills/docs/compatibility.md` names this page as its "longer narrative" companion and gained the Persona vs Utility subsection; the companion now lags by a shipped concept (no false claim, but a reader following the companion link finds no mention of utility skills).
 - **Suggested fix:** One short paragraph mirroring the new subsection (utility skills: skill adapters in all runtimes, no agent adapter, cite ADR-0046) — ride-along scale.
+
+### buildRoleMap accepts unrecognized type values
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 2 — unknown discriminators now throw before the persona check; locked by the `rejects an unrecognized type value` test (built via `JSON.parse` to mirror the unchecked production cast)
+- **File:** `scripts/ai-skills/build.ts` (`buildRoleMap`)
+- **Problem:** The registry loads through an unchecked JSON cast, so the `"persona" | "utility"` union never reaches runtime — a typo'd `type` (e.g. `"utilty"`) with a persona silently builds as a persona and ships an agent adapter; without a persona it throws a misleading missing-persona error.
+- **Suggested fix:** Throw on any `type` other than `"persona"`/`"utility"`; add a locking test.
+
+### PR body lagged the fix-pass scope in agent-owned sections
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 2 — Summary test count and pre-submit checklist synced via REST PATCH to post-fix state (seven new tests, 137/137); Notes preserved verbatim per seed-once
+- **File:** PR `#78` body (Summary; pre-submit checklist)
+- **Problem:** Summary said "Five new tests" and the checklist "135/135" after `d5daf65` added the sixth test (136/136) — a per-push body-sync miss; squash-merge would freeze the stale counts into main history.
+- **Suggested fix:** Sync the agent-owned sections on the next push. The Notes manual-QA bullet is user-owned/seed-once — Hunter may clear it now that the 2026-06-05 invocation verified both items.
 
 ---
 
