@@ -229,14 +229,14 @@ Verification: `pnpm prism:build` after task 31. Docs build succeeds, sidebar ren
   - **Alternatives considered:** Ren writes implementation tasks inline during grill pass 4.
   - **Chosen approach:** three-hop chain — Ren scouts → Winston plans → Clove executes. Each persona owns one phase.
   - **Implementation guidance:** step-07-plan leaves `## Implementation Tasks` as a stub heading. Winston populates it on the next invocation.
-  - → no promotion needed (the three-hop chain is codified in the skill's handoff section and the skills-ecosystem roster)
+  - → no promotion needed (the three-hop chain is codified in the skill's handoff section)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **State file schema lives in `.prism/architect/ren-state.md`, not duplicated across step files.**
   - **Root cause:** schema drift is the predictable failure mode if every step file restates the shape. Phase 1.5e's cite-don't-restate rule already covers this class of mistake.
   - **Alternatives considered:** inline the schema in each step file that reads or writes state.
   - **Chosen approach:** single source at `.prism/architect/ren-state.md`. Every step file cites it.
   - **Implementation guidance:** when the schema evolves, edit only `ren-state.md`; downstream cites pick up the change automatically.
-  - → no promotion needed (the schema's single source at `ren-state.md` is itself the durable surface)
+  - → no promotion needed (single-source intent held, but implementation diverged from this decision: the shipped schema lives at `.prism/skills/prism-refactor-scout/lib/state.md` — the skill's lib, matching Theo's pattern — not the planned `.prism/architect/ren-state.md`, which was never created; the skill's step files cite the shipped path)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **Step files use the micro-file step machine pattern with `stepsCompleted` frontmatter.**
   - **Root cause:** absorbed from BMAD via Phase 1.5e. The pattern keeps each step under 100 lines and gives the resume detector a clean cursor.
@@ -296,6 +296,7 @@ _(none yet)_
 
 - 2026-05-22 [main]: Plan created. Phase 2.6 — Ren as the refactor scout persona, four sub-PRs (skill scaffold + step files + state schema + ADR/dev doc), depends on Atlas (Phase 2) and Phase 1.5e patterns (deletion test, two-adapters seam, micro-file step machine, strength badges), parallel-safe with Theo (Phase 2.5) and Parker (Phase 3).
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out — implementation shipped by 2026-05-27 (`prism-refactor-scout` skill, ADR-0042, `ren.md` dev doc) but History was not maintained during implementation. Verdict gate run on all 7 Decisions; ADR-0042 promotion recorded, rest codified in references/architect docs. See `.prism/plans/audit-2026-06-05-closeout.md`.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Briar self-review corrected two verdict citations — state schema's shipped home is the skill's `lib/state.md` (not the planned architect-doc path), and the skills-ecosystem roster citation was dropped (Ren has no roster entry; gap filed as follow-up).
 
 ---
 

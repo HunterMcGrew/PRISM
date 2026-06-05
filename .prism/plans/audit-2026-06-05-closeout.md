@@ -78,8 +78,37 @@ Close out every shipped-but-never-closed plan flagged by the 2026-06-05 audit, r
 
 ---
 
+## Review Issues
+
+### Ren verdict cites the planned state-schema home, not the shipped one
+
+- **Severity:** `major`
+- **Status:** `fixed` — verdict rewritten to cite the shipped home (`.prism/skills/prism-refactor-scout/lib/state.md`) and record the plan-vs-implementation divergence. Fixed in: hmcgrew/prism-audit-2026-06-05, review-loop pass 1.
+- **File:** `.prism/plans/epic-prism-ren.md` (Decision: "State file schema lives in `.prism/architect/ren-state.md`")
+- **Problem:** The promotion verdict reads "the schema's single source at `ren-state.md` is itself the durable surface" — but `.prism/architect/ren-state.md` was never created; the shipped schema lives at `.prism/skills/prism-refactor-scout/lib/state.md` (cited from the skill's shared.md:52). The verdict endorses a nonexistent path and silently papers over a plan-vs-implementation divergence.
+- **Suggested fix:** Rewrite the verdict to cite the real home and record the divergence: implementation placed the schema in the skill's `lib/state.md` (matching Theo's pattern), not the planned architect-doc home.
+
+### Ren verdict cites a roster entry that doesn't exist
+
+- **Severity:** `major`
+- **Status:** `fixed` — roster citation dropped; verdict cites the skill's handoff section only. Fixed in: hmcgrew/prism-audit-2026-06-05, review-loop pass 1.
+- **File:** `.prism/plans/epic-prism-ren.md` (Decision: "Ren hands off to Clove after the refactor plan is accepted")
+- **Problem:** The promotion verdict cites "the skill's handoff section and the skills-ecosystem roster" — `skills-ecosystem.md` contains no Ren/refactor-scout entry at all (see Minor below).
+- **Suggested fix:** Drop the roster citation; cite the skill's handoff section only.
+
+### skills-ecosystem.md roster omits Theo, Ren, and Parker
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/skills-ecosystem.md` § Skill Roster
+- **Problem:** Pre-existing gap surfaced by this review — three shipped personas (`prism-doc-walker`/Theo, `prism-refactor-scout`/Ren, `prism-prd`/Parker) are absent from the roster tables in the doc loaded by the `**` manifest route every session. An incomplete roster misleads every persona that reads it.
+- **Suggested fix:** Out of this PR's close-out scope — file as a follow-up: add three roster rows (one fix, traceable to this review entry, done when the rows exist and mirrors regenerate; spec-edit class, Clove or Eli).
+
+---
+
 ## History
 
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan created — close-out of the 2026-06-05 audit findings (14 plan closes, wave-2 marker backfill, roadmap supersession, deletion-claim sweep). Dispositions confirmed by Hunter; site list verified by tree-wide grep, which surfaced `.prism/SPEC.md:75` and `audit-workflow.md:141` beyond the audit's two flagged sites.
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Tasks 1–9 executed — 15 plans closed (14 retroactive closes + this one), wave-2 marker backfilled, roadmap superseded, deletion-claim sweep applied (7 edits across 5 files + 2 seeds), mirrors regenerated, all verification gates green. One genuine promotion executed: the templates/install dual-write convention → `install-layout.md` § The templates/install seed surface. Plan closed; ship (task 10) remains.
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Task 10 shipped — branch pushed, draft PR #86 opened with exceptions-first Notes per the Decisions.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Review-loop pass 1 — Briar found 2 Majors (ren verdict citations pointing at nonexistent surfaces) + 1 Minor (skills-ecosystem roster omits Theo/Ren/Parker — pre-existing, routed to follow-up). Majors fixed by Clove same pass.
