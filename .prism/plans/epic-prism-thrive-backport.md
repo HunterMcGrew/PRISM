@@ -1,5 +1,7 @@
 # Plan: epic-prism-thrive-backport
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 1.5c — Thrive backports (no Linear ticket; phase work). See [roadmap.md § Phase 1.5c](./roadmap.md#phase-15c--thrive-backports) for sequencing rationale.
@@ -21,6 +23,7 @@ Absorb the 21 PRs of `.claude/`-equivalent work that landed in Thrive between PR
 - 2026-05-22 [hmcgrew/prism-1.5c.5-three-tier-loading]: PR-1.5c.5 implementation complete (tasks 1–5 + 7) — ADR-0035 (three-tier rule loading) and ADR-0036 (security as a distributed rule) authored and dual-written to canonical + templates. Six Tier 2 rule files (`accessibility.md`, `architect-doc-verification.md`, `implementation-task-detail.md`, `acceptance-criteria.md`, `worktree-isolation.md`, `verification-commands.md`) gain `paths:` YAML frontmatter, byte-identical between `.prism/rules/` and `templates/install/.prism/rules/`. Manifest restructured to register 7 Tier 1 rules and 6 Tier 2 rules as explicit per-file entries — the blanket `.prism/rules/**` entry is replaced with explicit routing while the architect-doc target stays `spec-editing.md`. All 12 persona sources gain a `## Context reuse across skills` section documenting how the three-tier model governs cross-skill invocations (Tier 1 inherits, Tier 2 re-evaluates, Tier 3 stays local). Platform copies regenerated via `pnpm prism:build`. All verification green.
 - 2026-05-22 [hmcgrew/prism-1.5c.5-three-tier-loading]: Task 6 (lazy-loading restructure for skills >500 lines) deferred to follow-up PR — task spec under-specified per `.prism/rules/implementation-task-detail.md` (the 5 skills over 500 lines — `prism-code-review-pr` 507, `prism-pixel` 715, `prism-qa-test-plan` 573, `prism-standup-summary` 588, `prism-ticket-start` 677 — need per-skill judgment on which sections belong in core vs. supplemental references, and the lazy-load mechanism's interaction with `pnpm prism:build` is undefined). Safer to refactor with per-skill judgment after three-tier infrastructure (tasks 1–5) verifies working. Surfaced in PR description as known follow-up.
 - 2026-05-22 [hmcgrew/prism-1.5c.6-zoe-persona]: PR-1.5c.6 implementation complete — ADR-0037 (cadence-driven personas axis) authored and dual-written, `audit-workflow.md` architect doc and paired dev doc landed per ADR-0038, Zoe's canonical skill source created at `.ai-skills/skills/prism-zoe/` (5 files, stack-agnostic) with roles.json registration. Manifest gains four routes for Zoe's surfaces (`.prism/lessons.md`, `.prism/lessons-archive.md`, `.prism/audit-state.json`, `.prism/audits/**` → `audit-workflow.md`); `audit-state.json` seeded with schemaVersion=1 shape; `lessons-archive.md` ships on both surfaces; per-Decision verdict reflex bullet added to Winston, Briar, Eric, and Zoe; open-question Decision variant codified in `.prism/rules/branch-plan.md` (mirrored to templates). All verification green (`pnpm prism:build && pnpm prism:check && pnpm prism:check-types && pnpm prism:test`).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out. Verdict gate surfaced one genuine promotion gap — the templates/install dual-write convention, now promoted to `install-layout.md` § The templates/install seed surface; the other six Decisions are tactical, no promotion. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
@@ -31,6 +34,7 @@ Absorb the 21 PRs of `.claude/`-equivalent work that landed in Thrive between PR
   - **Alternatives considered:** (a) Single mega-PR — too large to review, mixes mechanical sweeps with new-persona authoring. (b) Per-Thrive-PR mapping — produces 21 PRISM PRs with no cohesive groupings, drowns review attention. (c) Persona-first then rules — leaves persona PRs referencing rules that don't exist yet.
   - **Chosen approach:** Six cohesive sub-PRs grouped by concern. Universal rules first establishes the substrate; persona upgrades land in parallel against that substrate; three-tier loading restructures the substrate before Zoe is born into it.
   - **Implementation guidance:** Track each sub-PR as a separate task group below. Branch names follow the pattern `hmcgrew/prism-1.5c.N-<slug>`. Each sub-PR closes its own PR before the next dependent one opens.
+  - → no promotion needed (PR sequencing tactic)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **ADR renumbering map locked for this phase.** Avoids collisions with PRISM's existing ADR-0033 and Thrive's duplicated 0035.
@@ -40,30 +44,36 @@ Absorb the 21 PRs of `.claude/`-equivalent work that landed in Thrive between PR
   - Thrive ADR-0037 (paired dev doc gates) → PRISM ADR-0038
   - Thrive ADR-0038 (`.ai-*` namespace) → PRISM ADR-0039
   - **Implementation guidance:** Every new ADR cites its Thrive origin in a `## References` line so the genealogy is recoverable. ADR titles may diverge from Thrive's wording where PRISM's framing differs.
+  - → no promotion needed (one-shot mapping; each ADR's References line carries the genealogy)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **Every new ADR dual-writes to canonical (`.prism/spec/adrs/`) and templates (`templates/install/.prism/spec/adrs/`) surfaces.** Byte-identical except for plan-file references stripped from the templates copy per the ADR-0029/0030 pattern established in Phase 1.
   - **Implementation guidance:** Author the canonical copy first; copy to templates; delete any `.prism/plans/` reference line from the templates copy. `pnpm prism:check` verifies drift between the two copies.
+  - → promoted to `.prism/architect/install-layout.md` § The templates/install seed surface (promotion executed at plan close 2026-06-05 — the convention had been re-tripping as a lessons.md entry because no durable surface recorded it)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **PR-1.5c.1's `writing-voice.md` updates are conditional.** Thrive #1978 modifies writing-voice; PRISM may not ship that rule yet.
   - **Implementation guidance:** Before authoring writing-voice updates, run `ls .prism/rules/writing-voice.md` and `ls templates/install/.prism/rules/writing-voice.md`. If neither exists, the task is a no-op — note in plan history. If either exists, apply the updates to that surface and mirror to the other if it also exists.
+  - → no promotion needed (one-shot conditional, resolved at implementation)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **PR-1.5c.3 Nora cherry-pick mechanics — rebuild against PRISM's Nora.** Resolved 2026-05-22 by Hunter.
   - **Alternatives considered:** (a) rebase Thrive's `claude/sharp-albattani-ee8002` commits onto PRISM main — preserves commit history but guarantees conflicts on every file touched since PRISM's Nora source has diverged (prism- prefix, `.prism/` paths, dogfood content stripped); (b) rebuild Nora's modes against PRISM's existing canonical sources — re-authoring cost but lands clean on PRISM's diverged structure.
   - **Chosen approach:** path (b) — rebuild. Composes cleanly with PRISM's post-extraction shape; no merge-conflict overhead; commit-level genealogy is recoverable via plan history + ADR citation. Matches the canonical-content-is-generic principle from ADR-0032 — port the *capability*, not Thrive's exact source.
   - **Implementation guidance:** PR-1.5c.3 tasks below are the authoritative spec. Read Thrive's PR #2019 (branch `claude/sharp-albattani-ee8002`) as a reference for the cycle-view and duplicate-finder mode shapes, then re-author against PRISM's existing `.ai-skills/skills/prism-ticket-start/shared.md`. Do not git-cherry-pick or git-rebase Thrive's commits.
+  - → no promotion needed (one-shot porting tactic; the port-the-capability-not-the-source principle is ADR-0032's)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **PR-1.5c.2 Sasha content absorption — PRISM-adapt for language-agnostic framing.** Resolved 2026-05-22 by Hunter.
   - **Alternatives considered:** (a) verbatim port of Thrive's Sasha content — fastest, preserves exact phrasing but ladder examples cite WordPress/PHP debugging contexts and falsification principles cite Thrive incidents, bleeding Thrive shape into PRISM's canonical sources in violation of ADR-0032; (b) port the structural framework (ladder shape, hypothesis-count requirement, instrumentation gate, principles list) and adapt examples and citations to language-agnostic framing.
   - **Chosen approach:** path (b) — PRISM-adapt. Composes with ADR-0032 (canonical content is generic; per-team specializations land via Atlas during onboarding). Canonical Sasha stays language-agnostic; Atlas writes per-team examples into stub anchors during Phase 2 onboarding. The structural value (ranked hypotheses, feedback-loop ladder, tagged-instrumentation discipline) survives the adaptation — those are model-agnostic.
   - **Implementation guidance:** PR-1.5c.2 tasks below name structural elements to import and call out specific phrasings that need language-agnostic rewrites. Where Thrive's Sasha cites a WordPress/React example, PRISM's Sasha names the principle without the language-specific example and reserves a `<!-- atlas:example -->` anchor (per Phase 1.5d's stub-anchor convention) for Atlas to populate.
+  - → no promotion needed (instance of the ADR-0032 principle)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 - **Persona ownership within sub-PRs.** Clove owns implementation tasks (file edits, new file authoring, build verification). Eli owns documentation tasks (architect docs, dev docs, ADR Context/Decision/Consequences prose where it crosses into explanation rather than spec).
   - **Implementation guidance:** Within each sub-PR's `### PR-1.5c.N` heading, tasks split into `#### Clove` and `#### Eli` subheadings. Tasks reference each other inline when sequence matters (e.g. "after Eli's ADR-0035 draft lands").
+  - → no promotion needed (instance of ADR-0018 persona-lane ownership)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5c shipped (all six sub-PRs complete 2026-05-22 per History); ADRs 0035–0039 carry the durable record; plan never closed.
 
 ---

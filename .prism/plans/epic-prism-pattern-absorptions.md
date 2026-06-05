@@ -1,5 +1,7 @@
 # Plan: epic-prism-pattern-absorptions
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 1.5e — Pattern absorptions from Matt Pocock + BMAD research. See [`roadmap.md` § Phase 1.5e](./roadmap.md#phase-15e--pattern-absorptions) for phase context.
@@ -246,6 +248,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Standalone rule at `.prism/rules/deletion-test.md`; inline in `code-standards.md`; persona-only placement (chosen).
   - **Chosen approach:** Persona-only placement. The test is a tiebreaker, not a checklist item; rules-file placement would over-formalize it. Adding it to `code-standards.md` alongside two-adapters would conflate diagnosis (deletion test) with prescription (two-adapters seam rule).
   - **Implementation guidance:** Identical phrasing in Eric and Briar (tasks 2 and 3); Winston gets a slightly longer framing as a named subsection since evaluation is his primary lane. The cross-reference between the deletion test (in personas) and the two-adapters rule (in `code-standards.md`) is the seam — diagnosis points at prescription.
+  - → no promotion needed (the absorption is the durable surface — the test lives in Winston/Eric/Briar skill sources)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **Two-adapters rule lands in `code-standards.md` § General, not in a persona.**
@@ -253,6 +256,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Standalone rule at `.prism/rules/two-adapters-seam.md`; inline in Winston (chosen against because the rule applies during implementation, not just architecture); persona-only placement.
   - **Chosen approach:** `code-standards.md` § General, immediately after the existing "three similar lines" bullet. The two rules form a sequence — don't abstract on volume alone, don't abstract on intent alone.
   - **Implementation guidance:** Single bullet, no subsection. The companion thought experiment (deletion test) is cross-referenced from the personas, keeping diagnosis and prescription separate but findable.
+  - → no promotion needed (the absorption is the durable surface — `code-standards.md` § General carries the rule)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **Triple-gated ADR criterion replaces Winston's existing fuzzy criterion in-place, not as a new section.**
@@ -260,6 +264,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Add the triple-gate as a new criterion alongside the existing one; promote the triple-gate to `.prism/rules/branch-plan.md` § Before Closing instead; replace in-place (chosen).
   - **Chosen approach:** Replace in-place in Winston. Branch-plan rule already says "decisions that describe how the system works going forward" — that's pointing at architect file promotion, not ADR creation. The triple-gate is specifically about when a decision warrants an ADR vs. an architect file note vs. staying in git history; that's Winston's call.
   - **Implementation guidance:** Task 5 specifies the exact replacement block. Leave the "Skip these" list intact below the replaced section.
+  - → no promotion needed (the criterion now lives in `.prism/references/triple-gated-adr-criterion.md`, cited from Winston's plan-mode procedure)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **Micro-file step machine ships as a reference doc, not inlined into Winston or Theo.**
@@ -267,6 +272,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Inline in Winston's plan mode (chosen against — Winston doesn't currently use the pattern); inline in Theo's eventual spec (chosen against — Ren and Parker need it too, and Theo doesn't exist yet); reference doc (chosen).
   - **Chosen approach:** Reference doc at `.prism/references/micro-file-step-machine.md`. Phase 2.5/2.6/3 plans cite it on day one. Available for any future skill that grows past the threshold.
   - **Implementation guidance:** Reference doc shape mirrors existing `.prism/references/` files — agent-facing, citation-friendly, no narrative bloat. Companion human-readable dev doc deferred (Eli task 10) until at least one downstream consumer ships.
+  - → no promotion needed (the reference doc at `.prism/references/micro-file-step-machine.md` is the durable surface; Theo/Ren cite it)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **Stakes calibration ships as a reference doc with no current consumers, anchoring Phase 3.**
@@ -274,6 +280,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Defer until Phase 3 (chosen against — would force Parker's plan to derive a pattern that's already shaped externally); inline into Mira (chosen against — premature, Parker is the anchor not Mira); reference doc (chosen).
   - **Chosen approach:** Reference doc at `.prism/references/stakes-calibration.md` with explicit "no current consumers" framing. Phase 3 plan picks it up.
   - **Implementation guidance:** Document the three-level table and the three calibration dimensions; do NOT modify Mira or any existing skill in this phase. Mira composition is a Phase 3-or-later question.
+  - → no promotion needed (the reference doc at `.prism/references/stakes-calibration.md` is the durable surface; Parker cites it)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **A/P/C menu lands in Winston's evaluate mode, not as a generic skill mechanic.**
@@ -281,9 +288,11 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
   - **Alternatives considered:** Generic skill mechanic documented in `AGENTS.md` (chosen against — no other skill has the right shape); rules file (chosen against — same reason); Winston-specific (chosen).
   - **Chosen approach:** Subsection in Winston's `## Output format` between Devil's Advocate and Suggested Approach.
   - **Implementation guidance:** Task 7 specifies exact placement and phrasing. The gate fires once per evaluate run; do not stack gates between every output section.
+  - → no promotion needed (the absorption is the durable surface — Winston's evaluate-mode output format carries the gate)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 - **No new ADR is needed for this phase.** Each pattern absorbs into existing surfaces or new reference docs without altering an architectural decision that warrants ADR-class documentation. The triple-gate (task 5) itself confirms this — these absorptions are easy to reverse (delete the inserted block), explainable inline, and not contested trade-offs. ADR creation would fail the triple-gate the phase itself is codifying.
+  - → no promotion needed (the no-ADR call is itself an application of the triple-gate; nothing to record beyond this entry)
   - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5e shipped 2026-05-22 (History); absorptions live in Winston/Eric/Briar sources + the two reference docs; plan never closed.
 
 ---
@@ -323,6 +332,7 @@ Tasks must meet the detail bar in [`.prism/rules/implementation-task-detail.md`]
 
 - 2026-05-22 [main]: Plan created. Phase 1.5e scoped per roadmap.md — seven pattern absorptions from Matt Pocock (deletion test, two-adapters seam rule, triple-gated ADR criterion) and BMAD (micro-file step machine, stepsCompleted frontmatter, A/P/C menu, stakes calibration) into existing PRISM surfaces and two new reference docs. No new persona; no new ADR.
 - 2026-05-22 [hmcgrew/prism-1.5e-pattern-absorptions]: PR-1.5e implementation complete — deletion-test thought experiment added to Winston/Eric/Briar; two-adapters seam rule added to code-standards.md (canonical + templates); Winston's ADR-promotion criterion replaced with the triple-gate (hard-to-reverse + surprising + genuine trade-off); A/P/C menu inserted between Devil's Advocate and Suggested Approach; new reference docs at .prism/references/micro-file-step-machine.md and .prism/references/stakes-calibration.md (dual-written to templates). Paired dev docs deferred until Theo/Parker land per Eli's task 10/11 evaluation. All verification gates green.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out. Verdict gate run on all 7 Decisions — every absorption's durable surface is the absorption itself (skill sources, code-standards, reference docs); no promotions outstanding. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
