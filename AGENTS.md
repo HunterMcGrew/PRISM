@@ -55,6 +55,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 **Utility skills:**
 
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
+- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
 
 **Skip auto-routing when:**
 
