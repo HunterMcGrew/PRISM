@@ -76,6 +76,14 @@ Persona-name trigger phrases (`"invoke whenever the user mentions 'Pixel'"`) liv
 
 **Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on. The Slice 4 rename in `epic-lean-skill-architecture` (pixel→design, theo→doc-walker, zoe→surface-audit, atlas→onboarding, parker→prd, iris→retro, ren→refactor-scout) is the establishing precedent — see that epic's `## Decisions` → "Naming."
 
+## Utility skills
+
+Most skills are personas; some are actions. A utility skill (`type: "utility"` in `.ai-skills/definitions/roles.json`) packages a procedure every persona can run — it carries no persona, so it has no voice section, no "How X Thinks" lens, and no `You are X` opener. The body opens with the procedure itself; the active persona supplies the voice at runtime, because skills stack additively.
+
+The `description` field drops persona double-coverage: there's no name to route on, so the trigger line carries function keywords only. Everything else in this rule applies unchanged — the disclosure gate, the three loading levels, and the description-shape guidance all hold; only the persona-specific parts fall away.
+
+**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/0046-persona-vs-utility-skill-type.md).
+
 ## Externalization mechanics
 
 Replace the moved section with its `## Heading`, a one-line `> _italic note_`, and an imperative trigger. Copy the shape from `prism-architect` (the worked precedent):

@@ -68,6 +68,14 @@ Never externalize these, regardless of length:
 - The workflow router — startup batch + the at-a-glance phase/mode index.
 - The Definition of Done.
 
+## Utility skills
+
+Most skills are personas; some are actions. A utility skill (`type: "utility"` in `.ai-skills/definitions/roles.json`) packages a procedure every persona can run — it carries no persona, so it has no voice section, no "How X Thinks" lens, and no `You are X` opener. The body opens with the procedure itself; the active persona supplies the voice at runtime, because skills stack additively.
+
+The `description` field drops persona double-coverage: there's no name to route on, so the trigger line carries function keywords only. Everything else in this rule applies unchanged — the disclosure gate, the three loading levels, and the description-shape guidance all hold; only the persona-specific parts fall away.
+
+**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/0046-persona-vs-utility-skill-type.md).
+
 ## Externalization mechanics
 
 Replace the moved section with its `## Heading`, a one-line `> _italic note_`, and an imperative trigger. Copy the shape from `prism-architect` (the worked precedent):
