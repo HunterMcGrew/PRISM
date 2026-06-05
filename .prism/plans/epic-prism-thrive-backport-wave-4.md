@@ -240,6 +240,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Winston staged the plan close — verdict sub-bullets on all 15 Decisions; utility-skill roster note promoted to skills-ecosystem.md (dogfood + install seed), the one promotion the in-flight work hadn't already made. Deletion deferred until Briar/Eric pass and the two manual-QA AC items verify, per branch-plan § Before Closing. The worktree-isolation deferral and the ADR-index 0027–0045 backfill are flagged for follow-up filing so they survive plan deletion.
 - 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Briar gauntlet pass 1 — 2 Majors (AGENTS.md:5 still claims every skill has a persona; utility-skill routing wording diverges across skills-ecosystem/AGENTS.md vs the frontmatter Triggers line) + 3 Minors (utility+persona entry validates silently; test comment misstates the opt-out signal; human compatibility page lags). All routed to Clove; `prism:check`/`check-types`/`test` green at HEAD.
 - 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Clove gauntlet fix pass 1 — all five pass-1 findings fixed: AGENTS.md persona claim scoped, routing wording harmonized to user-initiated across both doc surfaces (five copies), utility+persona entries now rejected with a locking test, test comment corrected, human compatibility page gained the utility section. Checks green, 136/136 tests.
+- 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Briar gauntlet pass 2 — fix delta (`d5daf65`) swept clean: all five fixes verified closed, tree-wide residue sweep found no stale phrasing, nothing new introduced. Self-review phase ends at zero findings; PR Readiness updated.
+- 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: First real `/prism-handoff` invocation (cross-persona route to PR review, gauntlet phase handoff) — both manual-QA behavioral AC items verified and ticked. All five behavioral AC now hold; the non-behavioral `prism:check` tick lands at PR close-out per its note.
 
 ---
 
@@ -336,8 +338,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - [x] Given a skill declares `type: "utility"` in the role registry, when the build runs, then skill adapters are generated for all three runtimes and no Codex agent adapter is created for it. (Verified 2026-06-04: build run + the `utility skills generate skill adapters but no codex agent adapter` test.)
 - [x] Given a utility entry with no persona, when the build runs, then it completes without the missing-persona error. (Verified 2026-06-04: build run + `buildRoleMap` tests.)
 - [x] Given the existing persona skills, when the build re-runs after the change, then their generated outputs are unchanged. (Verified 2026-06-04: `prism:check` green with zero diffs to pre-existing generated files.)
-- [ ] Given `/prism-handoff` is invoked, when it completes, then a handoff document exists at a unique branch-namespaced path under the OS temp directory and that absolute path is reported back as the final output. (Manual QA: first real `/prism-handoff` invocation. The spec was dry-run by hand 2026-06-04 — the wave-4 handoff doc itself — but the generated skill hasn't been invoked.)
-- [ ] Given a handoff document, when it is written, then it references existing artifacts by path rather than duplicating them and contains no secrets. (Manual QA: same first-invocation check.)
+- [x] Given `/prism-handoff` is invoked, when it completes, then a handoff document exists at a unique branch-namespaced path under the OS temp directory and that absolute path is reported back as the final output. (Verified 2026-06-05: first real invocation, on this branch — doc at `$TMPDIR/prism-handoffs/<branch-slug>/20260605T145545Z-f94871f2.md`, path reported as final output; the explicit-join guard handled macOS's `/var/folders/...` TMPDIR.)
+- [x] Given a handoff document, when it is written, then it references existing artifacts by path rather than duplicating them and contains no secrets. (Verified 2026-06-05: same invocation — Artifacts section is paths/URLs only; no credentials or PII.)
 
 ### Non-behavioral
 
@@ -375,13 +377,13 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 Scope: sub-PR 4.2 (PR `#78`, draft). Sub-PR 4.1 (PR `#76`) merged 2026-06-04.
 
-- [ ] No critical or major issues (gauntlet pass 1 found 2 Majors + 3 Minors — all `open`, routed to Clove; see Review Issues)
+- [x] No critical or major issues (pass-1 findings — 2 Majors + 3 Minors — all `fixed` in d5daf65; pass 2 swept the fix delta clean)
 - [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (five new tests; one gap riding with the Minors — contradictory utility+persona entry)
+- [x] Tests written for new logic and edge cases (six new tests, including the utility+persona rejection lock)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 135/135 green at gauntlet-pass-1 HEAD)
+- [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 136/136 green at the fix-pass HEAD)
 - [x] PR description up to date (synced through the staged close)
 - [ ] Lasting decisions promoted to architect context (verdict gate staged; plan deletion pending review close)
 
-**Last updated:** 2026-06-04 (Briar, gauntlet pass 1)
+**Last updated:** 2026-06-04 (Briar, gauntlet pass 2 — clean)
