@@ -28,6 +28,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
   - **Chosen approach:** Four cohesive sub-PRs grouped by concern. 1.5f.1 (Pixel mocks) is the smallest content-only edit and unblocks nothing; ship it first to demonstrate the build holds. 1.5f.2 and 1.5f.3 are parallel-safe content edits to different rule/reference files. 1.5f.4 lands last with its ADR and consumer-facing compatibility doc.
   - **Implementation guidance:** Track each sub-PR as a separate task group below. Branch names follow `hmcgrew/prism-1.5f.N-<slug>`. Each sub-PR closes its own PR before the next opens unless explicitly parallel-safe.
   - → no promotion needed (process scoping specific to Phase 1.5f; no architectural pattern to promote)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5f shipped 2026-05-23 (History: complete, 'ready for Winston to close'); ADR-0044 + compatibility.md carry the durable record; plan never closed.
 
 - **New mocks directory at `.prism/design/mocks/`, not `.ai-spec/design/mocks/`.**
   - **Root cause:** Thrive chose `.ai-spec/` because their content-root namespace is `.ai-spec/`. PRISM's content root is `.prism/` (per ADR-0031 bifurcated install layout + ADR-0039 `.ai-*` namespace). Mocks belong inside the content namespace, not parallel to it.
@@ -35,6 +36,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
   - **Chosen approach:** `.prism/design/mocks/`. Tool-agnostic per Thrive's intent; namespace-consistent per PRISM's existing structure.
   - **Implementation guidance:** All `.claude/design/mocks/` references rewrite to `.prism/design/mocks/`. The Phase 1.5c-style template surface mirror is at `templates/install/.prism/design/` — but since no mocks exist in PRISM yet, only the *references to the path* need updating, not actual mock files. The directory itself gets created on first Pixel mode-2 invocation.
   - → promoted to `.prism/SPEC.md` + `.prism/architect/spec-editing.md` (via PR-1.5f.1 path-rename edits to canonical surfaces)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5f shipped 2026-05-23 (History: complete, 'ready for Winston to close'); ADR-0044 + compatibility.md carry the durable record; plan never closed.
 
 - **One ADR (ADR-0044) covers 1.5f.4 only.** The other three sub-PRs are rule/reference/template edits that don't pass the immediate-decision-promotion three-gate test.
   - **Root cause:** ADR-0044 (Direct-write tool outputs; commit `.cursor/skills/`) is hard-to-reverse (changes consumer install contract), surprising (reverses PRISM's current "Cursor/Codex output is generated, ignore it" model), and has a real alternative (relocate-only, gitignored). The verdict pattern in 1.5f.2 is hard-to-reverse but is process discipline, not architecture — belongs in `branch-plan.md` rule. Draft PRs in 1.5f.3 is a behavioral change but already industry-standard, not surprising. Pixel mocks in 1.5f.1 is a bug fix, not a decision.
@@ -42,6 +44,7 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
   - **Chosen approach:** Single ADR for the load-bearing install-contract decision. Rule and reference edits codify the smaller decisions in place.
   - **Implementation guidance:** ADR-0044 is dual-written canonical + templates per the ADR-0029/0030 pattern. ADR-0038 paired-dev-doc gate fires because ADR-0044 introduces a new architect-doc topic (compatibility) — Eli pairs `docs/content/dev/ai-skills/compatibility.md` and `docs/content/dev/ai-skills/syncing.md` against the architect surface in 1.5f.4.
   - → no promotion needed (meta-decision about ADR scope within this phase; not a standing rule)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5f shipped 2026-05-23 (History: complete, 'ready for Winston to close'); ADR-0044 + compatibility.md carry the durable record; plan never closed.
 
 - **`.cursor/skills/` becomes committed surface; `.codex/codex-config.toml` stays gitignored.** Asymmetric on purpose.
   - **Root cause:** `.cursor/skills/` content is consumed by Cursor's skill picker via `git pull` — committing it removes the install step for Cursor users. `.codex/codex-config.toml` is a per-user file (containing personality, projects, marketplaces); committing it would clobber consumer customization. Same logic as Thrive's PR #2025 install-script-scope rule.
@@ -49,10 +52,12 @@ Absorb Thrive PRs #2025, #2026, and #2027 — direct-write tool outputs (elimina
   - **Chosen approach:** Path (c). The `.ai-skills/docs/compatibility.md § Install-Script Scope` section codifies the rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts.
   - **Implementation guidance:** Gitignore in 1.5f.4 replaces blanket `/.cursor/` with surgical rules — `.cursor/skills/` trackable, `.cursor/worktrees/` and `.cursor/plans/` (anything not generated) ignored.
   - → promoted to ADR-0044 + `.ai-skills/docs/compatibility.md` + `.prism/architect/install-layout.md § Direct-write tool outputs`
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5f shipped 2026-05-23 (History: complete, 'ready for Winston to close'); ADR-0044 + compatibility.md carry the durable record; plan never closed.
 
 - **Persona ownership within sub-PRs.** Clove owns implementation tasks (file edits, new file authoring, build verification). Eli owns documentation tasks (ADR Context/Decision/Consequences prose, paired dev doc authoring, compatibility-doc narrative).
   - **Implementation guidance:** Within each sub-PR's heading, tasks split into `#### Clove` and `#### Eli` subheadings. Cross-persona dependencies noted inline.
   - → no promotion needed (codified in ADR-0018 persona lane ownership)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5f shipped 2026-05-23 (History: complete, 'ready for Winston to close'); ADR-0044 + compatibility.md carry the durable record; plan never closed.
 
 ---
 

@@ -148,34 +148,41 @@ Each draft was written against the actual `shared.md` body, not just the existin
   - Alternatives considered: `"Use when:"` (verb-led, longer), `"Invoke for:"` (passive feel), no label at all (loses the visual cue for trigger keywords vs. prose).
   - Chosen approach: `"Triggers:"` — short, clear, consistent.
   - → no promotion needed (formatting convention; lives in the rewrite itself).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **Persona name appears twice — sentence 1 and keyword list.** Double-coverage for named-invocation routing. If Anthropic's keyword-extraction prefers prose mentions and our list-shaped triggers match less reliably, sentence 1 catches it; if extraction prefers keyword lists, the trigger line catches it.
   - → no promotion needed (routing safety design; documented in skill-authoring.md update task below).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **Critical exclusions stay in the description.** Negation clauses like `"Never writes code"`, `"Reports in chat only — never posts to GitHub"`, `"Never approves"` are load-bearing for routing — they prevent the wrong skill from being chosen when the user asks for code (Pixel/Sasha) or a GitHub post (Briar) or PR approval (Eric).
   - Anthropic prefers positive framing; these negations are the exception because they're concrete behavioral constraints, not arbitrary prohibitions.
   - Chosen approach: keep one short exclusion per affected skill; cite "behavioral constraint, not preference" in skill-authoring guidance.
   - → no promotion needed (rationale lives in the rewrite; skill-authoring.md update captures the convention).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **Drafted descriptions are first-pass, validation required.** Each draft was written against the actual `shared.md` body via Explore-agent extraction — not just the available-skills system reminder. But the final shape should be sanity-checked by re-reading each skill's body in full before the edit lands, in case a secondary mode, gate, or routing nuance got dropped.
   - Implementation guidance: Clove reads each `.ai-skills/skills/<name>/shared.md` cold before editing that skill's `frontmatter.yml`. Skips any draft that fails the read-back ("does this WHAT cover what the persona actually does?").
   - → no promotion needed (process check; baked into the implementation task list).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **Ship as one PR after pilot validation.** All 18 rewrites land in a single PR, gated on the `prism-code-dev` (Clove) pilot passing its four routing tests first.
   - Alternatives considered: batched PRs (3 near-cap skills, then groups of 5–6) for smaller blast radius.
   - Chosen approach: one PR. The pilot gate already de-risks routing degradation before the bulk lands, so batching's smaller blast radius doesn't earn its PR/build overhead. Resolved by Hunter 2026-05-28.
   - Implementation guidance: Eric source-verifies the rewrite against each `shared.md` body in PR review per `architect-doc-verification.md`. If the pilot fails, stop before the remaining 17 — do not fall back to batching without re-deciding.
   - → no promotion needed (ticket-tactical PR-strategy call).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **The real cap is 1000 (Codex), not Anthropic's 1024 — and it's already CI-enforced.** Winston's plan review found `MAX_FRONTMATTER_DESCRIPTION_LENGTH = 1000` in `scripts/ai-skills/utils.ts:11`, thrown in `build.ts:340` and asserted in `discovery-metadata.test.ts:108` for all 18 skills.
   - Root cause: the plan was drafted against Anthropic's documented 1024 cap without checking the stricter cap the repo already enforces for Codex skill discovery.
   - Consequence: Slice 4's "add a description guard at 1024" was redundant (guard exists) and directionally wrong (1024 > 1000 would never fire). Rewrote Slice 4 to the only net-new work — a 500-line body guard.
   - Implementation guidance: target ≤1000 for descriptions; extend the existing test for the body cap rather than adding a parallel guard.
   - → no promotion needed (codified in the test + Slice 4; the cap lives in `utils.ts`).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 - **Baseline measurement corrected: 14,848 chars, not 8,723.** The first-pass Explore-agent table under-counted by ~half. Re-measured via the repo's own `parseFrontmatter` (identical to CI); result matches the GitHub issue #65 table exactly.
   - Implementation guidance: the ~60% reduction headline is correct; the "~32% conservative" framing was an artifact of the bad baseline and is removed from the AC.
   - → no promotion needed (ticket-tactical measurement).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — shipped via PR #67 (2026-05-28); shape codified in skill-authoring.md § Description field shape; plan never closed.
 
 ---
 

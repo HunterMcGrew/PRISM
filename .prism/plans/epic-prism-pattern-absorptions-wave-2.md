@@ -249,6 +249,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Wave 2 as a sibling to Phase 1.5e — references the prior phase, intentionally scopes to persona-specific work the prior phase left out.
   - **Implementation guidance:** Subagent re-evaluation (2026-05-23) confirmed no further overlap with 1.5e beyond the triple-gate.
   - → no promotion needed (process recovery, ticket-tactical)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Standalone correct-course skill rejected — folded into Winston as Re-plan Mode (top-level mode, not end-of-flow step).**
   - **Root cause:** The "value" isn't the re-planning (Winston already does this); it's the multi-artifact propagation across Linear AC, user stories, PRD, in-flight Clove work. That's orchestration. **Subagent caught:** Winston's plan mode is one-shot today — there's no concept of mid-ticket re-planning to append to. Re-plan must be a new mode, not a step.
@@ -256,6 +257,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** `## Re-plan Mode` as Winston's third top-level mode, alongside Evaluate and Plan.
   - **Implementation guidance:** Tasks 24–25.
   - → no promotion needed (codified inline in Winston's shared.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Sasha Phase 5 is design-only, not implementation. Preserves diagnose-only boundary.**
   - **Root cause:** Pocock's Phase 5 is "Fix + regression test" — Sasha's invariant is no source-file modifications (line 209: "Sasha diagnoses — she doesn't treat"). Adopting Pocock verbatim would break the Clove-owns-implementation boundary that the persona model depends on.
@@ -263,6 +265,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Sasha designs the regression test (specifies what it covers, where it lives, what it asserts); Clove implements in their own pass. Pocock's "no correct seam" finding format adopted as-is.
   - **Implementation guidance:** Task 10, Phase 5 section.
   - → no promotion needed (codified inline in Sasha's shared.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Sasha case file is single-state lighter variant of micro-file pattern.**
   - **Root cause:** The full micro-file pattern fits 2 of 3 gates strongly; gate #2 ("outlasts a context window") is weak for diagnostic sessions — bugs rarely span days the way Theo walks span hundreds of files. Per-step files would duplicate the plan's `## Debugged Issues` entry without adding signal.
@@ -270,6 +273,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Single `.prism/sasha-state.json` with `currentPhase` / `phasesCompleted` / hypothesis state / confirmed evidence / case slug / status. Update `.prism/references/micro-file-step-machine.md` to acknowledge the lighter variant.
   - **Implementation guidance:** Tasks 13–14.
   - → no promotion needed (codified in `.prism/references/micro-file-step-machine.md` lighter-variant clarification)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Eric is a 3-section output (Standards / Spec / Cross-cutting), not a strict 2-axis.**
   - **Root cause:** Eric covers more than two axes today — a11y, justification, doc-class triage, test coverage. **Subagent caught:** these flow INTO axes (a11y → Standards, justification → Standards, test coverage → Standards) — they're cross-cutting concerns, not axes themselves. Forcing strict 2-axis would lose them or duplicate them.
@@ -277,6 +281,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Standards axis + Spec axis + Cross-cutting observations. Parallel subagents handle the two axes; cross-cutting outputs surface in the main thread.
   - **Implementation guidance:** Tasks 16, 18.
   - → no promotion needed (codified inline in Eric's shared.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Eric's parallel-subagent pattern uses context isolation, but reserves lightweight single-pass path for docs-only PRs.**
   - **Root cause:** Pocock's mechanism literally spawns two subagents — context isolation enforces non-merging beyond just a prompt instruction. But API cost roughly doubles, and docs-only PRs don't need the heavyweight path.
@@ -284,6 +289,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Full path uses parallel subagents; docs-only PRs (`.md` diff only) stay single-pass. Threshold documented in Eric's shared.md.
   - **Implementation guidance:** Tasks 17, 20.
   - → no promotion needed (codified inline in Eric's shared.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **AFK/HITL tag defaults to unmarked (`[AFK]` implicit); only `[HITL]` is tagged.**
   - **Root cause:** Tagging every task as `[AFK]` or `[HITL]` is signal-to-noise drift — most tasks are AFK. Pocock himself prefers AFK; HITL is the exception. **Subagent caught:** Anchoring the definition in `.prism/rules/implementation-task-detail.md` (not in Winston's shared.md) prevents drift between the two files.
@@ -291,6 +297,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Definition lives in `.prism/rules/implementation-task-detail.md`; Winston's shared.md references it. `[HITL]` is the explicit tag; `[AFK]` is the unmarked default.
   - **Implementation guidance:** Tasks 5 (rule), 23 (Winston reference).
   - → no promotion needed (codified in `.prism/rules/implementation-task-detail.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **AFK/HITL composes with vertical slicing — slices are the AFK unit.**
   - **Root cause:** Pocock's tags exist *because* the unit is a vertical slice cutting through all layers. On horizontal lane tasks, "AFK for whom?" gets fuzzy (the human, Winston, Pixel?). On vertical slices, AFK means "this whole slice can ship without me" — a coherent claim.
@@ -298,6 +305,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Horizontal mode (default) uses tags sparingly (only `[HITL]` explicit). Vertical mode (opt-in) requires `[AFK]` or `[HITL]` on every slice — that's the slice's native question.
   - **Implementation guidance:** Tasks 5, 23, 27.
   - → no promotion needed (codified inline in Winston's shared.md vertical-mode section)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Vertical-slicing offer fires BEFORE task generation, not after.**
   - **Root cause:** **Subagent caught:** If Winston builds horizontal tasks then asks "would you like vertical?", he's done the work twice and the user picks horizontal because it's concrete. The offer dies on the vine.
@@ -305,6 +313,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Decomposition-shape gate between plan-mode steps 2 and 3. Signals fire → Winston asks once → generates one shape only.
   - **Implementation guidance:** Task 26.
   - → no promotion needed (codified inline in Winston's shared.md decomposition gate)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Vertical-slicing signal set refined — original "3+ layers" alone was too noisy.**
   - **Root cause:** "Touches 3+ layers" fires constantly (most non-trivial work hits 3 layers). Better signals: tracer-bullet vocabulary in ticket/user stories, feature-flag / phased rollout, greenfield (no existing code), user stories outnumber implementation surfaces, epic decomposition into independently-shippable stories. The 3-layer test is a necessary condition (you can't slice vertically with one layer), not a sufficient one.
@@ -312,6 +321,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Offer fires when 3+ signals match in pure plan mode, all signals in evaluate-then-plan (to avoid gate fatigue post-A/P/C).
   - **Implementation guidance:** Task 26.
   - → no promotion needed (codified inline in Winston's shared.md decomposition gate)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Vertical slices count as epic stories when slice count exceeds epic threshold (user-confirmed 2026-05-23).**
   - **Root cause:** Vertical slices are the natural story shape — they're independently demoable and shippable. When the slice count crosses the epic-detection threshold, each slice becomes its own story plan; the epic plan references the slice-story plans. This is the natural composition.
@@ -319,6 +329,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Update Epic Detection to acknowledge vertical mode. Slice count > epic threshold → slices become epic stories.
   - **Implementation guidance:** Task 28.
   - → no promotion needed (codified inline in Winston's shared.md Epic Detection section)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Iris (formerly Echo) — name confirmed 2026-05-23 to avoid E-prefix collision with Eric and Eli.**
   - **Root cause:** Echo collides with Eric and Eli in the E-prefix cluster; Iris keeps eye/reflection imagery without collision.
@@ -326,6 +337,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** All references to Echo throughout the plan and downstream artifacts use Iris.
   - **Implementation guidance:** Tasks 37–41.
   - → no promotion needed (naming choice, ticket-tactical)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Iris uses the real PRISM persona roster — evidence-driven disagreements, not scripted characters.**
   - **Root cause:** BMAD's retrospective uses hardcoded characters (Amelia, Alice, Charlie, etc.) with scripted disagreements for "authentic team dynamics." That's theater. PRISM has a real persona roster; Iris should drive participation from evidence (the personas that actually touched the plan) and surface real disagreements (re-litigate `## Decisions` against `## Debugged Issues`).
@@ -333,6 +345,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Iris stages voices based on `## History` and persona-task ownership in the plan. Disagreements come from outcome-vs-prediction gaps in `## Decisions`.
   - **Implementation guidance:** Task 38, step-03 and step-04.
   - → no promotion needed (codified inline in Iris's shared.md + step-04-facilitate.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Iris proposes action items; Nora files them.** Preserves the Nora ownership boundary for follow-up tickets.
   - **Root cause:** Action items are follow-up ticket candidates; Nora owns follow-up filing (with the scope-fit gate from `.prism/rules/followup-scope.md`). Iris bypassing Nora would create scope-gate gaps.
@@ -340,6 +353,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Iris writes `## Action Items` to the retro report; closing offer is "want me to hand off to Nora to file these as follow-up tickets?" — user accepts or declines.
   - **Implementation guidance:** Task 38, step-05.
   - → no promotion needed (codified inline in Iris's shared.md + step-05-action-items.md)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Lazy-artifact audit scope shrunk — most personas are already lazy.**
   - **Root cause:** **Subagent caught:** scope was over-stated. Per-persona audit found Theo's state file returns null on absent (already lazy), Pixel's mock dir creates on demand (already lazy), Zoe's audits dir creates on first run (already lazy), Atlas writes state on first answer (already lazy). The single concrete eager seed: `templates/install/.prism/lessons-archive.md` (header-only placeholder).
@@ -347,6 +361,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Write the rule at `.prism/rules/lazy-artifacts.md` codifying the existing pattern; remove the `lessons-archive.md` template seed; have Zoe create the file on first archive.
   - **Implementation guidance:** Tasks 2–4.
   - → no promotion needed (codified in `.prism/rules/lazy-artifacts.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Closing-message routing synthesizes from existing AGENTS.md § 9, lives in architect doc (not rule).**
   - **Root cause:** **Subagent caught:** 80% of the routing data already exists in `AGENTS.md § 9 Ownership & Handoff`. The new file is synthesis + per-persona conditional elaboration (e.g., Briar → Clove if issues / "ready to ship" if clean). Closing-message routing is contextual guidance, not universally loaded — architect docs are the right home, not rules.
@@ -354,6 +369,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** `.prism/architect/closing-messages.md`. Each persona's shared.md cites it; persona's row provides the conditional routing logic AGENTS.md doesn't cover.
   - **Implementation guidance:** Tasks 6–7.
   - → no promotion needed (codified in `.prism/architect/closing-messages.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Recommend-without-auto-invoke posture for all persona closings.**
   - **Root cause:** Closing messages suggest the next persona; they never auto-invoke. Auto-routing would bypass user agency and conflict with explicit-invocation principles (Zoe, Theo, Iris). The existing Nora pattern (line 382 of shared.md) is the gold standard — "Handing off to Sasha to verify..." is phrased as a proposal, not an execution.
@@ -361,6 +377,7 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** Every persona's closing names the next persona and offers; user invokes or doesn't.
   - **Implementation guidance:** Task 6, posture documented in closing-messages.md.
   - → no promotion needed (codified in `.prism/architect/closing-messages.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **Wave 2 ships as 5 PRs, not 1 (user-confirmed 2026-05-23).**
   - **Root cause:** Phase 1.5e was 9 tasks in one PR — manageable but close to the line. Wave 2 has ~43 tasks across 6 personas + new persona + cross-cutting work. Single-PR shape would be bisect-hostile and merge-conflict-prone. Splitting by structural concern keeps each PR reviewable.
@@ -368,9 +385,11 @@ Tasks meet the detail bar in [`.prism/rules/implementation-task-detail.md`](../r
   - **Chosen approach:** PR 1 (foundation: ref doc + lazy + closing + AFK/HITL rule + per-persona closing-message references), PR 2 (Sasha), PR 3 (Eric), PR 4 (Winston), PR 5 (Parker + Atlas STOPs + Iris).
   - **Implementation guidance:** PR sequence in `## Dependencies and Sequencing`.
   - → no promotion needed (sequencing decision, ticket-tactical)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 - **No new ADR for wave 2.** Per the triple-gate (hard-to-reverse + surprising + genuine trade-off, all three must fire), wave 2's changes don't meet the bar. Persona deepenings absorb into existing surfaces; new persona (Iris) follows established precedent (Parker, Atlas, Theo, Zoe); cross-cutting patterns absorb into the architect/rules layer. ADR creation would fail its own gate.
   - → no promotion needed (triple-gate fails by intent — this Decision is itself the application of the gate)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic closed 2026-05-24 (all 5 PRs merged; promotion audit in History); predates the `> Closed:` marker convention — marker backfill flagged.
 
 ---
 

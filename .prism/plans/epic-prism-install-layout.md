@@ -34,14 +34,19 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 ## Decisions
 
 - **Bifurcated install layout — `.prism/` canonical + platform-dir build copies.** Read-only canonical content (rules, ADRs, architect, templates, references) lives at `.prism/<area>/`. Platform dirs get build-time copies of read-only content (preserves Claude Code auto-load and equivalent on Codex/Cursor). Agent-written content (plans, lessons.md) lives only at `.prism/` — single source. ADR-0031 documents this. Full reasoning in `epic-phase-1-foundation.md` § Decisions.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
 
 - **Cross-reference convention: cite `.prism/<area>/<file>` paths in canonical sources.** Platform copies under `.prism/rules/` etc. are reflections — agents read whichever copy their platform's auto-load surfaced, but they edit the canonical at `.prism/`. Build-time guard fails if a canonical source contains `.claude/<area>/` or `.codex/<area>/` etc. paths outside skill files (where platform-specific paths are correct).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
 
 - **Distribution surface rename: `templates/claude/` → `templates/install/`.** The current name implies Claude-only distribution; the new layout is multi-platform. Renaming clarifies intent and updates `paths.json` accordingly.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
 
 - **Manifest moves with architect docs.** `.prism/architect/manifest.json` → `.prism/architect/manifest.json`. Routing patterns: file patterns like `.claude/skills/**` stay (skills stay platform-local), but architect doc references resolve relative to `.prism/architect/`.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
 
 - **Order vs PR #3 (tokenization): layout reorg ships first.** Tokenization sweeps at the final canonical paths instead of v1 `.claude/`-only paths. Saves a second sweep pass.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
 
 ---
 

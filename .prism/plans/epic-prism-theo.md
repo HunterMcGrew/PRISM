@@ -297,42 +297,49 @@ Step files live in `.prism/skills/prism-theo/` and are referenced from the canon
   - **Alternatives considered:** Atlas mode (rejected — dilutes onboarding); Winston mode (rejected — different posture, reactive vs proactive); shared utility with Ren (rejected for v1 — premature abstraction; revisit after both ship).
   - **Chosen approach:** Standalone persona with own state file, own skill directory, own ADR. Composes well with Atlas (post-onboarding) and Ren (parallel-safe).
   - **Implementation guidance:** Theo's skill directory is `.ai-skills/skills/prism-theo/`; state file is `.prism/theo-state.json`; ADR is `.prism/spec/adrs/0041-theo-architect-doc-walker.md`.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo uses the micro-file step machine pattern, not a monolithic SKILL.md.**
   - **Root cause:** 8 workflow phases × monolithic SKILL.md = the model loads every phase's instructions even when it only needs one. Wasteful and obscures the active step.
   - **Alternatives considered:** Single monolithic SKILL.md (rejected — pure waste during phases that don't need other phases' instructions); single SKILL.md with conditional includes (rejected — adds complexity without solving the load problem).
   - **Chosen approach:** Per-phase step files at `.prism/skills/prism-theo/step-01-init.md` through `step-08-continue.md`, each 30–100 lines. The canonical `shared.md` cites the step files rather than restating them.
   - **Implementation guidance:** Follow the pattern from Phase 1.5e (BMAD's `bmad-create-architecture` reference); each step file is a single workflow phase with clear entry/exit conditions named in the file.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **State file uses JSON, not YAML.**
   - **Root cause:** State file gets written and read atomically across sessions; format must be reliably parseable without significant-whitespace gotchas.
   - **Alternatives considered:** YAML (rejected — significant whitespace risk during atomic writes; no expressiveness benefit for this schema).
   - **Chosen approach:** JSON with 2-space indent; atomic write via tmp-then-rename pattern.
   - **Implementation guidance:** See `.prism/skills/prism-theo/lib/state.md` for the schema and write protocol.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo writes architect docs vs. ADRs against the triple-gated criterion.**
   - **Root cause:** Architect docs document patterns and conventions; ADRs document decisions. Confusing the two leads to ADRs that read like reference material and architect docs that read like committee minutes.
   - **Alternatives considered:** Theo writes only architect docs and lets Winston decide ADR status (rejected — Winston isn't in the walking loop; Theo has the candidate's context fresh); Theo writes both indiscriminately (rejected — produces ADR sprawl).
   - **Chosen approach:** Apply the triple-gated criterion from Phase 1.5e — a candidate becomes an ADR when (1) it's hard to reverse, (2) it's surprising to a new reader, AND (3) there was a genuine tradeoff. Otherwise it's an architect doc.
   - **Implementation guidance:** Step-05-draft.md branches the draft format on the suggested-shape field; suggestedShape is set in step-02-scan.md when the candidate is allocated.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Atlas integration uses an HTML comment anchor, not fuzzy text matching.**
   - **Root cause:** Per-team walking priorities need a deterministic insertion point in Theo's persona body; fuzzy text matching breaks when the surrounding prose drifts.
   - **Alternatives considered:** Fuzzy text matching (rejected — fragile); separate per-team file Theo reads at startup (rejected — adds another file to track; anchor pattern is already established for Atlas in other personas).
   - **Chosen approach:** `<!-- atlas:specializes-in -->` HTML comment anchor in `shared.md`; Atlas inserts team-specific walking guidance at that exact location during Phase 2 onboarding.
   - **Implementation guidance:** Place the anchor in `shared.md`'s "When this skill is invoked" or a dedicated subsection — match the placement Atlas uses in other personas (verify against Phase 2 work once Atlas lands).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Paired-dev-doc decisions apply ADR-0038's two gates verbatim.**
   - **Root cause:** ADR-0038 already defines when a paired dev doc belongs alongside an architect doc; Theo shouldn't invent his own criteria and drift from the rest of PRISM.
   - **Alternatives considered:** Theo defines his own gates (rejected — divergence drift); Theo skips paired dev docs entirely (rejected — defeats one of the persona's primary outputs).
   - **Chosen approach:** Cite ADR-0038 in shared.md; apply the two gates (category-fit + pairing-value) in step-02-scan.md when allocating the candidate's `pairedDevDoc` field.
   - **Implementation guidance:** Do not restate the gates in Theo's persona body; cite ADR-0038 (`.prism/spec/adrs/0038-paired-dev-doc-gates.md`). Per the cite-don't-restate rule in `.prism/rules/implementation-task-detail.md`.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 - **Theo's scope is cartographic, not evaluative.**
   - **Root cause:** Ren (Phase 2.6) covers the evaluative side (grading structural quality); overlap between Theo and Ren would muddle both personas and produce conflicting recommendations.
   - **Alternatives considered:** Theo grades quality too (rejected — duplicates Ren's job; one persona can't be both cartographer and critic without diluting both roles).
   - **Chosen approach:** Theo names shape; Ren grades quality. Surface the boundary explicitly in Theo's Cognitive Approach section.
   - **Implementation guidance:** When Theo encounters a candidate that's structurally weak (Ren's lane), he notes it as a candidate worth documenting (because the weakness is itself a load-bearing fact) but does not propose a refactor — that's Ren's output type, not Theo's.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Theo shipped — `.ai-skills/skills/prism-doc-walker/`, ADR-0041, `docs/content/dev/ai-skills/theo.md` all exist; plan never closed.
 
 ---
 

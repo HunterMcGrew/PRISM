@@ -47,9 +47,12 @@ This belongs in **onboarding** (Atlas), not plain sync — it's a walked, resuma
 
 - **First-contact is an onboarding mode, not a sync mode.** It bootstraps the baseline state file that steady-state sync (B) depends on. **Why:** B's merge has nothing to diff against on first contact; establishing the baseline is a walked, resumable conversation that's Atlas's domain.
   - → promote to ADR at build time.
+  - **Zoe verdict (2026-06-05):** `live` — Epic C deferred by design; decision governs the future build.
 - **Non-destructive, dry-run-first (inherited from Epic B).** Established teams won't adopt a tool that might clobber their `AGENTS.md` / `docs/` / existing skills on first run. Reconciliation previews the three buckets before any write.
   - → covered by Epic B's ADR.
+  - **Zoe verdict (2026-06-05):** `live` — Epic C deferred by design; decision governs the future build.
 - **OPEN — TBD, needs Hunter + SPC input (resolves at SPC's onboarding/sync time, not now).** SPC's specific existing-setup shape and doc format. The user will NOT have SPC's input ahead of time — SPC specifies when they pull/sync PRISM in. **Default path (used until resolved):** build the reconciliation mode generically (detect → diff → classify → walk → bootstrap state) so it handles any established repo; SPC's specifics ride the same `config.json` + onboarding-detection channel as Thrive's, no SPC-specific code.
+  - **Zoe verdict (2026-06-05):** `live` (open-question, not yet stale) — OPEN since 2026-05-29 (7 days); resolves at SPC onboarding time by design.
 
 ## History
 
