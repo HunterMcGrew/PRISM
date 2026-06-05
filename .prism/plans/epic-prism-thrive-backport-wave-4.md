@@ -197,6 +197,9 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - **Issue #51 (writing-voice tier conflict) resolved by this wave via its Option B.** The pre-existing shared.md-vs-ADR-0035 disagreement on writing-voice's tier needed an intent decision; the wave-4 audit supplied the rationale (path gating structurally misses non-file writing surfaces) and Hunter picked promotion. Task 4.1-8 carries the mechanics; the sub-PR closes `#51`.
 - **`worktree-isolation.md` tier inversion noted, deferred.** It gates on `.prism/**` + `scripts/**` (fires nearly every PRISM session) but is relevant only to worktree-mode review — candidate to fold into the `worktree-mode.md` reference Eric already loads (~600 tokens/session saved). Not approved this wave; revisit if always-on budget becomes a concern.
 - **Sub-PR 4.1 ships as a single PR** (user-confirmed) — all sub-30-line content edits in the same `.prism/rules/` neighborhood; splitting adds review overhead without isolation value.
+- **`prism-handoff` frontmatter uses the folded (`>`) scalar style.** `parseFrontmatter` (`scripts/ai-skills/utils.ts`) reads single-line values and `>` folded scalars only — a plain multi-line continuation parses as its first line, silently truncating the description that the length check and Codex discovery read. The folded form renders the identical string to the approved task-6 draft; only the YAML scalar style differs.
+- **Agent-adapter cleanup excludes utility skill IDs.** `removeDeletedManagedAgentFiles` receives only persona skill IDs, so a skill that flips persona→utility gets its stale `.codex/agents/<id>.toml` removed on the next build. Complements the task-5 generation gate — without this, the stale adapter would persist because the flipped skill's ID still exists in the registry.
+- **Tasks 4.2-12/13 (Eli lane) absorbed by Clove.** Two small doc edits (`.ai-skills/docs/compatibility.md`, `AGENTS.md`) tightly coupled to the pipeline change and shipping in the same PR; a separate docs handoff would re-load full context for ~20 lines of prose. Issue `#64` (agents-md-slim, owns AGENTS.md) verified unmoved since 2026-05-28 before the edit.
 
 ---
 
@@ -217,6 +220,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Clove fixed both Minors + the Cleanup — PR body Summary/How synced via REST PATCH (Notes untouched), task 9 carries the supersession marker, AC bullet's orphanable SHA claim dropped, dead lineage link de-linked. Both issues `fixed`.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Briar re-swept the fix delta clean; Eric pass 3 (head `32dc85f`) — zero findings, merge resolution verified, labels `effort:glance` + `confidence:needs-judgment`, PR returned to draft per Hunter. Two human items remain: fresh-session writing-voice check, accept/reject the proposed task-9 AC adjustment.
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: Hunter ran the fresh-session check on this branch — writing-voice.md auto-loads (4.2k tokens in Memory files); AC checked off. One human item remains: the proposed task-9 AC adjustment. Worktree removed; branch now checked out in the main working copy.
+- 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: `#74` merged on main → squash-already-upstream conflicts on plan + lessons; resolved keeping branch versions (newer on both counts — plan evolved through the review loop, lessons heading carries Eric's de-caps fix). PR `#76` mergeable again, checks green, still draft. (Entry re-appended on the 4.2 branch: its flush commit `5d43eb7` was pushed minutes after `#76`'s squash-merge, so it never reached main.)
+- 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: PR `#76` merged; Hunter accepted the task-9 AC adjustment. Implemented all thirteen 4.2 tasks — `type` discriminator + build gates, `/prism-handoff` skill sources, five new tests, ADR-0046 (+ index, both surfaces), skill-authoring utility subsection (five surfaces), compatibility.md + AGENTS.md docs (Eli lane absorbed; see Decisions). `prism:build`/`check`/`check-types`/`test` all green; persona outputs byte-identical; `.agents/` adapter generated but gitignored (per-user root), so task 9's "commit `.agents/skills/`" leg doesn't apply in the dogfood install.
 
 ---
 
@@ -265,26 +270,26 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ### Behavioral
 
-- [ ] Given a skill declares `type: "utility"` in the role registry, when the build runs, then skill adapters are generated for all three runtimes and no Codex agent adapter is created for it.
-- [ ] Given a utility entry with no persona, when the build runs, then it completes without the missing-persona error.
-- [ ] Given the existing persona skills, when the build re-runs after the change, then their generated outputs are unchanged.
-- [ ] Given `/prism-handoff` is invoked, when it completes, then a handoff document exists at a unique branch-namespaced path under the OS temp directory and that absolute path is reported back as the final output.
-- [ ] Given a handoff document, when it is written, then it references existing artifacts by path rather than duplicating them and contains no secrets.
+- [x] Given a skill declares `type: "utility"` in the role registry, when the build runs, then skill adapters are generated for all three runtimes and no Codex agent adapter is created for it. (Verified 2026-06-04: build run + the `utility skills generate skill adapters but no codex agent adapter` test.)
+- [x] Given a utility entry with no persona, when the build runs, then it completes without the missing-persona error. (Verified 2026-06-04: build run + `buildRoleMap` tests.)
+- [x] Given the existing persona skills, when the build re-runs after the change, then their generated outputs are unchanged. (Verified 2026-06-04: `prism:check` green with zero diffs to pre-existing generated files.)
+- [ ] Given `/prism-handoff` is invoked, when it completes, then a handoff document exists at a unique branch-namespaced path under the OS temp directory and that absolute path is reported back as the final output. (Manual QA: first real `/prism-handoff` invocation. The spec was dry-run by hand 2026-06-04 — the wave-4 handoff doc itself — but the generated skill hasn't been invoked.)
+- [ ] Given a handoff document, when it is written, then it references existing artifacts by path rather than duplicating them and contains no secrets. (Manual QA: same first-invocation check.)
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2 pending)
+- [ ] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2: green 2026-06-04 on the implementation branch — final tick when the 4.2 PR closes out.)
 - [x] Every rule edit present on all five surfaces (canonical + four mirrors).
 - [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
 - [x] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; Hunter ran the fresh-session spot check 2026-06-04 on this branch — writing-voice.md listed in the auto-loaded Memory files at 4.2k tokens.)
 - [x] ADR-0035's Tier 1 example list, its paired dev doc, and `session-close.md`'s universal-load-set list all agree that writing-voice is Tier 1 (issue `#51` done condition).
 - [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions).
-- [ ] ADR-0046 exists, records the rejected alternatives, and is indexed.
+- [x] ADR-0046 exists, records the rejected alternatives, and is indexed. (Both surfaces; index gap for 0027–0045 is pre-existing — see Cleanup Items.)
 
 ### AC Adjustments
 
 - 2026-06-04 (Briar): Re-pointed the `#51` done-condition bullet from `prism-code-dev/shared.md` (which has no Tier 1 list) to `.prism/references/session-close.md`'s universal-load-set enumeration — matches what was actually built and verified. See Review Issues.
-- 2026-06-04 (Clove): **Status: proposed.** Task 4.1-9's bullet ("Wave-3 plan's `#2042` deferral carries the annotation") became unsatisfiable when PR `#75` closed the wave-3 epic and deleted its plan after the annotation was committed. Rewrote the bullet to name the surviving durable record (this plan's Scope boundary + Decisions; branch history `1442c5b`). No implementation rides on this — flagged for user accept at review-loop close.
+- 2026-06-04 (Clove): **Status: accepted** (Hunter, 2026-06-04, post-`#76`-merge). Task 4.1-9's bullet ("Wave-3 plan's `#2042` deferral carries the annotation") became unsatisfiable when PR `#75` closed the wave-3 epic and deleted its plan after the annotation was committed. Rewrote the bullet to name the surviving durable record (this plan's Scope boundary + Decisions; branch history `1442c5b`). No implementation rides on this.
 
 ### AC Sync Log
 
@@ -292,12 +297,14 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-04 | Winston | Generated AC | updated | N/A — no Linear ticket (phase work) |
 | 2026-06-04 | Briar | Refined AC from 4.1 self-review (re-pointed `#51` third leg; ticked verified items) | updated | N/A — no Linear ticket (phase work) |
+| 2026-06-04 | Clove | Task-9 adjustment accepted by Hunter; ticked 4.2 items verified by build + tests | updated | N/A — no Linear ticket (phase work) |
 
 ---
 
 ## Cleanup Items
 
 - ~~`.prism/plans/epic-prism-thrive-backport-wave-4.md:5` — lineage link to `epic-prism-thrive-backport-wave-3.md` went dead when `#75` deleted the file~~ — resolved: link replaced with "epic closed in `#75`, plan deleted" text.
+- `.prism/spec/adrs/README.md` (+ templates mirror) — the index table skips 0027–0045; surfaced while adding the 0046 row. Pre-existing, not absorbed in 4.2 — follow-up candidate (backfill the rows or restate the index's inclusion rule).
 
 ---
 
