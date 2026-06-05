@@ -5,7 +5,7 @@
 AI agents must maintain a **living plan** that preserves context, decisions, and constraints across the lifecycle of a ticket or epic.
 This prevents accidental regressions where previously necessary code changes are undone because their intent was forgotten.
 
-Plans are scoped to **tickets or epics**, not branches. Multiple branches and PRs can reference the same plan. Plans live on `main` and persist until the work is complete.
+Plans are scoped to **tickets or epics**, not branches. Multiple branches and PRs can reference the same plan. Plans live on `main`, persist through the work, and remain after close as the durable record — plans are never deleted (see ADR-0047).
 
 ---
 
@@ -162,14 +162,14 @@ For each ticket or epic:
 
 # Before Closing
 
-Run the close on the ticket's **final PR branch** — after implementation is done and reviews have passed, before that PR merges. The promotion edits and the plan deletion then ride the final PR instead of requiring a standalone close-out PR after merge.
+Run the close on the ticket's **final PR branch** — after implementation is done and reviews have passed, before that PR merges. The promotion edits and the close marker then ride the final PR instead of requiring a standalone close-out PR after merge.
 
-**Why:** a plan that outlives its last PR costs an extra PR whose only diff is deleting an already-shipped plan. Closing on the final branch makes the plan's removal part of the work that completed it. AC items conditioned on merge ("Given the PR has merged…") are verified as holding-at-merge during the close — the squash makes them true atomically.
+**Why:** a close that waits for merge costs an extra PR whose only diff is close bookkeeping for already-shipped work. Closing on the final branch makes the close part of the work that completed it. AC items conditioned on merge ("Given the PR has merged…") are verified as holding-at-merge during the close — the squash makes them true atomically.
 
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
-2. **Delete the plan** — once decisions are promoted, delete the plan file. Git history preserves it if you ever need to look back.
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
 
@@ -177,7 +177,7 @@ Decisions that should be promoted:
 - Constraints discovered that affect future work (e.g., "X API doesn't support Y")
 - Design choices that other developers need to know about
 
-Decisions that stay in git history only:
+Decisions that stay in the closed plan only:
 
 - Implementation tactics specific to this ticket
 - Bug workarounds that are self-evident from the code
@@ -187,7 +187,7 @@ Decisions that stay in git history only:
 
 ## Decision verdict gate
 
-Before promoting decisions and deleting the plan (steps 1–2 above), every entry in `## Decisions` must carry an explicit verdict sub-bullet. The verdict closes the loop on whether the decision was promoted to a durable surface or intentionally stays local.
+Before promoting decisions and marking the plan closed (steps 1–2 above), every entry in `## Decisions` must carry an explicit verdict sub-bullet. The verdict closes the loop on whether the decision was promoted to a durable surface or intentionally stays local.
 
 **Verdict format:** append as the last sub-bullet on each Decision entry:
 
@@ -195,7 +195,7 @@ Before promoting decisions and deleting the plan (steps 1–2 above), every entr
 - `→ promoted to ADR-NNNN` — decision graduated to its own ADR.
 - `→ no promotion needed (<one-line reason>)` — decision is ticket-tactical, codified elsewhere, or otherwise doesn't generalize. Reason is required, not optional.
 
-**Why:** Without an explicit verdict, decisions get promoted mentally, the plan deletes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
+**Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
 **How to apply:** Winston runs this gate during plan close. Briar surfaces missing verdicts as a Minor in self-review when a plan is being closed. Eric surfaces missing verdicts during PR review when the PR is the close-out PR for a ticket.
 

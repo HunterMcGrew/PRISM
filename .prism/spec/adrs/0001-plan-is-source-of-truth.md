@@ -28,7 +28,7 @@ Agents read the plan before starting work. They update it after meaningful chang
 - Positive: decisions survive compaction, session ends, and skill handoffs. Skills can pick up mid-ticket without re-asking.
 - Positive: `## Decisions` acts as a documented Chesterton's Fence — code reviewers and future agents can see why a piece of logic was chosen.
 - Negative: plans require discipline to maintain. A stale plan is worse than no plan. Skills need explicit "update the plan" steps in their workflows.
-- Neutral: plans live on `main` and carry through until the ticket closes. At close, lasting decisions promote to architect context and the plan is deleted (git history preserves it).
+- Neutral: plans live on `main` and carry through until the ticket closes. At close, lasting decisions promote to architect context and the plan is marked closed and preserved ([ADR-0047](./0047-plans-are-preserved-at-close.md)).
 
 ## References
 

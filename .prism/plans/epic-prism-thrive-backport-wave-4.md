@@ -215,6 +215,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
   - → no promotion needed (codified in ADR-0046 and locked by the build tests)
 - **Tasks 4.2-12/13 (Eli lane) absorbed by Clove.** Two small doc edits (`.ai-skills/docs/compatibility.md`, `AGENTS.md`) tightly coupled to the pipeline change and shipping in the same PR; a separate docs handoff would re-load full context for ~20 lines of prose. Issue `#64` (agents-md-slim, owns AGENTS.md) verified unmoved since 2026-05-28 before the edit.
   - → no promotion needed (documented absorption per ADR-0018; ticket-tactical)
+- **Plans are never deleted — preserve and mark closed (Hunter, 2026-06-05).** Retires the staged close's deletion step; this plan survives as living memory and stays open for 4.3, which dissolves the `#77` scope conflict (the plan gains a 4.3 section when that work starts). Only Zoe may later move a plan out of `.prism/plans/` (cadence-audit archive on confirmation); no persona deletes one. Deletion language reconciled tree-wide in the close pass — `branch-plan.md` § Before Closing, `skills-ecosystem.md` § Lessons, ADR-0001's consequence line, each on canonical + install seed (rule edits absorbed by Winston per ADR-0018: spec-only, coupled to the close that surfaced them); the 2026-05-23 lesson's second trip is the recurrence that triggered promotion per the taxonomy.
+  - → promoted to ADR-0047 (and codified in branch-plan.md § Before Closing)
 
 ---
 
@@ -246,6 +248,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Third 4.3 design input (Hunter): the self-review→PR-review boundary is a user gate, not a fixed rule — fresh-chat-via-handoff as the recommended default (cold context + pin engagement; required on runtimes without per-skill model honoring), continue-in-session offered where pins are honored and context is quiet, anchoring tradeoff stated. Recorded in the handoff doc's Gauntlet state; the accumulated 4.3 inputs need a durable home (issue or 4.3 plan seed) before this plan deletes at close.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: All 4.3 dry-run inputs consolidated into issue `#77` (gate + state-travels guardrails folded into its embedded draft; dry-run record satisfies its validation done-condition). Surfaced a scope conflict needing Hunter's call: `#77` slots the gauntlet as wave-4 sub-PR 4.3 with this plan surviving to gain a 4.3 section, while the plan's Goal says two sub-PRs and the staged close treats `#78` as final — plan-deletion timing depends on the resolution.
 - 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Eric gauntlet PR-review pass 1 (head `22dcade`) — no Critical/Major, two Minors (buildRoleMap silently accepts unrecognized `type` values; PR body counts stale since `d5daf65`); labels `effort:quick` + `review:has-minors`, PR stays draft. Clove fix pass 2: both fixed — unknown discriminators rejected with a locking test (137/137 green), PR body agent-owned counts synced via REST PATCH. Both recorded in Review Issues as `fixed`.
+- 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Eric re-review (head `93e5581`) — zero findings, both fixes verified, thread resolved; labels `effort:quick` + `confidence:needs-judgment` (the `#77` plan-survival call), draft flipped ready.
+- 2026-06-05 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Winston ran the 4.2 close under Hunter's ruling — plans are never deleted; this plan survives and stays open for 4.3, dissolving the `#77` scope conflict. Deletion language reconciled tree-wide (branch-plan.md, skills-ecosystem § Lessons, ADR-0001, both surfaces each) and promoted to ADR-0047; final `prism:check` AC ticked. See Decision: "Plans are never deleted — preserve and mark closed".
 
 ---
 
@@ -365,7 +369,7 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2: green 2026-06-04 on the implementation branch — final tick when the 4.2 PR closes out.)
+- [x] `pnpm prism:check` green after each sub-PR. (4.1: green 2026-06-04, `check-types` also green; 4.2: green at close-out 2026-06-05 — `prism:check` passed, 137/137 tests.)
 - [x] Every rule edit present on all five surfaces (canonical + four mirrors).
 - [x] No Thrive-session specifics in ported prose: no THR-NNNN references, no WordPress nouns, no Thrive incident narration (ADR-0032).
 - [x] `writing-voice.md` loads in every session (always-on tier — no frontmatter gating) on all five surfaces. (Frontmatter verified stripped on all five; Hunter ran the fresh-session spot check 2026-06-04 on this branch — writing-voice.md listed in the auto-loaded Memory files at 4.2k tokens.)
@@ -406,6 +410,6 @@ Scope: sub-PR 4.2 (PR `#78`, draft). Sub-PR 4.1 (PR `#76`) merged 2026-06-04.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 136/136 green at the fix-pass HEAD)
 - [x] PR description up to date (synced through the staged close)
-- [ ] Lasting decisions promoted to architect context (verdict gate staged; plan deletion pending review close)
+- [x] Lasting decisions promoted to architect context (verdict gate passed 16/16; plan preserved per ADR-0047 — stays open for 4.3, no deletion)
 
-**Last updated:** 2026-06-04 (Briar, gauntlet pass 2 — clean)
+**Last updated:** 2026-06-05 (Winston, 4.2 close — plan preserved, ADR-0047)

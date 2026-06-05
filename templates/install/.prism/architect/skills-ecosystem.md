@@ -279,7 +279,7 @@ When a lesson moves from `.prism/lessons.md` to a durable home, it routes by typ
 - **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
 - **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
 
-Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is deleted. Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
+Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is marked closed (plans are never deleted — ADR-0047). Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
 
 ---
 
