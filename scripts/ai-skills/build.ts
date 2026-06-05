@@ -653,6 +653,11 @@ export function buildRoleMap(
 				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".'
 			);
 		}
+		if (role.type === "utility" && role.persona) {
+			throw new Error(
+				`Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`
+			);
+		}
 		roleMap.set(role.id, role);
 	}
 

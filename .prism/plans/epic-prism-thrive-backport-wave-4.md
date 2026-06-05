@@ -238,6 +238,8 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - 2026-06-04 [hmcgrew/prism-wave4.1-governance-git-rule-ports]: `#74` merged on main → squash-already-upstream conflicts on plan + lessons; resolved keeping branch versions (newer on both counts — plan evolved through the review loop, lessons heading carries Eric's de-caps fix). PR `#76` mergeable again, checks green, still draft. (Entry re-appended on the 4.2 branch: its flush commit `5d43eb7` was pushed minutes after `#76`'s squash-merge, so it never reached main.)
 - 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: PR `#76` merged; Hunter accepted the task-9 AC adjustment. Implemented all thirteen 4.2 tasks — `type` discriminator + build gates, `/prism-handoff` skill sources, five new tests, ADR-0046 (+ index, both surfaces), skill-authoring utility subsection (five surfaces), compatibility.md + AGENTS.md docs (Eli lane absorbed; see Decisions). `prism:build`/`check`/`check-types`/`test` all green; persona outputs byte-identical; `.agents/` adapter generated but gitignored (per-user root), so task 9's "commit `.agents/skills/`" leg doesn't apply in the dogfood install.
 - 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Winston staged the plan close — verdict sub-bullets on all 15 Decisions; utility-skill roster note promoted to skills-ecosystem.md (dogfood + install seed), the one promotion the in-flight work hadn't already made. Deletion deferred until Briar/Eric pass and the two manual-QA AC items verify, per branch-plan § Before Closing. The worktree-isolation deferral and the ADR-index 0027–0045 backfill are flagged for follow-up filing so they survive plan deletion.
+- 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Briar gauntlet pass 1 — 2 Majors (AGENTS.md:5 still claims every skill has a persona; utility-skill routing wording diverges across skills-ecosystem/AGENTS.md vs the frontmatter Triggers line) + 3 Minors (utility+persona entry validates silently; test comment misstates the opt-out signal; human compatibility page lags). All routed to Clove; `prism:check`/`check-types`/`test` green at HEAD.
+- 2026-06-04 [hmcgrew/prism-wave4.2-utility-skill-prism-handoff]: Clove gauntlet fix pass 1 — all five pass-1 findings fixed: AGENTS.md persona claim scoped, routing wording harmonized to user-initiated across both doc surfaces (five copies), utility+persona entries now rejected with a locking test, test comment corrected, human compatibility page gained the utility section. Checks green, 136/136 tests.
 
 ---
 
@@ -277,6 +279,51 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 - **File:** `.prism/plans/epic-prism-thrive-backport-wave-4.md:49` (also the adjusted AC bullet's bare `1442c5b` reference)
 - **Problem:** The task still instructs editing `.prism/plans/epic-prism-thrive-backport-wave-3.md`, which `#75` deleted — a cold reader of the task list can't tell it's been superseded; the AC Adjustments entry holds the truth but the task doesn't point there. The adjusted AC bullet also cites branch SHA `1442c5b` as a durable record, but squash-merge + branch deletion will orphan that SHA while the plan lives on into sub-PR 4.2.
 - **Suggested fix:** Append "(superseded — wave-3 epic closed in `#75`; see AC Adjustments 2026-06-04)" to task 9; drop or soften the SHA claim in the AC bullet — the plan's own Scope boundary + Decisions are the durable record.
+
+### AGENTS.md § Skills Ecosystem still claims every skill has a persona
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 1 — claim scoped to "most carry a dedicated persona — utility skills (ADR-0046) carry none"
+- **File:** `AGENTS.md:5`
+- **Problem:** "Each skill has a dedicated persona, role, and defined handoff points" is falsified by this PR — `prism-handoff` carries no persona. The PR edited AGENTS.md twice without updating the claim; classic removal-sweep miss (the all-skills-are-personas concept was retired everywhere except the sentence that states it most directly, in the always-loaded file).
+- **Suggested fix:** Reword to scope the persona claim, e.g. "Each skill has a defined role and handoff points; most carry a dedicated persona — utility skills (ADR-0046) run in the invoking persona's voice."
+
+### Utility-skill routing wording diverges across surfaces
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 1 — both doc surfaces now read "invocation is user-initiated: the `/prism-handoff` command or a direct hand-off request; personas may suggest at session close but never auto-invoke" (canonical + install seed + three mirrors; frontmatter untouched as approved)
+- **File:** `.prism/architect/skills-ecosystem.md` § Utility skills (+ install seed and three platform mirrors); `AGENTS.md` utility-skills bullet
+- **Problem:** skills-ecosystem says "explicit `/prism-handoff` invocation only" and AGENTS.md says "Invoke it on explicit `/prism-handoff` only, when the user asks to hand off…" — while the frontmatter description (the routing surface) carries a `Triggers:` line of user phrases. A cold router reading the two always-loaded docs can't tell whether a user's "hand off" request should route; the docs and the routing surface disagree. Doc-class diverged claim.
+- **Suggested fix:** Harmonize both doc surfaces to the design intent (plan Decision "Trigger integration"): invocation is *user-initiated* — the `/prism-handoff` command or a direct hand-off request; personas may suggest it at session close but never auto-invoke. Frontmatter stays as approved.
+
+### buildRoleMap silently accepts a contradictory utility-with-persona entry
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 1 — `buildRoleMap` throws on utility+persona; locked by the `rejects a utility entry that carries a persona` test
+- **File:** `scripts/ai-skills/build.ts` (`buildRoleMap`)
+- **Problem:** `{ id, persona, type: "utility" }` validates without complaint; the persona is silently inert (the agent-adapter path is gated off). A lying registry entry is exactly the failure ADR-0046's honest-data rationale exists to prevent.
+- **Suggested fix:** Throw when a utility entry carries `persona`; add a test locking the contract.
+
+### Test comment misstates the build's opt-out signal
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 1 — comment now states what the skip does (root absent locally, e.g. gitignored Codex root on a fresh clone)
+- **File:** `scripts/ai-skills/discovery-metadata.test.ts` (utility-adapter repo-state test)
+- **Problem:** The comment claims the bare `pathExists(root)` skip is "the same opt-out signal the build's check mode uses" — but check mode keys on managed-content markers (`skillsRootHasManagedContent`), not directory existence. Wrong claim about an invariant, sitting next to the code it describes.
+- **Suggested fix:** Reword the comment to what the skip actually does (skip platforms whose skills root doesn't exist locally), or adopt the marker-based signal.
+
+### Human-facing compatibility page lags the utility-skill concept
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 1 — "Persona vs utility skills" section added to the page, citing ADR-0046
+- **File:** `docs/content/dev/ai-skills/compatibility.md`
+- **Problem:** The agent-facing `.ai-skills/docs/compatibility.md` names this page as its "longer narrative" companion and gained the Persona vs Utility subsection; the companion now lags by a shipped concept (no false claim, but a reader following the companion link finds no mention of utility skills).
+- **Suggested fix:** One short paragraph mirroring the new subsection (utility skills: skill adapters in all runtimes, no agent adapter, cite ADR-0046) — ride-along scale.
 
 ---
 
@@ -326,15 +373,15 @@ Two ordered sub-PRs. Sub-PR 4.1 is a single PR (user-confirmed 2026-06-04 — no
 
 ## PR Readiness
 
-Scope: sub-PR 4.1 (PR `#76`). Sub-PR 4.2 not yet started.
+Scope: sub-PR 4.2 (PR `#78`, draft). Sub-PR 4.1 (PR `#76`) merged 2026-06-04.
 
-- [x] No critical or major issues (post-merge pass found two Minors — both `fixed`; see Review Issues)
-- [x] Types correct — no `any`, no unsafe `as` (no runtime code in diff; `pnpm prism:check-types` green)
+- [ ] No critical or major issues (gauntlet pass 1 found 2 Majors + 3 Minors — all `open`, routed to Clove; see Review Issues)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` green)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (N/A — markdown-only diff; mirror fidelity guarded by `pnpm prism:check`)
+- [x] Tests written for new logic and edge cases (five new tests; one gap riding with the Minors — contradictory utility+persona entry)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-04 post-merge (`pnpm prism:check` green after the `#75` merge resolution)
-- [x] PR description up to date (Summary + How rewritten for the merge resolution; Notes preserved verbatim)
-- [ ] Lasting decisions promoted to architect context (plan stays open for sub-PR 4.2)
+- [x] Build passes — last run: 2026-06-04 (`prism:check` + `prism:test` 135/135 green at gauntlet-pass-1 HEAD)
+- [x] PR description up to date (synced through the staged close)
+- [ ] Lasting decisions promoted to architect context (verdict gate staged; plan deletion pending review close)
 
-**Last updated:** 2026-06-04 (Clove, post-Eric-pass-3 sweep)
+**Last updated:** 2026-06-04 (Briar, gauntlet pass 1)

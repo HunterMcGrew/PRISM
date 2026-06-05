@@ -2,7 +2,7 @@
 
 ## Skills Ecosystem
 
-This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
+This project uses a multi-agent skills ecosystem. Each skill has a defined role and handoff points; most carry a dedicated persona — utility skills (ADR-0046) carry none and run in the invoking persona's voice. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
 
 The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.prism/SPEC.md`. Start there if you're unsure where a decision belongs.
 
@@ -54,7 +54,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 
 **Utility skills:**
 
-- `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invoke it on explicit `/prism-handoff` only, when the user asks to hand off, continue in a new chat, or pass work to a fresh session. It compacts the session into a handoff document and reports the path back.
+- `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
 
 **Skip auto-routing when:**
 

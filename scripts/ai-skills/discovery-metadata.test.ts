@@ -207,6 +207,16 @@ test("buildRoleMap rejects a persona-less entry that is not a utility", () => {
 	);
 });
 
+test("buildRoleMap rejects a utility entry that carries a persona", () => {
+	assert.throws(
+		() =>
+			buildRoleMap({
+				skills: [{ id: "prism-handoff", persona: "Ghost", type: "utility" }],
+			}),
+		/must not carry a persona/
+	);
+});
+
 test("buildCodexAgentToml opens with the persona line for persona entries", () => {
 	const toml = buildCodexAgentToml({
 		codexSkillMarkdown: "# Skill body",
@@ -244,8 +254,8 @@ test("utility skills generate skill adapters but no codex agent adapter", async 
 	for (const utilityId of utilityIds) {
 		for (const relative of skillRoots) {
 			const root = path.join(repoRoot, relative);
-			// Skip platforms that haven't been built locally — same opt-out
-			// signal the build's check mode uses.
+			// Skip platforms whose skills root doesn't exist locally — e.g. the
+			// gitignored Codex root on a fresh clone.
 			if (!(await pathExists(root))) {
 				continue;
 			}
