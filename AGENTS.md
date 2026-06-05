@@ -2,7 +2,7 @@
 
 ## Skills Ecosystem
 
-This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
+This project uses a multi-agent skills ecosystem. Each skill has a defined role and handoff points; most carry a dedicated persona — utility skills (ADR-0046) carry none and run in the invoking persona's voice. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
 
 The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.prism/SPEC.md`. Start there if you're unsure where a decision belongs.
 
@@ -51,6 +51,10 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 **Onboarding intent routing:**
 
 - When the user says "onboard this repo", "set up PRISM here", "configure PRISM for my team", "Atlas onboard", or any first-install / re-onboarding phrase, invoke `prism-onboarding` (Atlas). Atlas detects the stack, generates per-team rules, writes `.ai-skills/config.json`, and populates stub anchors. Runs once per team install or on stack change.
+
+**Utility skills:**
+
+- `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
 
 **Skip auto-routing when:**
 
@@ -143,6 +147,8 @@ Evaluate these three signals:
 **When 2 or more signals fire**, include in the handoff:
 
 > "We've covered a lot of ground. I'd recommend opening a new chat for [next persona] — they'll have full context available and won't risk losing details from compression."
+
+Name `/prism-handoff` as the remedy alongside that recommendation — it compacts this session into a handoff document the fresh chat continues from. Suggest it in the closing message; never auto-invoke it.
 
 **When only 1 signal fires**, proceed normally — a single signal alone is not sufficient evidence of context pressure.
 

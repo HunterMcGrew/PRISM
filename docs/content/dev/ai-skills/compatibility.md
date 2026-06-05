@@ -14,6 +14,10 @@ The short version, before the prose:
 - **Cursor** reads from `.cursor/skills/` — tracked.
 - **Codex per-user skills** install to `~/.agents/skills/` via `pnpm prism:install-codex`. `.agents/` in the repo is fully ignored.
 
+## Persona vs utility skills
+
+Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona — `prism-handoff` is the first. Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
+
 ## Why the asymmetry exists
 
 PRISM is a multi-tool toolkit, but the four tools have different installation models. Some auto-load content directly from the repo (Claude Code, Cursor); some need content installed to the user's home directory before they can find it (Codex). Some files are team-wide (skill bodies, rules, architect docs); some are inherently per-user (Codex config with personality, projects, marketplaces).

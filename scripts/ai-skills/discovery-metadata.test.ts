@@ -17,6 +17,11 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 import {
+	buildCodexAgentToml,
+	buildRoleMap,
+	type RolesDefinitions,
+} from "./build";
+import {
 	escapeToml,
 	escapeTomlMultiline,
 	GENERATED_HEADER_LINE,
@@ -29,15 +34,6 @@ import {
 	parseFrontmatter,
 	pathExists,
 } from "./utils";
-
-interface RoleDefinition {
-	id: string;
-	persona: string;
-}
-
-interface RolesDefinitions {
-	skills: RoleDefinition[];
-}
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
@@ -89,7 +85,9 @@ test("every canonical skill has a matching role definition", async () => {
 	}
 	for (const role of roles.skills) {
 		assert.ok(role.id, "Role missing id field");
-		assert.ok(role.persona, `Role '${role.id}' missing persona field`);
+		if (role.type !== "utility") {
+			assert.ok(role.persona, `Role '${role.id}' missing persona field`);
+		}
 	}
 });
 
@@ -188,6 +186,105 @@ test("escapeTomlMultiline escapes backslash and triple-quote but preserves newli
 	assert.equal(escapeTomlMultiline("backslash: \\"), "backslash: \\\\");
 	assert.equal(escapeTomlMultiline('triple: """end'), 'triple: \\"\\"\\"end');
 	assert.equal(escapeTomlMultiline("line one\nline two"), "line one\nline two");
+});
+
+test("buildRoleMap accepts a utility entry with no persona", () => {
+	const definitions: RolesDefinitions = {
+		skills: [
+			{ id: "prism-code-dev", persona: "Clove" },
+			{ id: "prism-handoff", type: "utility" },
+		],
+	};
+	const roleMap = buildRoleMap(definitions);
+	assert.equal(roleMap.get("prism-handoff")?.type, "utility");
+	assert.equal(roleMap.get("prism-code-dev")?.persona, "Clove");
+});
+
+test("buildRoleMap rejects a persona-less entry that is not a utility", () => {
+	assert.throws(
+		() => buildRoleMap({ skills: [{ id: "prism-mystery" }] }),
+		/persona unless type is "utility"/
+	);
+});
+
+test("buildRoleMap rejects a utility entry that carries a persona", () => {
+	assert.throws(
+		() =>
+			buildRoleMap({
+				skills: [{ id: "prism-handoff", persona: "Ghost", type: "utility" }],
+			}),
+		/must not carry a persona/
+	);
+});
+
+test("buildRoleMap rejects an unrecognized type value", () => {
+	// Built via JSON.parse to mirror the production path — roles.json arrives
+	// as an unchecked cast, so a typo'd discriminator reaches buildRoleMap at
+	// runtime even though the compile-time union forbids it.
+	const definitions = JSON.parse(
+		'{"skills": [{"id": "prism-mystery", "persona": "Ghost", "type": "utilty"}]}'
+	) as RolesDefinitions;
+	assert.throws(() => buildRoleMap(definitions), /unrecognized type 'utilty'/);
+});
+
+test("buildCodexAgentToml opens with the persona line for persona entries", () => {
+	const toml = buildCodexAgentToml({
+		codexSkillMarkdown: "# Skill body",
+		description: "A persona skill.",
+		roleDefinition: { id: "prism-code-dev", persona: "Clove" },
+		skillId: "prism-code-dev",
+		tokenMap: new Map(),
+	});
+	assert.match(toml, /You are Clove\./);
+});
+
+test("buildCodexAgentToml omits the persona line when persona is absent", () => {
+	const toml = buildCodexAgentToml({
+		codexSkillMarkdown: "# Skill body",
+		description: "A utility skill.",
+		roleDefinition: { id: "prism-handoff", type: "utility" },
+		skillId: "prism-handoff",
+		tokenMap: new Map(),
+	});
+	assert.doesNotMatch(toml, /You are /);
+	assert.match(toml, /Canonical skill source: \.ai-skills\/skills\/prism-handoff/);
+});
+
+test("utility skills generate skill adapters but no codex agent adapter", async () => {
+	const pathDefinitions = await loadPathDefinitions(repoRoot);
+	const roles = await loadRoleDefinitions();
+	const utilityIds = roles.skills
+		.filter((role) => role.type === "utility")
+		.map((role) => role.id);
+	const skillRoots = [
+		pathDefinitions.generated.claudeSkillsRoot,
+		pathDefinitions.generated.codexSkillsRoot,
+		pathDefinitions.generated.cursorSkillsRoot,
+	];
+	for (const utilityId of utilityIds) {
+		for (const relative of skillRoots) {
+			const root = path.join(repoRoot, relative);
+			// Skip platforms whose skills root doesn't exist locally — e.g. the
+			// gitignored Codex root on a fresh clone.
+			if (!(await pathExists(root))) {
+				continue;
+			}
+			const bodyPath = path.join(root, utilityId, "SKILL.md");
+			assert.ok(
+				await pathExists(bodyPath),
+				`Missing generated skill adapter at ${bodyPath}`
+			);
+		}
+		const agentTomlPath = path.join(
+			repoRoot,
+			pathDefinitions.generated.codexAgentsRoot,
+			`${utilityId}.toml`
+		);
+		assert.ok(
+			!(await pathExists(agentTomlPath)),
+			`Utility skill '${utilityId}' must not have a codex agent adapter at ${agentTomlPath}`
+		);
+	}
 });
 
 test("generated codex agent TOML files start with the managed header", async () => {

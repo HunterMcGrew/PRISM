@@ -71,6 +71,10 @@
 		{
 			"id": "prism-surface-audit",
 			"persona": "Zoe"
+		},
+		{
+			"id": "prism-handoff",
+			"type": "utility"
 		}
 	]
 }

@@ -39,12 +39,13 @@ import {
 	writeFileIfChanged,
 } from "./utils";
 
-interface RoleDefinition {
+export interface RoleDefinition {
 	id: string;
-	persona: string;
+	persona?: string;
+	type?: "persona" | "utility";
 }
 
-interface RolesDefinitions {
+export interface RolesDefinitions {
 	skills: RoleDefinition[];
 }
 
@@ -115,7 +116,7 @@ function buildSkillMarkdown({
 	return substituteTokens(assembled, tokenMap);
 }
 
-function buildCodexAgentToml({
+export function buildCodexAgentToml({
 	codexSkillMarkdown,
 	description,
 	roleDefinition,
@@ -130,10 +131,14 @@ function buildCodexAgentToml({
 	].join("\n");
 
 	const substitutedDescription = substituteTokens(description, tokenMap);
-	const substitutedPersona = substituteTokens(roleDefinition.persona, tokenMap);
+	// Utility entries carry no persona — the adapter opens with the skill
+	// source line instead of a "You are X." identity.
+	const substitutedPersona = roleDefinition.persona
+		? substituteTokens(roleDefinition.persona, tokenMap)
+		: undefined;
 
 	const developerInstructions = [
-		`You are ${substitutedPersona}.`,
+		...(substitutedPersona ? [`You are ${substitutedPersona}.`] : []),
 		`Canonical skill source: .ai-skills/skills/${skillId}`,
 		"Follow this generated skill definition:",
 		"",
@@ -632,6 +637,45 @@ async function removeDeletedManagedAgentFiles(
 	}
 }
 
+/**
+ * Validates role entries and indexes them by skill ID.
+ *
+ * Persona entries require a persona name; utility entries (type: "utility")
+ * validate with id alone — they have no persona to require.
+ */
+export function buildRoleMap(
+	roleDefinitions: RolesDefinitions
+): Map<string, RoleDefinition> {
+	const roleMap = new Map<string, RoleDefinition>();
+	for (const role of roleDefinitions.skills ?? []) {
+		// The registry arrives through an unchecked JSON cast, so the
+		// discriminator is validated here — an unrecognized value would
+		// otherwise fall through to persona semantics silently.
+		if (
+			role.type !== undefined &&
+			role.type !== "persona" &&
+			role.type !== "utility"
+		) {
+			throw new Error(
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", or omit type.`
+			);
+		}
+		if (!role.id || (role.type !== "utility" && !role.persona)) {
+			throw new Error(
+				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".'
+			);
+		}
+		if (role.type === "utility" && role.persona) {
+			throw new Error(
+				`Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`
+			);
+		}
+		roleMap.set(role.id, role);
+	}
+
+	return roleMap;
+}
+
 async function main(): Promise<void> {
 	const pathDefinitions = await loadPathDefinitions(repoRoot);
 	const roleDefinitions = await loadJsonFile<RolesDefinitions>(
@@ -681,15 +725,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	const roleMap = new Map<string, RoleDefinition>();
-	for (const role of roleDefinitions.skills ?? []) {
-		if (!role.id || !role.persona) {
-			throw new Error(
-				"Each role in .ai-skills/definitions/roles.json must include id and persona."
-			);
-		}
-		roleMap.set(role.id, role);
-	}
+	const roleMap = buildRoleMap(roleDefinitions);
 
 	const skillIds = await listDirectories(sourceSkillsRoot);
 	const knownSkillIds = new Set(skillIds);
@@ -785,7 +821,7 @@ async function main(): Promise<void> {
 			);
 		}
 
-		if (optedIn.codexAgents) {
+		if (optedIn.codexAgents && roleDefinition.type !== "utility") {
 			const description =
 				skillSource.frontmatterMap.get("description") ??
 				`Generated codex agent adapter for ${skillId}.`;
@@ -899,7 +935,12 @@ async function main(): Promise<void> {
 		checkMode,
 		changedPaths
 	);
-	await removeDeletedManagedAgentFiles(targetRoots.codexAgents, knownSkillIds);
+	// Utility skills never own an agent adapter, so their IDs are excluded
+	// here — a skill that flips to utility gets its stale .toml cleaned up.
+	const agentSkillIds = new Set(
+		[...knownSkillIds].filter((id) => roleMap.get(id)?.type !== "utility")
+	);
+	await removeDeletedManagedAgentFiles(targetRoots.codexAgents, agentSkillIds);
 
 	const literalGuardRoots = [
 		targetRoots.claude,

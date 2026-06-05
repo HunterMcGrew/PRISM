@@ -1,0 +1,9 @@
+name: prism-handoff
+description: >
+  Compact the current session into a scoped handoff document a fresh agent can
+  continue from — same persona or a different one. Flushes plan-worthy state
+  into the branch plan first, then writes only the session residue to a unique
+  path under the OS temp dir and reports that path back. Explicit
+  /prism-handoff invocation; no persona — runs in the current persona's voice.
+  Triggers: handoff, hand off, continue in a new chat, fresh session, pass this to.
+argument-hint: "[scope and/or target — e.g. 'story 4' or 'clove: implement story 4.1']"

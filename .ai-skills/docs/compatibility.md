@@ -26,7 +26,13 @@ Minimum tool versions are tracked in each tool's own setup docs; PRISM targets t
 
 Plus the platform content copies — `.prism/{rules,architect,spec,templates,references}/` and `.prism/SPEC.md` mirror into each platform's namespace (`.claude/`, `.codex/`, `.cursor/`).
 
+The `.codex/agents/<id>.toml` row applies to persona skills only — see the subsection below.
+
 `paths.json` is the authoritative source for the destination strings. Don't hardcode them elsewhere.
+
+### Persona vs Utility skills
+
+Most skills are personas; a skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`). Utility skills generate skill adapters in all three runtimes — `.claude/skills/<id>/`, `.agents/skills/<id>/`, `.cursor/skills/<id>/` — but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X. The build skips `.codex/agents/<id>.toml` for utility entries and removes a stale one if a skill flips type. See [ADR-0046](../../.prism/spec/adrs/0046-persona-vs-utility-skill-type.md).
 
 ## Per-Tool Directory Ownership
 
