@@ -284,6 +284,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Plan gained sub-PR 4.3 (issue `#77`, `prism-review-loop` utility skill) — Goal now reads three ordered sub-PRs. Winston caught the issue draft's plain-multiline frontmatter re-tripping the parseFrontmatter truncation lesson; folded-scalar fix + skill-authoring.md promotion folded into the tasks. AC extended with 4.3 criteria; dry-run AC pre-satisfied via PR `#78`'s hand-run gauntlet.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Implemented 4.3 tasks 2–7, commit-per-task — registry entry + skill sources (folded-scalar divergence only), parseFrontmatter constraint promoted into skill-authoring.md § Description field shape, both utility-skill doc surfaces updated, platform outputs regenerated. Zero pipeline edits and zero new tests, per the ADR-0046 contract; `prism:check` + `prism:test` green, 137/137. All five open 4.3 AC items verified and ticked.
 - 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Briar self-review pass 1 (PR `#85`) — zero findings. shared.md byte-diffed identical to the issue `#77` draft, frontmatter divergence confirmed sole, the skill-authoring rule's parseFrontmatter claims source-verified, tree-wide sweep found no stale utility enumerations; checks green at HEAD. Self-review phase closes at zero findings; verdict sub-bullets on the 4.3 Decisions deferred to Winston's task-8 close.
+- 2026-06-05 [hmcgrew/prism-wave4.3-review-loop-skill]: Eric gauntlet PR-review pass 1 — no Critical/Major, two Minors (stale "first utility skill" ordinal in `docs/content` compatibility doc; bare git-conventions citations in the review-loop skill body); labels `effort:glance` + `review:has-minors`, PR stays draft. Clove fix pass 3: both fixed, AC source-match wording adjusted with Hunter's acceptance; `prism:check` + `prism:test` green, 137/137. Both recorded in Review Issues as `fixed`.
 
 ---
 
@@ -387,6 +388,24 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - **Problem:** Summary said "Five new tests" and the checklist "135/135" after `d5daf65` added the sixth test (136/136) — a per-push body-sync miss; squash-merge would freeze the stale counts into main history.
 - **Suggested fix:** Sync the agent-owned sections on the next push. The Notes manual-QA bullet is user-owned/seed-once — Hunter may clear it now that the 2026-06-05 invocation verified both items.
 
+### Published compatibility doc carries a stale utility-skill ordinal
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 3 — reworded to the example form (`e.g. prism-handoff, prism-review-loop`), matching the canonical doc's count-rule-safe phrasing
+- **File:** `docs/content/dev/ai-skills/compatibility.md:19`
+- **Problem:** The published doc said "`prism-handoff` is the first" utility skill — a roster claim this PR's second utility skill makes false on arrival; the 4.3 tree-wide sweep covered `.prism/`/`.ai-skills/` but not `docs/content/`.
+- **Suggested fix:** Example form per `writing-voice.md` § Count rules, not numbers — done this pass.
+
+### Review-loop skill body cites git-conventions without a resolvable path
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** gauntlet fix pass 3 — both citations expanded to `` `.prism/rules/git-conventions.md` § ... `` in canonical shared.md; platform outputs regenerated
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:10,54`
+- **Problem:** Bare `git-conventions § ...` citations give the runtime agent no path to the rule, unlike peer skill bodies that cite the full `.prism/rules/` path.
+- **Suggested fix:** Expand both citations; AC "sole divergence" wording adjusted with Hunter's acceptance (see AC Adjustments) since this is a second documented divergence from the issue `#77` draft — prose amendment sanctioned by the verbatim-shipment Decision.
+
 ---
 
 ## Acceptance Criteria
@@ -414,7 +433,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 - [x] The `#2042` deferral's post-`#2047` end-state guidance is durably recorded (originally as a wave-3 plan annotation per task 4.1-9; superseded when PR `#75` closed that epic and deleted its plan — the guidance now lives in this plan's Scope boundary and Decisions).
 - [x] ADR-0046 exists, records the rejected alternatives, and is indexed. (Both surfaces; index gap for 0027–0045 is pre-existing — see Cleanup Items.)
 - [x] `pnpm prism:check` and `pnpm prism:test` green after sub-PR 4.3 (Verified 2026-06-05: both green at implementation HEAD, 137/137 tests.)
-- [x] 4.3 skill source matches the issue `#77` drafts, with the frontmatter description's YAML scalar style as the sole, documented divergence (REQ — see Decisions) (Verified 2026-06-05: shared.md verbatim; frontmatter line content identical, only `description: >` added.)
+- [x] 4.3 skill source matches the issue `#77` drafts, with documented divergences only: the frontmatter description's YAML scalar style and the review-amended citation paths in shared.md (REQ — see Decisions and Review Issues) (Verified 2026-06-05: shared.md otherwise verbatim; frontmatter line content identical, only `description: >` added; citation amendment accepted by Hunter in the Eric pass-1 fix.)
 - [x] Every always-loaded surface that enumerates utility skills (AGENTS.md, skills-ecosystem.md) names `prism-review-loop` (Verified 2026-06-05: AGENTS.md roster bullet + skills-ecosystem § Utility skills, canonical + install seed + regenerated mirrors.)
 - [x] The wave-4 plan carries a sub-PR 4.3 section referencing issue `#77`; Goal reads three ordered sub-PRs (issue `#77` done condition — satisfied at plan write, 2026-06-05)
 
@@ -422,6 +441,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 
 - 2026-06-04 (Briar): Re-pointed the `#51` done-condition bullet from `prism-code-dev/shared.md` (which has no Tier 1 list) to `.prism/references/session-close.md`'s universal-load-set enumeration — matches what was actually built and verified. See Review Issues.
 - 2026-06-04 (Clove): **Status: accepted** (Hunter, 2026-06-04, post-`#76`-merge). Task 4.1-9's bullet ("Wave-3 plan's `#2042` deferral carries the annotation") became unsatisfiable when PR `#75` closed the wave-3 epic and deleted its plan after the annotation was committed. Rewrote the bullet to name the surviving durable record (this plan's Scope boundary + Decisions; branch history `1442c5b`). No implementation rides on this.
+- 2026-06-05 (Clove): **Status: accepted** (Hunter, 2026-06-05, Eric pass-1 fix). Reworded the 4.3 source-match bullet from "YAML scalar style as the sole, documented divergence" to "documented divergences only" (scalar style + review-amended citation paths in shared.md) — Eric's citation-path Minor is a prose amendment the verbatim-shipment Decision sanctions, but it makes a second divergence the AC wording had ruled out.
 
 ### AC Sync Log
 
@@ -431,6 +451,7 @@ Second utility skill; the proof of the wave's zero-pipeline-edit contract (ADR-0
 | 2026-06-04 | Briar | Refined AC from 4.1 self-review (re-pointed `#51` third leg; ticked verified items) | updated | N/A — no Linear ticket (phase work) |
 | 2026-06-04 | Clove | Task-9 adjustment accepted by Hunter; ticked 4.2 items verified by build + tests | updated | N/A — no Linear ticket (phase work) |
 | 2026-06-05 | Winston | Generated 4.3 AC (issue `#77` done conditions; dry-run item pre-satisfied) | updated | N/A — no Linear ticket (phase work) |
+| 2026-06-05 | Clove | Citation-divergence adjustment accepted by Hunter; source-match bullet reworded | updated | N/A — no Linear ticket (phase work) |
 
 ---
 

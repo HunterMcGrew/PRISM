@@ -8,8 +8,8 @@ exactly as if invoked by hand.
 1. **Self-review loop** — invoke the self-review persona on the branch. Every
    finding, any severity (critical, major, minor, nit, cleanup), goes to the
    implementation persona to fix — review-fix commits stay separate per
-   git-conventions § Commit Granularity. Re-run self-review. Repeat until a
-   pass returns zero findings.
+   `.prism/rules/git-conventions.md` § Commit Granularity. Re-run
+   self-review. Repeat until a pass returns zero findings.
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
    Findings → fixes → re-review, until a zero-findings pass.
 3. **Cleaner paths** — non-blocking by design; they never gate the
@@ -51,4 +51,5 @@ Produce the scoreboard TLDR: a per-persona table of passes and what each found
 or fixed, plus totals — review passes, fix passes, issues found/fixed by
 severity, cleaner paths implemented/rejected/parked. The PR stays draft; tell
 the user it is ready for human testing and review. Merging and flipping
-ready-for-review remain the human's call (git-conventions § Who merges).
+ready-for-review remain the human's call (`.prism/rules/git-conventions.md`
+§ Who merges).

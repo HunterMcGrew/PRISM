@@ -16,7 +16,7 @@ The short version, before the prose:
 
 ## Persona vs utility skills
 
-Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona — `prism-handoff` is the first. Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
+Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`, `prism-review-loop`). Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
 
 ## Why the asymmetry exists
 
