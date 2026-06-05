@@ -26,7 +26,12 @@
 	},
 	"deferred": [],
 	"archived": {
-		"lessons": [],
+		"lessons": [
+			{
+				"title": "On Windows, the Write tool's `/tmp/` resolves to `D:/tmp/`, not the OS temp dir",
+				"archived_at": "2026-06-05T21:52:00Z"
+			}
+		],
 		"plans": []
 	}
 }
