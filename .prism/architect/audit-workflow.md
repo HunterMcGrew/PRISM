@@ -138,7 +138,7 @@ Field semantics:
 - **`deferred`** — array of objects: `{ "item": "<plan-path>:<decision-index>", "reason": "<user-supplied string>", "deferred_at": "<ISO 8601>" }`. Items the user explicitly chose to defer during a run — Zoe re-prompts these on the next run after their deferral grace period elapses.
 - **`archived`** — object with two arrays:
   - **`lessons`** — entries that have been moved to `.prism/lessons-archive.md`. Each entry: `{ "title": "<lesson title>", "archived_at": "<ISO 8601>" }`.
-  - **`plans`** — plans that have been closed and deleted after Zoe's audit confirmed all Decisions were promoted or archived. Each entry: `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
+  - **`plans`** — plans that have been closed after Zoe's audit confirmed all Decisions were promoted or archived (the plan files are preserved at close — ADR-0047). Each entry: `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
 
 ### Migration
 

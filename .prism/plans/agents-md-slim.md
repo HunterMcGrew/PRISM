@@ -61,6 +61,7 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
   - Chosen approach: keep `§0` table in AGENTS.md, tighten the signal-phrases column where verbose, leave the routing logic intact.
   - Implementation guidance: don't touch the User intent / Invoke columns. Trim long signal phrases to representative examples. Authors-ship-reviewers-review paragraph stays — it's the load-bearing variant note.
   - → no promotion needed (architecture invariant — lives in the plan and the routing-table preamble itself).
+  - **Zoe verdict (2026-06-05):** `live` — issue #64 in progress — Slice 1 merged (PR #66), Slices 2–4 pending (AGENTS.md still 241 lines); decision still governs the remaining work.
 
 - **Why `§9` cuts entirely.** The Skill Roster + Cross-skill Handoffs tables in `skills-ecosystem.md` are richer and canonical. `§9` is a thin restatement that gets out of sync the moment either file edits.
   - Root cause: `§9` was added before `skills-ecosystem.md` had its current depth. The slim moves AGENTS.md to a pointer.
@@ -68,6 +69,7 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
   - Chosen approach: move the 11 handoff-language quotes into `skills-ecosystem.md § Cross-skill Handoffs` as a new "Handoff phrases" sub-section, then replace `§9` with a one-line citation.
   - Implementation guidance: preserve the handoff-phrase quotes verbatim — they're tested phrasing. Don't editorialize them in the move.
   - → no promotion needed (cleanup, content moves to existing canonical home).
+  - **Zoe verdict (2026-06-05):** `live` — issue #64 in progress — Slice 1 merged (PR #66), Slices 2–4 pending (AGENTS.md still 241 lines); decision still governs the remaining work.
 
 - **Scatter (one rule per concern), not bundle.** Each externalized behavioral norm gets its own Tier 1 rule file in `.prism/rules/`.
   - Root cause: the question is whether one edit unit (bundle) or many (scatter) better serves how these norms are read, cited, and evolved.
@@ -75,11 +77,14 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
   - Chosen approach: scatter — ~9 short rule files (~10–30 lines each). Matches existing Tier 1 pattern (`code-comments.md`, `code-standards.md`, `branch-plan.md` are separate files, not bundled into `code-norms.md`). Per-session load cost is identical either way.
   - Implementation guidance: Slice 2 creates one file per norm. Each file applies `.prism/rules/writing-voice.md`, includes a `## Purpose` section, a `**Why:**` line, a `**How to apply:**` line, and (where applicable) a `## Who runs this rule` section. Cite by `.prism/rules/<file>.md` path, never `AGENTS.md §N`.
   - → no promotion needed (planning decision, lives in this plan; the resulting rule files are themselves the durable surface).
+  - **Zoe verdict (2026-06-05):** `live` — issue #64 in progress — Slice 1 merged (PR #66), Slices 2–4 pending (AGENTS.md still 241 lines); decision still governs the remaining work.
 
 - **Token economics.** Externalizing short sections does not save chat-load tokens — AGENTS.md is loaded every chat, and Tier 1 rules are also loaded every chat. The win is structural: cleaner authority hierarchy (rules live in `.prism/rules/`, not in the agent-behavior-router file), better scannability of AGENTS.md, and ability for other personas to cite a specific rule by path rather than "AGENTS.md `§5`."
   - → no promotion needed (planning rationale, not a durable invariant).
+  - **Zoe verdict (2026-06-05):** `live` — issue #64 in progress — Slice 1 merged (PR #66), Slices 2–4 pending (AGENTS.md still 241 lines); decision still governs the remaining work.
 
 - **OPEN — TBD, needs Hunter input.** Slice 4 §N numbering: whether AGENTS.md `§§ 1–6` keep their section numbering as discovery shells (each body becomes a one-line citation to `.prism/rules/<file>.md`), or shed numbering entirely so the file is structured around `.prism/rules/<file>.md` citations alone. **Default path (used until resolved):** keep numbering. Preserves existing in-tree `AGENTS.md §N` cross-references; less disruption to Slice 4 execution. Trade-off: shedding numbering aligns more cleanly with the externalization direction (rules live in `.prism/rules/`, AGENTS.md doesn't number-own them), but expands Slice 4 task #4 and Briar self-review task #5 to sweep and rewrite existing `AGENTS.md §N` references across `.prism/`, `.claude/`, `.codex/`, `.cursor/`.
+  - **Zoe verdict (2026-06-05):** `live` (open-question, not yet stale) — OPEN since 2026-05-28 (8 days, under the 30-day threshold); default path (keep numbering) carries Slice 4.
 
 ---
 

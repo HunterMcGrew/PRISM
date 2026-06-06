@@ -24,12 +24,6 @@ This file is for the **PRISM toolkit's own evolution** — patterns about how th
 
 PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The original `lessons.md` carried 200+ lines of Thrive-specific corrections that don't apply outside Thrive. Phase 1 prune cleared them out. New lessons accumulate from PRISM development going forward.
 
-## On Windows, the Write tool's `/tmp/` resolves to `D:/tmp/`, not the OS temp dir
-
-**Why:** 2026-05-03 — wrote a PR body to `/tmp/pr1-body-new.md` via the Write tool, then `gh pr edit --body-file /tmp/...` failed with "system cannot find the file specified" because gh resolved `/tmp/` to `C:\Users\<user>\AppData\Local\Temp\` (Windows OS temp). The Write tool had actually placed the file at `D:\tmp\` (literal `/tmp/` on the D drive). Cost one round trip to locate.
-
-**How to apply:** When passing files between the Write tool and a Windows-native CLI tool (`gh`, native git, etc.) on this dogfood install, use absolute Windows-style paths (`D:/...` or `C:/Users/.../Temp/...`) explicitly rather than relying on `/tmp/`. Or write the temp file inside the project tree (gitignored) so the path is unambiguous across tools.
-
 ## When updating cross-cutting docs, verify behavioral claims against current ADRs, not prior doc text
 
 **Why:** 2026-05-23 — README update for #32 preserved the line "`.prism/rules/` for cross-cutting standards loaded into every conversation" because the prior README said it. That phrasing predated ADR-0035 (2026-05-22, three-tier rule loading) and was no longer accurate — only Tier 1 rules load unconditionally; Tier 2 is path-scoped via `paths:` frontmatter and Tier 3 is skill-internal. Hunter caught it on the merged PR, forcing a follow-up (#33).
@@ -113,3 +107,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-05 (wave-4.2 follow-up filing) — Nora's create path takes its team and tracker from `skills-ecosystem.md § Project Context` ("use these identifiers — do not ask"), which token-substitutes from `.ai-skills/config.json`. The config declared Linear team `PRISM`; the workspace has no such team (actual teams: Thrive/THR, Space Station/SPA), and every prior follow-up in the repo (#77, #73, #64, …) is a GitHub issue. Filing on the configured identifiers would have failed outright or landed six tickets in a tracker nobody watches. Caught by two cheap pre-write reads: the Linear `get_user` team list and `gh issue list` precedent. Same exists-vs-honored family as the mirror-consumption lesson above — a config value that exists is not a config value that's true. Config fix routed to issue #79.
 
 **How to apply:** Before the first shared-state write of a session that leans on Project Context identifiers (team, repo, workspace, tracker), verify them against the live system — one read of the actual team/repo list plus a glance at where prior tickets of the same kind actually live. "Do not ask" governs asking the *user*; it doesn't forbid verifying against the *API*. If config and reality disagree, follow reality, surface the mismatch, and file the config fix rather than patching around it silently.
+
+## A first cadence audit's dominant verdict is archive-candidate-by-the-bucket — the real action is routing close-outs, not annotating harder
+
+**Why:** 2026-06-05 — Zoe's first full audit found 14 of 21 plans shipped-but-never-closed, so 119 of 138 Decision verdicts were the same `archive-candidate` with plan-level evidence. Two procedure gaps surfaced that `audit-workflow.md` doesn't cover: (a) a plan closed the *same day* with its own verdict gate (wave-4) — re-annotating it adds noise, skip it and note the skip in the report; (b) on the first run ever, every lesson is technically "on its first audit," so the new-lesson grace period would block archiving even a 33-day-old unreferenced entry — age + reference-absence is the intent, first-run literalism isn't.
+
+**How to apply:** When a plan's whole epic shipped, issue uniform per-Decision verdicts with the plan-level evidence and route the close-out to Winston rather than crafting per-Decision narratives. Skip re-annotation on plans closed within the current audit window. Read the lesson grace period as "young lessons are safe," not "nothing archives on run one."
+
+## Meta-mentions of token syntax break the build in copied content areas
+
+**Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
+
+**How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied).

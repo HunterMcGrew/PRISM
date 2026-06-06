@@ -1,5 +1,7 @@
 # Plan: epic-prism-ren
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 2.6 — Ren (refactor scout persona). No parent Linear ticket; this is an internal PRISM phase tracked via the roadmap at `.prism/plans/roadmap.md`.
@@ -206,36 +208,50 @@ Verification: `pnpm prism:build` after task 31. Docs build succeeds, sidebar ren
   - **Alternatives considered:** absorb Ren into Theo as a second walk type with a mode flag.
   - **Chosen approach:** separate persona. The intent, output type, and posture toward existing code diverge enough that a mode flag would muddle both personas' workflows.
   - **Implementation guidance:** keep Theo's and Ren's state files, step files, and architect docs cleanly separate. Cross-link in docs; never share runtime state.
+  - → promoted to ADR-0042 (authored during this epic)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **Ren is a separate persona from Winston.**
   - **Root cause:** Winston reacts to ideas presented by the user (evaluate this approach, plan this work). Ren proactively hunts for ideas the user hasn't named yet.
   - **Alternatives considered:** absorb Ren into Winston as a third mode (evaluate / plan / scout).
   - **Chosen approach:** separate persona. The proactive-vs-reactive split is a different operating mode; collapsing them would force one persona to context-switch between asking-the-user-what-to-do and telling-the-user-what's-wrong.
   - **Implementation guidance:** Ren hands off to Winston after the refactor plan lands. Winston then writes `## Implementation Tasks` per the detail bar and routes to Clove.
+  - → no promotion needed (the proactive-vs-reactive boundary is recorded in ADR-0042's reasoning)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **Refactor plans land as plan files at `.prism/plans/refactor-<slug>.md`, NOT HTML reports.**
   - **Root cause:** PRISM's plan-file-as-source-of-truth convention is already established. Every downstream persona (Winston, Clove, Briar, Eric) reads plan files. An HTML report would require hand-translation.
   - **Alternatives considered:** HTML report with embedded ASCII wireframes and a "copy to plan" button.
   - **Chosen approach:** plan file. Removes a translation step and keeps Ren's output inside the same lineage every other PRISM artifact lives in.
   - **Implementation guidance:** the plan file uses the branch-plan.md template with `## Goal`, `## Decisions`, and `## Implementation Tasks` populated. Winston picks it up unchanged.
+  - → no promotion needed (codified in the skill's output contract; instance of the plan-file-as-source-of-truth convention, ADR-0001)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **Ren hands off to Clove after the refactor plan is accepted, not during grill.**
   - **Root cause:** grill is a design conversation; implementation is a separate phase. Mixing them would compress the five-pass grilling loop and lose the "did we really need this?" pressure that justifies the persona.
   - **Alternatives considered:** Ren writes implementation tasks inline during grill pass 4.
   - **Chosen approach:** three-hop chain — Ren scouts → Winston plans → Clove executes. Each persona owns one phase.
   - **Implementation guidance:** step-07-plan leaves `## Implementation Tasks` as a stub heading. Winston populates it on the next invocation.
+  - → no promotion needed (the three-hop chain is codified in the skill's handoff section)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **State file schema lives in `.prism/architect/ren-state.md`, not duplicated across step files.**
   - **Root cause:** schema drift is the predictable failure mode if every step file restates the shape. Phase 1.5e's cite-don't-restate rule already covers this class of mistake.
   - **Alternatives considered:** inline the schema in each step file that reads or writes state.
   - **Chosen approach:** single source at `.prism/architect/ren-state.md`. Every step file cites it.
   - **Implementation guidance:** when the schema evolves, edit only `ren-state.md`; downstream cites pick up the change automatically.
+  - → no promotion needed (single-source intent held, but implementation diverged from this decision: the shipped schema lives at `.prism/skills/prism-refactor-scout/lib/state.md` — the skill's lib, matching Theo's pattern — not the planned `.prism/architect/ren-state.md`, which was never created; the skill's step files cite the shipped path)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **Step files use the micro-file step machine pattern with `stepsCompleted` frontmatter.**
   - **Root cause:** absorbed from BMAD via Phase 1.5e. The pattern keeps each step under 100 lines and gives the resume detector a clean cursor.
   - **Alternatives considered:** one monolithic workflow file with section anchors.
   - **Chosen approach:** eight micro-files. Resume detection reads the frontmatter cursor; no need to parse section state.
   - **Implementation guidance:** each step file ≤100 lines; `stepsCompleted` lists the prior steps in order.
+  - → no promotion needed (instance of `.prism/references/micro-file-step-machine.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 - **The `<!-- atlas:specializes-in -->` anchor lives in the Heuristics section of shared.md.**
   - **Root cause:** Ren's friction signals are universal across stacks (shallow modules, leaky seams, deletion test). Specific signals — WordPress block patterns, React RSC/client boundaries, Django ORM N+1 — differ per team. Atlas needs a clean insertion point.
   - **Alternatives considered:** scatter team-specific signals through the step files; require Atlas to patch step-02-explore directly.
   - **Chosen approach:** single anchor in shared.md § Heuristics. Atlas injects team-specific signals there, leaving step files untouched.
   - **Implementation guidance:** the anchor sits at the end of § Heuristics. Atlas appends new bullets between the anchor and the section's closing marker.
+  - → no promotion needed (instance of the anchor-substitution convention in `.prism/architect/anchor-substitution.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Ren shipped — `.ai-skills/skills/prism-refactor-scout/`, ADR-0042, `docs/content/dev/ai-skills/ren.md` all exist; plan never closed.
 
 ---
 
@@ -279,6 +295,8 @@ _(none yet)_
 ## History
 
 - 2026-05-22 [main]: Plan created. Phase 2.6 — Ren as the refactor scout persona, four sub-PRs (skill scaffold + step files + state schema + ADR/dev doc), depends on Atlas (Phase 2) and Phase 1.5e patterns (deletion test, two-adapters seam, micro-file step machine, strength badges), parallel-safe with Theo (Phase 2.5) and Parker (Phase 3).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out — implementation shipped by 2026-05-27 (`prism-refactor-scout` skill, ADR-0042, `ren.md` dev doc) but History was not maintained during implementation. Verdict gate run on all 7 Decisions; ADR-0042 promotion recorded, rest codified in references/architect docs. See `.prism/plans/audit-2026-06-05-closeout.md`.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Briar self-review corrected two verdict citations — state schema's shipped home is the skill's `lib/state.md` (not the planned architect-doc path), and the skills-ecosystem roster citation was dropped (Ren has no roster entry; gap filed as follow-up).
 
 ---
 

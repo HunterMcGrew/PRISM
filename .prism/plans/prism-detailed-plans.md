@@ -1,5 +1,7 @@
 # Plan: prism-detailed-plans
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 No Linear ticket — meta improvement to PRISM workflow. Out-of-phase work per Hunter direction (between Phase 1.5 PR #2 merge and Phase 1.5 PR #3 tokenization start).
@@ -16,6 +18,7 @@ Codify a high-detail bar for implementation-driving artifacts (Winston's `## Imp
 - 2026-05-03 [prism-detailed-plans]: Winston executed tasks 1-20 in one session under auto mode. Authored rule + ADRs 0033/0034 on both surfaces; updated Pixel/Winston/branch-plan/AGENTS/skills-ecosystem on both surfaces; ran `pnpm prism:build` clean (26 tests pass); `pnpm prism:check` and `pnpm prism:check-types` clean. ADR-0033 templates version intentionally drops the two `.prism/plans/...` reference lines from the dogfood version per the established pattern in PR #1 task #17 (templates ship to consumer teams without dogfood plan files) — diff result expected, not byte-identical for that file. ADR-0034 is byte-identical between surfaces. Also fixed mock-spec Status field options in Pixel skill template — replaced `Ready for implementation` with `Ready for Winston` to match the new routing.
 - 2026-05-04 [prism-detailed-plans]: Briar first-pass review opened on PR #3 — one minor flagged (UX Concern flow truncation in skills-ecosystem.md, missing final `→ Eric` in code block, pre-existing divergence). Winston added task #23 to the plan; Clove fixed both surfaces; build + check clean.
 - 2026-05-04 [prism-detailed-plans]: Eric caught the same Minor on Thrive's port that exists here too — `implementation-task-detail.md` § "All five states" re-enumerated states (`Default, empty, loading, error, success`) instead of citing Pixel's doctrine, drifting from Pixel's actual five (`empty, loading, error, partial/edge, success`). Winston applied the cite-don't-restate fix on both surfaces (canonical + templates), added a new `## Cite, don't restate, when overlapping existing framing` section to the rule codifying the principle, and slotted re-enumeration drift under the Major severity bar in `architect-doc-verification.md`. `pnpm prism:build` + `prism:check` clean (26 tests pass). Scope-fit per the active branch — same file PR #3 introduced, structurally same fix Thrive shipped, before the 2nd review pass.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out. Verdict gate run on all 5 Decisions (ADR-0033/0034 + rule promotions recorded); the state-wireframe-annotation Minor formally deferred. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
@@ -26,27 +29,37 @@ Codify a high-detail bar for implementation-driving artifacts (Winston's `## Imp
   - **Alternatives considered:** (a) Skill-level guidance only without a rule — gets diluted on every skill rewrite. (b) Rule but no examples — fails the same way as vague guidance. (c) Apply the bar uniformly across all artifacts including HTML mocks and inline sketches — kills mode 1's value as a quick riff.
   - **Chosen approach:** Universal rule at `.prism/rules/implementation-task-detail.md` with concrete good/bad examples drawn from existing detailed tasks. Applies to Winston's `## Implementation Tasks` and Pixel's mode 2 mock specs only. Mode 1 inline sketches and mode 3 HTML mocks explicitly exempt. Mirrored to templates surface.
   - **Implementation guidance:** Authored on this branch. Per ADR-0029, opens with applicability declaration and names personas (Winston, Pixel) in "Who runs this rule" section. Skills reference the rule by name (it's universal, not per-team — ADR-0029's prohibition doesn't apply).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5b shipped via PR #3 (2026-05-04); promoted to ADR-0033/0034; one Minor review issue still `open` — flagged in the audit report.
+  - → promoted to ADR-0033 and `.prism/rules/implementation-task-detail.md` (authored during this ticket)
 
 - **Pixel always routes to Winston for mode 2 specs. Direct-to-Clove path removed.**
   - **Root cause:** Pixel's design depth doesn't include architecture depth. The "does this design have architectural implications?" call lives outside her lane — she'll wave through new shared component candidates, server/client boundary issues, and data-flow couplings that Winston would catch. One wrong direct-route costs more in rework than always running Winston in light plan-mode.
   - **Alternatives considered:** (a) Keep Path B with stricter Pixel self-route checklist — still asks Pixel to make calls outside her lane. (b) Make Path B explicit-opt-in only — same problem, same risk. (c) Drop Pixel altogether and have Winston do design — loses Pixel's design depth.
   - **Chosen approach:** Always Pixel → Winston → Clove for mode 2 specs. Winston runs in plan-mode-only when Pixel flagged "no architectural concerns" — quick architecture verification pass against her spec, then writes `## Implementation Tasks`. No full evaluate ceremony. If Winston spots architecture Pixel missed, switches to evaluate mode and amends. Mode 1 inline sketches keep direct-back-to-Clove (mid-ticket gap-fill carve-out — those are conversational by design, not spec-class).
   - **Implementation guidance:** Update Pixel skill's "Handing off (conditional)" section to drop the "ready to build → hand straight to Clove" branch. Update "Where Pixel fits in the team flow" to reflect single path. Update Winston skill to add post-Pixel plan-mode-only path. Update AGENTS.md § 9 ownership table and skills-ecosystem.md § Cross-skill Handoffs.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5b shipped via PR #3 (2026-05-04); promoted to ADR-0033/0034; one Minor review issue still `open` — flagged in the audit report.
+  - → promoted to ADR-0034 (authored during this ticket)
 
 - **Pixel's mode 2 spec must give Winston enough fidelity to write detail-bar tasks without round-tripping for clarification.** This is the spec-side enforcement of the bar.
   - **Root cause:** If Winston has to come back to Pixel mid-plan for "what's the data flow" or "where does state live", the always-Winston rule degrades into churn instead of one clean handoff.
   - **Chosen approach:** Mock-spec template tightened. Wireframes annotate measurable units (Tailwind tokens like `text-lg`, `p-4`, `gap-2`, or explicit px/rem when a token doesn't fit). Each interaction cites the UI/UX principle that justifies it (Hick's, Fitts's, Miller's, Nielsen heuristic by number, Gestalt principle by name). All five states with annotated wireframes. Copy direction precise enough to write final strings without judgment. Keyboard flow, focus order, ARIA roles named. Reused components named with file paths. New section: `## Architectural inputs for Winston` covering data flow, fetch boundary, server/client classification, surfaced architectural concerns.
   - **Implementation guidance:** Update the mock-spec template in Pixel's skill source. Add new Definition of Done bullets for mode 2.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5b shipped via PR #3 (2026-05-04); promoted to ADR-0033/0034; one Minor review issue still `open` — flagged in the audit report.
+  - → promoted to `.prism/rules/implementation-task-detail.md` § How to apply — Pixel's mode 2 mock specs
 
 - **Mode 3 HTML mocks and Mode 1 inline sketches are exempt from the detail bar.** Bar applies to Mode 2 saved markdown specs and `## Implementation Tasks` only.
   - **Root cause:** Mode 1 is conversational by design — riffing in chat. Mode 3 is a visual preview, not a spec. Holding either to the implementation-grade bar would defeat their purpose.
   - **Chosen approach:** Bar limited to spec-class artifacts. Rule states the exemption explicitly so future reviewers don't try to apply the bar to inline sketches.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5b shipped via PR #3 (2026-05-04); promoted to ADR-0033/0034; one Minor review issue still `open` — flagged in the audit report.
+  - → no promotion needed (exemption codified in `implementation-task-detail.md` § When this rule applies)
 
 - **Cite, don't restate, when overlapping existing framing.** When a rule, ADR, architect doc, or skill section restates a concept defined elsewhere — a doctrine, an established enumeration — cite the source rather than re-enumerate. Re-enumeration drifts the moment either side moves; cited content can't.
   - **Root cause:** First-pass `implementation-task-detail.md` § "All five states" enumerated `Default, empty, loading, error, success` while Pixel's doctrine at `prism-pixel § States` says `empty, loading, error, partial/edge, success`. Three docs out of sync (rule, Pixel skill, mode 2 template) on the day the rule shipped — exactly the divergence-failure-mode the rule's bar already addresses, just upstream. Caught by Eric on Thrive's port; same drift exists here.
   - **Alternatives considered:** (a) Align the rule's enumeration to Pixel's doctrine (one-line fix, picks shorter side as canonical). (b) Add the principle as a standalone rule. (c) Add it under `branch-plan.md`. (d) Leave as a lesson for Winston.
   - **Chosen approach:** New `## Cite, don't restate, when overlapping existing framing` section in `implementation-task-detail.md` (the bar that committed the violation absorbs the principle that prevents it — same root cause as the bar, just upstream). Severity bar in `architect-doc-verification.md` extended to cover re-enumeration drift as a diverged claim. The rule's "All five states" line itself rewritten to cite Pixel's doctrine — eats its own dogfood.
   - **Implementation guidance:** When authoring a rule, ADR, architect doc, or skill section, if you find yourself enumerating a list and another doc already enumerates them, replace the list with `per [doc] § [section]`. At most a sentence of paraphrase for context.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5b shipped via PR #3 (2026-05-04); promoted to ADR-0033/0034; one Minor review issue still `open` — flagged in the audit report.
+  - → promoted to `implementation-task-detail.md` § Cite, don't restate and the severity extension in `architect-doc-verification.md`
 
 ---
 
@@ -187,7 +200,7 @@ Added by the architect skill (Winston). All tasks meet the detail bar codified i
 ### State wireframe annotation placement
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred` — deferred at plan close 2026-06-05; the preamble guidance is present and the gap is cosmetic scaffolding. Pick up only if a future Pixel spec demonstrably skips state annotations.
 - **File:** `.ai-skills/skills/prism-pixel/shared.md` (§ States, mock-spec template)
 - **Problem:** Task 9 specified adding annotation instructions "at the top of each `### <state>` subsection." The implementation placed a single paragraph above all states instead. Guidance is present but weaker scaffolding — the preamble isn't visible when an LLM is filling in state 4 or 5.
 - **Suggested fix:** Add a short one-liner inside each state subsection (e.g. `<!-- Annotate with Tailwind tokens; cite UI/UX principle for each choice. -->`), or keep the preamble and add inline reminders at each state heading.

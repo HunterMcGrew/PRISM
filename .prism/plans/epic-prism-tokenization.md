@@ -1,5 +1,7 @@
 # Plan: epic-prism-tokenization
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 1.5d — Tokenization + content cleanup. No Linear ticket; phase branch.
@@ -14,6 +16,7 @@ Run the originally-planned PR #3 (token substitution layer) and PR #4 (canonical
 
 - 2026-05-22 [main]: Plan created. Supersedes epic-phase-1-foundation.md tasks 13-28 which were authored pre-roadmap-revision. Tasks ported with paths refreshed for the post-Phase-1.5a bifurcated layout (`templates/claude/` → `templates/install/.prism/`) and re-sequenced behind Phase 1.5c backports.
 - 2026-05-22 [hmcgrew/prism-1.5d-tokenization-and-cleanup]: PR-1.5d implementation complete — substitution layer + literal-Thrive guard + allowlist landed, canonical sources and templates surface swept clean of identifiers, editorial cleanup per ADR-0032 added atlas stub anchors across persona sources, Problem-shape examples in architecture-doc-shape.md stubbed for Atlas to populate. Verification gates all green: `pnpm prism:build`, `pnpm prism:check`, `pnpm prism:check-types`, `pnpm prism:test`. Implemented across 5 sliced subagent dispatches (substitution infra → tokenization sweep → editorial canonical → editorial templates + stub anchor → docs final).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out. Verdict gate run on all 6 Decisions — durable content already lives in ADR-0030/0032, `anchor-substitution.md`, and the guard/allowlist implementation; no promotions outstanding. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
@@ -24,33 +27,45 @@ Run the originally-planned PR #3 (token substitution layer) and PR #4 (canonical
   - **Alternatives considered:** Keep PR #3 and PR #4 separate (preserves the original "one concern per PR" split); land tokenization first and backports second (forces double work); skip the literal-Thrive guard until Phase 2 (defers the safety net to Atlas).
   - **Chosen approach:** One sweep, two concerns (mechanical substitution + editorial cleanup). Both touch the same canonical sources and the same templates surface — the file set overlaps near-completely, so doing them in one pass cuts churn. The literal-Thrive guard lands here so any backport drift gets caught at build time before Phase 2.
   - **Implementation guidance:** Substitution layer lands first (tasks 1–4), then the literal-Thrive guard (task 5), then the editorial sweeps on canonical sources (tasks 6–11) and templates (tasks 12–13), then verification (task 14).
+  - → no promotion needed (PR sequencing tactic)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 - **Allowlist mechanism: file-level entries in `.ai-skills/definitions/literal-allowlist.json`.** Path-prefix matching; a file under an allowlisted path is exempt entirely.
   - **Root cause:** Frozen incident citations (`lessons.md`, originating-incident ADRs) must legitimately contain literal `THR-NNNN` IDs and references to "Thrive" by name. A line-level allowlist (file:line entries) is brittle because lines drift; a wildcard-glob allowlist is too loose because it hides accidental drift.
   - **Alternatives considered:** Line-level allowlist (drifts with edits); inline `<!-- allow-literal -->` markers in source (clutters prose); wildcard globs (too loose); no allowlist (forces tokenization of historical incident references that should stay literal).
   - **Chosen approach:** File-level allowlist with explicit `reason` strings. Path-prefix matching keeps the JSON small (one entry covers an ADR directory or a single file). Reasons are required so future maintainers know why each entry exists.
   - **Implementation guidance:** Seed the allowlist from inspection — frozen incident citations in `.prism/lessons.md` and originating-incident ADRs (e.g. `.prism/spec/adrs/0015-humane-language-over-mandates.md`, ADR-0024). Future entries get added with explicit `reason` strings during review.
+  - → no promotion needed (the mechanism lives in the guard implementation; the allowlist's required `reason` strings are self-documenting)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 - **Canonical files on disk stay in `${TOKEN}` form; substitution happens in-memory only.** The dogfood install and consumer installs run the same build script with different `.ai-skills/config.json` values — neither writes substituted content back to canonical paths.
   - **Root cause:** Substituting on disk would force two source-of-truth shapes (tokenized canonical + substituted dogfood) and break the symmetry the bifurcated layout (ADR-0031) established between dogfood and consumer installs.
   - **Alternatives considered:** Substitute on disk during build (forces two surface shapes); substitute at sync time inside Atlas (Phase 2 scatters substitution across two layers); keep canonical literal-Thrive (defeats the multi-team value prop).
   - **Chosen approach:** Substitution happens in `scripts/ai-skills/build.ts` between assembly and write — same seam ADR-0030 names. Canonical sources stay tokenized; platform outputs (`.claude/`, `.codex/`, `.cursor/`, `.generated/`) receive substituted content.
   - **Implementation guidance:** Build sequence (this phase locks it in): read canonical → substitute in memory → run path-guard on disk (still tokenized) → write platform outputs (substituted) → run literal-Thrive guard against the outputs.
+  - → no promotion needed (codified in ADR-0030's substitution seam; `docs/parameterization.md` carries the consumer-facing propagation story)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 - **Stub-anchor pattern for per-team content: HTML comment markers.** Canonical sources use markers like `<!-- atlas:specializes-in -->`, `<!-- atlas:domain-context -->` to reserve slots where Atlas writes during onboarding.
   - **Root cause:** Atlas needs a deterministic way to locate per-team content insertion points without doing fuzzy text matching against canonical prose. ADR-0032 names the principle ("stub anchors where Atlas writes") but doesn't pin the convention.
   - **Alternatives considered:** Section-heading-only anchors (`## Domain Context` alone) — Atlas has to detect "this is empty, write here" which is heuristic; YAML-frontmatter anchor lists (couples Atlas to a metadata surface that doesn't exist yet); inline `{{atlas:...}}` template literals (collides with future templating).
   - **Chosen approach:** HTML comments. Invisible in rendered markdown, easy for Atlas to find with a literal grep, and don't collide with the existing token-substitution literal form (`${...}`).
   - **Implementation guidance:** Anchor naming follows `atlas:<slot-name>` — `atlas:specializes-in` for persona stack intros, `atlas:domain-context` for domain blocks, `atlas:workflow-example` for language-specific workflow snippets. Each anchor sits immediately above the section it owns. Don't pre-populate the slots — Atlas writes them from the team's actual codebase in Phase 2.
+  - → no promotion needed (convention codified in `.prism/architect/anchor-substitution.md` and `skill-authoring.md`'s atlas-anchor rule)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 - **Skip frozen incident citations during tokenization.** `THR-1636`, `THR-1775`, and similar IDs that appear in Why/Originating-incident prose in `.prism/lessons.md` and originating-incident ADRs stay as literal IDs and get added to the allowlist (task 5).
   - **Root cause:** These are stable historical references — the lessons.md entries and ADRs cite specific incidents that produced specific decisions. Tokenizing them to `${TICKET_PREFIX}-NNNN` would substitute on every consumer install to a number that has no meaning in that team's Linear workspace.
   - **Alternatives considered:** Tokenize them anyway (breaks the citation chain); delete the incident citations entirely (loses historical traceability the ADRs depend on); maintain a separate "frozen IDs" list in each ADR (scatters the convention).
   - **Chosen approach:** Allowlist the files that contain frozen citations; sweep everywhere else.
   - **Implementation guidance:** During the canonical-source sweep (task 9), explicitly distinguish frozen citations (skip + add to allowlist) from illustrative ticket-ID examples (tokenize to `${TICKET_PREFIX}-NNNN`). Originating-incident *prose* in canonical sources outside `lessons.md`/ADRs gets generalized (`THR-1636 — Winston recommended...` becomes `an early-Phase incident where Winston recommended...`) rather than tokenized — the durable record lives in `lessons.md` and the ADR.
+  - → no promotion needed (the frozen-vs-illustrative distinction is carried by the allowlist seeds and ADR-0032's citation guidance)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 - **The `.prism/architect/architecture-doc-shape.md` Problem-shape section examples get the stub-anchor treatment.** Carried forward as the only remaining `open` Minor from epic-phase-1-foundation.md — landed via this phase's task 14.
   - **Why:** ADR-0032's principle says canonical content should be generic with stub anchors where Atlas writes specifics. The CI / block-system examples in that section encode Thrive's specific architecture (fleet of dealer sites, WordPress + Next.js split, Gutenberg block editor) even though they read as concrete and plausible. Replacing with `<!-- atlas:problem-shape-examples -->` lets Atlas write per-team illustrations during onboarding.
+  - → no promotion needed (one-shot fix; instance of the ADR-0032 principle)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5d shipped 2026-05-22 (History); substitution layer, guard, and allowlist live in scripts/ai-skills; plan never closed.
 
 ---
 

@@ -1,5 +1,7 @@
 # Plan: epic-lean-skill-architecture
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 No Linear (this team doesn't use it). Tracked by branch `hmcgrew/lean-skill-architecture`.
@@ -200,16 +202,23 @@ Final slice. Closes loose ends from Slices 0–4 and prepares the epic for plan 
   - **Chosen approach:** sort every section by load-frequency × trigger-determinism into PIN / EXTERNALIZE / CATALOG / CUT. The hard gate: **you may externalize a section only if you can write a one-line imperative trigger naming the exact file and exact condition; if you can't, it's a lens and it stays.** Voice, "How X Thinks" lens, anti-pattern guardrails, workflow router, and DoD always PIN.
   - **Implementation guidance:** references that shape reasoning throughout a run must be in the body (they also risk loading too late to matter); only conditional procedures and model-resident catalogs move. Never externalize a lens to hit a line target.
   - **→ promoted to ADR-0045 + `.prism/rules/skill-authoring.md`** (Slice 0).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Use "level"/"stage" for the disclosure model, never "tier."** "Tier 1/2/3" is already owned by ADR-0035 (rule-loading across handoffs); reusing it collides two taxonomies. → promoted to ADR-0045.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **RESOLVED — skill-specific externalized content lives in `.prism/references/<skill>/` sub-dirs; genuinely shared refs stay at `.prism/references/` top-level.** `.prism/references/` ships to consumers and the build mirrors it (sub-dirs included) into each platform; sub-dirs keep the library navigable at ~30+ files. Chosen over flat-prefixed names and over skill-local `.ai-skills/skills/<id>/references/` payload (whose trigger path is ambiguous from repo root). Trigger links use `../../../.prism/references/<skill>/<topic>.md`; internal links inside a sub-dir reference take an extra `../` (e.g. `../../rules/`). Architect's pilot refs were re-homed `winston-*.md` → `architect/{plan-mode,replan-mode,evaluate-checks}.md` and re-pointed (build + tests green). The separate pre-existing `.prism/skills/` ship-gap (ren/theo/iris/parker step files may not reach fresh consumer installs) is untouched by this epic — file as its own follow-up. → promoted to `skill-authoring.md` (Slice 0).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Sequencing: session-close → catalogs → per-skill → rename → test.** Rename is last so it sweeps the already-centralized structure instead of chasing scattered citations through files that Slices 1–3 are still moving. Session-close is first because it's mechanical, touches no decision logic, and validates the build+citation loop cheaply.
   - → no promotion needed (epic-tactical execution order).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Naming: only the 7 persona-named skills change ID; the 11 function-named ones are untouched.** Persona-name trigger phrases stay in descriptions — personas announce their names on intro, so name-users lose nothing.
   - → promoted to .prism/rules/skill-authoring.md § Persona name vs. slash-command ID (Slice 6, task 30).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Within-file duplication is fixed as part of the owning slice, not deferred.** code-review-pr (Justification framework ×2), changelog (Decision Tree ×2), standup (ZWSP contract ×4), ticket-start (priority-band / estimate-scale ×2). Externalizing to one home is a correctness win, not just a token win.
   - → no promotion needed (durable standard is the disclosure gate, already promoted to ADR-0045 + skill-authoring.md in Slice 0).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Testing is full-vs-full on main vs branch**, quantitative (generated SKILL.md `wc -l`) plus qualitative (DoD coverage, lens adherence, voice) on a benchmark workflow — Hunter is the judge of qualitative parity.
   - → no promotion needed (epic-tactical; superseded by the "Slice 5 benchmark skipped" decision recorded in Slice 6).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Session-close extraction (Slice 1): only the truly-shared boilerplate moves; persona-specific lesson signals stay inline.**
   - **Root cause:** the four-part close block (context-reuse → Lessons Check → reflex bullets → promotion taxonomy) is only partly shared. The context-reuse paragraph and promotion taxonomy are byte-identical across the 13 standard-block skills, and the Lessons-Check *mechanic* (ask/append framing) is identical — but the "Required if" conditions are persona-tuned (changelog: commit-parsing; standup: Slack-MCP/`gh`; pixel: UX/cognitive-science) and the reflex bullets are persona-specific. The task's "duplicated across all 18 skills" was an overcount: 13 carry the full block, iris a partial one, parker/ren/theo bespoke short prose, atlas none.
   - **Alternatives considered:** genericize the conditions into the shared file so only reflex bullets stay inline — would hit the task's ~25–35-line savings target but erase persona-tuned lesson signal. Rejected (confirmed with Hunter).
@@ -217,18 +226,21 @@ Final slice. Closes loose ends from Slices 0–4 and prepares the epic for plan 
   - **Scope:** parker/ren/theo carry bespoke short close prose (not the boilerplate) and atlas has no close block — left untouched per Hunter's call; touching them would be a behavior change, not an extraction. iris's trimmed context-reuse variant was normalized to the canonical version.
   - **Implementation guidance:** Slice 3 per-skill refactors leave this section alone — it is already a trigger + inline signals, satisfying the cross-cutting "leave session-close inline" rule.
   - **→ no promotion needed (Slice-1 execution decision; the durable standard is ADR-0045 + `skill-authoring.md`, already promoted in Slice 0).**
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **Slice 5 benchmark skipped; behavioral AC accepted informally.**
   - **Root cause:** the formal `main`-vs-branch benchmark (Winston evaluate→plan + a `prism-design` catalog-heavy run) is high-cost to set up cleanly and the marginal signal over "Hunter lived the refactored skills across Slices 0–4" is thin — every refactored skill has been invoked and observed across real PRISM workflows during the epic, and parity calls from use have been consistent.
   - **Alternatives considered:** (a) run the full benchmark on two skills (mode-router + catalog-heavy) — rejected, cost outweighs incremental signal; (b) run a mini-benchmark on one skill only — rejected, would still need both `main` and branch captures while delivering less than informal use already has; (c) skip entirely — chosen.
   - **Chosen approach:** skip Slice 5 in full. Behavioral AC items 207–209 get marked `[x] — accepted informally per Decision "Slice 5 benchmark skipped" (Slice 6)`. Trade-off acknowledged: no quantitative line-count + qualitative-parity record on file; weight goes on lived experience instead.
   - **Implementation guidance:** Slice 6 task 33 performs the AC marking.
   - **→ no promotion needed (epic-tactical acceptance approach; the durable rule that line-count-as-acceptance-gate is wrong is already in `skill-authoring.md` § Don't externalize a lens for line count, and Slice 6 task 31 extends it to deletion).**
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 - **CUT sign-off (Slice 6, per Winston's evaluation).** Three CUT candidates flagged at the end of Slice 3 were decided after reading content (not line count):
   - **standup `## Standup Standards` wall** → **KEEP.** Reading the section showed it isn't lens-restatement; it's incident-derived operational guardrails (the `invalid_blocks` MCP error from heading tokens, the U+200B zero-width-space workaround from "two real runs demonstrated this," the `channel_id`-vs-`channel` param trap, the code-block-eats-PR-numbers failure). Cutting would lose hard-won knowledge the template doesn't carry. Fails the deletion test in the keep direction.
   - **code-review-self `## Formatting Check`** → **CUT/collapse into Phase 4.** Genuine duplication of Phase 4 / batch-D (prettier `--check` + eslint, auto-fix, Cleanup Items reporting, Minor flag, follow-up-skip note all already present). Pure delete, no content port. Slice 6 task 35 executes.
   - **code-review-pr large-PR escape-hatch note (line 1)** → **KEEP.** Real operational affordance (bump to 1M model for oversized diffs); not a restated lens, not noise. Cheap to keep; costly to rediscover if cut.
   - **Implementation guidance:** the line-count-driven framing that produced the original Slice 3 cut list is the same failure mode as line-count-driven externalization — Slice 6 task 31 extends `skill-authoring.md` § Who runs this rule with a review-guard so the next audit doesn't repeat the misread.
   - **→ promoted to `.prism/rules/skill-authoring.md` § Who runs this rule (Slice 6, task 31).**
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — epic shipped (PRs #54–#67 merged by 2026-05-28); durable content promoted to ADR-0045 + skill-authoring.md; plan awaits `> Closed:` marker.
 
 ---
 
@@ -251,6 +263,7 @@ Final slice. Closes loose ends from Slices 0–4 and prepares the epic for plan 
 - 2026-05-27 [hmcgrew/slice4-rename-migration]: Briar self-review of PR #62 — clean, no issues. Verified completeness (only intentional residuals: historical plans + the `epic-prism-atlas` plan-filename ref in `stack-detect.ts`), no over-reach (`atlas:` anchor counts 6/6·1/1·7/7 unchanged, ADR persona-filenames + `*-state.json` names preserved, frontmatter persona-name triggers intact), and content integrity (`prism-design/shared.md` byte-identical to main's `prism-pixel/shared.md`; `prism-refactor-scout/shared.md` differs only in path segments). `prism:check` + 129 tests + `check-types` green.
 - 2026-05-28 [hmcgrew/slice6-close-out]: Slice 6 plan written — epic close-out. Eight ordered tasks across Winston (rules + plan edits — 30–33) and Clove (install backport, Formatting Check collapse, rebuild, plan delete — 34–37); Slice 5 formal benchmark skipped per Hunter's call. CUT verdicts decided after reading content: standup wall KEEP, code-review-self `## Formatting Check` CUT, code-review-pr large-PR note KEEP.
 - 2026-05-28 [hmcgrew/slice6-close-out]: Slice 6 — epic close-out. Promoted Naming convention to skill-authoring.md, added line-count-driven-cut review-guard, recorded 4 missing Decision verdicts + Slice 5 skip + CUT sign-off, marked AC accepted informally. Plan to delete after Clove's backport + collapse land (task 36).
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out — the Slice 6 close ran everything except the marker (the deletion step was retired by ADR-0047; plans are preserved at close). Verdict gate verified complete; `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

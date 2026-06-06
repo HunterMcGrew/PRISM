@@ -1,5 +1,7 @@
 # Plan: issue-39
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/39
@@ -57,6 +59,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
   - **Chosen approach:** Both in this PR. Documented here so reviewers see the scope expansion.
   - **Implementation guidance:** See Clove tasks 1 and 2. Each uses a different REST shape (POST with `--input` for add, DELETE per-label in a loop for strip) — they're not symmetric API calls.
   - → no promotion needed (ticket-tactical fix, the architectural pattern is "route label edits through REST" which is now codified in the Eric template itself).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — fix shipped via PR #40 (2026-05-23); REST label pattern codified in Eric's canonical source; plan never closed.
 
 - **Strip-loop uses per-label DELETE, not bulk PUT.**
   - **Root cause:** The REST API has a `PUT /repos/.../labels` endpoint that replaces the entire label set, which would be tempting as a single-call replacement for the multi-`--remove-label` invocation.
@@ -64,6 +67,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
   - **Chosen approach:** Loop with DELETE per label. Slightly more API calls but preserves non-review labels.
   - **Implementation guidance:** See Clove task 2 — six DELETE calls in a bash loop, each silenced with `2>/dev/null || true` so missing-label errors don't fail the batch.
   - → no promotion needed (ticket-tactical).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — fix shipped via PR #40 (2026-05-23); REST label pattern codified in Eric's canonical source; plan never closed.
 
 - **Mechanical swap only — no behavioral expansion.**
   - **Root cause:** Edits to skill source files invite drive-by "while I'm here" improvements (rewording prose, restructuring bash, adding defensive checks). Those expand review surface and dilute the fix's intent.
@@ -71,12 +75,14 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
   - **Chosen approach:** Replace only the two `gh pr edit ... --label` lines and the immediate scaffolding around the swap. Leave the rest of batch D's prose verbatim.
   - **Implementation guidance:** Clove's diff should show exactly two replaced bash blocks in `shared.md` plus the regenerated mirrors and the lessons.md edit. If the diff is bigger than that, something has expanded scope.
   - → no promotion needed (this is a scope-discipline call, codified in `.prism/rules/code-standards.md § Refactor scope`).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — fix shipped via PR #40 (2026-05-23); REST label pattern codified in Eric's canonical source; plan never closed.
 
 - **Lessons.md entry is updated, not deleted.**
   - **Root cause:** The lessons entry records both the workaround AND the upstream incident (GitHub Projects Classic deprecation). The workaround is obsoleted by this fix, but the incident may surface in other contexts (other repos, other tooling) where the same deprecation bites.
   - **Alternatives considered:** Delete the entry entirely now that the fix is in.
   - **Chosen approach:** Retain the **Why** line (historical record), rewrite the **How to apply** line to point at the fix. Future hits in other contexts can find the entry by symptom.
   - → no promotion needed (lessons.md is the right home for this; not architectural).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — fix shipped via PR #40 (2026-05-23); REST label pattern codified in Eric's canonical source; plan never closed.
 
 ---
 
@@ -86,6 +92,7 @@ No user-facing or dev docs reference Eric's batch D internals. The skill source 
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Implemented label-apply fix in canonical `shared.md` (POST for add, per-label DELETE loop for strip), regenerated three tracked mirrors via `tsx scripts/ai-skills/build.ts`, updated lessons.md entry to point at issue #39. URL-encoding test confirmed `gh api` handles `:` in label paths natively; no manual encoding needed.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Briar caught a leaked `pnpm-workspace.yaml` artifact from the failed pnpm install attempt during build. Deleted before commit; not part of the fix's intentional diff.
 - 2026-05-23 [hmcgrew/issue-39-eric-batch-d-label-fix]: Eric's PR-#40 batch D smoke test surfaced a Minor — `2>/dev/null` on the strip loop's DELETE call didn't catch `gh api`'s stdout error output, leaking 404 JSON on first-review runs. Patched to `>/dev/null 2>&1 || true`, mirrors regenerated, lessons.md entry added for the `gh api` stdout/stderr inversion.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed per the 2026-06-05 audit close-out. Verdict gate verified complete (all 4 Decisions carried promotion verdicts since ship); `> Closed:` marker added. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 

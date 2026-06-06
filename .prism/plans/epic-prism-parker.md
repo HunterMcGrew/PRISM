@@ -1,5 +1,7 @@
 # Plan: epic-prism-parker
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 3 — Parker (PRD persona). Internal epic, no Linear ticket. See [roadmap.md § Phase 3](./roadmap.md#phase-3--parker-prd-persona).
@@ -301,47 +303,63 @@ Scope: ship the ADR documenting Parker's design + the paired dev doc explaining 
   - **Alternatives considered:** Two separate personas (`prism-parker-greenfield` + `prism-parker-brownfield`); one persona with mode flag (chosen); absorb brownfield into a future persona (rejected — premature speculation).
   - **Chosen approach:** One persona, mode flag. Validated by BMAD's collapse of `bmad-create-prd` + `bmad-edit-prd` into `bmad-prd` — exact same divergence point, exact same resolution.
   - **Implementation guidance:** Step-01 detects mode (from trigger phrase or asks user); subsequent step files are mode-prefixed (`greenfield-step-XX` / `brownfield-step-XX`); shared steps (review, finalize, Linear handoff) live at the un-prefixed step number.
+  - → promoted to ADR-0043 (authored during this epic)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **Parker separate from Mira — initiative grain vs story grain.**
   - **Root cause:** A PRD generates multiple user stories. Audience differs: PRDs are read by PMs and leadership; stories are read by developers. Artifact shape differs: a PRD is a standalone doc at `.prism/prds/<slug>.md`; stories are entries in `## User Stories` of a branch plan.
   - **Alternatives considered:** Parker absorbs into Mira (rejected — grain mismatch); Mira absorbs into Parker (rejected — Mira's INVEST/3Cs/JTBD framework is story-specific and doesn't apply at initiative grain); two personas with explicit handoff (chosen).
   - **Chosen approach:** Two personas. Parker writes PRDs. Mira decomposes PRDs into stories during her own invocation (read PRD → write story bundle into the branch plan).
   - **Implementation guidance:** Mira's startup flow already reads existing context — extend it in a future PR (out of scope for this epic) to detect a referenced PRD slug and read `.prism/prds/<slug>.md` as input. For this epic, Mira's flow is unchanged; the handoff is a chat-level suggestion at Parker's finalize step.
+  - → no promotion needed (the Parker/Mira grain boundary is recorded in ADR-0043 and both skills' descriptions)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **Reviewer rubric uses three parallel subagents (product fit, technical feasibility framing, clarity), not sequential or single self-review.**
   - **Root cause:** Single self-review converges on the author's blind spots — Parker doesn't see what Parker can't see. Sequential rubrics let each rubric's findings bias the next. Parallel-dispatched subagents review independently against orthogonal axes.
   - **Alternatives considered:** Single self-review pass (rejected — blind-spot drift); sequential rubrics (rejected — finding bias); parallel subagents (chosen).
   - **Chosen approach:** Three parallel subagents via Claude's `Task` tool. Sequential fallback for Codex (no parallel Task tool); inline fallback for Cursor.
   - **Implementation guidance:** Rubric files at `.prism/skills/prism-parker/rubrics/{product-fit,technical-feasibility,clarity}.md`. Each subagent receives full PRD + its rubric file. Findings are synthesized into a sorted triage table (severity desc, then rubric order). Critical detail: the technical-feasibility rubric evaluates *framing* (does the PRD surface the right questions?), not feasibility itself (that's Winston's job).
+  - → no promotion needed (codified in the skill's rubric files and review step)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **Greenfield decision log is separate from PRD body.**
   - **Root cause:** PRD is the deliverable (read by PMs, leadership, downstream personas). Decision log is the audit trail (read when someone asks "why does this PRD say X?"). Mixing them dilutes both.
   - **Alternatives considered:** Inline decision log inside the PRD (rejected — pollutes the deliverable); separate file (chosen); skip the decision log entirely (rejected for `internal`/`launch` stakes — high-stakes PRDs benefit from audit-ability).
   - **Chosen approach:** `.prism/prds/<slug>.decision-log.md` paired with `.prism/prds/<slug>.md`. Decision log is created in greenfield mode for `stakes: internal|launch`; skipped for `stakes: hobby`; skipped entirely in brownfield mode (the code IS the decision log).
   - **Implementation guidance:** Step-05 in greenfield mode creates the decision log file. Subsequent steps (review, finalize) append to it. The PRD frontmatter does NOT track the decision log path — convention is the pairing by filename stem.
+  - → no promotion needed (codified in the skill's step files and output contract)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **PRD output location — local canonical at `.prism/prds/<slug>.md`, Linear push as optional handoff.** Resolved 2026-05-22 by Hunter.
   - **Alternatives considered:** (1) Local-only canonical (`.prism/prds/<slug>.md`) with Linear push as optional handoff — chosen; (2) Linear-only — PRD lives only in a Linear document, no local file; (3) Hybrid — local file is source of truth, Linear initiative description is a generated view.
   - **Chosen approach:** local-only canonical with optional Linear handoff. Matches PRISM's existing local-first convention (`.prism/plans/`, `.prism/architect/`, `.prism/lessons.md` all live local-canonical); decouples PRD lifecycle from Linear MCP availability (teams without Linear can still author PRDs); preserves the PRD as a versionable artifact in git, so PRD evolution is reviewable in PR diffs. Linear push remains available via PR-3.4's step-08 for teams that want the PRD reflected in their Linear initiative.
   - **Implementation guidance:** PR-3.1 through PR-3.5 proceed as originally written — local-canonical was the provisional default and is now confirmed. PR-3.4 (Linear initiative handoff) stays optional. `.prism/prds/<slug>.md` is the source of truth; `linearInitiativeId` in the PRD frontmatter is nullable and only populated when the user opts into the Linear handoff. The PR-3.1 merge gate is cleared.
+  - → no promotion needed (instance of the local-first convention; recorded in ADR-0043 and the skill's output contract)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **`[ASSUMPTION]` tags are first-class artifacts (inline + numbered in `## Open questions`); brownfield uses `[INFERRED]` instead.**
   - **Root cause:** Silent assumptions in a PRD bias every downstream decision. Surfacing them as inline markers AND collecting them in a numbered list at the end gives both context-local visibility (reading section X, see assumption) and global tractability (scanning Open questions reveals everything still unresolved).
   - **Alternatives considered:** Inline-only (rejected — easy to miss in a 4-page PRD); list-only (rejected — loses local context); both (chosen). Single tag for both modes (rejected — `[ASSUMPTION]` and `[INFERRED]` have different semantics).
   - **Chosen approach:** Inline marker at the point of use; numbered enumeration in `## Open questions`. Greenfield uses `[ASSUMPTION: <text>]` (deferred decision the user hasn't made). Brownfield uses `[INFERRED: <text>]` (claim derived from code observation that needs user validation).
   - **Implementation guidance:** Step-04 (greenfield draft) and brownfield-step-05 (brownfield draft) both emit inline markers and the numbered enumeration. Step-06 reviewer rubric's clarity rubric specifically checks marker discipline (every inline marker has a matching numbered entry; every numbered entry has at least one inline reference).
+  - → no promotion needed (codified in the skill's draft steps and clarity rubric)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **Micro-file step machine over single shared.md.**
   - **Root cause:** Parker's flow is multi-step, branching (greenfield vs brownfield, fast vs coaching), and resumable. A single shared.md would hit context length and re-load full instructions for every step regardless of relevance.
   - **Alternatives considered:** Everything in shared.md (rejected — context inefficiency); micro-file step machine per BMAD (chosen).
   - **Chosen approach:** shared.md carries persona + dispatch logic only. Each step is its own file at `.prism/skills/prism-parker/step-XX-*.md`, loaded only when that step runs.
   - **Implementation guidance:** Cite the pattern reference at `.prism/references/micro-file-step-machine.md` (Phase 1.5e — write the link even if the reference doesn't exist yet; it'll resolve when 1.5e lands).
+  - → no promotion needed (instance of `.prism/references/micro-file-step-machine.md`)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 - **Skipping reviewer rubric for hobby stakes is a feature, not a gap.**
   - **Root cause:** Hobby projects don't have audiences large enough to justify rubric-level scrutiny. Forcing the rubric on hobby PRDs adds friction without proportional value.
   - **Alternatives considered:** Always run rubric (rejected — friction); always skip rubric (rejected — internal/launch PRDs benefit); stakes-gated (chosen).
   - **Chosen approach:** Auto-skip rubric for `stakes: hobby`; auto-run for `stakes: internal|launch`. Document the skip in step-06 output ("Skipping reviewer rubric — hobby-stakes PRD per stakes calibration. Proceeding to finalize.") so the user knows it's deliberate.
   - **Implementation guidance:** Gate is in step-06-review.md at the top. No user prompt — silent skip with explanatory line.
+  - → no promotion needed (instance of `.prism/references/stakes-calibration.md`; the gate lives in the skill's review step)
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Parker shipped — `.ai-skills/skills/prism-prd/`, ADR-0043, `docs/content/dev/ai-skills/parker.md` all exist; plan never closed.
 
 ---
 
@@ -412,6 +430,7 @@ Scope: ship the ADR documenting Parker's design + the paired dev doc explaining 
 
 - 2026-05-22 [main]: Plan created. Phase 3 — Parker, the PRD persona. Five-PR breakdown (scaffold + greenfield → brownfield steps → reviewer rubric → Linear handoff → ADR + dev doc). Decisions logged: one-persona-two-modes per BMAD validation, separate-from-Mira on grain, parallel-subagent rubric, separate decision log, micro-file step machine, hobby-stakes skip-rubric. Open question flagged: PRD output location (.prism/prds/ vs Linear-only vs hybrid) — needs Hunter input before PR-3.1 merges.
 - 2026-05-22 [main]: PRD output location resolved by Hunter — local canonical at `.prism/prds/<slug>.md` with Linear push as optional handoff (path 1, provisional default confirmed). PR-3.1 merge gate cleared. All five sub-PRs proceed as originally written; no task rewrites required.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out — implementation shipped by 2026-05-27 (`prism-prd` skill, ADR-0043, `parker.md` dev doc) but History was not maintained during implementation. Verdict gate run on all 8 Decisions (ADR-0043 promotion recorded, rest codified in the skill/references); stale "Plan deleted after merge" PR-Readiness item corrected per ADR-0047. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
@@ -460,6 +479,6 @@ Living checklist — updated every time `code-review-self` runs against any of t
 - [ ] ADR-0043 and its `templates/claude/` mirror are byte-identical
 - [ ] `docs/content/dev/ai-skills/parker.md` passes architect-doc-verification triage
 - [ ] Lasting decisions promoted to architect context (Parker's relationship to Mira, Nora, Winston in `.prism/architect/skills-ecosystem.md`)
-- [ ] Plan deleted after PR-3.5 merges and lasting decisions are promoted
+- [x] Plan closed after PR-3.5 merged; lasting decisions promoted (plans are preserved at close, never deleted — ADR-0047)
 
 **Last updated:** 2026-05-22

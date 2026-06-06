@@ -1,5 +1,7 @@
 # Plan: epic-prism-install-layout
 
+> Closed: 2026-06-05
+
 ## Ticket
 
 PRISM Phase 1.5 (PR #2 of 2) — bifurcated install layout. No Linear ticket; phase-bridge work between Phase 1 (foundation) and Phase 2 (Atlas onboarding). Tracked here so Atlas in Phase 2 writes the new layout from day one.
@@ -28,20 +30,31 @@ Move PRISM's platform-agnostic content (rules, ADRs, architect docs, templates, 
 - 2026-05-04 [prism-install-layout]: Eric's fifth-pass review on PR #2. Round-4 false-drift fix verified — marker-based opt-in is consistently applied across content-copy, skill writes, codex agent TOMLs, and codex config (each adapted to its underlying shape). Doc-class triage on `.prism/architect/install-layout.md` and ADR-0031: every claim verified against source. One new Minor logged: path guard scans `.prism/` only, leaving the templates-surface mirror at `templates/install/.prism/` unchecked. Three suggested fix directions in the GitHub summary. Side-note: `optedIn` gating in `main()` lacks unit coverage (skill/codex-agent/codex-config branches) — flagged as fold-in-next-time, not load-bearing. PR labeled `effort:deep` + `review:has-minors`.
 - 2026-05-04 [prism-install-layout]: Clove fixed Eric's templates-surface path-guard Minor. Took option (a)-shape with paths.json declaration: added `canonical.templatesContentRoot` and refactored `build.ts main()` to iterate both content roots through `runPathGuard` in a single pass; violations carry a relative-content-root label so the failure message tells reviewers which surface tripped. Existing allowlist keys (relative to contentRoot) work for both surfaces unchanged. Added `scans the templates-surface content root using the same allowlist` test. Architect docs on both surfaces updated. 26 tests pass (was 25); types clean; `prism:check` passes. End-to-end injection verified: stale `.claude/rules/...` reference in templates surface now fails the build with the expected `path-guard: templates/install/.prism/...` message. Caught and reverted a prettier-driven tab-to-space sweep across the touched scripts before commit — kept the diff to logical changes only (~77 lines, 8 files).
 - 2026-05-04 [prism-install-layout]: Eric's sixth-pass review on PR #2. Templates-surface path-guard fix verified — data-driven dual-surface invocation is the right shape (paths.json carries the config, `runPathGuard` API stays focused). Doc-class triage on architect/install-layout.md confirms the new wording matches source. Surface-prefixed violation messages are an ergonomic win. No new issues; no open issues. PR labeled `effort:deep` + `confidence:high` — ready for human review and merge.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Plan closed retroactively per the 2026-06-05 audit close-out. Verdict gate run on all 5 Decisions — ADR-0031/install-layout.md promotions were recorded at ship time; rest no-promotion. See `.prism/plans/audit-2026-06-05-closeout.md`.
 
 ---
 
 ## Decisions
 
 - **Bifurcated install layout — `.prism/` canonical + platform-dir build copies.** Read-only canonical content (rules, ADRs, architect, templates, references) lives at `.prism/<area>/`. Platform dirs get build-time copies of read-only content (preserves Claude Code auto-load and equivalent on Codex/Cursor). Agent-written content (plans, lessons.md) lives only at `.prism/` — single source. ADR-0031 documents this. Full reasoning in `epic-phase-1-foundation.md` § Decisions.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
+  - → promoted to ADR-0031 and `.prism/architect/install-layout.md` (authored during this ticket)
 
 - **Cross-reference convention: cite `.prism/<area>/<file>` paths in canonical sources.** Platform copies under `.prism/rules/` etc. are reflections — agents read whichever copy their platform's auto-load surfaced, but they edit the canonical at `.prism/`. Build-time guard fails if a canonical source contains `.claude/<area>/` or `.codex/<area>/` etc. paths outside skill files (where platform-specific paths are correct).
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
+  - → promoted to `.prism/architect/install-layout.md` § Cross-reference convention (enforced by the path guard)
 
 - **Distribution surface rename: `templates/claude/` → `templates/install/`.** The current name implies Claude-only distribution; the new layout is multi-platform. Renaming clarifies intent and updates `paths.json` accordingly.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
+  - → no promotion needed (one-shot rename; the current layout is documented in `install-layout.md`)
 
 - **Manifest moves with architect docs.** `.prism/architect/manifest.json` → `.prism/architect/manifest.json`. Routing patterns: file patterns like `.claude/skills/**` stay (skills stay platform-local), but architect doc references resolve relative to `.prism/architect/`.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
+  - → no promotion needed (self-evident from the manifest's location; routing documented in `install-layout.md`)
 
 - **Order vs PR #3 (tokenization): layout reorg ships first.** Tokenization sweeps at the final canonical paths instead of v1 `.claude/`-only paths. Saves a second sweep pass.
+  - **Zoe verdict (2026-06-05):** `archive-candidate` — Phase 1.5a shipped via PR #2 (2026-05-03); promoted to ADR-0031 + `.prism/architect/install-layout.md`; plan never closed.
+  - → no promotion needed (PR sequencing tactic)
 
 ---
 

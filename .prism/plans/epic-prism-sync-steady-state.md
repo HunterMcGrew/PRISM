@@ -90,7 +90,9 @@ State tracks canonical files only. Build copies under platform dirs aren't track
 
 - **Non-destructive, dry-run-first is the decided frame.** Sync previews before it writes; conflicts are surfaced, never auto-resolved. **Why:** an established team won't adopt a tool that might silently overwrite their work; the user explicitly endorsed the non-destructive dry-run preview.
   - → promote to ADR at build time (cross-epic trust contract; also governs C).
+  - **Zoe verdict (2026-06-05):** `live` — Epic B deferred by design; the embedded design is the source of truth for the future build.
 - **OPEN — TBD, needs Hunter input.** *How* a previewed conflict (outcome 2) actually gets resolved once the dry-run has surfaced it. Options Clove named: (a) interactive per-file prompt in the Node script; (b) write git-style conflict markers into the file and let the user resolve in their editor; (c) dry-run-then-apply with the user hand-editing flagged files before re-running. **Default path (used until resolved):** (c) — dry-run surfaces conflicts, sync skips them and leaves the consumer's version intact, user resolves manually and re-syncs. Aligns with the non-destructive frame and avoids fiddly cross-platform interactive prompting (Clove's flag). Revisit if manual resolution proves too tedious at scale.
+  - **Zoe verdict (2026-06-05):** `live` (open-question, not yet stale) — OPEN since 2026-05-29 (7 days); default path (c) documented and carrying.
 
 ## History
 

@@ -1,5 +1,9 @@
 # PRISM Roadmap
 
+> Closed: 2026-06-05
+>
+> **Superseded.** All phases below shipped (or moved to their own epic plans). Current work and status live in the per-epic plans in this directory and in `.prism/audits/`; this file is preserved as the historical record of PRISM's phased buildout and ADR renumbering. Statuses in the tables below reflect 2026-05-23 and are intentionally left as-is.
+
 Meta-index for PRISM's phased work. Each phase below has (or will have) its own epic plan file in `.prism/plans/`. This document tracks sequencing, dependencies, and rationale across phases — not per-task implementation detail.
 
 ## Current state
@@ -315,3 +319,4 @@ No open decisions remain at the roadmap level. Implementation of Phase 1.5c can 
 - 2026-05-22 [main]: Persona naming locked: Theo (he/him, Phase 2.5 architect-doc walker), Ren (he/him, Phase 2.6 refactor scout), Parker (he/him, Phase 3 PRD persona). Ren reinstated as separate persona after initial pattern-only absorption was reconsidered — distinct proactive posture and different output type warrant his own scope. New ADR row 0042 added for Ren; Parker bumped to 0043.
 - 2026-05-22 [main]: Seven epic plans drafted via /goal-driven autonomous run with subagent-per-phase fan-out. Files at `.prism/plans/epic-prism-{thrive-backport,tokenization,pattern-absorptions,atlas,theo,ren,parker}.md`. Each plan meets the detail bar per `.prism/rules/implementation-task-detail.md`. Four open decisions flagged and deferred per the /goal contract (Nora cherry-pick, Sasha absorption, Atlas dogfood timing, PRD output location).
 - 2026-05-22 [main]: All four open decisions resolved by Hunter: Nora cherry-pick → rebuild against PRISM's Nora; Sasha absorption → PRISM-adapt language-agnostic per ADR-0032; Atlas dogfood timing → PRISM-first; PRD output location → local canonical at `.prism/prds/<slug>.md` with optional Linear handoff. Decisions and History sections updated across the four affected plans. Phase 1.5c implementation can begin.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Superseded and closed per the 2026-06-05 audit close-out (Hunter's call: supersede, don't refresh). Every phase in the tables shipped; per-epic plans and audit reports are the live source of truth. Stale statuses preserved as historical record.

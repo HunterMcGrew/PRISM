@@ -1,10 +1,37 @@
 {
 	"schemaVersion": 1,
-	"lastRun": null,
-	"classified": {},
+	"lastRun": "2026-06-05T21:44:34Z",
+	"classified": {
+		".prism/plans/agents-md-slim.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-lean-skill-architecture.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-phase-1-foundation.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-atlas.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-docs-overhaul.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-first-contact-reconciliation.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-install-layout.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-parker.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-pattern-absorptions-wave-2.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-pattern-absorptions.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-ren.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-sync-steady-state.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-theo.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-thrive-backport-wave-2.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-thrive-backport-wave-4.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-thrive-backport.md": "2026-06-05T21:44:34Z",
+		".prism/plans/epic-prism-tokenization.md": "2026-06-05T21:44:34Z",
+		".prism/plans/issue-39.md": "2026-06-05T21:44:34Z",
+		".prism/plans/prism-detailed-plans.md": "2026-06-05T21:44:34Z",
+		".prism/plans/roadmap.md": "2026-06-05T21:44:34Z",
+		".prism/plans/skill-descriptions-rewrite.md": "2026-06-05T21:44:34Z"
+	},
 	"deferred": [],
 	"archived": {
-		"lessons": [],
+		"lessons": [
+			{
+				"title": "On Windows, the Write tool's `/tmp/` resolves to `D:/tmp/`, not the OS temp dir",
+				"archived_at": "2026-06-05T21:52:00Z"
+			}
+		],
 		"plans": []
 	}
 }

@@ -44,6 +44,12 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../.ai-skills/docs/compatibility.md) for the full reasoning.
 
+## The templates/install seed surface
+
+`templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. Every addition to a shipped canonical area (rules, ADRs, architect docs, templates, references) dual-writes: author the canonical at `.prism/<area>/`, then write the seed copy at `templates/install/.prism/<area>/`, byte-identical except for content that doesn't ship (plan-file references are stripped; team identifiers stay in tokenized form per ADR-0030).
+
+**Why:** drift detection covers canonical ↔ platform copies only. The seed legitimately diverges from canonical (tokens, stripped references), so no tooling flags a forgotten seed write — the only gate is the author remembering. Treat "new canonical artifact" as a two-write operation.
+
 ## Cross-reference convention
 
 When canonical content cites another canonical file, use `.prism/<area>/<file>`. Every platform's copy of the citing file will resolve correctly via its own auto-load — Claude reads the citation from `.claude/rules/<rule>.md` and resolves `.prism/<area>/<file>` against the canonical location. Codex and Cursor do the same.

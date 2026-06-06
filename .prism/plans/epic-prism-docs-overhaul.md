@@ -47,22 +47,31 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 - **Doc format is an Atlas onboarding output, not a hardcoded default.** Extends the existing `techStack` → per-team rule-generation precedent (Phase 2). **Why:** hardcoding a PRISM-native format just repeats the Thrive mistake for the next consumer — replacing one hardcoded format with another is the same bug with a new default.
   - → no promotion needed (captured in the superseding ADR per Winston task 1).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **One Eli mechanism; PRISM is its first consumer.** PRISM's own `config.json` answers the doc questions for PRISM; Eli reads config and writes PRISM's flat guides *through* the same mechanism a consumer team uses. No separate "PRISM docs" vs "consumer docs" systems. Dogfooding holds.
   - → no promotion needed (ticket-tactical; the config-driven principle lands in the ADR).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Lightweight config + adaptive Eli — no format-generator matrix yet.** PRISM (flat-markdown-guides) and Thrive (nextra-blocks) are two genuinely divergent formats *today*, which earns the config-driven *seam* now (per code-standards.md "two adapters earn the seam"). It does NOT earn a pluggable per-framework generator. Build the seam; defer format-specific handlers until a second concrete format forces one. Considered: building Nextra/Docusaurus/Storybook adapters now — rejected as premature abstraction against formats no live consumer has specified.
   - → promoted to the superseding ADR (the seam-vs-fill split is a durable architectural decision).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Config schema extensible, not exhaustive.** `documentation.format` is an open string / growable enum, never a closed union. **Why:** keeps SPC (and any future team) a one-field config change, not a schema migration.
   - → promoted to the superseding ADR.
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Guides only; deep-divers read SPEC + ADRs.** No new technical-doc tier. `SPEC.md`, `AGENTS.md`, and `.prism/spec/adrs/` already *are* the deep-dive record for the "how does it work" reader, kept current as a matter of course. Guides link to them.
   - → no promotion needed (scoping decision, self-evident from the docs themselves).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Atlas is the single authoritative home for setup steps.** README quick-start and Atlas's skill intro point *into* the getting-started guide; `parameterization.md` stays the config-key source. **Why:** three copies of the setup story (README, Atlas skill, a new doc) drift independently.
   - → no promotion needed (ticket-tactical).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Organize docs by reader goal, not by topic.** Three readers: evaluator (deciding to adopt), operator (installing), practitioner (using daily). **Why (Mira):** nobody wakes up wanting to "understand the five tiers" — they want "how do I set this up," "who do I call next."
   - → no promotion needed (codified in Eli's rewritten startup sequence).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Roadmap/status out of the timeless docs.** Into `CHANGELOG.md` + a dated README status block. **Why (Sage):** point-in-time content in timeless guides rots on every ship and creates two drifting snapshots.
   - → no promotion needed (ticket-tactical).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Docs are team-owned content; sync must never clobber them.** The `documentation.location` field tells the Epic B sync layer where the team's docs live so the merge leaves that path alone — same hands-off class as `.prism/plans/` and `lessons.md`. **Why (Eli):** forward dependency — wire it now so a future `prism:sync` can't stomp a team's `docs/`.
   - → promoted to the superseding ADR (cross-epic contract).
+  - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 
 ## History
 
