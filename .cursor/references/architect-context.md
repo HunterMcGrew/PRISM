@@ -10,7 +10,7 @@ Before running these steps, you need:
 
 ## Steps
 
-1. **Read the manifest** at `<repo-root>/.prism/architect/manifest.json`. This is a JSON object where keys are path patterns and values are the architect doc filenames to load when files match that pattern.
+1. **Read the manifest** at `<repo-root>/.prism/architect/manifest.json`. This is a JSON object where keys are path patterns and values are either a single architect doc filename (`string`) or an array of filenames (`string[]`) to load when files match that pattern.
 
 2. **Match files against the manifest — programmatically, not by intuition.** Do not eyeball the file list and guess which patterns apply. Instead, iterate the full file list and check each path against every key in `manifest.json`. For each file, walk every manifest key and collect all matches.
 
@@ -18,7 +18,7 @@ Before running these steps, you need:
 
    Collect **all** matched doc filenames — not just the ones that seem most relevant to the current task.
 
-3. **Load all matched architect docs.** Read each matched file from `<repo-root>/.prism/architect/<filename>`. Only skip docs that had zero matching files in scope. Do not skip docs because they seem tangentially related — the manifest is the source of truth for what applies.
+3. **Load all matched architect docs.** Read each matched file from `<repo-root>/.prism/architect/<filename>`. When a value is an array, load all docs in the array for that match. Only skip docs that had zero matching files in scope. Do not skip docs because they seem tangentially related — the manifest is the source of truth for what applies.
 
 ## Why this matters
 
