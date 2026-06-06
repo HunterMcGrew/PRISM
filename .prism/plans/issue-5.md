@@ -33,8 +33,8 @@ Remove ghost ADR index rows (0021, 0025, 0026) that reference files never ported
 
 ## History
 
-- 2025-06-05 [hmcgrew/issue-5-ghost-adrs]: Plan created — remove 3 ghost ADR rows from README index across canonical, install template, and mirrored directories.
-- 2025-06-05 [hmcgrew/issue-5-ghost-adrs]: All tasks complete — removed 0021, 0025, 0026 rows from 2 source READMEs, rebuilt mirrors, verified clean sweep.
+- 2026-06-05 [hmcgrew/issue-5-ghost-adrs]: Plan created — remove 3 ghost ADR rows from README index across canonical, install template, and mirrored directories.
+- 2026-06-05 [hmcgrew/issue-5-ghost-adrs]: All tasks complete — removed 0021, 0025, 0026 rows from 2 source READMEs, rebuilt mirrors, verified clean sweep.
 
 ---
 
@@ -64,6 +64,14 @@ Remove ghost ADR index rows (0021, 0025, 0026) that reference files never ported
 
 ## Review Issues
 
+### Plan dates used wrong year
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/issue-5.md:36`
+- **Problem:** History entries and PR Readiness timestamp said 2025 instead of 2026
+- **Suggested fix:** Replace all `2025-06-05` with `2026-06-05`
+
 ---
 
 ## Cleanup Items
@@ -72,13 +80,13 @@ Remove ghost ADR index rows (0021, 0025, 0026) that reference files never ported
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — N/A (markdown-only change)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — N/A (no new logic); build tests pass (140/140)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:build` clean, 140 tests passing
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (if applicable) — N/A
 
-**Last updated:** 2025-06-05
+**Last updated:** 2026-06-05
