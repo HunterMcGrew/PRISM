@@ -102,6 +102,44 @@ test("loadedDocsForScope: returns empty when no key matches", () => {
 	assert.deepEqual(docs, []);
 });
 
+test("loadedDocsForScope: array value loads all docs for a matching file", () => {
+	const manifest = {
+		".claude/skills/**": ["spec-editing.md", "skills-ecosystem.md"],
+	};
+	const docs = loadedDocsForScope(manifest, [
+		".claude/skills/prism-architect/SKILL.md",
+	]);
+	assert.deepEqual(docs, ["skills-ecosystem.md", "spec-editing.md"]);
+});
+
+test("loadedDocsForScope: array value dedupes against other keys mapping to the same doc", () => {
+	const manifest = {
+		".prism/**": ["install-layout.md", "skills-ecosystem.md"],
+		".prism/plans/**": "skills-ecosystem.md",
+	};
+	const docs = loadedDocsForScope(manifest, [".prism/plans/some-plan.md"]);
+	assert.deepEqual(docs, [
+		"install-layout.md",
+		"skills-ecosystem.md",
+	]);
+});
+
+test("loadedDocsForScope: mixed string and array values across keys", () => {
+	const manifest = {
+		".claude/skills/**": ["spec-editing.md", "skills-ecosystem.md"],
+		".prism/**": "install-layout.md",
+	};
+	const docs = loadedDocsForScope(manifest, [
+		".claude/skills/foo/SKILL.md",
+		".prism/plans/bar.md",
+	]);
+	assert.deepEqual(docs, [
+		"install-layout.md",
+		"skills-ecosystem.md",
+		"spec-editing.md",
+	]);
+});
+
 test("findMissingCoverage: empty when every expected positive has skills-ecosystem.md", () => {
 	const result = {
 		nora: ["skills-ecosystem.md", "spec-editing.md"],

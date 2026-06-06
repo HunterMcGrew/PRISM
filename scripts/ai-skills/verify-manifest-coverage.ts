@@ -25,7 +25,7 @@ const repoRoot = process.env.PRISM_REPO_ROOT
 	? path.resolve(process.env.PRISM_REPO_ROOT)
 	: path.resolve(scriptDirectory, "../..");
 
-export type Manifest = Record<string, string>;
+export type Manifest = Record<string, string | string[]>;
 
 export interface PersonaScope {
 	name: string;
@@ -118,15 +118,19 @@ export function loadedDocsForScope(
 	scope: string[]
 ): string[] {
 	const docs = new Set<string>();
-	const compiledEntries = Object.entries(manifest).map(([pattern, doc]) => ({
-		matcher: compileMatcher(pattern),
-		doc,
-	}));
+	const compiledEntries = Object.entries(manifest).map(
+		([pattern, docOrDocs]) => ({
+			matcher: compileMatcher(pattern),
+			docs: Array.isArray(docOrDocs) ? docOrDocs : [docOrDocs],
+		})
+	);
 
 	for (const file of scope) {
-		for (const { matcher, doc } of compiledEntries) {
+		for (const { matcher, docs: entryDocs } of compiledEntries) {
 			if (matcher(file)) {
-				docs.add(doc);
+				for (const doc of entryDocs) {
+					docs.add(doc);
+				}
 			}
 		}
 	}
