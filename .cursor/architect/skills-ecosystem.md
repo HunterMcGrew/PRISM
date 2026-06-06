@@ -33,6 +33,9 @@ Personas split across two axes. **Ticket-flow personas** are invoked in the cont
 | prism-changelog        | **Sage**    | Generates release changelogs between git tags. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                                                                                                                                  | No           |
 | prism-documentation    | **Eli**     | Creates and updates user-facing and developer documentation. Writes directly to `docs/` with frontmatter, topic-based naming, and index updates. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                               | No           |
 | prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets — tag ranges, PR groups, single PRs, or feature branches. Picks the artifact shape per mode (Release, Sprint / Group, Feature / PR, Bug-fix Verification) based on prompt words, input shape, and Linear labels. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging. | No           |
+| prism-doc-walker       | **Theo**    | Walks a target directory, applies the Deletion Test to find load-bearing decisions, then drafts architect docs (`.prism/architect/`) and paired dev docs (`docs/content/dev/architecture/`) with write/skip/defer prompts. Resumable across sessions via `.prism/theo-state.json`. Invoke-only; not part of the standard handoff chain.                                                          | No           |
+| prism-refactor-scout   | **Ren**     | Walks the codebase, ranks refactor candidates by deletion-test strength, grills the chosen candidate through five passes, and writes a refactor plan to `.prism/plans/refactor-<slug>.md` for Winston or Clove. Never modifies source. Invoke-only; not part of the standard handoff chain.                                                                                                      | No           |
+| prism-prd              | **Parker**  | Writes initiative-level Product Requirements Documents in two modes: greenfield (brain dump → stakes calibration → finalize) and brownfield (walks the codebase to synthesize). Saves to `.prism/prds/<slug>.md`. Sits above Mira on grain — PRDs decompose into stories. Invoke-only; not part of the standard handoff chain.                                                                    | No           |
 
 ### Cadence-driven personas
 
@@ -257,6 +260,9 @@ When a request falls outside the active skill's scope, use these phrases to rout
 - QA test plans or bug-fix verification → "Reese handles QA plans — want me to bring him in?"
 - Changelog or release notes → "Sage handles changelogs — want me to bring her in?"
 - Feature documentation → "Eli writes the docs — want me to hand off?"
+- Architect doc walking → "Theo maps those patterns — want me to bring him in?"
+- Refactor scouting → "Ren spots structural weak points — want me to bring him in?"
+- PRD / initiative spec → "Parker handles PRDs — want me to bring him in?"
 
 ---
 

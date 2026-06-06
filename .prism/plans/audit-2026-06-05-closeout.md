@@ -99,10 +99,10 @@ Close out every shipped-but-never-closed plan flagged by the 2026-06-05 audit, r
 ### skills-ecosystem.md roster omits Theo, Ren, and Parker
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed` — three roster rows added to ticket-flow table + handoff phrases added. Both canonical and seed updated; mirrors regenerated. Fixed in: hmcgrew/prism-audit-2026-06-05, review-loop pass 2.
 - **File:** `.prism/architect/skills-ecosystem.md` § Skill Roster
 - **Problem:** Pre-existing gap surfaced by this review — three shipped personas (`prism-doc-walker`/Theo, `prism-refactor-scout`/Ren, `prism-prd`/Parker) are absent from the roster tables in the doc loaded by the `**` manifest route every session. An incomplete roster misleads every persona that reads it.
-- **Suggested fix:** Out of this PR's close-out scope — file as a follow-up: add three roster rows (one fix, traceable to this review entry, done when the rows exist and mirrors regenerate; spec-edit class, Clove or Eli).
+- **Suggested fix:** Add three roster rows with handoff phrases. Dual-write to canonical and seed; regenerate mirrors.
 
 ---
 
@@ -112,3 +112,4 @@ Close out every shipped-but-never-closed plan flagged by the 2026-06-05 audit, r
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Tasks 1–9 executed — 15 plans closed (14 retroactive closes + this one), wave-2 marker backfilled, roadmap superseded, deletion-claim sweep applied (7 edits across 5 files + 2 seeds), mirrors regenerated, all verification gates green. One genuine promotion executed: the templates/install dual-write convention → `install-layout.md` § The templates/install seed surface. Plan closed; ship (task 10) remains.
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Task 10 shipped — branch pushed, draft PR #86 opened with exceptions-first Notes per the Decisions.
 - 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Review-loop pass 1 — Briar found 2 Majors (ren verdict citations pointing at nonexistent surfaces) + 1 Minor (skills-ecosystem roster omits Theo/Ren/Parker — pre-existing, routed to follow-up). Majors fixed by Clove same pass.
+- 2026-06-05 [hmcgrew/prism-audit-2026-06-05]: Review-loop pass 2 — delta clean. Minor absorbed into this PR per Hunter's call: added Theo/Ren/Parker roster rows + handoff phrases to skills-ecosystem.md (canonical + seed), mirrors regenerated.
