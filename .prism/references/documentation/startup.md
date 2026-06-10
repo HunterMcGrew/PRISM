@@ -37,7 +37,7 @@ If the current branch is not `main`/`master`/`develop` and has a diff against ma
 > - A branch name (e.g. `feature/${TICKET_PREFIX}-1234-my-feature`)
 > - A PR number (e.g. `#456`)
 > - A tag range (e.g. `v1.1.0..v1.2.0`)
-> - An existing doc to update (e.g. `docs/user/blocks/colophon.md`)
+> - An existing doc to update (e.g. `docs/content/user/blocks/colophon.md`)
 > - Or just describe the topic and I'll interview you"
 
 Wait for the answer before continuing.

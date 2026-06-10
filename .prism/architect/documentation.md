@@ -41,7 +41,7 @@ last_updated: "YYYY-MM-DD"
 
 - **title**: Display title for the page. Used by static site generators and search.
 - **description**: Single sentence. Appears in search results and link previews.
-- **category**: Match the subdirectory the file lives in. The category list lives in the team's docs README — extend it when a new directory is added.
+- **category**: Match the subdirectory the file lives in. The category list lives in the documentation skill's Category placement table (and in the team's `docs/README.md` when the team maintains one) — extend it when a new directory is added.
 - **audience**: `dev` for `docs/content/dev/` files, `user` for `docs/content/user/` files.
 - **last_updated**: The date the page content was last meaningfully updated. Format: `YYYY-MM-DD`. Set to today's date whenever a doc is created or its content is edited.
 
