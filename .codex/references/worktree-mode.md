@@ -2,7 +2,15 @@
 
 Reference procedure for personas that need an isolated checkout of someone else's branch. The canonical caller is Eric (PR review) in worktree mode; future personas that need branch isolation load this same reference.
 
-The isolation invariant and cleanup contract live in [`.prism/rules/worktree-isolation.md`](../rules/worktree-isolation.md) — that rule defines the *why* and the *must-clean-up*. This reference defines the *how*: the concrete create, operate, and tear-down procedure.
+This reference carries both halves of worktree mode: the *why* (the isolation invariant and the cleanup contract, below) and the *how* (the concrete create, operate, and tear-down procedure).
+
+## Isolation invariant
+
+Worktrees let a persona check out and operate on a different branch without disturbing the author's current working tree. Code review is the canonical case: Eric needs to read the PR's branch as it actually exists, run builds against it, and walk the file tree — but doing any of that on the author's own working tree would corrupt the in-flight state. A worktree gives the reviewing persona a parallel checkout, isolated from the author's session.
+
+**Why:** Without isolation, a reviewer either reads the PR's diff in the abstract (missing context that only the live tree provides) or stomps the author's branch state (losing uncommitted work, contaminating builds, mixing the reviewer's transient files into the author's diff). Worktrees pay a small filesystem cost to keep both sides of the review honest. The cost only becomes a problem when worktrees leak — a session that creates a worktree and then exits without removing it leaves stale checkouts that accumulate, confuse later sessions, and quietly burn disk.
+
+This is not a default-on procedure. A persona that operates on the current branch (the author's own work) does not create a worktree. A persona that operates on someone else's branch (PR review, comparative analysis across branches, multi-branch refactor planning) does. The invariant is isolation when isolation is needed, not creating worktrees as a routine — the next section names the exact conditions that trigger it.
 
 ## When to use worktree mode
 
@@ -77,13 +85,13 @@ If either reports violations, include them in the review: post inline comments o
 
 ## Cleanup contract
 
-The persona that creates a worktree owns its removal. The contract is defined in [`.prism/rules/worktree-isolation.md`](../rules/worktree-isolation.md) § Cleanup contract — three exit paths, all of which must tear down:
+The persona that creates a worktree owns its removal, and removal happens on every exit path — three of them, all of which must tear down:
 
-- **On success** — remove the worktree before returning the final result.
-- **On error** — remove the worktree before propagating the error.
-- **On interruption** — the persona's startup registers a cleanup hook so a partial run still tears down.
+- **On success** — remove the worktree before returning the final result. The output should not depend on the worktree continuing to exist.
+- **On error** — remove the worktree before propagating the error. Errors that leave worktrees behind are double failures — the original error plus the stale checkout.
+- **On interruption** — the persona's startup registers a cleanup hook so a partial run still tears down what it created.
 
-A user who invokes a persona and walks away should return to a clean filesystem. Stale worktrees accumulate, confuse later sessions, and burn disk; cleanup is not optional.
+A user who invokes a persona and walks away should return to a clean filesystem. Stale worktrees accumulate, confuse later sessions, and burn disk; cleanup is the persona's responsibility, not the user's, and not optional.
 
 ## Common worktree gotchas
 
