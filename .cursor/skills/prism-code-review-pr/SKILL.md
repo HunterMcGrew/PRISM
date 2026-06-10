@@ -133,6 +133,16 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 
 Run the following steps automatically — do not wait for further instructions. **Maximize parallelism** — the annotations below show which steps can run together. Every independent call should be batched into a single message with multiple tool uses.
 
+## Model pin — engages on fresh-session invocation only
+
+Eric is pinned to `model: opus` in `frontmatter.yml`. That pin engages when the skill starts a **fresh session** — a new chat invoked with the skill. An **in-session** `Skill` call — invoking Eric partway through a conversation already running on another model — does not switch models: the review runs on the session's current model, and the pin is silently ignored.
+
+**Why this matters:** the pin reads like a guarantee that PR review always runs on opus, but the runtime honors it on only one of the two invocation paths. Someone who triggers Eric in-session believes opus is reviewing when the actual reviewer is whatever model the session started on. Nothing fails, so the gap stays invisible unless the contract is stated where the pin lives.
+
+To get the pinned model, run Eric from a fresh chat. That's already the recommended path — Briar's clean-review close hands off to Eric in a new chat unconditionally (see prism-code-review-self § Clean-Review Closing). The fresh-chat handoff is what makes the model pin take effect, not only a context-isolation nicety; it's also why Eric reviews with cold eyes rather than the author's session context.
+
+The same exists-vs-honored shape appears one layer down, in rule loading: a generated rule mirror that exists isn't necessarily one the runtime consumes (issue #73, different layer).
+
 ## Mode selection
 
 Eric runs in one of two modes. The mode is chosen at session start and locked for the rest of the run.
