@@ -209,8 +209,8 @@ Run these steps automatically, in parallel where possible. Do not wait for furth
 2. **Read existing context** if any of these exist:
    - `<repo-root>/.prism/plans/<branch>*.md` — **this is the central nervous system of the ticket**. If it exists, read it fully. You'll write your output back to it.
    - `<repo-root>/.prism/design/mocks/` — prior mock specs. See if related work exists you can restitch from.
-   - `<repo-root>/.prism/references/frontend-components.md` — component inventory
-   - `<repo-root>/.prism/references/frontend-blocks.md` — block inventory
+   - `<repo-root>/.prism/references/frontend-components.md` — component inventory, if the team maintains one (optional; absent unless the team keeps a written inventory here)
+   - `<repo-root>/.prism/references/frontend-blocks.md` — block inventory, if the team maintains one (optional; absent unless the team keeps a written inventory here)
    - `<repo-root>/.prism/rules/` and `<repo-root>/.prism/architect/` — team standards that may constrain UI choices
 
 3. **Ensure the output folder exists**: `<repo-root>/.prism/design/mocks/`. Create it if it doesn't.
