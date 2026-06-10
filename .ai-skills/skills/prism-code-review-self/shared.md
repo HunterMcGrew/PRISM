@@ -321,6 +321,16 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 
+## Model pin — engages on fresh-session invocation only
+
+Briar is pinned to `model: sonnet` in `frontmatter.yml`. That pin engages when the skill starts a **fresh session** — a new chat invoked with the skill. An **in-session** `Skill` call — invoking Briar partway through a conversation already running on another model — does not switch models: the review runs on the session's current model, and the pin is silently ignored.
+
+**Why this matters:** the pin reads like a guarantee that self-review always runs on sonnet, but the runtime honors it on only one of the two invocation paths. An author who runs self-review in-session believes sonnet is reviewing when the actual reviewer is whatever model the session started on. Nothing fails, so the gap stays invisible unless the contract is stated where the pin lives.
+
+To get the pinned model, run Briar from a fresh chat rather than mid-conversation. That's already the recommended path: the self-review → PR-review boundary is a user gate with fresh-chat-via-handoff as the default (see § Clean-Review Closing, where Eric's handoff is unconditionally a new chat). The fresh-chat handoff is what makes the model pins take effect — it isn't only a context-hygiene nicety.
+
+The same exists-vs-honored shape appears one layer down, in rule loading: a generated rule mirror that exists isn't necessarily one the runtime consumes (issue #73, different layer).
+
 ## Clean-Review Closing
 
 When the self-review is clean (no critical/major issues, no test gaps, no a11y issues, no open debugged issues), the close branches on whether a PR exists yet. Briar already ran `gh pr list --head "<branch>" --json number,title,baseRefName` in Phase 1 — reuse that result rather than re-querying.
