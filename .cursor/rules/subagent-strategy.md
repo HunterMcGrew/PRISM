@@ -1,0 +1,13 @@
+# Subagent Strategy
+
+## Purpose
+
+Keep the main context window clean by offloading research, exploration, and parallel analysis to subagents. One task per subagent keeps execution focused.
+
+**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. For complex problems, more compute via subagents is almost always the right call: it's cheaper to spend a subagent than to run out of context in the main window and lose the thread.
+
+**How to apply:**
+
+- Offload research, exploration, and parallel analysis to subagents — anything that reads a lot to produce a small answer.
+- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three tasks returns a muddled one.
+- When a problem is large enough that you're unsure whether to spend the compute, spend it. Running out of context is the more expensive failure.
