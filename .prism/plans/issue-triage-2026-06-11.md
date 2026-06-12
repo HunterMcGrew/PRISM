@@ -40,12 +40,12 @@ No duplicates. #83 and #73 are the same exists-vs-honored *family* but different
 
 ## Decisions
 
-- **#79 splits into a one-line value fix (#79a) and a tracker-support feature (#79b).** The repo uses GitHub issues; the engine supports only Linear.
+- **#79 splits into a one-line value fix (#79a, stays under #79) and a tracker-support feature (filed as #95).** The repo uses GitHub issues; the engine supports only Linear.
   - **Root cause:** `tokens.ts:108` hard-rejects any `kind !== "linear"` and `config.schema.json:31` enums only `["linear"]`, so `config.json` cannot truthfully name `github-issues` as the tracker. The repo never went through onboarding, so `config.json` is unconfigured defaults end-to-end, not just the two fields #79 names.
   - **Alternatives considered:** (a) keep the Linear placeholder with clarified "GitHub issues is the real tracker" prose — interim only, leaves the engine gap; (b) build `github-issues` support now — correct for reality, touches the tokenization engine.
-  - **Chosen approach:** ship #79a (the `repo` value) immediately because it's a live wrong claim token-substituted into every mirror's Project Context, and split #79b (build `github-issues` kind + proper config init) as its own issue routed to the tokenization concern. Path (a)'s clarified prose is the interim until #79b lands.
-  - **Implementation guidance:** #79a is `config.json` `repo: "PRISM"` + `pnpm prism:build`. #79b edits `config.schema.json` (enum), `tokens.ts` (guard ~line 108), `templates/install/.prism/architect/skills-ecosystem.md` (graceful degrade), then sets `kind: "github-issues"` and does a full config pass.
-  - → tracked as GitHub issues #79 (a) and #79b (b); no architect-doc promotion needed (the engine change is the durable surface).
+  - **Chosen approach:** ship #79a (the `repo` value) immediately because it's a live wrong claim token-substituted into every mirror's Project Context, and split the engine work (build `github-issues` kind + proper config init) into #95 routed to the tokenization concern. Path (a)'s clarified prose is the interim until #95 lands.
+  - **Implementation guidance:** #79a is `config.json` `repo: "PRISM"` + `pnpm prism:build`. #95 edits `config.schema.json` (enum), `tokens.ts` (guard ~line 108), `templates/install/.prism/architect/skills-ecosystem.md` (graceful degrade), then sets `kind: "github-issues"` and does a full config pass.
+  - → tracked as GitHub issues #79 (value fix) and #95 (engine feature); no architect-doc promotion needed (the engine change is the durable surface).
 
 - **Zoe's archived content lives under one parent: `.prism/archived/{plans/, lessons-archive.md}`.** #80's plan-archive destination is `.prism/archived/plans/`.
   - **Root cause:** ADR-0047 assigns plan archiving to Zoe but her spec defines a destination only for lessons (`.prism/lessons-archive.md`). The plan-archive lane needs a destination.
@@ -65,4 +65,4 @@ No duplicates. #83 and #73 are the same exists-vs-honored *family* but different
 
 ## History
 
-- 2026-06-11 [hmcgrew/issue-triage-2026-06-11]: Triage sweep over all 10 open issues produced the board above (one assessor per issue, validity-checked against the live tree; cross-runtime and low-confidence issues escalated for deeper assessment). Recorded the four resolved decisions; filed #79b for the github-issues tracker gap split out of #79.
+- 2026-06-11 [hmcgrew/issue-triage-2026-06-11]: Triage sweep over all 10 open issues produced the board above (one assessor per issue, validity-checked against the live tree; cross-runtime and low-confidence issues escalated for deeper assessment). Recorded the four resolved decisions; filed #95 for the github-issues tracker gap split out of #79.
