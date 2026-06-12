@@ -83,8 +83,13 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
   - → no promotion needed (planning rationale, not a durable invariant).
   - **Zoe verdict (2026-06-05):** `live` — issue #64 in progress — Slice 1 merged (PR #66), Slices 2–4 pending (AGENTS.md still 241 lines); decision still governs the remaining work.
 
-- **OPEN — TBD, needs Hunter input.** Slice 4 §N numbering: whether AGENTS.md `§§ 1–6` keep their section numbering as discovery shells (each body becomes a one-line citation to `.prism/rules/<file>.md`), or shed numbering entirely so the file is structured around `.prism/rules/<file>.md` citations alone. **Default path (used until resolved):** keep numbering. Preserves existing in-tree `AGENTS.md §N` cross-references; less disruption to Slice 4 execution. Trade-off: shedding numbering aligns more cleanly with the externalization direction (rules live in `.prism/rules/`, AGENTS.md doesn't number-own them), but expands Slice 4 task #4 and Briar self-review task #5 to sweep and rewrite existing `AGENTS.md §N` references across `.prism/`, `.claude/`, `.codex/`, `.cursor/`.
-  - **Zoe verdict (2026-06-05):** `live` (open-question, not yet stale) — OPEN since 2026-05-28 (8 days, under the 30-day threshold); default path (keep numbering) carries Slice 4.
+- **Slice 4 §N numbering: keep numbering.** AGENTS.md `§§ 1–6` retain their section numbers as discovery shells — each body becomes a one-line citation to `.prism/rules/<file>.md`, but the `§N` heading stays.
+  - **Root cause:** the question was whether to keep `§N` headings or shed them so the file is structured around `.prism/rules/<file>.md` citations alone.
+  - **Alternatives considered:** shed numbering — aligns more cleanly with the externalization direction (rules live in `.prism/rules/`, AGENTS.md doesn't number-own them), but expands Slice 4 task #4 and Briar self-review task #5 to sweep and rewrite every in-tree `AGENTS.md §N` reference across `.prism/`, `.claude/`, `.codex/`, `.cursor/`.
+  - **Chosen approach:** keep numbering. Preserves existing in-tree cross-references and keeps Slice 4 minimal; the externalization win comes from the body becoming a citation, not from dropping the heading number.
+  - **Implementation guidance:** Slice 4 task #4 follows the default path already written — no grep-sweep task is added. Do not shed `§N` headings.
+  - → no promotion needed (planning decision; lives in this plan, governs Slice 4 execution).
+  - **Resolved 2026-06-11 [hmcgrew/issue-triage-2026-06-11]:** Hunter confirmed keep-numbering during the issue-triage sweep. The OPEN marker is closed; default path is now the decision.
 
 ---
 
@@ -205,6 +210,7 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - 2026-05-28 [hmcgrew/agents-md-slim]: Mid-Slice-1, Hunter flagged "Sage handles changelogs — want me to bring him in?" as mis-pronouned (Sage is she/her). Fixed across all four `skills-ecosystem.md` surfaces + `AGENTS.md §9`; grep surfaced a third occurrence in `.ai-skills/skills/prism-changelog/shared.md` ("When he's unsure"), fixed at source. Rebuilt — 129/129 tests pass.
 - 2026-05-28 [hmcgrew/agents-md-slim]: Briar self-review of PR #66 — 2 Minor found, no Critical/Major. Doc-class triage clean (11 phrases verified verbatim vs AGENTS.md §9 post-Sage-fix, 4 mirror surfaces coherent). Build skipped (markdown-only diff; prior `pnpm prism:build` clean).
 - 2026-05-28 [hmcgrew/agents-md-slim]: Clove addressed both Briar Minor — `## Ticket` now points at GitHub issue #64, Slice 4 task #4 OR-clause replaced by a new `OPEN — TBD, needs Hunter input.` Decision (default: keep §N numbering) with task #4 rewritten to follow the default path. Plan-only fixes; no source changes.
+- 2026-06-11 [hmcgrew/issue-triage-2026-06-11]: Hunter resolved the §N numbering OPEN decision during the issue-triage sweep — keep numbering. OPEN marker closed; Slices 2–4 now fully unblocked.
 
 ---
 
