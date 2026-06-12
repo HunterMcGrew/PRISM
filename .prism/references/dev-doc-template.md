@@ -19,7 +19,7 @@ The base template below covers dev docs in general. Some categories have additio
 
 - **`category: architecture`** — docs in `docs/content/dev/architecture/` follow the four-beat opening arc and supporting principles in `.prism/architect/architecture-doc-shape.md`. Apply that rule alongside this template.
 - **`category: operations`** — operations docs pair with architecture counterparts (same base filename where the topics align) per the Two-Reader Model described in `.prism/architect/documentation.md § Architecture + Operations Pairing`.
-- **`category: blocks`** — dev block docs in `docs/content/dev/blocks/` follow the block-specific structure in `.prism/references/dev-block-doc-template.md` — Structure paths table, Block Attributes, Editor Controls split into Toolbar + Sidebar, Inner Blocks, Block Supports, and Notes for block-specific quirks. Apply that template alongside this one.
+- **`category: blocks`** — dev block docs in `docs/content/dev/blocks/` are a category layer on this base template. Apply the standard template structure; add a Structure paths table, Block Attributes, Editor Controls split into Toolbar + Sidebar, Inner Blocks, Block Supports, and a Notes section for block-specific quirks.
 
 ---
 
