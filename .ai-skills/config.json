@@ -9,7 +9,7 @@
 	},
 	"github": {
 		"owner": "HunterMcGrew",
-		"repo": "agent-crew"
+		"repo": "PRISM"
 	},
 	"defaultBranch": "main",
 	"techStack": ["typescript", "node"],
