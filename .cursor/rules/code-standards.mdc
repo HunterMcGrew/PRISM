@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Code Standards
 
 Universal standards that apply to all code in this repository. Language-specific rules live in dedicated files (see the dedicated standards section at the bottom — opt-in based on the team's stack).

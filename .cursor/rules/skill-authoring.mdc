@@ -1,5 +1,5 @@
 ---
-paths:
+globs:
   - ".ai-skills/skills/**"
   - ".prism/references/**"
 ---

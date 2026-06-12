@@ -17,6 +17,7 @@ import {
 	removeDeletedManagedContent,
 	syncPlatformContentCopy,
 } from "./build";
+import { cursorRuleDialect } from "./rule-dialect";
 import { MANAGED_MARKER } from "./utils";
 
 async function withTempRoots(
@@ -285,6 +286,103 @@ test("syncPlatformContentCopy drift-checks an existing platform dir in check mod
 				new Map()
 			);
 			assert.ok(changedPaths.length > 0, "drift reported for existing platform dir");
+		}
+	);
+});
+
+test("cursor dialect emits .mdc rule copies with globs:/alwaysApply: frontmatter", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "scoped.md"),
+				'---\npaths:\n  - "**/*.tsx"\n---\n\n# Scoped rule\n',
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "universal.md"),
+				"# Universal rule\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await copyContentToPlatformDir(
+				contentRoot,
+				platformDir,
+				false,
+				changedPaths,
+				new Map(),
+				cursorRuleDialect
+			);
+
+			const scoped = await fs.readFile(
+				path.join(platformDir, "rules", "scoped.mdc"),
+				"utf8"
+			);
+			const universal = await fs.readFile(
+				path.join(platformDir, "rules", "universal.mdc"),
+				"utf8"
+			);
+
+			assert.match(scoped, /globs:/);
+			assert.doesNotMatch(scoped, /paths:/);
+			assert.match(universal, /alwaysApply: true/);
+
+			let mdExists = true;
+			try {
+				await fs.access(path.join(platformDir, "rules", "scoped.md"));
+			} catch {
+				mdExists = false;
+			}
+			assert.equal(mdExists, false, "no verbatim .md copy alongside the .mdc");
+		}
+	);
+});
+
+test("cursor dialect cleanup removes a stale .md copy once .mdc is emitted", async () => {
+	await withTempRoots(
+		async (contentRoot, platformDir) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+			// Simulate a pre-dialect build: a verbatim .md copy plus the area
+			// marker, the exact state #73 inherited.
+			await fs.mkdir(path.join(platformDir, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(platformDir, "rules", "alpha.md"),
+				"# Alpha\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(platformDir, "rules", MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await removeDeletedManagedContent(
+				contentRoot,
+				platformDir,
+				false,
+				changedPaths,
+				cursorRuleDialect
+			);
+
+			let staleExists = true;
+			try {
+				await fs.access(path.join(platformDir, "rules", "alpha.md"));
+			} catch {
+				staleExists = false;
+			}
+			assert.equal(staleExists, false, "stale .md copy removed");
+			assert.ok(
+				changedPaths.includes(path.join(platformDir, "rules", "alpha.md"))
+			);
 		}
 	);
 });

@@ -44,7 +44,7 @@ Two seams are visible in the model and the team should expect to hit them.
 
 **Tier 3 isolation across skill handoffs.** When a skill invokes another skill — Clove → Briar → Eric, for example — Tier 3 rules don't cross the handoff in either direction. The invoked skill loads its own Tier 3 set; the invoking skill keeps its own. A rule that should have been Tier 1 or Tier 2 but was misclassified as Tier 3 will silently miss handoff scenarios. The seam is what makes Tier 3 cheap; it's also what makes the classification call load-bearing.
 
-For consumer installs, rule files mirror byte-identically from `.prism/rules/` to the per-platform copies that `pnpm prism:build` writes alongside each platform directory. The tier classification is encoded in the rule file itself — the frontmatter and the manifest entry — so it propagates with the copy without consumer-side configuration.
+For consumer installs, rule files mirror from `.prism/rules/` to the per-platform copies that `pnpm prism:build` writes alongside each platform directory. The tier classification is encoded in the rule file itself — the frontmatter and the manifest entry — so it propagates with the copy without consumer-side configuration. Claude and Codex receive byte-identical copies; Cursor receives a dialect translation because its rules loader reads a different frontmatter shape. The build rewrites `paths:` to `globs:` for Tier 2, adds `alwaysApply: true` to a frontmatter-less Tier 1 rule, and renames `.md` to `.mdc` — so the Cursor copy honors the same tiers the canonical encodes. The canonical stays in the Claude dialect; only the Cursor copy diverges.
 
 ## Related
 
