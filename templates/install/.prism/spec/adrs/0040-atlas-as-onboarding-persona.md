@@ -1,5 +1,7 @@
 # ADR-0040: Atlas as a dedicated onboarding persona
 
+**Status:** Accepted
+
 Date: 2026-05-22
 
 ## Context
