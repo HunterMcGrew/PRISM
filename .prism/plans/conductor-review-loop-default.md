@@ -67,8 +67,9 @@ No user stories or Linear ticket — AC omitted per acceptance-criteria.md (no M
 
 ## PR Readiness
 
-- [x] No critical or major issues
-- [ ] `pnpm prism:check` green — last run: pending (pre-existing atlas-dogfood Windows path failure, issue #107; not this branch)
+- [x] No critical or major issues — Briar clean + Eric clean re-review (#111)
+- [x] Build sync green (`tsx scripts/ai-skills/build.ts --check`) — step files aren't build-compiled, no drift. Full `pnpm prism:check` has only the pre-existing atlas-dogfood Windows path failure (issue #107, separate PR #109), unrelated to this branch.
 - [x] PR description up to date
+- [x] Gauntlet complete: self-review loop → pr-review loop, zero-findings exit. PR #111 ready for human flip-to-ready + merge.
 
 **Last updated:** 2026-06-13
