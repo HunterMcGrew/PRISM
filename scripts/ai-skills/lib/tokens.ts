@@ -17,7 +17,7 @@ export interface PrismConfig {
 	project: string;
 	ticketPrefix: string;
 	ticketSystem: {
-		kind: "linear";
+		kind: "linear" | "github-issues";
 		workspace?: string;
 		projectId?: string;
 		teamKey?: string;
@@ -105,9 +105,12 @@ export function loadConfig(repoRoot: string): PrismConfig {
 	}
 
 	const ticketSystemObject = ticketSystem as Record<string, unknown>;
-	if (ticketSystemObject.kind !== "linear") {
+	if (
+		ticketSystemObject.kind !== "linear" &&
+		ticketSystemObject.kind !== "github-issues"
+	) {
 		throw new Error(
-			`${configPath} /ticketSystem/kind: only "linear" is supported today (got ${JSON.stringify(ticketSystemObject.kind)}).`
+			`${configPath} /ticketSystem/kind: must be "linear" or "github-issues" (got ${JSON.stringify(ticketSystemObject.kind)}).`
 		);
 	}
 
@@ -141,6 +144,8 @@ export function deriveTokenMap(config: PrismConfig): Map<string, string> {
 	if (typeof config.ticketSystem.teamKey === "string") {
 		tokenMap.set("LINEAR_TEAM_KEY", config.ticketSystem.teamKey);
 	}
+
+	tokenMap.set("TICKET_TRACKER", deriveTicketTracker(config));
 
 	if (typeof config.github?.owner === "string") {
 		tokenMap.set("GITHUB_OWNER", config.github.owner);
@@ -192,6 +197,26 @@ export function substituteTokens(
 
 		return tokenMap.get(tokenName) ?? match;
 	});
+}
+
+/**
+ * Renders the Project Context tracker line for the active ticket system.
+ *
+ * The line lives at one seam (skills-ecosystem.md § Project Context) but its
+ * shape depends on the tracker: a Linear team carries a team key and ticket
+ * prefix, while a GitHub-issues repo has neither. Deriving the whole line as a
+ * token lets the canonical markdown stay a single `${TICKET_TRACKER}` literal
+ * instead of branching, so a github-issues install degrades to "GitHub issues"
+ * without emitting a phantom Linear team.
+ */
+function deriveTicketTracker(config: PrismConfig): string {
+	if (config.ticketSystem.kind === "github-issues") {
+		return "**Ticket tracker:** GitHub issues";
+	}
+
+	const teamKey = config.ticketSystem.teamKey ?? config.ticketPrefix;
+
+	return `**Linear team:** ${teamKey} (prefix: ${config.ticketPrefix}-####)`;
 }
 
 function contextSnippet(content: string, offset: number): string {

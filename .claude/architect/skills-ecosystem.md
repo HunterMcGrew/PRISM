@@ -7,10 +7,10 @@ This document is the shared reference for all AI skills. Every skill loads it on
 ## Project Context
 
 - **Repository:** HunterMcGrew/agent-crew
-- **Linear team:** PRISM (prefix: PRISM-####)
+- **Ticket tracker:** GitHub issues
 - **GitHub org:** HunterMcGrew
 
-All skills operate exclusively within this project. When creating tickets, referencing Linear, or interacting with GitHub, use these identifiers — do not ask.
+All skills operate exclusively within this project. When creating tickets, referencing the ticket tracker, or interacting with GitHub, use these identifiers — do not ask.
 
 ---
 
