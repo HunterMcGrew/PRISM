@@ -119,3 +119,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
 
 **How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied).
+
+## Sol decides run-shape (fleet vs pipeline); don't reflexively ask it
+
+**Why:** 2026-06-13 — Sol's step-01 intake asks the human "one unit or fleet?" up front. On a two-issue dispatch (#107/#108) Hunter pushed back: Sol should *make* the run-shape call itself, defaulting to fleet, optionally sending Nora/Winston as discovery to recommend the path — only escalating run-shape to the human when it's genuinely ambiguous. The autonomy-policy question is still the human's; run-shape is Sol's to decide from the tasks.
+
+**How to apply:** This is a per-user preference, not a skill change — Hunter declined folding it into step-01, since the intake question staying as-is (the human decides) plus memory-as-override is the intended design. For Hunter's runs: decide run-shape from the work (independent, non-overlapping units → fleet; single unit or hard sequential dependency → pipeline), state the call and reason, ask only the autonomy-policy question; reserve a run-shape question or discovery dispatch for genuinely ambiguous cases. The standing preference lives in user memory `feedback-sol-decides-run-shape`.
+
+## Sol's review phase is the full gauntlet — never skip pr-review (Eric) on triviality grounds
+
+**Why:** 2026-06-13 — a Sol run on two trivial, green PRs ran a single Briar self-review and parked at merge, skipping Eric. Briar reports in chat only and posts nothing to the PR, so the PRs the human merges carried zero review signal. The "trivial + green + Briar-clean = park" proportionality call silently dropped a defined lifecycle phase. Hunter caught it and directed that the review-loop gauntlet be the conductor's default review phase.
+
+**How to apply:** The conductor's `self-review` / `pr-review` phases run the prism-review-loop ladder by default — loop self-review→fix to clean, then pr-review→fix to clean (`needs-fix` verdict keeps the lane in-phase). `pr-review` (Eric) is non-skippable on any lane with an open PR, regardless of diff size. Proportionality may tune review *depth*, never *whether Eric runs* on an open PR. Codified in step-04 § The review phase is the gauntlet.
