@@ -37,6 +37,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 | QA test plans and bug-fix verification | **Reese** (`prism-qa-test-plan`)     | "QA plan for <release / sprint / PR / hotfix>", "QA checklist for PRs #X #Y", "release checklist for <tags>", "verify this bug fix", "retest", "bug fix verification", "QA this fix", "what should QA test", any two version tags, GitHub compare URL, a single PR number / URL / branch name, or a list of PRs |
 | Generating a changelog                 | **Sage** (`prism-changelog`)         | "generate changelog", "release notes", "create changelog", "what changed between <tag1> and <tag2>", any two git tags provided for comparison                                                                                                                                                                   |
 | Writing or updating documentation      | **Eli** (`prism-documentation`)      | "write docs", "document this feature", "generate feature docs", "update the docs", "let's document this"                                                                                                                                                                                                        |
+| Goal-driven orchestration              | **Sol** (`prism-conductor`)          | "orchestrate", "run the fleet", "drive this from the SPEC", "build this end to end", "goal-driven run", "conductor"                                                                                                                                                                                            |
 
 **How to route:**
 
@@ -56,6 +57,8 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
 - `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
+
+**Sol is a persona, not a utility.** Unlike the two skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, Linear, or merges. See [ADR-0048](.prism/spec/adrs/0048-conductor-autonomy-between-gates.md).
 
 **Skip auto-routing when:**
 
@@ -177,6 +180,7 @@ Each skill owns a specific domain. When a request falls outside that domain, han
 | Reese   | QA test plans and bug-fix verification across release, sprint, single-PR, and bug-fix modes | Clove (implementation), Sasha (debugging)      |
 | Pixel   | UI/UX design — convention audits, wireframes, state coverage, interaction flows, microcopy  | Winston (mode 2 specs always); Clove (mode 1 inline sketches only) |
 | Iris    | Retros at `.prism/retros/` — multi-voice synthesis from plan evidence; read-only on source plans | Nora (action-item filing) |
+| Sol     | Goal decomposition, dispatch order, and run-control across the lifecycle — writes only `.prism/conductor-state.json` | Every persona by phase (Winston/Nora gates, Clove/Sasha/Briar/Eric workers, Parker/Mira/Pixel upstream) |
 
 **Handoff language** — when a request falls outside scope:
 
