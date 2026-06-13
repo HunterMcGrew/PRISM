@@ -14,9 +14,11 @@ Worktrees let a persona check out and operate on a different branch without dist
 
 ## When to apply
 
-Any persona that operates on someone else's branch — currently the PR-review persona (Eric), future-extensible to any persona that needs an isolated checkout.
+Any persona that operates on someone else's branch — the PR-review persona (Eric) and the Conductor (Sol) when it runs a fleet — plus any future persona that needs an isolated checkout.
 
 This is not a default-on rule. A persona that operates on the current branch (the author's own work) does not create a worktree. A persona that operates on someone else's branch (PR review, comparative analysis across branches, multi-branch refactor planning) does. The rule is about isolation when isolation is needed, not about creating worktrees as a routine.
+
+Sol is the fleet case: a fleet run dispatches several lanes that each edit a different branch in parallel, so Sol gives **one worktree per fleet lane** to keep the lanes from stomping each other's checkout. A single-lane pipeline run needs no worktree — it uses the current checkout, exactly like a persona working its own branch.
 
 ## Cleanup contract
 
@@ -31,5 +33,6 @@ The cleanup is the persona's responsibility, not the user's. A user who invokes 
 ## Who runs this rule
 
 - **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — runs the worktree procedure when invoked in worktree mode. The mode-selection logic and the procedure itself live in the skill source; this rule defines the isolation invariant and the cleanup contract the procedure must satisfy.
+- **Sol** ([prism-conductor](../skills/prism-conductor/SKILL.md)) — creates one worktree per fleet lane so parallel lanes stay isolated, bound to the same cleanup contract (remove on success, error, or interruption). The fleet scheduler that allocates and tears down lane worktrees lives in `.prism/skills/prism-conductor/lib/fleet.md`; this rule defines the isolation invariant it satisfies.
 
 Future personas that need isolated checkouts will load this rule the same way.

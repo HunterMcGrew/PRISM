@@ -73,6 +73,10 @@
 			"persona": "Zoe"
 		},
 		{
+			"id": "prism-conductor",
+			"persona": "Sol"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},

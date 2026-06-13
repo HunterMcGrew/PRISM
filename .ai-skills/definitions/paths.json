@@ -6,6 +6,7 @@
 	},
 	"generated": {
 		"claudeSkillsRoot": ".claude/skills",
+		"claudeAgentsRoot": ".claude/agents",
 		"codexSkillsRoot": ".agents/skills",
 		"codexAgentsRoot": ".codex/agents",
 		"codexConfigFile": ".codex/codex-config.toml",
