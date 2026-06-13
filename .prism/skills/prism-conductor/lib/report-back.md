@@ -10,11 +10,12 @@ Exactly one per dispatch. It routes the lane.
 
 | Verdict | Meaning | Source persona example |
 | --- | --- | --- |
-| `done` | The persona completed its job. | Clove shipped the tasks; Briar's review came back clean. |
+| `done` | The persona completed its job. | Clove shipped the tasks; a review rung came back clean (zero findings). |
+| `needs-fix` | A review rung found issues it recorded in `## Review Issues`; they're fixable in-loop. | Briar or Eric returned findings — route to the implementer, re-review, stay in-phase. |
 | `blocked` | The persona can't proceed — a dependency, an environment failure, or a missing input. | Clove can't build because an upstream lane hasn't landed. |
 | `needs-replan` | The plan is the problem — vague tasks, a wrong decision, a gap. | Clove reports the plan left implementation judgment calls open. |
 | `needs-stronger-model` | The dispatch stalled on capability, not on the plan. | A Sonnet worker stalled the same unit twice. |
-| `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `launch` policy; an `OPEN —` decision. |
+| `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `launch` policy; an `OPEN —` decision; a review finding that needs a human call (disagreement → step-06). |
 
 ## Secondary signals
 
@@ -26,7 +27,7 @@ Optional, zero-or-more per dispatch. Each routes **independently** of the primar
 | `found-followup-work` | Nora (through her scope-fit + DoR gate) | The out-of-scope work and why it's separate. |
 | `observation` | recorded, no auto-route (`routedTo: null`) | Context worth surfacing in the end-of-run report. |
 
-The split exists because one enum value can't carry both routes — the dry run surfaced a `done` dispatch that also flagged a follow-up. The primary verdict routes the lane; each signal routes on its own. (Sources: Briar's non-clean review reports `needs-human` / `done`; Sasha's diagnosis is consumed by a `found-bug` signal; Nora's scope-fit gate consumes a `found-followup-work` signal.)
+The split exists because one enum value can't carry both routes — the dry run surfaced a `done` dispatch that also flagged a follow-up. The primary verdict routes the lane; each signal routes on its own. (Sources: a review rung returns `needs-fix` when findings are fixable in-loop, `done` when clean, and `needs-human` only when a finding needs a human call; Sasha's diagnosis is consumed by a `found-bug` signal; Nora's scope-fit gate consumes a `found-followup-work` signal.)
 
 ## Gate dispositions
 
@@ -45,6 +46,7 @@ On a `needs-human` resolution, the human's answer is durable product content. Th
 | Returned | Sol's route |
 | --- | --- |
 | primary `done` | advance `currentPhase` |
+| primary `needs-fix` | dispatch the implementer (Clove) for the `## Review Issues`, then re-dispatch the same reviewer; lane stays in the review phase (the gauntlet loop, bounded by the step-07 pass budget + three-strike rule) |
 | primary `needs-replan` / `blocked` | route to Winston (`escalation.axis: replan`) |
 | primary `needs-stronger-model` | bump `models.<persona>` to `opus` (`escalation.axis: model`) |
 | primary `needs-human` | pause; append to `pendingHumanReport` |
