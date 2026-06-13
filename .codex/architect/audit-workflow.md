@@ -17,7 +17,7 @@ A typical reason for off-cadence invocation: a session writes a large number of 
 Zoe walks four surfaces in a single audit run. Each surface produces a section in the run's output report.
 
 - **`.prism/plans/`** — every plan file in the directory. For each plan, Zoe walks the `## Decisions` section and issues one verdict per entry. She also scans for open-question Decision variants and flags any that have aged past the open-stale threshold.
-- **`.prism/lessons.md`** — every entry in the lessons file. Zoe classifies each lesson as live (still referenced in active plans, rules, or ADRs) or archive-candidate (no recent references). Archive-candidate lessons move to `.prism/lessons-archive.md` on the user's confirmation.
+- **`.prism/lessons.md`** — every entry in the lessons file. Zoe classifies each lesson as live (still referenced in active plans, rules, or ADRs) or archive-candidate (no recent references). Archive-candidate lessons move to `.prism/archived/lessons-archive.md` on the user's confirmation.
 - **`.prism/spec/adrs/`** — every ADR. Zoe scans the `## Context` and `## Consequences` sections for assumptions that may no longer hold (a referenced PR closed without merging, a sibling decision since superseded, a stated constraint that the codebase has since lifted). Findings surface as "ADR review candidate" entries — Zoe doesn't change ADRs, only flags them for a human to revisit.
 - **`.prism/architect/`** — every architect doc. Zoe scans for re-enumeration drift (a doc claims "the X states are A, B, C" while a sibling doc owns a different enumeration of X) and for stale source references (a path the doc cites that no longer exists). The architect-doc-verification rule (`.prism/rules/architect-doc-verification.md`) already covers in-session edits; Zoe runs the same triage on cadence across the whole `.prism/architect/` set.
 
@@ -50,7 +50,23 @@ Lessons in `.prism/lessons.md` get classified into two buckets on each audit run
 - **`live`** — the lesson is referenced by an active plan, rule, ADR, or architect doc within the last 30 days. The reference might be explicit (a rule's `**Why:**` line cites the lesson) or pattern-implicit (a Decision uses the lesson's recommendation verbatim). Live lessons stay in `.prism/lessons.md`.
 - **`archive-candidate`** — no plan, rule, ADR, or architect doc has referenced the lesson in the last 30 days, AND the lesson is older than 30 days at the time of the audit. New lessons are never archived on their first audit run — every lesson gets a grace period to be referenced before it can be classified as archive-candidate.
 
-Archive-candidate lessons get moved to `.prism/lessons-archive.md` on the user's confirmation — Zoe never moves entries silently. Each archived entry retains its original date and content; an archive timestamp is appended on move. The archive file is append-only — lessons don't come back out of the archive.
+Archive-candidate lessons get moved to `.prism/archived/lessons-archive.md` on the user's confirmation — Zoe never moves entries silently. Each archived entry retains its original date and content; an archive timestamp is appended on move. The archive file is append-only — lessons don't come back out of the archive.
+
+## Plan-archive lane
+
+Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, plans are never deleted — but they don't need to stay on the active surface forever. Zoe identifies archive-ready plans during each audit pass and flags them for user confirmation before moving anything.
+
+**Archive candidate criteria** — a plan qualifies when all three hold:
+
+- The plan carries a `> Closed:` marker.
+- Every entry in `## Decisions` has either a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or a Zoe verdict sub-bullet (`archive-candidate` or `overdue-archive`). Plans with unresolved Decision entries are not archive-ready.
+- The close date is at least 90 days in the past — a recently-closed plan gets a grace period before becoming a candidate.
+
+**Confirmation gate** — Zoe flags archive-ready plans in the audit report (close date + Decision verdict status) and waits for explicit user go-ahead. The user's confirmation must be explicit; Zoe never infers consent from silence.
+
+**Destination** — `.prism/archived/plans/<plan-file-name>`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not pre-seeded.
+
+**State tracking** — each confirmed move is recorded in `archived.plans[]` in `.prism/audit-state.json`.
 
 ## Open-question Decision variant
 
@@ -94,7 +110,7 @@ The report shape:
 ## Lessons
 
 - <lesson-title>: `live` — <reason>.
-- <lesson-title>: `archive-candidate` — <reason>. **Moved to lessons-archive on confirmation.**
+- <lesson-title>: `archive-candidate` — <reason>. **Moved to `.prism/archived/lessons-archive.md` on confirmation.**
 
 ## ADRs flagged for review
 
@@ -137,7 +153,7 @@ Field semantics:
 - **`classified`** — object keyed by plan file path (relative to `<repo-root>`), value is the ISO 8601 timestamp of the most recent verdict issued for any Decision in that plan. Used to skip re-classification on rapid follow-up runs.
 - **`deferred`** — array of objects: `{ "item": "<plan-path>:<decision-index>", "reason": "<user-supplied string>", "deferred_at": "<ISO 8601>" }`. Items the user explicitly chose to defer during a run — Zoe re-prompts these on the next run after their deferral grace period elapses.
 - **`archived`** — object with two arrays:
-  - **`lessons`** — entries that have been moved to `.prism/lessons-archive.md`. Each entry: `{ "title": "<lesson title>", "archived_at": "<ISO 8601>" }`.
+  - **`lessons`** — entries that have been moved to `.prism/archived/lessons-archive.md`. Each entry: `{ "title": "<lesson title>", "archived_at": "<ISO 8601>" }`.
   - **`plans`** — plans that have been closed after Zoe's audit confirmed all Decisions were promoted or archived (the plan files are preserved at close — ADR-0047). Each entry: `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
 
 ### Migration

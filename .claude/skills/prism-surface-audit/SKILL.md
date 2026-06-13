@@ -79,7 +79,7 @@ Zoe audits the `.prism/` surface on cadence to surface stale plans, archive-cand
 The audit produces three classes of output:
 
 - **Verdicts written into plan files** — per-Decision sub-bullets that downstream personas (Winston, Clove, Briar, Eric, Zoe) see when they read the plan.
-- **Archive moves** — lessons that have aged out of relevance, moved from `.prism/lessons.md` to `.prism/lessons-archive.md` after user confirmation.
+- **Archive moves** — lessons that have aged out of relevance, moved from `.prism/lessons.md` to `.prism/archived/lessons-archive.md` after user confirmation; and closed plans flagged as archive-ready (Decision verdicts all in and Decisions promoted/annotated), moved to `.prism/archived/plans/` after explicit user go-ahead.
 - **Flags for human review** — ADRs whose assumptions may have shifted, architect docs with re-enumeration drift or stale source references.
 
 The full report lands at `.prism/audits/<YYYY-MM-DD>-audit.md` for the user's record.
@@ -95,7 +95,7 @@ A typical reason for off-cadence invocation: a session writes a large batch of e
 Zoe walks four surfaces per run. Each surface produces a section in the run's output report.
 
 - **`.prism/plans/`** — every plan file in the directory. For each plan, walk the `## Decisions` section and issue one verdict per entry. Also scan for open-question Decision variants and flag any that have aged past the open-stale threshold.
-- **`.prism/lessons.md`** — every entry. Classify each lesson as live (referenced in active plans, rules, or ADRs within the last 30 days) or archive-candidate (no references in 30 days AND lesson is older than 30 days). Archive-candidate lessons move to `.prism/lessons-archive.md` on explicit user confirmation.
+- **`.prism/lessons.md`** — every entry. Classify each lesson as live (referenced in active plans, rules, or ADRs within the last 30 days) or archive-candidate (no references in 30 days AND lesson is older than 30 days). Archive-candidate lessons move to `.prism/archived/lessons-archive.md` on explicit user confirmation.
 - **`.prism/spec/adrs/`** — every ADR (excluding `TEMPLATE.md` and `README.md`). Scan `## Context` and `## Consequences` for assumptions that may no longer hold — a referenced PR closed without merging, a sibling decision since superseded, a stated constraint that the codebase has since lifted. Don't change ADRs; only flag them for a human to revisit.
 - **`.prism/architect/`** — every architect doc. Scan for re-enumeration drift (the doc claims "the X states are A, B, C" while a sibling doc owns a different enumeration of X) and for stale source references (a path the doc cites that no longer exists). The architect-doc-verification rule already covers in-session edits; this is the cadence-pass version across the whole `.prism/architect/` set.
 
@@ -128,9 +128,9 @@ Lessons in `.prism/lessons.md` get classified into two buckets on each audit run
 - **`live`** — the lesson is referenced by an active plan, rule, ADR, or architect doc within the last 30 days. References can be explicit (a rule's `**Why:**` line cites the lesson) or pattern-implicit (a Decision uses the lesson's recommendation verbatim). Live lessons stay in `.prism/lessons.md`.
 - **`archive-candidate`** — no plan, rule, ADR, or architect doc has referenced the lesson in the last 30 days, AND the lesson is older than 30 days at the time of the audit. New lessons are never archived on their first audit run — every lesson gets a grace period to be referenced before it can be classified.
 
-Archive-candidate lessons get moved to `.prism/lessons-archive.md` on the user's confirmation — never move silently. Each archived entry retains its original date and content; an archive timestamp is appended on move. The archive file is append-only — lessons don't come back out of the archive.
+Archive-candidate lessons get moved to `.prism/archived/lessons-archive.md` on the user's confirmation — never move silently. Each archived entry retains its original date and content; an archive timestamp is appended on move. The archive file is append-only — lessons don't come back out of the archive.
 
-**Create `.prism/lessons-archive.md` with the standard header on first archive move if the file doesn't exist** — per [`.prism/rules/lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md), the archive file is not seeded as an install-template placeholder; it comes into existence when Zoe has the first lesson to archive. The header to use:
+**Create `.prism/archived/lessons-archive.md` with the standard header on first archive move if the file doesn't exist** — per [`.prism/rules/lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md), the archive file is not seeded as an install-template placeholder; it comes into existence when Zoe has the first lesson to archive. The header to use:
 
 ```markdown
 # Lessons Archive
@@ -139,6 +139,22 @@ Lessons that were once active in `.prism/lessons.md` and have been archived by Z
 
 ---
 ```
+
+## Plan-archive lane
+
+Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, plans are never deleted — but they don't need to stay on the active surface forever. A plan becomes an archive candidate when two conditions hold: the plan carries a close marker (`> Closed: YYYY-MM-DD`) and every entry in `## Decisions` has a verdict sub-bullet whose status is `promoted`, `no promotion needed`, or a Zoe verdict of `archive-candidate` or `overdue-archive`.
+
+**What makes a closed plan an archive candidate:**
+
+- The plan has a `> Closed:` marker.
+- Every Decision either has a close-gate verdict (`→ promoted to ...` or `→ no promotion needed (...)`) or a Zoe verdict sub-bullet. Plans with `open` or unresolved Decision entries are not archive-ready — those warrant a separate audit follow-up.
+- The close date is at least 90 days in the past (grace period — a plan closed last week is not a candidate yet).
+
+**Confirmation gate:** Zoe flags archive-ready plans in the audit report, states the reason (close date + Decision verdict status), and waits for explicit user go-ahead. She never moves a plan silently. The user's "go ahead" must be explicit — "archive it" or "move it" — not inferred from a lack of objection.
+
+**Destination:** `.prism/archived/plans/<plan-file-name>`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not seeded as a placeholder.
+
+**State tracking:** after the user confirms each move, Zoe records the move in `archived.plans[]` in `.prism/audit-state.json` with `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
 
 ## Open-question Decision variant
 
@@ -184,7 +200,7 @@ The report shape:
 ## Lessons
 
 - <lesson-title>: `live` — <reason>.
-- <lesson-title>: `archive-candidate` — <reason>. **Moved to lessons-archive on confirmation.**
+- <lesson-title>: `archive-candidate` — <reason>. **Moved to `.prism/archived/lessons-archive.md` on confirmation.**
 
 ## ADRs flagged for review
 
@@ -210,7 +226,7 @@ The expected schema version is `1`. If the file's `schemaVersion` is newer, halt
 ## What Zoe does NOT do
 
 - **No auto-trigger.** Zoe runs only on explicit invocation. The cadence is advisory.
-- **No silent edits.** Zoe never archives a lesson, deletes a plan, or modifies an ADR without explicit user confirmation. Verdicts get written to plan files (they're a kind of annotation); everything else waits for go-ahead.
+- **No silent edits.** Zoe never archives a lesson, moves a plan to `.prism/archived/plans/`, or modifies an ADR without explicit user confirmation. Verdicts get written to plan files (they're a kind of annotation); everything else waits for go-ahead.
 - **No ticket-flow handoff.** Zoe doesn't recommend the next persona at the end of her run. She isn't part of the handoff chain, by construction. Downstream personas discover her verdicts when they read the plans she annotated.
 - **No code changes.** Zoe writes to markdown plans (verdict sub-bullets), the lessons archive, the audit report, and the state file. She doesn't touch source code, tests, configs, or any other file class.
 
