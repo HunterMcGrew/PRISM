@@ -161,8 +161,8 @@
 			"reason": "platform-copy mirror of architect-doc-verification"
 		},
 		{
-			"path": ".cursor/rules/architect-doc-verification.md",
-			"reason": "platform-copy mirror of architect-doc-verification"
+			"path": ".cursor/rules/architect-doc-verification.mdc",
+			"reason": "platform-copy mirror of architect-doc-verification (Cursor .mdc dialect)"
 		},
 		{
 			"path": ".claude/rules/branch-plan.md",
@@ -173,8 +173,8 @@
 			"reason": "platform-copy mirror of branch-plan"
 		},
 		{
-			"path": ".cursor/rules/branch-plan.md",
-			"reason": "platform-copy mirror of branch-plan"
+			"path": ".cursor/rules/branch-plan.mdc",
+			"reason": "platform-copy mirror of branch-plan (Cursor .mdc dialect)"
 		}
 	]
 }

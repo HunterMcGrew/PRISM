@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Core Principles
+
+## Purpose
+
+Two principles govern every change: keep it simple, and find the root cause.
+
+- **Simplicity first** — make every change as simple as possible. Touch the minimal code that solves the problem.
+- **No laziness** — find root causes. No temporary fixes. Senior-developer standards.
+
+**Why:** the two pull in tension, and naming both keeps either from winning by default. Simplicity without root-cause discipline produces a quick patch that hides the real bug; root-cause discipline without simplicity produces a sprawling rewrite where a small fix would do. Holding both is the senior-developer standard — the smallest change that actually fixes the underlying problem.
+
+**How to apply:**
+
+- Prefer the smallest change that solves the problem. A larger change carries its own review and regression cost — earn it.
+- When a fix would only mask a symptom, find the cause instead. A temporary fix is a deferred bug, not a closed one.

@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+# Self-Improvement Loop
+
+## Purpose
+
+After a correction from the user, capture the pattern in `.prism/lessons.md`. Review lessons at session start. The goal is a mistake rate that drops over time — each lesson is a ratchet that prevents the same class of error from recurring.
+
+**Why:** a correction that isn't captured is a correction you'll earn again. Writing the pattern down once turns a repeated mistake into a one-time cost. The flip side is real too: a lessons file that's too long to scan defeats its own purpose, so brevity and de-duplication are part of the rule, not an afterthought.
+
+**How to apply:**
+
+- After a correction, write the pattern to `.prism/lessons.md`. Before adding an entry, check whether an existing one already covers it — update rather than duplicate.
+- Keep entries to one sentence where possible. The file earns its place only if it stays scannable.
+- Review lessons at session start so the ratchet actually catches before the mistake repeats.

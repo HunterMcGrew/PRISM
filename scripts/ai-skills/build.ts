@@ -23,6 +23,11 @@ import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import {
+	cursorRuleDialect,
+	type RuleDialect,
+	verbatimRuleDialect,
+} from "./rule-dialect";
+import {
 	ensureDirectory,
 	escapeToml,
 	escapeTomlMultiline,
@@ -446,7 +451,8 @@ export async function copyContentToPlatformDir(
 	platformDir: string,
 	checkModeArg: boolean,
 	changedPathsArg: string[],
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	dialect: RuleDialect = verbatimRuleDialect
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const sourceArea = path.join(contentRoot, area);
@@ -461,13 +467,18 @@ export async function copyContentToPlatformDir(
 				continue;
 			}
 			const sourcePath = path.join(sourceArea, entry.relativePath);
-			const targetPath = path.join(targetArea, entry.relativePath);
+			const targetRelativePath = dialect.mapTargetRelativePath(
+				area,
+				entry.relativePath
+			);
+			const targetPath = path.join(targetArea, targetRelativePath);
 			await copyContentFileWithSubstitution(
 				sourcePath,
 				targetPath,
 				checkModeArg,
 				changedPathsArg,
-				tokenMap
+				tokenMap,
+				(content) => dialect.transformContent(area, content)
 			);
 		}
 
@@ -507,10 +518,11 @@ async function copyContentFileWithSubstitution(
 	targetPath: string,
 	checkModeArg: boolean,
 	changedPathsArg: string[],
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	transformContent: (content: string) => string = (content) => content
 ): Promise<void> {
 	const sourceContent = await fs.readFile(sourcePath, "utf8");
-	const substituted = substituteTokens(sourceContent, tokenMap);
+	const substituted = transformContent(substituteTokens(sourceContent, tokenMap));
 
 	await writeFileIfChanged(
 		targetPath,
@@ -538,7 +550,8 @@ export async function syncPlatformContentCopy(
 	platformDir: string,
 	checkModeArg: boolean,
 	changedPathsArg: string[],
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	dialect: RuleDialect = verbatimRuleDialect
 ): Promise<void> {
 	if (checkModeArg && !(await platformHasManagedContent(platformDir))) {
 		return;
@@ -549,13 +562,15 @@ export async function syncPlatformContentCopy(
 		platformDir,
 		checkModeArg,
 		changedPathsArg,
-		tokenMap
+		tokenMap,
+		dialect
 	);
 	await removeDeletedManagedContent(
 		contentRoot,
 		platformDir,
 		checkModeArg,
-		changedPathsArg
+		changedPathsArg,
+		dialect
 	);
 }
 
@@ -644,7 +659,8 @@ export async function removeDeletedManagedContent(
 	contentRoot: string,
 	platformDir: string,
 	checkModeArg: boolean,
-	changedPathsArg: string[]
+	changedPathsArg: string[],
+	dialect: RuleDialect = verbatimRuleDialect
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const targetArea = path.join(platformDir, area);
@@ -662,8 +678,22 @@ export async function removeDeletedManagedContent(
 			if (entry.relativePath === MANAGED_MARKER) {
 				continue;
 			}
-			const sourcePath = path.join(sourceArea, entry.relativePath);
-			if (await pathExists(sourcePath)) {
+			const sourceRelativePath = dialect.mapSourceRelativePath(
+				area,
+				entry.relativePath
+			);
+			const sourcePath = path.join(sourceArea, sourceRelativePath);
+			// A target is live only when its canonical source exists AND that
+			// source maps forward to this exact target name. The forward check
+			// catches stale verbatim copies left behind when the dialect renames
+			// (e.g. a pre-existing `.cursor/rules/foo.md` once the Cursor dialect
+			// began emitting `foo.mdc`): the source `foo.md` still exists, but it
+			// now maps to `foo.mdc`, so the old `.md` copy is an orphan.
+			const sourceExists = await pathExists(sourcePath);
+			const sourceMapsBack =
+				dialect.mapTargetRelativePath(area, sourceRelativePath) ===
+				entry.relativePath;
+			if (sourceExists && sourceMapsBack) {
 				continue;
 			}
 			const targetPath = path.join(targetArea, entry.relativePath);
@@ -1014,18 +1044,28 @@ async function main(): Promise<void> {
 
 	if (await pathExists(contentRoot)) {
 		const platformCopies = pathDefinitions.generated.platformContentCopies;
-		const platformDirs = [
-			path.join(repoRoot, platformCopies.claude),
-			path.join(repoRoot, platformCopies.codex),
-			path.join(repoRoot, platformCopies.cursor),
+		const platformDirs: { dir: string; dialect: RuleDialect }[] = [
+			{
+				dir: path.join(repoRoot, platformCopies.claude),
+				dialect: verbatimRuleDialect,
+			},
+			{
+				dir: path.join(repoRoot, platformCopies.codex),
+				dialect: verbatimRuleDialect,
+			},
+			{
+				dir: path.join(repoRoot, platformCopies.cursor),
+				dialect: cursorRuleDialect,
+			},
 		];
-		for (const platformDir of platformDirs) {
+		for (const { dir, dialect } of platformDirs) {
 			await syncPlatformContentCopy(
 				contentRoot,
-				platformDir,
+				dir,
 				checkMode,
 				changedPaths,
-				tokenMap
+				tokenMap,
+				dialect
 			);
 		}
 	}
