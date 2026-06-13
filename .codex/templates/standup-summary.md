@@ -130,7 +130,7 @@ PRISM-NNNN: Title [#NNNN](url) [status][ — author]
 
 ### Link
 
-Standard markdown link syntax: `[#1234](https://github.com/HunterMcGrew/agent-crew/pull/1234)`. Used for both delivery paths — see the Link format section above.
+Standard markdown link syntax: `[#1234](https://github.com/HunterMcGrew/PRISM/pull/1234)`. Used for both delivery paths — see the Link format section above.
 
 ### Status label
 
@@ -194,27 +194,27 @@ PRISM
 
 **Merged:**
 
-PRISM-1614: Fix Mega Menu Locations Add Location button visibility [#1794](https://github.com/HunterMcGrew/agent-crew/pull/1794) [merged]
-PRISM-1616: Make PRISM mega menu link target editor-controlled only [#1798](https://github.com/HunterMcGrew/agent-crew/pull/1798) [merged]
+PRISM-1614: Fix Mega Menu Locations Add Location button visibility [#1794](https://github.com/HunterMcGrew/PRISM/pull/1794) [merged]
+PRISM-1616: Make PRISM mega menu link target editor-controlled only [#1798](https://github.com/HunterMcGrew/PRISM/pull/1798) [merged]
 
 <ZWSP>
 
 **In Review:**
 
-PRISM-1622: Suppress nav link navigation in mega menu editor preview [#1803](https://github.com/HunterMcGrew/agent-crew/pull/1803) [draft]
+PRISM-1622: Suppress nav link navigation in mega menu editor preview [#1803](https://github.com/HunterMcGrew/PRISM/pull/1803) [draft]
 
 <ZWSP>
 
 **Continued:**
 
-PRISM-1620: Cleanup of Columns block tests [#1800](https://github.com/HunterMcGrew/agent-crew/pull/1800) [in review]
+PRISM-1620: Cleanup of Columns block tests [#1800](https://github.com/HunterMcGrew/PRISM/pull/1800) [in review]
 
 <ZWSP>
 
 **Reviewed:**
 
-PRISM-1621: Emit complete ILink (target/rel) for migrated nav items [#1801](https://github.com/HunterMcGrew/agent-crew/pull/1801) [merged] — jmotes
-PRISM-1613: Prevent feature branches from silently tracking origin/main [#1793](https://github.com/HunterMcGrew/agent-crew/pull/1793) [in review] — jmotes
+PRISM-1621: Emit complete ILink (target/rel) for migrated nav items [#1801](https://github.com/HunterMcGrew/PRISM/pull/1801) [merged] — jmotes
+PRISM-1613: Prevent feature branches from silently tracking origin/main [#1793](https://github.com/HunterMcGrew/PRISM/pull/1793) [in review] — jmotes
 
 <ZWSP>
 

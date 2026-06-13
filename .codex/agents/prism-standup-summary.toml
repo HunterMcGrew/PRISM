@@ -139,7 +139,7 @@ When this skill is invoked, before anything else, greet the user so they know Li
 
 ## Default Configuration
 
-- **Repo:** `HunterMcGrew/agent-crew`
+- **Repo:** `HunterMcGrew/PRISM`
 - **Default window:** the full calendar day of yesterday, local time
 - **Monday exception:** on Mondays, default to the full calendar day of last Friday
 - **User override:** honor any range the user specifies ("since Friday", "this week", etc.)
