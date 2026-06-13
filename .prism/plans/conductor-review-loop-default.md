@@ -29,12 +29,20 @@ Make the prism-review-loop gauntlet the conductor's default review phase, so a S
   - **Implementation guidance:** keep the `self-review` / `pr-review` phase names (the two rungs) to avoid churning the `currentPhase` enum; the loop is expressed by `needs-fix` keeping the lane in-phase. Cite prism-review-loop `shared.md` for the ladder definition; don't restate the pass budget / strike numbers.
   - → no promotion needed (the decision lives in the conductor skill's own step files, which are the durable surface; ADR candidacy noted to the user as an optional follow-up).
 
+- **Review-phase disagreement routes to Winston (architect) first, not directly to the human — reversing step-06's prior "a genuine disagreement is a human call."**
+  - **Root cause:** Eric's PR review surfaced that step-04 (this PR) said disagreement → Winston while the cited step-06 said disagreement → human, and the prism-review-loop ladder says → architect. Three docs disagreed.
+  - **Alternatives considered:** keep step-06 as-is (disagreement → human) and fix step-04's parenthetical to say human.
+  - **Chosen approach:** Winston-first (Hunter's call, 2026-06-13). An independent architect adjudicating a fixer-vs-reviewer tie with cold eyes beats paging the human on every disagreement, and it makes Sol's gauntlet resolve disagreements identically to the standalone review-loop. The human is still reached — but only when Winston itself needs their input. The prior step-06 stance ("disagreement is always a human call") no longer applies because the review-loop integration introduces an architect adjudication rung the prior conductor model lacked.
+  - **Implementation guidance:** step-06 disagreement fast-path now routes to Winston (rule for/against, or escalate to human if it needs the user); the human-axis trigger list drops the bare "disagreement fast-path" entry.
+  - → no promotion needed (lives in step-06; same durable-surface reasoning as the decision above).
+
 ---
 
 ## History
 
 - 2026-06-13 [hmcgrew/conductor-review-loop-default]: Wired prism-review-loop gauntlet into the conductor as the default review phase; added `needs-fix` verdict; Eric made non-skippable. Originated from a session steer after a Sol run skipped Eric.
 - 2026-06-13 [hmcgrew/conductor-review-loop-default]: Briar self-review minor — clarified in step-04 that Sol's autonomous segment skips the prism-review-loop phase-boundary gate.
+- 2026-06-13 [hmcgrew/conductor-review-loop-default]: Eric PR review (#111) — 4 minors, no major/critical. Fixed cleaner-path handling + Briar-no-rereview clarifications in step-04, checked the PR-description box; resolved the disagreement-path fork to Winston-first (Hunter's call), updating step-06. See Decision: review-phase disagreement routes to Winston first.
 
 ---
 
@@ -61,6 +69,6 @@ No user stories or Linear ticket — AC omitted per acceptance-criteria.md (no M
 
 - [x] No critical or major issues
 - [ ] `pnpm prism:check` green — last run: pending (pre-existing atlas-dogfood Windows path failure, issue #107; not this branch)
-- [ ] PR description up to date
+- [x] PR description up to date
 
 **Last updated:** 2026-06-13
