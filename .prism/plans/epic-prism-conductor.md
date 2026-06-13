@@ -1,5 +1,7 @@
 # Plan: epic-prism-conductor
 
+> Closed: 2026-06-13
+
 ## Ticket
 
 PRISM Phase 4 — Sol (the Conductor: goal-driven orchestration persona). No parent Linear ticket yet; internal PRISM phase. Prefer creating a parent ticket in Linear before implementation (Nora).
@@ -415,6 +417,7 @@ _(none yet)_
 - 2026-06-13 [hmcgrew/prism-conductor-engine]: Implemented Group 2 (Clove, tasks 13–28) — nine prose-only step files (`step-01-init` … `step-09-report`, no frontmatter, each ≤27 lines), `lib/report-back.md` (verdicts + signals + folded `## Gate registry`) and `lib/fleet.md`, the `shared.md` `## Workflow overview` rewrite citing all nine step paths, the byte-identical `## When dispatched by Sol` note in all nine dispatched personas' `shared.md`, and the Sol worktree extension across both `worktree-isolation.md` copies (`diff` exits 0). One plan-vs-reality deviation: `prism-debugger` does have `## Next persona` (plan said it lacked one), so the note was inserted before `## Next persona` uniformly across all nine for scannability. Full gate green modulo the known Windows `atlas-dogfood` path-separator flake.
 - 2026-06-13 [hmcgrew/prism-conductor-engine]: Briar self-review pass 1 (gauntlet) — fixed 3 Minors (Clove): step-05-route.md now lists `needs-stronger-model` matching the canonical routing table; two stale non-behavioral ACs corrected (step files are prose-only not `stepsCompleted`-frontmatter; agent defs are Claude+Codex, Cursor deferred). Content/plan-only; `prism:check` stays in sync (step files aren't build-mirrored).
 - 2026-06-13 [hmcgrew/prism-conductor-docs]: Reconciled Group 3 (PR-C.6 — docs/registration + plan close) against repo reality — rewrote tasks 29–35 to AFK-executable detail and added the plan-close task 36. Corrected six gaps (no ADR byte-parity linter so parity is a manual `diff`; skills-ecosystem install mirror is token-parameterized + omits handoff section, not byte-identical; AGENTS.md has no mirror; no `_meta.json` sidebar; no Winston/Nora/review-loop dev docs to cross-reference; branch is `…-docs` not `…-adr-docs`); see the "Group 3 reconciliation" Decision.
+- 2026-06-13 [hmcgrew/prism-conductor-docs]: Implemented Group 3 (Clove tasks 29–32, 36 + Eli tasks 33–35) and closed the epic. Shipped ADR-0048 + byte-identical install mirror, the skills-ecosystem orchestration-axis intro + Orchestration personas subsection (canonical literal + install token-mirror), AGENTS.md § 0 routing row / persona note / § 9 ownership row, the ADR README 0048 index row + mirror, and the paired dev doc at `docs/content/dev/ai-skills/conductor.md`. Verdict gate confirmed: all `## Decisions` entries carry a verdict and the six `→ promoted to ADR-0048` promotions are delivered (ADR-0048 + the skills-ecosystem axis); plan marked closed and preserved per ADR-0047.
 
 ---
 
@@ -478,18 +481,18 @@ _(none yet)_
 
 ## PR Readiness
 
-Living checklist — updated every time `code-review-self` runs. Reflects current state. **Now tracking Group 2 (engine PR, `hmcgrew/prism-conductor-engine`).**
+Living checklist — updated every time `code-review-self` runs. Reflects current state. **Now tracking Group 3 (docs/registration + epic-close PR, `hmcgrew/prism-conductor-docs`).**
 
 - [x] No critical or major issues
-- [x] Types correct — Group 2 is content-only (step files, lib docs, rule + persona edits); no code changes, no `any`
+- [x] Types correct — Group 3 is content-only (ADR, architect doc, AGENTS.md, ADR README, dev doc, plan close); no code changes, no `any`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — Group 2 adds no code; existing build/manifest tests cover the regenerated mirrors
+- [x] Tests written for new logic and edge cases — Group 3 adds no code; existing build/manifest tests cover the regenerated mirrors
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`)
-- [x] PR description up to date — set at draft-PR #105 open
-- [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048)
-- [x] Review gauntlet CLEAN (#105). Briar self-review: 3 Minors filed pass 1, all fixed in `6205eb1`, clean on pass 2. Eric PR review: clean on both axes first pass (`confidence:high` + `effort:quick`). Two remaining `open` issues are Group 1 foundation Minors, out of scope. PR held draft — human owns the merge/ready-flip.
+- [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`). ADR-0048 + ADR-README parity `diff`s exit 0.
+- [x] PR description up to date — set at draft-PR open
+- [x] Lasting decisions promoted to architect context — six `→ promoted to ADR-0048` decisions delivered (ADR-0048 + the skills-ecosystem orchestration axis); verdict gate confirmed all Decisions carry a verdict.
+- [ ] Review gauntlet — pending (Briar + Eric on the close PR).
 
-> **Group 1 (foundation, `hmcgrew/prism-conductor-foundation`) — shipped clean.** Briar (2 Minors fixed) + Eric (1 Minor fixed); both review passes clean, PR #104 held draft. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR, not the engine PR.
+> **Groups 1 + 2 — shipped clean.** Group 1 (foundation, PR #104): Briar (2 Minors fixed) + Eric (1 Minor fixed), both passes clean. Group 2 (engine, PR #105): Briar (3 Minors fixed) + Eric (clean first pass), gauntlet clean. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR.
 
-**Last updated:** 2026-06-13 (Group 2 engine gauntlet complete — Briar + Eric both clean; PR #105 ready for human merge, held draft)
+**Last updated:** 2026-06-13 (Group 3 docs/registration implemented + epic closed; full gate green modulo the known Windows flake; PR draft, review gauntlet pending)
