@@ -421,7 +421,7 @@ _(none yet)_
 
 ## Cleanup Items
 
-- Working tree (not in PR) — stray 0-byte file `:Tconductor-pr-body.md` at repo root (botched shell redirect from a prior session). Untracked, so it won't ship; remove to clear branch-checkout noise.
+- ~~Working tree (not in PR) — stray 0-byte file `:Tconductor-pr-body.md` at repo root (botched shell redirect from a prior session).~~ Removed during Briar self-review pass 1.
 
 ---
 
@@ -437,6 +437,7 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` green; only the pre-existing Windows `atlas-dogfood` path flake fails, identical on clean HEAD)
 - [ ] PR description up to date — set at draft-PR open
 - [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048; Group 1 is foundation)
-- [ ] Two open Minor review issues (agent-def utility-skip test coverage; conductor-state archive gitignore glob) — Briar self-review pass 1
+- [x] All review issues resolved — Briar (2 Minors: agent-def utility-skip test, conductor-state archive gitignore glob) + Eric (1 Minor: stale type:persona plan sweep), all fixed
+- [x] Review gauntlet clean — Briar self-review zero-findings pass + Eric PR review zero-findings pass; PR held draft (human/orchestrator owns merge)
 
-**Last updated:** 2026-06-13 (Briar self-review pass 1 — 2 open Minors)
+**Last updated:** 2026-06-13 (review gauntlet complete — Briar + Eric both clean; PR draft)
