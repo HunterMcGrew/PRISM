@@ -265,7 +265,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
   - **Root cause:** the user wants one lean persona whose single job is orchestration; orchestration has a distinct posture (dispatch + route + track) and its own voice, unlike `prism-review-loop` which runs in the invoking persona's voice.
   - **Alternatives considered:** (a) bake orchestration into Winston/Nora as a mode; (b) ship as a utility skill like `prism-review-loop`.
   - **Chosen approach:** new persona on a third axis (orchestration), orthogonal to ticket-flow and cadence-driven. (a) hat-stacks and violates one-lean-persona-one-job; (b) loses the persona/voice the user explicitly wants.
-  - **Implementation guidance:** `type: "persona"` in roles.json; full voice + How-Sol-thinks lens; never re-implements a dispatched persona.
+  - **Implementation guidance:** register Sol in roles.json with the `{ id, persona }` persona shape (no `type` field — only utilities carry `type: "utility"`; see the Group 1 reconciliation Decision); full voice + How-Sol-thinks lens; never re-implements a dispatched persona.
   - → promoted to ADR-0048 (authored in PR-C.6).
 - **Autonomy between gates, never through them — Sol has no authoritative write path.**
   - **Root cause:** an always-moving orchestrator that can clear a human gate erodes the single property that makes PRISM output trustworthy (Eric never approves, humans merge, Nora's DoR, Winston's A/P/C). Briar, Clove, and Nora independently converged on this in design review.
@@ -351,7 +351,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 
 ### Non-behavioral
 
-- [ ] Canonical skill source exists at `.ai-skills/skills/prism-conductor/` with `frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`; `type: "persona"` registered in `.ai-skills/definitions/roles.json`.
+- [ ] Canonical skill source exists at `.ai-skills/skills/prism-conductor/` with `frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`; registered in `.ai-skills/definitions/roles.json` with the `{ id, persona }` persona shape (no `type` field — see the Group 1 reconciliation Decision).
 - [ ] Generated mirrors land at `.claude/skills/prism-conductor/`, `.codex/skills/prism-conductor/`, `.cursor/skills/prism-conductor/` after `pnpm prism:build`.
 - [ ] The build emits per-runtime agent definitions (`.claude/agents/`, `.codex/agents/`, `.cursor/agents/`) for each dispatched persona from canonical source, each carrying a `model` default.
 - [ ] The goal-state schema lives at `.prism/skills/prism-conductor/lib/goal-state.md`; the report-back contract at `lib/report-back.md`; the fleet contract at `lib/fleet.md`.
@@ -379,6 +379,7 @@ _(none yet)_
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan revised — resolved both OPEN decisions (name = Sol; dispatch = Workflow tool, gate-segmented) and collapsed pipeline/fleet into one engine. Added the conditional-gate model — gates judged by their owning persona under a human-set autonomy policy (launch/internal/hobby), returning auto-cleared/needs-human/blocked, with Sol only routing, merge infra-enforced, and auto-clears always audited; see Decisions. Added the agent-definition build task to PR-C.1; PR #103 body re-synced.
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan refined after a tabletop dry run (goal: CMS Pages content type) — split report-back into a primary verdict plus optional secondary signals (the dry run showed a `done` dispatch can't carry an incidental follow-up under a single enum). Defined gate-resolution provenance: the gate's owning persona writes the escalation-reason/answer/rationale Decision via the OPEN-decision lifecycle, while Sol logs the event and carries the answer back, never writing the plan. Both promoted to ADR-0048; PR #103 body re-synced.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Reconciled Group 1 (PR-C.1 + PR-C.2, combined into one PR) against repo reality — rewrote tasks 1–12 to AFK-executable detail. Corrected five gaps (roles.json `{id,persona}` shape; agent-def build scoped to Claude-only since only `.codex/agents/*.toml` exists today; no theo/ren manifest route to mirror; no install `skills/` surface; state file at `.prism/conductor-state.json`); see the "Group 1 reconciliation" Decision.
+- 2026-06-13 [hmcgrew/prism-conductor-foundation]: Eric PR review (#104) — Standards axis clean; one Spec-axis Minor fixed: swept two stale `type: "persona"` plan references (Decision guidance + non-behavioral AC) to the `{ id, persona }` shape, matching the reconciliation Decision and shipped roles.json. Noted the pre-existing atlas-dogfood Windows flake and stale literal-allowlist as out-of-scope follow-up candidates. PR left draft; labels effort:quick + review:has-minors.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Briar self-review pass 1 — build.ts agent-def emitter, literal-allowlist set, and `startsWith`→`includes` cleanup change all verified sound; concern set (1 allowlist completeness, 2 header-match safety, 3 test coverage) cleared except two Minors filed: agent-def test omits the utility-skip coverage task 8 asked for, and timestamped conductor-state archives aren't gitignored (mirrors a pre-existing Ren gap). Also noted a pre-existing stale literal-allowlist condition (architect/qa-test-plan entries cite incidents no longer in their bodies) — out of scope, follow-up candidate.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Implemented Group 1 (Clove) — Sol skill scaffold (`frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`), goal-state schema doc at `.prism/skills/prism-conductor/lib/goal-state.md`, roles.json + manifest route + gitignore. Extended `scripts/ai-skills/build.ts` to emit `.claude/agents/<persona>.md` for every persona (opus for conductor+architect, sonnet otherwise; utilities excluded) with a unit test; ~132-line build diff stayed in-scope. Full gate green except a pre-existing Windows-only `atlas-dogfood` path-separator test flake (fails identically on clean HEAD).
 
@@ -391,6 +392,14 @@ _(none yet)_
 ---
 
 ## Review Issues
+
+### Stale `type: "persona"` references in the plan contradict the reconciliation Decision and shipped code
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-prism-conductor.md` (first `## Decisions` entry implementation-guidance sub-bullet; non-behavioral AC item)
+- **Problem:** Two spots still prescribed `type: "persona"` in roles.json, contradicting the Group 1 reconciliation Decision (real schema is `{ id, persona }`, no `type`) and the shipped `roles.json`. Eric (PR review) flagged it; they predate this PR's plan edits so weren't in the diff.
+- **Suggested fix:** Update both to the `{ id, persona }` persona shape, citing the reconciliation Decision. Done — the corrective task-1 and reconciliation mentions (which explicitly say *not* to use `type: "persona"`) stay as-is.
 
 ### Agent-def test omits the utility-skip and cleanup coverage task 8 asked for
 
