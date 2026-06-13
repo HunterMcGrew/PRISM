@@ -455,8 +455,8 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`)
 - [x] PR description up to date — set at draft-PR #105 open
 - [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048)
-- [ ] Review gauntlet — Briar self-review pass 1 (#105): 3 Minors filed (step-05 verdict omission, two stale ACs); Eric pending after a zero-findings self-review pass
+- [x] Review gauntlet CLEAN (#105). Briar self-review: 3 Minors filed pass 1, all fixed in `6205eb1`, clean on pass 2. Eric PR review: clean on both axes first pass (`confidence:high` + `effort:quick`). Two remaining `open` issues are Group 1 foundation Minors, out of scope. PR held draft — human owns the merge/ready-flip.
 
 > **Group 1 (foundation, `hmcgrew/prism-conductor-foundation`) — shipped clean.** Briar (2 Minors fixed) + Eric (1 Minor fixed); both review passes clean, PR #104 held draft. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR, not the engine PR.
 
-**Last updated:** 2026-06-13 (Group 2 engine implemented — Clove; gate green modulo known flake; gauntlet pending)
+**Last updated:** 2026-06-13 (Group 2 engine gauntlet complete — Briar + Eric both clean; PR #105 ready for human merge, held draft)
