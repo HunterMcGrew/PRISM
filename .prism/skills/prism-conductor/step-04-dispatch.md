@@ -16,6 +16,8 @@ The `self-review` and `pr-review` phases are not single passes — each runs the
 
 The loop reuses Sol's existing guardrails rather than duplicating them — the pass budget and three-strike survival rule from `step-07-budgets.md`, and the disagreement fast-path (a `needs-human` returned because the fixer thinks the finding is wrong → Winston) from `step-06-escalate.md`. Cite the ladder for its rules; do not restate the budget or strike numbers here.
 
+One ladder rule does not carry over: the prism-review-loop phase-boundary gate (its interactive `/prism-handoff` prompt at the `self-review → pr-review` transition) does not fire under Sol's autonomous segment — Sol advances the transition in place. Interactive gates only reach the human through `needs-human` / `pendingHumanReport`; Sol surfaces a review boundary to the human only when a rung returns `needs-human`, never as a routine handoff prompt.
+
 ## Exit condition
 
 A segment returned and its verdicts are recorded in goal-state — control advances to step-05 to route them.

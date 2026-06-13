@@ -34,13 +34,33 @@ Make the prism-review-loop gauntlet the conductor's default review phase, so a S
 ## History
 
 - 2026-06-13 [hmcgrew/conductor-review-loop-default]: Wired prism-review-loop gauntlet into the conductor as the default review phase; added `needs-fix` verdict; Eric made non-skippable. Originated from a session steer after a Sol run skipped Eric.
+- 2026-06-13 [hmcgrew/conductor-review-loop-default]: Briar self-review minor — clarified in step-04 that Sol's autonomous segment skips the prism-review-loop phase-boundary gate.
+
+---
+
+## Review Issues
+
+### Phase-boundary gate undefined under autonomous dispatch
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/step-04-dispatch.md:13`
+- **Problem:** The gauntlet section doesn't address the prism-review-loop phase-boundary gate (`/prism-handoff` prompt at the `self-review → pr-review` boundary) — when Sol's Workflow segment runs this transition autonomously, the gate doesn't surface, leaving the behavior undefined for a reader consulting this spec.
+- **Suggested fix:** Add one sentence noting that Sol's autonomous segment skips the prism-review-loop phase-boundary gate; interactive gates only surface via `needs-human` / `pendingHumanReport`.
+- **Resolution:** Added a paragraph to step-04 § The review phase is the gauntlet stating the phase-boundary gate does not fire under Sol's autonomous segment; interactive gates reach the human only via `needs-human` / `pendingHumanReport`.
+
+---
+
+## Acceptance Criteria
+
+No user stories or Linear ticket — AC omitted per acceptance-criteria.md (no Mira AC, no Debug entries, no REQ sources to cite).
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] `pnpm prism:check` green — last run: pending
+- [x] No critical or major issues
+- [ ] `pnpm prism:check` green — last run: pending (pre-existing atlas-dogfood Windows path failure, issue #107; not this branch)
 - [ ] PR description up to date
 
 **Last updated:** 2026-06-13
