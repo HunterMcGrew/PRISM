@@ -22,6 +22,7 @@
 	".prism/architect/**": "spec-editing.md",
 	".prism/references/**": "spec-editing.md",
 	".prism/plans/**": "spec-editing.md",
+	".prism/skills/prism-conductor/**": "spec-editing.md",
 	".ai-skills/skills/**": ["spec-editing.md", "skills-ecosystem.md"],
 	"scripts/ai-skills/**": ["spec-editing.md", "skills-ecosystem.md"],
 	".prism/lessons.md": "audit-workflow.md",

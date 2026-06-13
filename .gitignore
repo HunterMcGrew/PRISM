@@ -22,3 +22,7 @@ node_modules/
 # Ren state files — operational; gitignored per ADR-0042 + Ren state schema
 .prism/ren-state.json
 .prism/ren-state.json.tmp
+
+# Sol/Conductor state files — operational; gitignored per the conductor goal-state schema
+.prism/conductor-state.json
+.prism/conductor-state.json.tmp
