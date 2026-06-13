@@ -6,6 +6,7 @@ Apply the verdict + gate-disposition routing table. The table is canonical in `.
 
 - `done` → advance `currentPhase` to the next phase.
 - `needs-replan` / `blocked` → route back to Winston (set `escalation.axis: replan`).
+- `needs-stronger-model` → step-06 (set `escalation.axis: model`; bump `models.<persona>` to `opus` for the next dispatch).
 - `needs-human` → pause the lane and append to `pendingHumanReport`.
 
 **Secondary signals** route independently — a dispatch can be `done` *and* carry a signal:

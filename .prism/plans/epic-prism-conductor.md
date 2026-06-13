@@ -350,9 +350,9 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 
 - [ ] Canonical skill source exists at `.ai-skills/skills/prism-conductor/` with `frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`; registered in `.ai-skills/definitions/roles.json` with the `{ id, persona }` persona shape (no `type` field — see the Group 1 reconciliation Decision).
 - [ ] Generated mirrors land at `.claude/skills/prism-conductor/`, `.codex/skills/prism-conductor/`, `.cursor/skills/prism-conductor/` after `pnpm prism:build`.
-- [ ] The build emits per-runtime agent definitions (`.claude/agents/`, `.codex/agents/`, `.cursor/agents/`) for each dispatched persona from canonical source, each carrying a `model` default.
+- [ ] The build emits per-runtime agent definitions (`.claude/agents/` + `.codex/agents/`; Cursor agent defs deferred per the Group 1 reconciliation Decision) for each dispatched persona from canonical source, each carrying a `model` default.
 - [ ] The goal-state schema lives at `.prism/skills/prism-conductor/lib/goal-state.md`; the report-back contract at `lib/report-back.md`; the fleet contract at `lib/fleet.md`.
-- [ ] Step files exist at `.prism/skills/prism-conductor/step-01-init.md` … `step-09-report.md`, each ≤100 lines with `stepsCompleted` frontmatter.
+- [ ] Step files exist at `.prism/skills/prism-conductor/step-01-init.md` … `step-09-report.md`, each ≤100 lines, prose-only (no frontmatter — resume is driven off goal-state `currentPhase` per the Group 2 reconciliation Decision).
 - [ ] ADR-0048 documents the orchestration axis + the autonomy-between-gates invariant and is mirrored byte-identical to the templates surface.
 - [ ] `worktree-isolation.md` lists Sol as a worktree-creating persona bound to the cleanup contract; mirrored byte-identical.
 - [ ] `skills-ecosystem.md` and `AGENTS.md` register Sol and the orchestration axis; paired dev doc lives at `docs/content/dev/ai-skills/conductor.md` and is linked from the sidebar.
@@ -381,6 +381,7 @@ _(none yet)_
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Implemented Group 1 (Clove) — Sol skill scaffold (`frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`), goal-state schema doc at `.prism/skills/prism-conductor/lib/goal-state.md`, roles.json + manifest route + gitignore. Extended `scripts/ai-skills/build.ts` to emit `.claude/agents/<persona>.md` for every persona (opus for conductor+architect, sonnet otherwise; utilities excluded) with a unit test; ~132-line build diff stayed in-scope. Full gate green except a pre-existing Windows-only `atlas-dogfood` path-separator test flake (fails identically on clean HEAD).
 - 2026-06-13 [hmcgrew/prism-conductor-engine]: Reconciled Group 2 (PR-C.3 + C.4 + C.5, combined into one engine PR) against repo reality — rewrote the step-machine + protocol + fleet tasks to AFK-executable detail as continuous tasks 13–28, renumbered downstream Group 3 to 29–35. Corrected seven gaps; see the "Group 2 reconciliation" Decision.
 - 2026-06-13 [hmcgrew/prism-conductor-engine]: Implemented Group 2 (Clove, tasks 13–28) — nine prose-only step files (`step-01-init` … `step-09-report`, no frontmatter, each ≤27 lines), `lib/report-back.md` (verdicts + signals + folded `## Gate registry`) and `lib/fleet.md`, the `shared.md` `## Workflow overview` rewrite citing all nine step paths, the byte-identical `## When dispatched by Sol` note in all nine dispatched personas' `shared.md`, and the Sol worktree extension across both `worktree-isolation.md` copies (`diff` exits 0). One plan-vs-reality deviation: `prism-debugger` does have `## Next persona` (plan said it lacked one), so the note was inserted before `## Next persona` uniformly across all nine for scannability. Full gate green modulo the known Windows `atlas-dogfood` path-separator flake.
+- 2026-06-13 [hmcgrew/prism-conductor-engine]: Briar self-review pass 1 (gauntlet) — fixed 3 Minors (Clove): step-05-route.md now lists `needs-stronger-model` matching the canonical routing table; two stale non-behavioral ACs corrected (step files are prose-only not `stepsCompleted`-frontmatter; agent defs are Claude+Codex, Cursor deferred). Content/plan-only; `prism:check` stays in sync (step files aren't build-mirrored).
 
 ---
 
@@ -416,6 +417,24 @@ _(none yet)_
 - **Problem:** goal-state.md's corruption-recovery and resume protocols archive to `.prism/conductor-state.<timestamp>.json` and `.prism/conductor-state.<timestamp>.broken.json`, but `.gitignore` only covers `.prism/conductor-state.json` and `.prism/conductor-state.json.tmp`. `git check-ignore` confirms the timestamped variants are not ignored — a recovery archive could be accidentally committed. Faithfully mirrors a pre-existing identical gap in Ren (`.prism/ren-state.<timestamp>.*`).
 - **Suggested fix:** broaden to a glob — e.g. `.prism/conductor-state.json`, `.prism/conductor-state.json.tmp`, `.prism/conductor-state.*.json`. Closing Ren's identical gap is out of scope here (follow-up candidate).
 
+### step-05-route.md drops `needs-stronger-model` from its primary-verdict list (routing-table incoherence)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/skills/prism-conductor/step-05-route.md` — added the `needs-stronger-model → step-06 (escalation.axis: model)` bullet to the primary-verdict list, matching the canonical table in `lib/report-back.md`.
+- **File:** `.prism/skills/prism-conductor/step-05-route.md:5-9`
+- **Problem:** step-05's inline primary-verdict list enumerates four of the five canonical verdicts (`done`, `needs-replan`/`blocked`, `needs-human`) and silently omits `needs-stronger-model`, which the canonical routing table in `lib/report-back.md:49` lists as `bump models.<persona> to opus (escalation.axis: model)`. The list reads as exhaustive (plain bullets, no "e.g."), so a reader treating step-05 as the operative routing would never route the model axis from here. The mechanism is still reachable — step-05's exit condition hands escalation-raising verdicts to step-06, which owns the model axis — but the inline list disagreeing with the canonical table is exactly the drift cite-don't-restate exists to prevent.
+- **Suggested fix:** add one bullet to the primary-verdict list — `` - `needs-stronger-model` → step-06 (escalation.axis: model). `` — matching the canonical table; or replace the four-bullet list with a single "primary verdict routes the lane per the table in report-back.md" cite and drop the partial restatement entirely.
+
+### Stale non-behavioral AC: `stepsCompleted` frontmatter and `.cursor/agents/` emit contradict shipped reality
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.prism/plans/epic-prism-conductor.md` — non-behavioral AC line 355 now reads prose-only/no-frontmatter; line 353 drops `.cursor/agents/` and notes Cursor is deferred. Both now match the reconciliation Decisions and shipped reality.
+- **File:** `.prism/plans/epic-prism-conductor.md:353,355`
+- **Problem:** Two non-behavioral AC items assert properties the PR deliberately does not have. Line 355 says step files are "each ≤100 lines **with `stepsCompleted` frontmatter**" — but the Group 2 reconciliation Decision (line 319) and every shipped step file confirm prose-only, **no** frontmatter; `stepsCompleted` does not exist in this repo's step machine. Line 353 says the build emits agent defs to `.claude/agents/`, `.codex/agents/`, **`.cursor/agents/`** — but the Group 1 reconciliation Decision (line 299) defers Cursor agent defs; only `.claude/agents/` + the existing `.codex/agents/*.toml` are emitted. An AC asserting a property the PR correctly lacks is a self-contradicting verification claim — same drift class Eric swept on the Group 1 PR (stale `type: "persona"` refs).
+- **Suggested fix:** line 355 — strike "with `stepsCompleted` frontmatter"; replace with "each ≤100 lines, prose-only (no frontmatter — resume is driven off goal-state `currentPhase`)". Line 353 — drop `.cursor/agents/` and note Cursor is deferred, e.g. "(`.claude/agents/` + `.codex/agents/`; Cursor deferred)".
+
 ---
 
 ## Cleanup Items
@@ -436,7 +455,7 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`)
 - [x] PR description up to date — set at draft-PR #105 open
 - [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048)
-- [ ] Review gauntlet — pending Briar + Eric on the engine PR (#105)
+- [ ] Review gauntlet — Briar self-review pass 1 (#105): 3 Minors filed (step-05 verdict omission, two stale ACs); Eric pending after a zero-findings self-review pass
 
 > **Group 1 (foundation, `hmcgrew/prism-conductor-foundation`) — shipped clean.** Briar (2 Minors fixed) + Eric (1 Minor fixed); both review passes clean, PR #104 held draft. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR, not the engine PR.
 
