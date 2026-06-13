@@ -379,6 +379,7 @@ _(none yet)_
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan revised — resolved both OPEN decisions (name = Sol; dispatch = Workflow tool, gate-segmented) and collapsed pipeline/fleet into one engine. Added the conditional-gate model — gates judged by their owning persona under a human-set autonomy policy (launch/internal/hobby), returning auto-cleared/needs-human/blocked, with Sol only routing, merge infra-enforced, and auto-clears always audited; see Decisions. Added the agent-definition build task to PR-C.1; PR #103 body re-synced.
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan refined after a tabletop dry run (goal: CMS Pages content type) — split report-back into a primary verdict plus optional secondary signals (the dry run showed a `done` dispatch can't carry an incidental follow-up under a single enum). Defined gate-resolution provenance: the gate's owning persona writes the escalation-reason/answer/rationale Decision via the OPEN-decision lifecycle, while Sol logs the event and carries the answer back, never writing the plan. Both promoted to ADR-0048; PR #103 body re-synced.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Reconciled Group 1 (PR-C.1 + PR-C.2, combined into one PR) against repo reality — rewrote tasks 1–12 to AFK-executable detail. Corrected five gaps (roles.json `{id,persona}` shape; agent-def build scoped to Claude-only since only `.codex/agents/*.toml` exists today; no theo/ren manifest route to mirror; no install `skills/` surface; state file at `.prism/conductor-state.json`); see the "Group 1 reconciliation" Decision.
+- 2026-06-13 [hmcgrew/prism-conductor-foundation]: Briar self-review pass 1 — build.ts agent-def emitter, literal-allowlist set, and `startsWith`→`includes` cleanup change all verified sound; concern set (1 allowlist completeness, 2 header-match safety, 3 test coverage) cleared except two Minors filed: agent-def test omits the utility-skip coverage task 8 asked for, and timestamped conductor-state archives aren't gitignored (mirrors a pre-existing Ren gap). Also noted a pre-existing stale literal-allowlist condition (architect/qa-test-plan entries cite incidents no longer in their bodies) — out of scope, follow-up candidate.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Implemented Group 1 (Clove) — Sol skill scaffold (`frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`), goal-state schema doc at `.prism/skills/prism-conductor/lib/goal-state.md`, roles.json + manifest route + gitignore. Extended `scripts/ai-skills/build.ts` to emit `.claude/agents/<persona>.md` for every persona (opus for conductor+architect, sonnet otherwise; utilities excluded) with a unit test; ~132-line build diff stayed in-scope. Full gate green except a pre-existing Windows-only `atlas-dogfood` path-separator test flake (fails identically on clean HEAD).
 
 ---
@@ -391,13 +392,27 @@ _(none yet)_
 
 ## Review Issues
 
-_(none yet)_
+### Agent-def test omits the utility-skip and cleanup coverage task 8 asked for
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/claude-agent-def.test.ts`
+- **Problem:** The suite covers `buildClaudeAgentMarkdown` (frontmatter, model defaults, body, description collapse) but not the emitter loop's `roleDefinition.type !== "utility"` guard or `removeDeletedManagedAgentFiles` with the new `extension`/`headerLine` params — task 8 explicitly called for "utilities are skipped" coverage. Behavior is verified-correct by build output (19 personas → 19 defs, both utilities excluded), so this is a coverage gap, not a defect.
+- **Suggested fix:** add an assertion that the model-defaults map / emitter excludes the two utility skill IDs (`prism-handoff`, `prism-review-loop`), or a small integration assertion that no `.claude/agents/<utility>.md` is emitted.
+
+### Timestamped conductor-state archives are not gitignored
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.gitignore` (vs `.prism/skills/prism-conductor/lib/goal-state.md` lines 57, 79, 87)
+- **Problem:** goal-state.md's corruption-recovery and resume protocols archive to `.prism/conductor-state.<timestamp>.json` and `.prism/conductor-state.<timestamp>.broken.json`, but `.gitignore` only covers `.prism/conductor-state.json` and `.prism/conductor-state.json.tmp`. `git check-ignore` confirms the timestamped variants are not ignored — a recovery archive could be accidentally committed. Faithfully mirrors a pre-existing identical gap in Ren (`.prism/ren-state.<timestamp>.*`).
+- **Suggested fix:** broaden to a glob — e.g. `.prism/conductor-state.json`, `.prism/conductor-state.json.tmp`, `.prism/conductor-state.*.json`. Closing Ren's identical gap is out of scope here (follow-up candidate).
 
 ---
 
 ## Cleanup Items
 
-_(none yet — populated during self-review on each sub-PR)_
+- Working tree (not in PR) — stray 0-byte file `:Tconductor-pr-body.md` at repo root (botched shell redirect from a prior session). Untracked, so it won't ship; remove to clear branch-checkout noise.
 
 ---
 
@@ -413,5 +428,6 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` green; only the pre-existing Windows `atlas-dogfood` path flake fails, identical on clean HEAD)
 - [ ] PR description up to date — set at draft-PR open
 - [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048; Group 1 is foundation)
+- [ ] Two open Minor review issues (agent-def utility-skip test coverage; conductor-state archive gitignore glob) — Briar self-review pass 1
 
-**Last updated:** 2026-06-13 (Group 1 foundation implemented)
+**Last updated:** 2026-06-13 (Briar self-review pass 1 — 2 open Minors)

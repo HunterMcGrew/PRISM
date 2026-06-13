@@ -23,6 +23,9 @@ node_modules/
 .prism/ren-state.json
 .prism/ren-state.json.tmp
 
-# Sol/Conductor state files — operational; gitignored per the conductor goal-state schema
+# Sol/Conductor state files — operational; gitignored per the conductor goal-state schema.
+# The glob covers the timestamped archive/broken variants the corruption-recovery and
+# resume protocols write (conductor-state.<timestamp>.json, .<timestamp>.broken.json).
 .prism/conductor-state.json
 .prism/conductor-state.json.tmp
+.prism/conductor-state.*.json

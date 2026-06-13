@@ -4,14 +4,35 @@
  *   - per-skill model defaults (opus for conductor + architect, sonnet otherwise)
  *   - the generated SKILL.md body riding after the frontmatter
  *   - token substitution applied to the description
+ *   - the emitter loop skips utility skills (one agent def per persona, none per utility)
  */
+import fs from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 
 import {
 	buildClaudeAgentMarkdown,
+	buildRoleMap,
 	CLAUDE_AGENT_MODEL_DEFAULTS,
+	type RolesDefinitions,
 } from "./build";
+import { pathExists } from "./utils";
+
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDirectory, "../..");
+
+async function loadRoleDefinitions(): Promise<RolesDefinitions> {
+	const rolesPath = path.join(
+		repoRoot,
+		".ai-skills",
+		"definitions",
+		"roles.json"
+	);
+	const raw = await fs.readFile(rolesPath, "utf8");
+	return JSON.parse(raw) as RolesDefinitions;
+}
 
 function parseModelFromFrontmatter(markdown: string): string | undefined {
 	const match = markdown.match(/^model: (.+)$/m);
@@ -73,4 +94,34 @@ test("description is collapsed to one line and token-substituted", () => {
 	});
 
 	assert.match(output, /description: "Line one continued onto line two\."/);
+});
+
+test("the emitter skips utilities — one agent def per persona, none per utility", async () => {
+	const roleDefinitions = await loadRoleDefinitions();
+	const roleMap = buildRoleMap(roleDefinitions);
+	const agentsRoot = path.join(repoRoot, ".claude", "agents");
+
+	if (!(await pathExists(agentsRoot))) {
+		// Pre-build state — nothing emitted yet, nothing to assert against.
+		return;
+	}
+
+	for (const [skillId, role] of roleMap.entries()) {
+		const agentDefPath = path.join(agentsRoot, `${skillId}.md`);
+		const emitted = await pathExists(agentDefPath);
+
+		if (role.type === "utility") {
+			assert.equal(
+				emitted,
+				false,
+				`utility ${skillId} must not get a .claude/agents def`
+			);
+		} else {
+			assert.equal(
+				emitted,
+				true,
+				`persona ${skillId} must get a .claude/agents def`
+			);
+		}
+	}
 });
