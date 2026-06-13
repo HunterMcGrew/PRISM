@@ -30,6 +30,7 @@ Remove stale `prism-architect` and `prism-qa-test-plan` literal-allowlist entrie
 ## History
 
 - 2026-06-13 [hmcgrew/issue-108-prune-stale-literal-allowlist]: Removed 10 stale allowlist entries for prism-architect (THR-1636) and prism-qa-test-plan (THR-1630); all body files confirmed empty of the literals via grep.
+- 2026-06-13 [hmcgrew/issue-108-prune-stale-literal-allowlist]: Swept all 5 prism-code-dev reason strings from dangling THR-1636 reference to correct THR-1881 (per-push PR body sync incident) per Briar minor finding.
 
 ---
 
@@ -38,7 +39,7 @@ Remove stale `prism-architect` and `prism-qa-test-plan` literal-allowlist entrie
 ### prism-code-dev allowlist reason text cites wrong ticket
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.ai-skills/definitions/literal-allowlist.json:29` (and mirrors at lines 33, 37, 41, 45)
 - **Problem:** The `reason` field for all 5 `prism-code-dev` entries says "skill cites the THR-1636 originating incident in prettier guidance" but the actual literal triggering the guard in those files is `THR-1881`, not THR-1636. THR-1636 does not appear in the prism-code-dev bodies.
 - **Suggested fix:** Update reason text to reference THR-1881 and PR body sync guidance. No functional impact — guard exempts by path prefix, not reason text.

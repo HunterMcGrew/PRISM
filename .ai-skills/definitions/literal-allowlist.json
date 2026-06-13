@@ -26,23 +26,23 @@
 		},
 		{
 			"path": ".claude/skills/prism-code-dev/SKILL.md",
-			"reason": "skill cites the THR-1636 originating incident in prettier guidance"
+			"reason": "skill cites the THR-1881 originating incident in the per-push PR body sync guidance"
 		},
 		{
 			"path": ".agents/skills/prism-code-dev/SKILL.md",
-			"reason": "platform-copy mirror of prism-code-dev"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".codex/agents/prism-code-dev.toml",
-			"reason": "platform-copy mirror of prism-code-dev"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".claude/agents/prism-code-dev.md",
-			"reason": "platform-copy mirror of prism-code-dev"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".cursor/skills/prism-code-dev/SKILL.md",
-			"reason": "platform-copy mirror of prism-code-dev"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".claude/spec/adrs/0018-persona-lane-ownership.md",
