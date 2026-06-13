@@ -434,9 +434,9 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Tests written for new logic and edge cases — Group 2 adds no code; existing build/manifest tests cover the regenerated mirrors
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`)
-- [ ] PR description up to date — set at draft-PR open
+- [x] PR description up to date — set at draft-PR #105 open
 - [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048)
-- [ ] Review gauntlet — pending Briar + Eric on the engine PR
+- [ ] Review gauntlet — pending Briar + Eric on the engine PR (#105)
 
 > **Group 1 (foundation, `hmcgrew/prism-conductor-foundation`) — shipped clean.** Briar (2 Minors fixed) + Eric (1 Minor fixed); both review passes clean, PR #104 held draft. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR, not the engine PR.
 
