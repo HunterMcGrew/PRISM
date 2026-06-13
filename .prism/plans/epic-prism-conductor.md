@@ -27,7 +27,7 @@ Sol is a **persona on a third axis** — *orchestration* — orthogonal to the e
 
 ### Core invariant — autonomy between gates, never through them
 
-Sol drives autonomously *between* gates and hard-pauses *at* them. A persona's "no" (Briar non-clean, Nora not-ready, Winston's A/P/C selection, Eric's findings, the human merge) is the system working, never a failure to route around. This invariant is the ADR (ADR-0048) this epic ships.
+Sol drives autonomously *between* gates and stops *at* them — but a gate is not unconditionally human. Each gate is owned by a persona (Winston for plan approval / A/P/C, Nora for Definition of Ready), and that persona judges its own gate against a human-set **autonomy policy** (see below), returning one of three dispositions: `auto-cleared` (low-stakes, within policy — proceed), `needs-human` (the persona escalates regardless), or `blocked` (policy forces a human). Sol never judges a gate — it dispatches the owning persona and routes the disposition. The invariant holds in its strict form: *Sol* never clears a gate; the gate's *owner* clears or escalates it. The one unconditional gate is **merge**, enforced by branch protection at the infrastructure level (ADR-0011) — not even a maximally-autonomous Sol can merge a protected branch, so merge is never a disposition any persona returns; every lane parks there for the human. This conditional-gate model, plus the strict no-Sol-clearing rule, is the ADR (ADR-0048) this epic ships.
 
 ### Sol dispatches; it never does or interprets the work
 
@@ -42,9 +42,25 @@ Personas "talk to each other" through the **branch plan**, exactly as they alrea
 
 Sol's dispatch message stays minimal ("Clove — your turn, plan at `<path>`, tasks 3–5, report back"); the work content rides the plan; the run-state rides goal-state. No transcript-passing between personas — that is what keeps context tight enough for Sol-on-Opus to run a Sonnet fleet.
 
-### Per-phase fresh context
+### Dispatch engine — the Workflow tool, gate-segmented
 
-One context cannot hold the whole lifecycle (`prism-handoff` exists precisely because long runs compact and drop constraints). Sol spawns a **fresh context per dispatch**, with the goal-state/handoff doc carrying the survival state (strike table, DoR result, plan pointer) across the boundary — the `prism-review-loop` "Gauntlet state travels" rule, generalized. In Claude Code this is subagent fan-out / handoff compaction; on runtimes without that, sequential invocation with `prism-handoff` between phases.
+Sol dispatches through a deterministic orchestration script (Claude Code's Workflow tool; the `@openai/codex-sdk` / `@cursor/sdk` equivalents on other runtimes). The script's variables hold the run-state, so it never competes for Sol's context window — the decisive advantage at lifecycle scale. Each dispatched persona is materialized as a compiled per-runtime **agent definition** (the build emits `.claude/agents/`, `.codex/agents/`, `.cursor/agents/` from the same canonical persona source it already compiles skills from), so a worker loads its full persona at spawn — no dynamic skill invocation needed. Per-agent `model` override sets the tier; `schema` returns the report-back verdict; `isolation: 'worktree'` gives each lane its own checkout; `budget` bounds the run; `resumeFromRunId` resumes a stopped run.
+
+**Gate-segmented, dynamically.** Sol does not talk to running workers — a worker does its job and returns a structured verdict plus a summary/handoff of its progress. The script runs each lane forward through its phases autonomously, clearing `auto-cleared` gates in place without returning to Sol. It breaks out to Sol only when a lane returns `needs-human` / `blocked`, completes, or trips a budget. Sol — the conversational main loop — then surfaces those gates to the human, takes the input, and launches the next workflow segment. The workflow is the autonomous parallel engine *between* human touchpoints; Sol is the conversational gatekeeper *at* them. The segment boundary is dynamic ("run until a lane needs a human or finishes"), not fixed per phase — auto-cleared gates extend the autonomous run.
+
+**One engine, not two.** Pipeline and fleet are the same mechanism over a different lane count — a pipeline run is a one-lane fleet. `pipeline(lanes, …)` per-lane independence gives failure containment for free: a lane that throws drops to `null` and skips its remaining stages while the others continue.
+
+### Conditional gates and the autonomy policy
+
+The human sets an **autonomy policy** at run start (Sol asks it at intake alongside the pipeline/fleet question), reusing Parker's stakes-calibration vocabulary:
+
+- **launch** — gates stay human; Winston and Nora always return `needs-human`. Max scrutiny.
+- **internal** — personas self-clear the clearly-simple cases and escalate on judgment. The balanced default.
+- **hobby/spike** — maximum autonomy; personas escalate only on genuine risk.
+
+The rule is one-directional: a persona can always escalate *up* (`needs-human` even under a permissive policy) but never *down* (no `auto-cleared` when the policy locked the gate). The human holds the ceiling; the owning persona exercises judgment beneath it.
+
+**Auto-cleared is never invisible.** Every `auto-cleared` gate is recorded in the plan with the persona's stakes reasoning, and surfaced in Sol's end-of-run report. Autonomy moves the human from *in-the-loop* (approve before) to *on-the-loop* (review after) — it never goes dark, and merge remains the hard human backstop on every lane.
 
 ### Plan Readiness Gate — the firewall
 
@@ -65,11 +81,11 @@ A Plan Readiness Gate failure means *re-plan harder* (Winston is already Opus), 
 1. **Failure modes — three nested budgets.** Per-unit strike budget (the three-strike rule, generalized: same defect survives 3 fix attempts → pause the unit, surface survival history); per-phase failure budget (N consecutive hard failures of the same persona on the same unit → stop that phase, report); global run budget (total dispatch cap so a runaway can't burn unbounded). A "failure" is narrow — a persona can't complete its job, a verification command hard-fails repeatedly, or a defect survives the strike budget. A persona's "no" is **not** a failure.
 2. **Escalation modes — three axes, each trigger → target.** *Needs a better plan* → Winston (re-plan mode), triggered by a Plan Readiness Gate failure or a worker reporting guesswork. *Needs a stronger model* → bump the tier on the next dispatch of that persona, triggered by Sonnet stalling twice. *Needs a human* → hard pause and surface, triggered by an `OPEN —` decision, the disagreement fast-path (a fixer who believes the finding is wrong escalates immediately, not via strikes), or an inherently human gate.
 3. **Report-back protocol — a finite verdict enum.** Every dispatched persona writes content to the plan **and** returns one verdict to Sol: `done · blocked · needs-replan · needs-stronger-model · needs-human · found-bug · found-followup-work`. Sol's routing table is deterministic: `done`→advance · `needs-replan`/`blocked`→Winston · `found-bug`→Sasha · `found-followup-work`→Nora (through her scope-fit + DoR gate) · `needs-human`→pause and report. Sol routes a verdict; it never interprets one.
-4. **Fleet mode — failure containment + conflict gate.** Two run-shapes. *Pipeline* (one unit through phases, sequential; a failure pauses that one pipeline). *Fleet* (N independent units in parallel; a failure parks **that lane** — report and keep the others moving). Per-lane isolation via worktree (`worktree-isolation.md`, extended past Eric), per-lane goal-state lane. **Conflict gate (chosen default): refuse to parallelize units with overlapping blast radius** — shared types, the same architect doc, the same plan file — and serialize those instead; fail safe, not fast. Human-gate pauses across lanes are **batched** into one report ("4 lanes parked at merge, 2 blocked on you, 2 running"), never one ping per lane.
+4. **Fleet mode — failure containment + conflict gate.** Fleet is the dispatch engine run over multiple lanes — one engine; a pipeline is a one-lane fleet. `pipeline(lanes, …)` per-lane independence contains failures natively: a lane that throws drops to `null` and skips its remaining stages while the others continue. Per-lane isolation via worktree (`worktree-isolation.md`, extended past Eric). **Conflict gate (chosen default): refuse to parallelize lanes with overlapping blast radius** — shared types, the same architect doc, the same plan file — and serialize those instead; fail safe, not fast. `needs-human` pauses across lanes are **batched** into one end-of-segment report ("4 lanes parked at merge, 2 need you, 2 running"), never one ping per lane.
 
 ### Persona name
 
-Skill ID `prism-conductor` is locked. Persona human name defaults to **Sol** (they/them) — short, central, no roster collision — but is the user's call (see `## Decisions` → OPEN entry).
+Skill ID `prism-conductor`; persona **Sol** (they/them). Both locked.
 
 ---
 
@@ -98,9 +114,10 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
    - `## Model tiering` — the table from `## Design` (Sol=Opus default; Winston=always Opus; workers=Sonnet→Opus on signal). Cite `claude.md` for the runtime override mechanism.
    - `## Definition of Done` — Sol has either driven the run to `done`, paused at a gate with state saved, or stopped on a budget with a report. Include the `<!-- atlas:specializes-in -->` anchor at the end of a `## Per-team orchestration notes` stub so Atlas can inject team-specific phase ordering.
    - `## Lessons Check` + the standard reflex bullets (context-reuse, History 3-sentence cap, plan lookup).
-5. **Write `claude.md`** at `.ai-skills/skills/prism-conductor/claude.md`. Names the Claude Code dispatch surface: Sol dispatches a persona by spawning a fresh per-phase context (Agent/subagent) running the target skill, with the goal-state/handoff doc as carried context, and sets the model per dispatch via the runtime's model override. Fleet mode uses parallel subagent lanes with worktree isolation. State the OPEN dispatch-mechanism decision inline (subagent fan-out vs Workflow primitive vs sequential+handoff) and its default path (see `## Decisions`). Sol uses Read/Glob/Grep and writes only `.prism/skills/prism-conductor/`-owned state plus chat; never Edit on source.
+5. **Write `claude.md`** at `.ai-skills/skills/prism-conductor/claude.md`. Names the Claude Code dispatch surface: Sol authors and invokes a **Workflow** script per autonomous segment — `pipeline(lanes, …)` for per-lane phase chains, `agent()` calls with `agentType` (the compiled persona definition), `model` (the tiering), `schema` (the report-back verdict), `isolation: 'worktree'` (per lane), and `budget` (the global cap). The script clears `auto-cleared` gates in place and returns to Sol on `needs-human` / `blocked` / completion / budget; Sol surfaces gates conversationally, then launches the next segment (`resumeFromRunId` to resume). Personas are dispatched via compiled per-runtime agent definitions (task 8), not dynamic skill invocation. Sol uses Read/Glob/Grep and writes only `.prism/skills/prism-conductor/`-owned state plus chat; never Edit on source.
 6. **Write `codex.md` and `cursor.md`** at the same dir. Parallel structure to `claude.md`, describing the sequential-dispatch-with-`prism-handoff`-compaction fallback for runtimes without subagent fan-out / per-skill model pinning (note the known Cursor/Codex model-pin limitation already documented in `prism-review-loop`).
 7. **Run `pnpm prism:build`** from repo root. Verification: generated mirrors land at `.claude/skills/prism-conductor/`, `.codex/…`, `.cursor/…`.
+8. **Extend the build to emit agent definitions** at `scripts/ai-skills/build.ts` (or a sibling). Compile each PRISM persona into a per-runtime agent definition (`.claude/agents/<persona>.md`, `.codex/agents/<persona>.toml`, `.cursor/agents/<persona>.md`) from the canonical source — carrying the persona's behavioral instructions and a `model` default — so the dispatch engine spawns a worker that loads its persona at spawn (no dynamic skill invocation). Verification: `pnpm prism:build` emits the files; `pnpm prism:check` validates them. This is the portability prerequisite for Workflow dispatch; flag for its own PR if it grows large. (This insertion shifts downstream sub-PR task numbers by one — they are indicative and re-confirmed when each sub-PR is planned in detail.)
 
 ### PR-C.2 — Goal-state primitive (the run-control channel)
 
@@ -118,6 +135,8 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
      "lastUpdated": "ISO-8601",
      "goal": "one-line goal statement",
      "runShape": "pipeline | fleet",
+     "autonomyPolicy": "launch | internal | hobby",
+     "runId": "workflow run id or null",
      "conductorModel": "opus",
      "status": "running | paused | blocked | done | stopped",
      "globalBudget": { "maxDispatches": 100, "spent": 0 },
@@ -135,13 +154,13 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
          "failureCount": 0,
          "escalation": { "axis": "replan | model | human", "reason": "string", "raisedAt": "ISO-8601" },
          "lastVerdict": "done | blocked | needs-replan | needs-stronger-model | needs-human | found-bug | found-followup-work",
-         "gate": { "type": "plan-readiness | a-p-c | review | merge | dor", "awaiting": "human | persona", "since": "ISO-8601" }
+         "gate": { "type": "plan-readiness | a-p-c | review | dor", "disposition": "auto-cleared | needs-human | blocked", "clearedBy": "persona name or null", "reasoning": "stakes reasoning when auto-cleared", "since": "ISO-8601" }
        }
      ],
      "pendingHumanReport": ["string"]
    }
    ```
-   Document that `escalation`, `gate`, and per-strike entries are nullable/absent when inactive.
+   Document that `runId`, `escalation`, `gate`, and per-strike entries are nullable/absent when inactive; that `autonomyPolicy` is set at intake (launch/internal/hobby); and that `runId` points at the active Workflow run while the plan stays the source of truth.
 9. **Add manifest routing** in `.prism/architect/manifest.json` so edits touching `.prism/skills/prism-conductor/**` route the goal-state doc (follow the `theo-state`/`ren-state` route pattern). Mirror the manifest change to `templates/install/.prism/architect/manifest.json` byte-identical (`diff` exits 0).
 10. **Mirror the install template** if the schema doc ships in the install surface (match how Ren's state doc is/ isn't mirrored — verify the convention in `templates/install/.prism/skills/` before mirroring; if skill `lib/` docs are not mirrored, skip and note it in `## History`).
 11. **Run `pnpm prism:check`** — manifest validator + template-mirror diff pass.
@@ -156,12 +175,12 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 #### Clove (implementation)
 
 12. **Create step dir** `.prism/skills/prism-conductor/` (`mkdir -p`). Micro-file step machine, `stepsCompleted` frontmatter, each file ≤100 lines, per `.prism/references/micro-file-step-machine.md`.
-13. **`step-01-init.md`** — `stepsCompleted: []`. Intake the goal; ask the run-shape question (pipeline vs fleet) once; detect resume (read goal-state, validate against the schema in `lib/goal-state.md`, on mismatch refuse + backup-or-abort); decide jump-to phase from `currentPhase`/lane state.
+13. **`step-01-init.md`** — `stepsCompleted: []`. Intake the goal; ask the run-shape question (pipeline vs fleet) **and the autonomy policy (launch / internal / hobby)** once; detect resume (read goal-state + `runId`, validate against the schema in `lib/goal-state.md`, on mismatch refuse + backup-or-abort); decide jump-to phase from `currentPhase`/lane state.
 14. **`step-02-decompose.md`** — dispatch the upstream spec personas in dependency order to populate the plan(s): Parker (PRD) → Mira (stories) → Pixel (design, if UI) → Winston (architecture + plan). Sol only sequences and records phase status; each persona does its own work and writes the plan. Lay down one lane per independently-shippable unit.
-15. **`step-03-plan-readiness.md`** — the firewall. For each lane's plan, check the detail bar (`implementation-task-detail.md`). Pass → advance to implement. Fail → set `escalation.axis = replan`, route back to Winston, do not dispatch implementation. Record the gate in goal-state.
-16. **`step-04-dispatch.md`** — the per-phase dispatch loop: thin imperative to the phase's owning persona, fresh context, model per the tiering table, goal-state/handoff carried. Awaits the persona's report-back verdict.
-17. **`step-05-route.md`** — apply the verdict routing table (from `## Design` mechanic 3). Deterministic; Sol routes, never interprets. Writes `lastVerdict` and the next `currentPhase`.
-18. **`step-06-escalate.md`** — the three escalation axes (replan / model / human) and the disagreement fast-path. Sets `escalation`, bumps `models.<persona>` on the model axis, hard-pauses + appends to `pendingHumanReport` on the human axis.
+15. **`step-03-plan-readiness.md`** — the firewall. A *quality* gate, never auto-cleared by autonomy policy. For each lane's plan, check the detail bar (`implementation-task-detail.md`). Pass → advance to implement. Fail → set `escalation.axis = replan`, route back to Winston, do not dispatch implementation. Record the gate in goal-state.
+16. **`step-04-dispatch.md`** — author and invoke the Workflow segment: `pipeline(lanes, …)` with `agent()` calls (`agentType` = compiled persona definition, `model` per the tiering table, `schema` = report-back verdict, `isolation: 'worktree'` per lane, `budget` = global cap). The segment clears `auto-cleared` gates in place and returns on `needs-human` / `blocked` / completion / budget. Sol reads the returned verdicts; it never talks to running workers.
+17. **`step-05-route.md`** — apply the verdict + gate-disposition routing table. Deterministic; Sol routes, never interprets. Verdicts route per `## Design` mechanic 3; gate dispositions route as `auto-cleared` → advance and record the persona's stakes reasoning, `needs-human` / `blocked` → pause the lane and add to the human report. Writes `lastVerdict` and the next `currentPhase`.
+18. **`step-06-escalate.md`** — the three escalation axes (replan / model / human) and the disagreement fast-path. Sets `escalation`, bumps `models.<persona>` on the model axis, hard-pauses + appends to `pendingHumanReport` on the human axis. Enforces the one-directional autonomy rule: a persona may escalate up regardless of policy, but may never auto-clear below the policy ceiling.
 19. **`step-07-budgets.md`** — enforce the three nested budgets (strike, per-phase, global). On a tripped budget: stop the lane (not the run), record survival history, surface the report. Define "failure" narrowly per `## Design` (a persona's "no" is not a failure).
 20. **`step-08-fleet.md`** — the fleet scheduler: per-lane isolation (worktree), per-lane containment (park a failed lane, keep others active), the conflict gate (refuse to parallelize overlapping-blast-radius units; serialize them), batched human-gate pause reporting.
 21. **`step-09-report.md`** — the closing report: per-lane status, verdict/strike/escalation summary, what's parked and why, what's awaiting the human. Save goal-state with `status` set; never flip a PR ready or merge (human's call, ADR-0011 + git-conventions § Who merges).
@@ -178,7 +197,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 
 #### Clove (implementation)
 
-24. **Write the report-back contract** at `.prism/skills/prism-conductor/lib/report-back.md`: the seven-value verdict enum, what each means, what each persona returns it for, and the deterministic routing table. Cite the existing persona skills as the verdict sources (e.g. Briar's non-clean → `needs-human`/`done`, Sasha's diagnosis → `found-bug`, Nora's scope-fit → `found-followup-work`).
+24. **Write the report-back contract** at `.prism/skills/prism-conductor/lib/report-back.md`: the seven-value verdict enum AND the three gate dispositions (`auto-cleared` / `needs-human` / `blocked`), what each means, what each persona returns it for, and the deterministic routing table. Cite the existing persona skills as the verdict sources (Briar's non-clean → `needs-human`/`done`, Sasha's diagnosis → `found-bug`, Nora's scope-fit → `found-followup-work`). Gate dispositions are returned by the gate's owning persona (Winston for plan / A-P-C, Nora for DoR) per the autonomy policy.
 25. **Add a "report-back to Sol" note** to each dispatched persona's `shared.md` (`prism-architect`, `prism-code-dev`, `prism-code-review-self`, `prism-code-review-pr`, `prism-debugger`, `prism-ticket-start`, and the upstream Parker/Mira/Pixel): a short `## When dispatched by Sol` section stating that, when invoked by the Conductor, the persona finishes by returning one verdict from the enum in `report-back.md` in addition to its normal plan writes. Keep it to a cite + one sentence (cite-don't-restate). Verification: `pnpm prism:build` regenerates all touched mirrors.
 26. **Encode the model-tiering rule** in `shared.md` `## Model tiering` and `claude.md`: Sol=Opus default (config seam, not hardcoded), Winston=always Opus (hard rule), workers=Sonnet→Opus on the model-escalation signal. Reference the runtime model-override mechanism in `claude.md`.
 27. **Encode the gate registry** in `lib/report-back.md` or a sibling `lib/gates.md`: the hard-pause gates (plan-readiness, Winston A/P/C, Nora DoR, Eric review, human merge) and the rule that Sol cannot autonomously clear any of them. Cross-link ADR-0011 and `git-conventions.md` § Who merges.
@@ -193,7 +212,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 #### Clove (implementation)
 
 28. **Extend `worktree-isolation.md`** (`.prism/rules/worktree-isolation.md`) § When to apply and § Who runs this rule to add Sol as a persona that creates isolated checkouts — one worktree per fleet lane — and bind it to the same cleanup contract (remove on success, error, or interruption). Mirror to `templates/install/.prism/rules/worktree-isolation.md` byte-identical (`diff` exits 0).
-29. **Write `lib/fleet.md`** at `.prism/skills/prism-conductor/lib/fleet.md`: the fleet scheduler contract — lane lifecycle (`active → parked | done`), per-lane containment, the conflict gate (overlapping-blast-radius detection → serialize instead of parallelize; default refuse-to-parallelize), batched human-report aggregation. Document the chosen default and the rejected looser alternative (fan-out-then-serialize-on-conflict) with the one-line reason.
+29. **Write `lib/fleet.md`** at `.prism/skills/prism-conductor/lib/fleet.md`: fleet is the dispatch engine run over multiple lanes — one engine; a pipeline is a one-lane fleet. Cover lane lifecycle (`active → parked | done`), native per-lane containment via `pipeline(lanes, …)` (a lane that throws drops to `null` and skips its remaining stages while others continue), the conflict gate (overlapping-blast-radius detection → serialize instead of parallelize; default refuse-to-parallelize, with the rejected fan-out-then-serialize alternative and its one-line reason), and batched `needs-human` report aggregation.
 30. **Wire `step-08-fleet.md`** to cite `lib/fleet.md` (cite-don't-restate). Verification: `pnpm prism:build`.
 
 ### PR-C.6 — ADR-0048 + ecosystem registration + paired dev doc
@@ -229,7 +248,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 - **Autonomy between gates, never through them — Sol has no authoritative write path.**
   - **Root cause:** an always-moving orchestrator that can clear a human gate erodes the single property that makes PRISM output trustworthy (Eric never approves, humans merge, Nora's DoR, Winston's A/P/C). Briar, Clove, and Nora independently converged on this in design review.
   - **Alternatives considered:** let Sol batch-create tickets / interpret a clean review / narrow a reviewer's scope to keep momentum.
-  - **Chosen approach:** Sol writes only goal-state (pointers + run-control); dispatches and routes; pauses hard at every gate and cannot clear one autonomously.
+  - **Chosen approach:** Sol writes only goal-state (pointers + run-control); dispatches and routes; never clears a gate itself — the gate's owning persona clears or escalates it under the human's autonomy policy (see the conditional-gate decision below). Sol routes the disposition, never judges it.
   - **Implementation guidance:** no Edit on source, no Linear write, no merge/ready-flip; verdict routing is deterministic, never interpretive.
   - → promoted to ADR-0048.
 - **Plan-as-bus, plus a thin run-control channel — not transcript-passing between personas.**
@@ -251,8 +270,20 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
   - **Alternatives considered:** fan out optimistically and serialize on conflict after the fact.
   - **Chosen approach:** refuse to parallelize overlapping-blast-radius units; serialize them. Fail safe, not fast. (Hunter confirmed the fleet shape; this default is recorded so it can be flipped in PR review.)
   - → no promotion needed (codified in lib/fleet.md; user may flip the default).
-- **OPEN — TBD, needs Hunter input.** The Claude Code dispatch mechanism — subagent fan-out (Agent tool with per-agent model override + worktree isolation) vs a Workflow-style primitive vs sequential invocation with `prism-handoff` compaction between phases. **Default path (used until resolved):** spec the orchestration runtime-agnostically; the `claude.md` adapter uses subagent fan-out for fleet lanes and sequential dispatch with handoff for pipeline runs, while `codex.md`/`cursor.md` use sequential dispatch with handoff throughout (acknowledging the documented Cursor/Codex per-skill model-pin limitation). Resolve before PR-C.3/PR-C.5 lock the dispatch shape.
-- **OPEN — TBD, needs Hunter input.** Persona human name — default **Sol** (they/them). **Default path (used until resolved):** all artifacts use "Sol"; a rename is a mechanical find-replace across the skill source + ADR + dev doc before PR-C.6 lands. Alternatives floated: Max (maestro), Leo, Felix.
+- **Dispatch is the Workflow tool, gate-segmented (resolved 2026-06-12).**
+  - **Root cause:** at lifecycle scale, keeping run-state out of Sol's context is the dominant concern; the Workflow tool holds state in script variables and expresses Sol's budgets / routing / containment as deterministic control flow.
+  - **Alternatives considered:** (a) conversational subagent dispatch in Sol's own session; (b) Agent-view background full sessions.
+  - **Chosen approach:** Workflow tool. Beats (a) — subagent results return into Sol's context, re-importing the cost we chose this path to escape. Beats (b) — Agent-view gives parallelism but no control-flow layer, so coordination lands back in Sol's context, and its "unlimited" concurrency only piles lanes up at the human merge gate, which is serialized anyway. The one disqualifier for a workflow — no mid-run user input — is dissolved by gate-segmentation: workers report `needs-human` and end; Sol handles the gate conversationally between segments.
+  - **Implementation guidance:** Claude Code is the reference adapter (Workflow tool); `codex.md`/`cursor.md` use their SDK equivalents (`@openai/codex-sdk`, `@cursor/sdk`) or a sequential `prism-handoff` fallback where a parallel layer isn't enabled. Personas are dispatched via compiled per-runtime agent definitions so a worker loads its persona at spawn. Agent-view is reserved as a future option for a genuinely long-running single lane — not built in v1.
+  - → promoted to ADR-0048.
+- **Gates are conditional and persona-judged under a human-set autonomy policy (resolved 2026-06-12).**
+  - **Root cause:** a hard "always pause for a human" gate forces a human into simple, low-stakes work the owning persona could safely clear; the human wants the *choice* without losing the escalation path.
+  - **Alternatives considered:** keep gates unconditionally human; let Sol decide when to skip a gate.
+  - **Chosen approach:** the gate's owning persona (Winston for plan / A/P/C, Nora for DoR) judges its own gate against a human-set autonomy policy (launch / internal / hobby, reusing Parker's stakes calibration) and returns `auto-cleared` / `needs-human` / `blocked`. Sol never judges — it routes the disposition. Rejected unconditional-human (forces busywork); rejected Sol-decides (violates the no-interpret invariant and Nora's design-review guardrail — *Nora* clears her gate, not Sol).
+  - **Implementation guidance:** one-directional rule — escalate up always, never auto-clear below the policy ceiling. Every `auto-cleared` gate records the persona's stakes reasoning in the plan and is surfaced in Sol's end-of-run report. Merge is the one unconditional gate, enforced by branch protection (ADR-0011), never a returned disposition. The Plan Readiness Gate is a *quality* gate, not a stakes gate — it is never auto-cleared; a vague plan always re-plans.
+  - → promoted to ADR-0048.
+- **Persona name is Sol (they/them); skill ID `prism-conductor` (resolved 2026-06-12).**
+  - → no promotion needed (naming choice; recorded across the skill source, ADR, and dev doc).
 
 ---
 
@@ -261,7 +292,11 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 ### Behavioral
 
 - [ ] Given a stated goal and a single unit of work, When the user invokes Sol, Then Sol greets in character, asks whether the run is one unit or a fleet, and lays out the lifecycle phases it will drive. (US-1)
-- [ ] Given Sol is driving a unit, When a phase reaches an existing human gate (architecture approve/adjust, ticket readiness, PR review, merge), Then Sol pauses and surfaces the gate to the user instead of clearing it itself. (US-2)
+- [ ] Given Sol is driving a unit, When a phase reaches a gate, Then Sol dispatches the gate's owning persona to judge it and routes the returned disposition — Sol never clears a gate itself. (US-2)
+- [ ] Given an `internal` or `hobby` autonomy policy, When Winston or Nora judges a plan/ticket low-stakes, Then they auto-clear their gate and the run proceeds without a human, and the auto-clear is recorded with stakes reasoning and shown in the end-of-run report. (US-2)
+- [ ] Given any autonomy policy, When the owning persona judges a gate needs sign-off, Then it returns needs-human and Sol surfaces it regardless of how permissive the policy is. (US-2)
+- [ ] Given a `launch` autonomy policy, When any planning or readiness gate is reached, Then it is held for a human regardless of the persona's judgment. (US-2)
+- [ ] Given any run, When a lane reaches merge, Then it parks for a human and is never auto-cleared. (REQ-1)
 - [ ] Given a phase plan that leaves implementation judgment calls open, When Sol reaches the implementation phase, Then Sol refuses to dispatch implementation, reports the plan as not-ready, and routes it back for re-planning. (US-3)
 - [ ] Given a fleet run of independent units, When one unit fails past its budget, Then that unit is parked with a reported reason and the other units continue. (US-4)
 - [ ] Given a worker persona stalls on the same problem twice, When Sol next dispatches it, Then Sol escalates that dispatch to the stronger model; and given the plan is the problem, Then Sol routes back to re-plan instead. (US-5)
@@ -273,6 +308,7 @@ Grouped into six sub-PRs (PR-C.1 … PR-C.6). Every task hits the detail bar per
 
 - [ ] Canonical skill source exists at `.ai-skills/skills/prism-conductor/` with `frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`; `type: "persona"` registered in `.ai-skills/definitions/roles.json`.
 - [ ] Generated mirrors land at `.claude/skills/prism-conductor/`, `.codex/skills/prism-conductor/`, `.cursor/skills/prism-conductor/` after `pnpm prism:build`.
+- [ ] The build emits per-runtime agent definitions (`.claude/agents/`, `.codex/agents/`, `.cursor/agents/`) for each dispatched persona from canonical source, each carrying a `model` default.
 - [ ] The goal-state schema lives at `.prism/skills/prism-conductor/lib/goal-state.md`; the report-back contract at `lib/report-back.md`; the fleet contract at `lib/fleet.md`.
 - [ ] Step files exist at `.prism/skills/prism-conductor/step-01-init.md` … `step-09-report.md`, each ≤100 lines with `stepsCompleted` frontmatter.
 - [ ] ADR-0048 documents the orchestration axis + the autonomy-between-gates invariant and is mirrored byte-identical to the templates surface.
@@ -295,6 +331,7 @@ _(none yet)_
 ## History
 
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan created. Phase 4 — Sol, the goal-driven orchestration persona (`prism-conductor`), generalizing `prism-review-loop` from the review segment to the whole lifecycle. Six sub-PRs (scaffold, goal-state primitive, step files, dispatch/report-back protocol, fleet mode, ADR/ecosystem/dev-doc). Design synthesized from a Winston evaluation plus in-character design review by Briar, Clove, and Nora — all three converged on "autonomy between gates, never through them." Two OPEN decisions deferred to Hunter (Claude Code dispatch mechanism; persona name).
+- 2026-06-12 [claude/confident-cerf-65a9f6]: Plan revised — resolved both OPEN decisions (name = Sol; dispatch = Workflow tool, gate-segmented) and collapsed pipeline/fleet into one engine. Added the conditional-gate model — gates judged by their owning persona under a human-set autonomy policy (launch/internal/hobby), returning auto-cleared/needs-human/blocked, with Sol only routing, merge infra-enforced, and auto-clears always audited; see Decisions. Added the agent-definition build task to PR-C.1; PR #103 body re-synced.
 
 ---
 
