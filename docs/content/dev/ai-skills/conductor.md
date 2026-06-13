@@ -70,7 +70,7 @@ Sol is a thin conductor — every dispatched persona runs its full, unmodified r
 - **Nora keeps the no-write-path boundary honest.** Sol never writes Linear or creates tickets. When a worker surfaces a `found-followup-work` signal, Sol routes it to Nora, who applies her scope-fit and Definition-of-Ready gates — the ticket gets created by the persona that owns ticket creation, not by Sol.
 - **Briar and Eric are verdict sources.** A self-review or PR review comes back as a primary verdict Sol routes (clean → advance, findings → back to Clove). Eric never approves a PR ([ADR-0011](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0011-eric-never-approves-prs.md)); review findings route, they don't clear the merge gate.
 
-Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review *segment*; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the *whole* lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.prism/skills/prism-review-loop/SKILL.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-review-loop/SKILL.md).
+Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review *segment*; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the *whole* lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md).
 
 ## See also
 
@@ -79,4 +79,4 @@ Sol is the lifecycle-scale generalization of the `prism-review-loop` utility —
 - [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) — run-control schema and read/write/mutate protocol
 - [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md) — verdicts, signals, the gate registry, and the deterministic routing table
 - [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) — lane lifecycle, native containment, and the conflict gate
-- [`.prism/skills/prism-review-loop/SKILL.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-review-loop/SKILL.md) — the review-segment utility Sol generalizes to the lifecycle
+- [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md) — the review-segment utility Sol generalizes to the lifecycle
