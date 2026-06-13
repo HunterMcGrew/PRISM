@@ -159,14 +159,14 @@ Atlas populates the team's control-inventory shape during onboarding from the te
 
 Docs are written directly to `docs/` using topic-based naming per `documentation.md`:
 
-- **User docs** → `docs/user/{category}/{topic}.md`
-- **Dev docs** → `docs/dev/{category}/{topic}.md`
+- **User docs** → `docs/content/user/{category}/{topic}.md`
+- **Dev docs** → `docs/content/dev/{category}/{topic}.md`
 
 **Naming rules:**
 
 - Lowercase, kebab-case: `local-setup-mac.md`, `repository-service-pattern.md`
 - Match the topic, not the branch: a branch called `thr-1234-mega-menu-keyboard-nav` becomes `mega-menu.md` or updates an existing mega-menu doc
-- Block user docs follow the convention: `frontend/blocks/{name}/` → `docs/user/blocks/{name}.md`
+- Block user docs follow the convention: `frontend/blocks/{name}/` → `docs/content/user/blocks/{name}.md`
 
 **Category placement:**
 | Category | Audience | What goes here |
@@ -199,8 +199,8 @@ Templates are in `.prism/references/` — the single source of truth for doc str
 
 Category-specific templates layer on top of the base when writing into a specialized category:
 
-- **User block docs** (`docs/content/user/blocks/`): `.prism/references/user-block-doc-template.md`
-- **Dev block docs** (`docs/content/dev/blocks/`): `.prism/references/dev-block-doc-template.md`
+- **User block docs** (`docs/content/user/blocks/`): use `.prism/references/user-doc-template.md` — block docs are a category layer on the base user template
+- **Dev block docs** (`docs/content/dev/blocks/`): use `.prism/references/dev-doc-template.md` — block docs are a category layer on the base dev template
 - **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.prism/architect/architecture-doc-shape.md`
 
 Follow the template structure, writing rules, and image conventions defined there. Do not deviate from the template format unless the content genuinely doesn't fit (e.g. a customization guide doesn't need a Block Options section).

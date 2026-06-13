@@ -32,7 +32,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "strikes": [ { "issueKey": "string", "count": 2, "history": ["ISO-8601"] } ],
       "failureCount": 0,
       "escalation": { "axis": "replan | model | human", "reason": "string", "raisedAt": "ISO-8601" },
-      "lastVerdict": "done | blocked | needs-replan | needs-stronger-model | needs-human",
+      "lastVerdict": "done | needs-fix | blocked | needs-replan | needs-stronger-model | needs-human",
       "signals": [ { "kind": "found-bug | found-followup-work | observation", "note": "string", "routedTo": "persona or null" } ],
       "gate": { "type": "plan-readiness | a-p-c | review | dor", "disposition": "auto-cleared | needs-human | blocked", "clearedBy": "persona name or null", "reasoning": "stakes reasoning when auto-cleared", "since": "ISO-8601" }
     }

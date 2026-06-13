@@ -148,7 +148,7 @@ Run the following steps automatically — do not wait for further instructions. 
 Eric runs in one of two modes. The mode is chosen at session start and locked for the rest of the run.
 
 - **In-branch mode** (default) — Eric reads the PR's diff via `gh pr diff <pr-number>` and reads changed files at the PR head without touching the working tree. No checkout, no install, no worktree. This is the common path and the cheap path; most PRs use it.
-- **Worktree mode** (opt-in) — Eric creates an isolated checkout of the PR's branch and runs the review against that checkout. This is the path for branches that need real filesystem isolation. The full procedure lives in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md); the cleanup invariant lives in [`.prism/rules/worktree-isolation.md`](../../rules/worktree-isolation.md).
+- **Worktree mode** (opt-in) — Eric creates an isolated checkout of the PR's branch and runs the review against that checkout. This is the path for branches that need real filesystem isolation. The full procedure — the isolation invariant, the lifecycle, and the cleanup contract — lives in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md).
 
 **Mode gate** — Eric enters worktree mode if **any** of the following are true; otherwise he stays in-branch:
 
@@ -228,7 +228,7 @@ The review-specific worktree adaptations:
 - **Reads use the worktree path as root** — `/tmp/pr-review-<branch-slug>/` replaces the `git show origin/<branch>:` reads from in-branch mode. Architect context, manifest, plan, and source files all read from the worktree.
 - **Formatting checks are in batch C** (full path only — skip on lightweight). Same prettier/eslint commands as the rest of the codebase uses, executed from inside the worktree. Use `;` (not `&&`) before the return-to-root per the reference — a non-zero exit from prettier or eslint should not cancel the return-to-root.
 - **Plan update is included.** Worktree mode can commit and push back to the PR branch. After review, update `## Review Issues` and `## PR Readiness` in the worktree's plan file, then commit and push from the worktree per the push-from-detached-HEAD pattern in the reference.
-- **Cleanup is mandatory** per [`.prism/rules/worktree-isolation.md`](../../rules/worktree-isolation.md) § Cleanup contract. Tear down the worktree on success, on error, and on interruption.
+- **Cleanup is mandatory** per [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) § Cleanup contract. Tear down the worktree on success, on error, and on interruption.
 
 ## What to look for
 

@@ -7,10 +7,10 @@ This document is the shared reference for all AI skills. Every skill loads it on
 ## Project Context
 
 - **Repository:** HunterMcGrew/agent-crew
-- **Linear team:** PRISM (prefix: PRISM-####)
+- **Ticket tracker:** GitHub issues
 - **GitHub org:** HunterMcGrew
 
-All skills operate exclusively within this project. When creating tickets, referencing Linear, or interacting with GitHub, use these identifiers — do not ask.
+All skills operate exclusively within this project. When creating tickets, referencing the ticket tracker, or interacting with GitHub, use these identifiers — do not ask.
 
 ---
 
@@ -44,7 +44,7 @@ Cadence-driven personas are not part of the ticket-flow handoff chain. They're i
 | Skill         | Persona  | Role                                                                                                                                                                                                                                                                                                                                                                                            | Writes code? |
 | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | prism-onboarding   | **Atlas** | Onboarding persona — detects stack, generates per-team rules, writes `.ai-skills/config.json`, populates `<!-- atlas:* -->` stub anchors in canonical persona sources. Runs once per team install or on stack change; resumable via `.ai-skills/registry/onboarding-state.json`. Explicit invocation; no auto-trigger. See [ADR-0040](../spec/adrs/0040-atlas-as-onboarding-persona.md). | No           |
-| prism-surface-audit     | **Zoe**  | Audits the `.prism/` surface on cadence — walks `.prism/plans/`, `.prism/lessons.md`, `.prism/spec/adrs/`, and `.prism/architect/`. Issues per-Decision verdicts (`live` / `archive-candidate` / `overdue-archive` / `open-stale`) as sub-bullets on plan Decision entries, moves archive-candidate lessons to `.prism/lessons-archive.md` on confirmation, and writes a report to `.prism/audits/<YYYY-MM-DD>-audit.md`. Reads and writes `.prism/audit-state.json` between runs. Explicit invocation; no auto-trigger. See `.prism/architect/audit-workflow.md`. | No           |
+| prism-surface-audit     | **Zoe**  | Audits the `.prism/` surface on cadence — walks `.prism/plans/`, `.prism/lessons.md`, `.prism/spec/adrs/`, and `.prism/architect/`. Issues per-Decision verdicts (`live` / `archive-candidate` / `overdue-archive` / `open-stale`) as sub-bullets on plan Decision entries, moves archive-candidate lessons to `.prism/archived/lessons-archive.md` on confirmation, moves archive-ready closed plans to `.prism/archived/plans/` on confirmation, and writes a report to `.prism/audits/<YYYY-MM-DD>-audit.md`. Reads and writes `.prism/audit-state.json` between runs. Explicit invocation; no auto-trigger. See `.prism/architect/audit-workflow.md`. | No           |
 | prism-retro    | **Iris** | Retrospective persona — synthesizes a multi-voice retro from a plan's `## History`, `## Decisions`, `## Debugged Issues`, and `## Review Issues` using PRISM's actual persona roster. Only personas with evidence in the plan speak; disagreements are evidence-based (re-litigating Decisions against Debugged/Review Issues). Writes a report to `.prism/retros/<YYYY-MM-DD>-<epic-slug-or-date-range>.md`; routes proposed action items to Nora for follow-up filing under the scope-fit gate. Read-only on source plans. Six-step micro-file workflow (full variant) with state at `.prism/iris-state.json`. Explicit invocation; no auto-trigger. | No           |
 
 ### Orchestration personas
