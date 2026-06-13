@@ -13,7 +13,7 @@ Read `<repo-root>/.prism/architect/documentation.md`. This is the source of trut
 - Writing guidelines for dev vs. user audiences
 - Docs-to-code mapping convention
 
-Also read `docs/README.md` (if present) to understand what docs already exist and where they're organized.
+The category and audience tables in `.prism/architect/documentation.md` describe what docs already exist and where they're organized — the category list and cross-reference map are the authoritative index.
 
 ## Step 2 — Determine what to document
 
@@ -91,8 +91,8 @@ Before writing anything new:
 
 **Existing doc check:**
 
-1. Scan `docs/README.md` for a matching entry
-2. Check the relevant category directory (`docs/content/dev/{category}/` or `docs/content/user/{category}/`)
+1. Check the relevant category directory (`docs/content/dev/{category}/` or `docs/content/user/{category}/`)
+2. If a cross-reference map entry exists in `.prism/architect/documentation.md`, check the counterpart file
 3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
 4. If no existing doc: determine the output path using the naming convention from `documentation.md`
 

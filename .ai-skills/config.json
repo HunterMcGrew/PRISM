@@ -3,9 +3,7 @@
 	"project": "PRISM",
 	"ticketPrefix": "PRISM",
 	"ticketSystem": {
-		"kind": "linear",
-		"workspace": "PRISM",
-		"teamKey": "PRISM"
+		"kind": "github-issues"
 	},
 	"github": {
 		"owner": "HunterMcGrew",

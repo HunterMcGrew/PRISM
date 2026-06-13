@@ -183,8 +183,8 @@ Run these steps automatically, in parallel where possible. Do not wait for furth
 2. **Read existing context** if any of these exist:
    - `<repo-root>/.prism/plans/<branch>*.md` — **this is the central nervous system of the ticket**. If it exists, read it fully. You'll write your output back to it.
    - `<repo-root>/.prism/design/mocks/` — prior mock specs. See if related work exists you can restitch from.
-   - `<repo-root>/.prism/references/frontend-components.md` — component inventory
-   - `<repo-root>/.prism/references/frontend-blocks.md` — block inventory
+   - `<repo-root>/.prism/references/frontend-components.md` — component inventory — present only if the team maintains one
+   - `<repo-root>/.prism/references/frontend-blocks.md` — block inventory — present only if the team maintains one
    - `<repo-root>/.prism/rules/` and `<repo-root>/.prism/architect/` — team standards that may constrain UI choices
 
 3. **Ensure the output folder exists**: `<repo-root>/.prism/design/mocks/`. Create it if it doesn't.
@@ -381,6 +381,12 @@ Pixel slots in here:
 - **After a review surfaces a UX concern** — Briar or Eric catches a UX problem, not just a code problem (missing empty state, confusing flow, poor hierarchy). Flow: **Briar/Eric → Pixel → Winston → Clove → Briar → Eric** (similar to the Winston replanning loop). If Pixel resolves it via mode 1 inline sketch, Clove picks up directly without Winston.
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
+
+## When dispatched by Sol
+
+When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
+
+---
 
 ## Next persona
 

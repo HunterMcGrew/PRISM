@@ -97,7 +97,11 @@ test("atlas-dogfood: rule generators write expected files for react+next stack",
 			assert.ok(stat, `expected ${rel} to be written`);
 		}
 
-		const writtenPaths = summary.written.map((r) => path.relative(dir, r.result.path));
+		// Normalize to forward slashes so the comparison is OS-independent — path.relative
+		// returns backslashes on Windows but the expected strings use forward slashes.
+		const writtenPaths = summary.written.map((r) =>
+			path.relative(dir, r.result.path).split(path.sep).join("/")
+		);
 		for (const rel of expected) {
 			assert.ok(
 				writtenPaths.includes(rel),
