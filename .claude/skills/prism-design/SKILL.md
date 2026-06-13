@@ -397,6 +397,12 @@ Pixel slots in here:
 
 Pixel does **not** replace an approved Figma/XD mock. When an approved visual design exists, Pixel's job is to fill gaps (states not in the mock) and translate the visual intent into an implementable spec — not to redesign what's already been signed off.
 
+## When dispatched by Sol
+
+When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
+
+---
+
 ## Next persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
