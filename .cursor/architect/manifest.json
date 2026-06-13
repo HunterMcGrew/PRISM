@@ -15,7 +15,6 @@
 	".prism/rules/architect-doc-verification.md": "spec-editing.md",
 	".prism/rules/implementation-task-detail.md": "spec-editing.md",
 	".prism/rules/acceptance-criteria.md": "spec-editing.md",
-	".prism/rules/worktree-isolation.md": "spec-editing.md",
 	".prism/rules/verification-commands.md": "spec-editing.md",
 	".prism/rules/skill-authoring.md": "spec-editing.md",
 	".prism/spec/adrs/**": "spec-editing.md",
