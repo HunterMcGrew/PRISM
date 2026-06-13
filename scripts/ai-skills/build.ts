@@ -75,6 +75,29 @@ interface BuildCodexAgentTomlArgs {
 	tokenMap: Map<string, string>;
 }
 
+interface BuildClaudeAgentMarkdownArgs {
+	claudeSkillMarkdown: string;
+	description: string;
+	skillId: string;
+	tokenMap: Map<string, string>;
+}
+
+/**
+ * Default dispatch-model tier per persona agent definition.
+ *
+ * The conductor (Sol) and the architect (Winston) run on the strong model —
+ * Sol is the dispatcher and Winston is the plan-readiness firewall, the two
+ * roles the conductor tiering table never lets run cheap. Every other persona
+ * defaults to the cheaper tier and escalates only on a stall signal at runtime.
+ */
+export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
+	["prism-conductor", "opus"],
+	["prism-architect", "opus"],
+]);
+const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
+
+const GENERATED_MARKDOWN_HEADER_LINE = "<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->";
+
 type OptionalSkillPayload =
 	| { kind: "directory"; relativePath: string }
 	| { kind: "file"; relativePath: string };
@@ -154,6 +177,43 @@ export function buildCodexAgentToml({
 		'"""',
 		"",
 	].join("\n");
+}
+
+/**
+ * Builds a Claude Code agent definition — YAML frontmatter (`name`,
+ * `description`, `model`) followed by the generated Claude SKILL.md body — so a
+ * dispatched persona loads its full persona at spawn under the conductor's
+ * tiering table. The `model` is the per-persona default from
+ * CLAUDE_AGENT_MODEL_DEFAULTS, falling back to the cheaper worker tier.
+ */
+export function buildClaudeAgentMarkdown({
+	claudeSkillMarkdown,
+	description,
+	skillId,
+	tokenMap,
+}: BuildClaudeAgentMarkdownArgs): string {
+	const header = [
+		GENERATED_MARKDOWN_HEADER_LINE,
+		`<!-- Source: .ai-skills/skills/${skillId} -->`,
+		"<!-- Target: claude-agent | Regenerate with: pnpm prism:build -->",
+	].join("\n");
+
+	const substitutedDescription = substituteTokens(description, tokenMap).replace(
+		/\s+/g,
+		" "
+	);
+	const model =
+		CLAUDE_AGENT_MODEL_DEFAULTS.get(skillId) ?? DEFAULT_CLAUDE_AGENT_MODEL;
+
+	const frontmatter = [
+		"---",
+		`name: ${skillId}`,
+		`description: ${JSON.stringify(substitutedDescription)}`,
+		`model: ${model}`,
+		"---",
+	].join("\n");
+
+	return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
 }
 
 interface RelativeDirectoryEntry {
@@ -550,6 +610,30 @@ async function codexAgentsRootHasManagedContent(
 	return false;
 }
 
+async function claudeAgentsRootHasManagedContent(
+	agentsRoot: string
+): Promise<boolean> {
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (
+			!entry.isFile() ||
+			!entry.name.endsWith(".md") ||
+			entry.name.startsWith(".")
+		) {
+			continue;
+		}
+		const content =
+			(await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
+		if (content.includes(GENERATED_MARKDOWN_HEADER_LINE)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
  * Removes managed build-copy files under `<platformDir>/<area>/` whose
  * canonical source no longer exists. Detects the build copy by the presence of
@@ -601,7 +685,9 @@ export async function removeDeletedManagedContent(
 
 async function removeDeletedManagedAgentFiles(
 	outputRoot: string,
-	validSkillIds: Set<string>
+	validSkillIds: Set<string>,
+	extension: string,
+	headerLine: string
 ): Promise<void> {
 	if (!(await pathExists(outputRoot))) {
 		return;
@@ -611,20 +697,22 @@ async function removeDeletedManagedAgentFiles(
 	for (const entry of entries) {
 		if (
 			!entry.isFile() ||
-			!entry.name.endsWith(".toml") ||
+			!entry.name.endsWith(extension) ||
 			entry.name.startsWith(".")
 		) {
 			continue;
 		}
 
-		const skillId = entry.name.replace(/\.toml$/, "");
+		const skillId = entry.name.slice(0, -extension.length);
 		if (validSkillIds.has(skillId)) {
 			continue;
 		}
 
 		const filePath = path.join(outputRoot, entry.name);
 		const fileContent = (await readFileIfExists(filePath)) ?? "";
-		if (!fileContent.startsWith(GENERATED_HEADER_LINE)) {
+		// The TOML adapter leads with its header; the Markdown agent def carries
+		// the header after the YAML frontmatter, so match anywhere in the file.
+		if (!fileContent.includes(headerLine)) {
 			continue;
 		}
 
@@ -697,6 +785,10 @@ async function main(): Promise<void> {
 
 	const targetRoots = {
 		claude: path.join(repoRoot, pathDefinitions.generated.claudeSkillsRoot),
+		claudeAgents: path.join(
+			repoRoot,
+			pathDefinitions.generated.claudeAgentsRoot
+		),
 		codex: path.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
 		codexAgents: path.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
 		cursor: path.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot),
@@ -716,6 +808,9 @@ async function main(): Promise<void> {
 		codexAgents:
 			!checkMode ||
 			(await codexAgentsRootHasManagedContent(targetRoots.codexAgents)),
+		claudeAgents:
+			!checkMode ||
+			(await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
 		codexConfig: !checkMode || (await pathExists(codexConfigPath)),
 	};
 
@@ -839,6 +934,24 @@ async function main(): Promise<void> {
 				changedPaths
 			);
 		}
+
+		if (optedIn.claudeAgents && roleDefinition.type !== "utility") {
+			const description =
+				skillSource.frontmatterMap.get("description") ??
+				`Generated claude agent definition for ${skillId}.`;
+			const claudeAgentMarkdown = buildClaudeAgentMarkdown({
+				claudeSkillMarkdown: claudeMarkdown,
+				description,
+				skillId,
+				tokenMap,
+			});
+			await writeFileIfChanged(
+				path.join(targetRoots.claudeAgents, `${skillId}.md`),
+				claudeAgentMarkdown,
+				checkMode,
+				changedPaths
+			);
+		}
 	}
 
 	if (optedIn.codexConfig) {
@@ -940,10 +1053,22 @@ async function main(): Promise<void> {
 	const agentSkillIds = new Set(
 		[...knownSkillIds].filter((id) => roleMap.get(id)?.type !== "utility")
 	);
-	await removeDeletedManagedAgentFiles(targetRoots.codexAgents, agentSkillIds);
+	await removeDeletedManagedAgentFiles(
+		targetRoots.codexAgents,
+		agentSkillIds,
+		".toml",
+		GENERATED_HEADER_LINE
+	);
+	await removeDeletedManagedAgentFiles(
+		targetRoots.claudeAgents,
+		agentSkillIds,
+		".md",
+		GENERATED_MARKDOWN_HEADER_LINE
+	);
 
 	const literalGuardRoots = [
 		targetRoots.claude,
+		targetRoots.claudeAgents,
 		targetRoots.codex,
 		targetRoots.cursor,
 		targetRoots.codexAgents,
