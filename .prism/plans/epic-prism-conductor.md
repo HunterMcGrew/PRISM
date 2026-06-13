@@ -502,7 +502,7 @@ _(none yet)_
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state. **Now tracking Group 3 (docs/registration + epic-close PR, `hmcgrew/prism-conductor-docs`).**
 
-- [ ] No critical or major issues — Briar gauntlet pass 1 found 2 Minors (open): conductor.md dead review-loop link; two inaccurate `→ promoted to ADR-0048` verdicts
+- [x] No critical or major issues — Briar gauntlet pass 1 found 2 Minors (both fixed); pass 2 clean
 - [x] Types correct — Group 3 is content-only (ADR, architect doc, AGENTS.md, ADR README, dev doc, plan close); no code changes, no `any`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — Group 3 adds no code; existing build/manifest tests cover the regenerated mirrors
@@ -510,7 +510,7 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`). ADR-0048 + ADR-README parity `diff`s exit 0.
 - [x] PR description up to date — set at draft-PR open
 - [x] Lasting decisions promoted to architect context — four `→ promoted to ADR-0048` decisions delivered (ADR-0048 + the skills-ecosystem orchestration axis); the dispatch-mechanism and report-back-contract decisions carry `→ no promotion needed` (codified in claude.md/step-04 and lib/report-back.md); verdict gate confirmed all Decisions carry a verdict.
-- [ ] Review gauntlet — Briar pass 1 done (2 Minors, open); fixes + re-review pending, then Eric.
+- [ ] Review gauntlet — Briar self-review clean (pass 1: 2 Minors fixed; pass 2: zero findings); Eric PR review pending.
 
 > **Groups 1 + 2 — shipped clean.** Group 1 (foundation, PR #104): Briar (2 Minors fixed) + Eric (1 Minor fixed), both passes clean. Group 2 (engine, PR #105): Briar (3 Minors fixed) + Eric (clean first pass), gauntlet clean. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR.
 
