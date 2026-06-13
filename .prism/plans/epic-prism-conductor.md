@@ -380,6 +380,7 @@ _(none yet)_
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Briar self-review pass 1 — build.ts agent-def emitter, literal-allowlist set, and `startsWith`→`includes` cleanup change all verified sound; concern set (1 allowlist completeness, 2 header-match safety, 3 test coverage) cleared except two Minors filed: agent-def test omits the utility-skip coverage task 8 asked for, and timestamped conductor-state archives aren't gitignored (mirrors a pre-existing Ren gap). Also noted a pre-existing stale literal-allowlist condition (architect/qa-test-plan entries cite incidents no longer in their bodies) — out of scope, follow-up candidate.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Implemented Group 1 (Clove) — Sol skill scaffold (`frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`), goal-state schema doc at `.prism/skills/prism-conductor/lib/goal-state.md`, roles.json + manifest route + gitignore. Extended `scripts/ai-skills/build.ts` to emit `.claude/agents/<persona>.md` for every persona (opus for conductor+architect, sonnet otherwise; utilities excluded) with a unit test; ~132-line build diff stayed in-scope. Full gate green except a pre-existing Windows-only `atlas-dogfood` path-separator test flake (fails identically on clean HEAD).
 - 2026-06-13 [hmcgrew/prism-conductor-engine]: Reconciled Group 2 (PR-C.3 + C.4 + C.5, combined into one engine PR) against repo reality — rewrote the step-machine + protocol + fleet tasks to AFK-executable detail as continuous tasks 13–28, renumbered downstream Group 3 to 29–35. Corrected seven gaps; see the "Group 2 reconciliation" Decision.
+- 2026-06-13 [hmcgrew/prism-conductor-engine]: Implemented Group 2 (Clove, tasks 13–28) — nine prose-only step files (`step-01-init` … `step-09-report`, no frontmatter, each ≤27 lines), `lib/report-back.md` (verdicts + signals + folded `## Gate registry`) and `lib/fleet.md`, the `shared.md` `## Workflow overview` rewrite citing all nine step paths, the byte-identical `## When dispatched by Sol` note in all nine dispatched personas' `shared.md`, and the Sol worktree extension across both `worktree-isolation.md` copies (`diff` exits 0). One plan-vs-reality deviation: `prism-debugger` does have `## Next persona` (plan said it lacked one), so the note was inserted before `## Next persona` uniformly across all nine for scannability. Full gate green modulo the known Windows `atlas-dogfood` path-separator flake.
 
 ---
 
@@ -425,17 +426,18 @@ _(none yet)_
 
 ## PR Readiness
 
-Living checklist — updated every time `code-review-self` runs. Reflects current state.
+Living checklist — updated every time `code-review-self` runs. Reflects current state. **Now tracking Group 2 (engine PR, `hmcgrew/prism-conductor-engine`).**
 
 - [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] Types correct — Group 2 is content-only (step files, lib docs, rule + persona edits); no code changes, no `any`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`scripts/ai-skills/claude-agent-def.test.ts`)
+- [x] Tests written for new logic and edge cases — Group 2 adds no code; existing build/manifest tests cover the regenerated mirrors
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` green; only the pre-existing Windows `atlas-dogfood` path flake fails, identical on clean HEAD)
+- [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` + `prism:check-types` green; only the pre-existing Windows `atlas-dogfood` path-separator flake fails, identical on `origin/main`)
 - [ ] PR description up to date — set at draft-PR open
-- [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048; Group 1 is foundation)
-- [x] All review issues resolved — Briar (2 Minors: agent-def utility-skip test, conductor-state archive gitignore glob) + Eric (1 Minor: stale type:persona plan sweep), all fixed
-- [x] Review gauntlet clean — Briar self-review zero-findings pass + Eric PR review zero-findings pass; PR held draft (human/orchestrator owns merge)
+- [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048)
+- [ ] Review gauntlet — pending Briar + Eric on the engine PR
 
-**Last updated:** 2026-06-13 (review gauntlet complete — Briar + Eric both clean; PR draft)
+> **Group 1 (foundation, `hmcgrew/prism-conductor-foundation`) — shipped clean.** Briar (2 Minors fixed) + Eric (1 Minor fixed); both review passes clean, PR #104 held draft. The two `open` Group 1 review issues (agent-def utility-skip test, conductor-state archive gitignore glob) are tracked against the foundation PR, not the engine PR.
+
+**Last updated:** 2026-06-13 (Group 2 engine implemented — Clove; gate green modulo known flake; gauntlet pending)

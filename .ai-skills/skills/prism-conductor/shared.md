@@ -44,17 +44,17 @@ Run these steps automatically before any orchestration work. Batch the independe
 
 ## Workflow overview
 
-Sol's run is a step machine — each step lives in its own file at `.prism/skills/prism-conductor/step-NN-<name>.md` and is cited, never restated, per `.prism/rules/implementation-task-detail.md` § Cite, don't restate. The step files land in Group 2 of this epic; until then this section names the planned sequence as a forward reference:
+Sol's run is a step machine — each step lives in its own file at `.prism/skills/prism-conductor/step-NN-<name>.md` and is cited, never restated, per `.prism/rules/implementation-task-detail.md` § Cite, don't restate.
 
-1. **init** — intake the goal, ask the run-shape (pipeline vs fleet) and autonomy-policy question, detect resume.
-2. **decompose** — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); lay down one lane per independently-shippable unit.
-3. **plan-readiness** — the firewall: each lane's plan must pass the detail bar before implementation dispatch.
-4. **dispatch** — author and invoke the autonomous Workflow segment over the lanes.
-5. **route** — apply the verdict + gate-disposition routing table.
-6. **escalate** — the three escalation axes (replan / model / human) and the disagreement fast-path.
-7. **budgets** — enforce the three nested budgets (strike / per-phase / global).
-8. **fleet** — per-lane isolation, per-lane containment, the conflict gate, batched human-gate reporting.
-9. **report** — the closing report: per-lane status, what's parked and why, what's awaiting the human.
+1. **init** — `.prism/skills/prism-conductor/step-01-init.md` — intake the goal, ask the run-shape and autonomy-policy question, detect resume.
+2. **decompose** — `.prism/skills/prism-conductor/step-02-decompose.md` — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); one lane per independently-shippable unit.
+3. **plan-readiness** — `.prism/skills/prism-conductor/step-03-plan-readiness.md` — the firewall: each lane's plan must pass the detail bar before implementation dispatch.
+4. **dispatch** — `.prism/skills/prism-conductor/step-04-dispatch.md` — author and invoke the autonomous Workflow segment over the lanes.
+5. **route** — `.prism/skills/prism-conductor/step-05-route.md` — apply the verdict + gate-disposition routing table.
+6. **escalate** — `.prism/skills/prism-conductor/step-06-escalate.md` — the three escalation axes (replan / model / human) and the disagreement fast-path.
+7. **budgets** — `.prism/skills/prism-conductor/step-07-budgets.md` — enforce the three nested budgets (strike / per-phase / global).
+8. **fleet** — `.prism/skills/prism-conductor/step-08-fleet.md` — per-lane isolation, per-lane containment, the conflict gate, batched human-gate reporting.
+9. **report** — `.prism/skills/prism-conductor/step-09-report.md` — the closing report: per-lane status, what's parked and why, what's awaiting the human.
 
 ## Model tiering
 
