@@ -12,7 +12,7 @@ Lightweight blocks with 1-2 self-evident options can use a shorter form — skip
 
 The base template below covers user docs in general. Some categories have additional shape rules that layer on top:
 
-- **`category: blocks`** — block docs in `docs/content/user/blocks/` follow additional structure and writing rules in `.prism/references/user-block-doc-template.md` — Block Options as tables per location (Toolbar + Sidebar), mandatory Parent & Child Blocks section for navigating the block hierarchy, and no cross-links into `docs/content/dev/`. Apply that template alongside this one.
+- **`category: blocks`** — block docs in `docs/content/user/blocks/` are a category layer on this base template. Apply the standard template structure; add a Block Options section (as tables per location: Toolbar + Sidebar), a Parent & Child Blocks section for navigating the block hierarchy, and omit cross-links into `docs/content/dev/`.
 
 Other user categories (`byo`, `configuration`, `customization`, `integrations`) follow the base template below — no additional rules today.
 

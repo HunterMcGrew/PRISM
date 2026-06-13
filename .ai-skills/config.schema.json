@@ -23,13 +23,13 @@
 		},
 		"ticketSystem": {
 			"type": "object",
-			"description": "Ticket system configuration. Today only `kind: \"linear\"` is supported, but the object shape is the abstraction lever for future Jira/GitHub Issues.",
+			"description": "Ticket system configuration. `kind: \"linear\"` and `kind: \"github-issues\"` are supported; the object shape is the abstraction lever for future providers (e.g. Jira). The Linear-specific fields below apply only when `kind` is `linear`.",
 			"required": ["kind"],
 			"properties": {
 				"kind": {
 					"type": "string",
-					"enum": ["linear"],
-					"description": "Ticket system provider. Linear is the only supported value today."
+					"enum": ["linear", "github-issues"],
+					"description": "Ticket system provider. `linear` carries workspace/teamKey; `github-issues` tracks work as GitHub issues with no Linear team."
 				},
 				"workspace": {
 					"type": "string",

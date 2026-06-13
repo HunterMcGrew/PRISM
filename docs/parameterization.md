@@ -43,7 +43,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `org` | string | yes | Display org name. Substituted as `${ORG}`. Used in PR descriptions, changelogs, references in personas' shared.md. |
 | `project` | string | yes | Project display name. Substituted as `${PROJECT}`. Also derives `${PROJECT_LOWERCASE}` (lowercase form, used in git-config namespaces and similar). |
 | `ticketPrefix` | string | yes | Ticket ID prefix (uppercase, no separator). Substituted as `${TICKET_PREFIX}`. Also derives `${TICKET_PREFIX_LOWERCASE}`. Pattern: `^[A-Z][A-Z0-9]+$`. |
-| `ticketSystem.kind` | enum | yes | `"linear"` is the only supported value today. The object shape is the abstraction lever for future Jira / GitHub Issues support. |
+| `ticketSystem.kind` | enum | yes | `"linear"` or `"github-issues"`. Drives `${TICKET_TRACKER}`; the Linear-specific fields below apply only when `kind` is `linear`. The object shape is the abstraction lever for future providers (e.g. Jira). |
 | `ticketSystem.workspace` | string | linear | Linear workspace slug (the part before `.linear.app`). Substituted as `${LINEAR_WORKSPACE}`. |
 | `ticketSystem.projectId` | string | optional | Linear project UUID, if scoped to a single project. |
 | `ticketSystem.teamKey` | string | yes | Linear team key. Often matches `ticketPrefix`. Substituted as `${LINEAR_TEAM_KEY}`. |
@@ -66,6 +66,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix` | `ktc` |
 | `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `tractru` |
 | `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` |
+| `${TICKET_TRACKER}` | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` |
 | `${GITHUB_OWNER}` | `github.owner` | `tractru` |
 | `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `tractru` |
 | `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` |

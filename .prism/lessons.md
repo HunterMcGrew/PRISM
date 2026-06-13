@@ -1,4 +1,4 @@
-# Lessons
+﻿# Lessons
 
 Append-only working memory for the dogfood install. Captures patterns from corrections, mistakes, and confirmed-good calls during work on PRISM itself — anything a future session would want to pick up without re-litigating.
 
@@ -119,3 +119,21 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
 
 **How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied).
+
+## Skill frontmatter `model:` pins engage on fresh-session invocation only — in-session `Skill` calls run on the session's current model
+
+**Why:** 2026-06-09 (wave 4.2, issue #83) — the reviewer skills declare `model: sonnet` (Briar) and `model: opus` (Eric) in `frontmatter.yml`. The pin engages when the skill starts a fresh session, but an in-session `Skill` invocation doesn't switch models — it runs on whatever model the session is already on, and the pin is silently ignored. Unstated, the pins read as a guarantee the runtime delivers on only one of the two invocation paths: an author running self-review in-session believes sonnet is reviewing when it isn't. This is the third exists-vs-honored instance in the wave (after the rule-mirror dialect gap, issue #73, and the Project Context identifiers lesson) — a frontmatter declaration that exists is not one the runtime honors on every path. Surfaced both reviewer skill bodies' fresh-chat-handoff recommendation as the path where the pins actually take effect.
+
+**How to apply:** When a skill declares a `model:` pin (or any frontmatter that changes runtime behavior), state where it engages and where it doesn't — fresh-session invocation honors it, in-session `Skill` calls run on the current model. Recommend the fresh-chat-via-handoff path when the pinned model matters, which doubles as the existing context-isolation default for the reviewer boundary. More generally, this is the exists-vs-honored family: a declared value (rule-mirror frontmatter, config identifier, model pin) is honored only on the paths the consuming runtime actually reads — verify per-path consumption, don't trust that a syntactically-valid declaration takes effect everywhere.
+
+## Sol decides run-shape (fleet vs pipeline); don't reflexively ask it
+
+**Why:** 2026-06-13 — Sol's step-01 intake asks the human "one unit or fleet?" up front. On a two-issue dispatch (#107/#108) Hunter pushed back: Sol should *make* the run-shape call itself, defaulting to fleet, optionally sending Nora/Winston as discovery to recommend the path — only escalating run-shape to the human when it's genuinely ambiguous. The autonomy-policy question is still the human's; run-shape is Sol's to decide from the tasks.
+
+**How to apply:** This is a per-user preference, not a skill change — Hunter declined folding it into step-01, since the intake question staying as-is (the human decides) plus memory-as-override is the intended design. For Hunter's runs: decide run-shape from the work (independent, non-overlapping units → fleet; single unit or hard sequential dependency → pipeline), state the call and reason, ask only the autonomy-policy question; reserve a run-shape question or discovery dispatch for genuinely ambiguous cases. The standing preference lives in user memory `feedback-sol-decides-run-shape`.
+
+## Sol's review phase is the full gauntlet — never skip pr-review (Eric) on triviality grounds
+
+**Why:** 2026-06-13 — a Sol run on two trivial, green PRs ran a single Briar self-review and parked at merge, skipping Eric. Briar reports in chat only and posts nothing to the PR, so the PRs the human merges carried zero review signal. The "trivial + green + Briar-clean = park" proportionality call silently dropped a defined lifecycle phase. Hunter caught it and directed that the review-loop gauntlet be the conductor's default review phase.
+
+**How to apply:** The conductor's `self-review` / `pr-review` phases run the prism-review-loop ladder by default — loop self-review→fix to clean, then pr-review→fix to clean (`needs-fix` verdict keeps the lane in-phase). `pr-review` (Eric) is non-skippable on any lane with an open PR, regardless of diff size. Proportionality may tune review *depth*, never *whether Eric runs* on an open PR. Codified in step-04 § The review phase is the gauntlet.

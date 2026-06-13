@@ -59,6 +59,43 @@ test("derives GITHUB_OWNER_LOWERCASE alongside the raw GITHUB_OWNER", () => {
 	assert.equal(tokenMap.get("GITHUB_OWNER_LOWERCASE"), "huntermcgrew");
 });
 
+test("renders the Linear-team tracker line for a linear ticketSystem", () => {
+	const tokenMap = deriveTokenMap(SAMPLE_CONFIG);
+
+	assert.equal(
+		tokenMap.get("TICKET_TRACKER"),
+		"**Linear team:** PRISM (prefix: PRISM-####)"
+	);
+});
+
+test("renders the GitHub-issues tracker line and omits Linear tokens for github-issues", () => {
+	const githubIssuesConfig: PrismConfig = {
+		org: "ACME",
+		project: "Widget",
+		ticketPrefix: "WGT",
+		ticketSystem: { kind: "github-issues" },
+		github: { owner: "acme", repo: "widget" },
+	};
+	const tokenMap = deriveTokenMap(githubIssuesConfig);
+
+	assert.equal(tokenMap.get("TICKET_TRACKER"), "**Ticket tracker:** GitHub issues");
+	assert.equal(tokenMap.has("LINEAR_WORKSPACE"), false);
+	assert.equal(tokenMap.has("LINEAR_TEAM_KEY"), false);
+});
+
+test("substitutes the github-issues tracker line into Project Context content", () => {
+	const githubIssuesConfig: PrismConfig = {
+		org: "ACME",
+		project: "Widget",
+		ticketPrefix: "WGT",
+		ticketSystem: { kind: "github-issues" },
+	};
+	const tokenMap = deriveTokenMap(githubIssuesConfig);
+	const input = "- ${TICKET_TRACKER}";
+
+	assert.equal(substituteTokens(input, tokenMap), "- **Ticket tracker:** GitHub issues");
+});
+
 test("throws with the literal token name when a referenced token is missing", () => {
 	const tokenMap = deriveTokenMap(SAMPLE_CONFIG);
 	const input = "Hello ${UNKNOWN_TOKEN} world.";
@@ -193,7 +230,28 @@ test("loadConfig throws with the offending field when a required key is missing"
 	);
 });
 
-test("loadConfig rejects non-linear ticketSystem.kind", async () => {
+test("loadConfig accepts a github-issues ticketSystem.kind", async () => {
+	await withTempRepo(
+		async (root) => {
+			await fs.writeFile(
+				path.join(root, ".ai-skills", "config.json"),
+				JSON.stringify({
+					org: "ACME",
+					project: "Widget",
+					ticketPrefix: "WGT",
+					ticketSystem: { kind: "github-issues" },
+				}),
+				"utf8"
+			);
+		},
+		async (root) => {
+			const config = loadConfig(root);
+			assert.equal(config.ticketSystem.kind, "github-issues");
+		}
+	);
+});
+
+test("loadConfig rejects an unsupported ticketSystem.kind", async () => {
 	await withTempRepo(
 		async (root) => {
 			await fs.writeFile(
@@ -212,8 +270,9 @@ test("loadConfig rejects non-linear ticketSystem.kind", async () => {
 				() => loadConfig(root),
 				(error: Error) =>
 					error.message.includes("ticketSystem/kind") &&
-					error.message.includes("linear"),
-				"error names the offending field and the supported value"
+					error.message.includes("linear") &&
+					error.message.includes("github-issues"),
+				"error names the offending field and both supported values"
 			);
 		}
 	);

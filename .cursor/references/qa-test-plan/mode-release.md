@@ -9,7 +9,7 @@ Triggered by a tag pair, a GitHub compare URL between tags, or release-flavored 
 ## 1. Parse the input
 
 - **Two tags** (e.g. `v1.0.812 v1.1.10`, `v1.0.812..v1.1.10`, `v1.0.812 to v1.1.10`, `from v1.0.812 to v1.1.10`): extract `<base>` (old) and `<head>` (new). Normalize tags — if a tag is missing the `v` prefix, prepend it (`1.0.812` → `v1.0.812`). Tags always start with `v`.
-- **GitHub compare URL** (e.g. `https://github.com/HunterMcGrew/agent-crew/compare/v1.0.812...v1.1.10`): parse `/compare/<base>...<head>` from the URL path (three dots).
+- **GitHub compare URL** (e.g. `https://github.com/HunterMcGrew/PRISM/compare/v1.0.812...v1.1.10`): parse `/compare/<base>...<head>` from the URL path (three dots).
 - **One tag only**: ask which end it represents and what the other tag is.
 - **No tags**: ask for the previous and new release tags.
 

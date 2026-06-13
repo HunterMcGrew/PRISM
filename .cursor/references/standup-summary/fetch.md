@@ -15,25 +15,25 @@ Before running queries, read these — they've caused failures before:
 ## 2.2 Merged PRs authored by the user (run alone first)
 
 ```bash
-gh search prs --author=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/agent-crew --json title,number,closedAt,isDraft --limit 50
+gh search prs --author=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/PRISM --json title,number,closedAt,isDraft --limit 50
 ```
 
 ## 2.3 Open PRs authored by the user, updated in the window (batch after 2.2 succeeds)
 
 ```bash
-gh search prs --author=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/agent-crew --state=open --json title,number,createdAt,updatedAt,isDraft --limit 50
+gh search prs --author=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/PRISM --state=open --json title,number,createdAt,updatedAt,isDraft --limit 50
 ```
 
 ## 2.4 Reviewed PRs updated in the window
 
 ```bash
-gh search prs --reviewed-by=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/agent-crew --json title,number,author,state,isDraft --limit 50
+gh search prs --reviewed-by=@me --updated="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/PRISM --json title,number,author,state,isDraft --limit 50
 ```
 
 ## 2.5 Reviewed PRs merged in the window
 
 ```bash
-gh search prs --reviewed-by=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/agent-crew --json title,number,author,closedAt,isDraft --limit 50
+gh search prs --reviewed-by=@me --merged-at="$SINCE_DATE..$UNTIL_DATE" --repo=HunterMcGrew/PRISM --json title,number,author,closedAt,isDraft --limit 50
 ```
 
 ## 2.6 Verify actual activity in the window
@@ -45,7 +45,7 @@ The jq filters below use lexicographic string compare against GitHub's UTC-`Z` t
 **Open PRs — verify user pushed commits in the window:**
 
 ```bash
-gh api repos/HunterMcGrew/agent-crew/pulls/<number>/commits --jq "[.[] | select(.commit.author.date >= \"$SINCE_DATE\" and .commit.author.date < \"$UNTIL_DATE\")] | length"
+gh api repos/HunterMcGrew/PRISM/pulls/<number>/commits --jq "[.[] | select(.commit.author.date >= \"$SINCE_DATE\" and .commit.author.date < \"$UNTIL_DATE\")] | length"
 ```
 
 If `> 0`, include. Otherwise skip.
@@ -55,7 +55,7 @@ If `> 0`, include. Otherwise skip.
 Filter out any where `author.login == $USERNAME`. Then verify a submitted review exists in the window:
 
 ```bash
-gh api repos/HunterMcGrew/agent-crew/pulls/<number>/reviews --jq "[.[] | select(.user.login == \"$USERNAME\" and .submitted_at >= \"$SINCE_DATE\" and .submitted_at < \"$UNTIL_DATE\")] | length"
+gh api repos/HunterMcGrew/PRISM/pulls/<number>/reviews --jq "[.[] | select(.user.login == \"$USERNAME\" and .submitted_at >= \"$SINCE_DATE\" and .submitted_at < \"$UNTIL_DATE\")] | length"
 ```
 
 If `> 0`, include. Otherwise skip.

@@ -56,9 +56,17 @@ When multiple criteria apply (an open-question entry on a plan past 90 days), th
 
 ## Lessons archive
 
-Lessons get the same kind of classification but a different end state. Live lessons stay in `.prism/lessons.md`. Archive-candidate lessons move to `.prism/lessons-archive.md` on the user's confirmation — Zoe never moves silently. The archive file is append-only: lessons go in, lessons don't come back out.
+Lessons get the same kind of classification but a different end state. Live lessons stay in `.prism/lessons.md`. Archive-candidate lessons move to `.prism/archived/lessons-archive.md` on the user's confirmation — Zoe never moves silently. The archive file is append-only: lessons go in, lessons don't come back out.
 
-The archive file ships with both surfaces — `.prism/lessons-archive.md` on the canonical side, `templates/install/.prism/lessons-archive.md` on the templates side — so a consumer install lands with the file in place. Zoe doesn't have to create it on first run; she just appends to it.
+The archive file and archived plans directory are created on first use per `.prism/rules/lazy-artifacts.md` — neither is pre-seeded at install time.
+
+## Plan archive
+
+Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, plans are never deleted — but they don't need to stay on the active surface forever.
+
+A plan becomes an archive candidate when: it carries a `> Closed:` marker, every Decision entry has a verdict (either a close-gate verdict from plan close or a Zoe verdict sub-bullet), and the close date is at least 90 days in the past. Zoe flags qualifying plans in the audit report and waits for explicit user confirmation before moving anything — silence is never consent.
+
+Confirmed plans move to `.prism/archived/plans/`. The directory is created on first move; it's not pre-seeded.
 
 ## Operational state
 
@@ -71,12 +79,12 @@ The state file's main job is to skip re-classification on rapid follow-up runs. 
 A few negative-space invariants that matter:
 
 - **No auto-trigger.** Zoe doesn't run on a timer or a cron. The cadence ("weekly default") is advisory. The user invokes Zoe explicitly when the cadence comes due or when an off-cadence audit is wanted.
-- **No silent edits.** Zoe never archives a lesson, deletes a plan, or modifies an ADR without explicit user confirmation. Verdicts get written to plan files because they're a kind of annotation; everything else waits for go-ahead.
+- **No silent edits.** Zoe never archives a lesson, moves a plan to `.prism/archived/plans/`, or modifies an ADR without explicit user confirmation. Verdicts get written to plan files because they're a kind of annotation; everything else waits for go-ahead.
 - **No handoff chain.** Zoe doesn't recommend the next persona at the end of her run. She isn't part of the ticket-flow handoff chain, by construction.
 
 ## How this fits the rest of the toolkit
 
-The new persona axis sits alongside ticket-flow personas, not above or below them. The skill roster in `.prism/architect/skills-ecosystem.md` lists Zoe separately so the distinction shows up in the first place a reader looks. The audit doc the agent loads when it touches `.prism/audit-state.json`, `.prism/lessons-archive.md`, or `.prism/audits/**` is this document's paired agent-facing version at `.prism/architect/audit-workflow.md`.
+The new persona axis sits alongside ticket-flow personas, not above or below them. The skill roster in `.prism/architect/skills-ecosystem.md` lists Zoe separately so the distinction shows up in the first place a reader looks. The audit doc the agent loads when it touches `.prism/audit-state.json`, `.prism/archived/lessons-archive.md`, `.prism/archived/plans/**`, or `.prism/audits/**` is this document's paired agent-facing version at `.prism/architect/audit-workflow.md`.
 
 The pattern generalizes. A future cadence persona — say, a quarterly ADR-review persona that walks `.prism/spec/adrs/` with more depth than Zoe does, or a metrics-rollup persona that summarizes the team's ticket flow — adopts the same shape: dedicated state file, dedicated architect doc, explicit invocation, no ticket-flow handoff. Zoe is the first; the axis is durable.
 
