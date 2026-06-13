@@ -211,6 +211,7 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - 2026-05-28 [hmcgrew/agents-md-slim]: Briar self-review of PR #66 — 2 Minor found, no Critical/Major. Doc-class triage clean (11 phrases verified verbatim vs AGENTS.md §9 post-Sage-fix, 4 mirror surfaces coherent). Build skipped (markdown-only diff; prior `pnpm prism:build` clean).
 - 2026-05-28 [hmcgrew/agents-md-slim]: Clove addressed both Briar Minor — `## Ticket` now points at GitHub issue #64, Slice 4 task #4 OR-clause replaced by a new `OPEN — TBD, needs Hunter input.` Decision (default: keep §N numbering) with task #4 rewritten to follow the default path. Plan-only fixes; no source changes.
 - 2026-06-11 [hmcgrew/issue-triage-2026-06-11]: Hunter resolved the §N numbering OPEN decision during the issue-triage sweep — keep numbering. OPEN marker closed; Slices 2–4 now fully unblocked.
+- 2026-06-13 [hmcgrew/issue-64-slim-agents]: Merged origin/main (Sol conductor epic — PR #106); resolved AGENTS.md conflict. §0 routing table: took main version (adds Sol row, expands Eric/Pixel signal phrases). §9: kept branch one-liner citation. pnpm prism:check 145/145 pass.
 
 ---
 

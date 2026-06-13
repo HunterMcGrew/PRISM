@@ -1,0 +1,14 @@
+# Plan Before Building
+
+## Purpose
+
+For any non-trivial task — 3 or more steps, or a real architectural decision — enter plan mode first and write the spec upfront. Plan mode covers verification steps too, not just the build. If something goes sideways mid-implementation, stop and re-plan rather than pushing through a broken approach.
+
+**Why:** ambiguity at the start becomes rework at the end — the cheapest place to resolve an unclear requirement is before any code exists, and the most expensive is after the implementation has committed to the wrong shape. The plan exists to absorb course corrections cheaply: re-planning when the approach breaks costs a paragraph, while pushing through a broken approach costs the whole branch.
+
+**How to apply:**
+
+- A task is non-trivial when it spans 3 or more steps or turns on an architectural decision. When it does, plan before writing code.
+- Write the spec — file paths, exact changes, verification — before implementing. The branch plan (`.prism/rules/branch-plan.md`) is where that spec lives.
+- Plan the verification path too, not just the build. "How will I prove this works?" belongs in the plan from the start.
+- When the approach breaks mid-implementation, stop and re-plan. Don't bolt fallbacks onto a shape that's fighting you.
