@@ -42,6 +42,8 @@ Make the ADR-0035 rule-loading tiers honored by Cursor and Codex, not just Claud
 
 - 2026-06-11 [hmcgrew/issue-73-cross-runtime-tiers]: Shipped task 1 (Cursor dialect emission). Added `scripts/ai-skills/rule-dialect.ts` + tests; threaded `RuleDialect` through the content-copy functions; updated `literal-allowlist.json` cursor entries to `.mdc`; synced `install-layout.md` and `rule-loading-tiers.md` byte-identical claims. Tasks 2–3 (Codex AGENTS.md inlining + its check) deferred — blocked on a Tier 1 source-of-truth; see the OPEN Decision.
 
+- 2026-06-13 [hmcgrew/issue-73-cross-runtime-tiers]: Merged origin/main; resolved AGENTS.md routing-table conflict (took main's version with Sol row) and worktree-isolation rename/delete (honored main's delete, stale .mdc dropped out). Ran prism:build — 14 new Tier 1 .mdc rule copies emitted; prism:check green 158/158.
+
 ---
 
 ## PR Readiness
