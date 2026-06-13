@@ -37,6 +37,10 @@
 			"reason": "platform-copy mirror of prism-architect"
 		},
 		{
+			"path": ".claude/agents/prism-architect.md",
+			"reason": "platform-copy mirror of prism-architect"
+		},
+		{
 			"path": ".cursor/skills/prism-architect/SKILL.md",
 			"reason": "platform-copy mirror of prism-architect"
 		},
@@ -53,6 +57,10 @@
 			"reason": "platform-copy mirror of prism-code-dev"
 		},
 		{
+			"path": ".claude/agents/prism-code-dev.md",
+			"reason": "platform-copy mirror of prism-code-dev"
+		},
+		{
 			"path": ".cursor/skills/prism-code-dev/SKILL.md",
 			"reason": "platform-copy mirror of prism-code-dev"
 		},
@@ -66,6 +74,10 @@
 		},
 		{
 			"path": ".codex/agents/prism-qa-test-plan.toml",
+			"reason": "platform-copy mirror of prism-qa-test-plan"
+		},
+		{
+			"path": ".claude/agents/prism-qa-test-plan.md",
 			"reason": "platform-copy mirror of prism-qa-test-plan"
 		},
 		{
