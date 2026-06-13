@@ -379,6 +379,7 @@ _(none yet)_
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan revised — resolved both OPEN decisions (name = Sol; dispatch = Workflow tool, gate-segmented) and collapsed pipeline/fleet into one engine. Added the conditional-gate model — gates judged by their owning persona under a human-set autonomy policy (launch/internal/hobby), returning auto-cleared/needs-human/blocked, with Sol only routing, merge infra-enforced, and auto-clears always audited; see Decisions. Added the agent-definition build task to PR-C.1; PR #103 body re-synced.
 - 2026-06-12 [claude/confident-cerf-65a9f6]: Plan refined after a tabletop dry run (goal: CMS Pages content type) — split report-back into a primary verdict plus optional secondary signals (the dry run showed a `done` dispatch can't carry an incidental follow-up under a single enum). Defined gate-resolution provenance: the gate's owning persona writes the escalation-reason/answer/rationale Decision via the OPEN-decision lifecycle, while Sol logs the event and carries the answer back, never writing the plan. Both promoted to ADR-0048; PR #103 body re-synced.
 - 2026-06-13 [hmcgrew/prism-conductor-foundation]: Reconciled Group 1 (PR-C.1 + PR-C.2, combined into one PR) against repo reality — rewrote tasks 1–12 to AFK-executable detail. Corrected five gaps (roles.json `{id,persona}` shape; agent-def build scoped to Claude-only since only `.codex/agents/*.toml` exists today; no theo/ren manifest route to mirror; no install `skills/` surface; state file at `.prism/conductor-state.json`); see the "Group 1 reconciliation" Decision.
+- 2026-06-13 [hmcgrew/prism-conductor-foundation]: Implemented Group 1 (Clove) — Sol skill scaffold (`frontmatter.yml`, `shared.md`, `claude.md`, `codex.md`, `cursor.md`), goal-state schema doc at `.prism/skills/prism-conductor/lib/goal-state.md`, roles.json + manifest route + gitignore. Extended `scripts/ai-skills/build.ts` to emit `.claude/agents/<persona>.md` for every persona (opus for conductor+architect, sonnet otherwise; utilities excluded) with a unit test; ~132-line build diff stayed in-scope. Full gate green except a pre-existing Windows-only `atlas-dogfood` path-separator test flake (fails identically on clean HEAD).
 
 ---
 
@@ -404,13 +405,13 @@ _(none yet — populated during self-review on each sub-PR)_
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: _(pending — plan only)_
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`scripts/ai-skills/claude-agent-def.test.ts`)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-13 (`pnpm prism:build` + `prism:check` green; only the pre-existing Windows `atlas-dogfood` path flake fails, identical on clean HEAD)
+- [ ] PR description up to date — set at draft-PR open
+- [ ] Lasting decisions promoted to architect context — deferred to epic close (PR-C.6 ships ADR-0048; Group 1 is foundation)
 
-**Last updated:** 2026-06-12
+**Last updated:** 2026-06-13 (Group 1 foundation implemented)
