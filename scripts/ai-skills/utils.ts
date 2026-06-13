@@ -34,6 +34,7 @@ export interface PathDefinitions {
 	};
 	generated: {
 		claudeSkillsRoot: string;
+		claudeAgentsRoot: string;
 		codexSkillsRoot: string;
 		codexAgentsRoot: string;
 		codexConfigFile: string;
