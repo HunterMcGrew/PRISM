@@ -6,11 +6,11 @@ The file is the **ephemeral run-control channel** in Sol's two-channel model. Th
 
 The schema doc is tracked here; the runtime file lives at `.prism/conductor-state.json` (repo root under `.prism/`) and is **gitignored**, matching the Ren (`.prism/ren-state.json`) and Theo (`.prism/theo-state.json`) precedent. It is **never** seeded at session start — it is born lazily on the first phase transition (per `.prism/rules/lazy-artifacts.md`), so absence means a fresh run.
 
-## Schema (v1)
+## Schema (v2)
 
 ```json
 {
-  "version": "1",
+  "version": "2",
   "lastUpdated": "ISO-8601",
   "goal": "one-line goal statement",
   "runShape": "pipeline | fleet",
@@ -31,10 +31,30 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "models": { "winston": "opus", "clove": "sonnet" },
       "strikes": [ { "issueKey": "string", "count": 2, "history": ["ISO-8601"] } ],
       "failureCount": 0,
-      "escalation": { "axis": "replan | model | human", "reason": "string", "raisedAt": "ISO-8601" },
+      "escalation": { "axis": "replan | model | human", "reason": "blast-radius | scope-fit | string", "raisedAt": "ISO-8601" },
       "lastVerdict": "done | needs-fix | blocked | needs-replan | needs-stronger-model | needs-human",
-      "signals": [ { "kind": "found-bug | found-followup-work | observation", "note": "string", "routedTo": "persona or null" } ],
-      "gate": { "type": "plan-readiness | a-p-c | review | dor", "disposition": "auto-cleared | needs-human | blocked", "clearedBy": "persona name or null", "reasoning": "stakes reasoning when auto-cleared", "since": "ISO-8601" }
+      "signals": [
+        {
+          "kind": "found-bug | found-followup-work | observation",
+          "note": "string",
+          "routedTo": "persona or null",
+          "target": {
+            "file": "string",
+            "symbol": "string or null",
+            "scopeSlug": "string or null",
+            "errorSignature": "string or null"
+          },
+          "disposition": "fold-active | followup-pr | new-ticket | drop | null",
+          "processedAt": "ISO-8601 or null"
+        }
+      ],
+      "gate": { "type": "plan-readiness | a-p-c | review | dor", "disposition": "auto-cleared | needs-human | blocked", "clearedBy": "persona name or null", "reasoning": "stakes reasoning when auto-cleared", "since": "ISO-8601" },
+      "team": null,
+      "parentId": "laneId or null",
+      "dependsOn": [],
+      "generation": 0,
+      "scope": "one-line lane scope statement",
+      "pendingTicketCommit": false
     }
   ],
   "pendingHumanReport": ["string"]
@@ -43,11 +63,17 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 
 ### Field notes
 
+- `version` is `"2"`. v2 code reading a v1 file (missing v2 fields) treats missing fields as `null` — the additive-migration guarantee. v1 code reading a v2 file hits the existing version-mismatch refusal in the read protocol — that refusal is the rollback safety; no down-migration step is needed.
 - `autonomyPolicy` is set once at intake (launch / internal / hobby, reusing Parker's stakes-calibration vocabulary). It is the human-set ceiling — a persona may escalate above it (`needs-human` under any policy) but never auto-clear below it.
 - `runId` points at the active Workflow run while it is running and is `null` between segments; the plan stays the source of truth regardless.
-- `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded.
+- `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded. `escalation.reason` is typed: `"blast-radius"` or `"scope-fit"` for decision-box escalations; plain string for other escalation axes.
 - `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal.
 - `worktree` is `null` for a single-lane (pipeline) run and a checkout path for a fleet lane under worktree isolation.
+- `team` and `dependsOn` ship nullable and are **provisional** (Phase C — shape not yet driven in v1). Do not write logic that reads them until Phase C.
+- `parentId` is driven for discovery lineage: a lane spawned from a discovered signal carries the originating lane's `laneId`; `generation = parent.generation + 1`; origin lanes are `generation: 0`.
+- `pendingTicketCommit` is set to `true` at each decision-box step (`routed` → `winston-verdict` → `finalized`) before the next step begins, enabling deterministic resume after a crash — no double-commit, no lost draft.
+- Every dispatch counts against `globalBudget.spent` — origin-lane phases, decision-box dispatches (Nora/Winston), and discovered-lane phases alike. A single shape-agnostic counter is what makes the budget brake honest.
+- Governor thresholds (`globalBudget.maxDispatches`, generation cap K, breadth gate) and the autonomy→threshold mapping are config-driven; the defaults (100 / K=3 / 12) are Thrive values and are overridable by a consuming team.
 
 ## Read protocol
 
