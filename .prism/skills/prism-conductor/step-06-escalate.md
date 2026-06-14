@@ -12,4 +12,4 @@ Three escalation axes, each with one trigger and one target. Set the lane's `esc
 
 ## Exit condition
 
-The escalation is recorded on the lane and routed to its target — Winston (replan), a model bump on the next dispatch (model), or a human pause (human). Control returns to step-04 or step-09 (report) depending on whether the lane can proceed.
+The escalation is recorded on the lane and routed to its target — Winston (replan), a model bump on the next dispatch (model), or a human pause (human). Control returns to step-04 or step-10 (report) depending on whether the lane can proceed.

@@ -12,4 +12,4 @@ Mutate the budget counters per the protocol in `.prism/skills/prism-conductor/li
 
 ## Exit condition
 
-Budgets checked on each dispatch; a tripped budget parks its lane (`status: parked`) with survival history recorded, while other lanes continue. Control returns to step-04 or to step-09 (report) when a lane parks.
+Budgets checked on each dispatch; a tripped budget parks its lane (`status: parked`) with survival history recorded, while other lanes continue. Control returns to step-04 or to step-10 (report) when a lane parks.

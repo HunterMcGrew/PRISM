@@ -11,4 +11,4 @@ At the step level:
 
 ## Exit condition
 
-Lanes scheduled per the conflict gate (overlapping units serialized); failed or parked lanes contained without halting the run; `needs-human` pauses batched for step-09.
+Lanes scheduled per the conflict gate (overlapping units serialized); failed or parked lanes contained without halting the run; `needs-human` pauses batched for step-10.

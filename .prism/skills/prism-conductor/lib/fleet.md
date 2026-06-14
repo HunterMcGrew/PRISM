@@ -36,4 +36,4 @@ Each fleet lane runs in its own worktree (`isolation: 'worktree'`), recorded as 
 
 ## Batched human-gate reporting
 
-`needs-human` pauses across lanes are aggregated into **one** end-of-segment report, never one ping per lane. The shape: "4 lanes parked at merge, 2 need you, 2 running." The batched report drains into step-09's closing report; `pendingHumanReport` in goal-state accumulates the entries across the segment.
+`needs-human` pauses across lanes are aggregated into **one** end-of-segment report, never one ping per lane. The shape: "4 lanes parked at merge, 2 need you, 2 running." The batched report drains into step-10's closing report; `pendingHumanReport` in goal-state accumulates the entries across the segment.
