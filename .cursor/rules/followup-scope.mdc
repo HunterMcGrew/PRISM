@@ -94,7 +94,7 @@ When a worker persona (Clove, Briar, Eric, Sasha) operates inside a Sol run, it 
 **Broken-dependency stub convention:** when a worker finds that a dependency of the code it is currently writing is broken and cannot proceed cleanly, it:
 
 1. Emits the signal with a structured `target` (file, symbol, scopeSlug, or errorSignature as appropriate — per `lib/goal-state.md` schema).
-2. Proceeds on a **documented stub** — a clearly-marked placeholder whose comment names the emitted signal's `target`. Example: `// STUB: awaiting fix for <target.symbol> — emitted found-bug signal`.
+2. Proceeds on a **documented stub** — a clearly-marked placeholder whose comment names the emitted signal's `target`. Example: `// Placeholder while <target.symbol> is broken — found-bug signal emitted; the reconcile pass tracks the fix.`
 3. Does **not** stall the lane. The stub lets the lane continue; the emitted signal enters the registry for the next reconcile pass.
 
 Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the end-of-run report flags the original stub site for human or follow-up attention. v1 never auto-replaces stubs — the dependent lane's worktree may already be done, and rewiring is itself follow-up work.

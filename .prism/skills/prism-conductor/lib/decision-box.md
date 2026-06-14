@@ -8,7 +8,7 @@ The decision box is the boundary between discovering work and committing to it. 
 
 **Nora** runs the four-signal scope judgment (per `followup-scope.md`'s scope-fit gate) and resolves a disposition. Nora drafts the ticket and defers the Linear write.
 
-**Sol** picks `fold-into-active-PR` vs. `follow-up-PR-no-ticket` from the target lane's merge status — a deterministic run-state lookup from goal-state, never an interpretation call. Sol never judges scope.
+**Sol** picks `fold-active` vs. `followup-pr` from the target lane's merge status — a deterministic run-state lookup from goal-state, never an interpretation call. Sol never judges scope.
 
 **Winston** is consulted only on `escalationReason: "blast-radius"` — Sol routes a Winston read, then dispatches Nora a second time to finalize with Winston's verdict.
 

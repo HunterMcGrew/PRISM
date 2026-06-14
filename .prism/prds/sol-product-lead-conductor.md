@@ -112,7 +112,7 @@ The next two are standing invariants restated for the self-growth context — no
 
 - **NFR-1 — Invariants preserved.** Sol dispatches, never does (writes only `goal-state` + chat). The plan is the content bus; `goal-state` is run-control (ADR-0001). Merge is the one unconditional human gate (ADR-0011). Autonomy is a human-set ceiling — agents escalate above it, never auto-clear below it (ADR-0048).
 - **NFR-2 — Additive, non-breaking migration.** `goal-state` v2 fields are additive and nullable; runs written against the v1 schema still parse. No breaking migration step. Rollback is abandon-not-migrate: a v2 run interrupted by a revert is parked and reported, and any in-flight `pendingTicketCommit` entries are surfaced to the human rather than auto-resolved (confirm with Winston that no down-migration step is needed).
-- **NFR-3 — Deterministic crash-safety.** A run interrupted mid-decision resumes without double-committing a ticket or losing a signal, via the typed escalation reason (`blast-radius` | `scope-fit`), `pendingTicketCommit`, and per-step `goal-state` writes.
+- **NFR-3 — Deterministic crash-safety.** A run interrupted mid-decision resumes without double-committing a ticket or losing a signal, via the typed escalation reason (`blast-radius`), `pendingTicketCommit`, and per-step `goal-state` writes.
 - **NFR-4 — Lives within Workflow-engine limits.** No design element assumes deeper than one-level nesting, more than the per-run concurrency cap (see Constraints), or a budget/counter not shared across a nested run.
 - **NFR-5 — Failure-mode bias.** The pre-filter and governor bias toward **over-emit over under-emit** — a borderline find is emitted (and deduped/dropped downstream) rather than silently lost.
 
