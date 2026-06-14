@@ -49,7 +49,7 @@ The ratification gate **is** the human review the breadth gate exists to force, 
 
 The loophole guard closes the gap at `hobby` stakes: when there is no ratification gate, the breadth gate **does** apply to the planned tree as the backstop, so a very large tree can never bypass human review under every policy.
 
-The three-case table for planned trees (cite `lib/convergence.md` § Breadth gate for gate mechanics — do not restate them):
+The three-case table for planned trees (cite `lib/convergence.md` § Brake 3 — Breadth gate for gate mechanics — do not restate them):
 
 | Case | Breadth gate |
 | --- | --- |
@@ -65,4 +65,4 @@ Under every policy, a large planned tree faces exactly one human gate — ratifi
 - `lib/decision-box.md` — the crash-safety pattern this chain's resume logic mirrors.
 - `step-02-decompose.md` § Greenfield mode — the step that calls this chain and routes its output to step-04 dispatch.
 - `step-10-report.md` § Tree-structured view — the report format reused as the ratification artifact.
-- `lib/convergence.md` § Breadth gate — the gate whose mechanics the breadth-gate interaction table above cites without restating.
+- `lib/convergence.md` § Brake 3 — Breadth gate — the gate whose mechanics the breadth-gate interaction table above cites without restating.
