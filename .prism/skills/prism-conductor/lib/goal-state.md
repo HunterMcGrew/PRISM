@@ -50,14 +50,19 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       ],
       "gate": { "type": "plan-readiness | a-p-c | review | dor", "disposition": "auto-cleared | needs-human | blocked", "clearedBy": "persona name or null", "reasoning": "stakes reasoning when auto-cleared", "since": "ISO-8601" },
       "team": null,
+      "type": null,
       "parentId": "laneId or null",
       "dependsOn": [],
+      "blockedBy": [],
       "generation": 0,
       "scope": "one-line lane scope statement",
       "pendingTicketCommit": false
     }
   ],
-  "pendingHumanReport": ["string"]
+  "pendingHumanReport": ["string"],
+  "teamConfig": [
+    { "team": "string", "modelTier": null }
+  ]
 }
 ```
 
@@ -69,7 +74,9 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 - `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded. `escalation.reason` is typed `"blast-radius"` for decision-box escalations; plain string for other escalation axes. A same-scope-vs-split scope-fit call is never escalated — Nora resolves it inside her four-signal gate.
 - `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal.
 - `worktree` is `null` for a single-lane (pipeline) run and a checkout path for a fleet lane under worktree isolation.
-- `team` and `dependsOn` ship nullable and are **provisional** (Phase C — shape not yet driven in v1). Do not write logic that reads them until Phase C.
+- `team`, `dependsOn`, and `type` are driven as of Phase C: `team` groups lanes for scheduling/reporting/discovered-work routing; `dependsOn` is a flat `laneId[]` DAG enforced at dispatch eligibility; `type: "integration" | null` marks a lane as an integration lane (`null` = ordinary lane). Phase A/B runs with null `team` / empty `dependsOn` / null `type` dispatch identically — the fields are additive (NFR-2).
+- A lane blocked on an unresolved `dependsOn` edge stays `status: "active"` with `phaseStatus: "parked"` and a `blockedBy: laneId[]` note naming the unresolved edges; it is not a new top-level status value (see Phase C Decision: C-A2). `blockedBy` is absent when the lane has no unresolved dependency.
+- `teamConfig[]` is a top-level nullable array (absent on Phase A/B runs). Each entry is `{ team: string, modelTier: string | null }`. `modelTier` defaults to the run-wide conductor model when `null` or absent. Sol reads `teamConfig[].modelTier` when setting the per-dispatch `model` override for a lane whose `team` matches an entry — the per-team model tier is the override when set; the run-wide model applies otherwise.
 - `parentId` is driven for discovery lineage: a lane spawned from a discovered signal carries the originating lane's `laneId`; `generation = parent.generation + 1`; origin lanes are `generation: 0`. Phase B additionally drives `parentId` as an epic→issue→ticket tree pointer over the flat `lanes[]` — a lane whose `parentId` names a parent lane is a child in that parent's subtree; a lane with at least one child is a **container lane** (epic or issue) that has no implementation phase of its own. Its `status`/`currentPhase` are *derived* from its children (§ Tree dispatch, `step-04-dispatch.md`), never dispatched; only leaf lanes (no children) run a phase chain.
 - **Container lanes carry `generation: 0` when planned.** A lane emitted by the greenfield decompose chain is `generation: 0` regardless of its depth in the planned tree (epic, issue, and ticket lanes are all gen 0). Generation accrues only from *unplanned* discovery during build (`parent.generation + 1`). Tree depth ≠ generation depth — the convergence governor's generation cap (`lib/convergence.md`) is not triggered by a planned tree's depth, only by discovered work's lineage.
 - `pendingTicketCommit` is `true` at the `routed` and `winston-verdict` steps and resets to `false` at `finalized`, enabling deterministic resume after a crash — a `true` value on resume means the ticket was drafted but not committed (surface it to the human), so there is no double-commit and no lost draft.

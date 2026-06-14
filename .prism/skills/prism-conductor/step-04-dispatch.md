@@ -4,9 +4,23 @@ Author and invoke the autonomous Workflow segment that drives the lanes through 
 
 The segment runs each lane forward autonomously and **clears `auto-cleared` gates in place** without returning to Sol — the owning persona judges its own gate under the autonomy policy and the script proceeds. It breaks back to Sol only when a lane returns `needs-human` / `blocked`, completes, or trips a budget.
 
-Sol does not talk to running workers. It reads the returned verdicts when the segment ends and records them in goal-state (`lastVerdict`, `signals`, the gate disposition) per the mutate protocol in `.prism/skills/prism-conductor/lib/goal-state.md`. Set the per-dispatch `model` off each lane's `models` map — `opus` for Winston and for any worker that escalated, `sonnet` for the default worker dispatch.
+Sol does not talk to running workers. It reads the returned verdicts when the segment ends and records them in goal-state (`lastVerdict`, `signals`, the gate disposition) per the mutate protocol in `.prism/skills/prism-conductor/lib/goal-state.md`. Set the per-dispatch `model` off each lane's `models` map — `opus` for Winston and for any worker that escalated, `sonnet` for the default worker dispatch. When a run carries a `teamConfig[]` array, Sol also checks whether the dispatched lane's `team` matches any `teamConfig[].team` entry; when a match exists and `modelTier` is non-null, that value overrides the default tier for this lane's dispatch. The per-team model tier is the override when set; the run-wide default applies otherwise. This is the C-A1 read path — see `lib/goal-state.md` § Field notes for the `teamConfig[]` schema.
 
 The runtime equivalents for other adapters (`@openai/codex-sdk`, `@cursor/sdk`, or a sequential `prism-handoff` fallback) live in `codex.md` / `cursor.md`.
+
+## Per-team dispatch ordering
+
+Sol reads each eligible lane's `team` field and applies a team-aware ordering layer on top of the existing slot-fill — lanes sharing a `team` value form a logical queue (preserving their `lanes[]` array order); Sol interleaves teams round-robin as concurrency slots open, so no single team starves another within the shared concurrency cap. A lane with `team: null` is its own implicit singleton group, ordered by array position.
+
+This is an **ordering layer on the existing single-conductor dispatch loop, not a second scheduler** (NFR-3) — the concurrency cap, conflict gate, and budget are unchanged shared resources. Cite `lib/fleet.md` for the conflict gate (unchanged) and `claude.md § The autonomous segment` for the `pipeline(lanes, …)` mechanism — do not restate them.
+
+When recording dispatch state in goal-state, Sol tags each dispatched lane's segment-membership by `team` — the `team` value on the lane is the grouping key the end-of-run report (step-10) reads to produce the per-team view. No new schema field is needed; the existing `team` value serves as the grouping key. This is a documentation note only: no build effect.
+
+## Dependency-gated eligibility
+
+Before a lane is placed in the dispatch set, Sol checks its `dependsOn` list. A lane is **eligible** only when every `laneId` in its `dependsOn` has `status: "done"`. A lane with an unresolved edge is held: set `phaseStatus: "parked"` and `blockedBy: [<unresolved laneIds>]` per the mutate protocol in `lib/goal-state.md`, and it is not added to the `pipeline()` set this segment.
+
+Eligibility is checked **at each segment boundary (segment-granular), not mid-segment** — consistent with the segment model where Sol does not talk to running workers (`lib/goal-state.md` § Mutate protocol). A dependency that resolves mid-segment unblocks the dependent lane at the *next* boundary, not instantly. An empty `dependsOn` is trivially eligible (Phase A/B behavior, FR-2).
 
 ## The review phase is the gauntlet
 
