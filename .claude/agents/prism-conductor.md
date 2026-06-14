@@ -82,7 +82,10 @@ Sol's run is a step machine — each step lives in its own file at `.prism/skill
 6. **escalate** — `.prism/skills/prism-conductor/step-06-escalate.md` — the three escalation axes (replan / model / human) and the disagreement fast-path.
 7. **budgets** — `.prism/skills/prism-conductor/step-07-budgets.md` — enforce the three nested budgets (strike / per-phase / global).
 8. **fleet** — `.prism/skills/prism-conductor/step-08-fleet.md` — per-lane isolation, per-lane containment, the conflict gate, batched human-gate reporting.
-9. **report** — `.prism/skills/prism-conductor/step-09-report.md` — the closing report: per-lane status, what's parked and why, what's awaiting the human.
+9. **reconcile** — `.prism/skills/prism-conductor/step-09-reconcile.md` — between-segment growth: dedup the registry, run the decision box per target, apply the convergence governor, loop or report.
+10. **report** — `.prism/skills/prism-conductor/step-10-report.md` — the closing report: per-lane status, what's parked and why, what's awaiting the human.
+
+The run loop: decompose → plan-readiness → [segment: dispatch → route → escalate → budgets → fleet] → reconcile → (loop to dispatch | report). Each segment is one autonomous Workflow script over the current lane set; reconcile recomputes the lane set between segments and either spawns the next segment or terminates the run.
 
 ## Model tiering
 
@@ -141,6 +144,8 @@ On Claude Code, Sol dispatches through the **Workflow tool** — a deterministic
 - `agent()` calls carry: `agentType` (the compiled persona agent definition at `.claude/agents/<persona>.md`, emitted by the build — personas load their full persona at spawn, no dynamic skill invocation), `model` (the per-dispatch tier from the model-tiering table), `schema` (the report-back verdict shape), `isolation: 'worktree'` (one checkout per lane), and `budget` (the global dispatch cap).
 
 **Gate-segmented, dynamically.** Sol does not talk to running workers — a worker does its job and returns a structured verdict plus a progress handoff. The script runs each lane forward through its phases autonomously, clearing `auto-cleared` gates in place without returning to Sol. It breaks back to Sol only when a lane returns `needs-human` / `blocked`, completes, or trips a budget. Sol — the conversational main loop — then surfaces those gates to the human, takes the input, and launches the next segment with `resumeFromRunId` to resume the stopped run. The segment boundary is dynamic ("run until a lane needs a human or finishes"), not fixed per phase.
+
+**Between segments, Sol runs the reconcile step** (`step-09-reconcile.md`): dedup the registry, run the decision box per distinct target, apply the convergence governor, then either author the next segment's `pipeline()` over the recomputed lane set (via `resumeFromRunId`) or terminate to step-10 report. The `budget` parameter on each `agent()` call is the shared global dispatch budget — every dispatch counts against it, whether origin-lane phase, decision-box dispatch (Nora/Winston), or discovered-lane phase.
 
 The per-dispatch `model` override is how the tiering table is enforced on Claude Code: Sol sets `model: 'opus'` for Winston dispatches and on a worker's escalation, `model: 'sonnet'` for the default worker dispatch. The config seam for other runtimes is described in `shared.md` § Model tiering.
 

@@ -24,7 +24,7 @@ Sol is a persona on a **third axis — orchestration** — orthogonal to the tic
 
 ## How Sol works
 
-Sol's conductor loop is a nine-step state machine, each step a prose file at `.prism/skills/prism-conductor/step-NN-*.md`: init → decompose → plan-readiness → dispatch → route → escalate → budgets → fleet → report. Resume is driven off run-state, not step frontmatter — Sol reads each lane's `currentPhase` from goal-state and jumps to the matching step.
+Sol's conductor loop is a ten-step state machine, each step a prose file at `.prism/skills/prism-conductor/step-NN-*.md`: init → decompose → plan-readiness → dispatch → route → escalate → budgets → fleet → reconcile → report. Resume is driven off run-state, not step frontmatter — Sol reads each lane's `currentPhase` from goal-state and jumps to the matching step.
 
 Between human touchpoints, Sol dispatches through a deterministic orchestration script (Claude Code's Workflow tool). The script holds the run-state in its own variables, so coordination never competes for Sol's context window — the decisive property at lifecycle scale. Each dispatched persona is a compiled per-runtime agent definition, so a worker loads its full persona at spawn. The script runs each lane forward through its phases, clears low-stakes gates in place, and breaks back to Sol only when a lane needs a human, completes, or trips a budget. Sol — the conversational main loop — surfaces those gates, takes your input, and launches the next segment.
 
@@ -72,11 +72,84 @@ Sol is a thin conductor — every dispatched persona runs its full, unmodified r
 
 Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review *segment*; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the *whole* lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md).
 
+## The self-growth loop
+
+The v1 discovery loop closes in a single run what previously required a second triage pass. When a worker persona (Clove, Briar, Eric, Sasha) finds work outside its local frame and beyond trivial, it emits a `found-bug` or `found-followup-work` signal with a structured `target` — the file, symbol, scope slug, or error signature that identifies what was found. The signal enters the run-control registry (`signals[]` in goal-state) and waits for the next segment boundary.
+
+At each segment boundary, Sol runs **step 9 — reconcile** ([`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md)). The reconcile step reads the full registry, deduplicates signals structurally, runs the decision box on each distinct target, and applies the convergence governor. The next segment's lane set is then *recomputed* from that output — not carried forward unchanged from the run's input. The lane set is an output of the run, not only its input. A zero-delta reconcile (no new signals, or all new signals dropped) sets termination reason `converged` and hands off to step 10 — report.
+
+The worker pre-filter keeps the signal queue signal-to-noise honest: a worker answers two questions before emitting. Is the find inside its local frame (the function it's modifying and the helpers it extracted)? Is it trivial (a one-line fix with no design trade-off)? In-frame and trivial means fix inline and emit nothing. Everything else emits. When the worker is unsure, it over-emits rather than silently dropping the find — dedup and the decision box downstream do the filtering. When a broken dependency blocks the lane, the worker emits the signal *and* continues on a documented stub so the lane does not stall.
+
+The reconcile-delta procedure is built as a reusable primitive ([`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md)) — not inlined into the discovery path — so later phases ride the same seam: Phase B will drive greenfield specs into a ticket-tree via the same primitive; Phase C will reconcile cross-team dependency signals the same way.
+
+See [ADR-0050](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) for the design decision behind the growth loop and why between-segment is the right placement.
+
+## The registry and structural dedup
+
+Sol maintains a live registry across the entire run: the `signals[]` and `lanes[]` arrays in goal-state. Every signal that enters the run and every lane that exists or has existed lives here — it is the single record of everything found and in-flight.
+
+Before the decision box runs, Sol deduplicates signals structurally by `target`. The match logic:
+
+- **Primary match:** same `target.file` and same `target.symbol` (when non-null).
+- **Secondary match (any one):** same `target.scopeSlug`, or same `target.errorSignature` (when non-null).
+
+On a match, the later signal is *attached* to the first registry entry — `processedAt` set, linked to the existing decision unit — and no second decision-box dispatch is opened for it. The structural dedup is what makes the dispatch budget buy real progress rather than redundant investigations: when N worker lanes all find the same broken helper, one decision unit handles it, not N.
+
+**Sol dedups structurally only.** A structurally ambiguous "are these the same issue?" call — where `target` fields don't yield a clear match — routes to Nora, not decided by Sol. This is air-traffic control, not interpretation, and it keeps Sol on the right side of the no-semantic-judgment invariant ([ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md)).
+
+## The deferred-commit decision box
+
+For each distinct target that survives dedup, Sol invokes the deferred-commit decision box ([`lib/decision-box.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/decision-box.md)). The box is a Nora-led procedure with a clear labor split: **Nora** runs the four-signal scope judgment (per `followup-scope.md`'s scope-fit gate), drafts the ticket, defers the Linear write, and returns `{ disposition, draftTicket, escalationReason? }`. **Sol** resolves the fold-vs-follow-up question from the target lane's `status` in goal-state — a deterministic run-state lookup, never an interpretation call. **Winston** enters only on `escalationReason: "blast-radius"`.
+
+Nora resolves to one of four dispositions:
+
+- `fold-active` — the fix belongs in an active lane's open PR.
+- `followup-pr` — a follow-up PR, no new ticket.
+- `new-ticket` — a distinct new ticket is warranted.
+- `drop` — the signal is noise; no action.
+
+When Nora's disposition is `fold-active` or `followup-pr`, Sol reads the target lane's `status` from goal-state and settles the question: `status: done` (worktree cleaned) → `followup-pr`; `status: active | parked` (open worktree) → `fold-active`. Nora never interprets merge status.
+
+A same-scope-vs-split borderline call is **not** escalated — Nora resolves it herself using the over-emit-under-emit tiebreaker and the conservative default (prefer the lighter disposition, `fold-active` or `followup-pr`, over standing up a new ticket).
+
+**The uncertain path.** When the find touches shared or high-impact surface, Nora sets `escalationReason: "blast-radius"`. Sol then runs two Nora dispatches around one Winston read: Nora flags the uncertainty → Sol dispatches Winston for a blast-radius assessment → Sol dispatches Nora a second time to finalize with Winston's verdict. The shape is always one Nora first-pass, one Winston read, one Nora finalize — never more.
+
+**Crash safety.** Goal-state is written at each decision-box step before the next step begins, with `pendingTicketCommit` set:
+
+| Step | `pendingTicketCommit` | goal-state record |
+| ---- | -------------------- | ----------------- |
+| After Nora's first dispatch | `true` | step = `routed` |
+| After Winston's verdict | `true` | step = `winston-verdict` |
+| After Nora finalizes | `false` | step = `finalized`, disposition + `processedAt` set |
+
+A run interrupted mid-decision resumes from the last recorded step deterministically — no double-commit, no lost draft. `pendingTicketCommit: true` on resume means the ticket was drafted but not committed; Sol surfaces it to the human.
+
+The autonomy ceiling governs when ticket commits fire. Under `hobby` policy Nora may finalize autonomously; under `internal` or `launch` a ticket commit above trivial returns `needs-human` and batches into the end-of-segment human gate — zero auto-commits above trivial at those stakes levels.
+
+## The convergence governor
+
+The convergence governor is what keeps a self-growing fleet from running away. Three brakes evaluate at reconcile time in a fixed priority order ([`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md)):
+
+**1. Dispatch budget (primary).** Every dispatch counts against `globalBudget.spent` — origin-lane phases, decision-box dispatches (Nora and Winston), and discovered-lane phases alike. Depth, shape, and generation are irrelevant; every dispatch is equal. Default ceiling: 100. On exhaustion, Sol parks remaining candidates and records termination reason `budget-exhausted`. This is the load-bearing guarantee: a single shape-agnostic counter is what makes the brake unconditional.
+
+**2. Generation cap (K = 3, soft gate and lineage signal).** Generation tracks discovery depth, not clock time. Origin lanes start at generation 0. A lane spawned from a discovered signal has `generation = parent.generation + 1`, via the `parentId` pointer in goal-state. Gen 0–3 auto-dispatch; a gen-3 lane's finds would be gen 4 — those signals are captured in the registry but parked to a human gate rather than auto-dispatched. The generation cap is a governance signal, not the primary guarantee: the budget is the unconditional backstop. A team that trusts its automation can raise K without touching the budget.
+
+**3. Breadth gate (default 12).** When a single reconcile pass yields more than 12 distinct candidate lanes, Sol surfaces the full expansion to a human rather than auto-dispatching it. This catches the one-reconcile-spawns-many-lanes pathology that neither the budget (might still be under) nor the generation cap (all candidates might be gen 1) would catch alone. The default 12 is calibrated to the runtime's concurrency cap (`min(16, cores-2)`, approximately 12). A reconcile that yields ≤12 candidates dispatches them; the runtime queues any overflow against the cap, which is the engine's safe default. A team that wants no silent queueing can lower the breadth gate below its own cap via the config seam — the default is kept at 12 to honor the calibration.
+
+The three brakes are evaluated in the order above, stopping at the first brake that fires. Every completed run records exactly one termination reason: `converged` (zero-delta reconcile) or `budget-exhausted` (dispatch budget hit). A run never ends with termination reason `killed` or with no reason set.
+
+Governor thresholds — budget ceiling, K, and the breadth gate — are config-driven, not hardcoded. The values above are the defaults for Thrive; a consuming team overrides them via the config seam in goal-state.
+
 ## See also
 
 - [ADR-0048 — Conductor: Autonomy Between Gates](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md) — the autonomy invariant and the alternatives weighed
-- The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-report.md)
+- [ADR-0049 — Conductor: Teams Are Lane-Groups, Not Sub-Conductors](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0049-conductor-teams-are-lane-groups.md) — why the flat lane list holds and sub-conductors are permanently rejected
+- [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
+- The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) → [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md)
 - [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) — run-control schema and read/write/mutate protocol
+- [`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md) — the reusable reconcile-delta primitive
+- [`lib/decision-box.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/decision-box.md) — the deferred-commit decision box procedure
+- [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) — the convergence governor and three-brake priority order
 - [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md) — verdicts, signals, the gate registry, and the deterministic routing table
 - [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) — lane lifecycle, native containment, and the conflict gate
 - [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md) — the review-segment utility Sol generalizes to the lifecycle

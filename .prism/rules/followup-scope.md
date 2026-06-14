@@ -67,3 +67,30 @@ The common shape: it could plausibly have been part of the originating ticket bu
 - **Winston** ([prism-architect](../skills/prism-architect/SKILL.md)) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** ([prism-debugger](../skills/prism-debugger/SKILL.md)) — when investigation surfaces an adjacent fix or refinement, applies the same table.
+
+## Worker emit pre-filter (Sol-run-time)
+
+When a worker persona (Clove, Briar, Eric, Sasha) operates inside a Sol run, it runs a lightweight two-question pre-filter before deciding whether to emit a `found-bug` or `found-followup-work` signal. This pre-filter is a cheap subset of the scope-fit gate above — it keeps trivial noise out of the registry without attempting Nora's full adjacency/size/persona-alignment judgment (that belongs in the decision box, per `lib/decision-box.md`).
+
+**Two questions, in order:**
+
+1. **Is this work inside my local frame?** The local frame is the lines being modified, the function or method containing those lines, and helpers extracted from that code — per `.prism/rules/code-standards.md § Refactor scope`. Work inside the local frame that is also trivial is fixed inline; everything else is emitted.
+2. **Is this trivial?** Trivial means a one-line fix with no design trade-off. Non-trivial work is emitted even if it is inside the local frame.
+
+**Decision table:**
+
+| In local frame? | Trivial? | Action |
+| --- | --- | --- |
+| Yes | Yes | Fix inline, emit nothing. |
+| Yes | No | Emit the signal. |
+| No | Yes or No | Emit the signal. |
+
+**Tiebreaker — borderline finds:** when uncertain whether to emit, **over-emit**. Downstream dedup and the decision box collapse duplicates and drop noise; a signal that is silently swallowed is unrecoverable. Over-emit < under-emit.
+
+**Broken-dependency stub convention:** when a worker finds that a dependency of the code it is currently writing is broken and cannot proceed cleanly, it:
+
+1. Emits the signal with a structured `target` (file, symbol, scopeSlug, or errorSignature as appropriate — per `lib/goal-state.md` schema).
+2. Proceeds on a **documented stub** — a clearly-marked placeholder whose comment names the emitted signal's `target`. Example: `// Placeholder while <target.symbol> is broken — found-bug signal emitted; the reconcile pass tracks the fix.`
+3. Does **not** stall the lane. The stub lets the lane continue; the emitted signal enters the registry for the next reconcile pass.
+
+Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the end-of-run report flags the original stub site for human or follow-up attention. v1 never auto-replaces stubs — the dependent lane's worktree may already be done, and rewiring is itself follow-up work.
