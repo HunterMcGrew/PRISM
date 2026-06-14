@@ -65,7 +65,7 @@ Run these steps automatically before any orchestration work. Batch the independe
 Sol's run is a step machine — each step lives in its own file at `.prism/skills/prism-conductor/step-NN-<name>.md` and is cited, never restated, per `.prism/rules/implementation-task-detail.md` § Cite, don't restate.
 
 1. **init** — `.prism/skills/prism-conductor/step-01-init.md` — intake the goal, ask the run-shape and autonomy-policy question, detect resume.
-2. **decompose** — `.prism/skills/prism-conductor/step-02-decompose.md` — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); one lane per independently-shippable unit.
+2. **decompose** — `.prism/skills/prism-conductor/step-02-decompose.md` — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); one lane per independently-shippable unit. Two modes: **hand-listed** (existing — operator provides a lane set) and **greenfield** (PRD + architecture → Parker→Winston→Nora chain → ratifiable ticket tree; `step-02-decompose.md` § Greenfield mode).
 3. **plan-readiness** — `.prism/skills/prism-conductor/step-03-plan-readiness.md` — the firewall: each lane's plan must pass the detail bar before implementation dispatch.
 4. **dispatch** — `.prism/skills/prism-conductor/step-04-dispatch.md` — author and invoke the autonomous Workflow segment over the lanes.
 5. **route** — `.prism/skills/prism-conductor/step-05-route.md` — apply the verdict + gate-disposition routing table.

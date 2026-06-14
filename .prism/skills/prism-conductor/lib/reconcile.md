@@ -30,12 +30,22 @@ Count the distinct unprocessed targets that survived dedup. These are the candid
 
 Per the mutate protocol in `lib/goal-state.md`: read → mutate in-memory → atomic write. Update `lastUpdated`. Set `processedAt` on all signals handled in this reconcile pass.
 
+## Tree-shaped delta (Phase B)
+
+The primitive's contract is unchanged — input is emitted work, output is a lane delta + updated registry.
+
+When the emitted delta carries `parentId` pointers (the greenfield decompose chain's output, not flat discovery signals), the reconcile pass **preserves the pointers** into the candidate lanes and **assigns `generation: 0` to every lane in the planned tree** regardless of depth. It does **not** compute `parent.generation + 1` for planned-tree lanes — that formula applies only to *discovered* lineage.
+
+This is an **additive extension to the existing primitive, not a fork** (NFR-3). The flat-signal path (Phase A discovery) is untouched; the tree path is a second input shape the same primitive handles. A diff against the Phase A primitive shows the flat path unchanged — the success metric "no duplicate logic" holds.
+
+Structural dedup at the door still runs on the tree's leaf lanes the same way it runs on flat signals.
+
 ## Reuse contract
 
 This primitive is called at every segment boundary. It is not specific to the discovery loop:
 
 - **v1 (Phase A):** reconciles discovered-work signals from worker lanes.
-- **Phase B:** reconciles greenfield specs→ticket decompose output into candidate lanes.
+- **Phase B:** reconciles greenfield specs→ticket decompose output into candidate lanes — see § Tree-shaped delta above.
 - **Phase C:** reconciles cross-team dependency signals into sequenced lanes.
 
 The input is always `signals[]` + `lanes[]` in goal-state; the output is always a lane delta (distinct candidates) and an updated registry. The calling step applies the convergence governor (`lib/convergence.md`) to decide which candidates auto-dispatch vs. park.
