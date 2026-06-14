@@ -131,6 +131,7 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Eli updated docs/content/dev/ai-skills/conductor.md with Phase B sections: tree semantics, greenfield decompose mode (chain + ratification gate + crash safety), subtree budget attribution, and tree-structured end-of-run report. Cross-linked ADR-0049/0050 (Phase A) and ADR-0051/0052 (Phase B).
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Briar self-review complete. Zero critical/major issues. Two minors filed: cite-label case in goal-state.md `§ tree dispatch` and heading mismatch `§ Breadth gate` vs `## Brake 3 — Breadth gate`; both navigable in practice. pnpm prism:check green (158 tests). PR Readiness updated.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed both Briar minors (commit 7132cb3) — cite `§ Breadth gate` → `§ Brake 3 — Breadth gate` (2 occurrences in greenfield-decompose.md) and `§ tree dispatch` → `§ Tree dispatch` in goal-state.md. pnpm prism:check green. Draft PR #144 opened.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed Eric minor — moved "Per-subtree budget attribution" bullet from per-lane list to run-level list in step-10-report.md; 158 tests green.
 
 ---
 
@@ -190,6 +191,15 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 - **Problem:** The `parentId` Field notes bullet cites `(§ tree dispatch, step-04-dispatch.md)` in lowercase; the actual heading is `## Tree dispatch — leaf-first, container lanes roll up`. Not a broken reference — a reader lands in the right section.
 - **Suggested fix:** Capitalize to `§ Tree dispatch` to match cite-label conventions elsewhere in the file.
 - **Fixed in:** commit 7132cb3 — capitalized to `§ Tree dispatch`.
+
+### Per-subtree budget bullet under wrong list — `step-10-report.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/step-10-report.md:13`
+- **Problem:** The "Per-subtree budget attribution" bullet was placed inside the `Cover, per lane:` list (detached by a blank line), but it describes a run-as-a-whole concern (rolls up dispatches across epic/issue subtrees), not a per-lane concern.
+- **Suggested fix:** Move the bullet to the `Cover for the run as a whole:` list.
+- **Fixed in:** commit TBD — moved bullet to run-level list, removed orphaning blank line.
 
 ---
 

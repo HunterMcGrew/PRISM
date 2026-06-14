@@ -10,10 +10,9 @@ Cover, per lane:
 - **What's awaiting the human** — drain `pendingHumanReport` into the report. Fleet `needs-human` pauses arrive here already batched from step-08.
 - **Auto-cleared gates** — every gate a persona auto-cleared under the autonomy policy, with its stakes reasoning, so autonomy stays on-the-loop, never dark.
 
-- **Per-subtree budget attribution** — consumed dispatches shown rolled up to each epic's subtree and each issue's subtree, computed read-time from the global counter (no per-lane counter).
-
 Cover for the run as a whole:
 
+- **Per-subtree budget attribution** — consumed dispatches shown rolled up to each epic's subtree and each issue's subtree, computed read-time from the global counter (no per-lane counter).
 - **Every discovered spin-out and its outcome** — list each signal that entered the registry during the run, with its outcome: `ticketed` (ticket committed), `folded` (folded into an active lane), or `parked` (awaiting human). No spin-out is omitted — an omitted spin-out is an orphaned finding.
 - **Ratified-pending spin-out lanes** — each discovered lane that was authorized and ran to completion is shown as such, alongside its origin signal.
 - **Stub sites surfaced** — any stub site flagged by the reconcile step (from the broken-dependency convention in `followup-scope.md § Worker emit pre-filter`) that the fix lane's landing has not yet cleared. These need human or follow-up attention.
