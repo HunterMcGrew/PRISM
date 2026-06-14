@@ -125,6 +125,7 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 ## History
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Winston authored the Phase B epic plan (dispatched by Sol, non-interactive). Resolved all 7 PRD assumptions (B-A1…B-A7) — all technical, none flagged for Hunter; two generalize to ADR candidates 0051 (tree dispatch) and 0052 (greenfield decompose + ratification gate), proposed pending ratification. 13 implementation tasks (Clove ×12, Eli ×1) plus 1 gated ADR task (Winston).
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter). ADR candidates 0051/0052 ratified — Winston writes them during the Phase B build (task 14). Plan approved for build; Phase B is first in the B→C→D sequence.
 
 ---
 

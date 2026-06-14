@@ -194,6 +194,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 ## History
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Authored Phase D epic plan from the finalized PRD. Resolved all 10 assumptions — D-A3 partition key = epic-subtree (localizes the hot cross-team `dependsOn` path, the sharding-by-right-key argument), `team` stays a reporting dimension. Named two ADR candidates (partition-by-epic; run-wide brakes under partitioning); flagged D-A5/D-A7 for Hunter.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). D-A5 confirmed no telemetry surface; D-A7 per-team autonomy confirmed out-of-scope. ADR candidates 0055 (partition-by-epic) / 0056 (brakes-run-wide) ratified — written during the Phase D build. Build-ordered third (after B and C on main).
 
 ---
 
