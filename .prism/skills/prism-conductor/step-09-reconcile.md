@@ -26,7 +26,7 @@ After the decision box, each candidate is classified as: auto-dispatchable, park
 Apply the three brakes in priority order per `.prism/skills/prism-conductor/lib/convergence.md`:
 
 1. **Dispatch budget** — if `globalBudget.spent ≥ globalBudget.maxDispatches`, park remaining candidates and set termination reason `budget-exhausted`; go to step-10.
-2. **Generation cap K=3** — candidates at `generation ≥ 4` (default K=3) are captured but parked to a human gate; remaining candidates continue.
+2. **Generation cap K=3** — for each candidate lane, compute `generation = parent.generation + 1` (origin lanes are gen 0; discovered lanes inherit from the emitting lane's `parentId`). Candidates at `generation ≥ 4` (default K=3) are captured but parked to a human gate; gen 1–3 auto-dispatch.
 3. **Breadth gate (default 12)** — count remaining auto-dispatchable candidates; if the count exceeds 12, surface the full expansion to a human rather than auto-dispatching; go to step-10 for the parked set.
 
 Record parked candidates in `pendingHumanReport`; record any budget or breadth-gate trip in the lane's termination reason.
