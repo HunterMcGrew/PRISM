@@ -129,6 +129,8 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Clove implemented tasks 1–12. Tree semantics (tasks 1–6): container-lane definition + gen-0 bullet in goal-state field notes, tree-dispatch section in step-04, tree-convergence + subtree budget attribution in convergence.md, tree-structured report view in step-10, and run-loop wiring in shared.md. Greenfield decompose (tasks 7–12): tree-shaped-delta reconcile extension, new lib/greenfield-decompose.md (chain + ratification gate), greenfield mode in step-02, and skill-body wiring in shared.md + claude.md. pnpm prism:build + pnpm prism:check green; grep reachability confirmed.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Winston wrote the two ratified ADRs (task 14) — ADR-0051 (container lanes non-dispatchable, status rollup, tree depth ≠ generation depth) and ADR-0052 (greenfield decompose extends the reconcile primitive additively; ratification gate is the breadth gate's human review, `hobby` backstop). Numbers verified free (existing max 0050); README index rows added; § Decisions promotion pointers resolved. Tasks 1/3/7/9 already cite 0051/0052 by number — references correct, no edits.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Eli updated docs/content/dev/ai-skills/conductor.md with Phase B sections: tree semantics, greenfield decompose mode (chain + ratification gate + crash safety), subtree budget attribution, and tree-structured end-of-run report. Cross-linked ADR-0049/0050 (Phase A) and ADR-0051/0052 (Phase B).
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Briar self-review complete. Zero critical/major issues. Two minors filed: cite-label case in goal-state.md `§ tree dispatch` and heading mismatch `§ Breadth gate` vs `## Brake 3 — Breadth gate`; both navigable in practice. pnpm prism:check green (158 tests). PR Readiness updated.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed both Briar minors (commit 7132cb3) — cite `§ Breadth gate` → `§ Brake 3 — Breadth gate` (2 occurrences in greenfield-decompose.md) and `§ tree dispatch` → `§ Tree dispatch` in goal-state.md. pnpm prism:check green. Draft PR #144 opened.
 
 ---
 
@@ -169,17 +171,45 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 
 ---
 
+## Review Issues
+
+### Cite label vs. actual heading — `§ Breadth gate`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/greenfield-decompose.md:52,68`
+- **Problem:** The cite `lib/convergence.md § Breadth gate` uses the label "Breadth gate" but the actual section heading is `## Brake 3 — Breadth gate (default 12)`. Plan task 9 prescribed this exact cite text; the mismatch is between the plan's prescribed label and the convergence.md heading. A reader following the cite reaches the right section.
+- **Suggested fix:** Either accept as-is (cite navigates correctly in practice), or rename the convergence.md section to `## Breadth gate (default 12)` for exact anchor alignment.
+- **Fixed in:** commit 7132cb3 — updated both cite occurrences in greenfield-decompose.md to `§ Brake 3 — Breadth gate`.
+
+### Cite label case inconsistency — `§ tree dispatch` in goal-state Field notes
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:73`
+- **Problem:** The `parentId` Field notes bullet cites `(§ tree dispatch, step-04-dispatch.md)` in lowercase; the actual heading is `## Tree dispatch — leaf-first, container lanes roll up`. Not a broken reference — a reader lands in the right section.
+- **Suggested fix:** Capitalize to `§ Tree dispatch` to match cite-label conventions elsewhere in the file.
+- **Fixed in:** commit 7132cb3 — capitalized to `§ Tree dispatch`.
+
+---
+
+## Cleanup Items
+
+(None found.)
+
+---
+
 ## PR Readiness
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as` (N/A — markdown-skill system, no TypeScript in this diff)
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (`pnpm prism:check` drift + manifest tests cover the skill-surface changes)
-- [ ] All debugged issues resolved (no `open` entries)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (N/A — markdown-skill system, no TypeScript in this diff)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`pnpm prism:check` drift + manifest tests cover the skill-surface changes)
+- [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-14 (`pnpm prism:build` and `pnpm prism:check` both green; 158 tests pass, no drift)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (ADR-0051, ADR-0052 written on ratification — task 14)
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (ADR-0051, ADR-0052 written on ratification — task 14)
 
-**Last updated:** 2026-06-14 (Clove, after tasks 1–12)
+**Last updated:** 2026-06-14 (Briar, post-implementation self-review)
