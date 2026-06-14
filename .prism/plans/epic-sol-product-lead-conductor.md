@@ -236,6 +236,15 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - **Governor thresholds and the autonomy→threshold mapping are config-driven, not hardcoded to Thrive defaults** (NFR-4, Story 9, secondary-user SPC). The seam lives in the schema/convergence doc; defaults (100 / K=3 / 12) are the Thrive values a consuming team can override.
 - **The reconcile-delta primitive, the registry/dedup, the decision box, and the convergence governor each get their own lib reference doc** (`lib/reconcile.md`, `lib/decision-box.md`, `lib/convergence.md`), cited by the new reconcile step — so Phases B/C/D reuse them by citation and the priority order / dispositions live in exactly one home (cite-don't-restate, per `implementation-task-detail.md`).
 
+### Review-surfaced (Briar self-review, tasks 1–14)
+
+- **Decision-box escalation reason is `blast-radius` only — `scope-fit` is removed from the enum.** (Briar major)
+  - **Root cause:** the typed escalation enum shipped as `{ blast-radius, scope-fit }`, but only `blast-radius` has a handler (Sol routes a Winston read → Nora finalizes). A Nora return of `scope-fit` falls through silently to the no-escalation path, contradicting the typed contract. The deeper issue: `scope-fit` had no coherent handler to write. Escalation routes *to* a party who resolves the question — `blast-radius` routes to Winston. But "is this same-scope or split-scope?" *is* Nora's four-signal judgment; there is no third party to escalate it to. Sol can't take it (`decision-box.md`: "Sol never judges scope"; standing invariant: semantic judgments are "always Nora's"). Winston can't take it (blast-radius is architecture; scope-fit is the ticket-earns-its-place call, which is Nora's). A human gate is redundant — ticket commits above trivial already batch to a human gate via the autonomy ceiling.
+  - **Alternatives considered:** (A) give `scope-fit` a handler — route to a human gate, or back to Nora with the over-emit<under-emit tiebreaker, or to Sol. (B) remove `scope-fit` from the enum; Nora resolves scope ambiguity herself via the tiebreaker rather than escalating it.
+  - **Chosen approach:** (B) remove `scope-fit`. Every form of (A) fights an invariant — routing scope judgment to Sol violates "Sol never judges scope," to Winston conflates blast-radius with scope-fit, to a human gate duplicates the autonomy ceiling that already gates ticket commits. The design already hands Nora the resolution: when a scope find is borderline, the **over-emit < under-emit** tiebreaker (ASSUMPTION-4 / NFR-5) plus the conservative-disposition default (prefer the lighter `fold-active` / `followup-pr` over standing up a new ticket) lets Nora resolve it inside her own gate. `scope-fit` was a self-resolved disposition uncertainty wearing an escalation reason's clothes — which is exactly why it never had a handler.
+  - **Implementation guidance:** narrow the enum to `escalationReason: "blast-radius"` (and `escalation.reason` typed value to `"blast-radius" | string`) at all four sites — `lib/goal-state.md`, `lib/decision-box.md`, `step-09-reconcile.md`, and `prism-ticket-start/shared.md`. In `shared.md` step 4, drop the `scope-fit` clause and add a sentence that Nora resolves a genuinely ambiguous same-scope-vs-split call herself via over-emit<under-emit (conservative default: the lighter disposition), not by escalating. Exact text in `## Review Issues`.
+  - **Verdict:** → no promotion needed (decision-box escalation contract is conductor-local to `lib/decision-box.md`; the "Sol never judges scope" invariant it rests on is already promoted in ADR-0049 and the plan's standing invariants).
+
 ---
 
 ## Implementation Tasks
@@ -341,3 +350,66 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Nora opened GitHub epic #115 with 10 child issues #116–#125 (one per user story, native sub-issues), synced the full AC set into the epic body, set the plan `## Ticket` field, and flipped ADR-0049/0050 `proposed` → `accepted` across canonical + platform mirrors. Next: Clove for implementation (tasks 1–6 first — schema + reconcile skeleton).
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove completed tasks 1–6 (child issue #116 walking skeleton): goal-state schema v2 (structured target/disposition/generation/pendingTicketCommit), reconcile-delta primitive, convergence governor, deferred-commit decision box, Nora in-loop mode, and step-09-reconcile + step-09-report→step-10-report rename with tree-wide sweep. Build passes 158/158, prism:check clean, grep sweep clean outside closed plan history.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove completed tasks 7–14 (segment 2 — thicken the skeleton): wired run loop into shared.md/claude.md; extended global budget as primary brake; added generation computation to reconcile; added worker emit pre-filter + broken-dependency stub to followup-scope (canonical + install copy); extended report-back with structured target + autonomy batching; extended fleet conflict gate to pending-vs-active + cross-lane fold-in; added spin-outs/termination-reason to step-10 report. Build 158/158, prism:check clean, no drift.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Briar self-review (tasks 1–14): 1 major, 2 minor; build green (158/158); no dangling step-09-report references in live source. See ## Review Issues.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Winston resolved Briar's scope-fit major — remove `scope-fit` from the escalation enum (Nora resolves scope ambiguity herself via over-emit<under-emit; the labor split gives no coherent party to escalate it to). Recorded the call in ## Decisions and wrote exact Clove directives for all 3 findings into ## Review Issues. Next: Clove executes the four-site enum narrowing + two minor fixes.
+
+---
+
+## Review Issues
+
+### `scope-fit` escalation reason is typed but unhandled
+
+- **Severity:** `major`
+- **Status:** `open` → **resolved by Winston: remove `scope-fit` from the enum (option B).** See `## Decisions` → "Decision-box escalation reason is `blast-radius` only." Rationale: a `scope-fit` escalation has no coherent handler — scope judgment is Nora's (Sol never judges scope; Winston owns blast-radius, not scope-fit), and Nora resolves a borderline same-scope-vs-split call herself via over-emit<under-emit. Clove executes the four edits below; no judgment calls.
+- **File:** `.prism/skills/prism-conductor/lib/decision-box.md:28`, `.prism/skills/prism-conductor/lib/goal-state.md:34` & `:69`, `.prism/skills/prism-conductor/step-09-reconcile.md` (verify), `.ai-skills/skills/prism-ticket-start/shared.md:361`
+- **Problem:** `escalationReason: "scope-fit"` is defined in the typed enum but no handler routes it — it falls through to the no-escalation path, contradicting the typed contract.
+- **Clove directive (exact edits):**
+  1. **`.prism/skills/prism-conductor/lib/decision-box.md:28`** — replace `Returns `{ disposition, draftTicket, escalationReason? }` where `escalationReason ∈ { "blast-radius", "scope-fit" }`.` with `Returns `{ disposition, draftTicket, escalationReason? }` where `escalationReason` is `"blast-radius"` when set. A genuinely ambiguous same-scope-vs-split call is **not** escalated — Nora resolves it herself (over-emit < under-emit; conservative default is the lighter disposition, `fold-active` / `followup-pr`, over a new ticket).`
+  2. **`.prism/skills/prism-conductor/lib/goal-state.md:34`** — in the `escalation` object, change `"reason": "blast-radius | scope-fit | string"` to `"reason": "blast-radius | string"`.
+  3. **`.prism/skills/prism-conductor/lib/goal-state.md:69`** — in the field note, change `` `escalation.reason` is typed: `"blast-radius"` or `"scope-fit"` for decision-box escalations; plain string for other escalation axes.`` to `` `escalation.reason` is typed `"blast-radius"` for decision-box escalations; plain string for other escalation axes. A same-scope-vs-split scope-fit call is never escalated — Nora resolves it inside her four-signal gate.``
+  4. **`.ai-skills/skills/prism-ticket-start/shared.md:361`** — replace bullet 4 (`**Return `{ disposition, draftTicket, escalationReason? }`.** `escalationReason` is typed: `"blast-radius"` (the fix touches shared or high-impact surface) or `"scope-fit"` (the boundary between same-scope and split-scope is genuinely ambiguous). Omit `escalationReason` when there is no uncertainty.`) with: `**Return `{ disposition, draftTicket, escalationReason? }`.** Set `escalationReason: "blast-radius"` only when the fix touches shared or high-impact surface and needs a Winston read. When the same-scope-vs-split-scope boundary is genuinely ambiguous, do **not** escalate — resolve it yourself with over-emit < under-emit (the conservative default is the lighter disposition: `fold-active` / `followup-pr` over a new ticket). Omit `escalationReason` when there is no blast-radius uncertainty.`
+  5. **`.prism/skills/prism-conductor/step-09-reconcile.md`** — no edit needed; line 18 already handles only `escalationReason: "blast-radius"`. After the four edits, confirm no remaining `scope-fit` escalation references: `grep -rn "scope-fit" .prism/skills/prism-conductor .ai-skills/skills/prism-ticket-start` should return nothing (the `followup-scope.md` scope-fit *gate* is a different concept and lives elsewhere — it must not be touched).
+- **Verification:** `.ai-skills/**` edit (shared.md) is a build input → `pnpm prism:build` then `pnpm prism:check`. The three `.prism/skills/prism-conductor/**` edits are content-only → `pnpm prism:check`. Run the grep in step 5.
+
+### Disposition naming inconsistency in `decision-box.md` Step B
+
+- **Severity:** `minor`
+- **Status:** `open` → **resolved by Winston: use the schema enum tokens, not long-form.** Step A (line 24) already writes `fold-active` / `followup-pr`; Step B should match it so the `disposition` field value is unambiguous. (The plan's task-4 prose and the Labor split at line 11 still use the long-form `fold-into-active-PR` / `follow-up-PR-no-ticket` descriptively — those are fine as prose; only the backtick'd values that read as the written disposition need to be the enum tokens.)
+- **File:** `.prism/skills/prism-conductor/lib/decision-box.md:36-37`
+- **Problem:** Step B uses backtick'd `follow-up-PR-no-ticket` and `fold-into-active-PR` as if they are the values written into `disposition`, but the schema enum is `followup-pr` / `fold-active`. A reader implementing Step B can't tell which form Sol writes.
+- **Clove directive (exact edit):** in `.prism/skills/prism-conductor/lib/decision-box.md`, replace lines 36–37:
+  - `- Target lane `status: done` → `follow-up-PR-no-ticket` (worktree cleaned; a new lane spawns).` → `- Target lane `status: done` → disposition `followup-pr` (worktree cleaned; a new follow-up-PR lane spawns).`
+  - `- Target lane `status: active | parked` → `fold-into-active-PR` (open worktree; the fix folds into that lane).` → `- Target lane `status: active | parked` → disposition `fold-active` (open worktree; the fix folds into that lane).`
+- **Verification:** content-only — `pnpm prism:check`.
+
+### `pendingTicketCommit` field note inaccurate at `finalized`
+
+- **Severity:** `minor`
+- **Status:** `open` → **resolved by Winston: correct the field note to match the crash-safety table.** The `decision-box.md:72` table is authoritative (`false` at `finalized`); the field note must agree.
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:74`
+- **Problem:** Field note says the field is "set to `true` at each decision-box step (`routed` → `winston-verdict` → `finalized`)" but `decision-box.md` crash-safety table shows it resets to `false` at `finalized`. The note implies it stays `true` through `finalized`.
+- **Clove directive (exact edit):** in `.prism/skills/prism-conductor/lib/goal-state.md`, replace line 74 (`` - `pendingTicketCommit` is set to `true` at each decision-box step (`routed` → `winston-verdict` → `finalized`) before the next step begins, enabling deterministic resume after a crash — no double-commit, no lost draft.``) with: `` - `pendingTicketCommit` is `true` at the `routed` and `winston-verdict` steps and resets to `false` at `finalized`, enabling deterministic resume after a crash — a `true` value on resume means the ticket was drafted but not committed (surface it to the human), so there is no double-commit and no lost draft.``
+- **Verification:** content-only — `pnpm prism:check`.
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
+## PR Readiness
+
+Living checklist — updated every time `code-review-self` runs. Reflects current state.
+
+- [ ] No critical or major issues
+- [ ] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (content-only diff; 158/158 pass)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-13 (`pnpm prism:check` 158/158 green, no drift)
+- [ ] PR description up to date
+- [ ] Lasting decisions promoted to architect context (if applicable)
+
+**Last updated:** 2026-06-13
