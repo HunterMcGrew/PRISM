@@ -25,7 +25,7 @@ Sol dispatches Nora with the deduped signal and its `target`. Nora:
    - `new-ticket` — a distinct new ticket is warranted.
    - `drop` — the signal is noise; no action.
 3. If the disposition warrants a ticket: drafts it as a DoR-draft (estimate null, flagged for human ratification). The Linear write is **deferred** — Nora returns the draft, she does not commit it yet.
-4. Returns `{ disposition, draftTicket, escalationReason? }` where `escalationReason ∈ { "blast-radius", "scope-fit" }`.
+4. Returns `{ disposition, draftTicket, escalationReason? }` where `escalationReason` is `"blast-radius"` when set. A genuinely ambiguous same-scope-vs-split call is **not** escalated — Nora resolves it herself (over-emit < under-emit; conservative default is the lighter disposition, `fold-active` / `followup-pr`, over a new ticket).
 
 Sol writes `pendingTicketCommit: true` on the lane and records the step as `routed` in goal-state before proceeding.
 
@@ -33,8 +33,8 @@ Sol writes `pendingTicketCommit: true` on the lane and records the step as `rout
 
 When Nora returns `fold-active` or `followup-pr`, Sol reads the target lane's `status` from goal-state:
 
-- Target lane `status: done` → `follow-up-PR-no-ticket` (worktree cleaned; a new lane spawns).
-- Target lane `status: active | parked` → `fold-into-active-PR` (open worktree; the fix folds into that lane).
+- Target lane `status: done` → disposition `followup-pr` (worktree cleaned; a new follow-up-PR lane spawns).
+- Target lane `status: active | parked` → disposition `fold-active` (open worktree; the fix folds into that lane).
 
 Sol records the resolution without dispatching Nora again on this dimension.
 
