@@ -1,5 +1,7 @@
 # Plan: epic-sol-product-lead-conductor
 
+> Closed: 2026-06-14
+
 ## Ticket
 
 GitHub epic [#115](https://github.com/HunterMcGrew/PRISM/issues/115) — Sol self-growing conductor v1 (Phase A). Ten child issues, one per user story: [#116](https://github.com/HunterMcGrew/PRISM/issues/116) (US-1) … [#125](https://github.com/HunterMcGrew/PRISM/issues/125) (US-10), linked as native sub-issues. PRISM tracks on GitHub issues, not Linear. Sourced from the finalized PRD at [`.prism/prds/sol-product-lead-conductor.md`](../prds/sol-product-lead-conductor.md) (`internal` stakes) and §7 of [`.prism/plans/sol-product-lead-vision-brief.md`](./sol-product-lead-vision-brief.md).
@@ -198,27 +200,33 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
   - **Alternatives considered:** a lower self-growth-specific default (e.g. 40); a separate budget for discovered work.
   - **Chosen approach:** keep the existing `maxDispatches: 100` as the v1 default and count *all* dispatch types against it — origin-lane phases, decision-box dispatches (Nora/Winston), and discovered-lane phases alike. A single shape-agnostic counter is what makes the brake honest; a separate discovered-work budget would let the two pools each stay "under budget" while total spend runs away. Configurable per team (see schema decision below).
   - **Implementation guidance:** `globalBudget.spent` increments on every `agent()` dispatch in the Workflow segment, not only on origin-lane work.
+  - → no promotion needed (resolves PRD [ASSUMPTION-6] for this build; the budget-is-primary-brake doctrine is already promoted in ADR-0050 § Decision axis 1, and the `maxDispatches: 100` default is a config value, not a durable architectural claim).
 
 - **[ASSUMPTION-2 resolved] Ship the full additive nullable v2 schema now; `team`/`dependsOn` are provisional. (confirm)**
   - **Root cause:** whether to ship later-phase fields (`team`, `dependsOn`, `parentId` tree-semantics) nullable-now or add them with their phase.
   - **Chosen approach:** confirm the PRD's bet — ship the full additive nullable set. Old runs parse forward; one additive migration beats two. Hedge the YAGNI counter: `parentId` ships **driven** (discovery lineage) in v1, `generation`/per-lane `scope`/structured `target`·`disposition`·`processedAt`/`pendingTicketCommit`/typed escalation ship **driven**; `team` and `dependsOn` ship **nullable, not driven, explicitly provisional** — Phase C may reshape them without ceremony because nothing reads them yet.
   - **Implementation guidance:** mark `team`/`dependsOn` in the schema doc as "Phase C — shape provisional, not driven in v1."
+  - → no promotion needed (resolves PRD [ASSUMPTION-2] for this build; the additive-nullable-forward versioning contract is promoted in ADR-0050 § Consequences (Neutral) and the durable home is the `lib/goal-state.md` field notes that ship the schema).
 
 - **[ASSUMPTION-3 resolved] Autonomy policy and governor thresholds are orthogonal in v1.**
   - **Root cause:** does `launch` lower K below 3 or tighten breadth below 12?
   - **Chosen approach:** keep K=3 / breadth=12 flat across all autonomy levels in v1. Autonomy governs the *confirmation gate* (whether ticket commits batch to a human); the governor governs *convergence* (runaway). They are different knobs — coupling them conflates blast-radius-of-writes with fleet-growth-rate. The config seam (below) lets a team wire `launch`→lower-K later without a schema change, when there's data to tune on. Clean YAGNI win.
+  - → no promotion needed (resolves PRD [ASSUMPTION-3] for this build; the orthogonality is a v1 scoping call, and the config seam it relies on is already promoted via the config-driven-thresholds bullet in ADR-0050 § Consequences).
 
 - **[ASSUMPTION-4 resolved] Worker scope-fit pre-filter = a two-question local-frame test.**
   - **Root cause:** the exact pre-filter criteria (a cheap subset of Nora's four-signal gate) were unspecified.
   - **Chosen approach:** the worker answers two questions before emitting — (1) *Is this in my local frame?* (the lines I'm editing / their function / helpers I extracted, per `code-standards.md § Refactor scope`) and (2) *Is it trivial?* (one-line, no design trade-off). In-frame **and** trivial → fix inline, emit nothing. Otherwise → emit `found-bug`/`found-followup-work` with a structured `target`. The worker deliberately does **not** attempt Nora's adjacency/size/persona-alignment judgment — that's Nora's, inside the decision box. Tiebreaker on a borderline find: **over-emit < under-emit** (emit; downstream dedups/drops).
   - **Implementation guidance:** house additively in `followup-scope.md`; cite the four-signal gate as the heavier downstream check, do not restate it.
+  - → promoted to `.prism/rules/followup-scope.md` § Worker emit pre-filter (task 10) — the pre-filter is a durable rule that any worker persona reads, not a ticket-local tactic; it shipped into the canonical rule and its install copy this PR, so the rule itself is the durable home (no separate architect-doc promotion needed).
 
 - **[ASSUMPTION-5 resolved] Broken-dependency stub convention: emit-and-proceed, surface-not-rewire.**
   - **Root cause:** when a worker finds a dependency of code it's writing is broken, the stub format and how the dependent lane reconciles when the real fix lands were unspecified.
   - **Chosen approach:** the worker (a) emits the signal with a structured `target`, and (b) proceeds on a **documented stub** — a clearly-marked placeholder whose comment names the emitted signal's `target`. Reconciliation is **surface, not auto-rewire**: the signal is tracked in the registry, and when the fix lane lands, the end-of-run report flags the original stub site for human/follow-up attention. v1 does **not** auto-replace stubs — the dependent lane's worktree may already be done; rewiring is itself follow-up work. Conservative and crash-safe.
+  - → promoted to `.prism/rules/followup-scope.md` § Worker emit pre-filter (task 10) — the emit-and-proceed-on-a-stub convention shipped into the canonical rule and its install copy alongside the pre-filter; the rule is the durable home worker personas read.
 
 - **[ASSUMPTION-1 resolved] No telemetry surface in v1. (confirm)**
   - **Chosen approach:** confirm — the end-of-run report (every spin-out + termination reason) and `goal-state` inspection are the observability surface. All five success metrics are observable from those two surfaces; a telemetry/dashboard surface is a later-phase concern. No instrumentation requirement before merge.
+  - → no promotion needed (resolves PRD [ASSUMPTION-1] for this build; "no telemetry surface in v1" is a scoping decision, and the report-is-the-observability-surface shape is already documented in `step-10-report.md` and the conductor dev doc).
 
 ### Architectural threads
 
@@ -226,8 +234,10 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
   - **Root cause:** the breadth-gate default (12, Hunter-calibrated) and the runtime concurrency cap (`min(16, cores-2)`, ~12) are the same order of magnitude — the PRD asked whether a near-cap expansion serializes against the cap, or whether the gate should sit below it.
   - **Chosen approach:** keep breadth=12 (honor the calibration). The two govern different things — the cap is a *runtime* limit (exceeding it queues, it doesn't fail), the breadth gate is a *governance* limit (surface large expansions to a human before auto-dispatch). A reconcile yielding >12 distinct new lanes hits the governance gate; one yielding ≤12 dispatches and the runtime queues the overflow against the cap, which is the engine's safe default, not a failure. A team that wants no silent queueing lowers the breadth gate below its cap via the config seam.
   - **Implementation guidance:** document the queueing behavior in `convergence.md`; do not lower the default.
+  - → no promotion needed (the queueing-is-safe / gate-need-not-sit-below-cap conclusion is already promoted in ADR-0050 § Consequences (Negative); this entry is its working-memory resolution of the PRD's open thread).
 
 - **Convergence governor stays one cohesive group, three sub-tasks.** Story 7's three brakes share a priority order and a single reconcile-time evaluation point — splitting them into independent tasks would fragment the priority logic that binds them. Each brake is its own sub-task (independently testable) under one group. (SPIDR-Rules split at sub-task grain, not lane grain.)
+  - → no promotion needed (a planning-grain decomposition call specific to this epic's task breakdown; the priority-order-is-load-bearing invariant it protects is promoted in ADR-0050 § Decision and § Consequences (Negative)).
 
 ### Schema & migration
 
@@ -235,6 +245,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - **Rollback is abandon-not-migrate.** A v2 run interrupted by a revert to v1 code is parked and reported (version-mismatch refusal); in-flight `pendingTicketCommit` entries surface to the human rather than auto-resolving. Nothing to strip — v1 simply doesn't read v2 fields.
 - **Governor thresholds and the autonomy→threshold mapping are config-driven, not hardcoded to Thrive defaults** (NFR-4, Story 9, secondary-user SPC). The seam lives in the schema/convergence doc; defaults (100 / K=3 / 12) are the Thrive values a consuming team can override.
 - **The reconcile-delta primitive, the registry/dedup, the decision box, and the convergence governor each get their own lib reference doc** (`lib/reconcile.md`, `lib/decision-box.md`, `lib/convergence.md`), cited by the new reconcile step — so Phases B/C/D reuse them by citation and the priority order / dispositions live in exactly one home (cite-don't-restate, per `implementation-task-detail.md`).
+- → no promotion needed (schema/migration group): the additive-versioning contract (v2-reads-v1, v1-refuses-v2), abandon-not-migrate rollback, and config-driven thresholds are all promoted in ADR-0050 § Consequences (Neutral), and their durable runtime home is the `lib/goal-state.md` field notes + the `lib/*.md` reference docs this PR ships — the lib-doc-per-primitive choice is itself a conductor-local structuring decision, not a cross-cutting architectural claim.
 
 ### Behavioral-defect diagnosis (Winston, dispatched by Sol — premature human gate at push/PR-open)
 
@@ -382,6 +393,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove pushed branch to origin and opened PR #126 (https://github.com/HunterMcGrew/PRISM/pull/126). Ready for Eric review and human merge.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove applied Eric's three PR review fixes: removed `scope-fit` from ADR-0050 Neutral bullet (all four mirrors hand-edited) and PRD NFR-3 (major); replaced long-form disposition tokens in decision-box.md § Labor split (minor); rewrote `// STUB:` example as plain sentence in followup-scope.md canonical + install copy (minor). Build 158/158, no drift.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove fixed Eric's final minor — dropped `| \`scope-fit\`` from the US-4/Story 5 trace line (line 79); trace now reads `Typed escalation reason is \`blast-radius\`.`, consistent with the Decision and all AC hints.
+- 2026-06-14 [hmcgrew/sol-product-lead-prd]: Winston closed the epic on the final PR branch (#126) — every Decision verdicted (4 promoted to ADR-0049/0050 + followup-scope.md, 9 no-promotion), plan marked Closed. Worker pre-filter + broken-dep stub confirmed promoted to followup-scope.md; all other generalizing decisions already captured in ADR-0050. AC satisfied by shipped content; merge is the human's gate (ADR-0011).
 
 ---
 
@@ -476,6 +488,6 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:check` 158/158 green, no drift)
 - [x] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (ADR-0049/0050 accepted; worker pre-filter + broken-dep stub promoted to followup-scope.md; rest ticket-tactical or in-ADR)
 
-**Last updated:** 2026-06-13 (Briar final pass — all three prior findings confirmed resolved; Eli dev doc clean)
+**Last updated:** 2026-06-14 (Winston epic close — Decision verdict gate complete, plan marked Closed)
