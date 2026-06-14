@@ -76,7 +76,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 **I want** a blast-radius-uncertain discovery to route through a Winston read and then back to Nora to finalize — with `goal-state` written at every step,
 **so that** a run interrupted mid-decision resumes without double-committing a ticket or losing a signal.
 
-*Traces Journey 4, FR-4, NFR-3. The uncertain path is two Nora dispatches around one Winston read (routed → winston-verdict → finalized). Typed escalation reason is `blast-radius` | `scope-fit`.*
+*Traces Journey 4, FR-4, NFR-3. The uncertain path is two Nora dispatches around one Winston read (routed → winston-verdict → finalized). Typed escalation reason is `blast-radius`.*
 
 **Acceptance criteria hints:**
 - [ ] Given Nora returns `escalationReason: "blast-radius"`, When Sol routes a Winston read, Then Winston returns its assessment and Sol dispatches Nora a second time to finalize with it.
@@ -381,6 +381,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Winston diagnosed the premature push/PR-open human-gate defect — root cause (b) Sol misapplication (skill states the merge-only boundary in six places; Sol over-applied a generic confirm-before-outward reflex), plus a thin (a) clarity sliver (no line names PR-open as a conducted action). Fold-in remedy: one-sentence clarification to `step-04-dispatch.md` § The review phase is the gauntlet, exact text in ## Decisions → Behavioral-defect diagnosis. Next: Clove applies the fold-in edit.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove pushed branch to origin and opened PR #126 (https://github.com/HunterMcGrew/PRISM/pull/126). Ready for Eric review and human merge.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove applied Eric's three PR review fixes: removed `scope-fit` from ADR-0050 Neutral bullet (all four mirrors hand-edited) and PRD NFR-3 (major); replaced long-form disposition tokens in decision-box.md § Labor split (minor); rewrote `// STUB:` example as plain sentence in followup-scope.md canonical + install copy (minor). Build 158/158, no drift.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove fixed Eric's final minor — dropped `| \`scope-fit\`` from the US-4/Story 5 trace line (line 79); trace now reads `Typed escalation reason is \`blast-radius\`.`, consistent with the Decision and all AC hints.
 
 ---
 
@@ -446,6 +447,15 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - **Problem:** The broken-dependency stub convention prescribes a comment example `` `// STUB: awaiting fix for <target.symbol> — emitted found-bug signal` ``. The `STUB:` prefix is exactly the invented-keyword-tag shape `.prism/rules/code-comments.md § Not Allowed` prohibits (alongside `HACK:` / `XXX:` / `NOTE:`). A worker following this rule's example writes a comment that the team's own comment rule would flag in review — two rules in conflict.
 - **Suggested fix:** rewrite the example as a plain-sentence comment carrying the same "what + why" without the tag, e.g. `` `// Placeholder while <target.symbol> is broken — found-bug signal emitted; the reconcile pass tracks the fix.` ``. Apply to both the canonical and install copies (keep them in sync). Alternatively, if a scannable marker is genuinely wanted here, raise it as a `code-comments.md` amendment rather than a one-off exception — but the default is to follow the existing rule.
 - **Verification:** `.prism/rules/**` is a build input → `pnpm prism:build` then `pnpm prism:check`; confirm the install copy stays in sync.
+
+### Stale `scope-fit` token in the US-4 trace line
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: stale `| \`scope-fit\`` dropped from line 79; trace now reads `Typed escalation reason is \`blast-radius\`.` (plan working memory only — no build effect).
+- **File:** `.prism/plans/epic-sol-product-lead-conductor.md:79`
+- **Problem:** The US-4 trace line still reads `Typed escalation reason is `blast-radius` | `scope-fit`.` — but `scope-fit` was removed from the escalation enum (recorded in this file's `## Decisions` and `## Review Issues`). The AC hint two lines below correctly shows only `escalationReason: "blast-radius"`, so the story's prose trace contradicts its own AC hint. Same removal-completeness pattern as the ADR/PRD major, but lower stakes — it lives in plan working memory, not a shipped durable contract, and the file's authoritative sections are all correct. Does not block merge.
+- **Suggested fix:** drop `` | `scope-fit` `` so the trace reads `Typed escalation reason is `blast-radius`.`
+- **Verification:** content-only — no build effect (the plan is not a build input).
 
 ---
 
