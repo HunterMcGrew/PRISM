@@ -199,7 +199,7 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 - **File:** `.prism/skills/prism-conductor/step-10-report.md:13`
 - **Problem:** The "Per-subtree budget attribution" bullet was placed inside the `Cover, per lane:` list (detached by a blank line), but it describes a run-as-a-whole concern (rolls up dispatches across epic/issue subtrees), not a per-lane concern.
 - **Suggested fix:** Move the bullet to the `Cover for the run as a whole:` list.
-- **Fixed in:** commit TBD — moved bullet to run-level list, removed orphaning blank line.
+- **Fixed in:** commit 5fdfc62 — moved bullet to run-level list, removed orphaning blank line.
 
 ---
 
