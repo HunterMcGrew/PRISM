@@ -3,7 +3,7 @@ title: "Sol — the Conductor"
 description: "How Sol drives a goal across the lifecycle by dispatching the existing personas, pausing at every human gate, and routing each report-back verdict."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-13"
+last_updated: "2026-06-14"
 ---
 
 ## What Sol does
@@ -140,11 +140,83 @@ The three brakes are evaluated in the order above, stopping at the first brake t
 
 Governor thresholds — budget ceiling, K, and the breadth gate — are config-driven, not hardcoded. The values above are the defaults for Thrive; a consuming team overrides them via the config seam in goal-state.
 
+## Tree semantics — epics, issues, and tickets as a lane hierarchy
+
+Phase A treated the lane list as flat. Phase B makes `parentId` load-bearing as a **tree pointer**: a lane whose `parentId` names another lane is a child in that parent's subtree. Any lane with at least one child is a **container lane** — an epic or an issue. Any lane with no children is a **leaf lane** — a ticket. The flat `lanes[]` array in goal-state doesn't change shape; the tree is read from the `parentId` pointers it already holds.
+
+**Container lanes are non-dispatchable.** Only leaf lanes enter the `pipeline()` segment and run a phase chain. An epic or issue lane is never passed to `agent()`; it has no implementation phase of its own. Instead, its `status` is computed from its children at each reconcile boundary: `done` only when every child is `done` or `dropped`; `blocked` if any child is `blocked`; `active` otherwise. Its `currentPhase` is `null` — the field is not meaningful for a container. This is a deterministic read-time rollup from goal-state, not a dispatch, so it does not count against `globalBudget.spent`.
+
+The invariant that falls out of the rollup rule: no container lane closes as `done` while any child remains `active`, `parked`, or otherwise unresolved. The rule enforces itself — no separate state machine is needed.
+
+**Tree depth is not generation depth.** A planned three-level tree has epic, issue, and ticket lanes that are all `generation: 0`. Generation accrues only from *unplanned* discovery during build — a lane spawned from a discovered signal has `generation = parent.generation + 1`. The convergence governor's generation cap (brake 2 in `lib/convergence.md`) counts discovered lineage, never planned-tree depth. A planned tree of any depth does not trigger the generation cap.
+
+The canonical statements of both rules live in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Field notes (the `parentId` bullet and the container-lane generation bullet). The dispatch mechanics are in [`step-04-dispatch.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-04-dispatch.md) § Tree dispatch. The full design decision is in [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md).
+
+## Greenfield decompose mode
+
+When the operator brings a PRD and an architecture document instead of a hand-listed lane set, Sol runs in **greenfield mode**. Rather than asking the operator to enumerate every ticket, Sol conducts a Parker→Winston→Nora chain that turns the spec documents into a ratifiable epic→issue→ticket tree.
+
+### The conducted chain
+
+The chain is a Sol-dispatched conducted segment — sequential, one level deep, no nesting:
+
+1. **Parker** reads the PRD and emits **epic** lanes at initiative grain. Each epic gets a one-line `scope` statement.
+2. **Winston** reads the PRD, the architecture document, and Parker's epics, then emits **issue** lanes at architecture grain — task breakdowns, each carrying `parentId` → its epic.
+3. **Nora** reads the issues and writes **ticket** lanes — the leaf lanes that will be dispatched. Each ticket is in DoR-draft form with a `null` estimate (estimates are not meaningful before ratification) and carries `parentId` → its issue.
+
+Every lane emitted by the chain is `generation: 0`, regardless of depth. The reconcile primitive folds the chain's tree output into goal-state using the same dedup and registry logic it uses for flat signals, with one difference: when the delta carries `parentId` pointers, the primitive preserves them and assigns `generation: 0` to every lane in the planned tree rather than computing `parent.generation + 1`. The flat-signal path from Phase A is untouched — this is an additive extension to the same primitive, not a fork of it (see [`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md) § Tree-shaped delta).
+
+Each chain step counts against `globalBudget.spent` like any dispatch.
+
+### Crash safety and mid-chain escalation
+
+The chain reuses the decision-box crash-safety pattern. Sol writes goal-state after each step returns — `parker-done` → `winston-done` → `nora-done` — so a crash between steps loses nothing. On resume, Sol continues from the last written step; completed steps are never re-run, and a partial tree already in goal-state is preserved.
+
+If a chain persona returns `needs-human` — for example, Winston's architecture step hits an ambiguous data-ownership call — Sol surfaces the escalation through the existing gate-routing in `step-05-route.md` and resumes the chain from that step after the human resolves it. No new state machine. Mid-chain escalation works exactly like any other gate.
+
+### The ratification gate
+
+After the chain completes, Sol surfaces the generated tree to the operator before dispatching any leaf lanes. The artifact is the same tree-structured view the end-of-run report uses (§ Tree-structured end-of-run report below): epics → issues → tickets with `parentId` pointers, per-lane `scope` statements, persona assignments, and the DoR-draft ticket list — rendered as a chat-readable text summary alongside the goal-state lane tree.
+
+Gate behavior depends on the autonomy policy:
+
+- **`internal` or `launch` stakes:** the gate is `needs-human`. Sol batches the ratification artifact into `pendingHumanReport` and dispatches nothing until the operator approves.
+- **`hobby` stakes:** the tree auto-dispatches without a ratification pause.
+
+The operator may adjust `scope` statements or drop lanes before approving. Sol re-invokes the reconcile primitive over the edited tree before dispatching.
+
+**The breadth gate and ratification are complementary, not redundant.** The breadth gate (brake 3 in the convergence governor) exists to surface a large single-reconcile expansion to a human before auto-dispatch. A ratified planned tree already received that human review, so it is excluded from the breadth gate — applying it again would be a second gate on work the operator already approved. The loophole closes at `hobby` stakes: when there is no ratification gate, the breadth gate applies to the planned tree as the backstop, so a very large tree can never bypass human review under any policy. Under every policy, a large planned tree faces exactly one human gate — ratification at `internal`/`launch`, the breadth gate at `hobby`. Unplanned discovery always hits the breadth gate regardless of policy, as it did in Phase A.
+
+Once the tree is approved (or auto-dispatches at `hobby`), the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence.
+
+The full procedure is in [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md). The design decisions behind the chain structure and the ratification-gate/breadth-gate interaction are in [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md).
+
+> [!NOTE]
+> The greenfield chain takes already-authored spec documents as inputs. Sol conducts the chain; it does not write PRDs or architecture documents. If those documents don't exist yet, the operator runs Parker and Winston first, then hands the results to Sol for the greenfield chain.
+
+## Subtree budget attribution
+
+The convergence governor's `globalBudget.spent` counter is a single shape-agnostic number — every dispatch increments it, regardless of which lane or phase it came from. That design is what makes the budget brake unconditional (see `lib/convergence.md` § Brake 1).
+
+When the run drives a tree, the end-of-run report breaks that global number down by subtree. A leaf lane's dispatches roll up to its parent issue's subtree and its parent epic's subtree by summing across the leaves. This is **read-time aggregation only** — no per-lane budget counter exists in the schema, and nothing is written during the run. The global counter remains the primary brake; the subtree breakdown is a reporting convenience. Per-lane counters would add a second source of truth that could disagree with the global counter without adding any braking capability.
+
+## Tree-structured end-of-run report
+
+When a run drove a tree, the end-of-run report (step 10) renders the tree shape alongside the flat per-lane coverage: each epic, its child issues, and their child tickets, with per-lane `status` and termination reason, indented to reflect the `parentId` hierarchy.
+
+**Discovered work is shown separately from the planned tree.** Lanes at `generation: 0` (the planned tree) and lanes at `generation ≥ 1` (unplanned work found during build) appear in distinct sections. The separation lets the operator see what was planned and what was found — and confirm that the planned tree resolved cleanly before looking at the discovered work.
+
+A flat run — one where no lane has children — renders exactly as Phase A. The tree view is additive; it does not change the flat-run report format.
+
+The full report procedure is in [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md) § Tree-structured view.
+
 ## See also
 
 - [ADR-0048 — Conductor: Autonomy Between Gates](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md) — the autonomy invariant and the alternatives weighed
 - [ADR-0049 — Conductor: Teams Are Lane-Groups, Not Sub-Conductors](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0049-conductor-teams-are-lane-groups.md) — why the flat lane list holds and sub-conductors are permanently rejected
 - [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
+- [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md) — container lanes are non-dispatchable rollup nodes; child-first dispatch; tree depth ≠ generation depth
+- [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; hobby backstop
 - The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) → [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md)
 - [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) — run-control schema and read/write/mutate protocol
 - [`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md) — the reusable reconcile-delta primitive
@@ -152,4 +224,5 @@ Governor thresholds — budget ceiling, K, and the breadth gate — are config-d
 - [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) — the convergence governor and three-brake priority order
 - [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md) — verdicts, signals, the gate registry, and the deterministic routing table
 - [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) — lane lifecycle, native containment, and the conflict gate
+- [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md) — the Parker→Winston→Nora chain procedure, ratification gate, and breadth-gate interaction
 - [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md) — the review-segment utility Sol generalizes to the lifecycle

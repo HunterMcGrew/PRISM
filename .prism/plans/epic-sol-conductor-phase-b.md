@@ -1,0 +1,225 @@
+# Plan: epic-sol-conductor-phase-b
+
+## Ticket
+
+GitHub epic — *placeholder, Nora opens it later.* Phase B of the Sol product-lead conductor initiative: hierarchy (epic→issue→ticket tree semantics) + greenfield specs→ticket-tree decompose. Sourced from the ratified PRD at [`.prism/prds/sol-conductor-phase-b-hierarchy.md`](../prds/sol-conductor-phase-b-hierarchy.md) (`internal` stakes, status finalized) and §7 of [`.prism/plans/sol-product-lead-vision-brief.md`](./sol-product-lead-vision-brief.md). Builds on Phase A ([epic-sol-product-lead-conductor](./epic-sol-product-lead-conductor.md), merged) and its two ADRs — [ADR-0049](../spec/adrs/0049-conductor-teams-are-lane-groups.md) (lane-groups over sub-conductors) and [ADR-0050](../spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) (growth loop + convergence governor).
+
+## Goal
+
+Make Sol read and drive `parentId` as an epic→issue→ticket tree over the flat `lanes[]` (child-first dispatch, parent-status rollup, tree-aware convergence and reporting), and add a greenfield `decompose` mode that runs a Parker→Winston→Nora chain to turn a PRD + architecture into a ratifiable ticket tree — both reusing Phase A's reconcile-delta primitive without forking it.
+
+---
+
+## Design
+
+> No UI surface. The conductor is a markdown-skill system; all artifacts are `.md` skill/lib/step files plus the `goal-state.md` schema doc. No Pixel phase.
+
+---
+
+## Implementation Tasks
+
+> Grouped by persona. Sequenced **tree-semantics-first**: tasks 1–6 make Sol read and drive the existing `parentId` field as a tree (dispatch, convergence, report) — these touch only logic over a schema that already ships. Tasks 7–12 add the greenfield decompose mode (the chain, the ratification gate, the reconcile extension) on top of the now-tree-aware conductor. The implementer is **Clove** for all spec/lib/step edits (the conductor's step/lib docs are this feature's source); **Winston** owns the two ADR candidates (drafted on Hunter's ratification — see § Decisions); **Eli** owns the dev-doc update.
+>
+> **Build note (inherited from Phase A, verified against the manifest):** edits under `.prism/skills/prism-conductor/**` (step + lib files) are **content-only, not build inputs** → verify with `pnpm prism:check` (drift + tests + manifest). Edits under `.ai-skills/skills/**` and `.prism/rules/**` **are** build inputs → run `pnpm prism:build` to regenerate the platform copies, then `pnpm prism:check`. The schema doc `lib/goal-state.md` is content-only.
+>
+> **Schema note:** Phase B introduces **no schema change.** `parentId`, `generation`, `team`, `dependsOn`, `scope`, and `pendingTicketCommit` all already ship in `goal-state` v2 (Phase A, `lib/goal-state.md`). Phase B drives `parentId`'s tree meaning and `generation`-stays-0-for-planned-trees — both are *logic* changes, documented in the schema doc's § Field notes, never a version bump (per the PRD constraint "`parentId` is already in the schema").
+
+### Clove (implementation)
+
+#### Tree semantics (tasks 1–6)
+
+1. **Document tree-drive semantics in the schema doc's § Field notes** — `.prism/skills/prism-conductor/lib/goal-state.md`, § Field notes. The schema block is unchanged (no version bump). Edit the existing `parentId` bullet (currently: *"`parentId` is driven for discovery lineage: a lane spawned from a discovered signal carries the originating lane's `laneId`; `generation = parent.generation + 1`; origin lanes are `generation: 0`."*) by **appending** a second sentence: `` Phase B additionally drives `parentId` as an epic→issue→ticket tree pointer over the flat `lanes[]` — a lane whose `parentId` names a parent lane is a child in that parent's subtree; a lane with at least one child is a **container lane** (epic or issue) that has no implementation phase of its own. Its `status`/`currentPhase` are *derived* from its children (§ tree dispatch, `step-04-dispatch.md`), never dispatched; only leaf lanes (no children) run a phase chain. `` Then add one new § Field notes bullet immediately after the `parentId` bullet: `` - **Container lanes carry `generation: 0` when planned.** A lane emitted by the greenfield decompose chain is `generation: 0` regardless of its depth in the planned tree (epic, issue, and ticket lanes are all gen 0). Generation accrues only from *unplanned* discovery during build (`parent.generation + 1`). Tree depth ≠ generation depth — the convergence governor's generation cap (`lib/convergence.md`) is not triggered by a planned tree's depth, only by discovered work's lineage. `` Verification: content-only — `pnpm prism:check`. Sequence: first (other tasks cite these notes).
+
+2. **Tree dispatch: container lanes are non-dispatchable, status rolls up from children** — `.prism/skills/prism-conductor/step-04-dispatch.md`. Add a new section after § The review phase is the gauntlet, titled `## Tree dispatch — leaf-first, container lanes roll up`. Content: (a) **Only leaf lanes dispatch.** A leaf lane is one with no other lane naming it as `parentId`. The `pipeline(lanes, …)` segment is authored over the **leaf lanes only**; container lanes (epics, issues — any lane with ≥1 child) are never passed to `agent()` and never enter a phase chain. (b) **Container status is derived, not dispatched.** A container lane's `status` is computed from its children at each reconcile boundary: `done` only when every child is `done` or `dropped`; `blocked` if any child is `blocked`; otherwise `active`. Its `currentPhase` is not meaningful (no phase chain) — set it to `null` and rely on `status`. (c) **The invariant:** no container lane closes as `done` while any child remains `active`, `parked`, or otherwise unresolved (FR-1). (d) State that the parent-status computation is a **deterministic run-state rollup** — Sol reads child `status` from goal-state and computes the parent's; it is not a dispatch and does not count against `globalBudget.spent`. Cite `lib/goal-state.md` § Field notes (task 1) for the container-lane definition; do not restate it. Verification: content-only — `pnpm prism:check`. Sequence: after task 1.
+
+3. **Tree-aware convergence: parent-close gated on children** — `.prism/skills/prism-conductor/lib/convergence.md`. Add a new section after § Termination-reason invariant, titled `## Tree convergence — parent close gated on children`. Content: (a) A container lane (≥1 child) is `done` **only when all its children are `done` or `dropped`** — this is a convergence-*check* change, not a governor change: the three brakes (budget / generation cap / breadth gate) are **unchanged** and still evaluate exactly as documented above. (b) State explicitly: the planned tree's depth does **not** interact with the generation cap — a three-level planned tree (epic→issue→ticket) is three levels of gen-0 lanes, and brake 2 (generation cap) only counts *discovered* lineage (`parent.generation + 1` from an unplanned find), never tree depth. Cross-reference task 1's § Field notes bullet as the canonical statement of tree-depth ≠ generation-depth; cite, don't restate. (c) The run still terminates on `converged` (zero-delta reconcile) or `budget-exhausted` — tree shape adds no new termination reason. Verification: content-only — `pnpm prism:check`. Sequence: after task 1.
+
+4. **Subtree budget attribution is read-time reporting math** — `.prism/skills/prism-conductor/lib/convergence.md` (extends task 3's file) **and** `.prism/skills/prism-conductor/step-10-report.md`. In `convergence.md`, in the new § Tree convergence section, add a paragraph: subtree budget attribution is **read-time aggregation** for reporting only — at report time, a leaf lane's share of `globalBudget.spent` rolls up to its parent issue, which rolls up to its parent epic, by summing the dispatches attributed to each subtree's leaves. There is **no per-lane budget counter** in the schema and **no write-time aggregation** — `globalBudget.spent` remains a single shape-agnostic counter (the primary brake, unchanged). In `step-10-report.md`, add to the per-run coverage list a bullet: *"Per-subtree budget attribution — consumed dispatches shown rolled up to each epic's subtree and each issue's subtree, computed read-time from the global counter (no per-lane counter)."* Verification: content-only — `pnpm prism:check`. Sequence: after task 3.
+
+5. **Tree-aware end-of-run report** — `.prism/skills/prism-conductor/step-10-report.md` (extends task 4's edit). Add a new section after the existing per-run coverage list, titled `## Tree-structured view`. Content: when the run drove a tree, the report renders the tree shape — each epic, its child issues, and their child tickets, with per-lane `status` and termination reason, indented to show the `parentId` hierarchy. **Discovered work (gen ≥ 1) is shown in a separate section from the planned tree (gen 0)** so the operator distinguishes what was planned from what was found (FR-9). A flat (no-`parentId`) run renders exactly as today — the tree view is additive and degrades to the flat list when no lane has children. Verification: content-only — `pnpm prism:check`. Sequence: after task 4.
+
+6. **Wire tree-dispatch into the skill body's run-loop description** — `.ai-skills/skills/prism-conductor/shared.md`, § Workflow overview (the run-loop paragraph after the step list, ~lines 60). Append one sentence to the run-loop paragraph: `` When the lane set is a tree (lanes carry `parentId` children), the dispatch segment is authored over the **leaf lanes only** — container lanes (epics, issues) are non-dispatchable and their status rolls up from their children (`step-04-dispatch.md` § Tree dispatch); a container closes `done` only when all its children resolve. `` Do **not** restate the rollup rule — cite step-04. Verification: build input — `pnpm prism:build` then `pnpm prism:check`. Sequence: after task 2.
+
+#### Greenfield decompose (tasks 7–12)
+
+7. **Extend the reconcile primitive for tree-shaped deltas (additive, not a fork)** — `.prism/skills/prism-conductor/lib/reconcile.md`. Add a new section after § Reuse contract, titled `## Tree-shaped delta (Phase B)`. Content: (a) The primitive's contract is unchanged — input is emitted work, output is a lane delta + updated registry. (b) When the emitted delta carries `parentId` pointers (the greenfield decompose chain's output, not flat discovery signals), the reconcile pass **preserves the pointers** into the candidate lanes and **assigns `generation: 0` to every lane in the planned tree** regardless of depth — it does **not** compute `parent.generation + 1` for planned-tree lanes (that formula applies only to *discovered* lineage). (c) State explicitly: this is an **additive extension to the existing primitive, not a fork** (NFR-3) — the flat-signal path (Phase A discovery) is untouched; the tree path is a second input shape the same primitive handles. (d) Structural dedup at the door still runs on the tree's leaf lanes the same way it runs on flat signals. Update the § Reuse contract bullet for Phase B (currently *"Phase B: reconciles greenfield specs→ticket decompose output into candidate lanes."*) to point at this new section. Verification: content-only — `pnpm prism:check`. Sequence: after task 1.
+
+8. **Greenfield decompose chain procedure** — new file `.prism/skills/prism-conductor/lib/greenfield-decompose.md`. Content: the Parker→Winston→Nora conducted-segment chain Sol runs in greenfield mode. (a) **Inputs:** a PRD document path and an architecture document path (both already-authored — Sol conducts the chain, it does not write specs; if the operator has no PRD/architecture, they run Parker and Winston first, per the PRD's Won't-this-time). (b) **The chain, sequential, each step a Sol-dispatched agent running the named persona's skill:** *Parker* reads the PRD and emits **epic** lanes (initiative-grain, with one-line `scope` statements); *Winston* reads the PRD + architecture + Parker's epics and emits **issue** lanes (architecture-grain, task breakdowns, each with `parentId` → its epic); *Nora* reads the issues and writes **ticket** lanes (leaf lanes, DoR-draft with null estimate before ratification, each with `parentId` → its issue). (c) **All emitted lanes are `generation: 0`** (cite task 7's reconcile extension). (d) **Crash-safety / resume:** the chain reuses the decision-box crash-safety pattern — Sol writes goal-state after each chain step returns (`parker-done` → `winston-done` → `nora-done`), and on resume continues from the last written step; no completed chain step is re-run, and a partial tree (e.g. Parker's epics already in goal-state) is preserved (FR / Journey 5). (e) **Mid-chain escalation:** if a chain persona returns `needs-human` (e.g. Winston's architecture step hits an ambiguous data-ownership call), Sol surfaces the escalation and resumes the chain from that step after the human clears it — exactly the existing gate-routing (`step-05-route.md`), no new state machine. (f) Each chain step counts against `globalBudget.spent` like any dispatch. Cross-link `lib/reconcile.md` (task 7), `lib/decision-box.md` (the crash-safety pattern this mirrors), `step-02-decompose.md` (the existing hand-listed decompose this sits parallel to). Verification: content-only — `pnpm prism:check`. Sequence: after task 7.
+
+9. **Ratification gate before dispatch** — new section in `.prism/skills/prism-conductor/lib/greenfield-decompose.md` (extends task 8's file), titled `## Ratification gate`. Content: (a) After the chain completes, Sol surfaces the generated lane tree to the operator — **same format as the end-of-run report's § Tree-structured view** (task 5): epics → issues → tickets with `parentId` pointers, per-lane `scope` statements, persona assignments, and the DoR-draft ticket list, as a chat-readable text summary plus the goal-state-readable lane tree (FR-6, B-A3). (b) **Gate behavior is autonomy-policy-driven, config seam (NFR-5):** at `internal`/`launch` stakes the gate is `needs-human` — no dispatch proceeds until the operator approves, and the gate batches into `pendingHumanReport`; at `hobby` the tree auto-dispatches. (c) The operator may adjust `scope` statements or drop lanes before approval; Sol reconciles the adjustment (re-invoke the reconcile primitive over the edited tree) before dispatching. (d) **Breadth-gate interaction (B-A4 — load-bearing):** the ratification gate **is** the human review the breadth gate exists to force, so a ratified planned tree is **excluded from the breadth gate** — applying it again would be redundant double-gating. The loophole guard: at `hobby` (no ratification gate), the breadth gate **does** apply to the planned tree as the backstop, so a very large tree can never bypass human review under every policy. State this explicitly: *planned + ratified* (internal/launch) → breadth gate skipped, ratification is the gate; *planned + auto-dispatched* (hobby) → breadth gate applies as the backstop; *unplanned discovery* → breadth gate always applies (unchanged from Phase A). Cite `lib/convergence.md` § Breadth gate; do not restate the gate mechanics. Verification: content-only — `pnpm prism:check`. Sequence: after task 8 (same file) and task 5 (the tree-render format it reuses).
+
+10. **Greenfield mode in the decompose step + run-loop wiring** — `.prism/skills/prism-conductor/step-02-decompose.md`. Add a new section after the existing dependency-order list, titled `## Greenfield mode`. Content: (a) Sol supports a `greenfield` decompose mode (distinct from the existing hand-listed lane decompose, which is **unchanged**). (b) In greenfield mode, Sol takes a PRD + architecture path and runs the chain in `lib/greenfield-decompose.md` (task 8) as a conducted segment, then the ratification gate (task 9), then — on approval or `hobby` auto-dispatch — hands the leaf-ticket lanes to the normal step-04 dispatch flow with tree-aware convergence (tasks 2–3). (c) State the mode is selected at intake (step-01) from the operator's invocation (a PRD+architecture handoff signals greenfield; a hand-listed lane set signals the existing mode). Cross-link `lib/greenfield-decompose.md` and `step-04-dispatch.md` § Tree dispatch. Verification: content-only — `pnpm prism:check`. Sequence: after tasks 8, 9, and task 2.
+
+11. **Wire greenfield mode + the chain into the skill body** — `.ai-skills/skills/prism-conductor/shared.md` (§ Workflow overview step list + the decompose step description, ~lines 49–60) **and** `.ai-skills/skills/prism-conductor/claude.md` (§ The autonomous segment). In `shared.md`: in the step-02 decompose bullet, add that decompose has two modes — hand-listed lanes (existing) and **greenfield** (PRD + architecture → Parker→Winston→Nora chain → ratifiable ticket tree, `step-02-decompose.md` § Greenfield mode). In `claude.md` § The autonomous segment: add one paragraph that the greenfield decompose chain runs as a **conducted segment** (sequential Parker→Winston→Nora dispatches in one segment, one level deep — no nesting, NFR-4), each step writing goal-state on return for crash-safe resume, reusing the reconcile primitive to fold the chain's tree output into the lane set. Verification: build input — `pnpm prism:build` then `pnpm prism:check`. Sequence: after task 10.
+
+12. **Build + full verify** — run `pnpm prism:build` then `pnpm prism:check` from the repo root; confirm the build regenerates platform copies for the edited `.ai-skills/**` sources with no drift, tests pass, and the manifest verifies. Confirm `grep -rn "greenfield-decompose" .prism .ai-skills` resolves to the new lib file and its citers (no dangling references), and that the new `lib/greenfield-decompose.md` is reachable from the step index. Verification: `pnpm prism:build` then `pnpm prism:check`. Sequence: last (after all Clove tasks).
+
+### Eli (documentation)
+
+13. **Update the conductor dev doc for Phase B** — `docs/content/dev/ai-skills/conductor.md`. Add narrative sections covering: tree semantics (epic→issue→ticket as `parentId` pointers over the flat list; container lanes are non-dispatchable and roll up from children; tree depth ≠ generation depth); the greenfield decompose mode (the Parker→Winston→Nora conducted chain, the ratification gate, crash-safe resume); subtree budget attribution as read-time reporting; the tree-structured end-of-run report. Cross-link the two Phase B ADR candidates (tree dispatch semantics; greenfield decompose + ratification gate) once Winston writes them, and ADR-0049/ADR-0050 (the primitives Phase B reuses). Verification: prose-only — confirm internal links resolve. Sequence: after task 11 (skill body wired) and task 10 (steps finalized).
+
+### Winston (ADR authoring — on Hunter's ratification)
+
+14. **[HITL] Write the two Phase B ADR candidates** — blocked on Hunter ratifying the two architecture decisions in § Decisions (the A/P/C gate at plan-ready). On ratification, Winston writes `.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md` (container lanes are non-dispatchable status-rollup nodes; child-first dispatch; tree depth ≠ generation depth restated for the planned tree) and `.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md` (greenfield decompose chain reuses the reconcile primitive via additive tree-delta extension; ratification gate is the human review the breadth gate would otherwise force; loophole guard at `hobby`). Number-verify against the ADR directory at write time (0051/0052 assumed free; bump if taken). Cross-link both from the plan's § Decisions and update the ADR references in tasks 1, 3, 7, 9. Verification: content-only — `pnpm prism:check`. Sequence: gated on the plan-ready human ratification; ADRs land before or with the implementation PR's close.
+
+---
+
+## Decisions
+
+> Winston, plan authoring. Resolves all 7 PRD `[ASSUMPTION-N]` items (B-A1…B-A7). Two decisions generalize into ADR candidates (status **proposed** — flip to accepted on Hunter's ratification at the plan-ready gate, then Winston writes them, task 14). Every assumption is **technical** — none required Hunter to resolve; the ADR candidates are surfaced for ratification because they're durable architectural claims, not because they were open.
+
+### Architecture (ADR candidates — proposed, pending Hunter ratification)
+
+- **B-A1 resolved — Container lanes are non-dispatchable status-rollup nodes; only leaf lanes dispatch.** (ADR candidate)
+  - **Root cause / context:** the PRD framed B-A1 as "parent lanes do not dispatch until children resolve — implement child-first dispatch with parent-lane hold." The implicit model is that a parent lane is a dispatchable thing you *hold*. Pressed on it, that's the wrong shape: an epic or issue lane has no implementation phase of its own — there's nothing to dispatch and nothing to hold. "Hold the parent's dispatch" describes a queue entry that never had a job.
+  - **Alternatives considered:** (A) the PRD's literal "parent-lane hold" — parent lanes are dispatchable but blocked until children close. (B) container lanes are non-dispatchable nodes whose `status` is *derived* from children; only leaf lanes ever enter a phase chain. (C) a "meta" epic lane that runs concurrently with children to track status (the PRD named this as a thing to check for).
+  - **Chosen approach:** (B). A lane with ≥1 child is a **container lane** — it never enters `pipeline()`, never runs `agent()`, never counts against the budget. Its `status` is a deterministic rollup: `done` only when every child is `done`/`dropped`, `blocked` if any child is, else `active`. This is strictly simpler than (A) — it removes the "held dispatch" state entirely; there's no hold because there's no dispatch. It beats (C): a concurrent status-tracking lane is a dispatch that does no work and burns budget to compute what a read-time rollup computes for free. The FR-1 invariant ("no parent closes `done` while a child is unresolved") falls out of the rollup rule rather than needing separate enforcement.
+  - **Implementation guidance:** tasks 1–2. Author the segment over leaf lanes only; compute container status at each reconcile boundary from child status; set container `currentPhase: null`.
+  - **→ ADR candidate: 0051 — Conductor tree dispatch semantics.** Generalizes beyond this ticket (every later phase's tree handling depends on "container lanes don't dispatch"). Ratified by Hunter (plan-ready gate, 2026-06-14); Winston wrote it in task 14. **→ promoted to [ADR-0051](../spec/adrs/0051-conductor-tree-dispatch-semantics.md).**
+
+- **B-A6 resolved — Greenfield decompose extends the reconcile primitive additively; it does not fork it.** (ADR candidate)
+  - **Root cause / context:** the PRD asked whether `lib/reconcile.md` is reused unmodified or needs a tree-specific path. The current primitive handles *flat* signals → candidate lanes (Phase A discovery). A ticket *tree* carries internal `parentId` structure the flat path doesn't model, and the planned tree must land at `generation: 0` regardless of depth — which the flat path's `parent.generation + 1` would get wrong.
+  - **Alternatives considered:** (A) reuse the primitive **unmodified** — force the tree through the flat path (loses parent pointers and mis-assigns generation). (B) **fork** a tree-specific reconcile primitive (violates NFR-3, duplicates dedup/registry logic). (C) **additive extension** — one new input-shape path on the existing primitive: when the delta carries `parentId` pointers, preserve them and assign `generation: 0` to the whole planned tree; the flat path is untouched.
+  - **Chosen approach:** (C). The primitive's *contract* (input: emitted work; output: lane delta + updated registry) is genuinely the same for both shapes — that's why Phase A built it as a reusable lib and named Phase B as a reuser. The only real difference is the input shape (flat signals vs. a pointered tree) and the generation assignment. (A) breaks correctness; (B) breaks NFR-3 and re-implements the registry/dedup that already exists. The extension is the minimum that preserves the reuse seam. A diff against the Phase A primitive shows the flat path unchanged — the success metric "no duplicate logic" holds.
+  - **Implementation guidance:** task 7. Add a § Tree-shaped delta section to `lib/reconcile.md`; structural dedup still runs on leaf lanes; do not touch the flat-signal path.
+  - **→ ADR candidate: 0052 — Conductor greenfield decompose + ratification gate** (co-located with B-A4, below — same ADR). Ratified by Hunter (plan-ready gate, 2026-06-14); Winston wrote it in task 14. **→ promoted to [ADR-0052](../spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md).**
+
+### Resolved assumptions (technical — Winston's calls, presented for ratification)
+
+- **B-A4 resolved — The ratification gate *is* the human review the breadth gate would force; a ratified planned tree is excluded from the breadth gate, with a `hobby` backstop closing the loophole. (confirm)** (folds into ADR-0052)
+  - **Root cause / context:** the breadth gate (default 12) exists to surface a large *single-reconcile expansion* to a human before auto-dispatch. The PRD's worry: a very large planned tree (e.g. 30 tickets) dispatched after ratification could bypass the gate designed to stop runaway growth — a loophole.
+  - **Alternatives considered:** (A) apply the breadth gate to the planned tree too (double-gates — the operator already reviewed and ratified the tree; surfacing it again as "too big, review it" is redundant and confusing). (B) exclude the planned + ratified tree unconditionally (clean for internal/launch, but at `hobby` there's *no* ratification gate, so a huge tree would auto-dispatch ungated — the actual loophole). (C) exclude *planned + ratified* trees but apply the breadth gate to *planned + auto-dispatched* (hobby) trees as the backstop.
+  - **Chosen approach:** (C). The breadth gate's *purpose* is "make a human look at a large expansion." At internal/launch, ratification already is that human look — so the gate is satisfied, not bypassed; excluding the ratified tree removes a redundant second gate, it doesn't remove the review. At `hobby` (the operator opted out of ratification), there's no human look, so the breadth gate stays armed against the planned tree as the backstop. Net: under *every* policy a large planned tree faces exactly one human gate — ratification (internal/launch) or the breadth gate (hobby). The "planned + ratified vs. unplanned discovery" distinction the PRD calls load-bearing is preserved: unplanned discovery *always* hits the breadth gate (Phase A behavior, unchanged).
+  - **Implementation guidance:** task 9 § Ratification gate, with the three-case table (planned+ratified → gate skipped; planned+hobby → breadth gate as backstop; unplanned → breadth gate always). Cite `lib/convergence.md`; don't restate the gate mechanics.
+  - **→ no promotion needed beyond ADR-0052** — this is the ratification-gate half of [ADR-0052](../spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md); it resolves PRD B-A4 for this build and is captured in that ADR's decision body.
+
+- **B-A2 resolved — The greenfield chain is Parker→Winston→Nora, sequential, kept as three steps for grain separation. (confirm)**
+  - **Root cause / context:** the PRD named the chain but flagged an alternative — collapse Parker+Winston into a single Winston step that reads the PRD directly.
+  - **Alternatives considered:** (A) the three-step chain (Parker emits epics, Winston emits issues, Nora writes tickets). (B) collapse to Winston-reads-PRD-directly + Nora (two steps).
+  - **Chosen approach:** (A), the three-step chain. The grain separation is real and load-bearing: Parker owns *initiative grain* (PRD → epics), Winston owns *architecture grain* (architecture → issues/task-breakdowns), Nora owns *ticket grain* (issues → DoR-draft tickets). Collapsing Parker into Winston conflates "what initiative are we building" with "how is it architected" — and it's exactly the manual Parker→Winston→Nora work the greenfield mode exists to *conduct*, so collapsing it would hardcode a grain merge the personas otherwise keep distinct. Each step is also a clean crash-safe resume boundary (B-A7). The cost of (A) over (B) is one extra dispatch per run — cheap against the grain clarity. Reuses the existing step-02 persona-dispatch pattern, not a new mechanism.
+  - **→ no promotion needed** (resolves PRD B-A2 for this build; the chain ordering is captured in `lib/greenfield-decompose.md`, task 8, which is the durable home — the persona-grain doctrine it rests on is already established by the step-02 dependency order).
+
+- **B-A3 resolved — The ratification artifact is the tree-structured report format (chat-readable summary + goal-state-readable lane tree). (confirm)**
+  - **Root cause / context:** the PRD asked what the ratification artifact looks like — chat summary, generated document, or structured diff against the PRD.
+  - **Chosen approach:** reuse the end-of-run report's § Tree-structured view (task 5) as the ratification artifact — epics → issues → tickets with `parentId` pointers, per-lane `scope`, persona assignments, DoR-draft ticket list — surfaced as a chat text summary plus the goal-state-readable lane tree. Beats a separate generated document (a new artifact format to maintain, drifts from the report) and a structured-diff-against-PRD (the operator ratifies the *tree Sol will dispatch*, not a diff — the tree is the thing they're approving). One render format serves both ratification and the end-of-run report; building it once is the same cite-don't-restate discipline Phase A used for the lib primitives.
+  - **→ no promotion needed** (resolves PRD B-A3 for this build; the artifact format is the report's tree-render, documented in `step-10-report.md` task 5 and reused by `lib/greenfield-decompose.md` task 9 — those are the durable homes).
+
+- **B-A5 resolved — Subtree budget attribution is read-time reporting math; no per-lane budget counter. (confirm)**
+  - **Root cause / context:** the PRD asked whether subtree budget attribution needs a per-lane write-time counter or is read-time aggregation.
+  - **Chosen approach:** read-time aggregation, no schema change. `globalBudget.spent` stays a single shape-agnostic counter (the primary brake — keeping it single is what makes the brake honest, per ADR-0050). At report time, a leaf lane's dispatches roll up to its parent issue's subtree and its parent epic's subtree by summing. A per-lane counter would be write-time aggregation that duplicates the global counter, adds a schema field (breaking the no-schema-change constraint), and creates a second source of truth that can disagree with the global counter. Read-time math has none of those costs and is sufficient — subtree attribution is *reporting*, not a brake.
+  - **→ no promotion needed** (resolves PRD B-A5 for this build; the read-time-not-write-time call is captured in `lib/convergence.md` task 4, and the single-counter-is-primary doctrine it rests on is already promoted in ADR-0050).
+
+- **B-A7 resolved — The greenfield chain reuses the decision-box crash-safety pattern; no new state machine. (confirm)**
+  - **Root cause / context:** the PRD asked whether the multi-step chain needs a new state machine in goal-state or can reuse the existing crash-safety pattern.
+  - **Chosen approach:** reuse the decision-box pattern (write goal-state at each chain step; resume from the last written state). The chain is a sequence of dispatches — Parker, Winston, Nora — structurally identical to the decision box's routed→winston-verdict→finalized sequence. Sol writes goal-state after each chain step returns (`parker-done` → `winston-done` → `nora-done`); on resume it continues from the last written step, no completed step re-run, partial tree preserved. Mid-chain `needs-human` (e.g. Winston's ambiguous data-ownership call, PRD Journey 5) is the existing gate-routing (`step-05-route.md`) — Sol surfaces it, the human clears it, the chain resumes from that step. A new state machine would re-invent the per-step-goal-state-write pattern the decision box already proves crash-safe. `pendingTicketCommit` already covers Nora's ticket-write step.
+  - **→ no promotion needed** (resolves PRD B-A7 for this build; the chain-resume pattern is captured in `lib/greenfield-decompose.md` task 8, mirroring the already-documented decision-box crash-safety in `lib/decision-box.md` — that's the durable home).
+
+### Cross-phase notes (for the Phase C and Phase D plan authors)
+
+- **Tree dispatch semantics (ADR-0051 candidate) are foundational for Phase C.** Phase C's `team` field is a *second* grouping axis over the same flat `lanes[]` that Phase B's `parentId` tree runs on. The container-lane / leaf-lane distinction (only leaves dispatch; containers roll up) is the model Phase C's team-grouping and `dependsOn` sequencing build on — a team is a lane-group (ADR-0049), and the rollup machinery Phase B builds for `parentId` subtrees is the same shape Phase C reads for team-level status. Phase C should not re-invent status rollup.
+- **The reconcile tree-delta extension (ADR-0052 candidate) is the seam Phase C's cross-team dependency signals reuse.** Phase C reconciles `dependsOn`-sequenced lanes; that's a third input shape on the same primitive Phase B extends here. Build the extension as cleanly additive (task 7) so Phase C adds its path without touching Phase B's.
+- **No schema change in Phase B means Phase C/D inherit `goal-state` v2 untouched.** `team`/`dependsOn` still ship nullable-provisional (Phase A); Phase C is when they become load-bearing. Phase B drives no new field — it only adds *logic* over `parentId`. Phase C/D plan authors: the schema you build on is still v2; Phase B added zero fields.
+
+---
+
+## History
+
+- 2026-06-14 [hmcgrew/sol-product-lead-prd]: Winston authored the Phase B epic plan (dispatched by Sol, non-interactive). Resolved all 7 PRD assumptions (B-A1…B-A7) — all technical, none flagged for Hunter; two generalize to ADR candidates 0051 (tree dispatch) and 0052 (greenfield decompose + ratification gate), proposed pending ratification. 13 implementation tasks (Clove ×12, Eli ×1) plus 1 gated ADR task (Winston).
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter). ADR candidates 0051/0052 ratified — Winston writes them during the Phase B build (task 14). Plan approved for build; Phase B is first in the B→C→D sequence.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Clove implemented tasks 1–12. Tree semantics (tasks 1–6): container-lane definition + gen-0 bullet in goal-state field notes, tree-dispatch section in step-04, tree-convergence + subtree budget attribution in convergence.md, tree-structured report view in step-10, and run-loop wiring in shared.md. Greenfield decompose (tasks 7–12): tree-shaped-delta reconcile extension, new lib/greenfield-decompose.md (chain + ratification gate), greenfield mode in step-02, and skill-body wiring in shared.md + claude.md. pnpm prism:build + pnpm prism:check green; grep reachability confirmed.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Winston wrote the two ratified ADRs (task 14) — ADR-0051 (container lanes non-dispatchable, status rollup, tree depth ≠ generation depth) and ADR-0052 (greenfield decompose extends the reconcile primitive additively; ratification gate is the breadth gate's human review, `hobby` backstop). Numbers verified free (existing max 0050); README index rows added; § Decisions promotion pointers resolved. Tasks 1/3/7/9 already cite 0051/0052 by number — references correct, no edits.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Eli updated docs/content/dev/ai-skills/conductor.md with Phase B sections: tree semantics, greenfield decompose mode (chain + ratification gate + crash safety), subtree budget attribution, and tree-structured end-of-run report. Cross-linked ADR-0049/0050 (Phase A) and ADR-0051/0052 (Phase B).
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Briar self-review complete. Zero critical/major issues. Two minors filed: cite-label case in goal-state.md `§ tree dispatch` and heading mismatch `§ Breadth gate` vs `## Brake 3 — Breadth gate`; both navigable in practice. pnpm prism:check green (158 tests). PR Readiness updated.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed both Briar minors (commit 7132cb3) — cite `§ Breadth gate` → `§ Brake 3 — Breadth gate` (2 occurrences in greenfield-decompose.md) and `§ tree dispatch` → `§ Tree dispatch` in goal-state.md. pnpm prism:check green. Draft PR #144 opened.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed Eric minor — moved "Per-subtree budget attribution" bullet from per-lane list to run-level list in step-10-report.md; 158 tests green.
+
+---
+
+## Acceptance Criteria
+
+> Winston, plan authoring — derived from the PRD's 5 success metrics and 9 FRs / 5 NFRs. Epic-grain, observable from the end-of-run report and `goal-state` inspection (no telemetry surface — inherited from Phase A). Reese and Briar derive the verifiable per-PR checklist downstream. Citations: (FR-N)/(NFR-N) trace to the PRD requirements; (SM-N) to its success metrics. Format per `.prism/templates/acceptance-criteria.md`.
+
+### Behavioral
+
+- [ ] Given a PRD and an architecture document as inputs, When Sol runs the greenfield decompose chain, Then a ticket tree appears in run-control with correct epic→issue→ticket parent pointers and no operator hand-listed any lane (SM-1, FR-4, FR-5)
+- [ ] Given a generated ticket tree at internal stakes, When the chain completes, Then Sol surfaces the tree for ratification and dispatches zero lanes until the operator approves (SM-4, FR-6)
+- [ ] Given a generated ticket tree at hobby stakes, When the chain completes, Then the tree auto-dispatches without a ratification pause (FR-6)
+- [ ] Given a generated tree the operator adjusts (a scope note edited or a lane dropped), When the operator approves, Then Sol reconciles the adjustment before dispatching the leaf lanes (FR-6)
+- [ ] Given a three-level tree where all of an issue's child tickets are done, When Sol evaluates convergence, Then the issue lane closes done; and given any child still active or parked, Then the issue lane does not close done (SM-2, FR-1)
+- [ ] Given an epic whose every child issue is done or dropped, When Sol evaluates convergence, Then the epic lane closes done (FR-1)
+- [ ] Given a planned three-level tree (epic→issue→ticket), When Sol assigns generation, Then every planned lane is generation 0 — the tree's depth does not accrue generations (SM-3, FR-3)
+- [ ] Given a leaf-ticket lane that discovers unplanned work during build, When Sol reconciles, Then the discovered lane is generation 1 (the emitting lane's generation + 1) and the planned tree stays generation 0 (SM-3, FR-3)
+- [ ] Given a completed tree run, When the end-of-run report is produced, Then it renders each epic, its child issues, and their child tickets with per-lane status, and shows discovered work (generation 1+) separately from the planned tree (FR-9)
+- [ ] Given a completed tree run, When the report shows budget, Then consumed dispatches are attributed per subtree (rolled up to each epic and issue) computed read-time from the single global counter (FR-2)
+- [ ] Given the greenfield chain returns needs-human mid-chain (e.g. the architecture step hits an ambiguous decision), When the operator resolves it, Then Sol resumes the chain from that step with the partial tree preserved and no completed step re-run (FR-5)
+- [ ] Given a run crashes mid-chain after a chain step wrote run-control, When the run resumes, Then it continues from the last written chain step without re-running a completed step (NFR-2)
+
+### Non-behavioral
+
+- [ ] The greenfield decompose step reuses the Phase A reconcile-delta primitive — a diff against the Phase A primitive shows the flat-signal path unchanged and no duplicate registry/dedup logic (SM-5, NFR-3)
+- [ ] Phase B introduces no schema change — every field it drives (parentId tree meaning, generation-stays-0-for-planned) already ships in goal-state v2; a Phase A run still parses under Phase B code (NFR-2)
+- [ ] The decompose chain runs as a single conducted segment one level deep — no design element introduces nesting beyond the one-level Workflow limit (NFR-4)
+- [ ] The decompose-chain persona mapping, the ratification-gate auto-dispatch threshold, and the breadth-gate-vs-planned-tree interaction are config-driven, not hardcoded (NFR-5)
+- [ ] All Phase A invariants hold unchanged — Sol dispatches and writes only goal-state + chat, merge stays the one unconditional human gate, autonomy stays a human-set ceiling (NFR-1)
+
+### AC Adjustments
+
+### AC Sync Log
+
+| Date | Agent | Action | Plan | Linear |
+| ---- | ----- | ------ | ---- | ------ |
+| 2026-06-14 | Winston | AC authored from PRD success metrics + FR/NFR | epic-sol-conductor-phase-b | N/A — Nora opens the epic later |
+
+---
+
+## Review Issues
+
+### Cite label vs. actual heading — `§ Breadth gate`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/greenfield-decompose.md:52,68`
+- **Problem:** The cite `lib/convergence.md § Breadth gate` uses the label "Breadth gate" but the actual section heading is `## Brake 3 — Breadth gate (default 12)`. Plan task 9 prescribed this exact cite text; the mismatch is between the plan's prescribed label and the convergence.md heading. A reader following the cite reaches the right section.
+- **Suggested fix:** Either accept as-is (cite navigates correctly in practice), or rename the convergence.md section to `## Breadth gate (default 12)` for exact anchor alignment.
+- **Fixed in:** commit 7132cb3 — updated both cite occurrences in greenfield-decompose.md to `§ Brake 3 — Breadth gate`.
+
+### Cite label case inconsistency — `§ tree dispatch` in goal-state Field notes
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:73`
+- **Problem:** The `parentId` Field notes bullet cites `(§ tree dispatch, step-04-dispatch.md)` in lowercase; the actual heading is `## Tree dispatch — leaf-first, container lanes roll up`. Not a broken reference — a reader lands in the right section.
+- **Suggested fix:** Capitalize to `§ Tree dispatch` to match cite-label conventions elsewhere in the file.
+- **Fixed in:** commit 7132cb3 — capitalized to `§ Tree dispatch`.
+
+### Per-subtree budget bullet under wrong list — `step-10-report.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/step-10-report.md:13`
+- **Problem:** The "Per-subtree budget attribution" bullet was placed inside the `Cover, per lane:` list (detached by a blank line), but it describes a run-as-a-whole concern (rolls up dispatches across epic/issue subtrees), not a per-lane concern.
+- **Suggested fix:** Move the bullet to the `Cover for the run as a whole:` list.
+- **Fixed in:** commit 5fdfc62 — moved bullet to run-level list, removed orphaning blank line.
+
+---
+
+## Cleanup Items
+
+(None found.)
+
+---
+
+## PR Readiness
+
+Living checklist — updated every time `code-review-self` runs. Reflects current state.
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (N/A — markdown-skill system, no TypeScript in this diff)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`pnpm prism:check` drift + manifest tests cover the skill-surface changes)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-14 (`pnpm prism:build` and `pnpm prism:check` both green; 158 tests pass, no drift)
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (ADR-0051, ADR-0052 written on ratification — task 14)
+
+**Last updated:** 2026-06-14 (Briar, post-implementation self-review)

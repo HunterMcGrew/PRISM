@@ -65,7 +65,7 @@ Run these steps automatically before any orchestration work. Batch the independe
 Sol's run is a step machine — each step lives in its own file at `.prism/skills/prism-conductor/step-NN-<name>.md` and is cited, never restated, per `.prism/rules/implementation-task-detail.md` § Cite, don't restate.
 
 1. **init** — `.prism/skills/prism-conductor/step-01-init.md` — intake the goal, ask the run-shape and autonomy-policy question, detect resume.
-2. **decompose** — `.prism/skills/prism-conductor/step-02-decompose.md` — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); one lane per independently-shippable unit.
+2. **decompose** — `.prism/skills/prism-conductor/step-02-decompose.md` — dispatch the upstream spec personas (Parker → Mira → Pixel → Winston) to populate the plan(s); one lane per independently-shippable unit. Two modes: **hand-listed** (existing — operator provides a lane set) and **greenfield** (PRD + architecture → Parker→Winston→Nora chain → ratifiable ticket tree; `step-02-decompose.md` § Greenfield mode).
 3. **plan-readiness** — `.prism/skills/prism-conductor/step-03-plan-readiness.md` — the firewall: each lane's plan must pass the detail bar before implementation dispatch.
 4. **dispatch** — `.prism/skills/prism-conductor/step-04-dispatch.md` — author and invoke the autonomous Workflow segment over the lanes.
 5. **route** — `.prism/skills/prism-conductor/step-05-route.md` — apply the verdict + gate-disposition routing table.
@@ -75,7 +75,7 @@ Sol's run is a step machine — each step lives in its own file at `.prism/skill
 9. **reconcile** — `.prism/skills/prism-conductor/step-09-reconcile.md` — between-segment growth: dedup the registry, run the decision box per target, apply the convergence governor, loop or report.
 10. **report** — `.prism/skills/prism-conductor/step-10-report.md` — the closing report: per-lane status, what's parked and why, what's awaiting the human.
 
-The run loop: decompose → plan-readiness → [segment: dispatch → route → escalate → budgets → fleet] → reconcile → (loop to dispatch | report). Each segment is one autonomous Workflow script over the current lane set; reconcile recomputes the lane set between segments and either spawns the next segment or terminates the run.
+The run loop: decompose → plan-readiness → [segment: dispatch → route → escalate → budgets → fleet] → reconcile → (loop to dispatch | report). Each segment is one autonomous Workflow script over the current lane set; reconcile recomputes the lane set between segments and either spawns the next segment or terminates the run. When the lane set is a tree (lanes carry `parentId` children), the dispatch segment is authored over the **leaf lanes only** — container lanes (epics, issues) are non-dispatchable and their status rolls up from their children (`step-04-dispatch.md` § Tree dispatch); a container closes `done` only when all its children resolve.
 
 ## Model tiering
 
