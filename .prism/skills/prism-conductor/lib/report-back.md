@@ -29,9 +29,20 @@ Optional, zero-or-more per dispatch. Each routes **independently** of the primar
 
 The split exists because one enum value can't carry both routes — the dry run surfaced a `done` dispatch that also flagged a follow-up. The primary verdict routes the lane; each signal routes on its own. (Sources: a review rung returns `needs-fix` when findings are fixable in-loop, `done` when clean, and `needs-human` only when a finding needs a human call; Sasha's diagnosis is consumed by a `found-bug` signal; Nora's scope-fit gate consumes a `found-followup-work` signal.)
 
+**Structured `target` on `found-bug` and `found-followup-work` signals:** when emitting inside a Sol run, both signal kinds carry a structured `target` object — `{ file, symbol, scopeSlug, errorSignature }` — matching the schema in `lib/goal-state.md`. This is what Sol uses for structural dedup at the registry door; a signal without a `target` cannot be deduped and will be routed to Nora for ambiguity resolution.
+
+Before emitting either signal, a worker runs the two-question local-frame pre-filter in `followup-scope.md § Worker emit pre-filter (Sol-run-time)`. In-frame + trivial → fix inline, emit nothing; everything else → emit with a structured `target`. Tiebreaker: **over-emit < under-emit**.
+
 ## Gate dispositions
 
 A gate's owning persona returns one of three dispositions instead of (or alongside) a plain verdict. The disposition is judged by the **owning persona** under the human-set autonomy policy — Winston for plan / A-P-C, Nora for Definition of Ready — never by Sol.
+
+**Deferred-commit shape (Sol-run-time decision box):** Nora's in-loop evaluation returns `{ disposition, draftTicket, escalationReason? }` rather than a plain gate disposition. The ticket is drafted (DoR-draft, estimate null, flagged for human ratification) but **not yet committed to Linear**.
+
+- Under `hobby` policy: Nora may finalize autonomously — the ticket commits if warranted and the disposition clears.
+- Under `internal` or `launch` policy: a ticket commit above trivial returns `needs-human`; the draft batches into `pendingHumanReport` at the end of the segment. Zero auto-commits above trivial.
+
+See `lib/decision-box.md` for the full procedure, crash-safety protocol, and the uncertain (blast-radius) path.
 
 | Disposition | Meaning | Sol routes |
 | --- | --- | --- |
