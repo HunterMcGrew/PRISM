@@ -423,7 +423,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### `scope-fit` escalation token survives the enum removal in ADR-0050 + PRD (narrative docs)
 
 - **Severity:** `major`
-- **Status:** `fixed` — Fixed in: commit pending (this session). Changed `(`blast-radius` | `scope-fit`)` → `(`blast-radius`)` in ADR-0050 Neutral bullet (all four mirrors hand-edited) and PRD NFR-3. Build 158/158, grep sweep clean.
+- **Status:** `fixed` — Fixed in: commit `53982de`. Changed `(`blast-radius` | `scope-fit`)` → `(`blast-radius`)` in ADR-0050 Neutral bullet (all four mirrors hand-edited) and PRD NFR-3. Build 158/158, grep sweep clean.
 - **File:** `.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md:34` (+ the `.claude` / `.codex` / `.cursor` mirrors of the same line); `.prism/prds/sol-product-lead-conductor.md:115` (NFR-3)
 - **Problem:** Briar's major narrowed the escalation enum to `blast-radius` only and swept the four *skill* sites (`lib/goal-state.md`, `lib/decision-box.md`, `step-09-reconcile.md`, `prism-ticket-start/shared.md`). The two *narrative* docs that also document the same typed enum were not in that four-site list and still describe the crash-safety contract as riding the typed escalation reason `` (`blast-radius` | `scope-fit`) ``. Both lines are net-new in this PR's diff (ADR-0050 is a new file; the PRD is added whole on this branch), so they ship a factually wrong contract — `scope-fit` is no longer a valid escalation reason. This is a removal-completeness miss per `code-standards.md § Removal and rename completeness` (the missed reference lives in files the enum-fix never opened — the ADR and PRD).
 - **Suggested fix:** in ADR-0050 § Consequences (Neutral bullet) and PRD NFR-3, change `` (`blast-radius` | `scope-fit`) `` to `` (`blast-radius`) ``. Apply to all four ADR mirrors (canonical edit + `pnpm prism:build`-style mirror sync, or edit each surface). After: `grep -rn "scope-fit" .prism .claude .codex .cursor docs` returns only the legitimate `scope-fit` *gate* references (the `followup-scope.md` concept) — no `(blast-radius | scope-fit)` escalation-enum pairings remain.
@@ -432,7 +432,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### Disposition long-form tokens survive in `decision-box.md` § Labor split
 
 - **Severity:** `minor`
-- **Status:** `fixed` — Fixed in: commit pending (this session). Replaced `fold-into-active-PR` / `follow-up-PR-no-ticket` with canonical tokens `fold-active` / `followup-pr` in § Labor split.
+- **Status:** `fixed` — Fixed in: commit `53982de`. Replaced `fold-into-active-PR` / `follow-up-PR-no-ticket` with canonical tokens `fold-active` / `followup-pr` in § Labor split.
 - **File:** `.prism/skills/prism-conductor/lib/decision-box.md:11`
 - **Problem:** Same defect class as Briar's minor #2 (disposition naming), surviving in a sibling section of the same file. The Labor split paragraph (line 11) reads `` Sol picks `fold-into-active-PR` vs. `follow-up-PR-no-ticket` `` — the long forms — while Step A (lines 24–25), Step B (lines 36–37, already fixed), the schema enum, and the dev doc all use the canonical tokens `fold-active` / `followup-pr`. A reader can't tell whether Labor split names two more dispositions or restates the same two.
 - **Suggested fix:** in `.prism/skills/prism-conductor/lib/decision-box.md:11`, replace `` `fold-into-active-PR` vs. `follow-up-PR-no-ticket` `` with `` `fold-active` vs. `followup-pr` ``.
@@ -441,7 +441,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### `// STUB:` comment example violates the no-invented-prefix rule
 
 - **Severity:** `minor`
-- **Status:** `fixed` — Fixed in: commit pending (this session). Rewrote example as a plain-sentence "what + why" comment in both canonical `followup-scope.md` and its install copy.
+- **Status:** `fixed` — Fixed in: commit `53982de`. Rewrote example as a plain-sentence "what + why" comment in both canonical `followup-scope.md` and its install copy.
 - **File:** `.prism/rules/followup-scope.md:93` and its install copy `templates/install/.prism/rules/followup-scope.md:93`
 - **Problem:** The broken-dependency stub convention prescribes a comment example `` `// STUB: awaiting fix for <target.symbol> — emitted found-bug signal` ``. The `STUB:` prefix is exactly the invented-keyword-tag shape `.prism/rules/code-comments.md § Not Allowed` prohibits (alongside `HACK:` / `XXX:` / `NOTE:`). A worker following this rule's example writes a comment that the team's own comment rule would flag in review — two rules in conflict.
 - **Suggested fix:** rewrite the example as a plain-sentence comment carrying the same "what + why" without the tag, e.g. `` `// Placeholder while <target.symbol> is broken — found-bug signal emitted; the reconcile pass tracks the fix.` ``. Apply to both the canonical and install copies (keep them in sync). Alternatively, if a scannable marker is genuinely wanted here, raise it as a `code-comments.md` amendment rather than a one-off exception — but the default is to follow the existing rule.
