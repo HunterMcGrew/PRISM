@@ -285,7 +285,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 
 ### Eli (documentation)
 
-15. **Update the conductor dev doc** — `docs/content/dev/ai-skills/conductor.md`. Add narrative sections covering the v1 self-growth capability: the between-segment growth loop, the registry + structural dedup, the deferred-commit decision box (with the uncertain/crash-safe path), the two-axis convergence governor, and the new step in the run loop (reconcile, step 9). Update any step-list/numbering references (report is now step 10). Cross-link ADR-0049 and ADR-0050. Verification: prose-only — confirm internal links resolve. Sequence: after task 7 (skill body wired) and task 6 (steps renamed).
+15. ✓ **Update the conductor dev doc** — `docs/content/dev/ai-skills/conductor.md`. Add narrative sections covering the v1 self-growth capability: the between-segment growth loop, the registry + structural dedup, the deferred-commit decision box (with the uncertain/crash-safe path), the two-axis convergence governor, and the new step in the run loop (reconcile, step 9). Update any step-list/numbering references (report is now step 10). Cross-link ADR-0049 and ADR-0050. Verification: prose-only — confirm internal links resolve. Sequence: after task 7 (skill body wired) and task 6 (steps renamed).
 
 ---
 
@@ -353,6 +353,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Briar self-review (tasks 1–14): 1 major, 2 minor; build green (158/158); no dangling step-09-report references in live source. See ## Review Issues.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Winston resolved Briar's scope-fit major — remove `scope-fit` from the escalation enum (Nora resolves scope ambiguity herself via over-emit<under-emit; the labor split gives no coherent party to escalate it to). Recorded the call in ## Decisions and wrote exact Clove directives for all 3 findings into ## Review Issues. Next: Clove executes the four-site enum narrowing + two minor fixes.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove applied all 3 Briar review fixes (acd7365): removed scope-fit from escalation enum at four sites (major), corrected disposition tokens in decision-box.md Step B (minor), fixed pendingTicketCommit field note to match crash-safety table (minor). Build 158/158, prism:check clean, no drift.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Eli wrote task 15 — added four narrative sections to `docs/content/dev/ai-skills/conductor.md` covering the self-growth loop, registry/structural dedup, deferred-commit decision box (uncertain/crash-safe path), and the two-axis convergence governor; fixed stale `step-09-report` reference and updated step count from nine to ten.
 
 ---
 
