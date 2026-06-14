@@ -126,6 +126,7 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Winston authored the Phase B epic plan (dispatched by Sol, non-interactive). Resolved all 7 PRD assumptions (B-A1…B-A7) — all technical, none flagged for Hunter; two generalize to ADR candidates 0051 (tree dispatch) and 0052 (greenfield decompose + ratification gate), proposed pending ratification. 13 implementation tasks (Clove ×12, Eli ×1) plus 1 gated ADR task (Winston).
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter). ADR candidates 0051/0052 ratified — Winston writes them during the Phase B build (task 14). Plan approved for build; Phase B is first in the B→C→D sequence.
+- 2026-06-14 [hmcgrew/sol-phase-b-prd]: Clove implemented tasks 1–12. Tree semantics (tasks 1–6): container-lane definition + gen-0 bullet in goal-state field notes, tree-dispatch section in step-04, tree-convergence + subtree budget attribution in convergence.md, tree-structured report view in step-10, and run-loop wiring in shared.md. Greenfield decompose (tasks 7–12): tree-shaped-delta reconcile extension, new lib/greenfield-decompose.md (chain + ratification gate), greenfield mode in step-02, and skill-body wiring in shared.md + claude.md. pnpm prism:build + pnpm prism:check green; grep reachability confirmed.
 
 ---
 
@@ -175,8 +176,8 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (`pnpm prism:check` drift + manifest tests cover the skill-surface changes)
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: YYYY-MM-DD (`pnpm prism:build` for the `.ai-skills/**` edits; `pnpm prism:check` for content-only `.prism/skills/**` edits)
+- [x] Build passes — last run: 2026-06-14 (`pnpm prism:build` and `pnpm prism:check` both green; 158 tests pass, no drift)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (ADR-0051, ADR-0052 written on ratification — task 14)
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-14 (Clove, after tasks 1–12)
