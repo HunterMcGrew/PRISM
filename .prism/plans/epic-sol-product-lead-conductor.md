@@ -352,6 +352,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove completed tasks 7–14 (segment 2 — thicken the skeleton): wired run loop into shared.md/claude.md; extended global budget as primary brake; added generation computation to reconcile; added worker emit pre-filter + broken-dependency stub to followup-scope (canonical + install copy); extended report-back with structured target + autonomy batching; extended fleet conflict gate to pending-vs-active + cross-lane fold-in; added spin-outs/termination-reason to step-10 report. Build 158/158, prism:check clean, no drift.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Briar self-review (tasks 1–14): 1 major, 2 minor; build green (158/158); no dangling step-09-report references in live source. See ## Review Issues.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Winston resolved Briar's scope-fit major — remove `scope-fit` from the escalation enum (Nora resolves scope ambiguity herself via over-emit<under-emit; the labor split gives no coherent party to escalate it to). Recorded the call in ## Decisions and wrote exact Clove directives for all 3 findings into ## Review Issues. Next: Clove executes the four-site enum narrowing + two minor fixes.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove applied all 3 Briar review fixes (acd7365): removed scope-fit from escalation enum at four sites (major), corrected disposition tokens in decision-box.md Step B (minor), fixed pendingTicketCommit field note to match crash-safety table (minor). Build 158/158, prism:check clean, no drift.
 
 ---
 
@@ -360,7 +361,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### `scope-fit` escalation reason is typed but unhandled
 
 - **Severity:** `major`
-- **Status:** `open` → **resolved by Winston: remove `scope-fit` from the enum (option B).** See `## Decisions` → "Decision-box escalation reason is `blast-radius` only." Rationale: a `scope-fit` escalation has no coherent handler — scope judgment is Nora's (Sol never judges scope; Winston owns blast-radius, not scope-fit), and Nora resolves a borderline same-scope-vs-split call herself via over-emit<under-emit. Clove executes the four edits below; no judgment calls.
+- **Status:** `fixed` — Fixed in: commit `acd7365`. Removed `scope-fit` from the enum at all four sites; Nora resolves scope ambiguity herself via over-emit<under-emit. See `## Decisions` → "Decision-box escalation reason is `blast-radius` only."
 - **File:** `.prism/skills/prism-conductor/lib/decision-box.md:28`, `.prism/skills/prism-conductor/lib/goal-state.md:34` & `:69`, `.prism/skills/prism-conductor/step-09-reconcile.md` (verify), `.ai-skills/skills/prism-ticket-start/shared.md:361`
 - **Problem:** `escalationReason: "scope-fit"` is defined in the typed enum but no handler routes it — it falls through to the no-escalation path, contradicting the typed contract.
 - **Clove directive (exact edits):**
@@ -374,7 +375,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### Disposition naming inconsistency in `decision-box.md` Step B
 
 - **Severity:** `minor`
-- **Status:** `open` → **resolved by Winston: use the schema enum tokens, not long-form.** Step A (line 24) already writes `fold-active` / `followup-pr`; Step B should match it so the `disposition` field value is unambiguous. (The plan's task-4 prose and the Labor split at line 11 still use the long-form `fold-into-active-PR` / `follow-up-PR-no-ticket` descriptively — those are fine as prose; only the backtick'd values that read as the written disposition need to be the enum tokens.)
+- **Status:** `fixed` — Fixed in: commit `acd7365`. Replaced `follow-up-PR-no-ticket` / `fold-into-active-PR` with enum tokens `followup-pr` / `fold-active` in Step B.
 - **File:** `.prism/skills/prism-conductor/lib/decision-box.md:36-37`
 - **Problem:** Step B uses backtick'd `follow-up-PR-no-ticket` and `fold-into-active-PR` as if they are the values written into `disposition`, but the schema enum is `followup-pr` / `fold-active`. A reader implementing Step B can't tell which form Sol writes.
 - **Clove directive (exact edit):** in `.prism/skills/prism-conductor/lib/decision-box.md`, replace lines 36–37:
@@ -385,7 +386,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 ### `pendingTicketCommit` field note inaccurate at `finalized`
 
 - **Severity:** `minor`
-- **Status:** `open` → **resolved by Winston: correct the field note to match the crash-safety table.** The `decision-box.md:72` table is authoritative (`false` at `finalized`); the field note must agree.
+- **Status:** `fixed` — Fixed in: commit `acd7365`. Field note now reads: `true` at `routed`/`winston-verdict`, resets to `false` at `finalized` — matching the crash-safety table in `decision-box.md`.
 - **File:** `.prism/skills/prism-conductor/lib/goal-state.md:74`
 - **Problem:** Field note says the field is "set to `true` at each decision-box step (`routed` → `winston-verdict` → `finalized`)" but `decision-box.md` crash-safety table shows it resets to `false` at `finalized`. The note implies it stays `true` through `finalized`.
 - **Clove directive (exact edit):** in `.prism/skills/prism-conductor/lib/goal-state.md`, replace line 74 (`` - `pendingTicketCommit` is set to `true` at each decision-box step (`routed` → `winston-verdict` → `finalized`) before the next step begins, enabling deterministic resume after a crash — no double-commit, no lost draft.``) with: `` - `pendingTicketCommit` is `true` at the `routed` and `winston-verdict` steps and resets to `false` at `finalized`, enabling deterministic resume after a crash — a `true` value on resume means the ticket was drafted but not committed (surface it to the human), so there is no double-commit and no lost draft.``
