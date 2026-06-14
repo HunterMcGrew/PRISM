@@ -355,6 +355,7 @@ Evolve Sol from a single-team lead over a fixed lane set into a self-growing con
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove applied all 3 Briar review fixes (acd7365): removed scope-fit from escalation enum at four sites (major), corrected disposition tokens in decision-box.md Step B (minor), fixed pendingTicketCommit field note to match crash-safety table (minor). Build 158/158, prism:check clean, no drift.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Eli wrote task 15 — added four narrative sections to `docs/content/dev/ai-skills/conductor.md` covering the self-growth loop, registry/structural dedup, deferred-commit decision box (uncertain/crash-safe path), and the two-axis convergence governor; fixed stale `step-09-report` reference and updated step count from nine to ten.
 - 2026-06-13 [hmcgrew/sol-product-lead-prd]: Briar final gate pass — all three prior findings confirmed resolved (scope-fit removed at all four sites, disposition tokens fixed in decision-box.md Step B, pendingTicketCommit field note matches crash-safety table); Eli dev doc clean (step numbering correct, ADR-0049/0050 cross-links present, enum vocabulary matches, no session-context leakage, no stale step-09-report refs). Build 158/158, prism:check green. Ready for human merge gate.
+- 2026-06-13 [hmcgrew/sol-product-lead-prd]: Clove pushed branch to origin and opened PR #126 (https://github.com/HunterMcGrew/PRISM/pull/126). Ready for Eric review and human merge.
 
 ---
 
@@ -412,7 +413,7 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Tests written for new logic and edge cases (content-only diff; 158/158 pass)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-13 (`pnpm prism:check` 158/158 green, no drift)
-- [ ] PR description up to date
+- [x] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
 **Last updated:** 2026-06-13 (Briar final pass — all three prior findings confirmed resolved; Eli dev doc clean)
