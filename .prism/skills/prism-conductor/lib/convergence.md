@@ -48,6 +48,18 @@ Every completed run records exactly one of:
 
 A run never ends with termination reason `killed` or with no reason set. If a run would otherwise end without a termination reason, set `converged` — a zero-delta reconcile is convergence.
 
+## Tree convergence — parent close gated on children
+
+A container lane (≥1 child) is `done` **only when all its children are `done` or `dropped`** — this is a convergence-*check* change, not a governor change: the three brakes (budget / generation cap / breadth gate) are **unchanged** and still evaluate exactly as documented above.
+
+The planned tree's depth does **not** interact with the generation cap. A three-level planned tree (epic→issue→ticket) is three levels of gen-0 lanes; brake 2 (generation cap) only counts *discovered* lineage (`parent.generation + 1` from an unplanned find), never tree depth. Tree depth ≠ generation depth — see `lib/goal-state.md` § Field notes for the canonical statement.
+
+The run still terminates on `converged` (zero-delta reconcile) or `budget-exhausted` — tree shape adds no new termination reason.
+
+### Subtree budget attribution — read-time aggregation, no per-lane counter
+
+Subtree budget attribution is **read-time aggregation** for reporting only. At report time, a leaf lane's share of `globalBudget.spent` rolls up to its parent issue, which rolls up to its parent epic, by summing the dispatches attributed to each subtree's leaves. There is **no per-lane budget counter** in the schema and **no write-time aggregation** — `globalBudget.spent` remains a single shape-agnostic counter (the primary brake, unchanged). Read-time math has no schema cost and no second source of truth that can disagree with the global counter — subtree attribution is *reporting*, not a brake.
+
 ## Priority order at reconcile time
 
 Check in this order, stopping at the first brake that fires:

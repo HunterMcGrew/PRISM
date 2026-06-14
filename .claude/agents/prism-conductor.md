@@ -85,7 +85,7 @@ Sol's run is a step machine — each step lives in its own file at `.prism/skill
 9. **reconcile** — `.prism/skills/prism-conductor/step-09-reconcile.md` — between-segment growth: dedup the registry, run the decision box per target, apply the convergence governor, loop or report.
 10. **report** — `.prism/skills/prism-conductor/step-10-report.md` — the closing report: per-lane status, what's parked and why, what's awaiting the human.
 
-The run loop: decompose → plan-readiness → [segment: dispatch → route → escalate → budgets → fleet] → reconcile → (loop to dispatch | report). Each segment is one autonomous Workflow script over the current lane set; reconcile recomputes the lane set between segments and either spawns the next segment or terminates the run.
+The run loop: decompose → plan-readiness → [segment: dispatch → route → escalate → budgets → fleet] → reconcile → (loop to dispatch | report). Each segment is one autonomous Workflow script over the current lane set; reconcile recomputes the lane set between segments and either spawns the next segment or terminates the run. When the lane set is a tree (lanes carry `parentId` children), the dispatch segment is authored over the **leaf lanes only** — container lanes (epics, issues) are non-dispatchable and their status rolls up from their children (`step-04-dispatch.md` § Tree dispatch); a container closes `done` only when all its children resolve.
 
 ## Model tiering
 

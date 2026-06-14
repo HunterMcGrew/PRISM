@@ -20,6 +20,16 @@ The loop reuses Sol's existing guardrails rather than duplicating them — the p
 
 One ladder rule does not carry over: the prism-review-loop phase-boundary gate (its interactive `/prism-handoff` prompt at the `self-review → pr-review` transition) does not fire under Sol's autonomous segment — Sol advances the transition in place. Interactive gates only reach the human through `needs-human` / `pendingHumanReport`; Sol surfaces a review boundary to the human only when a rung returns `needs-human`, never as a routine handoff prompt.
 
+## Tree dispatch — leaf-first, container lanes roll up
+
+**Only leaf lanes dispatch.** A leaf lane is one with no other lane naming it as `parentId`. The `pipeline(lanes, …)` segment is authored over the **leaf lanes only**; container lanes (epics, issues — any lane with ≥1 child) are never passed to `agent()` and never enter a phase chain. The container-lane definition is in `lib/goal-state.md` § Field notes.
+
+**Container status is derived, not dispatched.** A container lane's `status` is computed from its children at each reconcile boundary: `done` only when every child is `done` or `dropped`; `blocked` if any child is `blocked`; otherwise `active`. Its `currentPhase` is not meaningful — set it to `null` and rely on `status`.
+
+**The invariant:** no container lane closes as `done` while any child remains `active`, `parked`, or otherwise unresolved (FR-1). This falls out of the rollup rule — it needs no separate enforcement.
+
+**Parent-status computation is a deterministic run-state rollup.** Sol reads child `status` from goal-state and computes the parent's; it is not a dispatch and does not count against `globalBudget.spent`.
+
 ## Exit condition
 
 A segment returned and its verdicts are recorded in goal-state — control advances to step-05 to route them.
