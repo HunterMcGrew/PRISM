@@ -1,6 +1,6 @@
 # Plan: epic-prism-sync-steady-state
 
-> **DEFERRED — captured for future planning.** This plan is written to survive context loss: the full design is embedded inline so a cold session can plan and build without re-deriving it. Epic B of three (A: docs overhaul — active; B: this; C: first-contact reconciliation — deferred).
+> **SUPERSEDED 2026-06-15 by the prism:update epic (.prism/plans/epic-prism-update.md). The three-way-merge mechanism specced here was replaced by BMAD-style overwrite + .bak + overlay before any code was built.**
 
 ## Ticket
 
@@ -91,12 +91,15 @@ State tracks canonical files only. Build copies under platform dirs aren't track
 - **Non-destructive, dry-run-first is the decided frame.** Sync previews before it writes; conflicts are surfaced, never auto-resolved. **Why:** an established team won't adopt a tool that might silently overwrite their work; the user explicitly endorsed the non-destructive dry-run preview.
   - → promote to ADR at build time (cross-epic trust contract; also governs C).
   - **Zoe verdict (2026-06-05):** `live` — Epic B deferred by design; the embedded design is the source of truth for the future build.
+  - **2026-06-15 note:** The non-destructive *trust contract* ("never silently lose consumer work") carries forward to the prism:update epic unchanged. The dry-run *mechanism* (three-bucket `--dry-run` preview) is replaced — the new epic's manual cross-repo dry-run in its Verification section (end-to-end manual test with a throwaway temp consumer dir) is the replacement affordance for v1.
 - **OPEN — TBD, needs Hunter input.** *How* a previewed conflict (outcome 2) actually gets resolved once the dry-run has surfaced it. Options Clove named: (a) interactive per-file prompt in the Node script; (b) write git-style conflict markers into the file and let the user resolve in their editor; (c) dry-run-then-apply with the user hand-editing flagged files before re-running. **Default path (used until resolved):** (c) — dry-run surfaces conflicts, sync skips them and leaves the consumer's version intact, user resolves manually and re-syncs. Aligns with the non-destructive frame and avoids fiddly cross-platform interactive prompting (Clove's flag). Revisit if manual resolution proves too tedious at scale.
   - **Zoe verdict (2026-06-05):** `live` (open-question, not yet stale) — OPEN since 2026-05-29 (7 days); default path (c) documented and carrying.
+  - → resolved-by-supersession: overwrite+.bak model has no conflict outcome; the outcome-2 resolution question no longer exists.
 
 ## History
 
 - 2026-05-29 [claude/stupefied-ardinghelli-189bdd]: Plan created (deferred) from the Winston design session. Design embedded inline from distribution.md so the epic survives context loss. Conflict-resolution interaction model left OPEN with default path (c).
+- 2026-06-15 [main]: Superseded by the prism:update epic. Merge model changed three-way-merge → overwrite+.bak+overlay (user-approved). Plan retained per ADR-0047; not deleted.
 
 ## Acceptance Criteria
 
