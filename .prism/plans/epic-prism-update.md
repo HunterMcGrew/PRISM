@@ -268,6 +268,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Phase 7 complete (#162) — scaffolded the `prism-skill-forge` utility skill (`frontmatter.yml` 4-part folded description 679 chars + procedure-first `shared.md` documenting Create and Migrate modes, no persona voice) plus the `{ "id": "prism-skill-forge", "type": "utility" }` roles.json entry. `pnpm prism:build` green and confirmed it wrote no `.codex/agents/prism-skill-forge.toml` (the `roleDefinition.type !== "utility"` adapter gate holds); platform footprint matches the other two utilities (`.claude`/`.cursor` skill copies only). `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
 - 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Briar self-review — 1 minor: migrate procedure in `shared.md:153-156` frames private `bootstrap-from-claude.ts` functions as importable ("reuse", "run it through"); wording should be "replicate the pattern of". Migrate-mode scope assessed acceptable — skill-as-guide model is correct for PRISM; script automation tracked in § Follow-up. No major/critical findings.
 - 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Fixed Briar minor (#162) — migrate preamble rewritten to "Follow the patterns in `bootstrap-from-claude.ts`" + "replicate the X pattern" for all three private helpers; explicit "module-private and not importable" note added; Step 2 updated to "apply the `splitFrontmatter` pattern to"; Step 5 updated to "Apply the `rewriteSkillIdReferences` pattern to". `pnpm prism:build` regenerated platform copies; `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
+- 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Fixed Eric minor (#162) — `frontmatter.yml:5` `non-prism- ID` → `non-prism-* ID` (glob form, consistent with plan Decisions); `pnpm prism:build` regenerated platform copies; `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
 
 ---
 
@@ -386,6 +387,15 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **Problem:** The migrate mode preamble said "Generalize `bootstrap-from-claude.ts`: reuse `splitFrontmatter`, `rewriteSkillIdReferences`, and `writeIfMissingOrForce`". Step 2 said "run it through `splitFrontmatter`." All three functions are private (unexported) in `bootstrap-from-claude.ts`. An agent following the procedure literally would fail an import.
 - **Suggested fix:** Change "reuse `splitFrontmatter`" → "replicate the `splitFrontmatter` pattern from" (and similarly for the other two). One-word change from "reuse" to "replicate the logic of" at the preamble line; "run it through" → "apply the `splitFrontmatter` pattern to" at Step 2.
 - **Fixed in:** `#162: Clarify migrate-mode wording (private helpers are patterns, not imports)` — rewrote preamble to "Follow the patterns in `bootstrap-from-claude.ts`" + "replicate the X pattern" for all three helpers; added explicit "module-private and not importable" note; Step 2 changed to "apply the `splitFrontmatter` pattern to"; Step 5 updated to "Apply the `rewriteSkillIdReferences` pattern to". Platform copies regenerated via `pnpm prism:build`.
+
+### Phase 7 minor — `non-prism- ID` in frontmatter description reads as truncated text
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-skill-forge/frontmatter.yml:5`
+- **Problem:** Description contained `non-prism- ID` — a space before `ID` made it read as a truncated glob, not intentional prose. Inconsistent with how the convention is written elsewhere (e.g. plan Decisions: `non-\`prism-*\` prefix`).
+- **Suggested fix:** Change `non-prism- ID` to `non-prism-* ID` (the glob form).
+- **Fixed in:** `#162: Clarify non-prism-* glob in skill description` — single character insertion in `frontmatter.yml:5`; `pnpm prism:build` regenerated platform copies; `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
 
 ---
 

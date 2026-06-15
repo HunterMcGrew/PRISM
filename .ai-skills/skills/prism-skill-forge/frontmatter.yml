@@ -2,7 +2,7 @@ name: prism-skill-forge
 description: >
   Scaffold a new PRISM skill from scratch, or migrate an existing platform skill
   into canonical source. Create mode walks the persona-vs-utility decision
-  (ADR-0046), collects a non-prism- ID, and writes frontmatter.yml + shared.md +
+  (ADR-0046), collects a non-prism-* ID, and writes frontmatter.yml + shared.md +
   the roles.json entry. Migrate mode decomposes a generated .claude/.cursor/.agents
   SKILL.md or .codex agent .toml back into canonical source, strips generated
   headers and markers, and normalizes the ID to the consumer namespace. Runs
