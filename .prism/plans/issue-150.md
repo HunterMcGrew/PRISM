@@ -316,6 +316,8 @@ Added by Winston. Tasks are grouped by persona.
 
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Seeded plan for issue #150 (seed-sync + CI enforcement). Traceable to PR #149 review — Briar Major on seed miss, Eric Major on committed-stale mirrors.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Implemented all Steps 0–8. Step 0 triage found no forgotten-drift; created seed-curation.json + checkSeedDrift() (read-only, raw-byte compare) + 6 unit tests + CI workflow + install-layout.md doc update. All 164 tests pass; prism:check green.
+- 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Briar self-review. Found 1 major (pnpm/action-setup@v4 missing version — CI will fail to install pnpm) and 3 minor (checkSeedDrift outside checkMode guard; absolute path regression in check-mode reporter; orphan sweep misses seed loose files). Routed back to Clove.
+- 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Fixed all Briar findings. CI workflow gains `version: 9` pin; checkSeedDrift moved inside checkMode guard; reporter normalized to relative paths for both absolute (platform-copy) and relative (seed-drift) entries. Orphan-loose-files minor deferred (COPIED_LOOSE_FILES is static closed list). 164/164 tests pass, prism:check green.
 
 ---
 
@@ -327,7 +329,41 @@ Not Applicable (build tooling enforcement — not a runtime bug with a root caus
 
 ## Review Issues
 
-Not Applicable
+### CI workflow missing pnpm version
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.github/workflows/prism-check.yml:17`
+- **Problem:** `pnpm/action-setup@v4` requires either a `version:` input or a `packageManager` field in `package.json`; neither is present, so CI will fail to install pnpm on every run.
+- **Suggested fix:** Add `with: version: 9` under the `pnpm/action-setup@v4` step (or add `"packageManager": "pnpm@9"` to `package.json`).
+- **Fixed in:** `.github/workflows/prism-check.yml` — added `with: version: 9` under the pnpm setup step.
+
+### checkSeedDrift called outside checkMode guard
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:1275`
+- **Problem:** `checkSeedDrift()` is documented as "check-mode only" in its JSDoc but is called unconditionally — before `if (checkMode)`. In build mode, drift-message strings pushed by `checkSeedDrift` are passed to `path.relative(repoRoot, changedPath)` at line 1297, producing garbled output if any seed drift is present during a build run.
+- **Suggested fix:** Move the `checkSeedDrift(...)` call inside the `if (checkMode)` block (after the literal-guard block at line 1273, inside the check-mode branch), or add a guard: `if (checkMode) { await checkSeedDrift(...); }`.
+- **Fixed in:** `scripts/ai-skills/build.ts` — moved `checkSeedDrift(...)` call inside `if (checkMode)` block.
+
+### check-mode error reporter now prints absolute paths for platform-copy findings
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:1282`
+- **Problem:** The diff changed `path.relative(repoRoot, changedPath)` to `changedPath` in the check-mode error reporter. Seed-drift messages are now correctly formatted, but platform-copy drift entries (which push absolute file paths) now print as full absolute paths (e.g. `D:\Documents\...`) instead of the prior relative form (`.claude/rules/foo.md`).
+- **Suggested fix:** Either: (a) normalize all changedPaths entries to relative-from-repo-root strings at push time, or (b) keep `path.relative` with a guard: only apply it when the entry looks like an absolute path (`path.isAbsolute(changedPath)`).
+- **Fixed in:** `scripts/ai-skills/build.ts` — reporter now branches on `path.isAbsolute(changedPath)`: absolute paths get `path.relative(repoRoot, changedPath)`; relative strings (seed-drift messages) print as-is.
+
+### Orphan sweep does not cover seed loose files
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `scripts/ai-skills/build.ts` (orphan sweep, ~line 829)
+- **Problem:** The reverse-sweep for orphans only walks `COPIED_CONTENT_AREAS` directories, not the seed root for loose files. An unknown loose file added to `templates/install/.prism/` (not in `COPIED_LOOSE_FILES` and not under a content-area directory) would not be caught as an orphan.
+- **Suggested fix:** After the content-area orphan sweep, add a parallel sweep of seed root loose files against `COPIED_LOOSE_FILES` and `curation.seedOnly`. Consider a follow-up PR if the scope is too large — the gap is narrow given `COPIED_LOOSE_FILES` is a static closed list.
+- **Deferred:** `COPIED_LOOSE_FILES` is a static closed list — adding an unknown loose file to the seed requires a deliberate human edit of that directory, which is already visible in review. Gap is narrow and out of the local frame for this pass; follow-up PR warranted if the list ever grows.
 
 ---
 
@@ -374,4 +410,4 @@ None at plan creation.
 - [x] PR description up to date (PR #151)
 - [x] Lasting decisions promoted to architect context (install-layout.md updated; decisions are tooling-tactical, no other promotion needed)
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-15 (Clove post-Briar fixes — all review issues resolved)

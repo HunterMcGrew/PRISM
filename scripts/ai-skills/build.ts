@@ -1272,13 +1272,16 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
-	await checkSeedDrift(contentRoot, templatesContentRoot, seedCuration, changedPaths);
-
 	if (checkMode) {
+		await checkSeedDrift(contentRoot, templatesContentRoot, seedCuration, changedPaths);
+
 		if (changedPaths.length > 0) {
 			console.error("prism:check failed. These files are out of sync:");
 			for (const changedPath of changedPaths) {
-				console.error(` - ${changedPath}`);
+				const displayPath = path.isAbsolute(changedPath)
+					? path.relative(repoRoot, changedPath)
+					: changedPath;
+				console.error(` - ${displayPath}`);
 			}
 			process.exit(1);
 		}
