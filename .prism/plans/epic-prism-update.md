@@ -244,6 +244,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [main]: Phase 1 MERGED via PR #156 (squash `519b0f5`). Phases 2 (hash manifest) and 5 (ownership classifier) unblocked. Run paused for handoff to a fresh Sol session.
 - 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Phase 2 complete (#158) — added `hashContent`/`hashFile` (utils.ts), `generateSyncManifest`/`loadSyncManifest` (new `sync-manifest.ts`), exported `listRelativeDirectoryEntries`, and wired the build-mode-only `.prism/.sync-manifest.json` write into `build.ts main()`. The manifest carves consumer-owned globs back out of the broader PRISM-owned globs so flat `spec/adrs/*.md`/`architect/*.md` never enter it; it is gitignored (volatile `sourceCommit`/`generatedAt`) so it is never a `prism:check` drift target. `pnpm prism:check` green 182/182 (was 175; +7 from `sync-manifest.test.ts`).
 - 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Addressed Eric's Phase 2 PR minors (#158) — passed `false` explicitly at the `writeSyncManifest` call site in `build.ts` (was threading `checkMode` which is always `false` inside the `if (!checkMode)` guard); added no-op idempotency test to `sync-manifest.test.ts` (8/8 pass, `pnpm prism:check` green 183/183).
+- 2026-06-15 [hmcgrew/prism-update-phase-5-ownership-classifier]: Phase 5 complete (#159) — new `ownership.ts` is the single canonical source for `PRISM_OWNED_GLOBS`/`CONSUMER_OWNED_GLOBS` and exports `classifyPath(): "prism" | "consumer" | "unknown"`; `sync-manifest.ts` now imports the globs and filters via `classifyPath` instead of its interim inline copies. `compileMatcher` was already exported (Phase 2 imports it), so task 1 needed no change; task 4 (wire into `update.ts`) deferred to Phase 3 since `update.ts` does not exist yet. `pnpm prism:check` green 196/196 (+13 from `ownership.test.ts`) and the PRISM-owned set is unchanged at 159 files, zero consumer leakage.
 
 ---
 
@@ -340,19 +341,19 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-Phase 2 branch (`hmcgrew/prism-update-phase-2-hash-manifest`). Phase 1 merged (PR #156, `519b0f5`).
+Phase 5 branch (`hmcgrew/prism-update-phase-5-ownership-classifier`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`).
 
 - [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`sync-manifest.test.ts`: hash stability, exact PRISM-owned-glob coverage, load/parse round-trip, null-on-missing, check-mode no-write)
+- [x] Tests written for new logic and edge cases (`ownership.test.ts`: 13 classifier verdicts covering `_toolkit/**`, loose `SPEC.md`, owned trees → prism; flat `architect/*.md`, flat ADRs, manifest, `custom/**`, `plans/**`, `lessons.md` → consumer; consumer-wins-over-owned; unknown fallthrough)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 182/182 tests pass)
-- [ ] PR description up to date (PR not yet opened)
-- [x] Lasting decisions promoted to architect context (not applicable for Phase 2 — `.sync-manifest.json` shape decisions stay in plan; manifest may graduate to ADR when Phase 3 consumes it)
-- [ ] Phase 2 PR open / merged — pending PR open and conductor dispatch
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 196/196 tests pass; PRISM-owned manifest set unchanged at 159 files, 0 consumer leakage after the `ownership.ts` refactor)
+- [ ] PR description up to date (PR not yet opened — conductor opens)
+- [x] Lasting decisions promoted to architect context (not applicable for Phase 5 — the path-decidable-ownership convention is already documented in `## Decisions`; `ownership.ts` JSDoc carries the skill-namespace convention inline)
+- [ ] Phase 5 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Briar — self-review complete, zero findings, ready for PR)
+**Last updated:** 2026-06-15 (Clove — Phase 5 implementation complete, all gates green)
 
 ---
 
