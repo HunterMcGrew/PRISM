@@ -100,6 +100,8 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Nora re-opened implementation lane on new branch. Spike findings recorded: Cursor confirmed done, Codex gap confirmed, #64 unblocked. Three OPEN decisions posted for Winston to resolve before Clove starts tasks 2–3.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Winston resolved all three OPEN decisions and wrote Clove tasks 2–8 at the detail bar. Tier-1 discriminator is frontmatter-absence (NOT manifest membership — manifest is stale in both directions; see Decisions); Tier-1-only for Codex (nested AGENTS.md doesn't fit glob-gated Tier-2); new `codexRuleDialect` strips stray `paths:` from the 7 `.codex/rules/` Tier-2 copies. AGENTS.md inlining is a new dedicated build step outside the copied-area pipeline. Lane is AFK-ready for Clove.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Clove implemented tasks 2–8. Added `codexRuleDialect` (strips `paths:` from `.codex/rules/` Tier-2 copies), `agents-md-block.ts` (Tier-1 body collection + block render/replace), wired both into `build.ts`. `pnpm prism:build` updated 8 files (7 `.codex/rules/` + `AGENTS.md`); `pnpm prism:check` green 0 failures; drift-detection spot-test confirmed non-zero exit on manual edit.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Briar self-review. 3 minor issues found: insertion-point test assertion trivially true (test doesn't catch wrong placement), AC wording used rejected "manifest-listed" discriminator (corrected), `rule-loading-tiers.md` dev doc now diverged ("byte-identical" claim no longer true; Codex inlining not mentioned). All behavioral ACs pass on spot-test; build and check green; Cursor dialect untouched.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed trivially-true insertion-point assertion in `agents-md-block.test.ts`. Anchored `standaloneSepPos` via `indexOf("\n---\n", tableRowPos)` so the `| --- |` table-header divider cannot match; asserts `blockPos < standaloneSepPos` so a wrong-location insertion now fails the test.
 
 ---
 
@@ -107,7 +109,7 @@ Spike posted to issue #73 corrected the original premise:
 
 ### Behavioral
 
-- [ ] Given a Codex session starts, When `AGENTS.md` is loaded, Then every Tier-1 rule body (manifest-listed rules without `paths:` frontmatter) is present in the generated block — inlined, not just linked. (REQ-1)
+- [ ] Given a Codex session starts, When `AGENTS.md` is loaded, Then every Tier-1 rule body (rules in `.prism/rules/` with no `paths:` frontmatter) is present in the generated block — inlined, not just linked. (REQ-1)
 - [ ] Given `pnpm prism:build` runs, When a Tier-1 rule body in `.prism/rules/` changes, Then `AGENTS.md`'s generated block reflects the updated body. (REQ-1)
 - [ ] Given `pnpm prism:check` runs against a manually drifted `AGENTS.md`, When the generated block does not match the current Tier-1 rule bodies, Then the check exits non-zero with a meaningful error. (REQ-1)
 - [ ] Given a Tier-2 rule (with `paths:` frontmatter), When `pnpm prism:build` runs, Then that rule body is NOT inlined into the `AGENTS.md` generated block. (REQ-1)
@@ -128,19 +130,55 @@ Spike posted to issue #73 corrected the original premise:
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-15 | Nora | Initial AC generated from spike findings | created | N/A (GitHub-tracked) |
 | 2026-06-15 | Winston | Added REQ-5 (no stray `paths:` in `.codex/rules/`) + table-preservation AC after resolving Decision 3 | updated | N/A (GitHub-tracked) |
+| 2026-06-15 | Briar | Corrected first behavioral AC item — replaced "manifest-listed" wording with frontmatter-only discriminator to match Decision 1 | updated | N/A (GitHub-tracked) |
+
+---
+
+## Review Issues
+
+### Insertion-point test assertion is trivially true
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/agents-md-block.test.ts:128-129`
+- **File:** `scripts/ai-skills/agents-md-block.test.ts:128-129`
+- **Problem:** The insertion-point assertion `blockPos > separatorPos || result.indexOf("---", blockPos) > blockPos` resolves `separatorPos` via `result.indexOf("---")`, which finds the `---` inside the `| --- | --- | --- |` table header row rather than the standalone `---` separator after the table. Both clauses are trivially true for any insertion location after the table; the test passes even if the block is appended to the end of the file instead of inserted in the correct position.
+- **Suggested fix:** Replace the assertion with two explicit checks: `assert.ok(blockPos > tableRowPos, "block should appear after the table row")` and `assert.ok(blockPos < standaloneSepPos, "block should appear before the --- separator after the table")`, where `standaloneSepPos` is found via a search for `\n---\n` (the standalone separator form) after `tableRowPos`.
+
+### AC first behavioral item uses "manifest-listed" wording that contradicts Decision 1
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/issue-73.md:110`
+- **Problem:** The first behavioral AC item says "every Tier-1 rule body (manifest-listed rules without `paths:` frontmatter)" — but Decision 1 explicitly rejected manifest membership as a discriminator. `lazy-artifacts.md` is correctly included by the implementation (frontmatter-only test) yet is NOT individually manifest-listed, so the AC wording misrepresents the actual discriminator.
+- **Suggested fix:** Change to "every Tier-1 rule body (rules in `.prism/rules/` with no `paths:` frontmatter)" to match Decision 1 and the implementation.
+
+### `rule-loading-tiers.md` dev doc is diverged after the Codex changes
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `docs/content/dev/architecture/rule-loading-tiers.md:47`
+- **Problem:** Line 47 states "Claude and Codex receive byte-identical copies" — which was true before this branch but is no longer true. Codex copies now have the `paths:` frontmatter stripped via `codexRuleDialect`. The doc also makes no mention of Tier-1 bodies being inlined into `AGENTS.md` for Codex, which is the primary behavioral change this PR ships.
+- **Suggested fix:** Update line 47 to say Codex receives copies with the stray `paths:` key stripped (not byte-identical to canonical), and add a sentence explaining that Tier-1 rule bodies are inlined into `AGENTS.md` because Codex auto-loads only that file. Eli is the right persona for this update.
+
+---
+
+## Cleanup Items
+
+(none)
 
 ---
 
 ## PR Readiness (Codex inlining — tasks 2–8)
 
-- [x] No critical or major issues
+- [ ] No critical or major issues — **minor issues found; see Review Issues**
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (`rule-dialect.test.ts` + `agents-md-block.test.ts`)
 - [x] All OPEN decisions resolved (Winston gate — all three resolved 2026-06-15)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` updated 8 files; `pnpm prism:check` green; drift-detection spot-test passed)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` updated 8 files; `pnpm prism:check` green; drift-detection spot-test passed by Briar 2026-06-15)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable — Briar to assess)
+- [ ] Lasting decisions promoted to architect context — `rule-loading-tiers.md` diverged; Eli update needed before close
 
 **Last updated:** 2026-06-15
 

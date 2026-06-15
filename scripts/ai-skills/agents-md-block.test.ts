@@ -121,11 +121,12 @@ test("replaceTier1Block inserts after Behavioral norms when no block exists", ()
 	const result = replaceTier1Block(agentsMd, block);
 
 	const blockPos = result.indexOf(AGENTS_MD_BLOCK_BEGIN);
-	const separatorPos = result.indexOf("---");
 	const tableRowPos = result.indexOf("| 12 | Pre-compaction checkpoint");
+	// Search for the standalone \n---\n separator starting after the table row so
+	// the | --- | --- | --- | header-divider row cannot match.
+	const standaloneSepPos = result.indexOf("\n---\n", tableRowPos);
 
 	assert.ok(blockPos > tableRowPos, "block should appear after the table row");
-	assert.ok(blockPos > separatorPos || result.indexOf("---", blockPos) > blockPos,
-		"block should appear before the --- separator that follows the table");
+	assert.ok(blockPos < standaloneSepPos, "block should appear before the standalone --- separator after the table");
 	assert.match(result, /# A Rule/);
 });
