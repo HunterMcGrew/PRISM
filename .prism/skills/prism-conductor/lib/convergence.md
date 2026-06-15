@@ -80,7 +80,7 @@ Partitioning splits lane records across files; the governor brakes are unaffecte
 
 Specifically:
 
-**(a) Budget counter is root-level.** `globalBudget` lives only in the root index (v3 schema, `lib/goal-state.md § Schema (v3)`). Every dispatch in any partition's lanes increments the one counter. There is no per-partition budget.
+**(a) Budget counter is root-level.** `globalBudget` lives only in the root index (v3 schema, `lib/goal-state.md § Schema (v3 — partitioned layout)`). Every dispatch in any partition's lanes increments the one counter. There is no per-partition budget.
 
 **(b) Generation cap reads `generation` from `lanesSummary` across all partitions.** `lanesSummary` in the root index is the run-wide source for generation values — the cap applies to the full discovered-lineage graph, not to the lanes in any one partition file.
 

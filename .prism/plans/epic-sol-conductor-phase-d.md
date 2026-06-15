@@ -259,6 +259,24 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **Suggested fix:** In `lib/batcher.md` and `lib/partition-store.md`, replace `Decision D-A1`/`Decision D-A2`/`Decision D-A3` with `ADR-0055`/`ADR-0056` cross-links where applicable. In the ADRs, replace the opaque inline `epic plan D-*` cites with plain-language prose naming what each decision says. Lower-impact `FR-N`/`NFR-N` inline cues can be deferred as prior-phase convention.
 - **Fixed in:** lib/step files (`batcher.md`, `partition-store.md`, `convergence.md`, `fleet.md`, `reconcile.md`, `step-10-report.md`) in `8517d11`. ADR-0055/0056 opaque inline cites rephrased to plain language in a separate commit (Eric review escalation) — `8517d11` never touched the ADRs, so this entry's ADR scope was not actually closed by it until now. Reference-section anchors (`§ Decisions D-A3`) are legitimate provenance per ADR-0047 and are intentionally retained.
 
+### Section-name citation mismatch (§ Schema v3)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/convergence.md:83`, `lib/reconcile.md:13`
+- **Problem:** Both files cite `lib/goal-state.md § Schema (v3)` but the actual heading in `goal-state.md` is `## Schema (v3 — partitioned layout)`. The short-form citation doesn't match the real heading.
+- **Suggested fix:** Update both cites to `§ Schema (v3 — partitioned layout)`.
+- **Fixed in:** TBD (pending commit)
+
+### Imperative authoring-voice in batcher.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/batcher.md:3`
+- **Problem:** Line 3 uses imperative authoring-voice ("do not restate this content in the step file") where its sibling `lib/partition-store.md:3` uses a cleaner declarative form ("step files and the crash-resume path cite this doc instead of restating the protocol").
+- **Suggested fix:** Rewrite to match the declarative pattern in `partition-store.md:3`.
+- **Fixed in:** TBD (pending commit)
+
 ---
 
 ## Cleanup Items

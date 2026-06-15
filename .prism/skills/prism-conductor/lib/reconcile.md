@@ -10,7 +10,7 @@ The registry is the live `signals[]` + `lanes[]` in goal-state (`lib/goal-state.
 
 Open goal-state and load `signals[]` and `lanes[]`. Identify all signals whose `processedAt` is `null` — these are unprocessed signals pending reconciliation this segment.
 
-**Under the partitioned layout (v3):** the `signals[]` registry is read from the **root index** only — never from individual partition files. The registry lives exclusively in the root index (`lib/goal-state.md § Schema (v3)`, `lib/partition-store.md`), so a signal emitted by a lane in partition P1 is immediately visible to dedup logic checking partition P2. The registry is run-wide by construction; no per-partition registry exists.
+**Under the partitioned layout (v3):** the `signals[]` registry is read from the **root index** only — never from individual partition files. The registry lives exclusively in the root index (`lib/goal-state.md § Schema (v3 — partitioned layout)`, `lib/partition-store.md`), so a signal emitted by a lane in partition P1 is immediately visible to dedup logic checking partition P2. The registry is run-wide by construction; no per-partition registry exists.
 
 ### 2. Structural dedup at the door
 

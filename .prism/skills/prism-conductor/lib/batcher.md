@@ -1,6 +1,6 @@
 # Conductor batcher — segment-sized dispatch against the concurrency cap
 
-Reference doc for batch composition. `step-04-dispatch.md` cites this doc when the ready-lane set exceeds the cap — do not restate this content in the step file.
+Reference doc for batch composition. `step-04-dispatch.md` cites this doc when the ready-lane set exceeds the cap — step files cite this doc instead of restating its content.
 
 Cross-links: `lib/convergence.md` (governor brakes — budget, generation cap, breadth gate), `lib/reconcile.md` (structural dedup runs before batch assignment), `lib/fleet.md` (the concurrency cap and conflict gate the batcher schedules against), `lib/goal-state.md` (schema fields the batcher reads).
 
