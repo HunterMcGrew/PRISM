@@ -103,6 +103,7 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Briar self-review. 3 minor issues found: insertion-point test assertion trivially true (test doesn't catch wrong placement), AC wording used rejected "manifest-listed" discriminator (corrected), `rule-loading-tiers.md` dev doc now diverged ("byte-identical" claim no longer true; Codex inlining not mentioned). All behavioral ACs pass on spot-test; build and check green; Cursor dialect untouched.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed trivially-true insertion-point assertion in `agents-md-block.test.ts`. Anchored `standaloneSepPos` via `indexOf("\n---\n", tableRowPos)` so the `| --- |` table-header divider cannot match; asserts `blockPos < standaloneSepPos` so a wrong-location insertion now fails the test.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Eli updated `docs/content/dev/architecture/rule-loading-tiers.md` to correct the byte-identical claim (Claude verbatim; Codex strips stray `paths:`; Cursor full dialect) and document the Codex Tier-1 AGENTS.md inlining behavior and Tier-1-only limitation. `pnpm prism:check` green.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Draft PR #153 opened — https://github.com/HunterMcGrew/PRISM/pull/153.
 
 ---
 
@@ -179,7 +180,7 @@ Spike posted to issue #73 corrected the original premise:
 - [x] Tests written for new logic and edge cases (`rule-dialect.test.ts` + `agents-md-block.test.ts`)
 - [x] All OPEN decisions resolved (Winston gate — all three resolved 2026-06-15)
 - [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` updated 8 files; `pnpm prism:check` green; drift-detection spot-test passed by Briar 2026-06-15)
-- [ ] PR description up to date
+- [x] PR description up to date — PR #153 opened as draft 2026-06-15
 - [ ] Lasting decisions promoted to architect context — `rule-loading-tiers.md` diverged; Eli update needed before close
 
 **Last updated:** 2026-06-15
