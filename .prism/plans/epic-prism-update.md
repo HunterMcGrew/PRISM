@@ -266,6 +266,8 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-4-overlay]: Phase 4 complete (#161) — `update.ts` now runs a second platform-copy pass for `.prism/custom` (when present) emitting per-area `custom/` subdirs across all 3 platforms, via a `targetSubpath` parameter threaded through the `build.ts` content-copy functions (base behavior unchanged at default `""`); two cross-scope guards in `removeDeletedManagedContent` keep base and overlay cleanup from crossing. `custom/**` was already consumer-owned (Phase 5), so the SKIP-glob is verified not changed — see Decisions. `pnpm prism:check` green 216/216 (+8: 7 `overlay-copy.test.ts` + 1 overlay-untouched `update.test.ts`), `prism:check-types` clean, end-to-end CLI confirmed: overlay source untouched, marker at `custom/` root, Cursor `.mdc`/Codex-stripped/Claude-verbatim, token substitution applied, manifest carries zero `custom/` entries.
 - 2026-06-15 [hmcgrew/prism-update-phase-4-overlay]: Addressed Eric's Phase 4 PR minors (#161) — JSDoc added to `copyContentToPlatformDir` documenting the `targetSubpath` semantics; Guard 2 wholesale-area branch covered by new test in `overlay-copy.test.ts`. `pnpm prism:check` green 217/217 (+1), `overlay-copy.test.ts` 8/8, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean.
 - 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Phase 7 complete (#162) — scaffolded the `prism-skill-forge` utility skill (`frontmatter.yml` 4-part folded description 679 chars + procedure-first `shared.md` documenting Create and Migrate modes, no persona voice) plus the `{ "id": "prism-skill-forge", "type": "utility" }` roles.json entry. `pnpm prism:build` green and confirmed it wrote no `.codex/agents/prism-skill-forge.toml` (the `roleDefinition.type !== "utility"` adapter gate holds); platform footprint matches the other two utilities (`.claude`/`.cursor` skill copies only). `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
+- 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Briar self-review — 1 minor: migrate procedure in `shared.md:153-156` frames private `bootstrap-from-claude.ts` functions as importable ("reuse", "run it through"); wording should be "replicate the pattern of". Migrate-mode scope assessed acceptable — skill-as-guide model is correct for PRISM; script automation tracked in § Follow-up. No major/critical findings.
+- 2026-06-15 [hmcgrew/prism-update-phase-7-skill-forge]: Fixed Briar minor (#162) — migrate preamble rewritten to "Follow the patterns in `bootstrap-from-claude.ts`" + "replicate the X pattern" for all three private helpers; explicit "module-private and not importable" note added; Step 2 updated to "apply the `splitFrontmatter` pattern to"; Step 5 updated to "Apply the `rewriteSkillIdReferences` pattern to". `pnpm prism:build` regenerated platform copies; `pnpm prism:check` green 217/217, `pnpm prism:check-types` clean.
 
 ---
 
@@ -376,6 +378,15 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **Problem:** The wholesale-area marker check in `removeDeletedManagedContent` (Guard 2 — prevents a base pass from `rm -rf`-ing an area whose `custom/.ai-skill-generated` overlay marker still exists) had no test that fired the branch. The guard is load-bearing but only exercised implicitly by the existing "base cleanup leaves overlay untouched" test, which never actually empties the base `sourceArea`.
 - **Suggested fix:** Add a test that seeds the base-source-gone scenario so the wholesale-removal branch executes, and assert the overlay output and marker survive.
 
+### Phase 7 minor — migrate procedure implies importable functions that are private to `bootstrap-from-claude.ts`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-skill-forge/shared.md:153-156`
+- **Problem:** The migrate mode preamble said "Generalize `bootstrap-from-claude.ts`: reuse `splitFrontmatter`, `rewriteSkillIdReferences`, and `writeIfMissingOrForce`". Step 2 said "run it through `splitFrontmatter`." All three functions are private (unexported) in `bootstrap-from-claude.ts`. An agent following the procedure literally would fail an import.
+- **Suggested fix:** Change "reuse `splitFrontmatter`" → "replicate the `splitFrontmatter` pattern from" (and similarly for the other two). One-word change from "reuse" to "replicate the logic of" at the preamble line; "run it through" → "apply the `splitFrontmatter` pattern to" at Step 2.
+- **Fixed in:** `#162: Clarify migrate-mode wording (private helpers are patterns, not imports)` — rewrote preamble to "Follow the patterns in `bootstrap-from-claude.ts`" + "replicate the X pattern" for all three helpers; added explicit "module-private and not importable" note; Step 2 changed to "apply the `splitFrontmatter` pattern to"; Step 5 updated to "Apply the `rewriteSkillIdReferences` pattern to". Platform copies regenerated via `pnpm prism:build`.
+
 ---
 
 ## Acceptance Criteria
@@ -437,16 +448,16 @@ Phase 4 branch (`hmcgrew/prism-update-phase-4-overlay`). Phase 1 merged (PR #156
 
 ### Phase 7 — `prism-skill-forge` (branch `hmcgrew/prism-update-phase-7-skill-forge`, from `main` @ `18c35cb`)
 
-- [x] No critical or major issues (Clove self-check 2026-06-15: utility skill, procedure-first `shared.md`, no persona voice / no "You are X"; cites source-of-truth files rather than restating per skill-authoring disclosure gate; folded `>` description 679 chars under the 1000 cap; generated body 201 lines under the 500-line cap)
+- [ ] No critical or major issues (Briar self-review 2026-06-15: 1 minor open — migrate procedure implies importable private functions; see Review Issues. No critical or major findings. Migrate-mode scope assessed as acceptable — skill-as-guide satisfies Phase 7 intent; script automation tracked in § Follow-up.)
 - [x] Types correct — `pnpm prism:check-types` clean
 - [x] No stray console.logs or debug artifacts (no scripts changed; skill is content only)
 - [x] Tests written for new logic and edge cases (no new test file — skill content round-trips through existing `discovery-metadata`/literal/path-guard suites via `prism:build`/`prism:check`, both green 217/217)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` green 217/217; `pnpm prism:check` green 217/217; `pnpm prism:check-types` clean; confirmed no `.codex/agents/prism-skill-forge.toml` generated — utility adapter gate holds)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` green 217/217; `pnpm prism:check` green 217/217; `pnpm prism:check-types` clean; confirmed no `.codex/agents/prism-skill-forge.toml` generated — utility adapter gate holds; build skipped per conditional rules — diff is content-only, no bundled output affected)
 - [ ] PR description up to date (PR not yet opened — conductor opens)
 - [x] Lasting decisions promoted to architect context (none — Phase 7 introduces no durable architecture decision; the persona-vs-utility model is already ADR-0046 and the namespace convention is already Phase 5 `ownership.ts` — the skill consumes both, adds nothing new)
 - [ ] Phase 7 PR open / merged — pending PR open and conductor dispatch
 
-**Phase 7 last updated:** 2026-06-15 (Clove — `prism:build`/`prism:check` 217/217, types clean, no codex agent toml; ready for self-review)
+**Phase 7 last updated:** 2026-06-15 (Briar self-review — `prism:build`/`prism:check` 217/217, types clean, no codex agent toml; 1 minor open in Review Issues; no major/critical; migrate-mode scope: acceptable)
 
 ---
 

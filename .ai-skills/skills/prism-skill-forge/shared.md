@@ -110,12 +110,14 @@ run `pnpm prism:check-types` clean.
 
 Migrate recovers canonical source from an already-generated platform skill —
 useful when a team hand-authored a skill directly in a platform directory and
-wants it inside the pipeline. Generalize
+wants it inside the pipeline. Follow the patterns in
 [`bootstrap-from-claude.ts`](../../../scripts/ai-skills/bootstrap-from-claude.ts):
-reuse `splitFrontmatter` (separates `---` frontmatter from body),
-`rewriteSkillIdReferences` (remaps cross-skill ID references), and
-`writeIfMissingOrForce` (skips existing canonical files unless `--force`, so a
-re-run never clobbers hand-edited source).
+replicate the `splitFrontmatter` pattern (separates `---` frontmatter from body),
+the `rewriteSkillIdReferences` pattern (remaps cross-skill ID references), and
+the `writeIfMissingOrForce` pattern (skips existing canonical files unless
+`--force`, so a re-run never clobbers hand-edited source). These helpers are
+module-private and not importable — implement equivalent logic inline or in a new
+migration script.
 
 ### Step 1 — Detect the source shape
 
@@ -128,8 +130,9 @@ re-run never clobbers hand-edited source).
 
 ### Step 2 — Extract canonical source
 
-- **Skill-markdown:** run it through `splitFrontmatter` → frontmatter becomes
-  `frontmatter.yml`, body becomes `shared.md`.
+- **Skill-markdown:** apply the `splitFrontmatter` pattern to the file — split
+  on the `---` frontmatter delimiters; frontmatter becomes `frontmatter.yml`,
+  body becomes `shared.md`.
 - **Codex `.toml`:** a TOML-aware extractor strips the `buildCodexAgentToml`
   wrapper — drop the generated header lines, the `name`/`description` TOML keys,
   and the `developer_instructions = """ … """` fencing. Inside the fence, drop
@@ -165,7 +168,7 @@ block.
 
 - Normalize the ID to the consumer namespace (Step 1 conventions in Shared
   conventions above) unless the skill is being contributed to the PRISM toolkit.
-  Use `rewriteSkillIdReferences` to fix cross-skill references to the new ID.
+  Apply the `rewriteSkillIdReferences` pattern to fix cross-skill references to the new ID.
 - Add the `roles.json` entry (persona or utility, per the recovered shape).
 - Run `pnpm prism:build`, confirm clean, then `pnpm prism:check-types` clean.
   Verify the regenerated platform copies round-trip (the source you wrote
