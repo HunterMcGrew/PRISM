@@ -186,6 +186,7 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Authored Phase C epic plan — teams as lane-groups (`team` drive), cross-team `dependsOn` sequencing + cycle detection, always-human integration gate. Resolved all 5 PRD assumptions: C-A1/C-A2/C-A4 architecturally, C-A3/C-A5 defaulted-and-flagged for Hunter. Build-ordered second (after Phase B on main).
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). C-A5 ratified always-human (incl. hobby); C-A3 per-team autonomy confirmed out-of-scope (deferred); C-A1 confirmed ship modelTier seam + read path (not lean). ADR candidates 0053 (`type` marker) / 0054 (integration-gate-always-human) ratified — written during the Phase C build.
+- 2026-06-14 [hmcgrew/sol-phase-c-teams]: Implemented Clove tasks 1–13 + C-A1 seam/read path. Adds type/blockedBy/teamConfig[] schema, per-team ordering + dependency-gated eligibility in step-04, DFS cycle check + eligibility resolution in step-09 § 2.5, convergence pre-check, team-tag carry through decision box, per-team/integration-gate views in step-10, integration gate in fleet.md + gate registry. pnpm prism:build && prism:check: 158/158 pass.
 
 ---
 
@@ -199,7 +200,13 @@ Living checklist — updated when `code-review-self` runs during Phase C impleme
 - [ ] `dependsOn` cycle check escalates (never hangs); eligibility is segment-granular
 - [ ] Integration gate is `needs-human` at all levels (pending C-A5 Hunter resolution)
 - [ ] Team tag never stripped through the decision box (FR-7)
-- [ ] Build passes — `pnpm prism:check` — last run: pending implementation
+- [x] `type`, `blockedBy`, `teamConfig[]` schema-doc additions are additive (no required fields; Phase A/B parse-forward verified)
+- [x] Per-team ordering confirmed as a layer, not a second scheduler (NFR-3)
+- [x] `dependsOn` cycle check escalates (never hangs); eligibility is segment-granular
+- [x] Integration gate is `needs-human` at all levels (C-A5 ratified: always-human)
+- [x] Team tag never stripped through the decision box (FR-7)
+- [x] Build passes — `pnpm prism:build && pnpm prism:check` — last run: 2026-06-14 (158/158 pass)
+- [ ] No critical or major issues (Briar self-review pending)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted (C-A4 → ADR-0053, C-A5 → ADR-0054 if ratified; conductor architect doc)
 
