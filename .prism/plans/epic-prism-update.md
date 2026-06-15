@@ -402,18 +402,18 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 Phase 4 branch (`hmcgrew/prism-update-phase-4-overlay`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`); Phase 5 merged (PR #166, `646be18`); Phase 3 merged (PR #167, `af254c3`).
 
-- [x] No critical or major issues (Clove implementation 2026-06-15: overlay is a second content-copy pass; base behavior unchanged at default `targetSubpath`; two cross-scope cleanup guards verified by `overlay-copy.test.ts` both directions; overlay source never written — Phase 5 globs + test + e2e all confirm. Briar self-review pending.)
+- [x] No critical or major issues (Briar self-review 2026-06-15: base behavior byte-identical at default `targetSubpath=""`; cross-scope guard 1 — file-level `custom${path.sep}` skip in `removeDeletedManagedContent` — verified correct; guard 2 — overlay marker check before wholesale area removal — verified correct; `path.sep` consistent with `path.relative()` in `listRelativeDirectoryEntries`; Codex identity path mapping confirmed; Cursor `.mdc` output confirmed via test + trace. Zero findings.)
 - [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; no new casts in Phase 4)
 - [x] No stray console.logs or debug artifacts (no console output added in Phase 4)
 - [x] Tests written for new logic and edge cases (`overlay-copy.test.ts`: 7/7 — Claude verbatim / Codex verbatim+stripped / Cursor `.mdc` dialect / marker at `custom/` root / token substitution / overlay cleanup scoped off base / base cleanup scoped off overlay; `update.test.ts`: 13/13 — added overlay-source-untouched)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` 216/216, `overlay-copy.test.ts` 7/7, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean; build skipped — diff does not affect Next.js bundle)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` 216/216, `overlay-copy.test.ts` 7/7, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean; build skipped — diff does not affect bundled output)
 - [x] Formatting clean — new file uses tabs consistently, matching the codebase (no prettier in this repo's `prism:check`)
 - [ ] PR description up to date (PR not yet opened — conductor opens)
 - [x] Lasting decisions promoted to architect context (overlay layout convention marked for promotion to `install-layout.md` at epic close; the `targetSubpath` threading is an implementation-level extension documented in `## Decisions` + `build.ts`/`update.ts` JSDoc)
 - [ ] Phase 4 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Clove Phase 4 implementation — `pnpm prism:check` 216/216, `overlay-copy.test.ts` 7/7, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean; zero open issues; Briar self-review pending)
+**Last updated:** 2026-06-15 (Briar self-review — 216/216, 7/7, 13/13, 12/12, types clean; zero findings; all cross-scope guards verified correct)
 
 ---
 
