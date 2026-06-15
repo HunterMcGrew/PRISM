@@ -233,6 +233,8 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 
 - 2026-06-15 [main]: Epic plan created from approved design session (greedy-conjuring-barto.md). 7-phase build plan transcribed. Linear epic pending. Epic-B superseded; Epic-C flagged for replan.
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Phase 1 complete — 12 architect docs moved to `.prism/architect/_toolkit/`, 54 ADRs moved to `.prism/spec/adrs/_toolkit/`, all cross-references rewritten, manifest split created, seed twins synced. `pnpm prism:check` green (175/175 tests pass, manifest coverage verified). Two commits: architect move (320 files) and ADR move (242 files).
+- 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Briar self-review found 3 major issues: (1) 5 seed twin rule/reference files have stale flat ADR refs that weren't updated alongside canonicals; (2) `templates/install/.prism/references/review-docs-impact.md` seed twin links to old `architect/documentation.md` path; (3) `CONTEXT.md` was missed in the reorg sweep and still references 3 flat architect doc paths. All clear-cut fixes — routing to Clove.
+- 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (#155) fixed all 3 major review issues — comprehensive tree-wide grep found 2 additional stale refs (ADR-0044 in install-layout.md seed twin, ADR-0029 illustrative example in implementation-task-detail.md seed twin). 15 files updated; `pnpm prism:check` green 175/175.
 
 ---
 
@@ -244,7 +246,32 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 
 ## Review Issues
 
-(None yet.)
+### Stale flat ADR refs in 5 seed twin rule/reference files
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `#155` — updated all flat ADR refs to `_toolkit/` paths in seed twin rules and references; also caught ADR-0044 in install-layout.md seed twin and ADR-0029 illustrative example in implementation-task-detail.md seed twin
+- **File:** `templates/install/.prism/references/architect/plan-mode.md:12,36,48,104`; `templates/install/.prism/rules/branch-plan.md:131,172`; `templates/install/.prism/rules/skill-authoring.md:11,17,79`; `templates/install/.prism/rules/architect-doc-verification.md:11`; `templates/install/.prism/rules/implementation-task-detail.md:60`
+- **Problem:** These 5 seed twin files contain ADR hyperlinks using the old flat path (`../spec/adrs/0NNN-*.md`) instead of `../spec/adrs/_toolkit/0NNN-*.md`. The canonical counterparts were correctly updated; the seed twins were partially missed. A consumer who installs from `templates/install/.prism/` will get hyperlinks that point to empty consumer-space (`spec/adrs/`) rather than to `spec/adrs/_toolkit/` where the ADRs now live.
+- **Suggested fix:** Update each of the 5 files to change `spec/adrs/0NNN-` → `spec/adrs/_toolkit/0NNN-` for all ADR cross-references. The canonical `.prism/` counterpart for each is already correct — diff against it to find every affected line.
+
+### Stale flat architect doc refs in `templates/install/.prism/references/review-docs-impact.md`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `#155` — both `documentation.md` refs updated to `_toolkit/documentation.md`
+- **File:** `templates/install/.prism/references/review-docs-impact.md:7,9`
+- **Problem:** The seed twin still references `../architect/documentation.md` (a file that no longer exists at the flat path in the seed — it moved to `_toolkit/`). The canonical `.prism/references/review-docs-impact.md` was correctly updated to `../architect/_toolkit/documentation.md`. A consumer who installs will have a broken relative link in this reference doc.
+- **Suggested fix:** Change both occurrences from `../architect/documentation.md` to `../architect/_toolkit/documentation.md` to match the canonical.
+
+### CONTEXT.md has stale flat architect doc references (missed in Phase 1)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `#155` — all 7 flat architect doc refs updated to `_toolkit/` paths
+- **File:** `CONTEXT.md:27,38,67,77,101,121,146,155,178`
+- **Problem:** `CONTEXT.md` was not changed in Phase 1. It contains multiple prose references to `architect/skills-ecosystem.md`, `architect/audit-workflow.md`, and `architect/install-layout.md` — all docs that moved to `_toolkit/`. These are not clickable hyperlinks in the current format, but they are load-bearing references that agents and humans follow. The plan's Phase 1 scope said "Plans directory is out of scope" but CONTEXT.md is a root-level glossary file, not a plan — it should have been included.
+- **Suggested fix:** Update `CONTEXT.md` to replace `architect/skills-ecosystem.md` → `architect/_toolkit/skills-ecosystem.md`, `architect/audit-workflow.md` → `architect/_toolkit/audit-workflow.md`, and `architect/install-layout.md` → `architect/_toolkit/install-layout.md` throughout.
 
 ---
 
@@ -288,16 +315,16 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 Phase 1 branch only.
 
-- [x] No critical or major issues
+- [x] No critical or major issues — all 3 major issues fixed in `#155`
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (path-guard, verify-manifest-coverage updated)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass; note: path-guard does not scan hyperlink text in prose, so stale prose ADR links pass the guard)
 - [ ] PR description up to date (no PR open yet — Sol handles PR after self-review)
 - [ ] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-15 (Clove — #155 fixes)
 
 ---
 

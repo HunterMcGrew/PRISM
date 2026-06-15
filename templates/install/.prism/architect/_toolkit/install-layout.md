@@ -35,7 +35,7 @@ Skills are never under canonical at all — they're generated platform outputs f
 
 `pnpm prism:build` writes platform outputs directly to their tool-namespaced destinations — no staging directory. Cursor skills land at `.cursor/skills/<id>/SKILL.md`; Codex config lands at `.codex/codex-config.toml`. There is no `.generated/` staging surface.
 
-The committed-vs-ignored split inside each tool namespace is the consumer install contract — codified in [`.ai-skills/docs/compatibility.md`](../../.ai-skills/docs/compatibility.md) § Per-Tool Directory Ownership and recorded as [ADR-0044](../spec/adrs/0044-direct-write-tool-outputs.md). The short version:
+The committed-vs-ignored split inside each tool namespace is the consumer install contract — codified in [`.ai-skills/docs/compatibility.md`](../../.ai-skills/docs/compatibility.md) § Per-Tool Directory Ownership and recorded as [ADR-0044](../spec/adrs/_toolkit/0044-direct-write-tool-outputs.md). The short version:
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
@@ -68,7 +68,7 @@ The convention does not apply to:
 Two exclusions:
 
 - Matches inside fenced code blocks pass — code blocks may legitimately quote prior layouts (e.g. ADR-0031's Context section).
-- Filename allowlist (two entries today: `spec/adrs/0031-bifurcated-install-layout.md` and `architect/install-layout.md` — the latter so this doc's own example block can name `.claude/rules/<file>.md` etc. without the guard tripping). New allowlist entries need a comment explaining why.
+- Filename allowlist (two entries today: `spec/adrs/_toolkit/0031-bifurcated-install-layout.md` and `architect/_toolkit/install-layout.md` — the latter so this doc's own example block can name `.claude/rules/<file>.md` etc. without the guard tripping). New allowlist entries need a comment explaining why.
 
 When the guard fires, it prints `path-guard: <relative-path>:<line>: <text>` for each violation and exits non-zero.
 

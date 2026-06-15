@@ -24,7 +24,7 @@ A living working-memory document scoped to one ticket or epic, stored at `.prism
 - **Relationships:**
   - One plan per ticket or epic (`.prism/rules/branch-plan.md` § One Plan Per Ticket). Many branches and PRs may reference the same plan.
   - The plan is Tier 5 in the [spec tier hierarchy](#rule-loading-tier). Its `## Decisions` are promoted up to Tier 2/3 at close.
-  - Sections are owned by specific personas — see `.prism/architect/skills-ecosystem.md` § Plan Section Ownership and ADR-0014.
+  - Sections are owned by specific personas — see `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership and ADR-0014.
 
 ## Branch plan
 
@@ -35,7 +35,7 @@ The same artifact as a [plan](#plan). The term "branch plan" is the historical n
 
 ## Persona
 
-A named character a skill embodies — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona carries a voice, a thinking lens, and a defined lane of ownership. Most skills are personas; the roster lives in `.prism/architect/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
+A named character a skill embodies — Winston the architect, Clove the implementer, Eric the PR reviewer. A persona carries a voice, a thinking lens, and a defined lane of ownership. Most skills are personas; the roster lives in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster. Personas split on two orthogonal axes: **ticket-flow** (invoked for a specific ticket, read/write a plan, hand off along the lifecycle) and **cadence-driven** (invoked on a schedule or on demand, operate over the whole `.prism/` surface, write to a dedicated state file) — see ADR-0037.
 
 - **Avoid:** "agent", "bot", "assistant", "role" as a synonym. "Agent" is the runtime (the model running a skill); "role" is the ownership lane, not the character. A persona is the character a skill puts on.
 - **Relationships:**
@@ -64,7 +64,7 @@ A durable engineering standard under `.prism/rules/`, loaded as agent context to
 - **Avoid:** "guideline" (too soft — rules are the default authority for project-specific decisions), "convention", "policy" (mandate voice; see `writing-voice.md`), "standard" used loosely (a rule encodes a standard, but "standard" alone is ambiguous with code-style).
 - **Relationships:**
   - Many rules; membership is "every durable engineering standard the team has codified" — not a fixed count.
-  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/skills-ecosystem.md` § Lesson promotion taxonomy).
+  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/_toolkit/skills-ecosystem.md` § Lesson promotion taxonomy).
   - A rule differs from an [ADR](#adr): the rule encodes behavior; the ADR records the reasoning behind a one-shot decision.
 
 ## Architect doc
@@ -98,7 +98,7 @@ An Architecture Decision Record under `.prism/spec/adrs/NNNN-<slug>.md` — a nu
 
 ## Lesson
 
-A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/skills-ecosystem.md` § Lessons.
+A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/_toolkit/skills-ecosystem.md` § Lessons.
 
 - **Avoid:** "note", "gotcha" (a gotcha is one kind of lesson, not the category), "learning", "retro item" (retro actions route to Nora; lessons live in `lessons.md`).
 - **Relationships:**
@@ -118,7 +118,7 @@ An entry in a plan's `## Decisions` section: a choice made during a ticket, reco
 
 ## Mode
 
-A distinct operating shape a single [skill](#skill) switches between, selected from prompt words, input shape, or flags. The skill is one persona; the mode is which job it's doing this run. Examples: Pixel's mode 1 (inline sketch) vs mode 2 (saved mock spec); Eric's in-branch vs worktree mode; Reese's four QA modes (Release / Sprint-Group / Feature-PR / Bug-fix Verification); Parker's greenfield vs brownfield. Owned by each skill's source; the roster summarizes modes in `.prism/architect/skills-ecosystem.md` § Skill Roster.
+A distinct operating shape a single [skill](#skill) switches between, selected from prompt words, input shape, or flags. The skill is one persona; the mode is which job it's doing this run. Examples: Pixel's mode 1 (inline sketch) vs mode 2 (saved mock spec); Eric's in-branch vs worktree mode; Reese's four QA modes (Release / Sprint-Group / Feature-PR / Bug-fix Verification); Parker's greenfield vs brownfield. Owned by each skill's source; the roster summarizes modes in `.prism/architect/_toolkit/skills-ecosystem.md` § Skill Roster.
 
 - **Avoid:** "phase" (a phase is a step within one run; a mode is which run-shape you're in), "variant" used loosely, "state" (Eric's review states are a different concept).
 - **Relationships:** a skill has one [persona](#persona) and may have multiple modes. The mode gate runs at session start and the chosen mode is announced in the greeting.
@@ -152,7 +152,7 @@ The routing table at `.prism/architect/manifest.json` that maps file-path patter
 
 ## Canonical vs mirror
 
-**Canonical** content is the single source of truth, authored under `.prism/`, `.ai-skills/`, `templates/`, `docs/`, and root files. A **mirror** is a build-time copy of canonical content placed in a platform directory so each runtime's auto-load mechanism can find it: read-only canonical content (rules, ADRs, architect docs) mirrors into `.claude/`, `.codex/`, and `.cursor/`, while generated skills land in `.claude/`, `.cursor/`, and `.agents/` (the per-user Codex skills root). Mirrors regenerate via `pnpm prism:build`; editing a mirror directly is drift, caught by `pnpm prism:check`. Edit canonical, never the mirror — across every platform directory, including `.agents/`. Owned by ADR-0031 (bifurcated install layout) and `.prism/architect/install-layout.md`.
+**Canonical** content is the single source of truth, authored under `.prism/`, `.ai-skills/`, `templates/`, `docs/`, and root files. A **mirror** is a build-time copy of canonical content placed in a platform directory so each runtime's auto-load mechanism can find it: read-only canonical content (rules, ADRs, architect docs) mirrors into `.claude/`, `.codex/`, and `.cursor/`, while generated skills land in `.claude/`, `.cursor/`, and `.agents/` (the per-user Codex skills root). Mirrors regenerate via `pnpm prism:build`; editing a mirror directly is drift, caught by `pnpm prism:check`. Edit canonical, never the mirror — across every platform directory, including `.agents/`. Owned by ADR-0031 (bifurcated install layout) and `.prism/architect/_toolkit/install-layout.md`.
 
 - **Avoid:** "source" vs "copy" used without the canonical/mirror framing (too generic), "generated" used as a noun for the mirror, "platform dir" used to mean the mirror content (the dir holds both mirrors and platform-specific files).
 - **Relationships:**
@@ -175,7 +175,7 @@ This is distinct from the five-tier **spec hierarchy** in `.prism/SPEC.md` (Cons
 
 ## Zoe verdict
 
-A per-Decision classification Zoe (`prism-surface-audit`) issues during her cadence audit, written as a sub-bullet directly on a plan's `## Decisions` entry. Exactly one verdict applies per Decision, in increasing severity: `open-stale` < `archive-candidate` < `overdue-archive`, plus `live` for decisions still in effect. The verdict carries a date and a one-line reason (the evidence trail). Owned by `.prism/architect/audit-workflow.md`.
+A per-Decision classification Zoe (`prism-surface-audit`) issues during her cadence audit, written as a sub-bullet directly on a plan's `## Decisions` entry. Exactly one verdict applies per Decision, in increasing severity: `open-stale` < `archive-candidate` < `overdue-archive`, plus `live` for decisions still in effect. The verdict carries a date and a one-line reason (the evidence trail). Owned by `.prism/architect/_toolkit/audit-workflow.md`.
 
 - `live` — still in effect; no action.
 - `archive-candidate` — no longer load-bearing; candidate for promotion or archival.
