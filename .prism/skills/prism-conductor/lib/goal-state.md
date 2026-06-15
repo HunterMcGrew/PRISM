@@ -83,6 +83,92 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 - Every dispatch counts against `globalBudget.spent` — origin-lane phases, decision-box dispatches (Nora/Winston), and discovered-lane phases alike. A single shape-agnostic counter is what makes the budget brake honest.
 - Governor thresholds (`globalBudget.maxDispatches`, generation cap K, breadth gate) and the autonomy→threshold mapping are config-driven; the defaults (100 / K=3 / 12) are Thrive values and are overridable by a consuming team.
 
+## Schema (v3 — partitioned layout)
+
+Version `"3"` activates when the lane count crosses the partition threshold (default 50 — see § Field notes). Below the threshold the run stays single-file (v2 layout) exactly as today. Partitioning is a **layout** the same schema takes, not a breaking change.
+
+### Root index — `.prism/conductor-state.json`
+
+Same top-level fields as v2 (`version: "3"`, `lastUpdated`, `goal`, `runShape`, `autonomyPolicy`, `runId`, `conductorModel`, `status`, `globalBudget`, `pendingHumanReport`) plus three new root-only fields:
+
+```json
+{
+  "version": "3",
+  "lastUpdated": "ISO-8601",
+  "goal": "one-line goal statement",
+  "runShape": "pipeline | fleet",
+  "autonomyPolicy": "launch | internal | hobby",
+  "runId": "workflow run id or null",
+  "conductorModel": "opus",
+  "status": "running | paused | blocked | done | stopped",
+  "globalBudget": { "maxDispatches": 100, "spent": 0 },
+  "pendingHumanReport": ["string"],
+  "teamConfig": [ { "team": "string", "modelTier": null } ],
+  "partitionManifest": [
+    {
+      "key": "epic-<laneId>",
+      "path": ".prism/conductor-state.epic-<laneId>.json",
+      "laneCount": 0,
+      "lastWritten": "ISO-8601"
+    }
+  ],
+  "lanesSummary": {
+    "<laneId>": {
+      "status": "active | parked | blocked | done",
+      "team": "string or null",
+      "generation": 0,
+      "partitionKey": "epic-<laneId>"
+    }
+  },
+  "signals": [
+    {
+      "kind": "found-bug | found-followup-work | observation",
+      "note": "string",
+      "routedTo": "persona or null",
+      "target": {
+        "file": "string",
+        "symbol": "string or null",
+        "scopeSlug": "string or null",
+        "errorSignature": "string or null"
+      },
+      "disposition": "fold-active | followup-pr | new-ticket | drop | null",
+      "processedAt": "ISO-8601 or null"
+    }
+  ]
+}
+```
+
+**Root-only fields (new in v3):**
+
+- `partitionManifest` — the canonical record of which partition files exist. Absent or empty on a single-file (sub-threshold) run. Each entry carries `key` (partition identifier), `path` (relative file path), `laneCount` (number of lanes in this partition), and `lastWritten` (timestamp of the last atomic write to that partition file). Sol updates `lastWritten` after each partition write and uses it for stale-partition detection on resume.
+- `lanesSummary` — a **denormalized per-lane status summary** covering every lane across all partitions. This is the read-fast copy that cross-partition `dependsOn` checks read instead of opening the foreign partition file (see `lib/fleet.md § Cross-partition dependency resolution`). Written atomically in the same root-index write that follows every partition write. The partition lane record is the source of truth for the full record; the summary is the indexed copy for cross-partition reads.
+- `signals` — the **run-wide signal registry**, moved from per-lane to the root index in v3. The registry is run-wide so structural dedup spans all partitions (see `lib/reconcile.md`). Schema of each signal element is unchanged from v2.
+
+**Note:** The v2 `lanes[]` array is **absent from the root index in a partitioned run** — lanes live in partition files. The root index carries only `lanesSummary` (the status snapshot) and `partitionManifest` (the file map).
+
+### Partition files — `.prism/conductor-state.epic-<laneId>.json`
+
+Each partition file holds the lane records for lanes whose epic-subtree root is `<laneId>`:
+
+```json
+{
+  "version": "3",
+  "key": "epic-<laneId>",
+  "lastWritten": "ISO-8601",
+  "lanes": [ ]
+}
+```
+
+The `lanes[]` array contains **unchanged v2 lane records** — only the file location changes. The partition key derivation is `walkToEpicRoot(laneId)`, which walks `parentId` to the tree root (requires Phase B on `main`).
+
+### Field notes (v3 additions)
+
+- `version: "3"` indicates partitioned-capable code. v3 reads v2 forward: a v2 single-file state has no `partitionManifest` → treat as single-file and operate as v2. v2 code reading a v3 root index hits the version-mismatch refusal — the rollback safety (NFR-2/NFR-3).
+- The **partition key is the epic-subtree root** (Decision D-A3, `lib/partition-store.md`). `lanesSummary[laneId].partitionKey` is `"epic-" + walkToEpicRoot(laneId)`. A lane with no epic ancestor (a flat run, no `parentId`) partitions under a synthetic `"epic-root"` key or stays single-file below threshold.
+- The `signals[]` registry and `globalBudget` live **only in the root index** — never in a partition file — so dedup and budget are run-wide by construction. This is the invariant that keeps governor brakes honest under partitioning (see `lib/convergence.md § Brakes are run-wide under partitioning`).
+- `lanesSummary` is denormalized: a lane's `status`/`generation` appears in both its partition file's lane record and the root summary. The partition file is the source of truth for the full record; the summary is the read-fast copy for cross-partition checks. The two copies are kept in sync by the partition-store write order (write partition file, then root index in the same mutate cycle — they cannot drift mid-segment because Sol is the single writer).
+- **Phase D config seams** (all config-driven, not hardcoded — FR-12, NFR-5, same seam contract as Phase A's governor thresholds above): (a) **partition threshold** — default 50 lanes (Decision D-A2); (b) **batch size** — default = concurrency cap ~12 (Decision D-A1); (c) **team co-batching preference** weight (Decision D-A1); (d) **partition key strategy** — default `epic-subtree` (Decision D-A3; a consuming team could select `team` or `hybrid`, but `epic-subtree` is the shipped default and the only one v1 implements end-to-end). All four defaults are Thrive values, overridable by a consuming team. See `lib/partition-store.md` for the onset rule and migration protocol.
+
 ## Read protocol
 
 1. Open `.prism/conductor-state.json`.
@@ -115,7 +201,10 @@ Read → mutate the in-memory copy → atomic write back. Always update `lastUpd
 | Present | `paused` | Resume offer; surface `pendingHumanReport`, take the human's input on the open gate, and re-dispatch the gate's owning persona carrying the answer. |
 | Present | `blocked` | Resume offer; the blocking lane's `escalation` names the axis and reason — route accordingly. |
 
+**Partitioned run resume:** a run whose root index carries a `partitionManifest` (v3 partitioned layout) runs the stale-partition check from `lib/partition-store.md` before re-dispatching — see that doc's § Stale-partition detection for the timestamp-comparison procedure. A stale or missing partition surfaces as a `needs-human` gate, never auto-repaired.
+
 ## Corruption recovery
 
 - `.tmp` + canonical both present → read canonical; the `.tmp` is ignored and overwritten on the next write.
 - `.tmp` only (no canonical) → fresh run with a warning; archive the `.tmp` to `.prism/conductor-state.<timestamp>.broken.json`.
+- A `conductor-state.epic-N.json.tmp` present without its canonical sibling, or both present, follows the same rule: read canonical if present; a `.tmp`-only partition file is a stale-partition case → surface as `needs-human` gate per `lib/partition-store.md § Stale-partition detection`. Never auto-repair.
