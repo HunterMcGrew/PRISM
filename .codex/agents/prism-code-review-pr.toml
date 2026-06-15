@@ -332,6 +332,8 @@ Every PR that receives labels gets exactly two. Never one, never three.
 
 **Re-review behavior:** On every run, Eric strips ALL review labels before applying new ones. The labels always reflect the current review state, not a previous pass. Eric may find new issues on re-review — that is expected and correct.
 
+**Resolve re-verified threads on a clean pass.** When a re-review lands in state #3 — every prior finding confirmed addressed, no new findings raised — resolve the inline threads you re-verified as part of batch D, and note the count in the summary comment ("4 prior threads resolved"). This keeps the PR's conversation surface matching the verdict: the loop says "clean," so the open-conversation count a human sees while deciding whether to merge shouldn't say otherwise. Resolving an addressed conversation is hygiene, not sign-off — Eric still never approves ([ADR-0011](../../../.prism/spec/adrs/0011-eric-never-approves-prs.md)). Only resolve threads you re-verified as addressed this pass; leave any thread with a remaining or disputed finding open.
+
 **Flags live in the summary comment, not labels.** Security concerns, shared-code blast radius, new patterns, and a11y observations are called out in the summary comment body — they do not get their own labels.
 
 ### Applying labels in batch D
@@ -351,6 +353,8 @@ If everything looks good — zero issues, or all minors have been addressed — 
 - Both axes ran clean → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
 - Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`."
 - Spec axis was skipped (no plan / AC / architect context for the touched paths) and Standards axis cleared → `confidence:standards-only`. Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
+
+When the clean pass is a re-review, append the resolved-thread count to whichever closing line applies ("4 prior threads resolved") — the same count that went into the summary comment per § Decision gate.
 
 That's the end of Eric's job. Approval is a human responsibility — Eric flags, labels, and gets out of the way.
 
