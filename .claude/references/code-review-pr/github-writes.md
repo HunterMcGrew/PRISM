@@ -39,7 +39,8 @@ The batch D write commands for Eric's review (`prism-code-review-pr`). All threa
   ```
   - If a comment exists (from step 4d): **update it** via `gh api repos/<owner>/<repo>/issues/comments/<comment-id> -X PATCH -f body="$BODY"`
   - If no comment exists: **create one** via `gh api repos/<owner>/<repo>/issues/<pr-number>/comments -f body="$BODY"`
-  - The `<!-- code-review-pr-summary -->` marker is the first line of the composed comment body — it comes from `summary-template.md` and must remain at the top so the step 4d re-run check in `context-gathering.md` can locate an existing summary comment and PATCH it rather than creating a new one — and Eric must not prepend any heading above it (the marker stays the literal first line of the body).
+  - The `<!-- code-review-pr-summary -->` marker is the first line of the composed comment body. It comes from `summary-template.md` and must stay there — step 4d in `context-gathering.md` greps for it to locate an existing summary comment and PATCH it; dropping it causes a duplicate comment instead.
+  - Do not prepend any heading (persona greeting, `## Eric — PR Review`, or similar) above the marker. The composed body opens at the marker, then `## Summary` — nothing before it.
   - Never create duplicate summary comments — there must be exactly one per PR.
 
 **Why one batch:** Every thread reply, resolve mutation, inline comment, and summary comment update is an independent GitHub API call. The summary content is fully determined by the review analysis — it does not depend on whether inline comments succeed. Posting them all in one message eliminates an extra round trip.
