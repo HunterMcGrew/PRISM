@@ -4,11 +4,13 @@
  *
  * Pulls PRISM's latest canonical content into an already-onboarded consumer
  * repo. PRISM-owned files (decided by `classifyPath`) are overwritten when the
- * consumer never diverged from the last-known PRISM base, and preserved as
- * `<file>.bak` when they did — consumer edits are never silently lost.
+ * consumer never diverged from the last-known PRISM base, and preserved as a
+ * `.bak` snapshot when they did — consumer edits are never silently lost, and a
+ * repeat divergence never clobbers an earlier snapshot (see `backupConsumerFile`).
  * Consumer-owned and unknown paths are left untouched. After the file pass the
  * consumer's `.sync-manifest.json` is rewritten to the new base hashes and the
- * platform dirs (`.claude`/`.codex`/`.cursor`) are refreshed.
+ * platform dirs are refreshed, reading their locations from the consumer's own
+ * `paths.json` so they stay in lockstep with `prism:build`.
  *
  * Source resolution order: `--prism-source <path>` CLI arg → `prismSource` in
  * the consumer's `.ai-skills/config.json` → error with guidance. The flow
@@ -35,7 +37,7 @@ import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
 } from "./sync-manifest";
-import { hashFile, pathExists } from "./utils";
+import { hashFile, loadPathDefinitions, pathExists } from "./utils";
 
 /** What happened to a single file during the update pass. */
 export type FileAction =
@@ -75,14 +77,33 @@ async function hashFileIfExists(filePath: string): Promise<string | null> {
 }
 
 /**
- * Copies a consumer file to `<file>.bak` before it is overwritten or removed,
- * preserving a diverged edit. Returns the `.bak` path for the run summary.
+ * Copies a consumer file to a backup before it is overwritten or removed,
+ * preserving a diverged edit. Returns the backup path for the run summary.
+ *
+ * Never silently destroys a prior backup. `<file>.bak` is the preferred target,
+ * but a repeat divergence would clobber a snapshot from an earlier run, so when
+ * `<file>.bak` already exists the copy is skipped if its bytes are identical
+ * (the snapshot is already preserved) and otherwise written to the next free
+ * `<file>.bak.1`, `<file>.bak.2`, … name. Each diverged edit keeps its own
+ * durable archive.
  */
 async function backupConsumerFile(absolutePath: string): Promise<string> {
-	const backupPath = `${absolutePath}.bak`;
-	await fs.copyFile(absolutePath, backupPath);
+	const sourceHash = await hashFile(absolutePath);
 
-	return backupPath;
+	let candidate = `${absolutePath}.bak`;
+	let suffix = 0;
+	while (await pathExists(candidate)) {
+		if ((await hashFile(candidate)) === sourceHash) {
+			return candidate;
+		}
+
+		suffix += 1;
+		candidate = `${absolutePath}.bak.${suffix}`;
+	}
+
+	await fs.copyFile(absolutePath, candidate);
+
+	return candidate;
 }
 
 async function writeIncoming(
@@ -267,20 +288,45 @@ async function rewriteConsumerManifest(
 }
 
 /**
- * Refreshes the consumer's platform dirs after `.prism/` is updated, using a
- * token map derived from the consumer's own `config.json`.
+ * Resolves the consumer's platform output dirs from its own `paths.json`,
+ * pairing each with its rule dialect. Mirrors `build.ts main()` so both entry
+ * points read the same `generated.platformContentCopies` source — a consumer
+ * that customized those paths gets `prism:update` writing to the same place
+ * `prism:build` would.
+ */
+async function resolveConsumerPlatformDirs(
+	consumerRepoRoot: string
+): Promise<{ dir: string; dialect: RuleDialect }[]> {
+	const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+	const platformCopies = pathDefinitions.generated.platformContentCopies;
+
+	return [
+		{
+			dir: path.join(consumerRepoRoot, platformCopies.claude),
+			dialect: verbatimRuleDialect,
+		},
+		{
+			dir: path.join(consumerRepoRoot, platformCopies.codex),
+			dialect: codexRuleDialect,
+		},
+		{
+			dir: path.join(consumerRepoRoot, platformCopies.cursor),
+			dialect: cursorRuleDialect,
+		},
+	];
+}
+
+/**
+ * Refreshes the consumer's platform dirs after `.prism/` is updated. The token
+ * map and platform dirs are resolved and validated in `main()` before any
+ * `.prism/` mutation, so this step never fails on a bad config after the file
+ * pass has already written.
  */
 async function refreshPlatformDirs(
-	consumerRepoRoot: string,
-	consumerContentRoot: string
+	consumerContentRoot: string,
+	platformDirs: { dir: string; dialect: RuleDialect }[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
-	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
-	const platformDirs: { dir: string; dialect: RuleDialect }[] = [
-		{ dir: path.join(consumerRepoRoot, ".claude"), dialect: verbatimRuleDialect },
-		{ dir: path.join(consumerRepoRoot, ".codex"), dialect: codexRuleDialect },
-		{ dir: path.join(consumerRepoRoot, ".cursor"), dialect: cursorRuleDialect },
-	];
-
 	await syncAllPlatformContentCopies(
 		consumerContentRoot,
 		platformDirs,
@@ -345,8 +391,15 @@ async function main(): Promise<void> {
 		);
 	}
 
+	// Resolve and validate everything the platform refresh needs before the file
+	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
+	// with nothing written, instead of half-applying the update and throwing at
+	// the very end.
+	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
+	const platformDirs = await resolveConsumerPlatformDirs(consumerRepoRoot);
+
 	const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
-	await refreshPlatformDirs(consumerRepoRoot, consumerContentRoot);
+	await refreshPlatformDirs(consumerContentRoot, platformDirs, tokenMap);
 
 	reportSummary(summary);
 }

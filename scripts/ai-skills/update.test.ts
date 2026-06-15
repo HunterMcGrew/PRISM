@@ -6,7 +6,8 @@
  * asserts the consumer file state plus the returned outcome. Branches covered:
  * new / no-op / clean-overwrite / diverged→.bak / no-manifest byte-compare
  * fallback (no .bak when already current) / consumer-owned untouched /
- * unknown-classified untouched / deleted-in-PRISM removed / manifest rewritten.
+ * unknown-classified untouched / deleted-in-PRISM removed / deleted-in-PRISM
+ * already-absent no-op / manifest rewritten.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -279,6 +280,24 @@ test("backs up a diverged file before removing it", async () => {
 			"removed-with-backup"
 		);
 		assert.equal(summary.backups.length, 1);
+	});
+});
+
+test("no-ops a manifest-recorded deletion the consumer already removed", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {
+			"rules/gone.md": "# recorded base\n",
+		});
+
+		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+
+		assert.equal(await fileExists(consumerContentRoot, "rules/gone.md"), false);
+		assert.equal(outcomeFor(summary, "rules/gone.md").action, "no-op");
+		assert.equal(
+			await fileExists(consumerContentRoot, "rules/gone.md.bak"),
+			false
+		);
+		assert.equal(summary.backups.length, 0);
 	});
 });
 
