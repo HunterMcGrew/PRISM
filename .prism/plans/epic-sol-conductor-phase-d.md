@@ -204,8 +204,8 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Briar self-review writing-voice minors: replaced stale ADR-candidate note in convergence.md with declarative ADR-0056 pointer; replaced opaque D-A* plan labels across batcher.md, partition-store.md, fleet.md, reconcile.md, goal-state.md, step-10-report.md, and convergence.md with plain-language descriptions or ADR-0055/0056 cross-links.
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston adjudicated Eric's Major (PR #146) — chose to rephrase rather than defend the ADR cites; replaced the opaque inline `(epic plan D-A9 / Build dependency / D-A4)` cites in ADR-0055/0056 with plain-language prose, since the References-section anchors already carry provenance. Corrected Review Issue #2's bookkeeping mismatch (`8517d11` never touched the ADRs).
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Eric PR-review Minors — updated `§ Schema (v3)` section cites in convergence.md and reconcile.md to `§ Schema (v3 — partitioned layout)` (matching real heading); rewrote batcher.md:3 from imperative to declarative authoring-voice matching partition-store.md:3. `206d573`.
-- 2026-06-15 [hmcgrew/sol-conductor-bcd-epic-close]: Epic closed — implementation merged (PR #146), ADRs 0055/0056 promoted, dev doc shipped. Verdict gate passed — added `→ no promotion needed` verdicts to the two Hunter-policy Decisions (D-A5 telemetry, D-A7 per-team autonomy), both resolved at the plan-ready gate. No separate architect-doc promotion needed — durable decisions captured in ADRs 0055/0056.
 - 2026-06-14 [hmcgrew/sol-conductor-bcd-epic-close]: Eli task D-14 complete — added Phase D section to conductor.md covering the batcher (four ordering rules, per-run budget), partitioned layout (root index + partition files, ADR-0055), cross-partition dependency resolution via lanesSummary, crash-safe resume, run-wide brakes invariant (ADR-0056), and partition-aware report (ee47647).
+- 2026-06-15 [hmcgrew/sol-conductor-bcd-epic-close]: Epic closed — implementation merged (PR #146), ADRs 0055/0056 promoted, dev doc shipped. Verdict gate passed — added `→ no promotion needed` verdicts to the two Hunter-policy Decisions (D-A5 telemetry, D-A7 per-team autonomy), both resolved at the plan-ready gate. No separate architect-doc promotion needed — durable decisions captured in ADRs 0055/0056.
 
 ---
 
@@ -284,6 +284,15 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **Suggested fix:** Rewrite to match the declarative pattern in `partition-store.md:3`.
 - **Fixed in:** `206d573`
 
+### History date-ordering regression in epic close — phase-d plan
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-sol-conductor-phase-d.md:207-208` (pre-fix)
+- **Problem:** The two close-branch History entries were appended in reverse chronological order: the `2026-06-15` epic-close entry (commit `44b9d98`, Winston) appeared before the `2026-06-14` Eli doc task entry (commit `7bda1a8`). History is append-only working notes; the Eli commit landed after the close commit, creating a date-regression (older date listed after newer date).
+- **Suggested fix:** Swap the two entries so `2026-06-14` Eli entry precedes `2026-06-15` close entry.
+- **Fixed in:** Briar close-PR review on this branch — entries reordered in place.
+
 ---
 
 ## Cleanup Items
@@ -306,5 +315,6 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Lasting decisions promoted to ADRs (ADR-0055, ADR-0056)
 - [x] Stale ADR note in convergence.md:91 fixed
 - [x] Internal plan labels in durable files cleaned up
+- [x] History date ordering corrected (Briar, close-PR review)
 
-**Last updated:** 2026-06-15 (Winston, epic close — verdict gate passed, decisions promoted to ADRs 0055/0056)
+**Last updated:** 2026-06-15 (Briar, close-PR self-review — zero critical/major; History ordering minor fixed; pnpm prism:check green 158/158)
