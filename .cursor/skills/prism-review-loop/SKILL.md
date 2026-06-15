@@ -33,7 +33,7 @@ exactly as if invoked by hand.
    fix lands a finding, the thread that flagged it is only closed by the
    reviewer's next pass (the reviewer's batch-D resolve step is the sole actor
    that resolves threads). If fixed threads remain unresolved when findings hit
-   zero, run one final reviewer pass to resolve them before closing the phase.
+   zero, run a final reviewer pass to resolve them before closing the phase.
 3. **Cleaner paths** — non-blocking by design; they never gate the
    zero-findings exit, but each must reach a terminal state before the loop
    closes: implemented, rejected with a one-line reason, or parked by the user.
