@@ -54,6 +54,13 @@ export interface RolesDefinitions {
 	skills: RoleDefinition[];
 }
 
+export interface SeedCuration {
+	excluded: string[];
+	curated: string[];
+	seedOnly: string[];
+	renames: Record<string, string>;
+}
+
 interface SkillSource {
 	claudeBody: string;
 	codexBody: string;
@@ -713,6 +720,138 @@ export async function removeDeletedManagedContent(
 	}
 }
 
+/**
+ * Checks for drift between the canonical content root and the install seed
+ * (`templates/install/.prism/`). Check-mode only — never writes, moves, or
+ * deletes any file.
+ *
+ * Compares raw unsubstituted bytes per ADR-0030: the seed ships tokens as
+ * literals; substitution happens at install time, not at seed-write time.
+ * Calling substituteTokens() here would produce false-positive drift on every
+ * token-bearing file.
+ */
+export async function checkSeedDrift(
+	contentRoot: string,
+	seedRoot: string,
+	curation: SeedCuration,
+	changedPathsArg: string[]
+): Promise<void> {
+	const excludedSet = new Set(curation.excluded);
+	const curatedSet = new Set(curation.curated);
+	const seedOnlySet = new Set(curation.seedOnly);
+	const renames = curation.renames;
+	const renameValues = new Set(Object.values(renames));
+
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
+
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+
+			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
+
+			if (excludedSet.has(relPath)) {
+				const seedPath = path.join(seedRoot, relPath);
+				if (await pathExists(seedPath)) {
+					changedPathsArg.push(`seed contains excluded file: ${relPath}`);
+				}
+				continue;
+			}
+
+			if (relPath in renames) {
+				const renamedRelPath = renames[relPath];
+				const renamedSeedPath = path.join(seedRoot, renamedRelPath);
+				if (!(await pathExists(renamedSeedPath))) {
+					changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
+				}
+				continue;
+			}
+
+			if (curatedSet.has(relPath)) {
+				const seedPath = path.join(seedRoot, relPath);
+				if (!(await pathExists(seedPath))) {
+					changedPathsArg.push(`seed drift: ${relPath} (curated file missing from seed)`);
+				}
+				continue;
+			}
+
+			const seedPath = path.join(seedRoot, relPath);
+			if (!(await pathExists(seedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath}`);
+				continue;
+			}
+
+			if (!(await filesAreEqual(path.join(sourceArea, entry.relativePath), seedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath}`);
+			}
+		}
+	}
+
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const relPath = looseFile;
+		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+			continue;
+		}
+
+		if (relPath in renames) {
+			const renamedRelPath = renames[relPath];
+			const renamedSeedPath = path.join(seedRoot, renamedRelPath);
+			if (!(await pathExists(renamedSeedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
+			}
+			continue;
+		}
+
+		const sourcePath = path.join(contentRoot, looseFile);
+		const seedPath = path.join(seedRoot, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+		if (!(await pathExists(seedPath))) {
+			changedPathsArg.push(`seed drift: ${relPath}`);
+			continue;
+		}
+		if (!(await filesAreEqual(sourcePath, seedPath))) {
+			changedPathsArg.push(`seed drift: ${relPath}`);
+		}
+	}
+
+	if (!(await pathExists(seedRoot))) {
+		return;
+	}
+
+	for (const area of COPIED_CONTENT_AREAS) {
+		const seedArea = path.join(seedRoot, area);
+		if (!(await pathExists(seedArea))) {
+			continue;
+		}
+
+		const seedEntries = await listRelativeDirectoryEntries(seedArea);
+		for (const seedEntry of seedEntries) {
+			if (seedEntry.kind !== "file") {
+				continue;
+			}
+
+			const relPath = path.posix.join(area, seedEntry.relativePath.replace(/\\/g, "/"));
+
+			if (curatedSet.has(relPath) || seedOnlySet.has(relPath) || renameValues.has(relPath)) {
+				continue;
+			}
+
+			const canonicalPath = path.join(contentRoot, relPath);
+			if (!(await pathExists(canonicalPath))) {
+				changedPathsArg.push(`seed orphan: ${relPath}`);
+			}
+		}
+	}
+}
+
 async function removeDeletedManagedAgentFiles(
 	outputRoot: string,
 	validSkillIds: Set<string>,
@@ -799,6 +938,10 @@ async function main(): Promise<void> {
 	const roleDefinitions = await loadJsonFile<RolesDefinitions>(
 		".ai-skills/definitions/roles.json",
 		"roles definitions"
+	);
+	const seedCuration = await loadJsonFile<SeedCuration>(
+		".ai-skills/definitions/seed-curation.json",
+		"seed curation manifest"
 	);
 	const config = loadConfig(repoRoot);
 	const tokenMap = deriveTokenMap(config);
@@ -1129,11 +1272,13 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
+	await checkSeedDrift(contentRoot, templatesContentRoot, seedCuration, changedPaths);
+
 	if (checkMode) {
 		if (changedPaths.length > 0) {
 			console.error("prism:check failed. These files are out of sync:");
 			for (const changedPath of changedPaths) {
-				console.error(` - ${path.relative(repoRoot, changedPath)}`);
+				console.error(` - ${changedPath}`);
 			}
 			process.exit(1);
 		}
