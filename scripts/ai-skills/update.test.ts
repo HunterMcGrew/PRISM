@@ -224,6 +224,25 @@ test("leaves a consumer-owned flat architect doc untouched", async () => {
 	});
 });
 
+test("leaves the .prism/custom overlay source untouched", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeFile(consumerContentRoot, "custom/rules/team.md", "# Team overlay\n");
+
+		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+
+		assert.equal(
+			await readFile(consumerContentRoot, "custom/rules/team.md"),
+			"# Team overlay\n",
+			"overlay source is never written by the canonical sync pass"
+		);
+		assert.equal(
+			summary.outcomes.some((o) => o.relativePath.startsWith("custom/")),
+			false,
+			"no custom/ path produces an outcome"
+		);
+	});
+});
+
 test("leaves a deep-nested unknown-classified architect path untouched", async () => {
 	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
 		await writeFile(prismContentRoot, "architect/subdir/deep.md", "# incoming\n");

@@ -230,6 +230,14 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **`manifest.json` is split-ownership.** `.prism/architect/_toolkit/manifest.base.json` holds toolkit routes (PRISM-owned); `.prism/architect/manifest.json` is consumer-owned (merged from base + per-team routes at onboard). The merge-at-onboard logic may be deferred; the ownership split is locked in Phase 1. `verify-manifest-coverage.ts` guards it.
   - → no promotion needed (implementation decision; may graduate to ADR when merge-at-onboard is built)
 
+- **Overlay layout: `.prism/custom/` mirrors canonical area names (`{rules,architect,references,templates}/`); consumer-owned, never written by the sync.** A consumer drops overlay content under `.prism/custom/<area>/<file>` using the same area names as canonical `.prism/`. The update flow reads it only during the platform-copy step and emits each area into a `custom/` subdir per platform (`.claude/rules/custom/`, `.cursor/rules/custom/*.mdc`, `.codex/rules/custom/`). `custom/**` is already in `CONSUMER_OWNED_GLOBS` (Phase 5), so `classifyPath` returns `consumer` and the canonical file pass + manifest both skip it — verified, no SKIP-glob change needed in Phase 4 (the `update.test.ts` "leaves the .prism/custom overlay source untouched" case locks it). No source files are created in this phase; the convention is the contract.
+  - → promoted to .prism/architect/_toolkit/install-layout.md (overlay layout is durable consumer-facing structure, not ticket-tactical) — promote at epic close
+- **Overlay reuses the base content-copy pipeline via a `targetSubpath` parameter threaded through the four content-copy functions.** The overlay is a second `syncAllPlatformContentCopies` pass with `contentRoot = .prism/custom` and `targetSubpath = "custom"`.
+  - **Root cause / problem:** the overlay needs `<platformDir>/<area>/custom/<file>` output with its own marker, but the base functions wrote `<platformDir>/<area>/<file>` with the marker at the area root, and the recursive orphan-cleanup walk would descend into `custom/` and delete overlay files as orphans (no matching base source).
+  - **Alternatives considered:** (a) a separate parallel set of overlay-copy functions; (b) thread an optional `targetSubpath` (default `""`) through `copyContentToPlatformDir`/`syncPlatformContentCopy`/`removeDeletedManagedContent`/`platformHasManagedContent`/`syncAllPlatformContentCopies`.
+  - **Chosen approach:** (b). One pipeline, base behavior unchanged at the default, dialects untouched. Beats (a) (duplicate copy/cleanup/dialect logic to keep in sync). The cross-scope guard is two clauses in `removeDeletedManagedContent`: the base pass skips entries under `custom/`, and the base pass refuses to recursively remove an area whose `custom/.ai-skill-generated` overlay marker exists. Base and overlay cleanup never cross.
+  - **Implementation guidance:** `update.ts` runs the overlay pass only when `.prism/custom` exists; loose files (`SPEC.md`) are base-only and skipped under a subpath. `overlay-copy.test.ts` covers all 3 dialects + marker placement + token substitution + both cross-scope directions.
+  - → no promotion needed (implementation-level extension of the content-copy primitives; documented here and in `update.ts`/`build.ts` JSDoc)
 - **No-manifest decision point: the no-op equality check runs before the divergence `.bak` branch.** Winston flagged the danger that a pre-manifest install would `.bak` every file because no recorded base hash exists to prove the consumer is clean.
   - **Root cause:** on an install predating `.sync-manifest.json`, `recordedHash` is `null` for every file, so a naive "diverged unless recorded-clean" rule treats even byte-identical files as diverged and backs them up.
   - **Alternatives considered:** (a) a separate "no-manifest mode" code path that byte-compares; (b) bak-everything when no manifest exists; (c) ordering the universal `consumerHash === incomingHash` no-op check ahead of the divergence branch.
@@ -255,6 +263,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-5-ownership-classifier]: Briar self-review — zero logic/type/test findings; auto-fixed tabs→spaces formatting in 3 new files (`ownership.ts`, `ownership.test.ts`, `sync-manifest.ts`); 196/196 still pass post-fix.
 - 2026-06-15 [hmcgrew/prism-update-phase-3-update-command]: Phase 3 complete (#160) — new `scripts/ai-skills/update.ts` implements `pnpm prism:update` (source resolution + refusal, hash-based per-file algorithm, deletions, manifest rewrite, platform refresh) wiring Phase 5's `classifyPath`, plus the mechanical `syncAllPlatformContentCopies` extraction from `build.ts main()` (behavior unchanged) and an optional `prismSource` on `PrismConfig`. `pnpm prism:check` green 207/207 (+11 from `update.test.ts`); CLI verified end-to-end against a throwaway consumer. The no-op-before-`.bak` branch order is the no-manifest decision point — see Decisions.
 - 2026-06-15 [hmcgrew/prism-update-phase-3-update-command]: Addressed all 4 Phase 3 self-review Minors (#160) — fail-fast config/`paths.json` validation in `main()` before the file pass, non-clobbering `.bak` snapshots (`<file>.bak.N` + identical-bytes skip), platform dirs read from the consumer's `paths.json` via new `resolveConsumerPlatformDirs`, and a test for the already-deleted manifest entry. `pnpm prism:check` green 208/208 (+1), `update.test.ts` 12/12, end-to-end CLI re-verified (`.bak`/`.bak.1` preserved, all platform dirs resolved from `paths.json`).
+- 2026-06-15 [hmcgrew/prism-update-phase-4-overlay]: Phase 4 complete (#161) — `update.ts` now runs a second platform-copy pass for `.prism/custom` (when present) emitting per-area `custom/` subdirs across all 3 platforms, via a `targetSubpath` parameter threaded through the `build.ts` content-copy functions (base behavior unchanged at default `""`); two cross-scope guards in `removeDeletedManagedContent` keep base and overlay cleanup from crossing. `custom/**` was already consumer-owned (Phase 5), so the SKIP-glob is verified not changed — see Decisions. `pnpm prism:check` green 216/216 (+8: 7 `overlay-copy.test.ts` + 1 overlay-untouched `update.test.ts`), `prism:check-types` clean, end-to-end CLI confirmed: overlay source untouched, marker at `custom/` root, Cursor `.mdc`/Codex-stripped/Claude-verbatim, token substitution applied, manifest carries zero `custom/` entries.
 
 ---
 
@@ -358,16 +367,16 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 - [ ] Given Phase 1 is complete, When `pnpm prism:check` runs on a fresh checkout, Then it exits green (path-guard + seed-drift + manifest-coverage + check-mode copy all pass). (REQ-1: Phase 1 gate)
 - [x] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
 - [x] Given Phase 3 is complete, When `pnpm prism:test` runs, Then `update.test.ts` passes all per-file branches (new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed; manifest rewritten). (REQ-3: Phase 3 gate)
-- [ ] Given Phase 4 is complete, When `pnpm prism:test` runs, Then `overlay-copy.test.ts` passes for all 3 platforms, marker present, scoped cleanup does not touch base files. (REQ-4: Phase 4 gate)
+- [x] Given Phase 4 is complete, When `pnpm prism:test` runs, Then `overlay-copy.test.ts` passes for all 3 platforms, marker present, scoped cleanup does not touch base files. (REQ-4: Phase 4 gate)
 - [x] Given Phase 5 is complete, When `pnpm prism:test` runs, Then `ownership.test.ts` passes classifier verdicts for `_toolkit/**` (prism), flat `architect/*.md` (consumer), `custom/**` (consumer), `SPEC.md` (prism), `plans/**` (consumer). (REQ-5: Phase 5 gate)
-- [ ] Given the end-to-end scenario: a throwaway temp consumer dir seeded from `templates/install/.prism` with one rule hand-edited and one `.prism/custom/rules/team.md` added, When `pnpm prism:update --prism-source <PRISM path>` runs, Then: the hand-edited rule is preserved as `.bak` and the new version written; the custom overlay is untouched at source and emitted to `.claude/rules/custom/`, `.cursor/rules/custom/*.mdc`, `.codex/rules/custom/`; `.sync-manifest.json` is rewritten; a consumer-owned flat `architect/foo.md` is untouched. (REQ-6: end-to-end verification)
+- [x] Given the end-to-end scenario: a throwaway temp consumer dir seeded from `templates/install/.prism` with one rule hand-edited and one `.prism/custom/rules/team.md` added, When `pnpm prism:update --prism-source <PRISM path>` runs, Then: the hand-edited rule is preserved as `.bak` and the new version written; the custom overlay is untouched at source and emitted to `.claude/rules/custom/`, `.cursor/rules/custom/*.mdc`, `.codex/rules/custom/`; `.sync-manifest.json` is rewritten; a consumer-owned flat `architect/foo.md` is untouched. (REQ-6: end-to-end verification — Phase 4 e2e: overlay source byte-identical, `.bak` held the hand-edit, manifest carried zero `custom/` entries)
 - [ ] Given Phase 7 is complete, When a user runs `prism-skill-forge` in create mode and chooses "utility", Then the resulting skill builds clean via `pnpm prism:build` and produces no `.codex/agents/<id>.toml`. (REQ-7: Phase 7 gate — utility type)
 - [ ] Given Phase 7 is complete, When a user runs `prism-skill-forge` in create mode or migrate mode with a consumer skill, Then the resulting skill ID carries a non-`prism-*` prefix. (REQ-7: Phase 7 gate — namespace)
 
 ### Non-behavioral
 
 - [ ] `pnpm prism:check` remains green after every phase (per-phase invariant). (REQ-1 through REQ-6)
-- [ ] `.prism/custom/**` is never written by `pnpm prism:update` — only read by the platform-copy overlay pass. (REQ-4)
+- [x] `.prism/custom/**` is never written by `pnpm prism:update` — only read by the platform-copy overlay pass. (REQ-4 — classified `consumer` by Phase 5 globs; `update.test.ts` overlay-untouched case + e2e hash-unchanged both confirm)
 - [ ] `.bak` files are created only when the consumer file genuinely diverged from the last-known PRISM base; no-op files do not produce `.bak` artifacts. (REQ-3)
 - [ ] Phase 7 skills carry a non-`prism-*` ID in `roles.json`. (REQ-7)
 
@@ -391,20 +400,20 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-Phase 3 branch (`hmcgrew/prism-update-phase-3-update-command`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`); Phase 5 merged (PR #166, `646be18`).
+Phase 4 branch (`hmcgrew/prism-update-phase-4-overlay`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`); Phase 5 merged (PR #166, `646be18`); Phase 3 merged (PR #167, `af254c3`).
 
-- [x] No critical or major issues (Briar re-verification 2026-06-15: all 4 Minors fixed and confirmed clean. Core data-safety invariant verified: no path overwrites or removes a diverged consumer file without a `.bak` first.)
-- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; the `as SyncManifest` reads in `update.ts`/`update.test.ts` parse files this code just serialized, mirroring the existing Phase 2 pattern)
-- [x] No stray console.logs or debug artifacts (the two `console.log` calls in `update.ts` are the CLI run summary — intentional user-facing output, not debug artifacts)
-- [x] Tests written for new logic and edge cases (`update.test.ts`: 12/12 — new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback both ways / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed both ways / already-absent no-op / manifest rewritten)
+- [x] No critical or major issues (Clove implementation 2026-06-15: overlay is a second content-copy pass; base behavior unchanged at default `targetSubpath`; two cross-scope cleanup guards verified by `overlay-copy.test.ts` both directions; overlay source never written — Phase 5 globs + test + e2e all confirm. Briar self-review pending.)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; no new casts in Phase 4)
+- [x] No stray console.logs or debug artifacts (no console output added in Phase 4)
+- [x] Tests written for new logic and edge cases (`overlay-copy.test.ts`: 7/7 — Claude verbatim / Codex verbatim+stripped / Cursor `.mdc` dialect / marker at `custom/` root / token substitution / overlay cleanup scoped off base / base cleanup scoped off overlay; `update.test.ts`: 13/13 — added overlay-source-untouched)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` 208/208, `update.test.ts` 12/12, `content-copy.test.ts` 12/12, `prism:check-types` clean; build skipped — diff does not affect Next.js bundle)
-- [x] Formatting clean — new files use tabs consistently, matching the codebase (no prettier in this repo's `prism:check`)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` 216/216, `overlay-copy.test.ts` 7/7, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean; build skipped — diff does not affect Next.js bundle)
+- [x] Formatting clean — new file uses tabs consistently, matching the codebase (no prettier in this repo's `prism:check`)
 - [ ] PR description up to date (PR not yet opened — conductor opens)
-- [x] Lasting decisions promoted to architect context (not applicable for Phase 3 — the merge/`.bak`/overlay model and no-manifest decision point are implementation-level decisions documented in `## Decisions`; `update.ts` JSDoc carries the no-manifest branch-order rationale inline)
-- [ ] Phase 3 PR open / merged — pending PR open and conductor dispatch
+- [x] Lasting decisions promoted to architect context (overlay layout convention marked for promotion to `install-layout.md` at epic close; the `targetSubpath` threading is an implementation-level extension documented in `## Decisions` + `build.ts`/`update.ts` JSDoc)
+- [ ] Phase 4 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Briar re-verification — all 4 Minors confirmed fixed; `pnpm prism:check` 208/208, `update.test.ts` 12/12, `content-copy.test.ts` 12/12, `prism:check-types` clean; zero open issues)
+**Last updated:** 2026-06-15 (Clove Phase 4 implementation — `pnpm prism:check` 216/216, `overlay-copy.test.ts` 7/7, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean; zero open issues; Briar self-review pending)
 
 ---
 

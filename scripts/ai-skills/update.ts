@@ -316,14 +316,27 @@ async function resolveConsumerPlatformDirs(
 	];
 }
 
+/** Subdir name for the `.prism/custom` overlay's source and platform output. */
+const OVERLAY_SUBPATH = "custom";
+
 /**
  * Refreshes the consumer's platform dirs after `.prism/` is updated. The token
  * map and platform dirs are resolved and validated in `main()` before any
  * `.prism/` mutation, so this step never fails on a bad config after the file
  * pass has already written.
+ *
+ * Two passes per platform: the base `.prism/` content, then the consumer's
+ * `.prism/custom` overlay. The overlay reuses the same content-copy + dialect
+ * pipeline (token substitution, Cursor `.mdc` translation, Codex `paths:`
+ * stripping) but emits into a `custom/` subdir per area — `.claude/rules/custom`,
+ * `.cursor/rules/custom`, `.codex/rules/custom`. The subdir makes base-vs-overlay
+ * collision structurally impossible, and each pass carries its own
+ * `.ai-skill-generated` marker so orphan cleanup stays scoped to its own tree.
+ * The overlay pass is skipped when the consumer ships no `.prism/custom`.
  */
 async function refreshPlatformDirs(
 	consumerContentRoot: string,
+	overlayContentRoot: string,
 	platformDirs: { dir: string; dialect: RuleDialect }[],
 	tokenMap: Map<string, string>
 ): Promise<void> {
@@ -334,6 +347,17 @@ async function refreshPlatformDirs(
 		[],
 		tokenMap
 	);
+
+	if (await pathExists(overlayContentRoot)) {
+		await syncAllPlatformContentCopies(
+			overlayContentRoot,
+			platformDirs,
+			false,
+			[],
+			tokenMap,
+			OVERLAY_SUBPATH
+		);
+	}
 }
 
 /**
@@ -384,6 +408,7 @@ async function main(): Promise<void> {
 
 	const prismContentRoot = path.join(prismRepoRoot, ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
 
 	if (!(await pathExists(prismContentRoot))) {
 		throw new Error(
@@ -399,7 +424,12 @@ async function main(): Promise<void> {
 	const platformDirs = await resolveConsumerPlatformDirs(consumerRepoRoot);
 
 	const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
-	await refreshPlatformDirs(consumerContentRoot, platformDirs, tokenMap);
+	await refreshPlatformDirs(
+		consumerContentRoot,
+		overlayContentRoot,
+		platformDirs,
+		tokenMap
+	);
 
 	reportSummary(summary);
 }
