@@ -1,5 +1,7 @@
 # Plan: epic-sol-conductor-phase-b
 
+> Closed: 2026-06-15
+
 ## Ticket
 
 GitHub epic — *placeholder, Nora opens it later.* Phase B of the Sol product-lead conductor initiative: hierarchy (epic→issue→ticket tree semantics) + greenfield specs→ticket-tree decompose. Sourced from the ratified PRD at [`.prism/prds/sol-conductor-phase-b-hierarchy.md`](../prds/sol-conductor-phase-b-hierarchy.md) (`internal` stakes, status finalized) and §7 of [`.prism/plans/sol-product-lead-vision-brief.md`](./sol-product-lead-vision-brief.md). Builds on Phase A ([epic-sol-product-lead-conductor](./epic-sol-product-lead-conductor.md), merged) and its two ADRs — [ADR-0049](../spec/adrs/0049-conductor-teams-are-lane-groups.md) (lane-groups over sub-conductors) and [ADR-0050](../spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) (growth loop + convergence governor).
@@ -132,6 +134,7 @@ Make Sol read and drive `parentId` as an epic→issue→ticket tree over the fla
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Briar self-review complete. Zero critical/major issues. Two minors filed: cite-label case in goal-state.md `§ tree dispatch` and heading mismatch `§ Breadth gate` vs `## Brake 3 — Breadth gate`; both navigable in practice. pnpm prism:check green (158 tests). PR Readiness updated.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed both Briar minors (commit 7132cb3) — cite `§ Breadth gate` → `§ Brake 3 — Breadth gate` (2 occurrences in greenfield-decompose.md) and `§ tree dispatch` → `§ Tree dispatch` in goal-state.md. pnpm prism:check green. Draft PR #144 opened.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Fixed Eric minor — moved "Per-subtree budget attribution" bullet from per-lane list to run-level list in step-10-report.md; 158 tests green.
+- 2026-06-15 [hmcgrew/sol-conductor-bcd-epic-close]: Epic closed — implementation merged (PR #144), ADRs 0051/0052 promoted, dev doc shipped. Verdict gate passed (all Decisions carried verdicts; none added). No separate architect-doc promotion needed — durable decisions captured in ADRs 0051/0052.
 
 ---
 
@@ -222,4 +225,4 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0051, ADR-0052 written on ratification — task 14)
 
-**Last updated:** 2026-06-14 (Briar, post-implementation self-review)
+**Last updated:** 2026-06-15 (Winston, epic close — verdict gate passed, decisions promoted to ADRs 0051/0052)
