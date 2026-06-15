@@ -3,6 +3,8 @@
 > **DEFERRED — captured for future planning, lowest priority of the three (user: fresh/established-merge onboarding is least urgent right now).** Written to survive context loss: design embedded inline. Epic C of three (A: docs — active; B: prism:sync steady-state — deferred; C: this).
 
 > **NEEDS REPLAN (2026-06-15) — Epic B dependency changed.** This plan reuses Epic B's three-way content-hash diff engine and --dry-run three-bucket preview, both of which the prism:update epic (.prism/plans/epic-prism-update.md) replaced with the .sync-manifest.json hash + .bak + Phase 5 path-ownership classifier. The problem (first-contact into a repo with no manifest) is still unsolved. Re-plan against the new primitives AFTER the new epic's Phase 2 (manifest) and Phase 5 (classifier) land — Winston owns that pass.
+>
+> Forward idea (Hunter, 2026-06-15): Atlas/onboarding should ask the consumer whether they already have skills (authored or merely present in the repo) and run a discovery sweep to adopt them — same for architect docs, ADRs, and rules. Generalizes prism-skill-forge's per-skill migrate mode into a first-contact discovery flow; fold into this re-plan.
 
 ## Ticket
 

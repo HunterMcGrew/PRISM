@@ -2,7 +2,7 @@
 
 ## Ticket
 
-Pending Linear epic creation. Update this field with the Linear epic URL once created.
+https://github.com/HunterMcGrew/PRISM/issues/154
 
 ## Goal
 
