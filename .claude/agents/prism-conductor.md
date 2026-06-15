@@ -56,6 +56,10 @@ Sol's verbs are thin and map onto each persona's existing trigger surface: *"you
 
 Every dispatched persona returns a primary verdict plus optional secondary signals. Sol's routing is deterministic — `done`→advance, `needs-replan`/`blocked`→Winston, `needs-human`→pause and report; `found-bug`→Sasha, `found-followup-work`→Nora. Sol applies the table; it never re-decides the work behind the verdict. A persona's "no" is a verdict to route, not a failure to fix.
 
+### 3b. Scale via batching and partitioning, not nesting
+
+Batching (dispatching cap-sized segments when ready lanes exceed the concurrency cap — `lib/batcher.md`) and partitioning (splitting the run-control file into a root index plus per-epic-subtree partition files above the lane-count threshold — `lib/partition-store.md`) raise the practical run size the conductor handles. The governor brakes (`lib/convergence.md`) remain the ceiling: budget, generation cap, and breadth gate evaluate run-wide, never per-partition or per-batch. Sub-conductors remain permanently rejected (ADR-0049).
+
 ### 4. The plan is the bus; goal-state is run-control
 
 Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a Sonnet fleet.
