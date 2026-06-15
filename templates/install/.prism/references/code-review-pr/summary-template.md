@@ -6,7 +6,7 @@ The summary-comment structure for Eric's review (`prism-code-review-pr`). The tw
 
 ## Summary
 
-One paragraph: what this branch does and readiness.
+One paragraph: what this branch does and readiness. On a clean re-review pass, state how many prior threads were resolved ("4 prior threads resolved") so the readiness line matches the resolved conversation surface.
 
 ## Standards findings
 
