@@ -66,7 +66,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **What binds:** The ticket the plan is scoped to. A plan's `## Decisions` section is load-bearing for _that_ ticket — do not remove a documented decision without updating the section.
 
-**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/skills-ecosystem.md`.
+**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/_toolkit/skills-ecosystem.md`.
 
 **How changes are proposed:** Directly. Plans are ephemeral working memory; they do not need an ADR to edit.
 
@@ -129,7 +129,7 @@ Preferences are not spec. They're user-scoped, not team-wide, and they don't bin
 
 Current preferences:
 
-- `${PROJECT_LOWERCASE}.pauseBeforeCommit` — per-user pre-commit pause. See [ADR-0003 § Per-User Overrides](./spec/adrs/0003-authors-ship-reviewers-review.md).
+- `${PROJECT_LOWERCASE}.pauseBeforeCommit` — per-user pre-commit pause. See [ADR-0003 § Per-User Overrides](./spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md).
 
 If a second preference emerges, write an ADR first to generalize the mechanism before adding it here. Preferences earn a place in this namespace when they describe durable per-user behavior, not task-level toggles or per-skill tweaks.
 
