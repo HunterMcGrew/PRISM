@@ -393,18 +393,18 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 Phase 3 branch (`hmcgrew/prism-update-phase-3-update-command`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`); Phase 5 merged (PR #166, `646be18`).
 
-- [x] No critical or major issues (Briar self-review 2026-06-15: zero critical/major; 4 open Minors — see Review Issues. Core data-safety invariant verified: no path overwrites or removes a diverged consumer file without a `.bak` first.)
+- [x] No critical or major issues (Briar re-verification 2026-06-15: all 4 Minors fixed and confirmed clean. Core data-safety invariant verified: no path overwrites or removes a diverged consumer file without a `.bak` first.)
 - [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; the `as SyncManifest` reads in `update.ts`/`update.test.ts` parse files this code just serialized, mirroring the existing Phase 2 pattern)
 - [x] No stray console.logs or debug artifacts (the two `console.log` calls in `update.ts` are the CLI run summary — intentional user-facing output, not debug artifacts)
-- [x] Tests written for new logic and edge cases (`update.test.ts`: 11 tests covering new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback both ways / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed both ways / manifest rewritten)
+- [x] Tests written for new logic and edge cases (`update.test.ts`: 12/12 — new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback both ways / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed both ways / already-absent no-op / manifest rewritten)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 207/207 tests pass; `build.ts` extraction verified non-behavioral via 12/12 content-copy tests; build skipped — diff does not affect Next.js bundle)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` 208/208, `update.test.ts` 12/12, `content-copy.test.ts` 12/12, `prism:check-types` clean; build skipped — diff does not affect Next.js bundle)
 - [x] Formatting clean — new files use tabs consistently, matching the codebase (no prettier in this repo's `prism:check`)
 - [ ] PR description up to date (PR not yet opened — conductor opens)
 - [x] Lasting decisions promoted to architect context (not applicable for Phase 3 — the merge/`.bak`/overlay model and no-manifest decision point are implementation-level decisions documented in `## Decisions`; `update.ts` JSDoc carries the no-manifest branch-order rationale inline)
 - [ ] Phase 3 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Briar self-review — `pnpm prism:check` 207/207, `update.test.ts` 11/11, `content-copy.test.ts` 12/12, `prism:check-types` clean; 4 open Minors logged, zero critical/major)
+**Last updated:** 2026-06-15 (Briar re-verification — all 4 Minors confirmed fixed; `pnpm prism:check` 208/208, `update.test.ts` 12/12, `content-copy.test.ts` 12/12, `prism:check-types` clean; zero open issues)
 
 ---
 
