@@ -247,7 +247,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **File:** `.prism/skills/prism-conductor/lib/convergence.md:91`
 - **Problem:** The `## Brakes are run-wide under partitioning` section ends with `**ADR note:** this invariant is a strong ADR candidate (D-A3 companion, reserved ADR-0056: …) — promote on Hunter's ratification.` — ADR-0056 is already written and `accepted` on this branch; the "ADR candidate / promote on ratification" text is stale session-context leakage.
 - **Suggested fix:** Replace the stale ADR note sentence with a plain forward reference: `**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.`
-- **Fixed in:** see commit below
+- **Fixed in:** `8517d11`
 
 ### Internal plan labels (D-A*, FR-N) in durable skill files
 
@@ -256,7 +256,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **File:** `.prism/skills/prism-conductor/lib/batcher.md:13,17,36,43`, `lib/partition-store.md:11,15`, `lib/convergence.md:42,48`, `lib/fleet.md:66`, `lib/reconcile.md:17,57`, `step-10-report.md:30`; also `.prism/spec/adrs/0055:10,22,40`, `0056:32`
 - **Problem:** Internal plan labels (`Decision D-A1`, `D-A3`, `D-A2`, `D-A9`, `D-A10`, `FR-N`, `NFR-N`) appear throughout durable skill files and the new ADRs. These are session-scoped references from the epic plan that mean nothing to a cold reader. The pattern is inherited from Phase C (not a new regression), but it remains a `writing-voice.md § Anti-pattern: Session-context leakage` violation. The ADR refs are particularly visible: `0055` cites `(epic plan D-A9)` and `epic plan, Build dependency`; `0056` cites `(epic plan D-A4)`.
 - **Suggested fix:** In `lib/batcher.md` and `lib/partition-store.md`, replace `Decision D-A1`/`Decision D-A2`/`Decision D-A3` with `ADR-0055`/`ADR-0056` cross-links where applicable. In the ADRs, replace `epic plan D-A9` with the plan section name in prose. Lower-impact `FR-N`/`NFR-N` inline cues can be deferred as prior-phase convention.
-- **Fixed in:** see commit below
+- **Fixed in:** `8517d11`
 
 ---
 
