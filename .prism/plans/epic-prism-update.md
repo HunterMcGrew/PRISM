@@ -230,6 +230,13 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **`manifest.json` is split-ownership.** `.prism/architect/_toolkit/manifest.base.json` holds toolkit routes (PRISM-owned); `.prism/architect/manifest.json` is consumer-owned (merged from base + per-team routes at onboard). The merge-at-onboard logic may be deferred; the ownership split is locked in Phase 1. `verify-manifest-coverage.ts` guards it.
   - → no promotion needed (implementation decision; may graduate to ADR when merge-at-onboard is built)
 
+- **No-manifest decision point: the no-op equality check runs before the divergence `.bak` branch.** Winston flagged the danger that a pre-manifest install would `.bak` every file because no recorded base hash exists to prove the consumer is clean.
+  - **Root cause:** on an install predating `.sync-manifest.json`, `recordedHash` is `null` for every file, so a naive "diverged unless recorded-clean" rule treats even byte-identical files as diverged and backs them up.
+  - **Alternatives considered:** (a) a separate "no-manifest mode" code path that byte-compares; (b) bak-everything when no manifest exists; (c) ordering the universal `consumerHash === incomingHash` no-op check ahead of the divergence branch.
+  - **Chosen approach:** (c). One branch order handles both the manifest and no-manifest cases — an already-current file is a no-op regardless of manifest presence, and a genuinely diverged file (consumer bytes ≠ incoming bytes) is still `.bak`'d. Beats (a) (duplicate logic, two code paths to keep in sync) and (b) (the failure mode Winston explicitly forbade — bak-everything floods the consumer with spurious `.bak` files on first update).
+  - **Implementation guidance:** in `update.ts` `applyIncomingFile`, the `consumerHash === incomingHash` check sits above the `recordedHash`/`.bak` branches. Do not reorder. The byte-compare *is* the leading equality check — there is no separate no-manifest code path. Documented in the function JSDoc.
+  - → no promotion needed (implementation decision; documented here and in `update.ts` JSDoc)
+
 ---
 
 ## History
@@ -246,6 +253,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Addressed Eric's Phase 2 PR minors (#158) — passed `false` explicitly at the `writeSyncManifest` call site in `build.ts` (was threading `checkMode` which is always `false` inside the `if (!checkMode)` guard); added no-op idempotency test to `sync-manifest.test.ts` (8/8 pass, `pnpm prism:check` green 183/183).
 - 2026-06-15 [hmcgrew/prism-update-phase-5-ownership-classifier]: Phase 5 complete (#159) — new `ownership.ts` is the single canonical source for `PRISM_OWNED_GLOBS`/`CONSUMER_OWNED_GLOBS` and exports `classifyPath(): "prism" | "consumer" | "unknown"`; `sync-manifest.ts` now imports the globs and filters via `classifyPath` instead of its interim inline copies. `compileMatcher` was already exported (Phase 2 imports it), so task 1 needed no change; task 4 (wire into `update.ts`) deferred to Phase 3 since `update.ts` does not exist yet. `pnpm prism:check` green 196/196 (+13 from `ownership.test.ts`) and the PRISM-owned set is unchanged at 159 files, zero consumer leakage.
 - 2026-06-15 [hmcgrew/prism-update-phase-5-ownership-classifier]: Briar self-review — zero logic/type/test findings; auto-fixed tabs→spaces formatting in 3 new files (`ownership.ts`, `ownership.test.ts`, `sync-manifest.ts`); 196/196 still pass post-fix.
+- 2026-06-15 [hmcgrew/prism-update-phase-3-update-command]: Phase 3 complete (#160) — new `scripts/ai-skills/update.ts` implements `pnpm prism:update` (source resolution + refusal, hash-based per-file algorithm, deletions, manifest rewrite, platform refresh) wiring Phase 5's `classifyPath`, plus the mechanical `syncAllPlatformContentCopies` extraction from `build.ts main()` (behavior unchanged) and an optional `prismSource` on `PrismConfig`. `pnpm prism:check` green 207/207 (+11 from `update.test.ts`); CLI verified end-to-end against a throwaway consumer. The no-op-before-`.bak` branch order is the no-manifest decision point — see Decisions.
 
 ---
 
@@ -312,7 +320,7 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 - [ ] Given Phase 1 is complete, When `pnpm prism:check` runs on a fresh checkout, Then it exits green (path-guard + seed-drift + manifest-coverage + check-mode copy all pass). (REQ-1: Phase 1 gate)
 - [x] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
-- [ ] Given Phase 3 is complete, When `pnpm prism:test` runs, Then `update.test.ts` passes all per-file branches (new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback / consumer-owned untouched / deleted-in-PRISM removed). (REQ-3: Phase 3 gate)
+- [x] Given Phase 3 is complete, When `pnpm prism:test` runs, Then `update.test.ts` passes all per-file branches (new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed; manifest rewritten). (REQ-3: Phase 3 gate)
 - [ ] Given Phase 4 is complete, When `pnpm prism:test` runs, Then `overlay-copy.test.ts` passes for all 3 platforms, marker present, scoped cleanup does not touch base files. (REQ-4: Phase 4 gate)
 - [x] Given Phase 5 is complete, When `pnpm prism:test` runs, Then `ownership.test.ts` passes classifier verdicts for `_toolkit/**` (prism), flat `architect/*.md` (consumer), `custom/**` (consumer), `SPEC.md` (prism), `plans/**` (consumer). (REQ-5: Phase 5 gate)
 - [ ] Given the end-to-end scenario: a throwaway temp consumer dir seeded from `templates/install/.prism` with one rule hand-edited and one `.prism/custom/rules/team.md` added, When `pnpm prism:update --prism-source <PRISM path>` runs, Then: the hand-edited rule is preserved as `.bak` and the new version written; the custom overlay is untouched at source and emitted to `.claude/rules/custom/`, `.cursor/rules/custom/*.mdc`, `.codex/rules/custom/`; `.sync-manifest.json` is rewritten; a consumer-owned flat `architect/foo.md` is untouched. (REQ-6: end-to-end verification)
@@ -346,20 +354,20 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-Phase 5 branch (`hmcgrew/prism-update-phase-5-ownership-classifier`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`).
+Phase 3 branch (`hmcgrew/prism-update-phase-3-update-command`). Phase 1 merged (PR #156, `519b0f5`); Phase 2 merged (PR #165, `d8b14de`); Phase 5 merged (PR #166, `646be18`).
 
 - [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; the pre-existing `JSON.parse(raw) as SyncManifest` at `sync-manifest.ts:101` is from Phase 2 / main and not in scope for this review)
-- [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`ownership.test.ts`: 13 classifier verdicts covering `_toolkit/**`, loose `SPEC.md`, owned trees → prism; flat `architect/*.md`, flat ADRs, manifest, `custom/**`, `plans/**`, `lessons.md` → consumer; consumer-wins-over-owned; unknown fallthrough)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean; the `as SyncManifest` reads in `update.ts`/`update.test.ts` parse files this code just serialized, mirroring the existing Phase 2 pattern)
+- [x] No stray console.logs or debug artifacts (the two `console.log` calls in `update.ts` are the CLI run summary — intentional user-facing output, not debug artifacts)
+- [x] Tests written for new logic and edge cases (`update.test.ts`: 11 tests covering new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback both ways / consumer-owned untouched / unknown-classified untouched / deleted-in-PRISM removed both ways / manifest rewritten)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 196/196 tests pass; PRISM-owned manifest set unchanged at 159 files, 0 consumer leakage after the `ownership.ts` refactor; build skipped — diff does not affect Next.js bundle)
-- [x] Formatting clean — Briar auto-fixed tabs→spaces in 3 new files; 196/196 still pass post-fix
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 207/207 tests pass; `build.ts` extraction verified non-behavioral via 12/12 content-copy tests; build skipped — diff does not affect Next.js bundle)
+- [x] Formatting clean — new files use tabs consistently, matching the codebase (no prettier in this repo's `prism:check`)
 - [ ] PR description up to date (PR not yet opened — conductor opens)
-- [x] Lasting decisions promoted to architect context (not applicable for Phase 5 — the path-decidable-ownership convention is already documented in `## Decisions`; `ownership.ts` JSDoc carries the skill-namespace convention inline)
-- [ ] Phase 5 PR open / merged — pending PR open and conductor dispatch
+- [x] Lasting decisions promoted to architect context (not applicable for Phase 3 — the merge/`.bak`/overlay model and no-manifest decision point are implementation-level decisions documented in `## Decisions`; `update.ts` JSDoc carries the no-manifest branch-order rationale inline)
+- [ ] Phase 3 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Briar — self-review complete; formatting auto-fixed, zero logic/type/test findings)
+**Last updated:** 2026-06-15 (Clove — Phase 3 implementation complete; `pnpm prism:check` green 207/207, CLI verified end-to-end)
 
 ---
 
