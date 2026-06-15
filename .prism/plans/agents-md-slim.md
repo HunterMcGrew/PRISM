@@ -238,4 +238,4 @@ Verdict: `§9`'s table is duplicate. `§9`'s handoff phrases need to move to `sk
 - [x] Build skipped — markdown-only diff; `pnpm prism:build` ran clean during implementation (129/129)
 - [x] 2 Minor findings fixed — Ticket field now points at GitHub issue #64; Slice 4 task #4 OR-clause wrapped as `OPEN` Decision with default path
 
-**Last updated:** 2026-05-28 (Briar re-review of PR #66 — clean, ready for Eric)
+**Last updated:** 2026-05-28 (Clove addressed Briar's 2 Minor; re-review pending)
