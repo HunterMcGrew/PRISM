@@ -61,6 +61,8 @@ Not Applicable
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Briar self-review found 1 major: `templates/install/.prism/references/code-review-pr/github-writes.md:42` not updated to match canonical reword. All other mirrors clean; build + check green (158/158).
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Applied line-42 reword to `templates/install/` copy of `github-writes.md`; both install copies now match canonical byte-for-byte. pnpm prism:check 158/158 green (27cc7d9).
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Folded two additional fixes into PR #149: (1) review-loop exit gate now requires zero fixed-but-unresolved threads (accaa7d); (2) Eric's every-run resolve sweep made explicit and marker-first rule reinforced in `github-writes.md` + `templates/install` mirror (2412e3f); (3) Eric's `shared.md` § Summary format now prohibits persona headings in the posted comment body (da05657). pnpm prism:check 158/158 green.
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Briar second self-review (expanded PR). Thread-clean invariant loop-safety confirmed clean — "fixed-but-unresolved" scoping excludes praise threads; pass budget is hard escape. All mirrors byte-identical. 1 minor: github-writes.md:42 run-on sentence (non-blocking).
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Split github-writes.md:42 run-on into two sub-bullets — marker-first rule and no-prepend-heading rule now separate scannable points; templates/install mirror updated to match (2407c41).
 
 ---
 
@@ -97,6 +99,14 @@ Not Applicable
 - **Problem:** `github-writes.md` in `templates/install/` still carries the old `Always include...` wording. The canonical `.prism/` copy was reworded to name `summary-template.md` as source-of-truth, but the `templates/install/` mirror was not updated. `prism:check` does not drift-check this tree, so the mismatch passes CI. Fresh consumer installs receive a stale instruction note.
 - **Suggested fix:** Apply the same line-42 reword to `templates/install/.prism/references/code-review-pr/github-writes.md` — match the canonical copy exactly.
 
+### github-writes.md line 42 run-on sentence (extended fix round)
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: 2407c41
+- **File:** `.prism/references/code-review-pr/github-writes.md:42`
+- **Problem:** The reworded line is a compound-complex run-on with two em-dashes and a redundant parenthetical that restates the marker-first rule already expressed earlier in the sentence. Content is correct; readability is mildly degraded.
+- **Suggested fix:** Split into two sentences or trim the closing parenthetical `(the marker stays the literal first line of the body)` as it repeats "must remain at the top."
+
 ---
 
 ## Acceptance Criteria
@@ -105,12 +115,15 @@ Not Applicable
 
 - [x] Given a PR where Eric has already posted a summary comment, When Eric runs again on the same PR, Then the existing summary comment is PATCHed (not a new comment created)
 - [x] Given the composed PR summary comment body, When inspected, Then `<!-- code-review-pr-summary -->` is the first line of the comment body
+- [x] Given the review-loop PR-review phase exits, When there are fixed-but-unresolved threads, Then a final reviewer pass runs before the phase is declared complete
+- [x] Given Eric posts a PR summary comment, When inspected on GitHub, Then the body opens with the marker line and `## Summary` — no persona heading prepended
 
 ### Non-behavioral
 
 - [x] `pnpm prism:build` passes green
-- [x] `pnpm prism:check` passes green
+- [x] `pnpm prism:check` passes green (158/158)
 - [x] The marker appears in the `templates/install/` mirror of `summary-template.md` (propagated by the build)
+- [x] All runtime mirrors (.claude, .cursor, .codex, templates/install) byte-identical to canonical for both github-writes.md and summary-template.md
 
 ### AC Sync Log
 
@@ -133,8 +146,10 @@ None at this stage.
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (not applicable — reference-only change)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-14 (pnpm prism:check 158/158)
+- [x] Build passes — last run: 2026-06-14 (pnpm prism:build + prism:check 158/158 green)
+- [x] All runtime mirrors byte-identical (verified by git diff — zero drift across .claude, .cursor, .codex, templates/install)
 - [x] PR description up to date — PR #149 opened as draft
 - [x] Lasting decisions promoted to architect context (if applicable) — decisions marked no-promotion-needed
+- [x] Minor: github-writes.md:42 run-on sentence — fixed in 2407c41
 
-**Last updated:** 2026-06-14 (Clove — thread-resolution + heading-drift fixes folded in)
+**Last updated:** 2026-06-14 (Clove — split run-on minor; all issues resolved; prism:check 158/158 green)
