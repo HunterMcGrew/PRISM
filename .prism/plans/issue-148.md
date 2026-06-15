@@ -51,6 +51,8 @@ Not Applicable
 
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Plan seeded. Bug confirmed: `summary-template.md` omits `<!-- code-review-pr-summary -->`, causing Eric re-runs to create duplicate summary comments instead of patching.
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Inserted marker above `## Summary` in `summary-template.md` (canonical + templates/install mirror); rewrote the matching note in `github-writes.md` to name the template as source of truth. Build green (86a794e).
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Briar self-review found 1 major: `templates/install/.prism/references/code-review-pr/github-writes.md:42` not updated to match canonical reword. All other mirrors clean; build + check green (158/158).
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Applied line-42 reword to `templates/install/` copy of `github-writes.md`; both install copies now match canonical byte-for-byte. pnpm prism:check 158/158 green (27cc7d9).
 
 ---
 
@@ -74,6 +76,18 @@ Not Applicable
 - **Recommended fix:** Insert `<!-- code-review-pr-summary -->` + blank line above `## Summary` in `summary-template.md`
 - **Suggested tests:** Manually verify on next Eric run that only one summary comment exists and a second run updates it
 - **Linear:** N/A
+
+---
+
+## Review Issues
+
+### templates/install github-writes.md not updated
+
+- **Severity:** `major`
+- **Status:** `fixed` — Fixed in: 27cc7d9
+- **File:** `templates/install/.prism/references/code-review-pr/github-writes.md:42`
+- **Problem:** `github-writes.md` in `templates/install/` still carries the old `Always include...` wording. The canonical `.prism/` copy was reworded to name `summary-template.md` as source-of-truth, but the `templates/install/` mirror was not updated. `prism:check` does not drift-check this tree, so the mismatch passes CI. Fresh consumer installs receive a stale instruction note.
+- **Suggested fix:** Apply the same line-42 reword to `templates/install/.prism/references/code-review-pr/github-writes.md` — match the canonical copy exactly.
 
 ---
 
@@ -111,8 +125,8 @@ None at this stage.
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (not applicable — reference-only change)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-14
-- [ ] PR description up to date
+- [x] Build passes — last run: 2026-06-14 (pnpm prism:check 158/158)
+- [x] PR description up to date — PR #149 opened as draft
 - [x] Lasting decisions promoted to architect context (if applicable) — decisions marked no-promotion-needed
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-14 (Clove self-review fix)
