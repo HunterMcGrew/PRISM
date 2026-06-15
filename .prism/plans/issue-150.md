@@ -306,11 +306,16 @@ Added by Winston. Tasks are grouped by persona.
 
 - **`seed-curation.json` is now load-bearing.** Any new canonical file must be classified (excluded/curated/included) and the manifest updated. Any change to an existing file's curation status requires a manifest update + a `pnpm prism:check` verification. Review discipline: when reviewing PRs that add or move canonical files, check whether `seed-curation.json` was updated. → no promotion needed (operational discipline; enforced by the check itself).
 
+- **`SPEC.md` (canonical) maps to `SPEC.md.tmpl` (seed) via the `renames` entry.** The seed template version intentionally differs in one line (plan-retention vs delete instruction). Classified as a rename + curated; `checkSeedDrift` asserts the renamed path is present, content compare skipped. → no promotion needed (implementation detail for this specific rename).
+
+- **Step 0 triage found no forgotten-drift files.** All diffs between canonical and seed were either excluded, curated, or the known rename. The spec ADR diffs (0003, 0005, 0015, 0016, 0018, 0029-0033, README) are curated — Thrive-internal plan references stripped for consumer copies. → no promotion needed.
+
 ---
 
 ## History
 
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Seeded plan for issue #150 (seed-sync + CI enforcement). Traceable to PR #149 review — Briar Major on seed miss, Eric Major on committed-stale mirrors.
+- 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Implemented all Steps 0–8. Step 0 triage found no forgotten-drift; created seed-curation.json + checkSeedDrift() (read-only, raw-byte compare) + 6 unit tests + CI workflow + install-layout.md doc update. All 164 tests pass; prism:check green.
 
 ---
 
@@ -360,13 +365,13 @@ None at plan creation.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (6 unit tests for checkSeedDrift)
+- [x] All debugged issues resolved (no `open` entries — N/A for this ticket)
+- [x] Build passes — last run: 2026-06-15 (164 tests pass, prism:check green)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (install-layout.md updated; decisions are tooling-tactical, no other promotion needed)
 
 **Last updated:** 2026-06-15
