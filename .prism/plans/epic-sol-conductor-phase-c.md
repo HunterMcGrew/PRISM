@@ -99,7 +99,7 @@ Resolving all five PRD `[ASSUMPTION-N]` items. C-A1, C-A2, C-A4 are Winston-reso
   - **Alternatives considered:** (a) `role` field — rejected: "role" collides conceptually with persona-assignment (the persona *is* the lane's role), inviting confusion. (b) Named-lane convention (e.g. laneId starts with `integration-`) — rejected: string-convention triggers are fragile and unschematized; a typo silently disables the gate. (c) A default persona mapping in conductor config (integration → Briar) — rejected: the right integration persona depends on what's being validated (a seam check is Winston, a test pass is Briar/QA); a default would be wrong often enough to mislead.
   - **Chosen approach:** A nullable `type: "integration" | null` field on the lane, defaulting to `null` (ordinary lane). Beats `role` (no persona collision), beats named-convention (schematized, typo-safe), beats default-mapping (scope statement names the persona explicitly, which is already how every other lane's persona is assigned). The gate triggers on `type === "integration"` AND cross-team `dependsOn` — both conditions required.
   - **Implementation guidance:** Add `type` to the schema doc (C-1); trigger logic in `lib/fleet.md` (C-10); persona-assignment-via-scope documented (C-13). `type: null` is the additive default — Phase A/B lanes are unaffected.
-  - **→ promoted to ADR-0053 (candidate) — see ADR Candidates.**
+  - **→ promoted to ADR-0053** (`.prism/spec/adrs/0053-conductor-integration-lane-type-marker.md`, status: accepted).
 
 - **C-A2 (ASSUMPTION-2) — Parked-dependency state is `status: "active"` + `phaseStatus: "parked"` + a `blockedBy: laneId[]` note, not a new top-level `status` value.**
   - **Context:** When a `dependsOn` target is `parked` (not `done`), the dependent lane is blocked. The question: does the blocked lane need a distinct `status: "dependency-blocked"` value, or is the existing status model + a flag sufficient?
@@ -127,7 +127,7 @@ Resolving all five PRD `[ASSUMPTION-N]` items. C-A1, C-A2, C-A4 are Winston-reso
   - **Default path (used until resolved):** integration gate is always `needs-human`, as specified in NFR-4. Implemented that way in C-10 and C-11.
   - **Architectural read (Winston's input on the technical side):** Always-human is the *safer* default and the cleaner implementation — it makes the integration gate a categorical sibling of the merge gate (one rule, no autonomy-level branching in the gate logic). An exemption (`hobby` → auto-dispatch integration lanes) adds a conditional branch to the gate and a path where two teams' work merges-and-tests with zero human eyes — defensible only if Hunter judges `hobby` runs as genuinely throwaway. The technical cost of *either* choice is one conditional; the risk asymmetry favors always-human.
   - **→ HUNTER-POLICY.** Flag at plan-ready: *confirm `hobby`-stakes runs are NOT exempt from the always-human integration gate (default), OR exempt them (`hobby` → auto-dispatch, `internal`/`launch` → needs-human).* Default (always-human) is implemented unless Hunter exempts `hobby`. If Hunter exempts, C-10/C-11 gain one autonomy-level conditional on the gate trigger.
-  - **→ promoted to ADR-0054 (candidate) — integration-gate-is-always-human may generalize as an invariant. See ADR Candidates.**
+  - **→ promoted to ADR-0054** (`.prism/spec/adrs/0054-conductor-integration-gate-always-human.md`, status: accepted).
 
 - **C-D1 — `dependsOn` eligibility is segment-granular, checked at the reconcile/dispatch boundary, never mid-segment.** Sol does not talk to running workers (`shared.md § 4`); a dependency can only resolve when its target lane reaches `done`, which Sol observes at a segment boundary. So eligibility is recomputed once per boundary (FR-2). A lane whose dependency completes mid-segment unblocks at the *next* boundary, not instantly. → no promotion needed (restates the existing segment model for the `dependsOn` case; codified in C-3/C-5 task bodies).
 
@@ -186,27 +186,77 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Authored Phase C epic plan — teams as lane-groups (`team` drive), cross-team `dependsOn` sequencing + cycle detection, always-human integration gate. Resolved all 5 PRD assumptions: C-A1/C-A2/C-A4 architecturally, C-A3/C-A5 defaulted-and-flagged for Hunter. Build-ordered second (after Phase B on main).
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). C-A5 ratified always-human (incl. hobby); C-A3 per-team autonomy confirmed out-of-scope (deferred); C-A1 confirmed ship modelTier seam + read path (not lean). ADR candidates 0053 (`type` marker) / 0054 (integration-gate-always-human) ratified — written during the Phase C build.
+- 2026-06-14 [hmcgrew/sol-phase-c-teams]: Wrote ADR-0053 (`type` integration marker, no default persona) and ADR-0054 (integration gate always-human, incl. hobby) as accepted; added README index rows; resolved C-A4/C-A5 promotion pointers and marked the ADR-not-written Review Issue fixed.
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Implemented Clove tasks 1–13 + C-A1 seam/read path. Adds type/blockedBy/teamConfig[] schema, per-team ordering + dependency-gated eligibility in step-04, DFS cycle check + eligibility resolution in step-09 § 2.5, convergence pre-check, team-tag carry through decision box, per-team/integration-gate views in step-10, integration gate in fleet.md + gate registry. pnpm prism:build && prism:check: 158/158 pass.
+
+---
+
+## Review Issues
+
+### Writing-voice: "Cite ADR-0011...and ADR-0049" meta-instruction in fleet.md
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/lib/fleet.md:39`
+- **Problem:** `(b) Always human` paragraph ends with `Cite ADR-0011 (merge stays the unconditional gate alongside this one) and ADR-0049 (Sol never reassigns team tags).` — task-spec instruction text pasted verbatim into the durable skill file. Reads as a directive to a future reader, not a declaration.
+- **Suggested fix:** Replace `Cite ADR-0011` with `See ADR-0011`.
+
+### Writing-voice: "Cite `lib/fleet.md § Integration gate`" instruction in step-10
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/step-10-report.md:44`
+- **Problem:** `Cite \`lib/fleet.md § Integration gate\` for the trigger.` is a task-spec instruction, not a declaration. Reads as telling Sol what to cite rather than stating the spec.
+- **Suggested fix:** Replace with `The integration gate trigger is defined in \`lib/fleet.md § Integration gate\`.`
+
+### Writing-voice: "C-A1 read path" internal session label in step-04
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/step-04-dispatch.md:7`
+- **Problem:** `This is the C-A1 read path` — C-A1 is a plan decision label opaque to readers loading step-04 cold without the epic plan.
+- **Suggested fix:** Drop the label entirely — the cite to `lib/goal-state.md § Field notes` is sufficient.
+
+### Writing-voice: "see Phase C Decision: C-A2" internal label in goal-state
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:78`
+- **Problem:** `(see Phase C Decision: C-A2)` is an internal plan reference opaque in the skill file standing alone.
+- **Suggested fix:** Replace with plain rationale: `(the four-value status model is unchanged)`.
+
+### ADR-0053 and ADR-0054 cited but not yet written
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/fleet.md:39`, `.prism/skills/prism-conductor/lib/report-back.md:84`
+- **Problem:** Both ADRs are cited in durable skill files but no files exist in `.prism/spec/adrs/` for them yet. The `(candidate)` qualifier in fleet.md signals this, but a reader following the cite finds nothing.
+- **Suggested fix:** No change needed before PR; ADR authoring happens at plan close per the Decisions section. Non-blocking.
+- **Resolution:** 2026-06-14 — both ADRs written as `status: accepted` (numbers confirmed free; max was 0052). README index rows added. Plan promotion pointers resolved to the live files.
+
+---
+
+## Cleanup Items
+
+- `.prism/skills/prism-conductor/lib/fleet.md:39` — `Cite ADR-0011...` → `See ADR-0011...` (instruction voice)
+- `.prism/skills/prism-conductor/step-10-report.md:44` — `Cite \`lib/fleet.md...\`` → declarative form
+- `.prism/skills/prism-conductor/step-04-dispatch.md:7` — drop `This is the C-A1 read path —` prefix
+- `.prism/skills/prism-conductor/lib/goal-state.md:78` — replace `(see Phase C Decision: C-A2)` with `(the four-value status model is unchanged)`
 
 ---
 
 ## PR Readiness
 
-Living checklist — updated when `code-review-self` runs during Phase C implementation. Reflects current state (plan-authoring stage; implementation gated on Phase B merge).
+Living checklist — updated by Briar self-review 2026-06-14.
 
-- [ ] No critical or major issues
-- [ ] `type`, `blockedBy`, `teamConfig[]` schema-doc additions are additive (no required fields; Phase A/B parse-forward verified)
-- [ ] Per-team ordering confirmed as a layer, not a second scheduler (NFR-3)
-- [ ] `dependsOn` cycle check escalates (never hangs); eligibility is segment-granular
-- [ ] Integration gate is `needs-human` at all levels (pending C-A5 Hunter resolution)
-- [ ] Team tag never stripped through the decision box (FR-7)
 - [x] `type`, `blockedBy`, `teamConfig[]` schema-doc additions are additive (no required fields; Phase A/B parse-forward verified)
 - [x] Per-team ordering confirmed as a layer, not a second scheduler (NFR-3)
 - [x] `dependsOn` cycle check escalates (never hangs); eligibility is segment-granular
 - [x] Integration gate is `needs-human` at all levels (C-A5 ratified: always-human)
 - [x] Team tag never stripped through the decision box (FR-7)
 - [x] Build passes — `pnpm prism:build && pnpm prism:check` — last run: 2026-06-14 (158/158 pass)
-- [ ] No critical or major issues (Briar self-review pending)
+- [x] No critical or major issues — zero critical/major findings (Briar self-review 2026-06-14)
+- [ ] 4 minor writing-voice cleanup items (see ## Review Issues) — fixable inline before or after PR open
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted (C-A4 → ADR-0053, C-A5 → ADR-0054 if ratified; conductor architect doc)
 
