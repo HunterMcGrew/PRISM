@@ -199,6 +199,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston wrote the two ratified Phase D ADRs — ADR-0055 (partition by epic-subtree, not team) and ADR-0056 (governor brakes run-wide, never per-partition); added README index rows and resolved both D-A3 promotion pointers to the live ADRs.
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Briar self-review writing-voice minors: replaced stale ADR-candidate note in convergence.md with declarative ADR-0056 pointer; replaced opaque D-A* plan labels across batcher.md, partition-store.md, fleet.md, reconcile.md, goal-state.md, step-10-report.md, and convergence.md with plain-language descriptions or ADR-0055/0056 cross-links.
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston adjudicated Eric's Major (PR #146) — chose to rephrase rather than defend the ADR cites; replaced the opaque inline `(epic plan D-A9 / Build dependency / D-A4)` cites in ADR-0055/0056 with plain-language prose, since the References-section anchors already carry provenance. Corrected Review Issue #2's bookkeeping mismatch (`8517d11` never touched the ADRs).
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Eric PR-review Minors — updated `§ Schema (v3)` section cites in convergence.md and reconcile.md to `§ Schema (v3 — partitioned layout)` (matching real heading); rewrote batcher.md:3 from imperative to declarative authoring-voice matching partition-store.md:3. `206d573`.
 
 ---
 
@@ -266,7 +267,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **File:** `.prism/skills/prism-conductor/lib/convergence.md:83`, `lib/reconcile.md:13`
 - **Problem:** Both files cite `lib/goal-state.md § Schema (v3)` but the actual heading in `goal-state.md` is `## Schema (v3 — partitioned layout)`. The short-form citation doesn't match the real heading.
 - **Suggested fix:** Update both cites to `§ Schema (v3 — partitioned layout)`.
-- **Fixed in:** TBD (pending commit)
+- **Fixed in:** `206d573`
 
 ### Imperative authoring-voice in batcher.md
 
@@ -275,7 +276,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **File:** `.prism/skills/prism-conductor/lib/batcher.md:3`
 - **Problem:** Line 3 uses imperative authoring-voice ("do not restate this content in the step file") where its sibling `lib/partition-store.md:3` uses a cleaner declarative form ("step files and the crash-resume path cite this doc instead of restating the protocol").
 - **Suggested fix:** Rewrite to match the declarative pattern in `partition-store.md:3`.
-- **Fixed in:** TBD (pending commit)
+- **Fixed in:** `206d573`
 
 ---
 
