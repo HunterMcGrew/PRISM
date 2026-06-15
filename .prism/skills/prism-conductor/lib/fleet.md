@@ -32,6 +32,16 @@ Overlapping lanes are **serialized, not parallelized.** The chosen default is **
 
 **Pending-vs-active overlap:** the conflict gate checks not only pending-vs-pending, but also **pending-vs-active** — a fold-in targeting a parked or active sibling's live worktree cannot be auto-resolved. Two worktrees touching the same code simultaneously is a race condition the gate cannot safely collapse. When the overlap is pending-vs-active, the fold-in routes to a **human gate** rather than auto-dispatching.
 
+## Integration gate (Phase C)
+
+**(a) Trigger** — a lane with `type: "integration"` whose `dependsOn` edges point at lanes in **two or more distinct `team` values** (at least one cross-team edge) triggers a pre-dispatch human gate, fired after all its `dependsOn` lanes reach `done` and before the integration lane dispatches (FR-5). A same-team lane with multiple `dependsOn` edges does **not** trigger the integration gate. A `type: "integration"` lane with only same-team edges does not trigger it. Both conditions — `type: "integration"` AND cross-team `dependsOn` — are required.
+
+**(b) Always human** — the integration gate is **`needs-human` at every autonomy level, including `hobby`** (NFR-4): it never auto-clears. This is a categorical distinction from the confidence-gated autonomy pattern (ADR-0048), which governs within-lane decisions; the integration gate is a cross-team convergence checkpoint, not a routine gate confidence can satisfy. See ADR-0054 (candidate). Cite ADR-0011 (merge stays the unconditional gate alongside this one) and ADR-0049 (Sol never reassigns team tags).
+
+**(c) Distinct from the conflict gate** — the file-conflict gate serializes same-file lanes (see `## Conflict gate` above); the integration gate gates cross-team work convergence, independent of file overlap. The two are separate phases and produce separate reports (see `step-10-report.md § Integration gate report`).
+
+**(d) Persona assignment** — see `## Integration gate — persona assignment` below.
+
 ## Cross-lane fold-in
 
 When a discovered fix belongs to another lane (a "fold-in"), the routing depends on that sibling lane's status:
@@ -46,6 +56,10 @@ When a discovered fix belongs to another lane (a "fold-in"), the routing depends
 ## Per-lane isolation
 
 Each fleet lane runs in its own worktree (`isolation: 'worktree'`), recorded as the lane's `worktree` path, bound to the cleanup contract in `.prism/rules/worktree-isolation.md` — removed on success, error, or interruption. A single-lane pipeline run leaves `worktree: null` and uses the current checkout.
+
+## Integration gate — persona assignment
+
+The integration lane is a conductor-dispatched lane like any other — its persona follows the **existing persona-assignment logic**: the lane's `scope` statement names the persona (Briar for a review-and-test pass, Winston for a seam-architecture check, a QA persona if available). Phase C introduces **no default integration-lane persona mapping** — the scope statement is always explicit (Decision C-A4). Sol does not choose the persona; the decompose chain or operator sets it in the scope.
 
 ## Batched human-gate reporting
 
