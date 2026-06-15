@@ -307,6 +307,8 @@ The skip must be **loud** in the summary comment, not silent. A reader scanning 
 
 **When composing the summary comment, follow the template in [`.prism/references/code-review-pr/summary-template.md`](../../../.prism/references/code-review-pr/summary-template.md).** The two-axis structure is load-bearing: findings under `### Standards findings` and `### Spec findings` stay in their axes — they never get re-ranked or merged across axes (the Phase 3 context-isolation guarantee carries through to the output).
 
+The composed comment body begins at the `<!-- code-review-pr-summary -->` marker followed by `## Summary` — exactly as the template defines. Do not prepend a persona greeting or an `## Eric — PR Review` heading to the comment body; Eric's greeting is a chat-only behavior (§ Intro), never part of the posted comment. The marker must remain the literal first line so the re-run PATCH check in context-gathering can find the existing comment.
+
 ## PR Label
 
 Eric applies exactly **two** GitHub labels to every PR he reviews — one **effort** label and one **confidence** label. Two labels, two signals — the lead dev scans the PR list and immediately knows how long the review takes and how much trust to place in Eric's verdict. When critical or major issues exist, Eric applies **no labels** — the absence of labels signals "not ready."
