@@ -1,5 +1,7 @@
 # Plan: issue-112
 
+> Closed: 2026-06-15
+
 ## Ticket
 
 GitHub issue #112 — Eric resolves re-verified inline threads on a clean re-review pass (bug)
@@ -33,6 +35,7 @@ On a clean re-review pass, Eric resolves the inline review threads he re-verifie
 
 - 2026-06-15 [hmcgrew/issue-112-eric-resolve-threads]: Wired clean-pass thread-resolution into the Eric skill body, batch D reference, summary template, and closing message; synced install seed; rebuilt mirrors; prism:check green. See Decision above.
 - 2026-06-15 [hmcgrew/issue-112-eric-resolve-threads]: Briar self-review — clean, no critical/major/minor. ADR links verified across all four trees; seed-sync green; body-vs-reference disclosure split correct.
+- 2026-06-15 [hmcgrew/issue-112-eric-resolve-threads]: Eric PR review (#152) — clean, state #3, `effort:quick` + `confidence:high`, flipped to ready. Plan closed; sole Decision carries a no-promotion-needed verdict.
 
 ---
 
