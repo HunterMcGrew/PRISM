@@ -239,6 +239,9 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Briar self-review found 3 major issues: (1) 5 seed twin rule/reference files have stale flat ADR refs that weren't updated alongside canonicals; (2) `templates/install/.prism/references/review-docs-impact.md` seed twin links to old `architect/documentation.md` path; (3) `CONTEXT.md` was missed in the reorg sweep and still references 3 flat architect doc paths. All clear-cut fixes — routing to Clove.
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (#155) fixed all 3 major review issues — comprehensive tree-wide grep found 2 additional stale refs (ADR-0044 in install-layout.md seed twin, ADR-0029 illustrative example in implementation-task-detail.md seed twin). 15 files updated; `pnpm prism:check` green 175/175.
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (#155 follow-up) fixed 2 remaining Eric Majors — `AGENTS.md.tmpl` (3 stale `architect/skills-ecosystem.md`/`spec-editing.md` refs) and `SPEC.md.tmpl` (1 stale `architect/skills-ecosystem.md` ref + 1 stale ADR-0003 flat path). Sweep clean; `pnpm prism:check` green 175/175.
+- 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Eric PR-review (#156) found a 3rd Major round — the moved ADRs' own `## References` sections still pointed at flat `architect/skills-ecosystem.md`. Sol's corrected sweep (prior passes were `.md`-scoped and a `grep -v "_toolkit/"` filter matched the line's path prefix — a false-clean) found the complete set: 28 source files (13 canonical `_toolkit/` ADRs + 13 template twins + 2 template architect docs).
+- 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (Opus, #155, `cf22072`) applied 37 substring-safe `architect/<doc>` → `architect/_toolkit/<doc>` replacements across the 28 files + regenerated platform copies + fixed the `AGENTS.md.tmpl:119` minor. Sol independently re-verified the corrected sweep clean; Eric re-review clean (`pnpm prism:check` 175/175).
+- 2026-06-15 [main]: Phase 1 MERGED via PR #156 (squash `519b0f5`). Phases 2 (hash manifest) and 5 (ownership classifier) unblocked. Run paused for handoff to a fresh Sol session.
 
 ---
 
@@ -325,15 +328,18 @@ Phase 1 branch only.
 - [x] Tests written for new logic and edge cases (path-guard, verify-manifest-coverage updated)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass; note: path-guard does not scan hyperlink text in prose, so stale prose ADR links pass the guard)
-- [ ] PR description up to date (no PR open yet — Sol handles PR after self-review)
-- [ ] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
+- [x] PR description up to date (PR #156 body authored from template; agent-owned sections current)
+- [x] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
+- [x] Phase 1 MERGED — PR #156 squash-merged to `main` as `519b0f5` (2026-06-15)
 
-**Last updated:** 2026-06-15 (Clove — #155 fixes)
+**Last updated:** 2026-06-15 (Sol — Phase 1 merged; run paused for handoff)
 
 ---
 
 ## Follow-up (not this epic)
 
+- **Prose cross-reference lint in `pnpm prism:check`** (decided in-scope as its own GitHub issue, priority; Nora to file). Scan every content carrier (`.md`/`.tmpl`/`.mdc`/`.json`) across canonical + seed-twin for references to paths that don't exist. Motivated by PR #156's 3-pass completeness miss — the existing check (path-guard + seed-drift + manifest-coverage) does not scan prose hyperlink/path correctness, so stale refs in `.tmpl` sources, seed-twin `.md` files, and moved-ADR `## References` bodies all passed green. Scope is the GENERAL guard, NOT just the two `.tmpl` pairs the original suggested-task named — the same defect hit all three carrier types. See `.prism/lessons.md` (the sweep-methodology trap: extension-scoped greps + the `grep -v` path-prefix false-clean).
+- **Delete the orphaned `.generated/cursor-skills/` tree** — tracked but no longer a build target (build writes Cursor output to `.cursor/skills` per `.ai-skills/definitions/paths.json`); last touched 2026-06-13 by #73, drifts from the live output. Small cleanup PR.
 - **`manifest.json` merge-at-onboard logic**, if deferred from Phase 1.
 - **Overlay-authoring affordance inside `prism-skill-forge`** — a guided "extend Briar" flow (appended steps / extra menu items written into `.prism/custom/`) once both the overlay and the forge exist.
 - **Migrating hand-authored Cursor `.mdc` rules** (reverse of `cursorRuleDialect`) — flagged in Phase 7 as adjacent but not v1-blocking.
