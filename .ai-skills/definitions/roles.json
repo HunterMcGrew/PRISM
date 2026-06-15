@@ -83,6 +83,10 @@
 		{
 			"id": "prism-review-loop",
 			"type": "utility"
+		},
+		{
+			"id": "prism-skill-forge",
+			"type": "utility"
 		}
 	]
 }
