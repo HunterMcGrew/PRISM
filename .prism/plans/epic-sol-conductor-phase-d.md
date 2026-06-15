@@ -195,6 +195,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Authored Phase D epic plan from the finalized PRD. Resolved all 10 assumptions — D-A3 partition key = epic-subtree (localizes the hot cross-team `dependsOn` path, the sharding-by-right-key argument), `team` stays a reporting dimension. Named two ADR candidates (partition-by-epic; run-wide brakes under partitioning); flagged D-A5/D-A7 for Hunter.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). D-A5 confirmed no telemetry surface; D-A7 per-team autonomy confirmed out-of-scope. ADR candidates 0055 (partition-by-epic) / 0056 (brakes-run-wide) ratified — written during the Phase D build. Build-ordered third (after B and C on main).
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Implemented Clove tasks 1–13. Schema v3 (additive partitioned layout) added to lib/goal-state.md; new lib/partition-store.md and lib/batcher.md; batcher wired into step-04, partition store into step-01/step-09; cross-partition deps in lib/fleet.md; partition-aware report in step-10; run-wide brakes + scale ceiling in lib/convergence.md; run-wide registry in lib/reconcile.md; scale framing added to shared.md. pnpm prism:build + prism:check green (158/158 tests, zero drift); no goal-state.json real paths introduced.
 
 ---
 
@@ -240,11 +241,11 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
 - [ ] No critical or major issues
-- [ ] Schema v3 additive — single-file runs still parse; no breaking migration
-- [ ] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
-- [ ] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
+- [x] Schema v3 additive — single-file runs still parse; no breaking migration
+- [x] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
+- [x] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
 - [ ] ADR candidates ratified by Hunter before promotion (partition-by-epic; run-wide brakes)
-- [ ] Build passes — `pnpm prism:build && pnpm prism:check` green
+- [x] Build passes — `pnpm prism:build && pnpm prism:check` green (158/158 tests, 2026-06-14)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to ADRs (after ratification)
 
