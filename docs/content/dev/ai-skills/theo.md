@@ -29,10 +29,10 @@ Resumability is structural — Theo writes his progress to `.prism/theo-state.js
 Theo produces three file types:
 
 - **Architect docs** at `.prism/architect/<topic>.md` — the agent-facing record of load-bearing decisions. Read by every PRISM agent during relevant edits via the manifest.
-- **Paired dev docs** at `docs/content/dev/architecture/<topic>.md` — the narrative companion for engineers, gated by [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0038-paired-dev-doc-gates.md)'s two checks (category-fit + pairing-value).
+- **Paired dev docs** at `docs/content/dev/architecture/<topic>.md` — the narrative companion for engineers, gated by [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0038-paired-dev-doc-gates.md)'s two checks (category-fit + pairing-value).
 - **State file** at `.prism/theo-state.json` — operational state for resume. Gitignored; not durable spec.
 
-Architect docs follow the four-beat arc named in [`.prism/architect/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/architecture-doc-shape.md).
+Architect docs follow the four-beat arc named in [`.prism/architect/_toolkit/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/_toolkit/architecture-doc-shape.md).
 
 ## Composition with the other codebase-touching personas
 
@@ -47,6 +47,6 @@ Theo names load-bearing shape; Ren grades quality; Winston evaluates proposed ap
 
 ## See also
 
-- [ADR-0041 — Theo as the architect-doc walker persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0041-theo-architect-doc-walker.md)
+- [ADR-0041 — Theo as the architect-doc walker persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0041-theo-architect-doc-walker.md)
 - [`.prism/skills/prism-doc-walker/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-doc-walker/lib/state.md) — state schema and protocol
-- [`.prism/architect/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/architecture-doc-shape.md) — the four-beat arc Theo's drafts follow
+- [`.prism/architect/_toolkit/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/_toolkit/architecture-doc-shape.md) — the four-beat arc Theo's drafts follow

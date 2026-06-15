@@ -2,7 +2,7 @@
 
 ## Skills Ecosystem
 
-This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
+This project uses a multi-agent skills ecosystem. Each skill has a dedicated persona, role, and defined handoff points. See `.prism/architect/_toolkit/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
 
 The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.prism/SPEC.md`. Start there if you're unsure where a decision belongs.
 
@@ -10,7 +10,7 @@ Key files:
 
 - `.prism/SPEC.md` — tier hierarchy map: what binds, who changes, how proposals work
 - `.prism/spec/adrs/` — architectural decision records for durable, cross-cutting decisions (skill ecosystem, codebase architecture, spec structure). Not ticket-tactical decisions — those stay in the plan's `## Decisions`.
-- `.prism/architect/skills-ecosystem.md` — skill roster, workflows, handoffs, cross-cutting rules
+- `.prism/architect/_toolkit/skills-ecosystem.md` — skill roster, workflows, handoffs, cross-cutting rules
 - `.prism/architect/manifest.json` — maps file paths to architect context docs
 - `.prism/plans/<ticket-id>.md` — living plans scoped to tickets (see `.prism/rules/branch-plan.md`)
 - `.prism/templates/` — shared templates (bug report, PR description, acceptance criteria, ticket types)
@@ -116,7 +116,7 @@ One exception: if the fix touches a public API, shared type, or shared utility, 
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — built through iterative testing and real project experience. They are the equivalent of a style guide or code standard: follow them as the default authority for project-specific decisions.
 
-**Framing:** see ADR-0015 (humane language over mandates) and ADR-0016 (explain the why). When editing spec content under `.claude/**`, `.prism/architect/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `skills-ecosystem.md`.
+**Framing:** see ADR-0015 (humane language over mandates) and ADR-0016 (explain the why). When editing spec content under `.claude/**`, `.prism/architect/_toolkit/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `.prism/architect/_toolkit/skills-ecosystem.md`.
 
 - Apply every applicable rule as written — these exist because the team learned the hard way what happens without them
 - If a specific situation genuinely requires deviation, flag the deviation and explain the reasoning rather than silently overriding

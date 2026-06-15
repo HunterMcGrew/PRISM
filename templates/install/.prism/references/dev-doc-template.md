@@ -17,8 +17,8 @@ Not every code change needs a dev doc. If the code is self-documenting and follo
 
 The base template below covers dev docs in general. Some categories have additional shape rules that layer on top:
 
-- **`category: architecture`** — docs in `docs/content/dev/architecture/` follow the four-beat opening arc and supporting principles in `.prism/architect/architecture-doc-shape.md`. Apply that rule alongside this template.
-- **`category: operations`** — operations docs pair with architecture counterparts (same base filename where the topics align) per the Two-Reader Model described in `.prism/architect/documentation.md § Architecture + Operations Pairing`.
+- **`category: architecture`** — docs in `docs/content/dev/architecture/` follow the four-beat opening arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`. Apply that rule alongside this template.
+- **`category: operations`** — operations docs pair with architecture counterparts (same base filename where the topics align) per the Two-Reader Model described in `.prism/architect/_toolkit/documentation.md § Architecture + Operations Pairing`.
 - **`category: blocks`** — dev block docs in `docs/content/dev/blocks/` are a category layer on this base template. Apply the standard template structure; add a Structure paths table, Block Attributes, Editor Controls split into Toolbar + Sidebar, Inner Blocks, Block Supports, and a Notes section for block-specific quirks.
 
 ---

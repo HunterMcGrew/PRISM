@@ -4,7 +4,7 @@ Read this at the start of every documentation run, after the inline Step 2c code
 
 ## Step 1 — Read documentation conventions
 
-Read `<repo-root>/.prism/architect/documentation.md`. This is the source of truth for:
+Read `<repo-root>/.prism/architect/_toolkit/documentation.md`. This is the source of truth for:
 
 - Naming conventions (topic-based, kebab-case)
 - Frontmatter schema (title, description, category, audience, last_updated)
@@ -13,7 +13,7 @@ Read `<repo-root>/.prism/architect/documentation.md`. This is the source of trut
 - Writing guidelines for dev vs. user audiences
 - Docs-to-code mapping convention
 
-The category and audience tables in `.prism/architect/documentation.md` describe what docs already exist and where they're organized — the category list and cross-reference map are the authoritative index.
+The category and audience tables in `.prism/architect/_toolkit/documentation.md` describe what docs already exist and where they're organized — the category list and cross-reference map are the authoritative index.
 
 ## Step 2 — Determine what to document
 
@@ -92,7 +92,7 @@ Before writing anything new:
 **Existing doc check:**
 
 1. Check the relevant category directory (`docs/content/dev/{category}/` or `docs/content/user/{category}/`)
-2. If a cross-reference map entry exists in `.prism/architect/documentation.md`, check the counterpart file
+2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md`, check the counterpart file
 3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
 4. If no existing doc: determine the output path using the naming convention from `documentation.md`
 

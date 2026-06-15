@@ -32,7 +32,7 @@ Between human touchpoints, Sol dispatches through a deterministic orchestration 
 
 Personas already talk to each other through the **branch plan**: Briar writes `## Review Issues` and Clove reads and fixes them; Sasha writes `## Debugged Issues` and Winston reads them into tasks. Sol keeps that intact and adds a thin second channel for run-state.
 
-- **The branch plan is the durable content bus** — decisions, tasks, findings, history. The real conversation. It stays the source of truth ([ADR-0001](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0001-plan-is-source-of-truth.md)).
+- **The branch plan is the durable content bus** — decisions, tasks, findings, history. The real conversation. It stays the source of truth ([ADR-0001](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0001-plan-is-source-of-truth.md)).
 - **The goal-state file is the ephemeral run-control channel** — phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier. It holds pointers into plans, never work content, and is born lazily on the first phase transition. Schema and protocol: [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md).
 
 Sol's dispatch message stays minimal — "Clove, your turn, plan at `<path>`, tasks 3–5, report back." The work content rides the plan; the run-state rides goal-state. There is no transcript-passing between personas, which is what keeps context tight enough for a Conductor on the strong model to run a fleet of workers on the cheaper one.
@@ -60,7 +60,7 @@ A plan-readiness failure means *re-plan harder* — Winston is already on the st
 
 The invariant that keeps Sol from eroding PRISM's human-gated correctness model: **Sol drives autonomously between gates and stops at them, but never clears a gate itself.** Each gate is owned by a persona — Winston for plan / A-P-C, Nora for the Definition of Ready — that judges its own gate against a human-set autonomy policy (`launch` / `internal` / `hobby`) and returns one of three dispositions: `auto-cleared`, `needs-human`, or `blocked`. Sol routes the disposition; it never judges one.
 
-The rule is one-directional — a persona can always escalate up (`needs-human` under any policy) but never auto-clear below the policy ceiling the human set. Every `auto-cleared` gate records the owner's stakes reasoning in the plan and surfaces in the end-of-run report, so autonomy moves you from in-the-loop to on-the-loop without going dark. Merge is the one unconditional gate, enforced by branch protection — even a maximally-autonomous Sol parks every lane there for the human. The full decision, with the alternatives weighed, is in [ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md).
+The rule is one-directional — a persona can always escalate up (`needs-human` under any policy) but never auto-clear below the policy ceiling the human set. Every `auto-cleared` gate records the owner's stakes reasoning in the plan and surfaces in the end-of-run report, so autonomy moves you from in-the-loop to on-the-loop without going dark. Merge is the one unconditional gate, enforced by branch protection — even a maximally-autonomous Sol parks every lane there for the human. The full decision, with the alternatives weighed, is in [ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md).
 
 ## Composition with the personas Sol dispatches
 
@@ -68,7 +68,7 @@ Sol is a thin conductor — every dispatched persona runs its full, unmodified r
 
 - **Winston is the firewall.** Before Sol dispatches implementation for a phase, the plan must pass the detail bar (any worker at any effort executes it without judgment calls). A vague plan is a hard pause that routes back to Winston to re-plan — not "proceed carefully." This is the single highest-leverage gate, because a worker dispatched against a fuzzy plan is exactly where two runs diverge.
 - **Nora keeps the no-write-path boundary honest.** Sol never writes Linear or creates tickets. When a worker surfaces a `found-followup-work` signal, Sol routes it to Nora, who applies her scope-fit and Definition-of-Ready gates — the ticket gets created by the persona that owns ticket creation, not by Sol.
-- **Briar and Eric are verdict sources.** A self-review or PR review comes back as a primary verdict Sol routes (clean → advance, findings → back to Clove). Eric never approves a PR ([ADR-0011](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0011-eric-never-approves-prs.md)); review findings route, they don't clear the merge gate.
+- **Briar and Eric are verdict sources.** A self-review or PR review comes back as a primary verdict Sol routes (clean → advance, findings → back to Clove). Eric never approves a PR ([ADR-0011](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0011-eric-never-approves-prs.md)); review findings route, they don't clear the merge gate.
 
 Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review *segment*; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the *whole* lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md).
 
@@ -82,7 +82,7 @@ The worker pre-filter keeps the signal queue signal-to-noise honest: a worker an
 
 The reconcile-delta procedure is built as a reusable primitive ([`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md)) — not inlined into the discovery path — so later phases ride the same seam: Phase B will drive greenfield specs into a ticket-tree via the same primitive; Phase C will reconcile cross-team dependency signals the same way.
 
-See [ADR-0050](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) for the design decision behind the growth loop and why between-segment is the right placement.
+See [ADR-0050](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0050-conductor-growth-loop-and-convergence-governor.md) for the design decision behind the growth loop and why between-segment is the right placement.
 
 ## The registry and structural dedup
 
@@ -95,7 +95,7 @@ Before the decision box runs, Sol deduplicates signals structurally by `target`.
 
 On a match, the later signal is *attached* to the first registry entry — `processedAt` set, linked to the existing decision unit — and no second decision-box dispatch is opened for it. The structural dedup is what makes the dispatch budget buy real progress rather than redundant investigations: when N worker lanes all find the same broken helper, one decision unit handles it, not N.
 
-**Sol dedups structurally only.** A structurally ambiguous "are these the same issue?" call — where `target` fields don't yield a clear match — routes to Nora, not decided by Sol. This is air-traffic control, not interpretation, and it keeps Sol on the right side of the no-semantic-judgment invariant ([ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md)).
+**Sol dedups structurally only.** A structurally ambiguous "are these the same issue?" call — where `target` fields don't yield a clear match — routes to Nora, not decided by Sol. This is air-traffic control, not interpretation, and it keeps Sol on the right side of the no-semantic-judgment invariant ([ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md)).
 
 ## The deferred-commit decision box
 
@@ -150,7 +150,7 @@ The invariant that falls out of the rollup rule: no container lane closes as `do
 
 **Tree depth is not generation depth.** A planned three-level tree has epic, issue, and ticket lanes that are all `generation: 0`. Generation accrues only from *unplanned* discovery during build — a lane spawned from a discovered signal has `generation = parent.generation + 1`. The convergence governor's generation cap (brake 2 in `lib/convergence.md`) counts discovered lineage, never planned-tree depth. A planned tree of any depth does not trigger the generation cap.
 
-The canonical statements of both rules live in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Field notes (the `parentId` bullet and the container-lane generation bullet). The dispatch mechanics are in [`step-04-dispatch.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-04-dispatch.md) § Tree dispatch. The full design decision is in [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md).
+The canonical statements of both rules live in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Field notes (the `parentId` bullet and the container-lane generation bullet). The dispatch mechanics are in [`step-04-dispatch.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-04-dispatch.md) § Tree dispatch. The full design decision is in [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0051-conductor-tree-dispatch-semantics.md).
 
 ## Greenfield decompose mode
 
@@ -189,7 +189,7 @@ The operator may adjust `scope` statements or drop lanes before approving. Sol r
 
 Once the tree is approved (or auto-dispatches at `hobby`), the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence.
 
-The full procedure is in [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md). The design decisions behind the chain structure and the ratification-gate/breadth-gate interaction are in [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md).
+The full procedure is in [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md). The design decisions behind the chain structure and the ratification-gate/breadth-gate interaction are in [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0052-conductor-greenfield-decompose-and-ratification-gate.md).
 
 > [!NOTE]
 > The greenfield chain takes already-authored spec documents as inputs. Sol conducts the chain; it does not write PRDs or architecture documents. If those documents don't exist yet, the operator runs Parker and Winston first, then hands the results to Sol for the greenfield chain.
@@ -244,7 +244,7 @@ An integration lane is a lane with `type: "integration"` whose `dependsOn` edges
 
 Two conditions are both required to trigger the gate: `type: "integration"` on the lane, and at least one cross-team `dependsOn` edge. A same-team lane with multiple `dependsOn` edges does not trigger it. A `type: "integration"` lane whose dependencies are all same-team does not trigger it.
 
-The gate is `needs-human` at every autonomy level, including `hobby`. It is not a stakes gate that confidence can satisfy — it is a categorical checkpoint, a sibling of the merge gate in that it never auto-clears regardless of policy. The design decision is in [ADR-0054](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0054-conductor-integration-gate-always-human.md). The gate is also distinct from the conflict gate, which serializes lanes that share a file — the integration gate is about cross-team work convergence, independent of file overlap.
+The gate is `needs-human` at every autonomy level, including `hobby`. It is not a stakes gate that confidence can satisfy — it is a categorical checkpoint, a sibling of the merge gate in that it never auto-clears regardless of policy. The design decision is in [ADR-0054](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md). The gate is also distinct from the conflict gate, which serializes lanes that share a file — the integration gate is about cross-team work convergence, independent of file overlap.
 
 The integration lane's persona comes from its `scope` statement, not from a default mapping. A scope describing a review-and-test pass names Briar; a seam-architecture check names Winston. This keeps the gate general-purpose: the operator or the decompose chain sets the scope, and the persona follows from it.
 
@@ -256,13 +256,13 @@ The full gate contract is in [`lib/fleet.md`](https://github.com/HunterMcGrew/PR
 
 When any lanes carry a non-null `team`, the end-of-run report adds a per-team summary alongside the flat lane list and the tree-structured view. For each distinct team, the summary shows the count of lanes dispatched, done, parked, and discovered (where "discovered" means lanes whose origin signal carried that team tag). A run with all-null `team` values shows no per-team section, and the report format is identical to what Phases A and B produce.
 
-See [ADR-0053](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0053-conductor-integration-lane-type-marker.md) for the decision to use a `type` field as the integration lane marker.
+See [ADR-0053](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0053-conductor-integration-lane-type-marker.md) for the decision to use a `type` field as the integration lane marker.
 
 ---
 
 ## Scale — batching and partitioned run-control state
 
-At larger run sizes, two mechanics work together: the batcher keeps dispatch efficient within a segment, and the partition store keeps the run-control file from becoming a bottleneck across segments. Neither introduces a second scheduler, a second budget, or any form of nesting — sub-conductors are permanently off the table ([ADR-0049](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0049-conductor-teams-are-lane-groups.md)).
+At larger run sizes, two mechanics work together: the batcher keeps dispatch efficient within a segment, and the partition store keeps the run-control file from becoming a bottleneck across segments. Neither introduces a second scheduler, a second budget, or any form of nesting — sub-conductors are permanently off the table ([ADR-0049](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0049-conductor-teams-are-lane-groups.md)).
 
 ### The batcher
 
@@ -297,7 +297,7 @@ The most common cross-lane dependency in a Sol run is a frontend ticket waiting 
 
 Partitioning by epic subtree localizes the common case: a backend ticket and the frontend ticket that depends on it are typically both children of the same epic. Their `dependsOn` edge is an in-partition check, no cross-partition read needed. Only genuinely cross-epic dependencies — the rarer case — take the slower path, which is exactly where a denormalized summary is the right tool.
 
-`team` remains a field on the lane and drives the per-team report view. Partition-by-epic and report-by-team are orthogonal. The design decision is in [ADR-0055](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md).
+`team` remains a field on the lane and drives the per-team report view. Partition-by-epic and report-by-team are orthogonal. The design decision is in [ADR-0055](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md).
 
 #### The root index and partition files
 
@@ -335,7 +335,7 @@ Splitting lane records across files does not weaken any convergence brake. Every
 
 The budget counter lives only in the root index — every dispatch in any partition increments the one counter. There is no per-partition budget. The generation cap reads `generation` from `lanesSummary` across all partitions — the cap applies to the full discovered-lineage graph, not to any single partition's lanes. The breadth gate counts distinct new lanes summed across all partitions in a single reconcile pass: a six-lane expansion in one partition and a seven-lane expansion in another is a thirteen-lane reconcile that trips a gate of twelve, even though neither partition alone exceeds it.
 
-The per-partition counting mistake — where each partition's expansion is checked independently against the gate — is exactly what the run-wide design exists to prevent. The invariant is in [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) § Brakes are run-wide under partitioning and recorded in [ADR-0056](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md).
+The per-partition counting mistake — where each partition's expansion is checked independently against the gate — is exactly what the run-wide design exists to prevent. The invariant is in [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) § Brakes are run-wide under partitioning and recorded in [ADR-0056](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md).
 
 #### The partition-aware end-of-run report
 
@@ -351,15 +351,15 @@ Phase D supports runs at ~100 lanes. Runs trending past that size are expected t
 
 ## See also
 
-- [ADR-0048 — Conductor: Autonomy Between Gates](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md) — the autonomy invariant and the alternatives weighed
-- [ADR-0049 — Conductor: Teams Are Lane-Groups, Not Sub-Conductors](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0049-conductor-teams-are-lane-groups.md) — why the flat lane list holds and sub-conductors are permanently rejected
-- [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
-- [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md) — container lanes are non-dispatchable rollup nodes; child-first dispatch; tree depth ≠ generation depth
-- [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; hobby backstop
-- [ADR-0053 — Conductor: Integration Lane Type Marker](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0053-conductor-integration-lane-type-marker.md) — `type: "integration"` as the marker; no default integration persona; `null` is ordinary
-- [ADR-0054 — Conductor: Integration Gate Always Human](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0054-conductor-integration-gate-always-human.md) — the gate is `needs-human` at every autonomy level, including `hobby`; categorical, not confidence-gated
-- [ADR-0055 — Conductor: Run-Control State Partitions by Epic-Subtree Root, Not by Team](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md) — why epic-subtree beats team-partition; the sharding-by-right-key argument
-- [ADR-0056 — Conductor: Governor Brakes Evaluated Run-Wide, Never Per-Partition](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the invariant that keeps Phase D from quietly weakening the convergence governor
+- [ADR-0048 — Conductor: Autonomy Between Gates](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md) — the autonomy invariant and the alternatives weighed
+- [ADR-0049 — Conductor: Teams Are Lane-Groups, Not Sub-Conductors](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0049-conductor-teams-are-lane-groups.md) — why the flat lane list holds and sub-conductors are permanently rejected
+- [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
+- [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0051-conductor-tree-dispatch-semantics.md) — container lanes are non-dispatchable rollup nodes; child-first dispatch; tree depth ≠ generation depth
+- [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; hobby backstop
+- [ADR-0053 — Conductor: Integration Lane Type Marker](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0053-conductor-integration-lane-type-marker.md) — `type: "integration"` as the marker; no default integration persona; `null` is ordinary
+- [ADR-0054 — Conductor: Integration Gate Always Human](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md) — the gate is `needs-human` at every autonomy level, including `hobby`; categorical, not confidence-gated
+- [ADR-0055 — Conductor: Run-Control State Partitions by Epic-Subtree Root, Not by Team](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md) — why epic-subtree beats team-partition; the sharding-by-right-key argument
+- [ADR-0056 — Conductor: Governor Brakes Evaluated Run-Wide, Never Per-Partition](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md) — the invariant that keeps Phase D from quietly weakening the convergence governor
 - The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) → [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md)
 - [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) — run-control schema and read/write/mutate protocol
 - [`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md) — the reusable reconcile-delta primitive

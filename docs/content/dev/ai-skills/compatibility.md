@@ -16,7 +16,7 @@ The short version, before the prose:
 
 ## Persona vs utility skills
 
-Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`, `prism-review-loop`). Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
+Most skills are personas. A skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`, `prism-review-loop`). Utility skills generate skill bodies in all three runtimes like any other skill, but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X, so the build skips its `.codex/agents/<id>.toml` (and removes a stale one if a skill flips type). See [ADR-0046](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) for the decision and the rejected alternatives.
 
 ## Why the asymmetry exists
 
@@ -77,9 +77,9 @@ The failure mode this rule prevents is staging-and-deploy drift. Before Phase 1.
 
 ## The architectural decision
 
-The committed-vs-ignored split and the install-script rule are codified as [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0044-direct-write-tool-outputs.md). Read that ADR for the alternatives considered and the reasoning behind the per-file decisions.
+The committed-vs-ignored split and the install-script rule are codified as [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md). Read that ADR for the alternatives considered and the reasoning behind the per-file decisions.
 
 See also:
 
-- [`.prism/architect/install-layout.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/install-layout.md) — the agent-facing routing summary for the install layout.
+- [`.prism/architect/_toolkit/install-layout.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/_toolkit/install-layout.md) — the agent-facing routing summary for the install layout.
 - [`docs/content/dev/ai-skills/syncing.md`](./syncing.md) — the operational workflow for keeping platform outputs in sync.

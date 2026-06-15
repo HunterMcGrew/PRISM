@@ -142,11 +142,11 @@ test("loadedDocsForScope: mixed string and array values across keys", () => {
 
 test("findMissingCoverage: empty when every expected positive has skills-ecosystem.md", () => {
 	const result = {
-		nora: ["skills-ecosystem.md", "spec-editing.md"],
-		zoe: ["skills-ecosystem.md"],
-		winston: ["skills-ecosystem.md"],
-		eric: ["skills-ecosystem.md"],
-		sage: ["skills-ecosystem.md"],
+		nora: ["_toolkit/skills-ecosystem.md", "_toolkit/spec-editing.md"],
+		zoe: ["_toolkit/skills-ecosystem.md"],
+		winston: ["_toolkit/skills-ecosystem.md"],
+		eric: ["_toolkit/skills-ecosystem.md"],
+		sage: ["_toolkit/skills-ecosystem.md"],
 		fallthrough: [],
 	};
 	assert.deepEqual(findMissingCoverage(result), []);
@@ -154,11 +154,11 @@ test("findMissingCoverage: empty when every expected positive has skills-ecosyst
 
 test("findMissingCoverage: reports each expected positive that is missing the doc", () => {
 	const result = {
-		nora: ["skills-ecosystem.md"],
-		zoe: ["spec-editing.md"],
-		winston: ["skills-ecosystem.md"],
+		nora: ["_toolkit/skills-ecosystem.md"],
+		zoe: ["_toolkit/spec-editing.md"],
+		winston: ["_toolkit/skills-ecosystem.md"],
 		eric: [],
-		sage: ["skills-ecosystem.md"],
+		sage: ["_toolkit/skills-ecosystem.md"],
 		fallthrough: [],
 	};
 	const failures = findMissingCoverage(result);

@@ -32,7 +32,7 @@ export interface PersonaScope {
 	files: string[];
 }
 
-const SKILLS_ECOSYSTEM_DOC = "skills-ecosystem.md";
+const SKILLS_ECOSYSTEM_DOC = "_toolkit/skills-ecosystem.md";
 
 const PERSONA_SCOPES: PersonaScope[] = [
 	{
@@ -47,7 +47,7 @@ const PERSONA_SCOPES: PersonaScope[] = [
 		files: [
 			".claude/skills/prism-surface-audit/SKILL.md",
 			".prism/lessons.md",
-			".prism/spec/adrs/0035-rule-loading-tiers.md",
+			".prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md",
 		],
 	},
 	{

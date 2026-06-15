@@ -1,6 +1,6 @@
 # Anchor Substitution
 
-How Atlas writes per-team specializations into canonical persona sources without contaminating the canonical content. The agent-facing summary lives at [`.prism/architect/anchor-substitution.md`](../../../../.prism/architect/anchor-substitution.md); this doc walks the same surface with longer narrative and a worked example.
+How Atlas writes per-team specializations into canonical persona sources without contaminating the canonical content. The agent-facing summary lives at [`.prism/architect/_toolkit/anchor-substitution.md`](../../../../.prism/architect/_toolkit/anchor-substitution.md); this doc walks the same surface with longer narrative and a worked example.
 
 ## The problem the module solves
 
@@ -132,7 +132,7 @@ The duplicate-name rule (`workflow-example`, `workflow-example-2`, `workflow-exa
 
 ## Cross-references
 
-- [ADR-0030](../../../../.prism/spec/adrs/0030-token-substitution-at-build-time.md) — the sibling mechanism covering identifier substitution.
-- [ADR-0032](../../../../.prism/spec/adrs/0032-canonical-skill-content-is-generic.md) — the decision this module implements.
+- [ADR-0030](../../../../.prism/spec/adrs/_toolkit/0030-token-substitution-at-build-time.md) — the sibling mechanism covering identifier substitution.
+- [ADR-0032](../../../../.prism/spec/adrs/_toolkit/0032-canonical-skill-content-is-generic.md) — the decision this module implements.
 - [Stack Detection](./stack-detection.md) — produces the `DetectedStack` `runAnchorSubstitution` reads from.
 - [Rule Generation](./rule-generation.md) — the sibling Phase 2 step that runs immediately before anchor substitution.

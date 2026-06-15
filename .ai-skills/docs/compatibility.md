@@ -32,7 +32,7 @@ The `.codex/agents/<id>.toml` row applies to persona skills only — see the sub
 
 ### Persona vs Utility skills
 
-Most skills are personas; a skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`). Utility skills generate skill adapters in all three runtimes — `.claude/skills/<id>/`, `.agents/skills/<id>/`, `.cursor/skills/<id>/` — but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X. The build skips `.codex/agents/<id>.toml` for utility entries and removes a stale one if a skill flips type. See [ADR-0046](../../.prism/spec/adrs/0046-persona-vs-utility-skill-type.md).
+Most skills are personas; a skill whose `roles.json` entry declares `type: "utility"` is an action with no persona (e.g. `prism-handoff`). Utility skills generate skill adapters in all three runtimes — `.claude/skills/<id>/`, `.agents/skills/<id>/`, `.cursor/skills/<id>/` — but no Codex agent adapter: an agent adapter announces "You are X," and a utility skill has no X. The build skips `.codex/agents/<id>.toml` for utility entries and removes a stale one if a skill flips type. See [ADR-0046](../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md).
 
 ## Per-Tool Directory Ownership
 
@@ -54,4 +54,4 @@ Install scripts exist only when the destination is outside the repo.
 
 The failure mode this rule prevents: staging-and-deploy drift. Without this discipline, build outputs accumulate in a staging directory (formerly `.generated/`) and the install scripts drift from the source of truth — what the build writes to staging stops matching what install copies to the destination. The fix is to remove staging entirely for in-repo destinations and only use install scripts when the destination is genuinely external.
 
-See [ADR-0044](../../.prism/spec/adrs/0044-direct-write-tool-outputs.md) for the architectural decision; see [`.prism/architect/install-layout.md § Direct-write tool outputs`](../../.prism/architect/install-layout.md) for the routing summary; see [`docs/content/dev/ai-skills/compatibility.md`](../../docs/content/dev/ai-skills/compatibility.md) for the human-readable narrative version.
+See [ADR-0044](../../.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md) for the architectural decision; see [`.prism/architect/_toolkit/install-layout.md § Direct-write tool outputs`](../../.prism/architect/_toolkit/install-layout.md) for the routing summary; see [`docs/content/dev/ai-skills/compatibility.md`](../../docs/content/dev/ai-skills/compatibility.md) for the human-readable narrative version.

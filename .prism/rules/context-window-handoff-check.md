@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression. See [ADR-0006](../spec/adrs/0006-context-window-handoff-check.md) for why this check exists.
+Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression. See [ADR-0006](../spec/adrs/_toolkit/0006-context-window-handoff-check.md) for why this check exists.
 
 **Why:** a persona recommendation that ignores context load hands the next persona a session already close to compaction, where load-bearing details get silently dropped. The check costs one evaluation at session close and protects the handoff at exactly the moment the context is most likely to be lost.
 

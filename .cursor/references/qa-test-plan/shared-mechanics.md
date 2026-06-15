@@ -14,7 +14,7 @@ These apply across all four modes. Each mode reference points here instead of du
 
 ## Identify regression risks
 
-After covering what the change should do, ask what the change might have broken. Run `git show <hash> --stat` (or `gh pr diff <num> --name-only`) for each included change and flag the regression signals listed in `../../architect/qa-test-planning.md` — shared components, block renderer / registry, global styles, utility functions, PHP endpoints / middleware, Next.js routing, WordPress hooks / filters.
+After covering what the change should do, ask what the change might have broken. Run `git show <hash> --stat` (or `gh pr diff <num> --name-only`) for each included change and flag the regression signals listed in `../../architect/_toolkit/qa-test-planning.md` — shared components, block renderer / registry, global styles, utility functions, PHP endpoints / middleware, Next.js routing, WordPress hooks / filters.
 
 For each regression risk found:
 

@@ -1,6 +1,6 @@
 # Rule Generation
 
-How Atlas turns a `DetectedStack` into the per-team rules that ship in `.prism/rules/`. The agent-facing summary lives at [`.prism/architect/rule-generation.md`](../../../../.prism/architect/rule-generation.md); this doc walks the same surface with longer narrative and concrete examples of generated output.
+How Atlas turns a `DetectedStack` into the per-team rules that ship in `.prism/rules/`. The agent-facing summary lives at [`.prism/architect/_toolkit/rule-generation.md`](../../../../.prism/architect/_toolkit/rule-generation.md); this doc walks the same surface with longer narrative and concrete examples of generated output.
 
 ## Why generators
 
@@ -8,7 +8,7 @@ PRISM ships a static universal rule set in `.prism/rules/` — code standards, a
 
 A team running a Rails monolith does not want to load TypeScript guidelines; a team running Next.js does not want to load WordPress hook discipline. The generator surface emits only what the stack detection found, so the team's `.prism/rules/` directory after onboarding mirrors the team's actual code rather than a kitchen-sink of every supported language.
 
-The decision to generate at onboarding time instead of routing dynamically lives in [ADR-0029](../../../../.prism/spec/adrs/0029-rules-self-declare-applicability.md). The short version: rules in `.prism/rules/` are auto-loaded as Tier 2 context per the PRISM SPEC, and each rule self-declares when it applies. Generators emit, the agent picks up — no manifest, no discovery layer, no skill-to-rule coupling.
+The decision to generate at onboarding time instead of routing dynamically lives in [ADR-0029](../../../../.prism/spec/adrs/_toolkit/0029-rules-self-declare-applicability.md). The short version: rules in `.prism/rules/` are auto-loaded as Tier 2 context per the PRISM SPEC, and each rule self-declares when it applies. Generators emit, the agent picks up — no manifest, no discovery layer, no skill-to-rule coupling.
 
 ## The three generators
 
@@ -69,8 +69,8 @@ A second invocation of `runRuleGenerators` against the same repo returns six `wr
 
 ## See also
 
-- [`.prism/architect/rule-generation.md`](../../../../.prism/architect/rule-generation.md) — agent-facing reference. Same matrix and contract; shorter.
-- [`.prism/architect/stack-detection.md`](../../../../.prism/architect/stack-detection.md) — the detector that produces the `DetectedStack` these generators consume.
+- [`.prism/architect/_toolkit/rule-generation.md`](../../../../.prism/architect/_toolkit/rule-generation.md) — agent-facing reference. Same matrix and contract; shorter.
+- [`.prism/architect/_toolkit/stack-detection.md`](../../../../.prism/architect/_toolkit/stack-detection.md) — the detector that produces the `DetectedStack` these generators consume.
 - [`docs/content/dev/architecture/stack-detection.md`](./stack-detection.md) — paired dev doc for the detector.
-- [ADR-0029](../../../../.prism/spec/adrs/0029-rules-self-declare-applicability.md) — the applicability-declaration convention every generated rule follows.
-- [ADR-0040](../../../../.prism/spec/adrs/0040-atlas-as-onboarding-persona.md) — the persona-level rationale for Atlas as a whole.
+- [ADR-0029](../../../../.prism/spec/adrs/_toolkit/0029-rules-self-declare-applicability.md) — the applicability-declaration convention every generated rule follows.
+- [ADR-0040](../../../../.prism/spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md) — the persona-level rationale for Atlas as a whole.

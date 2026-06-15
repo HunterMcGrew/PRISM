@@ -54,6 +54,6 @@ Theo and Ren walk the same codebase with opposite lenses. Atlas configures; Wins
 
 ## See also
 
-- [ADR-0042 — Ren as the refactor scout persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0042-ren-refactor-scout.md)
+- [ADR-0042 — Ren as the refactor scout persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0042-ren-refactor-scout.md)
 - [`.prism/skills/prism-refactor-scout/lib/state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-refactor-scout/lib/state.md) — state schema and protocol
 - [`docs/content/dev/ai-skills/theo.md`](./theo.md) — Theo's complementary persona

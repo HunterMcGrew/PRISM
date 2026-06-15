@@ -12,7 +12,7 @@ A run operates **single-file** (`.prism/conductor-state.json` holding `lanes[]` 
 
 Sol checks the lane count at each reconcile boundary. On crossing the threshold, Sol **migrates in place**:
 
-1. Group all existing lanes by `walkToEpicRoot(laneId)` — the partition key derivation (see [ADR-0055](../../spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md)). A lane with no epic ancestor uses the synthetic key `"epic-root"`.
+1. Group all existing lanes by `walkToEpicRoot(laneId)` — the partition key derivation (see [ADR-0055](../../spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md)). A lane with no epic ancestor uses the synthetic key `"epic-root"`.
 2. For each group, write one partition file (`conductor-state.epic-<laneId>.json`) containing `{ "version": "3", "key": "epic-<laneId>", "lastWritten": "<ISO-8601>", "lanes": [ ... ] }` with the group's lane records.
 3. Rewrite the root index with `partitionManifest` + `lanesSummary` + the moved `signals[]` / `globalBudget`, setting `version: "3"`.
 4. Clear `lanes[]` from the root — in the partitioned layout, `lanes[]` lives only in partition files.

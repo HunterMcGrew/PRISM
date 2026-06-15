@@ -101,9 +101,9 @@ test("ignores violations in non-copied areas (plans/)", async () => {
 test("respects the file allowlist (ADR-0031)", async () => {
 	await withTempContentRoot(
 		async (root) => {
-			await fs.mkdir(path.join(root, "spec", "adrs"), { recursive: true });
+			await fs.mkdir(path.join(root, "spec", "adrs", "_toolkit"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "spec", "adrs", "0031-bifurcated-install-layout.md"),
+				path.join(root, "spec", "adrs", "_toolkit", "0031-bifurcated-install-layout.md"),
 				"## Context\n\nBefore the bifurcation, `.claude/rules/` was canonical.\n",
 				"utf8"
 			);
@@ -115,12 +115,12 @@ test("respects the file allowlist (ADR-0031)", async () => {
 	);
 });
 
-test("respects the file allowlist (architect/install-layout.md)", async () => {
+test("respects the file allowlist (architect/_toolkit/install-layout.md)", async () => {
 	await withTempContentRoot(
 		async (root) => {
-			await fs.mkdir(path.join(root, "architect"), { recursive: true });
+			await fs.mkdir(path.join(root, "architect", "_toolkit"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "architect", "install-layout.md"),
+				path.join(root, "architect", "_toolkit", "install-layout.md"),
 				"# Install Layout\n\nExample: `.prism/rules/foo.md` copies to `.claude/rules/foo.md`, `.codex/rules/foo.md`, `.cursor/rules/foo.md`.\n",
 				"utf8"
 			);
@@ -158,9 +158,9 @@ test("scans the templates-surface content root using the same allowlist", async 
 				"See `.claude/rules/other.md` for details.\n",
 				"utf8"
 			);
-			await fs.mkdir(path.join(root, "architect"), { recursive: true });
+			await fs.mkdir(path.join(root, "architect", "_toolkit"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "architect", "install-layout.md"),
+				path.join(root, "architect", "_toolkit", "install-layout.md"),
 				"Example: `.claude/rules/foo.md` copies from `.prism/rules/foo.md`.\n",
 				"utf8"
 			);

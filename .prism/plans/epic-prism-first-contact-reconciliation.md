@@ -2,6 +2,10 @@
 
 > **DEFERRED — captured for future planning, lowest priority of the three (user: fresh/established-merge onboarding is least urgent right now).** Written to survive context loss: design embedded inline. Epic C of three (A: docs — active; B: prism:sync steady-state — deferred; C: this).
 
+> **NEEDS REPLAN (2026-06-15) — Epic B dependency changed.** This plan reuses Epic B's three-way content-hash diff engine and --dry-run three-bucket preview, both of which the prism:update epic (.prism/plans/epic-prism-update.md) replaced with the .sync-manifest.json hash + .bak + Phase 5 path-ownership classifier. The problem (first-contact into a repo with no manifest) is still unsolved. Re-plan against the new primitives AFTER the new epic's Phase 2 (manifest) and Phase 5 (classifier) land — Winston owns that pass.
+>
+> Forward idea (Hunter, 2026-06-15): Atlas/onboarding should ask the consumer whether they already have skills (authored or merely present in the repo) and run a discovery sweep to adopt them — same for architect docs, ADRs, and rules. Generalizes prism-skill-forge's per-skill migrate mode into a first-contact discovery flow; fold into this re-plan.
+
 ## Ticket
 
 No Linear ticket. Solves the hardest distribution case: adopting PRISM into a repo that **already has its own setup** (Thrive today; SPC in the future).
@@ -32,8 +36,8 @@ This belongs in **onboarding** (Atlas), not plain sync — it's a walked, resuma
 ### Atlas (onboarding)
 
 1. **Detect established setup.** On onboarding, check for pre-existing `.claude/`, `.prism/`, `AGENTS.md`, `CLAUDE.md`, platform dirs, and a `docs/` layout. If found → enter reconciliation mode instead of clean onboarding.
-2. **Bootstrap-diff against PRISM's snapshot.** Diff the established repo's relevant files against `templates/install/` (canonical) + generated-skill outputs at the synced commit. Classify each file: **PRISM owns this** (adopt PRISM's version) / **you authored this** (keep, never manage — won't enter state file) / **both diverged** (walk a merge). Reuse Epic B's content-hash diff engine.
-3. **Walk reconciliation with a dry-run preview first** (same non-destructive frame as Epic B — the user explicitly endorsed this). Show the three buckets before writing anything. Resumable via the existing `.ai-skills/registry/onboarding-state.json` mechanism — an established-repo reconciliation is long and must survive interruption.
+2. **Bootstrap-diff against PRISM's snapshot.** Diff the established repo's relevant files against `templates/install/` (canonical) + generated-skill outputs at the synced commit. Classify each file: **PRISM owns this** (adopt PRISM's version) / **you authored this** (keep, never manage — won't enter state file) / **both diverged** (walk a merge). Reuse Epic B's content-hash diff engine. **(stale — see header)**
+3. **Walk reconciliation with a dry-run preview first** (same non-destructive frame as Epic B — the user explicitly endorsed this). Show the three buckets before writing anything. Resumable via the existing `.ai-skills/registry/onboarding-state.json` mechanism — an established-repo reconciliation is long and must survive interruption. **(stale — see header: three-bucket preview mechanism replaced in prism:update epic)**
 4. **Establish the baseline state file.** After the user resolves, write the initial `.ai-skills/.prism-state.json` (Epic B's shape) so subsequent `prism:sync` runs work as steady-state.
 5. **Propose existing docs layout as the `documentation` config default** (Epic A seam) rather than asking the established team cold — they already have a docs system; detect and confirm it.
 
@@ -62,7 +66,7 @@ This belongs in **onboarding** (Atlas), not plain sync — it's a walked, resuma
 
 ### Behavioral
 
-- [ ] Given an established repo with its own `.claude/`, `AGENTS.md`, and `docs/`, When Atlas onboards it, Then it enters reconciliation mode and shows a dry-run three-bucket preview before writing anything.
+- [ ] Given an established repo with its own `.claude/`, `AGENTS.md`, and `docs/`, When Atlas onboards it, Then it enters reconciliation mode and shows a dry-run three-bucket preview before writing anything. **(stale — see header)**
 - [ ] Given a file the established team authored (e.g. a custom skill, their own `docs/`), When reconciliation runs, Then that file is classified "yours," left untouched, and excluded from the baseline state file.
 - [ ] Given reconciliation completes, When the maintainer later runs `prism:sync`, Then it behaves as steady-state (Epic B) against the baseline state file just written.
 - [ ] Given a long reconciliation interrupted midway, When the user resumes, Then onboarding picks up from the saved `onboarding-state.json` without redoing resolved files.
@@ -70,4 +74,4 @@ This belongs in **onboarding** (Atlas), not plain sync — it's a walked, resuma
 ### Non-behavioral
 
 - [ ] No SPC-specific code paths — established-repo handling is generic; team specifics come from `config.json` + detection.
-- [ ] Reconciliation reuses Epic B's diff engine (no second diff implementation).
+- [ ] Reconciliation reuses Epic B's diff engine (no second diff implementation). **(stale — see header: Epic B's diff engine replaced by .sync-manifest.json + Phase 5 classifier)**

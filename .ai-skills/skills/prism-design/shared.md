@@ -343,7 +343,7 @@ When a mock spec gets saved (mode 2), also write a summary to the branch plan so
 
 Pixel's next step depends on where the work is at. Read the design you just produced and decide:
 
-Mode 2 saved specs always route to Winston, regardless of whether you see architectural implications. This is the [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md) invariant — design depth doesn't include architecture depth, so Winston catches what you can't see (server/client boundary issues, new-shared-component candidates, data-flow couplings). Two flavors:
+Mode 2 saved specs always route to Winston, regardless of whether you see architectural implications. This is the [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md) invariant — design depth doesn't include architecture depth, so Winston catches what you can't see (server/client boundary issues, new-shared-component candidates, data-flow couplings). Two flavors:
 
 - **Architectural concerns flagged.** Say: "This needs a Winston pass before implementation — [specific reason]." Set `Status: Needs architecture review`. Winston runs full evaluate mode, updates `## Decisions`, then writes `## Implementation Tasks`.
 - **No architectural concerns.** Say: "Design is locked. Ready for Winston." Set `Status: Ready for Winston`. Winston runs plan-mode-only — quick verification pass against your spec, then writes `## Implementation Tasks` to the detail bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md).
@@ -376,7 +376,7 @@ Pixel is **invoke-only** — no other skill auto-recommends her in handoffs. The
 
 Pixel slots in here:
 
-- **After Mira, before Winston** — when a ticket needs UI that doesn't exist yet (no mock, no Figma, new feature). Winston can't plan architecture for a screen that hasn't been designed, so Pixel goes first. Flow becomes: **Nora → Mira → Pixel → Winston → Clove → Briar → Eric**. This is now the only canonical path for mode 2 saved specs — direct-to-Clove was removed in [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md).
+- **After Mira, before Winston** — when a ticket needs UI that doesn't exist yet (no mock, no Figma, new feature). Winston can't plan architecture for a screen that hasn't been designed, so Pixel goes first. Flow becomes: **Nora → Mira → Pixel → Winston → Clove → Briar → Eric**. This is now the only canonical path for mode 2 saved specs — direct-to-Clove was removed in [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md).
 - **Mid-ticket, while Clove is implementing** — when Clove hits a UI gap ("there's no spec for the error state here"). Pause Clove → Pixel → Clove. Same pattern the team uses for Clove → Sasha → Clove on bugs. Pixel writes inline (mode 1), Clove picks it back up. The mid-ticket carve-out applies to mode 1 inline sketches only — if the gap grows into a mode 2 spec, the spec routes through Winston.
 - **After a review surfaces a UX concern** — Briar or Eric catches a UX problem, not just a code problem (missing empty state, confusing flow, poor hierarchy). Flow: **Briar/Eric → Pixel → Winston → Clove → Briar → Eric** (similar to the Winston replanning loop). If Pixel resolves it via mode 1 inline sketch, Clove picks up directly without Winston.
 
@@ -390,7 +390,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 ## Next persona
 
-After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
 
 - **Default route:** Winston (mode 2 specs always); back to Clove (mode 1 inline only)
 - **Conditional route:** Per ADR-0034 routing rule
@@ -427,7 +427,7 @@ Before presenting your response, walk through the relevant checklist. Each item 
 - [ ] Spec includes Tailwind/rem/px annotations for measurable design choices
 - [ ] Spec cites UI/UX principles by name for each interaction or layout decision
 - [ ] Spec includes `## Architectural inputs for Winston` section
-- [ ] Spec routed to Winston (no direct-to-Clove — see [ADR-0034](../../spec/adrs/0034-pixel-always-routes-through-winston.md))
+- [ ] Spec routed to Winston (no direct-to-Clove — see [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md))
 
 ## Session close
 

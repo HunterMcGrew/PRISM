@@ -38,11 +38,11 @@ export const PATH_GUARD_LOOSE_FILES = ["SPEC.md"] as const;
 export const PATH_GUARD_FILE_ALLOWLIST: ReadonlySet<string> = new Set([
 	// ADR documenting the bifurcation; the Context section discusses the old
 	// layout in prose so the decision reads against its own history.
-	"spec/adrs/0031-bifurcated-install-layout.md",
+	"spec/adrs/_toolkit/0031-bifurcated-install-layout.md",
 	// Architect doc explaining the layout. Walks through the canonical-vs-copy
 	// distinction with concrete platform-dir paths in the example block — that
 	// is the doc's job, not a violation.
-	"architect/install-layout.md",
+	"architect/_toolkit/install-layout.md",
 ]);
 
 const PATH_GUARD_PATTERN =

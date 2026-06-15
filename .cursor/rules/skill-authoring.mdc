@@ -8,13 +8,13 @@ globs:
 
 ## Purpose
 
-PRISM skills are scaffolding. They define what a persona does and how it weighs everything else — and they point to references for the rest. This rule governs what stays in the skill body and what moves to a reference, so skills stay lean enough that their load-bearing rules actually get followed. It is the author-facing form of [ADR-0045](../spec/adrs/0045-skill-content-disclosure-model.md).
+PRISM skills are scaffolding. They define what a persona does and how it weighs everything else — and they point to references for the rest. This rule governs what stays in the skill body and what moves to a reference, so skills stay lean enough that their load-bearing rules actually get followed. It is the author-facing form of [ADR-0045](../spec/adrs/_toolkit/0045-skill-content-disclosure-model.md).
 
 **Why:** A skill's body is paid every time the skill triggers and stays in context for the rest of the conversation. References are free until the body tells the agent to read them. But the real cost of a bloated body isn't tokens — it's attention dilution. A 200-line skill with five sharp rules treats them as load-bearing because they're the whole document; a 700-line skill with the same five rules plus thirty nice-to-haves flattens the hierarchy, and the critical rules get followed less reliably. Going lean is not about line count for its own sake — it's about keeping the importance hierarchy sharp.
 
 ## The three loading levels
 
-Use "level" or "stage" here — never "tier." [ADR-0035](../spec/adrs/0035-rule-loading-tiers.md) owns "tier" for rule loading; colliding the vocabularies confuses both.
+Use "level" or "stage" here — never "tier." [ADR-0035](../spec/adrs/_toolkit/0035-rule-loading-tiers.md) owns "tier" for rule loading; colliding the vocabularies confuses both.
 
 1. **Frontmatter** (`name` + `description`) — loaded every session, for every installed skill. Keep it tight; it's permanent cost.
 2. **Body** (`shared.md` + the platform file → generated `SKILL.md`) — loaded every trigger. This is where the cost and the dilution live.
@@ -84,7 +84,7 @@ Most skills are personas; some are actions. A utility skill (`type: "utility"` i
 
 The `description` field drops persona double-coverage: there's no name to route on, so the trigger line carries function keywords only. Everything else in this rule applies unchanged — the disclosure gate, the three loading levels, and the description-shape guidance all hold; only the persona-specific parts fall away.
 
-**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/0046-persona-vs-utility-skill-type.md).
+**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md).
 
 ## Externalization mechanics
 

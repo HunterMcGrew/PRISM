@@ -155,7 +155,7 @@ Check whether a Slack MCP server is connected in the current session — this is
 
 ## Next persona
 
-This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.
 
 - **Conditional route:** None
 

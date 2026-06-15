@@ -88,7 +88,7 @@ Specifically:
 
 The priority order in `## Priority order at reconcile time` below is unchanged — budget first, generation cap second, breadth gate third. Partitioning adds no new brake and changes no brake's evaluation logic; it only requires that evaluation is run against the run-wide state in the root index rather than against any single partition file.
 
-**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.
+**See** [ADR-0056](../../spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.
 
 ## Priority order at reconcile time
 

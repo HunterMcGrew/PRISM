@@ -8,7 +8,7 @@ last_updated: "2026-05-22"
 
 # Audit Workflow
 
-Agent-facing version: `.prism/architect/audit-workflow.md`.
+Agent-facing version: `.prism/architect/_toolkit/audit-workflow.md`.
 
 PRISM accumulates durable context over time — branch plans, lessons learned, architectural decision records, architect docs. Every one of those surfaces grows on every ticket. Most of the growth is healthy: a plan documents a decision, the decision lands in the architect doc, the lesson hardens into a rule. Some of it isn't: a plan stays open after the work shipped, a lesson never gets referenced, an ADR's underlying assumption shifts without anyone updating the entry.
 
@@ -24,7 +24,7 @@ Three approaches got considered (and the rejected ones say what's wrong with the
 
 - **Add the maintenance work to existing personas.** Have Winston run a quarterly audit. Have Briar sweep `.prism/lessons.md` after every self-review. The cost lands on personas whose job isn't maintenance, and the timing is wrong — a user opening Briar to review their own PR doesn't want Briar also reading the lessons file.
 - **Build cadence into the tooling, not into personas.** Run a cron job that walks `.prism/`, dumps findings to a static report. The work is judgment work, not mechanical work. Classifying a Decision as still-load-bearing or no-longer-needed requires reasoning a script can't carry. The output of a cron job that nobody reads is a list nobody acts on.
-- **Introduce a new persona axis: cadence-driven, separate from ticket-flow.** This is the path PRISM took. The persona is named Zoe; the ADR codifying the axis is [ADR-0037](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0037-cadence-driven-personas.md).
+- **Introduce a new persona axis: cadence-driven, separate from ticket-flow.** This is the path PRISM took. The persona is named Zoe; the ADR codifying the axis is [ADR-0037](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0037-cadence-driven-personas.md).
 
 ## What the persona does
 
@@ -84,13 +84,13 @@ A few negative-space invariants that matter:
 
 ## How this fits the rest of the toolkit
 
-The new persona axis sits alongside ticket-flow personas, not above or below them. The skill roster in `.prism/architect/skills-ecosystem.md` lists Zoe separately so the distinction shows up in the first place a reader looks. The audit doc the agent loads when it touches `.prism/audit-state.json`, `.prism/archived/lessons-archive.md`, `.prism/archived/plans/**`, or `.prism/audits/**` is this document's paired agent-facing version at `.prism/architect/audit-workflow.md`.
+The new persona axis sits alongside ticket-flow personas, not above or below them. The skill roster in `.prism/architect/_toolkit/skills-ecosystem.md` lists Zoe separately so the distinction shows up in the first place a reader looks. The audit doc the agent loads when it touches `.prism/audit-state.json`, `.prism/archived/lessons-archive.md`, `.prism/archived/plans/**`, or `.prism/audits/**` is this document's paired agent-facing version at `.prism/architect/_toolkit/audit-workflow.md`.
 
 The pattern generalizes. A future cadence persona — say, a quarterly ADR-review persona that walks `.prism/spec/adrs/` with more depth than Zoe does, or a metrics-rollup persona that summarizes the team's ticket flow — adopts the same shape: dedicated state file, dedicated architect doc, explicit invocation, no ticket-flow handoff. Zoe is the first; the axis is durable.
 
 ## References
 
-- [ADR-0037](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0037-cadence-driven-personas.md) — the cadence-driven persona axis.
-- [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0038-paired-dev-doc-gates.md) — the paired-doc invariant this document follows.
-- `.prism/architect/audit-workflow.md` — agent-facing version with the verdict procedure, state schema, and output format.
+- [ADR-0037](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0037-cadence-driven-personas.md) — the cadence-driven persona axis.
+- [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0038-paired-dev-doc-gates.md) — the paired-doc invariant this document follows.
+- `.prism/architect/_toolkit/audit-workflow.md` — agent-facing version with the verdict procedure, state schema, and output format.
 - `.ai-skills/skills/prism-surface-audit/` — Zoe's canonical skill source.

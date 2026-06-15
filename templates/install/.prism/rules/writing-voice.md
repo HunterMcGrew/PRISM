@@ -10,7 +10,7 @@ The principle is _durable_ communication — anything a future reader will load 
 
 Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE` — reads as a contract written for someone who needs to be controlled. Onboarding voice reads as guidance from a colleague who already trusts you to do the right thing once you understand it. The constraint is the same; the framing changes how the reader receives it.
 
-**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md).
+**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/_toolkit/0015-humane-language-over-mandates.md).
 
 **How to apply:**
 
@@ -26,7 +26,7 @@ Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE
 
 Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule is load-bearing or stale.
 
-**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't. See [ADR-0016](../spec/adrs/0016-explain-the-why.md).
+**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't. See [ADR-0016](../spec/adrs/_toolkit/0016-explain-the-why.md).
 
 **How to apply:**
 

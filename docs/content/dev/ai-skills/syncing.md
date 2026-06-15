@@ -45,7 +45,7 @@ Whichever path you take, do **not** touch `~/.codex/codex-config.toml` from PRIS
 
 ## Cursor: no install step
 
-Cursor reads skills from `.cursor/skills/<id>/SKILL.md` directly in the repo. Since `.cursor/skills/` is committed (per [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0044-direct-write-tool-outputs.md)), Cursor consumers get every persona on `git pull` — no install step required.
+Cursor reads skills from `.cursor/skills/<id>/SKILL.md` directly in the repo. Since `.cursor/skills/` is committed (per [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md)), Cursor consumers get every persona on `git pull` — no install step required.
 
 This is the Phase 1.5f change. Before it, `.cursor/skills/` was generated and gitignored. PRISM never shipped a Cursor install script (the upstream Thrive dogfood had one; PRISM was extracted before that script was added). So pre-1.5f, Cursor consumers of PRISM had no clean install path — direct-write + commit closes that gap.
 
@@ -68,4 +68,4 @@ Phase 1.5f removed the staging directory entirely. Cursor skills land directly a
 rm -rf .generated/
 ```
 
-The build won't recreate it. The full reasoning lives in [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0044-direct-write-tool-outputs.md).
+The build won't recreate it. The full reasoning lives in [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md).
