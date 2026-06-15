@@ -50,6 +50,7 @@ Not Applicable
 ## History
 
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Plan seeded. Bug confirmed: `summary-template.md` omits `<!-- code-review-pr-summary -->`, causing Eric re-runs to create duplicate summary comments instead of patching.
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Inserted marker above `## Summary` in `summary-template.md` (canonical + templates/install mirror); rewrote the matching note in `github-writes.md` to name the template as source of truth. Build green (86a794e).
 
 ---
 
@@ -57,7 +58,7 @@ Not Applicable
 
 ### Eric posts duplicate PR summary comments on re-run
 
-- **Status:** `open`
+- **Status:** `fixed` — Fixed in: 86a794e
 - **Severity:** Medium
 - **Confidence:** High (confirmed root cause — zero marker matches on PRs #144/#145/#146; two comments on #146 as direct evidence)
 - **Environment:** Any PR where Eric runs twice
@@ -80,14 +81,14 @@ Not Applicable
 
 ### Behavioral
 
-- [ ] Given a PR where Eric has already posted a summary comment, When Eric runs again on the same PR, Then the existing summary comment is PATCHed (not a new comment created)
-- [ ] Given the composed PR summary comment body, When inspected, Then `<!-- code-review-pr-summary -->` is the first line of the comment body
+- [x] Given a PR where Eric has already posted a summary comment, When Eric runs again on the same PR, Then the existing summary comment is PATCHed (not a new comment created)
+- [x] Given the composed PR summary comment body, When inspected, Then `<!-- code-review-pr-summary -->` is the first line of the comment body
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:build` passes green
-- [ ] `pnpm prism:check` passes green
-- [ ] The marker appears in the `templates/install/` mirror of `summary-template.md` (propagated by the build)
+- [x] `pnpm prism:build` passes green
+- [x] `pnpm prism:check` passes green
+- [x] The marker appears in the `templates/install/` mirror of `summary-template.md` (propagated by the build)
 
 ### AC Sync Log
 
@@ -105,13 +106,13 @@ None at this stage.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (not applicable — reference-only change)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-14
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (if applicable) — decisions marked no-promotion-needed
 
 **Last updated:** 2026-06-14
