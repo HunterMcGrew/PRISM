@@ -13,7 +13,7 @@ Concrete example: if both Winston and Clove might write to `## Decisions`, an am
 
 ## Decision
 
-Each plan section has designated readers and writers. The ownership table in `.prism/architect/skills-ecosystem.md` § Plan Section Ownership is the canonical source.
+Each plan section has designated readers and writers. The ownership table in `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership is the canonical source.
 
 Summary:
 
@@ -38,5 +38,5 @@ Summary:
 
 ## References
 
-- `.prism/architect/skills-ecosystem.md` § Plan Section Ownership
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership
 - ADR-0001 (Plan Is Source of Truth) — this ADR specifies who writes to which section

@@ -33,5 +33,5 @@ Agents read the plan before starting work. They update it after meaningful chang
 ## References
 
 - `.prism/rules/branch-plan.md` — plan file location, template, maintenance expectations
-- `.prism/architect/skills-ecosystem.md` § Plan Section Ownership — who writes which section
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership — who writes which section
 - `AGENTS.md § Task Management` — plan is the working memory across sessions

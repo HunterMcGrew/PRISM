@@ -31,5 +31,5 @@ This gate matters even when the user wants to move fast — a bad branch state c
 
 ## References
 
-- `.prism/architect/skills-ecosystem.md` § Rules for All Skills item 10
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Rules for All Skills item 10
 - `.claude/skills/prism-ticket-start/SKILL.md` — Nora's implementation of the gate

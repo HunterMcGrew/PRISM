@@ -30,7 +30,7 @@ A cadence-driven persona:
 - Writes to a dedicated **operational state file** at `.prism/<persona-state>.json` (or similar), not a ticket-scoped plan. The state file tracks what's been classified, what's been deferred, what's been archived.
 - Owns a paired **architect doc** at `.prism/architect/<workflow>-workflow.md` describing the workflow, the audit surfaces, and the verdict procedure.
 
-Zoe is the first cadence-driven persona. She audits the `.prism/` surface on cadence to surface stale plans, archive-candidate lessons, and overdue ADR reviews. Her state file lives at `.prism/audit-state.json` and her workflow doc at `.prism/architect/audit-workflow.md`.
+Zoe is the first cadence-driven persona. She audits the `.prism/` surface on cadence to surface stale plans, archive-candidate lessons, and overdue ADR reviews. Her state file lives at `.prism/audit-state.json` and her workflow doc at `.prism/architect/_toolkit/audit-workflow.md`.
 
 The axis is durable, not Zoe-specific. Future cadence personas — for example, a quarterly ADR-review persona, or a metrics-rollup persona — adopt the same shape: dedicated state file, dedicated architect doc, explicit-invocation, no ticket-flow handoff.
 
@@ -39,7 +39,7 @@ The axis is durable, not Zoe-specific. Future cadence personas — for example, 
 - **Positive:** Ticket-flow personas stay focused on ticket-flow work. Winston isn't loaded with audit logic; Briar isn't loaded with archival logic. The cost of the maintenance work lives in personas whose only job is the maintenance work.
 - **Positive:** Cadence-driven personas have a well-defined operational state pattern — a JSON state file, an architect workflow doc, explicit invocation. Future cadence persona authors follow the pattern instead of inventing one each time.
 - **Positive:** Surfaces that nobody currently owns get an owner. Lessons archival, stale plan flagging, ADR review — these are now Zoe's responsibility. The next cadence persona picks up its own slice.
-- **Negative:** Two persona axes increase the conceptual surface area of the ecosystem. Onboarding documentation has to introduce the distinction. Mitigation: the skill roster table in `.prism/architect/skills-ecosystem.md` calls cadence-driven personas out explicitly so the distinction shows up in the first place a reader looks.
+- **Negative:** Two persona axes increase the conceptual surface area of the ecosystem. Onboarding documentation has to introduce the distinction. Mitigation: the skill roster table in `.prism/architect/_toolkit/skills-ecosystem.md` calls cadence-driven personas out explicitly so the distinction shows up in the first place a reader looks.
 - **Negative:** Operational state files at `.prism/<persona-state>.json` introduce a new file class that ships with consumer installs. Mitigation: the file is seeded empty on install; the architect doc documents the schema; the persona that owns the file handles migration when the shape changes.
 - **Neutral:** Cadence-driven personas don't auto-trigger. They're explicit-invocation only — the user controls when they run. The cadence ("weekly default") is advisory, not enforced by tooling. A future PR may add a tooling layer that suggests invocation when the cadence elapses; that's out of scope for this ADR.
 
@@ -49,5 +49,5 @@ The axis is durable, not Zoe-specific. Future cadence personas — for example, 
 - [ADR-0002](./0002-skill-auto-routing.md) — sibling decision: ticket-flow skill auto-routing. Cadence-driven personas are explicitly **not** auto-routed; the user invokes them by name on cadence.
 - [ADR-0035](./0035-rule-loading-tiers.md) — related: three-tier rule loading. Zoe loads Tier 1 (universal rules) plus archive-specific rules at Tier 3 (skill-internal).
 - [ADR-0038](./0038-paired-dev-doc-gates.md) — related: every architect doc ships paired with a dev doc. Zoe's `audit-workflow.md` follows the paired-doc invariant.
-- `.prism/architect/audit-workflow.md` — Zoe's workflow doc and state-file schema.
+- `.prism/architect/_toolkit/audit-workflow.md` — Zoe's workflow doc and state-file schema.
 - `.ai-skills/skills/prism-surface-audit/` — Zoe's canonical skill source.

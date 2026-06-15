@@ -105,7 +105,7 @@ Architecture docs in `docs/content/dev/architecture/` and operations docs in `do
 
 **Naming convention.** Share a topic keyword across both directories so the pairing is discoverable. Exact same base filename is fine when both sides cover the same topic at the same scope; different suffixes are fine — and often clearer — when the operational scope doesn't mirror the architectural scope (e.g. `architecture/payments.md` ↔ `operations/payments-runbook.md`).
 
-**Shape rule for architecture docs.** See `.prism/architect/architecture-doc-shape.md` for the four-beat opening arc and the supporting principles.
+**Shape rule for architecture docs.** See `.prism/architect/_toolkit/architecture-doc-shape.md` for the four-beat opening arc and the supporting principles.
 
 ## Cross-Reference Map
 

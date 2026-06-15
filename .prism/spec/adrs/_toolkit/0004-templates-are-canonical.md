@@ -31,4 +31,4 @@ Current templates: `bug-report.md`, `ticket-types.md`, `pr-description.md`, `acc
 ## References
 
 - `.prism/templates/` — canonical templates folder
-- `.prism/architect/skills-ecosystem.md` § Shared Templates
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Shared Templates

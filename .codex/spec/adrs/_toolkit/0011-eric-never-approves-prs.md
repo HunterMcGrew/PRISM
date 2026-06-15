@@ -30,5 +30,5 @@ This applies to Eric specifically because he's the only skill that touches GitHu
 
 ## References
 
-- `.prism/architect/skills-ecosystem.md` § Rules for All Skills item 11
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Rules for All Skills item 11
 - `.claude/skills/prism-code-review-pr/SKILL.md` — Eric's role boundary

@@ -34,5 +34,5 @@ Silent cross-lane edits are the failure mode this ADR prevents. Documented absor
 ## References
 
 - `.prism/rules/branch-plan.md` — Implementation Tasks section enforces the heading structure
-- `.prism/architect/skills-ecosystem.md` — Rules for All Skills (Rule 13 cites this ADR)
+- `.prism/architect/_toolkit/skills-ecosystem.md` — Rules for All Skills (Rule 13 cites this ADR)
 - ADR-0014 (Plan Section Ownership) — related but distinct: 0014 governs who writes to which `## Section`; this ADR governs who owns which task within `## Implementation Tasks`

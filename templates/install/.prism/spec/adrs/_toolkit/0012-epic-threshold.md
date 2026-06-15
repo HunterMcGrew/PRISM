@@ -35,5 +35,5 @@ Epic plans use the filename `epic-<name>.md` and contain a `## Stories` section 
 
 ## References
 
-- `.prism/architect/skills-ecosystem.md` § Epic vs Story
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Epic vs Story
 - `.prism/rules/branch-plan.md` — epic filename convention

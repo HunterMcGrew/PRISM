@@ -36,7 +36,7 @@ The change lands in three surfaces:
 
 - **`.ai-skills/skills/prism-design/shared.md`** — handoff section drops Path B; team-flow section reflects single canonical path; mock-spec template adds the architectural inputs Winston needs.
 - **`.ai-skills/skills/prism-architect/shared.md`** — adds the post-Pixel plan-mode-only path.
-- **`.prism/architect/skills-ecosystem.md`** + **`AGENTS.md`** — Cross-skill Handoffs and Ownership tables updated.
+- **`.prism/architect/_toolkit/skills-ecosystem.md`** + **`AGENTS.md`** — Cross-skill Handoffs and Ownership tables updated.
 
 ## Consequences
 

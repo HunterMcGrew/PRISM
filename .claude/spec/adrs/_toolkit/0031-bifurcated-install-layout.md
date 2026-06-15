@@ -43,7 +43,7 @@ The distribution surface (consumer install template) renamed from `templates/cla
 
 ## References
 
-- [`.prism/architect/install-layout.md`](../../architect/install-layout.md) — agent-loaded reference for the bifurcation
+- [`.prism/architect/_toolkit/install-layout.md`](../../architect/_toolkit/install-layout.md) — agent-loaded reference for the bifurcation
 - [`.prism/plans/epic-prism-install-layout.md`](../../plans/epic-prism-install-layout.md) — implementation plan
 - ADR-0029 — rules self-declare applicability (sibling pattern: canonical file is the source, platform copies are just the auto-load surface)
 - ADR-0030 — token substitution at build time (parallel build-time mechanism: substitution happens once at canonical-to-platform write)
