@@ -242,6 +242,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Eric PR-review (#156) found a 3rd Major round — the moved ADRs' own `## References` sections still pointed at flat `architect/skills-ecosystem.md`. Sol's corrected sweep (prior passes were `.md`-scoped and a `grep -v "_toolkit/"` filter matched the line's path prefix — a false-clean) found the complete set: 28 source files (13 canonical `_toolkit/` ADRs + 13 template twins + 2 template architect docs).
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (Opus, #155, `cf22072`) applied 37 substring-safe `architect/<doc>` → `architect/_toolkit/<doc>` replacements across the 28 files + regenerated platform copies + fixed the `AGENTS.md.tmpl:119` minor. Sol independently re-verified the corrected sweep clean; Eric re-review clean (`pnpm prism:check` 175/175).
 - 2026-06-15 [main]: Phase 1 MERGED via PR #156 (squash `519b0f5`). Phases 2 (hash manifest) and 5 (ownership classifier) unblocked. Run paused for handoff to a fresh Sol session.
+- 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Phase 2 complete (#158) — added `hashContent`/`hashFile` (utils.ts), `generateSyncManifest`/`loadSyncManifest` (new `sync-manifest.ts`), exported `listRelativeDirectoryEntries`, and wired the build-mode-only `.prism/.sync-manifest.json` write into `build.ts main()`. The manifest carves consumer-owned globs back out of the broader PRISM-owned globs so flat `spec/adrs/*.md`/`architect/*.md` never enter it; it is gitignored (volatile `sourceCommit`/`generatedAt`) so it is never a `prism:check` drift target. `pnpm prism:check` green 182/182 (was 175; +7 from `sync-manifest.test.ts`).
 
 ---
 
@@ -320,19 +321,19 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-Phase 1 branch only.
+Phase 2 branch (`hmcgrew/prism-update-phase-2-hash-manifest`). Phase 1 merged (PR #156, `519b0f5`).
 
-- [x] No critical or major issues — all 3 major issues fixed in `#155`
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (path-guard, verify-manifest-coverage updated)
+- [x] Tests written for new logic and edge cases (`sync-manifest.test.ts`: hash stability, exact PRISM-owned-glob coverage, load/parse round-trip, null-on-missing, check-mode no-write)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass; note: path-guard does not scan hyperlink text in prose, so stale prose ADR links pass the guard)
-- [x] PR description up to date (PR #156 body authored from template; agent-owned sections current)
-- [x] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
-- [x] Phase 1 MERGED — PR #156 squash-merged to `main` as `519b0f5` (2026-06-15)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 182/182 tests pass)
+- [ ] PR description up to date (PR not yet opened — conductor runs Briar self-review first)
+- [x] Lasting decisions promoted to architect context (not applicable for Phase 2 — `.sync-manifest.json` shape decisions stay in plan; manifest may graduate to ADR when Phase 3 consumes it)
+- [ ] Phase 2 PR open / merged — pending self-review and conductor dispatch
 
-**Last updated:** 2026-06-15 (Sol — Phase 1 merged; run paused for handoff)
+**Last updated:** 2026-06-15 (Clove — Phase 2 implemented; awaiting Briar self-review)
 
 ---
 
