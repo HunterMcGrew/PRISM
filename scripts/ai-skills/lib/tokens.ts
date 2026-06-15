@@ -27,6 +27,7 @@ export interface PrismConfig {
 		repo?: string;
 	};
 	defaultBranch?: string;
+	prismSource?: string;
 	techStack?: string[];
 	rules?: {
 		universal?: "all";
