@@ -41,7 +41,7 @@ When an integration gate fires (a lane with `type: "integration"` whose `depends
 - The integration lane's **scope statement** (what it validates).
 - A prompt for the operator to approve dispatch or escalate (FR-6).
 
-Cite `lib/fleet.md § Integration gate` for the trigger. The integration gate report and the file-conflict gate report are distinct — label them clearly so the operator can tell which is which.
+The trigger is defined in `lib/fleet.md § Integration gate`. The integration gate report and the file-conflict gate report are distinct — label them clearly so the operator can tell which is which.
 
 Save goal-state with `status` set per the write protocol in `.prism/skills/prism-conductor/lib/goal-state.md`: `done` (run complete), `paused` (stopped at a gate, resumable via `resumeFromRunId`), or `stopped` (tripped a budget).
 
