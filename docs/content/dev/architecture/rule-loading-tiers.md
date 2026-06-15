@@ -8,7 +8,7 @@ last_updated: "2026-06-15"
 
 # Rule Loading Tiers
 
-Spec source: [ADR-0035](../../spec/adrs/0035-rule-loading-tiers.md)
+Spec source: [ADR-0035](../../spec/adrs/_toolkit/0035-rule-loading-tiers.md)
 
 PRISM ships durable agent context as rules in `.prism/rules/`, and the rule-loading system is what decides which of those rules enter agent context on a given session.
 
@@ -58,6 +58,6 @@ Tier-2 rules are deliberately excluded from the inlined block. Tier 2 exists pre
 
 ## Related
 
-- [ADR-0035: Rule Loading Tiers](../../spec/adrs/0035-rule-loading-tiers.md) — the spec source for this doc
-- [ADR-0029: Rules Self-Declare Applicability](../../spec/adrs/0029-rules-self-declare-applicability.md) — sibling decision; Tier 2's `paths:` frontmatter is the machine-readable counterpart to the self-declaration this ADR introduces
-- [ADR-0031: Bifurcated Install Layout](../../spec/adrs/0031-bifurcated-install-layout.md) — the per-platform copy mechanism this loading model rides on
+- [ADR-0035: Rule Loading Tiers](../../spec/adrs/_toolkit/0035-rule-loading-tiers.md) — the spec source for this doc
+- [ADR-0029: Rules Self-Declare Applicability](../../spec/adrs/_toolkit/0029-rules-self-declare-applicability.md) — sibling decision; Tier 2's `paths:` frontmatter is the machine-readable counterpart to the self-declaration this ADR introduces
+- [ADR-0031: Bifurcated Install Layout](../../spec/adrs/_toolkit/0031-bifurcated-install-layout.md) — the per-platform copy mechanism this loading model rides on

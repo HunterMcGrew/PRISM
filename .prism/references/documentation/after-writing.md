@@ -7,7 +7,7 @@ Read this after the doc content is written, before the closing. `prism-documenta
 **When creating a new template at `.prism/references/*-template.md`:**
 
 1. Add a **Category-specific rules** bullet to the parent base template (`user-doc-template.md` or `dev-doc-template.md`) pointing down to the new specialization — this is the breadcrumb that routes future Eli sessions to the right template.
-2. Add an entry to `.prism/architect/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
+2. Add an entry to `.prism/architect/_toolkit/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
 3. Mention the new template in `SKILL.md § Doc templates § Category-specific templates` so the skill itself knows it exists.
 
 **When creating a doc collection (N ≥ 3 docs sharing a topic, not a single standalone page):**
@@ -38,7 +38,7 @@ If the doc is new and the audience section on `docs/content/index.mdx` doesn't h
 
 ## 3. Update the cross-reference map
 
-If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.prism/architect/documentation.md`.
+If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.prism/architect/_toolkit/documentation.md`.
 
 ## 4. Update the branch plan
 

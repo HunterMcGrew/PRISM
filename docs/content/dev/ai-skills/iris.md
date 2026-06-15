@@ -91,6 +91,6 @@ The handoff is always a proposal, never an execution. Iris doesn't auto-invoke N
 ## See also
 
 - [`.ai-skills/skills/prism-retro/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-retro/shared.md) — canonical persona source
-- [ADR-0037 — Cadence-driven personas](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0037-cadence-driven-personas.md) — the axis Iris shares with Zoe and Atlas
+- [ADR-0037 — Cadence-driven personas](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0037-cadence-driven-personas.md) — the axis Iris shares with Zoe and Atlas
 - [`.prism/references/micro-file-step-machine.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/references/micro-file-step-machine.md) — the step-machine pattern
 - [`.prism/rules/followup-scope.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/rules/followup-scope.md) — the scope-fit gate Nora applies to Iris's action items

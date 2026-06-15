@@ -108,7 +108,7 @@ After the first sync, the consumer repo has `.ai-skills/.prism-state.json` recor
   "files": {
     "AGENTS.md": "<content hash>",
     ".prism/rules/writing-voice.md": "<content hash>",
-    ".prism/spec/adrs/0031-bifurcated-install-layout.md": "<content hash>",
+    ".prism/spec/adrs/_toolkit/0031-bifurcated-install-layout.md": "<content hash>",
     "...": "..."
   }
 }

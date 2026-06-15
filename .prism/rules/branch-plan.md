@@ -128,7 +128,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
 
 **How to apply:** When Winston records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
@@ -169,7 +169,7 @@ Run the close on the ticket's **final PR branch** — after implementation is do
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
-2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/0047-plans-are-preserved-at-close.md).
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
 

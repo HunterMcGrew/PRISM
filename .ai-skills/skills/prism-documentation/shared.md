@@ -162,7 +162,7 @@ Docs are written directly to `docs/` using topic-based naming per `documentation
 
 > _The frontmatter schema (title, description, category, audience, last_updated) lives in the architect doc._
 
-**When writing or updating a doc file, follow the frontmatter schema in [`.prism/architect/documentation.md`](../../../.prism/architect/documentation.md) § Frontmatter schema.** Set `last_updated` to today's date when creating or updating a doc.
+**When writing or updating a doc file, follow the frontmatter schema in [`.prism/architect/_toolkit/documentation.md`](../../../.prism/architect/_toolkit/documentation.md) § Frontmatter schema.** Set `last_updated` to today's date when creating or updating a doc.
 
 ## Doc templates
 
@@ -176,7 +176,7 @@ Category-specific templates layer on top of the base when writing into a special
 
 - **User block docs** (`docs/content/user/blocks/`): use `.prism/references/user-doc-template.md` — block docs are a category layer on the base user template
 - **Dev block docs** (`docs/content/dev/blocks/`): use `.prism/references/dev-doc-template.md` — block docs are a category layer on the base dev template
-- **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.prism/architect/architecture-doc-shape.md`
+- **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`
 
 Follow the template structure, writing rules, and image conventions defined there. Do not deviate from the template format unless the content genuinely doesn't fit (e.g. a customization guide doesn't need a Block Options section).
 
@@ -207,9 +207,9 @@ After the review prompt above, Eli ships the docs — no prompt before pushing. 
 
 ## Next persona
 
-This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.
 
-- **Conditional route:** If a decision-log emerged during writing → Winston for ADR promotion. When documenting personas or persona behaviors, the closing-message pattern from `.prism/architect/closing-messages.md` is a documented behavior to surface.
+- **Conditional route:** If a decision-log emerged during writing → Winston for ADR promotion. When documenting personas or persona behaviors, the closing-message pattern from `.prism/architect/_toolkit/closing-messages.md` is a documented behavior to surface.
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 

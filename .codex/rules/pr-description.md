@@ -54,7 +54,7 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the full decision.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the full decision.
 
 **Two enforcement moments:**
 
@@ -66,7 +66,7 @@ The PR body describes current scope — what's shipping right now — not the sc
 - **Agent-owned** — the narrative sections generated from `.prism/templates/pr-description.md` (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, pre-submit checklist). Auto-sync rewrites these.
 - **User-owned** — `## Screenshots`, `## Notes`, and any section the agent didn't originate (reviewer callouts, deployment notes, ad-hoc context). The agent may seed initial content in Screenshots and Notes at first body creation, but never rewrites them on subsequent syncs — once the template places the heading, the content belongs to the user. Auto-sync preserves these verbatim. The screenshot-preservation bullet in Writing mechanics above is a specific case of this general rule.
 
-**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. Last-editor detection was explicitly rejected in [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md). "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without it.
+**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. Last-editor detection was explicitly rejected in [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md). "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without it.
 
 **Session-scoped opt-out:** if the user says "don't touch the PR body" during a session, honor it for the rest of that session. No per-push prompting — prompting every push is the friction this invariant is designed to avoid.
 

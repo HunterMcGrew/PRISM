@@ -5,13 +5,13 @@ Compose the architect doc (and optional paired dev doc). Drafts live in working 
 ## Inputs
 
 - A candidate with `status: "drafting"` from step-04
-- `.prism/architect/architecture-doc-shape.md` — the four-beat arc
+- `.prism/architect/_toolkit/architecture-doc-shape.md` — the four-beat arc
 
 ## Actions
 
-1. **Draft the architect doc.** Compose against the four-beat arc named in [`architecture-doc-shape.md`](../../architect/architecture-doc-shape.md). Do not restate the four beats — cite the doc and structure the draft accordingly. Use the candidate's `topic`, `files`, and `loadBearingReason` as the seed material.
+1. **Draft the architect doc.** Compose against the four-beat arc named in [`architecture-doc-shape.md`](../../architect/_toolkit/architecture-doc-shape.md). Do not restate the four beats — cite the doc and structure the draft accordingly. Use the candidate's `topic`, `files`, and `loadBearingReason` as the seed material.
 
-2. **Check ADR-0038's two gates for the paired dev doc.** Cite [ADR-0038](../../spec/adrs/0038-paired-dev-doc-gates.md) for the gate definitions:
+2. **Check ADR-0038's two gates for the paired dev doc.** Cite [ADR-0038](../../spec/adrs/_toolkit/0038-paired-dev-doc-gates.md) for the gate definitions:
    - **Category-fit** — does the topic belong in `docs/content/dev/architecture/`?
    - **Pairing-value** — does the narrative version carry information the agent-facing version doesn't?
 

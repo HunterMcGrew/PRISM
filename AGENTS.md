@@ -2,7 +2,7 @@
 
 ## Skills Ecosystem
 
-This project uses a multi-agent skills ecosystem. Each skill has a defined role and handoff points; most carry a dedicated persona — utility skills (ADR-0046) carry none and run in the invoking persona's voice. See `.prism/architect/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
+This project uses a multi-agent skills ecosystem. Each skill has a defined role and handoff points; most carry a dedicated persona — utility skills (ADR-0046) carry none and run in the invoking persona's voice. See `.prism/architect/_toolkit/skills-ecosystem.md` for the full reference — it's loaded automatically via `manifest.json` on every skill invocation.
 
 The full tier hierarchy — what binds whom, who can change it, how changes are proposed — lives in `.prism/SPEC.md`. Start there if you're unsure where a decision belongs.
 
@@ -48,7 +48,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
 - `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see ADR-0046). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
 
-**Sol is a persona, not a utility.** Unlike the two skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, Linear, or merges. See [ADR-0048](.prism/spec/adrs/0048-conductor-autonomy-between-gates.md).
+**Sol is a persona, not a utility.** Unlike the two skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, Linear, or merges. See [ADR-0048](.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md).
 
 **Skip auto-routing when:**
 
@@ -257,7 +257,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. The THR-1775 audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
 
 **How to apply:** When Winston records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
@@ -298,7 +298,7 @@ Run the close on the ticket's **final PR branch** — after implementation is do
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
-2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/0047-plans-are-preserved-at-close.md).
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
 
@@ -854,7 +854,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 ## Purpose
 
-Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression. See [ADR-0006](../spec/adrs/0006-context-window-handoff-check.md) for why this check exists.
+Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression. See [ADR-0006](../spec/adrs/_toolkit/0006-context-window-handoff-check.md) for why this check exists.
 
 **Why:** a persona recommendation that ignores context load hands the next persona a session already close to compaction, where load-bearing details get silently dropped. The check costs one evaluation at session close and protects the handoff at exactly the moment the context is most likely to be lost.
 
@@ -910,7 +910,7 @@ Two principles govern every change: keep it simple, and find the root cause.
 
 ## Purpose
 
-When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding. See [ADR-0007](../spec/adrs/0007-cross-agent-handoff-accountability.md) for the originating incident and the tradeoff.
+When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding. See [ADR-0007](../spec/adrs/_toolkit/0007-cross-agent-handoff-accountability.md) for the originating incident and the tradeoff.
 
 **Why:** a fix passed between agents carries the upstream agent's confidence but not its verification — and a confidently applied wrong fix is worse than a slower correct one, because it ships looking deliberate. Treating every handoff as trust-but-verify catches the mismatch between diagnosis and fix before it reaches the user, which is the only place it's cheap to catch.
 
@@ -1145,7 +1145,7 @@ PRs are **squash-merged** on GitHub. This means:
 
 ## Who merges
 
-Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona. This is the merge-side complement of "Eric never approves PRs" ([ADR-0011](../spec/adrs/0011-eric-never-approves-prs.md)): the review-side rule binds the reviewer; this one binds every persona that touches a branch.
+Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona. This is the merge-side complement of "Eric never approves PRs" ([ADR-0011](../spec/adrs/_toolkit/0011-eric-never-approves-prs.md)): the review-side rule binds the reviewer; this one binds every persona that touches a branch.
 
 Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the handoff* — push the final commits, sync the PR body, report the PR ready to merge. They are never an instruction to run the merge.
 
@@ -1295,7 +1295,7 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the full decision.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the full decision.
 
 **Two enforcement moments:**
 
@@ -1307,7 +1307,7 @@ The PR body describes current scope — what's shipping right now — not the sc
 - **Agent-owned** — the narrative sections generated from `.prism/templates/pr-description.md` (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, pre-submit checklist). Auto-sync rewrites these.
 - **User-owned** — `## Screenshots`, `## Notes`, and any section the agent didn't originate (reviewer callouts, deployment notes, ad-hoc context). The agent may seed initial content in Screenshots and Notes at first body creation, but never rewrites them on subsequent syncs — once the template places the heading, the content belongs to the user. Auto-sync preserves these verbatim. The screenshot-preservation bullet in Writing mechanics above is a specific case of this general rule.
 
-**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. Last-editor detection was explicitly rejected in [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md). "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without it.
+**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. Last-editor detection was explicitly rejected in [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md). "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without it.
 
 **Session-scoped opt-out:** if the user says "don't touch the PR body" during a session, honor it for the rest of that session. No per-push prompting — prompting every push is the friction this invariant is designed to avoid.
 
@@ -1331,7 +1331,7 @@ Leave all UI-related items unchecked if there are no UI changes.
 
 ## Purpose
 
-When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction. See [ADR-0008](../spec/adrs/0008-pre-compaction-checkpoint.md) for the decision and tradeoff.
+When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction. See [ADR-0008](../spec/adrs/_toolkit/0008-pre-compaction-checkpoint.md) for the decision and tradeoff.
 
 **Why:** auto-compaction drops context without announcing what it dropped, and the worst losses are silent — a constraint everyone still believes is in effect, a root cause that gets re-investigated because the first finding vanished. A checkpoint written before the threshold preserves the load-bearing state on purpose, so compaction reshapes the narration without losing the facts.
 
@@ -1419,7 +1419,7 @@ The principle is _durable_ communication — anything a future reader will load 
 
 Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE` — reads as a contract written for someone who needs to be controlled. Onboarding voice reads as guidance from a colleague who already trusts you to do the right thing once you understand it. The constraint is the same; the framing changes how the reader receives it.
 
-**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/0015-humane-language-over-mandates.md).
+**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/_toolkit/0015-humane-language-over-mandates.md).
 
 **How to apply:**
 
@@ -1435,7 +1435,7 @@ Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE
 
 Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule is load-bearing or stale.
 
-**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't. See [ADR-0016](../spec/adrs/0016-explain-the-why.md).
+**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't. See [ADR-0016](../spec/adrs/_toolkit/0016-explain-the-why.md).
 
 **How to apply:**
 
@@ -1573,7 +1573,7 @@ See [`.prism/rules/context-window-handoff-check.md`](.prism/rules/context-window
 
 ## 9. Ownership & Handoff
 
-Skill ownership and handoff phrases live in [`.prism/architect/skills-ecosystem.md`](.prism/architect/skills-ecosystem.md) §§ Skill Roster, Cross-skill Handoffs.
+Skill ownership and handoff phrases live in [`.prism/architect/_toolkit/skills-ecosystem.md`](.prism/architect/_toolkit/skills-ecosystem.md) §§ Skill Roster, Cross-skill Handoffs.
 
 ---
 

@@ -118,7 +118,7 @@ The report is the durable artifact. The state file at `.prism/iris-state.json` i
 
 ## Next persona
 
-This skill typically ends with a conditional handoff to Nora — see [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+This skill typically ends with a conditional handoff to Nora — see [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.
 
 - **Default route:** Nora (for action-item filing). The handoff is a proposal — the user types Nora's name when they're ready, or declines.
 - **Done route:** if the user declined the Nora handoff in step 05, the closing message just confirms the report's location at `.prism/retros/<YYYY-MM-DD>-<slug>.md`.

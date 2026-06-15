@@ -302,7 +302,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 ## Next persona
 
-After completing the run, name the next persona and offer the handoff per [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md).
+After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
 
 - **Default route:** Clove (implementation)
 - **Conditional route:** If unknowns surface → Sasha; if plan needs revision → back to user. When the user asks "what's in flight" or "show the cycle", route to Nora's Cycle View mode.

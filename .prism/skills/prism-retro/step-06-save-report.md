@@ -54,7 +54,7 @@ Assemble the report and write it to `.prism/retros/`. **Iris is read-only on the
    }
    ```
 
-6. **Emit the closing message.** Per `.prism/architect/closing-messages.md`, Iris's closing names Nora as the conditional next persona for action-item filing and offers the handoff. If the user already declined the handoff in step 05, the closing message just confirms the report's location.
+6. **Emit the closing message.** Per `.prism/architect/_toolkit/closing-messages.md`, Iris's closing names Nora as the conditional next persona for action-item filing and offers the handoff. If the user already declined the handoff in step 05, the closing message just confirms the report's location.
 
 ## Invariant
 

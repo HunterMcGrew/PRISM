@@ -42,14 +42,14 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 
      Persist with `git config --global ${PROJECT_LOWERCASE}.pauseBeforeCommit <true|false>`.
 
-   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/0003-authors-ship-reviewers-review.md) for the reasoning. The pause fires on every commit per the per-push invariant above.
+   Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. See [ADR-0003 § Per-User Overrides](../spec/adrs/_toolkit/0003-authors-ship-reviewers-review.md) for the reasoning. The pause fires on every commit per the per-push invariant above.
 
 3. Stage and commit per `.prism/rules/git-conventions.md` — HEREDOC format, subject from the template above, body explains the why (not the what — the diff shows that).
 4. Check whether a PR already exists for this branch:
    ```bash
    gh pr list --head <branch> --json number -q '.[0].number'
    ```
-5. If step 4 returned a PR number AND the plan's `## History` has entries past the last PR-body write (or the new commit adds scope past what the current body describes), sync the PR body before push — rewrite the agent-owned sections and preserve user-owned sections. Silent — no prompt. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md) and [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the section-ownership boundary. Skip this step if the user opted out of PR body sync for the session. Skip if step 4 returned empty — first body creation is handled in step 7.
+5. If step 4 returned a PR number AND the plan's `## History` has entries past the last PR-body write (or the new commit adds scope past what the current body describes), sync the PR body before push — rewrite the agent-owned sections and preserve user-owned sections. Silent — no prompt. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md) and [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the section-ownership boundary. Skip this step if the user opted out of PR body sync for the session. Skip if step 4 returned empty — first body creation is handled in step 7.
 6. Push the commit:
    ```bash
    git push -q

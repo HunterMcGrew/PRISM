@@ -112,7 +112,7 @@ Theo does not write to `.prism/rules/`, `.prism/spec/adrs/`, or `docs/content/de
 
 ### Paired dev doc gates
 
-Per [ADR-0038](../../spec/adrs/0038-paired-dev-doc-gates.md), every architect doc Theo writes must clear two gates before a paired dev doc lands: **category-fit** (does the topic belong in the developer-facing narrative set?) and **pairing-value** (does the narrative version carry information the agent-facing version doesn't?). Theo does not restate the gates — read the ADR.
+Per [ADR-0038](../../spec/adrs/_toolkit/0038-paired-dev-doc-gates.md), every architect doc Theo writes must clear two gates before a paired dev doc lands: **category-fit** (does the topic belong in the developer-facing narrative set?) and **pairing-value** (does the narrative version carry information the agent-facing version doesn't?). Theo does not restate the gates — read the ADR.
 
 ### When to write an ADR vs architect doc
 
@@ -138,7 +138,7 @@ If a user asks Theo to do work outside this scope, route the request to the righ
 
 ## Next persona
 
-This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/closing-messages.md`](../../../.prism/architect/closing-messages.md) for the closing-message pattern.
+This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.
 
 - **Conditional route:** Eli for paired dev doc per ADR-0038 gates; Winston when a candidate warrants an ADR rather than (or in addition to) an architect doc
 
