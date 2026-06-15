@@ -13,6 +13,27 @@ Two kinds of content sit in a PRISM install:
 
 Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style rule. `pnpm prism:build` writes byte-identical copies to `.claude/rules/code-comments.md`, `.codex/rules/code-comments.md`, and `.cursor/rules/code-comments.md`. Editing the canonical and rebuilding refreshes all three. Editing a platform copy directly is drift — `pnpm prism:check` flags it.
 
+## Ownership is path-decidable: the `_toolkit/` namespace
+
+`pnpm prism:update` pulls PRISM's latest content into an already-onboarded consumer repo. For that to be safe, "what is PRISM allowed to overwrite" has to be answerable from the path alone.
+
+PRISM-owned content lives under `_toolkit/` subdirs so ownership is a glob, not a guess:
+
+- `.prism/architect/_toolkit/**` — PRISM's architect docs. Flat `.prism/architect/*.md` is reserved for consumer product docs.
+- `.prism/spec/adrs/_toolkit/**` — PRISM's ADRs. Flat `.prism/spec/adrs/*.md` is reserved for consumer product ADRs, which sidesteps numbering collisions between PRISM and consumer ADRs.
+
+`manifest.json` is split-ownership: `.prism/architect/_toolkit/manifest.base.json` holds the toolkit routes (PRISM-owned), while the live `.prism/architect/manifest.json` is consumer-owned.
+
+## Consumer overlay: `.prism/custom/`
+
+Consumers extend PRISM without editing PRISM-owned files by dropping content under `.prism/custom/`, which mirrors the canonical area names: `.prism/custom/{rules,architect,references,templates}/<file>`. The overlay is consumer-owned, so `pnpm prism:update` never writes into it.
+
+The update flow reads the overlay only during the platform-copy step, emitting each area into a `custom/` subdir per platform: `.claude/rules/custom/<file>.md`, `.cursor/rules/custom/<file>.mdc`, `.codex/rules/custom/<file>.md`. The `custom/` subdir makes base-vs-overlay collision structurally impossible.
+
+## Skill namespace ownership
+
+PRISM owns `prism-*` skill IDs and regenerates only those on update. Consumer-authored skills use a non-`prism-*` prefix — the org token from `config.json` (e.g. `acme-<role>`) or `custom-<role>` — and are consumer-owned, so an update never touches them. `prism-skill-forge` enforces this default in both its create and migrate modes.
+
 ## What gets copied; what stays canonical-only
 
 Copied areas (mirrored to every platform dir):
