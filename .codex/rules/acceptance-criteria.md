@@ -1,8 +1,3 @@
----
-paths:
-  - ".prism/plans/**/*.md"
----
-
 # Acceptance Criteria
 
 ## When to generate

@@ -8,7 +8,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { cursorRuleDialect, verbatimRuleDialect } from "./rule-dialect";
+import { codexRuleDialect, cursorRuleDialect, verbatimRuleDialect } from "./rule-dialect";
 
 test("cursor dialect rewrites a Tier 2 paths: list to globs: with the same globs", () => {
 	const canonical = `---
@@ -72,6 +72,40 @@ test("cursor dialect maps .mdc back to .md for orphan cleanup", () => {
 	assert.equal(
 		cursorRuleDialect.mapSourceRelativePath("rules", ".ai-skill-generated"),
 		".ai-skill-generated"
+	);
+});
+
+test("codex dialect strips a Tier 2 paths: block, leaving body only", () => {
+	const input = `---\npaths:\n  - "**/*.tsx"\n---\n\n# Accessibility\n\nBody.\n`;
+	const out = codexRuleDialect.transformContent("rules", input);
+
+	assert.doesNotMatch(out, /paths:/);
+	assert.doesNotMatch(out, /^---/);
+	assert.match(out, /# Accessibility/);
+});
+
+test("codex dialect leaves a frontmatter-less Tier 1 rule untouched", () => {
+	const input = "# Writing Voice\n\nBody.\n";
+	const out = codexRuleDialect.transformContent("rules", input);
+
+	assert.equal(out, input);
+});
+
+test("codex dialect leaves non-rule areas untouched", () => {
+	const input = `---\npaths:\n  - "**/*.tsx"\n---\n\n# Architect doc\n`;
+	const out = codexRuleDialect.transformContent("architect", input);
+
+	assert.equal(out, input);
+});
+
+test("codex dialect path maps are identity", () => {
+	assert.equal(
+		codexRuleDialect.mapTargetRelativePath("rules", "accessibility.md"),
+		"accessibility.md"
+	);
+	assert.equal(
+		codexRuleDialect.mapSourceRelativePath("rules", "accessibility.md"),
+		"accessibility.md"
 	);
 });
 

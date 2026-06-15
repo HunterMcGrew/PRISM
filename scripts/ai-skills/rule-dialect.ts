@@ -3,17 +3,19 @@
  *
  * Canonical rules live at `.prism/rules/*.md` and carry the Claude dialect: a
  * `paths:` YAML list governs Tier 2 load, and Tier 1 rules carry no frontmatter
- * at all (per ADR-0035). Claude and Codex read that dialect directly, so their
- * platform copies stay byte-identical to canonical. Cursor does not — its rules
- * loader keys on `.mdc` files whose frontmatter uses `globs:` (path-scoped) or
+ * at all (per ADR-0035). Claude reads that dialect directly, so its platform
+ * copies stay byte-identical to canonical. Cursor does not — its rules loader
+ * keys on `.mdc` files whose frontmatter uses `globs:` (path-scoped) or
  * `alwaysApply: true` (always-on). A verbatim `.md` copy carrying `paths:` is
  * untiered at best and inert at worst (lessons.md 2026-06-04, routed to #73).
+ * Codex cannot path-tier rules at all, so it receives clean copies with the
+ * inert `paths:` key stripped.
  *
- * This module rewrites the `rules` area for Cursor: `paths:` becomes `globs:`
- * with the same glob list, a frontmatter-less Tier 1 rule gains
- * `alwaysApply: true`, and the target filename gains the `.mdc` extension Cursor
- * requires. Every other area, and every other platform, passes through
- * unchanged.
+ * This module rewrites the `rules` area per platform:
+ * - Cursor: `paths:` → `globs:`, Tier 1 gains `alwaysApply: true`, `.md` → `.mdc`.
+ * - Codex: the `paths:` frontmatter block is stripped; Tier 1 rules (no
+ *   frontmatter) pass through unchanged. Path mapping is identity (`.md` stays).
+ * Every other area, and Claude, pass through unchanged.
  */
 import path from "node:path";
 
@@ -115,4 +117,33 @@ export const cursorRuleDialect: RuleDialect = {
 
 		return `${relativePath.slice(0, -path.extname(relativePath).length)}.md`;
 	},
+};
+
+/**
+ * The Codex dialect — strips the stray `paths:` frontmatter block from Tier 2
+ * rule copies so Codex receives clean `.md` files without a key it cannot
+ * interpret. Tier 1 rules (no frontmatter) pass through unchanged. Path mapping
+ * is identity: Codex reads `.md` directly, no rename needed.
+ *
+ * The `paths:` key is dead frontmatter in the Codex context — Codex has no
+ * path-tiering primitive, so the key misrepresents the file's loading behaviour.
+ * Stripping it here mirrors the Cursor lane's precedent: a wrong-dialect key
+ * is translated, not tolerated (Decision 3, issue-73 plan).
+ */
+export const codexRuleDialect: RuleDialect = {
+	transformContent: (area, content) => {
+		if (area !== RULES_AREA) {
+			return content;
+		}
+
+		const { frontmatter, body } = splitFrontmatter(content);
+
+		if (frontmatter === null || !/^paths:/m.test(frontmatter)) {
+			return content;
+		}
+
+		return body.replace(/^\r?\n/, "");
+	},
+	mapTargetRelativePath: (_area, relativePath) => relativePath,
+	mapSourceRelativePath: (_area, relativePath) => relativePath,
 };

@@ -99,6 +99,7 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-13 [hmcgrew/issue-73-cross-runtime-tiers]: Merged origin/main; resolved AGENTS.md routing-table conflict (took main's version with Sol row) and worktree-isolation rename/delete (honored main's delete, stale .mdc dropped out). Ran prism:build — 14 new Tier 1 .mdc rule copies emitted; prism:check green 158/158.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Nora re-opened implementation lane on new branch. Spike findings recorded: Cursor confirmed done, Codex gap confirmed, #64 unblocked. Three OPEN decisions posted for Winston to resolve before Clove starts tasks 2–3.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Winston resolved all three OPEN decisions and wrote Clove tasks 2–8 at the detail bar. Tier-1 discriminator is frontmatter-absence (NOT manifest membership — manifest is stale in both directions; see Decisions); Tier-1-only for Codex (nested AGENTS.md doesn't fit glob-gated Tier-2); new `codexRuleDialect` strips stray `paths:` from the 7 `.codex/rules/` Tier-2 copies. AGENTS.md inlining is a new dedicated build step outside the copied-area pipeline. Lane is AFK-ready for Clove.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Clove implemented tasks 2–8. Added `codexRuleDialect` (strips `paths:` from `.codex/rules/` Tier-2 copies), `agents-md-block.ts` (Tier-1 body collection + block render/replace), wired both into `build.ts`. `pnpm prism:build` updated 8 files (7 `.codex/rules/` + `AGENTS.md`); `pnpm prism:check` green 0 failures; drift-detection spot-test confirmed non-zero exit on manual edit.
 
 ---
 
@@ -130,16 +131,16 @@ Spike posted to issue #73 corrected the original premise:
 
 ---
 
-## PR Readiness (Codex inlining — tasks 2–3)
+## PR Readiness (Codex inlining — tasks 2–8)
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (check-mode guard)
-- [ ] All OPEN decisions resolved (Winston gate)
-- [ ] Build passes — last run: pending
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`rule-dialect.test.ts` + `agents-md-block.test.ts`)
+- [x] All OPEN decisions resolved (Winston gate — all three resolved 2026-06-15)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` updated 8 files; `pnpm prism:check` green; drift-detection spot-test passed)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (if applicable — Briar to assess)
 
 **Last updated:** 2026-06-15
 

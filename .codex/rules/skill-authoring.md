@@ -1,9 +1,3 @@
----
-paths:
-  - ".ai-skills/skills/**"
-  - ".prism/references/**"
----
-
 # Skill Authoring — Content Disclosure
 
 ## Purpose
