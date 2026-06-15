@@ -186,6 +186,36 @@ test("orphan — seed has a file not in canonical and not in seedOnly; changedPa
 	);
 });
 
+test("rename (loose file) — canonical has SPEC.md; seed has SPEC.md.tmpl via renames; changedPaths stays empty", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.writeFile(
+				path.join(contentRoot, "SPEC.md"),
+				"# SPEC content\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "SPEC.md.tmpl"),
+				"# SPEC template content — intentionally different\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				renames: { "SPEC.md": "SPEC.md.tmpl" },
+			};
+			const changedPaths: string[] = [];
+			await checkSeedDrift(contentRoot, seedRoot, curation, changedPaths);
+			assert.equal(
+				changedPaths.length,
+				0,
+				"loose-file rename in seed is recognized as present — no drift"
+			);
+		}
+	);
+});
+
 test("rename — canonical has manifest.json; seed has manifest.stub.json; changedPaths stays empty", async () => {
 	await withTempRoots(
 		async (contentRoot, seedRoot) => {

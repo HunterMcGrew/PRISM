@@ -736,6 +736,10 @@ export async function checkSeedDrift(
 	curation: SeedCuration,
 	changedPathsArg: string[]
 ): Promise<void> {
+	if (!(await pathExists(seedRoot))) {
+		return;
+	}
+
 	const excludedSet = new Set(curation.excluded);
 	const curatedSet = new Set(curation.curated);
 	const seedOnlySet = new Set(curation.seedOnly);
@@ -820,10 +824,6 @@ export async function checkSeedDrift(
 		if (!(await filesAreEqual(sourcePath, seedPath))) {
 			changedPathsArg.push(`seed drift: ${relPath}`);
 		}
-	}
-
-	if (!(await pathExists(seedRoot))) {
-		return;
 	}
 
 	for (const area of COPIED_CONTENT_AREAS) {
