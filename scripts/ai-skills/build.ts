@@ -19,10 +19,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+	collectTier1RuleBodies,
+	renderTier1Block,
+	replaceTier1Block,
+} from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import {
+	codexRuleDialect,
 	cursorRuleDialect,
 	type RuleDialect,
 	verbatimRuleDialect,
@@ -721,6 +727,45 @@ export async function removeDeletedManagedContent(
 }
 
 /**
+ * Inlines the Tier-1 rule bodies into AGENTS.md's generated block.
+ *
+ * Codex auto-loads only AGENTS.md; the generated block ensures every Tier-1
+ * rule body (rules with no `paths:` frontmatter) is present in Codex sessions.
+ * When AGENTS.md is absent the function returns early — lazy, no creation.
+ * Follows the same check-mode / changedPaths contract as `writeFileIfChanged`.
+ */
+export async function syncAgentsMdTier1Block(
+	repoRootArg: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
+): Promise<void> {
+	const agentsPath = path.join(repoRootArg, "AGENTS.md");
+
+	if (!(await pathExists(agentsPath))) {
+		return;
+	}
+
+	const current = await fs.readFile(agentsPath, "utf8");
+	const rules = await collectTier1RuleBodies(
+		path.join(repoRootArg, ".prism", "rules"),
+		tokenMap
+	);
+	const block = renderTier1Block(rules);
+	const next = replaceTier1Block(current, block);
+
+	if (next === current) {
+		return;
+	}
+
+	changedPathsArg.push(agentsPath);
+
+	if (!checkModeArg) {
+		await fs.writeFile(agentsPath, next, "utf8");
+	}
+}
+
+/**
  * Checks for drift between the canonical content root and the install seed
  * (`templates/install/.prism/`). Check-mode only — never writes, moves, or
  * deletes any file.
@@ -1194,7 +1239,7 @@ async function main(): Promise<void> {
 			},
 			{
 				dir: path.join(repoRoot, platformCopies.codex),
-				dialect: verbatimRuleDialect,
+				dialect: codexRuleDialect,
 			},
 			{
 				dir: path.join(repoRoot, platformCopies.cursor),
@@ -1212,6 +1257,8 @@ async function main(): Promise<void> {
 			);
 		}
 	}
+
+	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
 	await removeDeletedManagedSkills(
 		targetRoots.claude,

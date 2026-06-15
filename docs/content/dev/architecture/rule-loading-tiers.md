@@ -3,7 +3,7 @@ title: "Rule Loading Tiers"
 description: "How PRISM decides which rules load into agent context on a given session — a three-tier model balancing universal coverage against per-session cost."
 category: "architecture"
 audience: "dev"
-last_updated: "2026-05-25"
+last_updated: "2026-06-15"
 ---
 
 # Rule Loading Tiers
@@ -44,7 +44,17 @@ Two seams are visible in the model and the team should expect to hit them.
 
 **Tier 3 isolation across skill handoffs.** When a skill invokes another skill — Clove → Briar → Eric, for example — Tier 3 rules don't cross the handoff in either direction. The invoked skill loads its own Tier 3 set; the invoking skill keeps its own. A rule that should have been Tier 1 or Tier 2 but was misclassified as Tier 3 will silently miss handoff scenarios. The seam is what makes Tier 3 cheap; it's also what makes the classification call load-bearing.
 
-For consumer installs, rule files mirror from `.prism/rules/` to the per-platform copies that `pnpm prism:build` writes alongside each platform directory. The tier classification is encoded in the rule file itself — the frontmatter and the manifest entry — so it propagates with the copy without consumer-side configuration. Claude and Codex receive byte-identical copies; Cursor receives a dialect translation because its rules loader reads a different frontmatter shape. The build rewrites `paths:` to `globs:` for Tier 2, adds `alwaysApply: true` to a frontmatter-less Tier 1 rule, and renames `.md` to `.mdc` — so the Cursor copy honors the same tiers the canonical encodes. The canonical stays in the Claude dialect; only the Cursor copy diverges.
+For consumer installs, rule files mirror from `.prism/rules/` to the per-platform copies that `pnpm prism:build` writes alongside each platform directory. The tier classification is encoded in the rule file itself — the frontmatter and the manifest entry — so it propagates with the copy without consumer-side configuration.
+
+Each runtime receives a dialect appropriate to its loader:
+
+- **Claude** receives verbatim copies — the canonical `.md` files, unchanged.
+- **Codex** receives copies with the `paths:` frontmatter key stripped from Tier-2 rules. Codex has no path-tiering primitive — it cannot act on `paths:`, so the key is dead frontmatter that misrepresents how those files load. The build strips it via a `codexRuleDialect` transform so the `.codex/rules/` copies are honest about their own behavior.
+- **Cursor** receives a full dialect translation: `paths:` rewrites to `globs:`, Tier-1 rules gain `alwaysApply: true`, and `.md` renames to `.mdc`. Cursor's rules loader reads that shape; the canonical `.md` format would be inert without the translation.
+
+Codex also requires a separate mechanism to reach Tier-1 rule bodies at all. Codex auto-loads only `AGENTS.md` — it has no rules-directory auto-load mechanism, so the `.codex/rules/` copies exist as citable references but are never automatically read at session start. To close this gap, `pnpm prism:build` inlines every Tier-1 rule body into a generated, marker-delimited block in root `AGENTS.md`, inserted after the `## Behavioral norms` pointer table. The table remains — it is the human-scannable index and the anchor for cross-references — while the generated block adds the full rule text for Codex to read inline.
+
+Tier-2 rules are deliberately excluded from the inlined block. Tier 2 exists precisely because file-type-specific rules should not load on every session; inlining them unconditionally would defeat that purpose. Codex has no path-tiering primitive that could replicate the `paths:` gate, so Tier-1-only inlining is the faithful ceiling. The 7 Tier-2 rules remain citable at `.codex/rules/<file>.md` for skills that reference them by path.
 
 ## Related
 

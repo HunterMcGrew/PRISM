@@ -1,14 +1,3 @@
----
-paths:
-  - "**/*.ts"
-  - "**/*.tsx"
-  - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.php"
-  - "**/*.py"
-  - "**/*.go"
----
-
 # Verification Commands
 
 Canonical commands for building, testing, formatting, and linting. All agents that verify code should reference this file — do not embed commands in individual skill files.

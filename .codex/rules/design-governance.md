@@ -1,14 +1,3 @@
----
-paths:
-  - "**/*.tsx"
-  - "**/*.jsx"
-  - "**/*.vue"
-  - "**/*.svelte"
-  - "**/*.html"
-  - "**/*.css"
-  - ".prism/design/**"
----
-
 # Design Governance
 
 Implementations follow the approved design artifact — the mock, the saved spec, the design file. Redesigns and enhancements beyond that artifact need explicit UI/UX sign-off *before* implementation. Agent creative liberty is not authorization — the sign-off comes from whoever owns the design decision, not from the implementer's taste.
