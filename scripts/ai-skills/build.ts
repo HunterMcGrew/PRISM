@@ -462,17 +462,26 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
+/**
+ * Copies all managed content areas from `contentRoot` into `platformDir`,
+ * applying token substitution and dialect transformation per file.
+ *
+ * `targetSubpath` controls where within each area dir the output lands:
+ * `""` (default) writes directly into `<platformDir>/<area>/` (base pass);
+ * `"custom"` writes into `<platformDir>/<area>/custom/` (overlay pass).
+ */
 export async function copyContentToPlatformDir(
 	contentRoot: string,
 	platformDir: string,
 	checkModeArg: boolean,
 	changedPathsArg: string[],
 	tokenMap: Map<string, string>,
-	dialect: RuleDialect = verbatimRuleDialect
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		const sourceArea = path.join(contentRoot, area);
-		const targetArea = path.join(platformDir, area);
+		const targetArea = path.join(platformDir, area, targetSubpath);
 		if (!(await pathExists(sourceArea))) {
 			continue;
 		}
@@ -504,6 +513,13 @@ export async function copyContentToPlatformDir(
 			checkModeArg,
 			changedPathsArg
 		);
+	}
+
+	// Loose files (SPEC.md) belong to the base content pass only. The overlay
+	// (.prism/custom) mirrors the area dirs, not the loose top-level files, so
+	// it never carries a SPEC.md to copy. Skip them when emitting into a subpath.
+	if (targetSubpath !== "") {
+		return;
 	}
 
 	for (const looseFile of COPIED_LOOSE_FILES) {
@@ -567,9 +583,13 @@ export async function syncPlatformContentCopy(
 	checkModeArg: boolean,
 	changedPathsArg: string[],
 	tokenMap: Map<string, string>,
-	dialect: RuleDialect = verbatimRuleDialect
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
-	if (checkModeArg && !(await platformHasManagedContent(platformDir))) {
+	if (
+		checkModeArg &&
+		!(await platformHasManagedContent(platformDir, targetSubpath))
+	) {
 		return;
 	}
 
@@ -579,14 +599,16 @@ export async function syncPlatformContentCopy(
 		checkModeArg,
 		changedPathsArg,
 		tokenMap,
-		dialect
+		dialect,
+		targetSubpath
 	);
 	await removeDeletedManagedContent(
 		contentRoot,
 		platformDir,
 		checkModeArg,
 		changedPathsArg,
-		dialect
+		dialect,
+		targetSubpath
 	);
 }
 
@@ -602,7 +624,8 @@ export async function syncAllPlatformContentCopies(
 	platformDirs: { dir: string; dialect: RuleDialect }[],
 	checkModeArg: boolean,
 	changedPathsArg: string[],
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	targetSubpath = ""
 ): Promise<void> {
 	for (const { dir, dialect } of platformDirs) {
 		await syncPlatformContentCopy(
@@ -611,14 +634,20 @@ export async function syncAllPlatformContentCopies(
 			checkModeArg,
 			changedPathsArg,
 			tokenMap,
-			dialect
+			dialect,
+			targetSubpath
 		);
 	}
 }
 
-async function platformHasManagedContent(platformDir: string): Promise<boolean> {
+async function platformHasManagedContent(
+	platformDir: string,
+	targetSubpath = ""
+): Promise<boolean> {
 	for (const area of COPIED_CONTENT_AREAS) {
-		if (await pathExists(path.join(platformDir, area, MANAGED_MARKER))) {
+		if (
+			await pathExists(path.join(platformDir, area, targetSubpath, MANAGED_MARKER))
+		) {
 			return true;
 		}
 	}
@@ -702,10 +731,11 @@ export async function removeDeletedManagedContent(
 	platformDir: string,
 	checkModeArg: boolean,
 	changedPathsArg: string[],
-	dialect: RuleDialect = verbatimRuleDialect
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
 	for (const area of COPIED_CONTENT_AREAS) {
-		const targetArea = path.join(platformDir, area);
+		const targetArea = path.join(platformDir, area, targetSubpath);
 		const sourceArea = path.join(contentRoot, area);
 		const markerPath = path.join(targetArea, MANAGED_MARKER);
 		if (!(await pathExists(targetArea)) || !(await pathExists(markerPath))) {
@@ -718,6 +748,14 @@ export async function removeDeletedManagedContent(
 				continue;
 			}
 			if (entry.relativePath === MANAGED_MARKER) {
+				continue;
+			}
+			// Scope the base pass to its own files: when no subpath is set, the
+			// overlay's custom/ subtree is a separate managed tree with its own
+			// marker. Its files have no canonical source under the base area, so
+			// the base cleanup would otherwise treat every overlay file as an
+			// orphan and delete it. Base and overlay cleanup never cross.
+			if (targetSubpath === "" && entry.relativePath.startsWith(`custom${path.sep}`)) {
 				continue;
 			}
 			const sourceRelativePath = dialect.mapSourceRelativePath(
@@ -747,6 +785,19 @@ export async function removeDeletedManagedContent(
 		}
 
 		if (!(await pathExists(sourceArea))) {
+			// A base pass must not recursively remove an area whose overlay
+			// subtree (custom/) is still managed — that subtree has its own
+			// source under .prism/custom and its own cleanup pass. Removing the
+			// area wholesale here would cross into the overlay's lane.
+			const overlayMarkerPath = path.join(
+				targetArea,
+				"custom",
+				MANAGED_MARKER
+			);
+			if (targetSubpath === "" && (await pathExists(overlayMarkerPath))) {
+				continue;
+			}
+
 			changedPathsArg.push(targetArea);
 			if (!checkModeArg) {
 				await fs.rm(targetArea, { force: true, recursive: true });
