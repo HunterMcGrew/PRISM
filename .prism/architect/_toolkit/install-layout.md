@@ -15,6 +15,29 @@ Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style
 
 The Cursor translation is mechanical and lossless: `paths:` becomes `globs:` with the same glob list, a frontmatter-less Tier 1 rule gains `alwaysApply: true`, and the `.md` extension becomes `.mdc`. Canonical rules stay in the Claude dialect per [ADR-0035](../spec/adrs/_toolkit/0035-rule-loading-tiers.md); a verbatim `.md` copy carrying `paths:` was untiered in Cursor at best and inert at worst (the gap routed to issue `#73`).
 
+## Ownership is path-decidable: the `_toolkit/` namespace
+
+`pnpm prism:update` (ADR-0057) pulls PRISM's latest content into an already-onboarded consumer repo. For that to be safe, "what is PRISM allowed to overwrite" has to be answerable from the path alone — a sync that has to guess ownership per file will eventually guess wrong and clobber a consumer's product doc.
+
+PRISM-owned content lives under `_toolkit/` subdirs so ownership is a glob, not a guess:
+
+- `.prism/architect/_toolkit/**` — PRISM's architect docs. Flat `.prism/architect/*.md` is reserved for consumer product docs.
+- `.prism/spec/adrs/_toolkit/**` — PRISM's ADRs. Flat `.prism/spec/adrs/*.md` is reserved for consumer product ADRs, which sidesteps numbering collisions between PRISM and consumer ADRs.
+
+The leading underscore keeps the recursive walker working unchanged and sorts the reserved flat dir first. `scripts/ai-skills/ownership.ts` is the single source of truth for the classification: `PRISM_OWNED_GLOBS` lists `architect/_toolkit/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `spec/**`, and `SPEC.md`; `CONSUMER_OWNED_GLOBS` lists flat `architect/*.md`, flat `spec/adrs/*.md`, the live `architect/manifest.json`, `custom/**`, `plans/**`, and `lessons.md`. `classifyPath(relativePath)` returns `prism` | `consumer` | `unknown`, and the sync writes only `prism`-classified files.
+
+`manifest.json` is split-ownership: `.prism/architect/_toolkit/manifest.base.json` holds the toolkit routes (PRISM-owned), while the live `.prism/architect/manifest.json` is consumer-owned. The merge-at-onboard logic that would compose the live manifest from base plus per-team routes is not yet built — until it is, the live manifest is hand-maintained and `verify-manifest-coverage.ts` guards its coverage.
+
+## Consumer overlay: `.prism/custom/`
+
+Consumers extend PRISM without editing PRISM-owned files by dropping content under `.prism/custom/`, which mirrors the canonical area names: `.prism/custom/{rules,architect,references,templates}/<file>`. The overlay is consumer-owned (`custom/**` is in `CONSUMER_OWNED_GLOBS`), so `classifyPath` returns `consumer` and `pnpm prism:update` never writes into it — both the canonical file pass and the manifest skip it entirely.
+
+The update flow reads the overlay only during the platform-copy step, emitting each area into a `custom/` subdir per platform: `.claude/rules/custom/<file>.md`, `.cursor/rules/custom/<file>.mdc` (dialect-translated), `.codex/rules/custom/<file>.md`. The `custom/` subdir makes base-vs-overlay collision structurally impossible — there is no last-write-wins ambiguity. Token substitution applies, so overlay rules can use team tokens. The overlay output carries its own `.ai-skill-generated` marker at the `custom/` subdir root, and orphan cleanup is scoped so base and overlay cleanup never cross.
+
+## Skill namespace ownership
+
+PRISM owns `prism-*` skill IDs and regenerates only those on update. Consumer-authored skills use a non-`prism-*` prefix — the org token from `config.json` (e.g. `acme-<role>`) or `custom-<role>` — and are consumer-owned, so an update never touches them. `prism-skill-forge` enforces this default in both its create and migrate modes; `prism-skill-forge` itself ships `prism-*` because it is a toolkit-owned skill, the documented carve-out.
+
 ## What gets copied; what stays canonical-only
 
 Copied areas (mirrored to every platform dir):
