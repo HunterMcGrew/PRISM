@@ -188,6 +188,7 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). C-A5 ratified always-human (incl. hobby); C-A3 per-team autonomy confirmed out-of-scope (deferred); C-A1 confirmed ship modelTier seam + read path (not lean). ADR candidates 0053 (`type` marker) / 0054 (integration-gate-always-human) ratified — written during the Phase C build.
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Wrote ADR-0053 (`type` integration marker, no default persona) and ADR-0054 (integration gate always-human, incl. hobby) as accepted; added README index rows; resolved C-A4/C-A5 promotion pointers and marked the ADR-not-written Review Issue fixed.
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Implemented Clove tasks 1–13 + C-A1 seam/read path. Adds type/blockedBy/teamConfig[] schema, per-team ordering + dependency-gated eligibility in step-04, DFS cycle check + eligibility resolution in step-09 § 2.5, convergence pre-check, team-tag carry through decision box, per-team/integration-gate views in step-10, integration gate in fleet.md + gate registry. pnpm prism:build && prism:check: 158/158 pass.
+- 2026-06-14 [hmcgrew/sol-phase-c-teams]: Fixed 4 writing-voice minors from Briar self-review (64caa04) — replaced instruction-voice "Cite ADR-..." with declarative "See ADR-..." in fleet.md and step-10-report.md, dropped opaque "C-A1 read path" label from step-04-dispatch.md, replaced "(see Phase C Decision: C-A2)" with "(the four-value status model is unchanged)" in goal-state.md. 158/158 pass.
 
 ---
 
@@ -196,34 +197,38 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 ### Writing-voice: "Cite ADR-0011...and ADR-0049" meta-instruction in fleet.md
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/lib/fleet.md:39`
 - **Problem:** `(b) Always human` paragraph ends with `Cite ADR-0011 (merge stays the unconditional gate alongside this one) and ADR-0049 (Sol never reassigns team tags).` — task-spec instruction text pasted verbatim into the durable skill file. Reads as a directive to a future reader, not a declaration.
 - **Suggested fix:** Replace `Cite ADR-0011` with `See ADR-0011`.
+- **Fixed in:** `64caa04`
 
 ### Writing-voice: "Cite `lib/fleet.md § Integration gate`" instruction in step-10
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/step-10-report.md:44`
 - **Problem:** `Cite \`lib/fleet.md § Integration gate\` for the trigger.` is a task-spec instruction, not a declaration. Reads as telling Sol what to cite rather than stating the spec.
 - **Suggested fix:** Replace with `The integration gate trigger is defined in \`lib/fleet.md § Integration gate\`.`
+- **Fixed in:** `64caa04`
 
 ### Writing-voice: "C-A1 read path" internal session label in step-04
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/step-04-dispatch.md:7`
 - **Problem:** `This is the C-A1 read path` — C-A1 is a plan decision label opaque to readers loading step-04 cold without the epic plan.
 - **Suggested fix:** Drop the label entirely — the cite to `lib/goal-state.md § Field notes` is sufficient.
+- **Fixed in:** `64caa04`
 
 ### Writing-voice: "see Phase C Decision: C-A2" internal label in goal-state
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/lib/goal-state.md:78`
 - **Problem:** `(see Phase C Decision: C-A2)` is an internal plan reference opaque in the skill file standing alone.
 - **Suggested fix:** Replace with plain rationale: `(the four-value status model is unchanged)`.
+- **Fixed in:** `64caa04`
 
 ### ADR-0053 and ADR-0054 cited but not yet written
 
