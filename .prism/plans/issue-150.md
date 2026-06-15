@@ -1,5 +1,7 @@
 # Plan: issue-150
 
+> Closed: 2026-06-15
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/150
@@ -319,6 +321,7 @@ Added by Winston. Tasks are grouped by persona.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Briar self-review. Found 1 major (pnpm/action-setup@v4 missing version — CI will fail to install pnpm) and 3 minor (checkSeedDrift outside checkMode guard; absolute path regression in check-mode reporter; orphan sweep misses seed loose files). Routed back to Clove.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Fixed all Briar findings. CI workflow gains `version: 9` pin; checkSeedDrift moved inside checkMode guard; reporter normalized to relative paths for both absolute (platform-copy) and relative (seed-drift) entries. Orphan-loose-files minor deferred (COPIED_LOOSE_FILES is static closed list). 164/164 tests pass, prism:check green.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Fixed two Eric minors. Moved seedRoot existence guard to top of checkSeedDrift() for readability (behavior unchanged). Added loose-file rename test (SPEC.md → SPEC.md.tmpl) to seed-drift.test.ts. 165/165 tests pass, prism:check green.
+- 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Plan close (Winston). Verdict gate passed — all 7 Decisions verdicted (OPEN pre-commit-hook entry exempt). Confirmed all `no promotion needed` verdicts: the two generalizing decisions (curated drift-check contract, seed-curation.json discipline) were already promoted into install-layout.md §seed surface during Step 7, so no second promotion. AC all satisfied; ready for human merge gate on PR #151.
 
 ---
 
@@ -390,25 +393,26 @@ Not Applicable (build tooling enforcement — not a runtime bug with a root caus
 
 ### Behavioral
 
-- [ ] Given a canonical ships-to-consumer file (non-curated, non-excluded) is edited without syncing the seed, When `pnpm prism:check` runs, Then it fails and names the specific drifted file. (REQ-1)
-- [ ] Given a curated seed file is edited (e.g. `verification-commands.md`), When `pnpm prism:check` runs, Then it passes (content compare is skipped for curated files). (REQ-1)
-- [ ] Given a canonical-only/excluded file is manually copied into the seed, When `pnpm prism:check` runs, Then it fails and identifies the file as a seed-contains-excluded violation. (REQ-1)
-- [ ] Given a canonical file is committed but its platform mirror (`.claude/`, `.codex/`, `.cursor/`) is left uncommitted, When CI runs `pnpm prism:check` on the committed branch state, Then CI fails. (REQ-2)
-- [ ] Given a clean, fully-synced branch, When CI runs `pnpm prism:check`, Then CI passes. (REQ-2)
+- [x] Given a canonical ships-to-consumer file (non-curated, non-excluded) is edited without syncing the seed, When `pnpm prism:check` runs, Then it fails and names the specific drifted file. (REQ-1)
+- [x] Given a curated seed file is edited (e.g. `verification-commands.md`), When `pnpm prism:check` runs, Then it passes (content compare is skipped for curated files). (REQ-1)
+- [x] Given a canonical-only/excluded file is manually copied into the seed, When `pnpm prism:check` runs, Then it fails and identifies the file as a seed-contains-excluded violation. (REQ-1)
+- [x] Given a canonical file is committed but its platform mirror (`.claude/`, `.codex/`, `.cursor/`) is left uncommitted, When CI runs `pnpm prism:check` on the committed branch state, Then CI fails. (REQ-2)
+- [x] Given a clean, fully-synced branch, When CI runs `pnpm prism:check`, Then CI passes. (REQ-2)
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:build` (non-check mode) never writes to `templates/install/` — seed remains hand-authored. (REQ-1)
-- [ ] `seed-curation.json` accounts for 100% of canonical ↔ seed divergence — no unclassified differences remain after Step 0 triage. (REQ-1)
-- [ ] Token-bearing files are compared as raw unsubstituted bytes, producing no false-positive drift failures. (REQ-1)
-- [ ] Unit tests cover identical, drifted, curated, excluded, orphan, and rename cases. (REQ-1)
-- [ ] `.prism/architect/install-layout.md` §seed surface is updated to reflect the new enforcement, and the consumer copy in `templates/install/` is hand-synced. (REQ-3)
+- [x] `pnpm prism:build` (non-check mode) never writes to `templates/install/` — seed remains hand-authored. (REQ-1)
+- [x] `seed-curation.json` accounts for 100% of canonical ↔ seed divergence — no unclassified differences remain after Step 0 triage. (REQ-1)
+- [x] Token-bearing files are compared as raw unsubstituted bytes, producing no false-positive drift failures. (REQ-1)
+- [x] Unit tests cover identical, drifted, curated, excluded, orphan, and rename cases. (REQ-1)
+- [x] `.prism/architect/install-layout.md` §seed surface is updated to reflect the new enforcement, and the consumer copy in `templates/install/` is hand-synced. (REQ-3)
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-15 | Nora | Generated AC from issue requirements and Winston scope | updated | N/A |
+| 2026-06-15 | Winston | Plan-close AC verification — all behavioral + non-behavioral items confirmed satisfied, boxes checked | updated | N/A |
 
 ---
 
@@ -427,6 +431,6 @@ None at plan creation.
 - [x] All debugged issues resolved (no `open` entries — N/A for this ticket)
 - [x] Build passes — last run: 2026-06-15 (164 tests pass, prism:check green)
 - [x] PR description up to date (PR #151)
-- [x] Lasting decisions promoted to architect context (install-layout.md updated; decisions are tooling-tactical, no other promotion needed)
+- [x] Lasting decisions promoted to architect context (close gate confirmed: the two generalizing decisions were already promoted into install-layout.md §seed surface during Step 7; remaining decisions are tooling-tactical with `no promotion needed` verdicts)
 
-**Last updated:** 2026-06-15 (Clove post-Eric minor fixes — all review issues resolved; 165/165 tests pass)
+**Last updated:** 2026-06-15 (Winston plan close — verdict gate passed, AC verified, plan marked closed; ready for human merge gate on PR #151)
