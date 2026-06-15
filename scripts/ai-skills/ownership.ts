@@ -22,13 +22,13 @@ import { compileMatcher } from "./verify-manifest-coverage";
  * contract the skill-regeneration step keys off.
  */
 export const PRISM_OWNED_GLOBS = [
-	"architect/_toolkit/**",
-	"spec/adrs/_toolkit/**",
-	"rules/**",
-	"templates/**",
-	"references/**",
-	"spec/**",
-	"SPEC.md",
+  "architect/_toolkit/**",
+  "spec/adrs/_toolkit/**",
+  "rules/**",
+  "templates/**",
+  "references/**",
+  "spec/**",
+  "SPEC.md",
 ] as const;
 
 /**
@@ -42,17 +42,17 @@ export const PRISM_OWNED_GLOBS = [
  * `classifyPath`, which is what keeps the carve-out correct.
  */
 export const CONSUMER_OWNED_GLOBS = [
-	"architect/*.md",
-	"spec/adrs/*.md",
-	"architect/manifest.json",
-	"custom/**",
-	"plans/**",
-	"lessons.md",
+  "architect/*.md",
+  "spec/adrs/*.md",
+  "architect/manifest.json",
+  "custom/**",
+  "plans/**",
+  "lessons.md",
 ] as const;
 
 const ownedMatchers = PRISM_OWNED_GLOBS.map((glob) => compileMatcher(glob));
 const consumerMatchers = CONSUMER_OWNED_GLOBS.map((glob) =>
-	compileMatcher(glob)
+  compileMatcher(glob),
 );
 
 /**
@@ -65,15 +65,15 @@ const consumerMatchers = CONSUMER_OWNED_GLOBS.map((glob) =>
  * overwrite what it provably owns.
  */
 export function classifyPath(
-	relativePath: string
+  relativePath: string,
 ): "prism" | "consumer" | "unknown" {
-	if (consumerMatchers.some((matches) => matches(relativePath))) {
-		return "consumer";
-	}
+  if (consumerMatchers.some((matches) => matches(relativePath))) {
+    return "consumer";
+  }
 
-	if (ownedMatchers.some((matches) => matches(relativePath))) {
-		return "prism";
-	}
+  if (ownedMatchers.some((matches) => matches(relativePath))) {
+    return "prism";
+  }
 
-	return "unknown";
+  return "unknown";
 }

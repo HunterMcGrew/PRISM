@@ -19,20 +19,20 @@ import { hashFile, readFileIfExists } from "./utils";
 export const SYNC_MANIFEST_FILENAME = ".sync-manifest.json";
 
 export interface SyncManifestFileEntry {
-	contentHash: string;
+  contentHash: string;
 }
 
 export interface SyncManifest {
-	prismVersion: string;
-	sourceCommit: string;
-	generatedAt: string;
-	files: Record<string, SyncManifestFileEntry>;
+  prismVersion: string;
+  sourceCommit: string;
+  generatedAt: string;
+  files: Record<string, SyncManifestFileEntry>;
 }
 
 export interface GenerateSyncManifestOptions {
-	prismVersion: string;
-	sourceCommit: string;
-	generatedAt: string;
+  prismVersion: string;
+  sourceCommit: string;
+  generatedAt: string;
 }
 
 /**
@@ -43,15 +43,15 @@ export interface GenerateSyncManifestOptions {
  * update flow may overwrite — consumer-owned and unknown paths are excluded.
  */
 export async function listPrismOwnedRelativePaths(
-	prismContentRoot: string
+  prismContentRoot: string,
 ): Promise<string[]> {
-	const entries = await listRelativeDirectoryEntries(prismContentRoot);
+  const entries = await listRelativeDirectoryEntries(prismContentRoot);
 
-	return entries
-		.filter((entry) => entry.kind === "file")
-		.map((entry) => entry.relativePath.split(path.sep).join("/"))
-		.filter((relativePath) => classifyPath(relativePath) === "prism")
-		.sort((a, b) => a.localeCompare(b));
+  return entries
+    .filter((entry) => entry.kind === "file")
+    .map((entry) => entry.relativePath.split(path.sep).join("/"))
+    .filter((relativePath) => classifyPath(relativePath) === "prism")
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -65,23 +65,23 @@ export async function listPrismOwnedRelativePaths(
  * `renamedFrom`.
  */
 export async function generateSyncManifest(
-	prismContentRoot: string,
-	options: GenerateSyncManifestOptions
+  prismContentRoot: string,
+  options: GenerateSyncManifestOptions,
 ): Promise<SyncManifest> {
-	const relativePaths = await listPrismOwnedRelativePaths(prismContentRoot);
-	const files: Record<string, SyncManifestFileEntry> = {};
+  const relativePaths = await listPrismOwnedRelativePaths(prismContentRoot);
+  const files: Record<string, SyncManifestFileEntry> = {};
 
-	for (const relativePath of relativePaths) {
-		const absolutePath = path.join(prismContentRoot, relativePath);
-		files[relativePath] = { contentHash: await hashFile(absolutePath) };
-	}
+  for (const relativePath of relativePaths) {
+    const absolutePath = path.join(prismContentRoot, relativePath);
+    files[relativePath] = { contentHash: await hashFile(absolutePath) };
+  }
 
-	return {
-		prismVersion: options.prismVersion,
-		sourceCommit: options.sourceCommit,
-		generatedAt: options.generatedAt,
-		files,
-	};
+  return {
+    prismVersion: options.prismVersion,
+    sourceCommit: options.sourceCommit,
+    generatedAt: options.generatedAt,
+    files,
+  };
 }
 
 /**
@@ -90,15 +90,15 @@ export async function generateSyncManifest(
  * an older install that predates the manifest.
  */
 export async function loadSyncManifest(
-	consumerContentRoot: string
+  consumerContentRoot: string,
 ): Promise<SyncManifest | null> {
-	const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
-	const raw = await readFileIfExists(manifestPath);
-	if (raw === null) {
-		return null;
-	}
+  const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+  const raw = await readFileIfExists(manifestPath);
+  if (raw === null) {
+    return null;
+  }
 
-	return JSON.parse(raw) as SyncManifest;
+  return JSON.parse(raw) as SyncManifest;
 }
 
 /**
@@ -106,22 +106,22 @@ export async function loadSyncManifest(
  * content root, honoring the build's check-mode / changedPaths contract.
  */
 export async function writeSyncManifest(
-	prismContentRoot: string,
-	manifest: SyncManifest,
-	checkMode: boolean,
-	changedPaths: string[]
+  prismContentRoot: string,
+  manifest: SyncManifest,
+  checkMode: boolean,
+  changedPaths: string[],
 ): Promise<void> {
-	const manifestPath = path.join(prismContentRoot, SYNC_MANIFEST_FILENAME);
-	const serialized = `${JSON.stringify(manifest, null, "\t")}\n`;
-	const previous = await readFileIfExists(manifestPath);
-	if (previous === serialized) {
-		return;
-	}
+  const manifestPath = path.join(prismContentRoot, SYNC_MANIFEST_FILENAME);
+  const serialized = `${JSON.stringify(manifest, null, "\t")}\n`;
+  const previous = await readFileIfExists(manifestPath);
+  if (previous === serialized) {
+    return;
+  }
 
-	changedPaths.push(manifestPath);
-	if (checkMode) {
-		return;
-	}
+  changedPaths.push(manifestPath);
+  if (checkMode) {
+    return;
+  }
 
-	await fs.writeFile(manifestPath, serialized, "utf8");
+  await fs.writeFile(manifestPath, serialized, "utf8");
 }
