@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -233,6 +234,25 @@ export async function removeDeletedManagedSkills(
 
 		await fs.rm(skillPath, { force: true, recursive: true });
 	}
+}
+
+/**
+ * Hashes raw bytes with SHA-256 and returns a `sha256:<hex>` digest.
+ *
+ * Hashes bytes, not decoded text, so the digest matches `filesAreEqual`'s
+ * `Buffer.equals` byte comparison — a file that compares equal hashes equal.
+ */
+export function hashContent(content: string | Buffer): string {
+	const digest = createHash("sha256").update(content).digest("hex");
+	return `sha256:${digest}`;
+}
+
+/**
+ * Reads a file as raw bytes and returns its `sha256:<hex>` digest.
+ */
+export async function hashFile(filePath: string): Promise<string> {
+	const content = await fs.readFile(filePath);
+	return hashContent(content);
 }
 
 /**
