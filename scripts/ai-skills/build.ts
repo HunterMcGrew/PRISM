@@ -737,7 +737,8 @@ export async function removeDeletedManagedContent(
 export async function syncAgentsMdTier1Block(
 	repoRootArg: string,
 	checkModeArg: boolean,
-	changedPathsArg: string[]
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
 	const agentsPath = path.join(repoRootArg, "AGENTS.md");
 
@@ -746,7 +747,10 @@ export async function syncAgentsMdTier1Block(
 	}
 
 	const current = await fs.readFile(agentsPath, "utf8");
-	const rules = await collectTier1RuleBodies(path.join(repoRootArg, ".prism", "rules"));
+	const rules = await collectTier1RuleBodies(
+		path.join(repoRootArg, ".prism", "rules"),
+		tokenMap
+	);
 	const block = renderTier1Block(rules);
 	const next = replaceTier1Block(current, block);
 
@@ -1254,7 +1258,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths);
+	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
 	await removeDeletedManagedSkills(
 		targetRoots.claude,

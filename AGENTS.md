@@ -148,8 +148,8 @@ The filename must match the ticket or epic identifier in lowercase.
 
 Examples:
 
-- Ticket ${TICKET_PREFIX}-1448 → `.prism/plans/${TICKET_PREFIX_LOWERCASE}-1448.md`
-- Epic ${TICKET_PREFIX}-1524 → `.prism/plans/epic-${TICKET_PREFIX_LOWERCASE}-1524.md`
+- Ticket PRISM-1448 → `.prism/plans/prism-1448.md`
+- Epic PRISM-1524 → `.prism/plans/epic-prism-1524.md`
 - Epic with no parent ticket → `.prism/plans/epic-<descriptive-name>.md` (fallback — prefer creating a parent ticket in Linear)
 
 ---
@@ -952,7 +952,7 @@ For non-trivial changes, pause and ask "is there a more elegant way?" If a fix f
 
 ## Purpose
 
-Work surfaced after a ticket is underway doesn't always earn its own ticket. Same-scope work folds into the active PR when the originating ticket hasn't merged, or ships as a follow-up PR off `${DEFAULT_BRANCH}` when it has — a new ticket is reserved for work whose scope genuinely splits from the original. When a follow-up *does* warrant a ticket, it earns its place only when its scope is sharp enough to act on; open-ended follow-ups ("clean up X someday") drift into the backlog as dead weight, because no one can tell when they're done or whether the next reader will agree on what "X" even means.
+Work surfaced after a ticket is underway doesn't always earn its own ticket. Same-scope work folds into the active PR when the originating ticket hasn't merged, or ships as a follow-up PR off `main` when it has — a new ticket is reserved for work whose scope genuinely splits from the original. When a follow-up *does* warrant a ticket, it earns its place only when its scope is sharp enough to act on; open-ended follow-ups ("clean up X someday") drift into the backlog as dead weight, because no one can tell when they're done or whether the next reader will agree on what "X" even means.
 
 **Why:** Filing a new ticket for every small same-thread correction inflates ticket and story-point counts on work that's really one continuous effort — and each ticket carries real overhead: a backlog entry, a separate branch, cycle planning, and another full review cycle. When the work doesn't earn that overhead, the overhead is pure tax. The flip side is just as real: a vague follow-up ticket is worse than none — it consumes ticket-hygiene budget, gives the originating ticket false confidence that the work is "tracked," and leaves the next implementer guessing at intent. Both failure modes come from picking the wrong vehicle, so the rule's first job is choosing the vehicle.
 
@@ -963,7 +963,7 @@ Walk this table before opening a ticket or recommending one:
 | Situation | Action |
 | --- | --- |
 | **Pre-merge** — surfaced work is same-scope as the active ticket's thread | Fold into the active PR |
-| **Post-merge** — small follow-up that's same-scope as the just-merged ticket | Open a follow-up PR off `${DEFAULT_BRANCH}`, no new ticket |
+| **Post-merge** — small follow-up that's same-scope as the just-merged ticket | Open a follow-up PR off `main`, no new ticket |
 | **Scope genuinely splits** — different personas, different systems, or a size that wouldn't have fit in the original ticket | New ticket |
 
 **Four signals decide same-scope vs. splits:**
@@ -979,8 +979,8 @@ Walk this table before opening a ticket or recommending one:
 
 When the vehicle is a follow-up PR (the post-merge, same-scope case):
 
-- **Branch naming:** `<username>/${TICKET_PREFIX_LOWERCASE}-NNNN-followup-<short-slug>` — the original ticket ID anchors the lineage so PR lists and git logs read coherently. Follows the base convention in [`git-conventions.md`](./git-conventions.md) § Branch Naming.
-- **PR body opener:** "Follow-up to ${TICKET_PREFIX}-NNNN. No new ticket per `.prism/rules/followup-scope.md`." This pre-empts the "where's the ticket?" reflex from reviewers and auto-link tooling.
+- **Branch naming:** `<username>/prism-NNNN-followup-<short-slug>` — the original ticket ID anchors the lineage so PR lists and git logs read coherently. Follows the base convention in [`git-conventions.md`](./git-conventions.md) § Branch Naming.
+- **PR body opener:** "Follow-up to PRISM-NNNN. No new ticket per `.prism/rules/followup-scope.md`." This pre-empts the "where's the ticket?" reflex from reviewers and auto-link tooling.
 - **Ticket linkage (optional):** drop a one-line comment on the original ticket linking the follow-up PR when the audit trail matters — a notable feature, an epic, or a post-incident fix.
 
 ## Scope-fit gate
@@ -1055,7 +1055,7 @@ Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the
 
 ### Subject line
 
-Format: `${TICKET_PREFIX}-NNNN: <imperative summary>`
+Format: `PRISM-NNNN: <imperative summary>`
 
 - Start with the ticket ID, colon, space
 - Use imperative mood ("Fix image distortion", not "Fixed" or "Fixes")
@@ -1064,7 +1064,7 @@ Format: `${TICKET_PREFIX}-NNNN: <imperative summary>`
 - No trailing period
 
 Variants:
-- Follow-up commits after the main PR has merged: `${TICKET_PREFIX}-NNNN followup: <summary>`
+- Follow-up commits after the main PR has merged: `PRISM-NNNN followup: <summary>`
 - Chores not tied to a ticket (plan updates, CI config, tooling): `chore: <summary>`
 
 ### Body
@@ -1084,7 +1084,7 @@ Always pass the commit message via HEREDOC to preserve formatting:
 
 ```bash
 git commit -m "$(cat <<'EOF'
-${TICKET_PREFIX}-1588: Fix remaining ILink migration gaps in block registration and view props
+PRISM-1588: Fix remaining ILink migration gaps in block registration and view props
 
 The ILink migration missed two files: index.tsx still registered buttonUrl/buttonUrlTarget
 as block attributes, and MegaMenuInfoBannerBlock.view.tsx still exported the old prop types.
@@ -1137,7 +1137,7 @@ Always branch from `origin/main` — never from the current branch, which may ca
 ## Merge Strategy
 
 PRs are **squash-merged** on GitHub. This means:
-- The PR title becomes the merge commit subject — which is why `pr-description.md` documents the title format (`${TICKET_PREFIX}-NNNN: <description>`)
+- The PR title becomes the merge commit subject — which is why `pr-description.md` documents the title format (`PRISM-NNNN: <description>`)
 - Individual commit messages on the branch don't appear in `main` history
 - Commit quality still matters for branch-level `git log` and `git blame` during development
 
@@ -1243,8 +1243,8 @@ For any non-trivial task — 3 or more steps, or a real architectural decision �
 
 ## PR Title
 
-- Format: `${TICKET_PREFIX}-NNNN: <description>` for the primary implementation PR
-- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `${TICKET_PREFIX}-NNNN followup: <description>`
+- Format: `PRISM-NNNN: <description>` for the primary implementation PR
+- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `PRISM-NNNN followup: <description>`
 
 ## What goes in the PR body
 
@@ -1260,7 +1260,7 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
 - `## Screenshots` — UI PRs only; delete the heading when not applicable
 - `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — ${TICKET_PREFIX}-#### or Linear URL
+- `## Ticket` — PRISM-#### or Linear URL
 - `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
 
 **Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.
@@ -1293,7 +1293,7 @@ When updating an existing PR description:
 
 ## Keeping the PR in sync with scope
 
-The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because ${PROJECT} squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
+The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
 **Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/0020-pr-body-reflects-current-scope.md) for the full decision.
 

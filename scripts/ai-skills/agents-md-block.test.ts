@@ -2,6 +2,7 @@
  * Regression suite for the AGENTS.md Tier-1 rule-body generator. Pins:
  *   - which rules are collected (no-frontmatter only; paths:-bearing excluded)
  *   - alphabetical ordering of the collected set
+ *   - token substitution (${TICKET_PREFIX} → configured value; no literal placeholders survive)
  *   - begin/end markers and source comments in the rendered block
  *   - idempotent replace (second call produces the same output as the first)
  *   - insertion point when no markers exist yet (after Behavioral norms table)
@@ -98,6 +99,26 @@ test("replaceTier1Block replaces an existing block idempotently", () => {
 
 	assert.equal(second, first);
 	assert.equal((first.match(new RegExp(AGENTS_MD_BLOCK_BEGIN, "g")) ?? []).length, 1);
+});
+
+test("collectTier1RuleBodies substitutes tokens when tokenMap is provided", async () => {
+	await withTempRulesDir(
+		async (dir) => {
+			await fs.writeFile(
+				path.join(dir, "tier1.md"),
+				"# Rule\n\nSee ${TICKET_PREFIX}-1234 for context.\n",
+				"utf8"
+			);
+		},
+		async (dir) => {
+			const tokenMap = new Map([["TICKET_PREFIX", "PRISM"]]);
+			const rules = await collectTier1RuleBodies(dir, tokenMap);
+			assert.equal(rules.length, 1);
+			// Token was substituted — no literal ${...} placeholder survives
+			assert.doesNotMatch(rules[0].body, /\$\{/);
+			assert.match(rules[0].body, /PRISM-1234/);
+		}
+	);
 });
 
 test("replaceTier1Block inserts after Behavioral norms when no block exists", () => {

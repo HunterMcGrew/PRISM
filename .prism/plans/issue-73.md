@@ -104,6 +104,7 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed trivially-true insertion-point assertion in `agents-md-block.test.ts`. Anchored `standaloneSepPos` via `indexOf("\n---\n", tableRowPos)` so the `| --- |` table-header divider cannot match; asserts `blockPos < standaloneSepPos` so a wrong-location insertion now fails the test.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Eli updated `docs/content/dev/architecture/rule-loading-tiers.md` to correct the byte-identical claim (Claude verbatim; Codex strips stray `paths:`; Cursor full dialect) and document the Codex Tier-1 AGENTS.md inlining behavior and Tier-1-only limitation. `pnpm prism:check` green.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Draft PR #153 opened — https://github.com/HunterMcGrew/PRISM/pull/153.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed Eric Major: threaded `tokenMap` through `syncAgentsMdTier1Block` → `collectTier1RuleBodies`; apply `substituteTokens` to each rule body. Added regression test asserting no `${` survives. `pnpm prism:build` updated `AGENTS.md` (0 placeholders in block); `pnpm prism:check` green; 175/175 tests pass.
 
 ---
 
@@ -137,6 +138,15 @@ Spike posted to issue #73 corrected the original premise:
 ---
 
 ## Review Issues
+
+### Token substitution missing from Tier-1 inlining path
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/agents-md-block.ts`, `scripts/ai-skills/build.ts`, `scripts/ai-skills/agents-md-block.test.ts`
+- **File:** `scripts/ai-skills/build.ts:737` (`syncAgentsMdTier1Block`)
+- **Problem:** `syncAgentsMdTier1Block` called `collectTier1RuleBodies` and `renderTier1Block` without applying `substituteTokens`, so the generated AGENTS.md block contained 11 literal `${TICKET_PREFIX}` / `${TICKET_PREFIX_LOWERCASE}` placeholders instead of the configured values (e.g. `PRISM`). Every sibling rule-copy path applies substitution via `copyContentFileWithSubstitution`; this path did not.
+- **Suggested fix:** Thread `tokenMap` through `syncAgentsMdTier1Block` to `collectTier1RuleBodies`; apply `substituteTokens(body, tokenMap)` to each rule body before collecting. Add a regression test asserting no `${` survives in the output. (Eric PR #153 Major.)
 
 ### Insertion-point test assertion is trivially true
 
@@ -174,7 +184,7 @@ Spike posted to issue #73 corrected the original premise:
 
 ## PR Readiness (Codex inlining — tasks 2–8)
 
-- [ ] No critical or major issues — **minor issues found; see Review Issues**
+- [ ] No critical or major issues — **1 major fixed (token substitution); 2 minors fixed; 1 minor open (AC wording — cosmetic)**
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (`rule-dialect.test.ts` + `agents-md-block.test.ts`)

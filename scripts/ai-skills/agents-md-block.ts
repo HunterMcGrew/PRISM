@@ -18,6 +18,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { substituteTokens } from "./lib/tokens";
+
 export const AGENTS_MD_BLOCK_BEGIN =
 	"<!-- BEGIN GENERATED TIER-1 RULE BODIES — managed by scripts/ai-skills/build.ts; do not edit -->";
 export const AGENTS_MD_BLOCK_END = "<!-- END GENERATED TIER-1 RULE BODIES -->";
@@ -52,9 +54,16 @@ function splitFrontmatter(content: string): {
  * frontmatter and not in CODEX_INLINE_EXCLUDE), and returns them sorted by
  * filename ascending (deterministic block output, matches
  * `listRelativeDirectoryEntries` sort order).
+ *
+ * When `tokenMap` is provided, token substitution (`${TOKEN}` → value) is
+ * applied to each rule body before it is returned — matching how the
+ * platform-copy path in `build.ts` substitutes via `copyContentFileWithSubstitution`.
+ * Without substitution, literal `${TICKET_PREFIX}` placeholders appear in the
+ * generated AGENTS.md block instead of the configured value (e.g. `PRISM-`).
  */
 export async function collectTier1RuleBodies(
-	rulesDir: string
+	rulesDir: string,
+	tokenMap?: Map<string, string>
 ): Promise<{ name: string; body: string }[]> {
 	const entries = await fs.readdir(rulesDir);
 	const mdFiles = entries.filter((e) => e.endsWith(".md")).sort();
@@ -73,7 +82,11 @@ export async function collectTier1RuleBodies(
 			continue;
 		}
 
-		results.push({ name, body: content.trim() });
+		const body = tokenMap
+			? substituteTokens(content.trim(), tokenMap)
+			: content.trim();
+
+		results.push({ name, body });
 	}
 
 	return results;
