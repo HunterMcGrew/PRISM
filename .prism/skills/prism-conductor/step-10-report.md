@@ -26,6 +26,23 @@ When the run drove a tree (lanes carry `parentId` children), the report renders 
 
 A flat run (no lane has children / no `parentId`) renders exactly as today — the tree view is additive and degrades to the flat lane list when no lane has children.
 
+## Per-team view (Phase C)
+
+For each distinct non-null `team` value across `lanes[]`, surface a per-team summary — count of lanes **dispatched, done, parked, and discovered** (discovered = lanes whose origin signal carried that team tag, identified from the `team` value on the lane). The grouping key is the `team` value already recorded on each lane; no re-derivation is needed.
+
+This view is **additive** — it appears alongside the existing flat-list view and the tree-structured view above; all applicable views appear in one report (FR-8). A run with all-null `team` shows no per-team section, preserving Phase A/B behavior unchanged.
+
+## Integration gate report (Phase C)
+
+When an integration gate fires (a lane with `type: "integration"` whose `dependsOn` spans two or more distinct `team` values — all dependencies reached `done`), the report surfaces, distinctly labeled as an integration gate (not a file-conflict gate):
+
+- A **per-team summary of completed `dependsOn` lanes** — lane ID, scope statement, termination reason — grouped by upstream team.
+- Any `dependsOn` lanes that are `parked` rather than `done`, with their escalation reason.
+- The integration lane's **scope statement** (what it validates).
+- A prompt for the operator to approve dispatch or escalate (FR-6).
+
+Cite `lib/fleet.md § Integration gate` for the trigger. The integration gate report and the file-conflict gate report are distinct — label them clearly so the operator can tell which is which.
+
 Save goal-state with `status` set per the write protocol in `.prism/skills/prism-conductor/lib/goal-state.md`: `done` (run complete), `paused` (stopped at a gate, resumable via `resumeFromRunId`), or `stopped` (tripped a budget).
 
 **Never flip a PR ready or merge.** Merge is the human's call — branch protection enforces it (ADR-0011) and `git-conventions.md` § Who merges binds every persona. Sol surfaces what's parked at merge; the human clicks it.
