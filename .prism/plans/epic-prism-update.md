@@ -232,6 +232,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 ## History
 
 - 2026-06-15 [main]: Epic plan created from approved design session (greedy-conjuring-barto.md). 7-phase build plan transcribed. Linear epic pending. Epic-B superseded; Epic-C flagged for replan.
+- 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Phase 1 complete — 12 architect docs moved to `.prism/architect/_toolkit/`, 54 ADRs moved to `.prism/spec/adrs/_toolkit/`, all cross-references rewritten, manifest split created, seed twins synced. `pnpm prism:check` green (175/175 tests pass, manifest coverage verified). Two commits: architect move (320 files) and ADR move (242 files).
 
 ---
 
@@ -285,14 +286,16 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+Phase 1 branch only.
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (path-guard, verify-manifest-coverage updated)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass)
+- [ ] PR description up to date (no PR open yet — Sol handles PR after self-review)
+- [ ] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
 
 **Last updated:** 2026-06-15
 
