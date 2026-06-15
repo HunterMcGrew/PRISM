@@ -318,6 +318,7 @@ Added by Winston. Tasks are grouped by persona.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Implemented all Steps 0–8. Step 0 triage found no forgotten-drift; created seed-curation.json + checkSeedDrift() (read-only, raw-byte compare) + 6 unit tests + CI workflow + install-layout.md doc update. All 164 tests pass; prism:check green.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Briar self-review. Found 1 major (pnpm/action-setup@v4 missing version — CI will fail to install pnpm) and 3 minor (checkSeedDrift outside checkMode guard; absolute path regression in check-mode reporter; orphan sweep misses seed loose files). Routed back to Clove.
 - 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Fixed all Briar findings. CI workflow gains `version: 9` pin; checkSeedDrift moved inside checkMode guard; reporter normalized to relative paths for both absolute (platform-copy) and relative (seed-drift) entries. Orphan-loose-files minor deferred (COPIED_LOOSE_FILES is static closed list). 164/164 tests pass, prism:check green.
+- 2026-06-15 [hmcgrew/issue-150-seed-sync-ci-enforcement]: Fixed two Eric minors. Moved seedRoot existence guard to top of checkSeedDrift() for readability (behavior unchanged). Added loose-file rename test (SPEC.md → SPEC.md.tmpl) to seed-drift.test.ts. 165/165 tests pass, prism:check green.
 
 ---
 
@@ -355,6 +356,24 @@ Not Applicable (build tooling enforcement — not a runtime bug with a root caus
 - **Problem:** The diff changed `path.relative(repoRoot, changedPath)` to `changedPath` in the check-mode error reporter. Seed-drift messages are now correctly formatted, but platform-copy drift entries (which push absolute file paths) now print as full absolute paths (e.g. `D:\Documents\...`) instead of the prior relative form (`.claude/rules/foo.md`).
 - **Suggested fix:** Either: (a) normalize all changedPaths entries to relative-from-repo-root strings at push time, or (b) keep `path.relative` with a guard: only apply it when the entry looks like an absolute path (`path.isAbsolute(changedPath)`).
 - **Fixed in:** `scripts/ai-skills/build.ts` — reporter now branches on `path.isAbsolute(changedPath)`: absolute paths get `path.relative(repoRoot, changedPath)`; relative strings (seed-drift messages) print as-is.
+
+### `seedRoot` existence guard placement in `checkSeedDrift()`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:739`
+- **Problem:** The `seedRoot` existence guard sat after the loose-file loop rather than at the top of `checkSeedDrift()`. The function was correct (each forward-sweep access was individually protected by `pathExists` checks), but the placement read as if the sweep ran unguarded.
+- **Suggested fix:** Move the guard to the top of the function body, before the set initializations and any loops.
+- **Fixed in:** `scripts/ai-skills/build.ts` — guard moved to line 739, first statement in the function body.
+
+### Missing test for loose-file rename path
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/seed-drift.test.ts`
+- **Problem:** The rename test only covered the content-area path (`architect/manifest.json` → `architect/manifest.stub.json`). The `COPIED_LOOSE_FILES` rename path (e.g. `SPEC.md` → `SPEC.md.tmpl`) was unexercised.
+- **Suggested fix:** Add a test that places `SPEC.md` in canonical, `SPEC.md.tmpl` in the seed root via `renames`, and asserts `changedPaths` stays empty.
+- **Fixed in:** `scripts/ai-skills/seed-drift.test.ts` — added `rename (loose file)` test case; 165/165 tests pass.
 
 ### Orphan sweep does not cover seed loose files
 
@@ -410,4 +429,4 @@ None at plan creation.
 - [x] PR description up to date (PR #151)
 - [x] Lasting decisions promoted to architect context (install-layout.md updated; decisions are tooling-tactical, no other promotion needed)
 
-**Last updated:** 2026-06-15 (Clove post-Briar fixes — all review issues resolved)
+**Last updated:** 2026-06-15 (Clove post-Eric minor fixes — all review issues resolved; 165/165 tests pass)
