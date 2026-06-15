@@ -371,7 +371,7 @@ None at plan creation.
 - [x] Tests written for new logic and edge cases (6 unit tests for checkSeedDrift)
 - [x] All debugged issues resolved (no `open` entries — N/A for this ticket)
 - [x] Build passes — last run: 2026-06-15 (164 tests pass, prism:check green)
-- [ ] PR description up to date
+- [x] PR description up to date (PR #151)
 - [x] Lasting decisions promoted to architect context (install-layout.md updated; decisions are tooling-tactical, no other promotion needed)
 
 **Last updated:** 2026-06-15
