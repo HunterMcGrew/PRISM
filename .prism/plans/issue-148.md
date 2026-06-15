@@ -63,6 +63,7 @@ Not Applicable
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Folded two additional fixes into PR #149: (1) review-loop exit gate now requires zero fixed-but-unresolved threads (accaa7d); (2) Eric's every-run resolve sweep made explicit and marker-first rule reinforced in `github-writes.md` + `templates/install` mirror (2412e3f); (3) Eric's `shared.md` § Summary format now prohibits persona headings in the posted comment body (da05657). pnpm prism:check 158/158 green.
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Briar second self-review (expanded PR). Thread-clean invariant loop-safety confirmed clean — "fixed-but-unresolved" scoping excludes praise threads; pass budget is hard escape. All mirrors byte-identical. 1 minor: github-writes.md:42 run-on sentence (non-blocking).
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Split github-writes.md:42 run-on into two sub-bullets — marker-first rule and no-prepend-heading rule now separate scannable points; templates/install mirror updated to match (2407c41).
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Fixed Eric Major — committed stale .claude/.codex/.cursor mirrors for github-writes.md that the 2407c41 build left unstaged (2d18405); fixed Eric Minor — dropped "one" from "run one final reviewer pass" in review-loop/shared.md and committed its mirrors (910b472). prism:check 158/158 green.
 
 ---
 
@@ -102,10 +103,26 @@ Not Applicable
 ### github-writes.md line 42 run-on sentence (extended fix round)
 
 - **Severity:** `minor`
-- **Status:** `fixed` — Fixed in: 2407c41
+- **Status:** `fixed` — Fixed in: 2407c41 (source); runtime mirrors committed in 2d18405
 - **File:** `.prism/references/code-review-pr/github-writes.md:42`
 - **Problem:** The reworded line is a compound-complex run-on with two em-dashes and a redundant parenthetical that restates the marker-first rule already expressed earlier in the sentence. Content is correct; readability is mildly degraded.
 - **Suggested fix:** Split into two sentences or trim the closing parenthetical `(the marker stays the literal first line of the body)` as it repeats "must remain at the top."
+
+### Stale runtime mirrors committed without regeneration (Eric Major)
+
+- **Severity:** `major`
+- **Status:** `fixed` — Fixed in: 2d18405
+- **File:** `.claude/references/code-review-pr/github-writes.md`, `.codex/references/code-review-pr/github-writes.md`, `.cursor/references/code-review-pr/github-writes.md`
+- **Problem:** The run-on fix in 2407c41 edited the canonical source and ran `pnpm prism:build` but did not commit the regenerated runtime mirrors. `pnpm prism:check` exited 1 on the committed branch, naming the three drift files.
+- **Suggested fix:** Run `pnpm prism:build`, stage the regenerated mirrors, and commit. After any build-input edit, the regenerated mirrors must ride in the same commit.
+
+### review-loop "one final reviewer pass" terminal framing (Eric Minor)
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: 910b472
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:19`
+- **Problem:** "Run one final reviewer pass" implied a strict single-pass limit, but a re-pass can surface new findings and re-open the loop.
+- **Suggested fix:** Drop "one" → "run a final reviewer pass".
 
 ---
 
@@ -152,4 +169,4 @@ None at this stage.
 - [x] Lasting decisions promoted to architect context (if applicable) — decisions marked no-promotion-needed
 - [x] Minor: github-writes.md:42 run-on sentence — fixed in 2407c41
 
-**Last updated:** 2026-06-14 (Clove — split run-on minor; all issues resolved; prism:check 158/158 green)
+**Last updated:** 2026-06-14 (Clove — committed stale runtime mirrors (2d18405) and review-loop minor (910b472); prism:check 158/158 green; all issues resolved)
