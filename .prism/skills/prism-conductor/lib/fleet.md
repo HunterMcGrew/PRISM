@@ -61,6 +61,14 @@ Each fleet lane runs in its own worktree (`isolation: 'worktree'`), recorded as 
 
 The integration lane is a conductor-dispatched lane like any other — its persona follows the **existing persona-assignment logic**: the lane's `scope` statement names the persona (Briar for a review-and-test pass, Winston for a seam-architecture check, a QA persona if available). Phase C introduces **no default integration-lane persona mapping** — the scope statement is always explicit (Decision C-A4). Sol does not choose the persona; the decompose chain or operator sets it in the scope.
 
+## Cross-partition dependency resolution
+
+A `dependsOn` edge from lane A (partition P1) to lane B (partition P2) is resolved by reading B's `status` from the root index's `lanesSummary`, **not** by opening P2's partition file (FR-8, D-A9). The summary is refreshed on every partition write (`lib/partition-store.md § Mutate protocol`), so it is never staler than the last segment boundary — which is the only point dependency resolution is checked (consistent with Phase C's segment-granular eligibility check in `step-04-dispatch.md § Dependency-gated eligibility`).
+
+A cross-partition edge to a `parked` dependency surfaces to the human gate exactly as Phase C's same-partition parked-dependency rule: keep the dependent lane's `blockedBy` entry and append an entry to `pendingHumanReport` naming both lanes and the parked target's escalation reason (Phase C FR-3, `step-09-reconcile.md § 2.5c`).
+
+The conflict gate's file-overlap check is unaffected by partitioning — it reads the cross-partition edge list and `lanesSummary` from the root index, never two partition files directly. Cross-partition merge arbitration is out of scope for Phase D (PRD "Out of scope — cross-partition merge arbitration").
+
 ## Batched human-gate reporting
 
 `needs-human` pauses across lanes are aggregated into **one** end-of-segment report, never one ping per lane. The shape: "4 lanes parked at merge, 2 need you, 2 running." The batched report drains into step-10's closing report; `pendingHumanReport` in goal-state accumulates the entries across the segment.

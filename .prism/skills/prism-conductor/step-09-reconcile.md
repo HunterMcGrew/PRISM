@@ -7,7 +7,7 @@ The between-segment growth step. After a segment completes (steps 04–08), Sol 
 ### 1. Invoke the reconcile primitive
 
 Call the reconcile-delta procedure in `.prism/skills/prism-conductor/lib/reconcile.md`:
-- Read `goal-state` (`signals[]` + `lanes[]`).
+- Read `goal-state` — under the partitioned layout (v3), `signals[]` is read from the **root index** (run-wide registry); `lanes[]` is loaded from the active partition files per `lib/partition-store.md § Read strategy`. On a single-file run (v2 layout), read `signals[]` and `lanes[]` from the single file as today.
 - Structural dedup at the door — attach duplicate signals, route ambiguous matches to Nora.
 - Compute the lane delta: distinct unprocessed targets that survived dedup.
 
@@ -42,6 +42,8 @@ Apply the three brakes in priority order per `.prism/skills/prism-conductor/lib/
 3. **Breadth gate (default 12)** — count remaining auto-dispatchable candidates; if the count exceeds 12, surface the full expansion to a human rather than auto-dispatching; go to step-10 for the parked set.
 
 Record parked candidates in `pendingHumanReport`; record any budget or breadth-gate trip in the lane's termination reason.
+
+**Partition write order:** after the decision box and governor evaluate, write state per `lib/partition-store.md § Write strategy and crash safety` — touched partition files first, root index last. The root index write carries the refreshed `lanesSummary` (any lane whose `status` or `generation` changed this reconcile pass) and the updated `signals[]` registry. On a single-file run, the existing single-file atomic write applies unchanged.
 
 ### 4. Branch
 

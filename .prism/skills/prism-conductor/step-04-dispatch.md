@@ -22,6 +22,14 @@ Before a lane is placed in the dispatch set, Sol checks its `dependsOn` list. A 
 
 Eligibility is checked **at each segment boundary (segment-granular), not mid-segment** — consistent with the segment model where Sol does not talk to running workers (`lib/goal-state.md` § Mutate protocol). A dependency that resolves mid-segment unblocks the dependent lane at the *next* boundary, not instantly. An empty `dependsOn` is trivially eligible (Phase A/B behavior, FR-2).
 
+## Batching against the concurrency cap
+
+When the ready-lane set for a segment exceeds the concurrency cap, Sol invokes the batcher (`lib/batcher.md`) to order and slice the ready lanes into a cap-sized segment. Sol then authors the segment's `pipeline()` over that batch; the remainder queues for the next segment's dispatch boundary.
+
+Batching changes **which** lanes a segment's `pipeline()` covers, not **how** a lane runs — the autonomous segment, the gauntlet, and the merge-only human gate are all unchanged (NFR-1). The batcher's four ordering rules, budget composition, and dedup composition are defined in `lib/batcher.md`; do not restate them here.
+
+A lane whose `dependsOn` is unmet never enters the ready set for batching — it is waiting on a dependency, not queued behind a batch slot. The report (step-10) distinguishes the two states (FR-10, `lib/batcher.md § Input`).
+
 ## The review phase is the gauntlet
 
 The `self-review` and `pr-review` phases are not single passes — each runs the prism-review-loop ladder (`.claude/skills/prism-review-loop/SKILL.md`, canonical `.ai-skills/skills/prism-review-loop/shared.md`): dispatch the reviewer; a `done` (zero-findings) verdict advances the phase, a `needs-fix` verdict routes the recorded `## Review Issues` to the implementer and re-dispatches the **same** reviewer, looping until a clean pass. `self-review` (Briar) loops to clean, then `pr-review` (Eric) loops to clean. A fix pushed during the `pr-review` loop is re-reviewed by the same reviewer (Eric), not re-run through self-review — the self-review loop already ran to clean before `pr-review` opened.
