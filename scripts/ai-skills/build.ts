@@ -590,6 +590,32 @@ export async function syncPlatformContentCopy(
 	);
 }
 
+/**
+ * Runs `syncPlatformContentCopy` for every platform dir, each with its own rule
+ * dialect. Both `main()` (PRISM's own build) and the consumer-side
+ * `pnpm prism:update` flow call this after `.prism/` is in its final state, so
+ * the loop lives here once rather than being duplicated across the two entry
+ * points.
+ */
+export async function syncAllPlatformContentCopies(
+	contentRoot: string,
+	platformDirs: { dir: string; dialect: RuleDialect }[],
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
+): Promise<void> {
+	for (const { dir, dialect } of platformDirs) {
+		await syncPlatformContentCopy(
+			contentRoot,
+			dir,
+			checkModeArg,
+			changedPathsArg,
+			tokenMap,
+			dialect
+		);
+	}
+}
+
 async function platformHasManagedContent(platformDir: string): Promise<boolean> {
 	for (const area of COPIED_CONTENT_AREAS) {
 		if (await pathExists(path.join(platformDir, area, MANAGED_MARKER))) {
@@ -1287,16 +1313,13 @@ async function main(): Promise<void> {
 				dialect: cursorRuleDialect,
 			},
 		];
-		for (const { dir, dialect } of platformDirs) {
-			await syncPlatformContentCopy(
-				contentRoot,
-				dir,
-				checkMode,
-				changedPaths,
-				tokenMap,
-				dialect
-			);
-		}
+		await syncAllPlatformContentCopies(
+			contentRoot,
+			platformDirs,
+			checkMode,
+			changedPaths,
+			tokenMap
+		);
 
 		// The manifest carries per-build volatile fields (sourceCommit,
 		// generatedAt), so it is a build-mode-only output and gitignored — not a
