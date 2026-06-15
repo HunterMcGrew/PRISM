@@ -6,7 +6,7 @@ https://github.com/HunterMcGrew/PRISM/issues/148
 
 ## Goal
 
-Fix Eric's PR summary comment idempotency by inserting the `<!-- code-review-pr-summary -->` marker into `summary-template.md` so re-runs patch the existing comment rather than creating a duplicate.
+Fix Eric's PR summary comment idempotency by inserting the `<!-- code-review-pr-summary -->` marker into `summary-template.md` so re-runs patch the existing comment rather than creating a duplicate. Extended to also close two orchestration gaps: (1) the PR-review loop's exit condition now requires zero fixed-but-unresolved threads, and (2) Eric's summary body no longer opens with a persona heading.
 
 ---
 
@@ -39,8 +39,15 @@ Not Applicable
 - **Fix is template-only, not an instruction patch.** The idempotency marker belongs in `summary-template.md` (the composed-body source of truth), not as a repeated directive in `github-writes.md` or `context-gathering.md`. Adding it to instructions creates drift risk — the instruction could be followed or ignored; the template emits it deterministically every run.
   - → no promotion needed (ticket-tactical fix; the template-as-source-of-truth pattern is already the established approach for Eric's comment structure)
 
-- **Out of scope: Eric's section headings drift (`## Eric — PR Review: <phase>` vs. `## Summary`).** Winston flagged this as a separate template-adherence issue. It does not affect idempotency and is not fixed here.
-  - → no promotion needed (separate issue; stays noted here for traceability)
+- **Heading-drift fix: enforce template, never patch the instruction.** Eric was opening posted comment bodies with `## Eric — PR Review: <phase>` instead of the template's `## Summary`. Fix is a template-adherence instruction in `shared.md` § Summary format and a reinforcing note on the marker line in `github-writes.md` — not a separate template guard or post-hoc strip. The marker (`<!-- code-review-pr-summary -->`) must remain the literal first line; the heading follows from the template.
+  - → no promotion needed (ticket-tactical skill-instruction fix; the template-as-source-of-truth pattern is already established)
+
+- **Thread-resolution root cause: orchestration gap, not a missing Eric instruction.** Unresolved threads on minor-only PRs traced to the review-loop exit condition: the loop exited on zero new findings without requiring zero fixed-but-unresolved threads, so Eric's batch-D resolve sweep never ran on the final pass.
+  - **Root cause:** `prism-review-loop/shared.md` ladder step 2 defined exit as "zero findings" only. Eric resolves threads in batch D of each pass, but batch D only runs when Eric runs — a loop that exits before a final Eric pass leaves threads open.
+  - **Alternatives considered:** (a) make Eric resolve threads in a separate pre-exit step independent of batch D; (b) add a post-loop cleanup pass outside the ladder.
+  - **Chosen approach:** update the ladder's exit condition to "zero new findings AND zero fixed-but-unresolved threads." If threads remain after findings hit zero, one final reviewer pass runs. This keeps resolution fully in Eric's batch D (single actor, no new pass type) and makes the invariant visible in the ladder itself.
+  - **Implementation guidance:** `prism-review-loop/shared.md` step 2 and new Guardrails bullet "Thread-clean exit." Eric's `github-writes.md` "Resolve fixed threads" bullet now explicitly says "on every run (including re-reviews), sweep ALL currently-unresolved threads."
+  - → no promotion needed (ticket-tactical orchestration fix; the exit-condition logic is self-evident from the updated ladder wording)
 
 - **Out of scope: pre-existing duplicate comments on PR #146.** Cleaning up the two existing summary comments (IDs 4703683215 and 4703728047) is an owner's call, not part of this fix.
   - → no promotion needed (ticket-tactical; one-time cleanup decision)
@@ -53,6 +60,7 @@ Not Applicable
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Inserted marker above `## Summary` in `summary-template.md` (canonical + templates/install mirror); rewrote the matching note in `github-writes.md` to name the template as source of truth. Build green (86a794e).
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Briar self-review found 1 major: `templates/install/.prism/references/code-review-pr/github-writes.md:42` not updated to match canonical reword. All other mirrors clean; build + check green (158/158).
 - 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Applied line-42 reword to `templates/install/` copy of `github-writes.md`; both install copies now match canonical byte-for-byte. pnpm prism:check 158/158 green (27cc7d9).
+- 2026-06-14 [hmcgrew/issue-148-eric-summary-marker]: Folded two additional fixes into PR #149: (1) review-loop exit gate now requires zero fixed-but-unresolved threads (accaa7d); (2) Eric's every-run resolve sweep made explicit and marker-first rule reinforced in `github-writes.md` + `templates/install` mirror (2412e3f); (3) Eric's `shared.md` § Summary format now prohibits persona headings in the posted comment body (da05657). pnpm prism:check 158/158 green.
 
 ---
 
@@ -129,4 +137,4 @@ None at this stage.
 - [x] PR description up to date — PR #149 opened as draft
 - [x] Lasting decisions promoted to architect context (if applicable) — decisions marked no-promotion-needed
 
-**Last updated:** 2026-06-14 (Clove self-review fix)
+**Last updated:** 2026-06-14 (Clove — thread-resolution + heading-drift fixes folded in)
