@@ -210,6 +210,145 @@ A flat run — one where no lane has children — renders exactly as Phase A. Th
 
 The full report procedure is in [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md) § Tree-structured view.
 
+## Teams as lane-groups — cross-team sequencing and the integration gate
+
+The `team` field on a lane is a first-class scheduling axis. It does not introduce a second conductor or a second budget — it is a grouping dimension layered over the flat `lanes[]` array.
+
+### Per-team dispatch ordering
+
+When lanes carry a `team` value, Sol applies a team-aware ordering layer on top of the slot-fill: lanes sharing a `team` value form a logical queue that preserves their `lanes[]` order, and Sol interleaves teams round-robin as concurrency slots open. No single team starves another within the shared concurrency cap. A lane with `team: null` is its own implicit singleton group, ordered by array position.
+
+The important thing this is not: a second scheduler. The concurrency cap, the conflict gate, and the global budget are shared resources, unchanged. The `team` field controls the order in which eligible lanes are handed to the existing dispatch loop — nothing more. The full dispatch contract is in [`step-04-dispatch.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-04-dispatch.md) § Per-team dispatch ordering.
+
+### Cross-team dependency sequencing
+
+A lane can declare `dependsOn: [<laneId>, ...]` to express that it must wait for one or more other lanes to finish before it dispatches. Eligibility is checked at each segment boundary: a lane whose `dependsOn` list contains any lane not yet at `status: "done"` is held out of the dispatch set. When held, the lane stays `status: "active"` with `phaseStatus: "parked"` and a `blockedBy` field listing the unresolved edges.
+
+Eligibility is segment-granular because Sol does not talk to running workers — a dependency can only resolve when its target lane finishes and Sol observes the result at a segment boundary. A dependency that completes mid-segment unblocks the dependent lane at the *next* boundary.
+
+Dependency edges form a directed acyclic graph. If the graph contains a cycle — lane A depends on B, which depends on A — the reconcile step detects it with a depth-first check and raises a `needs-human` escalation describing the cycle. No lane in the cycle dispatches until the human removes an edge. This is a constraint check on a malformed graph, not one of the three convergence brakes — it does not consume budget and runs before the brake priority order. The cycle check is in [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) § 2.5; the `lib/convergence.md § Dependency-graph pre-check` records its placement relative to the brakes.
+
+When a `dependsOn` target is `parked` rather than `done`, the dependent lane cannot resolve either. The reconcile step co-presents both in a single `pendingHumanReport` entry — the blocked lane and the reason its target stalled — so the operator sees the full picture rather than a confusingly stalled lane with no apparent cause. Resolving the parked lane's escalation unblocks the dependent lane on the next reconcile pass.
+
+### Per-team model tier
+
+The `teamConfig[]` array in `conductor-state.json` provides a per-team model tier seam. Each entry pairs a `team` name with a `modelTier` — one of the tier values defined in `shared.md § Model tiering` (e.g. `opus`, `sonnet`). When Sol dispatches a lane whose `team` matches an entry, it uses that entry's `modelTier` as the per-dispatch model override. `null` means fall back to the run-wide model. The seam exists so a consuming team can run one team's lanes on a stronger model without upgrading the whole run. The schema is in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Field notes.
+
+### Team-tag inheritance through discovered work
+
+When a worker lane emits a `found-bug` or `found-followup-work` signal and the emitting lane carries a `team` value, that tag travels through the decision box and onto any resulting lane. A new ticket or fold-in inherits the emitting lane's `team` unless the operator or the decompose chain explicitly overrides it. Sol never strips or reassigns a team tag — the carry is deterministic and automatic. This is Nora's scope judgment and Sol's tag carry kept distinct: Nora decides what to do with the signal; Sol decides which team owns the result.
+
+### The integration gate
+
+An integration lane is a lane with `type: "integration"` whose `dependsOn` edges span two or more distinct `team` values. When all of its dependencies reach `done`, a pre-dispatch human gate fires before the integration lane is dispatched. The purpose is to give the operator a cross-team convergence checkpoint — a moment to review that the backend and frontend (or whichever teams are converging) have each completed what the integration lane will validate.
+
+Two conditions are both required to trigger the gate: `type: "integration"` on the lane, and at least one cross-team `dependsOn` edge. A same-team lane with multiple `dependsOn` edges does not trigger it. A `type: "integration"` lane whose dependencies are all same-team does not trigger it.
+
+The gate is `needs-human` at every autonomy level, including `hobby`. It is not a stakes gate that confidence can satisfy — it is a categorical checkpoint, a sibling of the merge gate in that it never auto-clears regardless of policy. The design decision is in [ADR-0054](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0054-conductor-integration-gate-always-human.md). The gate is also distinct from the conflict gate, which serializes lanes that share a file — the integration gate is about cross-team work convergence, independent of file overlap.
+
+The integration lane's persona comes from its `scope` statement, not from a default mapping. A scope describing a review-and-test pass names Briar; a seam-architecture check names Winston. This keeps the gate general-purpose: the operator or the decompose chain sets the scope, and the persona follows from it.
+
+When an integration gate fires, the end-of-run report surfaces a labeled integration gate section — distinct from any file-conflict gate section — with a per-team summary of completed dependency lanes, any dependencies still parked, the integration lane's scope statement, and an approve/escalate prompt.
+
+The full gate contract is in [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) § Integration gate. The gate appears in the gate registry in [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md).
+
+### Per-team end-of-run report
+
+When any lanes carry a non-null `team`, the end-of-run report adds a per-team summary alongside the flat lane list and the tree-structured view. For each distinct team, the summary shows the count of lanes dispatched, done, parked, and discovered (where "discovered" means lanes whose origin signal carried that team tag). A run with all-null `team` values shows no per-team section, and the report format is identical to what Phases A and B produce.
+
+See [ADR-0053](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0053-conductor-integration-lane-type-marker.md) for the decision to use a `type` field as the integration lane marker.
+
+---
+
+## Scale — batching and partitioned run-control state
+
+At larger run sizes, two mechanics work together: the batcher keeps dispatch efficient within a segment, and the partition store keeps the run-control file from becoming a bottleneck across segments. Neither introduces a second scheduler, a second budget, or any form of nesting — sub-conductors are permanently off the table ([ADR-0049](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0049-conductor-teams-are-lane-groups.md)).
+
+### The batcher
+
+When the set of ready lanes for a segment exceeds the concurrency cap (default ~12), Sol invokes the batcher to order and slice the ready set into a cap-sized batch. The batch becomes that segment's `pipeline()` input; remaining lanes queue for the next segment's dispatch boundary.
+
+The batcher applies four ordering rules as a stable sort, in this sequence:
+
+1. **Dependency-unblocking first.** A lane that other lanes depend on is ordered ahead, because completing it unblocks the most downstream work.
+2. **Team co-batching.** Among equally-unblocking lanes, lanes sharing a `team` value are co-batched so a team's parallel work advances together across segments rather than interleaving with other teams.
+3. **Leaf-first within the tree.** Ticket lanes before issue lanes before epic lanes, consistent with Phase B's leaf-first dispatch.
+4. **Generation order.** Lower generation first — origin lanes before discovered work.
+
+All four rules read existing fields on the lane record (`dependsOn`, `team`, `parentId`, `generation`). Sol makes no semantic priority judgment — the ordering is fully deterministic from the data. Two identical runs over the same state produce the same batch order.
+
+Batching changes which lanes a segment covers, not how a lane runs. The autonomous segment, the gauntlet, and the merge gate are unchanged. The batcher's full contract is in [`lib/batcher.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/batcher.md).
+
+**The budget is per-run, not per-batch.** Before composing each segment the batcher checks the global counter; if the budget is exhausted, it parks the remaining queue with termination reason `budget-exhausted` and does not compose the segment. Subdividing the budget per batch — giving each batch its own pool — would reintroduce the exact failure the single-counter design exists to prevent: two pools each staying "under budget" while total spend runs away. Batches are just segments, and every segment's dispatches count against the one counter.
+
+Structural dedup runs before batch assignment. A signal deduped in segment 1 is never re-dispatched in segment 2 because the registry is checked at the door, ahead of the batcher.
+
+### Partitioned run-control state
+
+`conductor-state.json` is the single run-control file in Phases A through C. In Phase D, when a run's lane count crosses the partition threshold (default 50 lanes, config-driven), Sol migrates the file in place into a **partitioned layout**: a root index at `.prism/conductor-state.json` plus one partition file per epic subtree at `.prism/conductor-state.epic-<laneId>.json`.
+
+Partitioning is a layout the same schema takes, not a breaking change. A run below the threshold stays single-file exactly as before.
+
+#### Why partition by epic subtree, not by team
+
+The partition key is the epic-subtree root, not the team. The reason follows from where the hot dependency edges land.
+
+The most common cross-lane dependency in a Sol run is a frontend ticket waiting on a backend ticket — a cross-team edge. If the state were partitioned by team, every one of those edges would cross a partition boundary and require a cross-partition file read. Partitioning by the wrong key makes the hottest path slower.
+
+Partitioning by epic subtree localizes the common case: a backend ticket and the frontend ticket that depends on it are typically both children of the same epic. Their `dependsOn` edge is an in-partition check, no cross-partition read needed. Only genuinely cross-epic dependencies — the rarer case — take the slower path, which is exactly where a denormalized summary is the right tool.
+
+`team` remains a field on the lane and drives the per-team report view. Partition-by-epic and report-by-team are orthogonal. The design decision is in [ADR-0055](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md).
+
+#### The root index and partition files
+
+The root index carries the fields that must be run-wide: `globalBudget`, `pendingHumanReport`, `teamConfig`, and — new in the partitioned layout — three additional fields:
+
+- `partitionManifest` — the canonical record of which partition files exist, each entry carrying the partition key, file path, lane count, and the `lastWritten` timestamp used for crash detection.
+- `lanesSummary` — a denormalized status snapshot of every lane across all partitions. Each entry holds the lane's `status`, `team`, `generation`, and `partitionKey`. Cross-partition dependency checks read this summary rather than opening the foreign partition file.
+- `signals` — the run-wide signal registry, moved from per-lane to the root index so structural dedup spans all partitions.
+
+The v2 `lanes[]` array is absent from the root index in a partitioned run — lane records live only in their partition files.
+
+Each partition file holds `{ version, key, lastWritten, lanes[] }` where `lanes[]` is the unchanged v2 lane-record format for that subtree's lanes. The schema is in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Schema (v3 — partitioned layout).
+
+#### Reading and writing under partitioning
+
+At each segment boundary, Sol reads the root index first — that gives it the manifest, the status summary, the signal registry, and the budget. Then it reads only the partition files whose lanes are active or ready in the current segment. Untouched partitions are not opened. A cross-partition dependency check that needs only a lane's status reads `lanesSummary` in the root index; only if a full lane record is needed does Sol open the foreign partition file.
+
+Writes follow a load-bearing order: touched partition files first, root index last. The root index is the commit point. Writing the root last means that if Sol crashes after writing a partition but before writing the root, the manifest's `lastWritten` timestamp for that partition will be behind the partition file's — a detectable mismatch. Writing the root first would mean a crash after the root write but before the partition write leaves the manifest claiming the partition is current when it may not be. The protocol is in [`lib/partition-store.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/partition-store.md).
+
+#### Cross-partition dependency resolution
+
+When lane A (in partition P1) depends on lane B (in partition P2), Sol reads B's status from `lanesSummary` in the root index — not by opening P2's partition file. The summary is refreshed on every root-index write (which follows every partition write), so it is never staler than the last segment boundary. That is the only point dependency resolution is checked, consistent with Phase C's segment-granular eligibility rule.
+
+A cross-partition edge whose target is `parked` rather than `done` is surfaced to the human gate the same way a same-partition parked dependency is: the dependent lane's `blockedBy` entry stays set, and a co-presented entry goes to `pendingHumanReport` naming both lanes.
+
+#### Crash-safe resume across partitions
+
+On resume of a partitioned run, Sol reads the root index and compares each partition file's `lastWritten` against the manifest's recorded timestamp for that partition. A match means the partition is current. A mismatch — the partition file's timestamp is older than the manifest's record, or the partition file is absent — means the partition is potentially stale: the crash happened after the partition was meant to be written but before the root index committed.
+
+A potentially-stale partition raises a `needs-human` gate rather than auto-repairing. Sol cannot infer what the crashed segment accomplished, so the correct recovery is to surface the discrepancy and let the operator decide. This is the same bias as v2's corruption-recovery handling — surface, not repair.
+
+#### Governor brakes stay run-wide under partitioning
+
+Splitting lane records across files does not weaken any convergence brake. Every brake evaluates against the full run's state.
+
+The budget counter lives only in the root index — every dispatch in any partition increments the one counter. There is no per-partition budget. The generation cap reads `generation` from `lanesSummary` across all partitions — the cap applies to the full discovered-lineage graph, not to any single partition's lanes. The breadth gate counts distinct new lanes summed across all partitions in a single reconcile pass: a six-lane expansion in one partition and a seven-lane expansion in another is a thirteen-lane reconcile that trips a gate of twelve, even though neither partition alone exceeds it.
+
+The per-partition counting mistake — where each partition's expansion is checked independently against the gate — is exactly what the run-wide design exists to prevent. The invariant is in [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) § Brakes are run-wide under partitioning and recorded in [ADR-0056](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md).
+
+#### The partition-aware end-of-run report
+
+When a run partitioned, the end-of-run report aggregates across all partitions and adds a per-partition summary for each epic subtree: lane count, status breakdown, discovered-work count, and budget consumed by that subtree. The per-team summary from the teams section and the per-epic-partition summary are both present — they are orthogonal views of the same run. The existing flat lane list is preserved in full for compatibility.
+
+The report structure is in [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md) § Partition-aware summary.
+
+#### Scale ceiling
+
+Phase D supports runs at ~100 lanes. Runs trending past that size are expected to hit the dispatch budget (default 100) or the breadth gate (12 per reconcile) before growing further — the ceiling is a governance expectation enforced by existing brakes, not a new hard limit. Batching and partitioning raise the practical run size Sol handles efficiently; the governor brakes remain the enforcement ceiling.
+
+---
+
 ## See also
 
 - [ADR-0048 — Conductor: Autonomy Between Gates](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0048-conductor-autonomy-between-gates.md) — the autonomy invariant and the alternatives weighed
@@ -217,12 +356,18 @@ The full report procedure is in [`step-10-report.md`](https://github.com/HunterM
 - [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
 - [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0051-conductor-tree-dispatch-semantics.md) — container lanes are non-dispatchable rollup nodes; child-first dispatch; tree depth ≠ generation depth
 - [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; hobby backstop
+- [ADR-0053 — Conductor: Integration Lane Type Marker](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0053-conductor-integration-lane-type-marker.md) — `type: "integration"` as the marker; no default integration persona; `null` is ordinary
+- [ADR-0054 — Conductor: Integration Gate Always Human](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0054-conductor-integration-gate-always-human.md) — the gate is `needs-human` at every autonomy level, including `hobby`; categorical, not confidence-gated
+- [ADR-0055 — Conductor: Run-Control State Partitions by Epic-Subtree Root, Not by Team](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md) — why epic-subtree beats team-partition; the sharding-by-right-key argument
+- [ADR-0056 — Conductor: Governor Brakes Evaluated Run-Wide, Never Per-Partition](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the invariant that keeps Phase D from quietly weakening the convergence governor
 - The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) → [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md)
 - [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) — run-control schema and read/write/mutate protocol
 - [`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md) — the reusable reconcile-delta primitive
 - [`lib/decision-box.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/decision-box.md) — the deferred-commit decision box procedure
 - [`lib/convergence.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/convergence.md) — the convergence governor and three-brake priority order
 - [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md) — verdicts, signals, the gate registry, and the deterministic routing table
-- [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) — lane lifecycle, native containment, and the conflict gate
+- [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md) — lane lifecycle, native containment, the conflict gate, and the integration gate
+- [`lib/batcher.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/batcher.md) — the batcher: ordering rules, budget composition, dedup composition
+- [`lib/partition-store.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/partition-store.md) — the partition store: onset, read strategy, write order, crash-safe resume
 - [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md) — the Parker→Winston→Nora chain procedure, ratification gate, and breadth-gate interaction
 - [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md) — the review-segment utility Sol generalizes to the lifecycle
