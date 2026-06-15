@@ -10,11 +10,11 @@ Cross-links: `lib/convergence.md` (governor brakes — budget, generation cap, b
 
 The **ready-lane set** for the current segment: lanes whose `status` is not `done` or `parked`, and whose every `dependsOn` edge has `status: "done"` (Phase C eligibility check, per `step-04-dispatch.md § Dependency-gated eligibility`). Lanes with unresolved `dependsOn` edges are **not in the ready set** — they are waiting on a dependency, not queued behind a batch slot. The batcher never sees them.
 
-The **concurrency cap** is read from config (default ~12 — Decision D-A1; same value as the breadth gate by calibration — see `lib/convergence.md § Brake 3`).
+The **concurrency cap** is read from config (default ~12 — same value as the breadth gate by calibration — see `lib/convergence.md § Brake 3`).
 
 ---
 
-## Ordering rules (Decision D-A1, FR-2)
+## Ordering rules (FR-2)
 
 Applied as a **stable sort in priority sequence** — earlier rules break ties for later rules. Two runs over the same goal-state produce the same batch order (determinism is the contract).
 
@@ -33,14 +33,14 @@ Fill the current segment with up to `cap` lanes in the ordered sequence. The rem
 
 ---
 
-## Budget composition (FR-3, D-A8)
+## Budget composition (FR-3)
 
 The dispatch budget is **per-run, not per-batch.** Before composing each batch segment, the batcher checks `globalBudget.spent < globalBudget.maxDispatches` (Brake 1 in `lib/convergence.md`). If the budget is exhausted:
 
 - Park the remaining queue with termination reason `budget-exhausted`.
 - Do not compose the segment.
 
-Budget counts **total dispatches across all batch segments** — batches are just segments, and every segment's dispatches count against the one global counter. Per-batch budget subdivision is explicitly rejected (D-A8): two pools each "under budget" while total spend runs away is the exact failure ADR-0050 addresses.
+Budget counts **total dispatches across all batch segments** — batches are just segments, and every segment's dispatches count against the one global counter. Per-batch budget subdivision is explicitly rejected (two pools each "under budget" while total spend runs away is the exact failure ADR-0050 addresses).
 
 ---
 

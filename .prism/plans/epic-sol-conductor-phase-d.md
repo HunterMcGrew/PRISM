@@ -197,6 +197,7 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). D-A5 confirmed no telemetry surface; D-A7 per-team autonomy confirmed out-of-scope. ADR candidates 0055 (partition-by-epic) / 0056 (brakes-run-wide) ratified — written during the Phase D build. Build-ordered third (after B and C on main).
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Implemented Clove tasks 1–13. Schema v3 (additive partitioned layout) added to lib/goal-state.md; new lib/partition-store.md and lib/batcher.md; batcher wired into step-04, partition store into step-01/step-09; cross-partition deps in lib/fleet.md; partition-aware report in step-10; run-wide brakes + scale ceiling in lib/convergence.md; run-wide registry in lib/reconcile.md; scale framing added to shared.md. pnpm prism:build + prism:check green (158/158 tests, zero drift); no goal-state.json real paths introduced.
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston wrote the two ratified Phase D ADRs — ADR-0055 (partition by epic-subtree, not team) and ADR-0056 (governor brakes run-wide, never per-partition); added README index rows and resolved both D-A3 promotion pointers to the live ADRs.
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Briar self-review writing-voice minors: replaced stale ADR-candidate note in convergence.md with declarative ADR-0056 pointer; replaced opaque D-A* plan labels across batcher.md, partition-store.md, fleet.md, reconcile.md, goal-state.md, step-10-report.md, and convergence.md with plain-language descriptions or ADR-0055/0056 cross-links.
 
 ---
 
@@ -237,6 +238,34 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 
 ---
 
+## Review Issues
+
+### Stale ADR-note in convergence.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/convergence.md:91`
+- **Problem:** The `## Brakes are run-wide under partitioning` section ends with `**ADR note:** this invariant is a strong ADR candidate (D-A3 companion, reserved ADR-0056: …) — promote on Hunter's ratification.` — ADR-0056 is already written and `accepted` on this branch; the "ADR candidate / promote on ratification" text is stale session-context leakage.
+- **Suggested fix:** Replace the stale ADR note sentence with a plain forward reference: `**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.`
+- **Fixed in:** see commit below
+
+### Internal plan labels (D-A*, FR-N) in durable skill files
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/batcher.md:13,17,36,43`, `lib/partition-store.md:11,15`, `lib/convergence.md:42,48`, `lib/fleet.md:66`, `lib/reconcile.md:17,57`, `step-10-report.md:30`; also `.prism/spec/adrs/0055:10,22,40`, `0056:32`
+- **Problem:** Internal plan labels (`Decision D-A1`, `D-A3`, `D-A2`, `D-A9`, `D-A10`, `FR-N`, `NFR-N`) appear throughout durable skill files and the new ADRs. These are session-scoped references from the epic plan that mean nothing to a cold reader. The pattern is inherited from Phase C (not a new regression), but it remains a `writing-voice.md § Anti-pattern: Session-context leakage` violation. The ADR refs are particularly visible: `0055` cites `(epic plan D-A9)` and `epic plan, Build dependency`; `0056` cites `(epic plan D-A4)`.
+- **Suggested fix:** In `lib/batcher.md` and `lib/partition-store.md`, replace `Decision D-A1`/`Decision D-A2`/`Decision D-A3` with `ADR-0055`/`ADR-0056` cross-links where applicable. In the ADRs, replace `epic plan D-A9` with the plan section name in prose. Lower-impact `FR-N`/`NFR-N` inline cues can be deferred as prior-phase convention.
+- **Fixed in:** see commit below
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
 ## PR Readiness
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
@@ -245,9 +274,11 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] Schema v3 additive — single-file runs still parse; no breaking migration
 - [x] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
 - [x] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
-- [ ] ADR candidates ratified by Hunter before promotion (partition-by-epic; run-wide brakes)
+- [x] ADR-0055 and ADR-0056 written, accepted, README rows added — ratification confirmed
 - [x] Build passes — `pnpm prism:build && pnpm prism:check` green (158/158 tests, 2026-06-14)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to ADRs (after ratification)
+- [x] Lasting decisions promoted to ADRs (ADR-0055, ADR-0056)
+- [x] Stale ADR note in convergence.md:91 fixed
+- [x] Internal plan labels in durable files cleaned up
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-14 (Clove — review minors fixed)

@@ -39,13 +39,13 @@ The three brakes evaluate at reconcile time in a fixed priority order. The budge
 
 A reconcile that yields ≤12 candidate lanes dispatches them; the runtime queues the overflow against the cap, which is safe. A team wanting no silent queueing can lower the breadth gate below its cap via the config seam. The default is kept at 12 to honor the calibration; do not lower it without a team config change.
 
-## Scale ceiling at ~100 lanes (D-A6)
+## Scale ceiling at ~100 lanes
 
 Phase D targets runs up to ~100 lanes. Runs trending beyond that size are expected to hit the breadth gate or dispatch budget before reaching that size — the ceiling is a **governance expectation enforced by existing brakes**, not a new hard limit Sol checks. No new "100-lane" counter is added.
 
 The budget (default 100 dispatches) and breadth gate (12 per reconcile) are the existing backstops: a run cannot dispatch more than 100 times total, and any single reconcile that yields more than 12 new lanes surfaces to a human. Together they prevent a run from silently scaling past the ceiling without operator awareness. The relationship between ceiling and brakes is additive: batching + partitioning raise the practical run size the conductor handles (more lanes fit in memory and fewer I/O round-trips are needed), while the governor brakes remain the enforcement ceiling.
 
-Expressing the ceiling as a lane count (rather than "2 teams × 50" or "5 epics × 20") keeps it composable with the partition threshold (D-A2, also lane-count) and the budget. The alternative formulations are instances of ~100 lanes, not different ceilings.
+Expressing the ceiling as a lane count (rather than "2 teams × 50" or "5 epics × 20") keeps it composable with the partition threshold (default 50 lanes, also lane-count) and the budget. The alternative formulations are instances of ~100 lanes, not different ceilings.
 
 ## Termination-reason invariant
 
@@ -88,7 +88,7 @@ Specifically:
 
 The priority order in `## Priority order at reconcile time` below is unchanged — budget first, generation cap second, breadth gate third. Partitioning adds no new brake and changes no brake's evaluation logic; it only requires that evaluation is run against the run-wide state in the root index rather than against any single partition file.
 
-**ADR note:** this invariant is a strong ADR candidate (D-A3 companion, reserved ADR-0056: "Conductor governor brakes are evaluated run-wide, never per-partition") — promote on Hunter's ratification.
+**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.
 
 ## Priority order at reconcile time
 

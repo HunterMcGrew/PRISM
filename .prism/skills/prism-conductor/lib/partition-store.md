@@ -6,18 +6,18 @@ Cross-links: `lib/goal-state.md` (single-file protocol, schema v2 and v3), `lib/
 
 ---
 
-## Onset — when partitioning activates (FR-11, D-A2)
+## Onset — when partitioning activates (FR-11)
 
-A run operates **single-file** (`.prism/conductor-state.json` holding `lanes[]` directly, v2 layout) until the lane count crosses the **partition threshold** (default 50 lanes — Decision D-A2, config-driven per `lib/goal-state.md § Field notes (v3 additions)`).
+A run operates **single-file** (`.prism/conductor-state.json` holding `lanes[]` directly, v2 layout) until the lane count crosses the **partition threshold** (default 50 lanes — config-driven per `lib/goal-state.md § Field notes (v3 additions)`).
 
 Sol checks the lane count at each reconcile boundary. On crossing the threshold, Sol **migrates in place**:
 
-1. Group all existing lanes by `walkToEpicRoot(laneId)` — the partition key derivation (Decision D-A3). A lane with no epic ancestor uses the synthetic key `"epic-root"`.
+1. Group all existing lanes by `walkToEpicRoot(laneId)` — the partition key derivation (see [ADR-0055](../../spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md)). A lane with no epic ancestor uses the synthetic key `"epic-root"`.
 2. For each group, write one partition file (`conductor-state.epic-<laneId>.json`) containing `{ "version": "3", "key": "epic-<laneId>", "lastWritten": "<ISO-8601>", "lanes": [ ... ] }` with the group's lane records.
 3. Rewrite the root index with `partitionManifest` + `lanesSummary` + the moved `signals[]` / `globalBudget`, setting `version: "3"`.
 4. Clear `lanes[]` from the root — in the partitioned layout, `lanes[]` lives only in partition files.
 
-Pre-Phase-D runs and sub-threshold runs never partition (FR-11, D-A10) — this onset is a one-way, in-place migration triggered only by crossing the threshold.
+Pre-Phase-D runs and sub-threshold runs never partition (FR-11) — this onset is a one-way, in-place migration triggered only by crossing the threshold.
 
 ---
 
@@ -54,7 +54,7 @@ Read root → read needed partitions → mutate in-memory → write touched part
 
 ---
 
-## Stale-partition detection (FR-7, NFR-3, D-A10) {#stale-partition-detection}
+## Stale-partition detection (FR-7, NFR-3) {#stale-partition-detection}
 
 On resume of a partitioned run (root index carries `partitionManifest`):
 
@@ -62,6 +62,6 @@ On resume of a partitioned run (root index carries `partitionManifest`):
 2. **Match** — partition file's `lastWritten` equals the manifest's recorded `lastWritten` for that partition → the partition is current.
 3. **Mismatch** — partition file's `lastWritten` is older than, or absent versus, the manifest record → the partition is **potentially stale** (the crash occurred after that partition was meant to be written but before the root index committed, or the file was partially written).
 
-A potentially-stale or missing partition surfaces as a **`needs-human` gate**: append `"partition epic-N may be stale; confirm before resuming"` to `pendingHumanReport`. Sol does **not** auto-repair — the correct action depends on what the crashed segment accomplished, which Sol cannot infer (D-A10, NFR-3). This mirrors v2's corruption-recovery bias (surface, let the human choose) — see `lib/goal-state.md § Corruption recovery`.
+A potentially-stale or missing partition surfaces as a **`needs-human` gate**: append `"partition epic-N may be stale; confirm before resuming"` to `pendingHumanReport`. Sol does **not** auto-repair — the correct action depends on what the crashed segment accomplished, which Sol cannot infer (NFR-3). This mirrors v2's corruption-recovery bias (surface, let the human choose) — see `lib/goal-state.md § Corruption recovery`.
 
 **`.tmp` partition files:** a `conductor-state.epic-N.json.tmp` present without its canonical sibling follows the same stale-partition rule: surface as `needs-human`, do not auto-repair. Both `.tmp` and canonical present: read canonical, overwrite `.tmp` on next write (same as the single-file `.tmp` case).

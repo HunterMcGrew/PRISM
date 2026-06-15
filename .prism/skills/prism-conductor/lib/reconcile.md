@@ -14,7 +14,7 @@ Open goal-state and load `signals[]` and `lanes[]`. Identify all signals whose `
 
 ### 2. Structural dedup at the door
 
-For each unprocessed signal, match its `target` against existing registry entries (both in-flight and already-disposed signals) by structural identity. Under the partitioned layout, signals from all partitions are compared against the same run-wide registry — dedup is run-wide because the registry is root-level, never per-partition (FR-4, D-A4). A signal deduped in segment 1 (partition P1) is never re-dispatched in segment 2 (partition P2) because the registry spans all partitions.
+For each unprocessed signal, match its `target` against existing registry entries (both in-flight and already-disposed signals) by structural identity. Under the partitioned layout, signals from all partitions are compared against the same run-wide registry — dedup is run-wide because the registry is root-level, never per-partition (FR-4). A signal deduped in segment 1 (partition P1) is never re-dispatched in segment 2 (partition P2) because the registry spans all partitions.
 
 - **Primary match:** same `target.file` AND same `target.symbol` (when non-null).
 - **Secondary match (any one):** same `target.scopeSlug`, or same `target.errorSignature` (when non-null).
@@ -54,7 +54,7 @@ The input is always `signals[]` + `lanes[]` in goal-state; the output is always 
 
 ## Field notes
 
-- **Registry size cap:** the root registry has no size cap in v1 (D-A4 default path). At the ~100-lane scale ceiling (D-A6), structural dedup keeps the registry in the low hundreds — a JSON array of small objects, cheap to parse. A cap/prune mechanism (archiving `processedAt`-old entries out of the hot registry) is a named future refinement; it is not implemented in v1. The registry location (`lib/partition-store.md`) ensures the root read pays this cost once per segment boundary, not once per partition.
+- **Registry size cap:** the root registry has no size cap in v1. At the ~100-lane scale ceiling, structural dedup keeps the registry in the low hundreds — a JSON array of small objects, cheap to parse. A cap/prune mechanism (archiving `processedAt`-old entries out of the hot registry) is a named future refinement; it is not implemented in v1. The registry location (`lib/partition-store.md`) ensures the root read pays this cost once per segment boundary, not once per partition.
 
 ## Cross-references
 

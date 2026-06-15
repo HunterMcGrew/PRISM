@@ -27,7 +27,7 @@ When the run partitioned (root index carries `partitionManifest`), the report ag
 - **Discovered-work count** — lanes with `generation ≥ 1` originating within this partition's subtree.
 - **Budget consumed by this subtree** — read-time aggregation of dispatches attributed to this epic's leaf lanes (same mechanism as Phase B's per-subtree budget attribution in `lib/convergence.md § Subtree budget attribution`; no per-lane counter is added).
 
-The report also groups lanes by `team` (Phase C's per-team view, `## Per-team view`) — partition-by-epic and report-by-team are orthogonal (Decision D-A3), so the report carries **both** an epic-partition summary and a team summary. The existing flat lane list is preserved in full in the detail section for compatibility (FR-10). Cross-reference `lib/partition-store.md` for the partition file layout and key derivation.
+The report also groups lanes by `team` (Phase C's per-team view, `## Per-team view`) — partition-by-epic and report-by-team are orthogonal (see [ADR-0055](../../spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md)), so the report carries **both** an epic-partition summary and a team summary. The existing flat lane list is preserved in full in the detail section for compatibility (FR-10). Cross-reference `lib/partition-store.md` for the partition file layout and key derivation.
 
 When the run did not partition (single-file, sub-threshold), this section is omitted — the report renders exactly as in Phases A–C.
 

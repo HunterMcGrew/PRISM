@@ -63,7 +63,7 @@ The integration lane is a conductor-dispatched lane like any other — its perso
 
 ## Cross-partition dependency resolution
 
-A `dependsOn` edge from lane A (partition P1) to lane B (partition P2) is resolved by reading B's `status` from the root index's `lanesSummary`, **not** by opening P2's partition file (FR-8, D-A9). The summary is refreshed on every partition write (`lib/partition-store.md § Mutate protocol`), so it is never staler than the last segment boundary — which is the only point dependency resolution is checked (consistent with Phase C's segment-granular eligibility check in `step-04-dispatch.md § Dependency-gated eligibility`).
+A `dependsOn` edge from lane A (partition P1) to lane B (partition P2) is resolved by reading B's `status` from the root index's `lanesSummary`, **not** by opening P2's partition file (FR-8). The summary is refreshed on every partition write (`lib/partition-store.md § Mutate protocol`), so it is never staler than the last segment boundary — which is the only point dependency resolution is checked (consistent with Phase C's segment-granular eligibility check in `step-04-dispatch.md § Dependency-gated eligibility`).
 
 A cross-partition edge to a `parked` dependency surfaces to the human gate exactly as Phase C's same-partition parked-dependency rule: keep the dependent lane's `blockedBy` entry and append an entry to `pendingHumanReport` naming both lanes and the parked target's escalation reason (Phase C FR-3, `step-09-reconcile.md § 2.5c`).
 
