@@ -32,6 +32,13 @@ On a clean re-review pass, Eric resolves the inline review threads he re-verifie
 ## History
 
 - 2026-06-15 [hmcgrew/issue-112-eric-resolve-threads]: Wired clean-pass thread-resolution into the Eric skill body, batch D reference, summary template, and closing message; synced install seed; rebuilt mirrors; prism:check green. See Decision above.
+- 2026-06-15 [hmcgrew/issue-112-eric-resolve-threads]: Briar self-review — clean, no critical/major/minor. ADR links verified across all four trees; seed-sync green; body-vs-reference disclosure split correct.
+
+---
+
+## Review Issues
+
+No open issues. Briar self-review (2026-06-15) found the change clean. One non-blocking observation: the clean-pass clause is scoped to "every prior finding confirmed addressed," which is a strict subset of decision-gate state #3 (state #3 can also be reached via acknowledged-but-unfixed minors). The text already handles this — "leave any thread with a remaining or disputed finding open" — so an acknowledged-but-unfixed minor's thread stays open. Behavior is correct; noted for Eric's eye.
 
 ---
 
