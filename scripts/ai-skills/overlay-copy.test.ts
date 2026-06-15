@@ -219,6 +219,47 @@ test("overlay cleanup removes an orphaned overlay copy without touching base fil
 	});
 });
 
+test("base cleanup does not wholesale-remove an area whose overlay subtree is still managed", async () => {
+	await withOverlayRoots(async (roots) => {
+		// Seed a base rules source and run the base pass so the area dir and its
+		// marker exist on the platform side.
+		const baseRulesSrc = path.join(roots.baseContentRoot, "rules");
+		await fs.mkdir(baseRulesSrc, { recursive: true });
+		await fs.writeFile(path.join(baseRulesSrc, "base.md"), "# Base rule\n", "utf8");
+		await syncAllPlatformContentCopies(
+			roots.baseContentRoot,
+			platformDirs(roots),
+			false,
+			[],
+			new Map()
+		);
+
+		// Run the overlay pass so the custom/ subdir and its marker are in place.
+		await writeOverlayRule(roots, "team.md", "# Team rule\n");
+		await runOverlayPass(roots);
+
+		// Remove the base rules source entirely — the area no longer exists in the
+		// base content tree, which is the trigger for the wholesale-removal branch.
+		await fs.rm(baseRulesSrc, { force: true, recursive: true });
+
+		// Re-run the base pass. Guard 2 detects the overlay marker and skips the
+		// wholesale area removal, preserving the custom/ subtree.
+		await syncAllPlatformContentCopies(
+			roots.baseContentRoot,
+			platformDirs(roots),
+			false,
+			[],
+			new Map()
+		);
+
+		const overlayCopy = path.join(roots.claudeDir, "rules", "custom", "team.md");
+		assert.equal(await exists(overlayCopy), true, "overlay copy survives base wholesale-removal guard");
+
+		const overlayMarker = path.join(roots.claudeDir, "rules", "custom", MANAGED_MARKER);
+		assert.equal(await exists(overlayMarker), true, "overlay marker survives base wholesale-removal guard");
+	});
+});
+
 test("base cleanup leaves the overlay custom/ subtree untouched", async () => {
 	await withOverlayRoots(async (roots) => {
 		// Base canonical source: one rule. Overlay source: one rule.

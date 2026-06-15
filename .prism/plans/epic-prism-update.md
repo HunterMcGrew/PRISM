@@ -264,6 +264,7 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-3-update-command]: Phase 3 complete (#160) — new `scripts/ai-skills/update.ts` implements `pnpm prism:update` (source resolution + refusal, hash-based per-file algorithm, deletions, manifest rewrite, platform refresh) wiring Phase 5's `classifyPath`, plus the mechanical `syncAllPlatformContentCopies` extraction from `build.ts main()` (behavior unchanged) and an optional `prismSource` on `PrismConfig`. `pnpm prism:check` green 207/207 (+11 from `update.test.ts`); CLI verified end-to-end against a throwaway consumer. The no-op-before-`.bak` branch order is the no-manifest decision point — see Decisions.
 - 2026-06-15 [hmcgrew/prism-update-phase-3-update-command]: Addressed all 4 Phase 3 self-review Minors (#160) — fail-fast config/`paths.json` validation in `main()` before the file pass, non-clobbering `.bak` snapshots (`<file>.bak.N` + identical-bytes skip), platform dirs read from the consumer's `paths.json` via new `resolveConsumerPlatformDirs`, and a test for the already-deleted manifest entry. `pnpm prism:check` green 208/208 (+1), `update.test.ts` 12/12, end-to-end CLI re-verified (`.bak`/`.bak.1` preserved, all platform dirs resolved from `paths.json`).
 - 2026-06-15 [hmcgrew/prism-update-phase-4-overlay]: Phase 4 complete (#161) — `update.ts` now runs a second platform-copy pass for `.prism/custom` (when present) emitting per-area `custom/` subdirs across all 3 platforms, via a `targetSubpath` parameter threaded through the `build.ts` content-copy functions (base behavior unchanged at default `""`); two cross-scope guards in `removeDeletedManagedContent` keep base and overlay cleanup from crossing. `custom/**` was already consumer-owned (Phase 5), so the SKIP-glob is verified not changed — see Decisions. `pnpm prism:check` green 216/216 (+8: 7 `overlay-copy.test.ts` + 1 overlay-untouched `update.test.ts`), `prism:check-types` clean, end-to-end CLI confirmed: overlay source untouched, marker at `custom/` root, Cursor `.mdc`/Codex-stripped/Claude-verbatim, token substitution applied, manifest carries zero `custom/` entries.
+- 2026-06-15 [hmcgrew/prism-update-phase-4-overlay]: Addressed Eric's Phase 4 PR minors (#161) — JSDoc added to `copyContentToPlatformDir` documenting the `targetSubpath` semantics; Guard 2 wholesale-area branch covered by new test in `overlay-copy.test.ts`. `pnpm prism:check` green 217/217 (+1), `overlay-copy.test.ts` 8/8, `update.test.ts` 13/13, `content-copy.test.ts` 12/12, `prism:check-types` clean.
 
 ---
 
@@ -355,6 +356,24 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **File:** `scripts/ai-skills/update.test.ts` (coverage gap); branch at `scripts/ai-skills/update.ts:157-159`
 - **Problem:** Every other branch of `applyIncomingFile` and `applyDeletedFile` has a dedicated test, but the `applyDeletedFile` path where the consumer has already deleted a manifest-recorded file (`consumerHash === null` → `no-op`) has no coverage. It is a benign no-op, but it is the one uncovered branch in an otherwise exhaustive matrix, and the stated Phase 6 goal is exhaustive per-branch coverage.
 - **Suggested fix:** Add a test: manifest records `rules/gone.md`, PRISM source omits it, consumer also lacks it on disk → assert outcome `no-op` and no `.bak`.
+
+### Phase 4 minor — missing JSDoc on `copyContentToPlatformDir`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `#161` address-minors commit — added JSDoc summary line explaining `targetSubpath` semantics (`""` = base output at area root, `"custom"` = overlay output under `custom/` subdir)
+- **File:** `scripts/ai-skills/build.ts:465`
+- **Problem:** `copyContentToPlatformDir` is the only exported content-copy function without a JSDoc. The `targetSubpath` parameter semantics are not self-evident from the signature alone.
+- **Suggested fix:** Add a JSDoc per `.prism/rules/code-comments.md` covering the summary and `targetSubpath` meaning.
+
+### Phase 4 minor — Guard 2 wholesale-area branch untested in `overlay-copy.test.ts`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `#161` address-minors commit — added "base cleanup does not wholesale-remove an area whose overlay subtree is still managed" test to `overlay-copy.test.ts`. Seeds a base rules source, runs base + overlay passes, removes the base source entirely, re-runs the base pass, and asserts the overlay copy and its marker survive. Suite is now 8/8.
+- **File:** `scripts/ai-skills/overlay-copy.test.ts` (coverage gap); branch at `scripts/ai-skills/build.ts:789`
+- **Problem:** The wholesale-area marker check in `removeDeletedManagedContent` (Guard 2 — prevents a base pass from `rm -rf`-ing an area whose `custom/.ai-skill-generated` overlay marker still exists) had no test that fired the branch. The guard is load-bearing but only exercised implicitly by the existing "base cleanup leaves overlay untouched" test, which never actually empties the base `sourceArea`.
+- **Suggested fix:** Add a test that seeds the base-source-gone scenario so the wholesale-removal branch executes, and assert the overlay output and marker survive.
 
 ---
 

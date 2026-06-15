@@ -462,6 +462,14 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
+/**
+ * Copies all managed content areas from `contentRoot` into `platformDir`,
+ * applying token substitution and dialect transformation per file.
+ *
+ * `targetSubpath` controls where within each area dir the output lands:
+ * `""` (default) writes directly into `<platformDir>/<area>/` (base pass);
+ * `"custom"` writes into `<platformDir>/<area>/custom/` (overlay pass).
+ */
 export async function copyContentToPlatformDir(
 	contentRoot: string,
 	platformDir: string,
