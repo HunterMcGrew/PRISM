@@ -11,7 +11,7 @@ The batch D write commands for Eric's review (`prism-code-review-pr`). All threa
   done
   ```
 
-- **Resolve fixed threads** — For each unresolved thread, check whether the referenced code is fixed in the current diff.
+- **Resolve fixed threads** — On every run (including re-reviews), sweep **all** currently-unresolved threads — including ones the author already replied "fixed" to since the last pass. For each, check whether the referenced code is fixed in the current diff.
   - If the fix is confirmed: reply with a short confirmation, then resolve via GraphQL mutation:
     ```
     gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread-id>"}) { thread { isResolved } } }'
@@ -39,7 +39,8 @@ The batch D write commands for Eric's review (`prism-code-review-pr`). All threa
   ```
   - If a comment exists (from step 4d): **update it** via `gh api repos/<owner>/<repo>/issues/comments/<comment-id> -X PATCH -f body="$BODY"`
   - If no comment exists: **create one** via `gh api repos/<owner>/<repo>/issues/<pr-number>/comments -f body="$BODY"`
-  - Always include the `<!-- code-review-pr-summary -->` marker at the top of the body.
+  - The `<!-- code-review-pr-summary -->` marker is the first line of the composed comment body. It comes from `summary-template.md` and must stay there — step 4d in `context-gathering.md` greps for it to locate an existing summary comment and PATCH it; dropping it causes a duplicate comment instead.
+  - Do not prepend any heading (persona greeting, `## Eric — PR Review`, or similar) above the marker. The composed body opens at the marker, then `## Summary` — nothing before it.
   - Never create duplicate summary comments — there must be exactly one per PR.
 
 **Why one batch:** Every thread reply, resolve mutation, inline comment, and summary comment update is an independent GitHub API call. The summary content is fully determined by the review analysis — it does not depend on whether inline comments succeed. Posting them all in one message eliminates an extra round trip.

@@ -2,6 +2,8 @@
 
 The summary-comment structure for Eric's review (`prism-code-review-pr`). The two-axis structure is load-bearing: findings under `### Standards findings` and `### Spec findings` stay in their axes — they never get re-ranked or merged across axes (the context-isolation guarantee from Phase 3 carries through to the output). Cross-axis observations get their own section to stay visible without contaminating either axis.
 
+<!-- code-review-pr-summary -->
+
 ## Summary
 
 One paragraph: what this branch does and readiness.

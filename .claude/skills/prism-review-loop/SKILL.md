@@ -28,7 +28,12 @@ exactly as if invoked by hand.
    `.prism/rules/git-conventions.md` § Commit Granularity. Re-run
    self-review. Repeat until a pass returns zero findings.
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
-   Findings → fixes → re-review, until a zero-findings pass.
+   Findings → fixes → re-review. The phase is not done until a pass returns
+   **zero new findings AND zero fixed-but-unresolved review threads** — when a
+   fix lands a finding, the thread that flagged it is only closed by the
+   reviewer's next pass (the reviewer's batch-D resolve step is the sole actor
+   that resolves threads). If fixed threads remain unresolved when findings hit
+   zero, run a final reviewer pass to resolve them before closing the phase.
 3. **Cleaner paths** — non-blocking by design; they never gate the
    zero-findings exit, but each must reach a terminal state before the loop
    closes: implemented, rejected with a one-line reason, or parked by the user.
@@ -57,6 +62,10 @@ exactly as if invoked by hand.
   skill-level pin) or **continue in-session** (offered when the runtime honors
   per-skill pins and the context signals are quiet — the user accepts that the
   reviewer inherits the conversation; model diversity is not cold eyes).
+- **Thread-clean exit.** The PR-review phase never closes with
+  fixed-but-unresolved threads outstanding. Resolution happens only on a
+  reviewer re-pass — declaring the phase clean without that pass leaves stale
+  unresolved threads on the merged PR.
 - **Gauntlet state travels.** A mid-gauntlet handoff doc must carry the
   ladder's rules and live state — pass count, strike table, scoreboard, current
   phase — in a `## Gauntlet state` section. Once this skill ships the rules
