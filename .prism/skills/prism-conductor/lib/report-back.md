@@ -33,6 +33,8 @@ The split exists because one enum value can't carry both routes — the dry run 
 
 Before emitting either signal, a worker runs the two-question local-frame pre-filter in `followup-scope.md § Worker emit pre-filter (Sol-run-time)`. In-frame + trivial → fix inline, emit nothing; everything else → emit with a structured `target`. Tiebreaker: **over-emit < under-emit**.
 
+A `found-bug` / `found-followup-work` signal emitted inside a Sol run carries the emitting lane's `team` value through reconcile and the decision box; a resulting lane inherits it (FR-7) — see `lib/decision-box.md § Step A`. The team tag is never stripped.
+
 ## Gate dispositions
 
 A gate's owning persona returns one of three dispositions instead of (or alongside) a plain verdict. The disposition is judged by the **owning persona** under the human-set autonomy policy — Winston for plan / A-P-C, Nora for Definition of Ready — never by Sol.
@@ -79,8 +81,9 @@ The hard-pause gates in a Sol run, and the rule that binds them: **Sol cannot au
 | Winston A/P/C (approve / proceed / cancel) | Winston | Yes, under `internal` / `hobby` for low-stakes plans; `launch` locks it. |
 | Nora Definition of Ready | Nora | Yes, under `internal` / `hobby` for clearly-ready tickets; `launch` locks it. |
 | Eric review | Eric | **No** — Eric never approves a PR (ADR-0011); review findings route, they don't clear a merge. |
+| Integration gate | the human (always) | **No** — always `needs-human` at every autonomy level, including `hobby`; a cross-team convergence checkpoint, not a stakes gate (NFR-4). Fires before an integration lane dispatches. |
 | Human merge | the human | **No** — the one unconditional gate, enforced by branch protection (ADR-0011); never a returned disposition, always a park. |
 
-Merge is the hard backstop on every lane. Even a maximally-autonomous Sol on a `hobby` policy parks at merge — branch protection enforces it at the infrastructure level, so merge is never a disposition any persona returns. See [ADR-0011](../../../spec/adrs/0011-eric-never-approves-prs.md) and [`git-conventions.md` § Who merges](../../../rules/git-conventions.md) — the review-side rule binds the reviewer, the merge-side rule binds every persona, and this registry binds Sol.
+Merge is the hard backstop on every lane. Even a maximally-autonomous Sol on a `hobby` policy parks at merge — branch protection enforces it at the infrastructure level, so merge is never a disposition any persona returns. See [ADR-0011](../../../spec/adrs/0011-eric-never-approves-prs.md) and [`git-conventions.md` § Who merges](../../../rules/git-conventions.md) — the review-side rule binds the reviewer, the merge-side rule binds every persona, and this registry binds Sol. The integration gate is the second unconditional `needs-human` gate alongside merge — but where merge is enforced by branch protection, the integration gate is enforced by Sol's dispatch logic (`lib/fleet.md § Integration gate`).
 
 **Why one file, not two.** A gate disposition *is* one of the return shapes this contract enumerates — co-locating the disposition enum with the gates it applies to keeps them from drifting. Splitting the registry into a separate `gates.md` would put the enum in one file and its gates in another, guaranteeing the two fall out of sync.

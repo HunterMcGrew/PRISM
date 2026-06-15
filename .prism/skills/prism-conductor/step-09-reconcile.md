@@ -21,6 +21,18 @@ For each candidate target in the lane delta, invoke the decision box in `.prism/
 
 After the decision box, each candidate is classified as: auto-dispatchable, parked-to-human, or dropped.
 
+### 2.5 Resolve dependency eligibility and detect cycles
+
+Run this step over the full `lanes[]` array before the convergence governor evaluates. It has three sub-checks, in order:
+
+**(a) Cycle check** — run a depth-first cycle detection over the `dependsOn` graph across all `lanes[]` (edges are `laneId` references over the flat list; the graph must be a DAG per FR-9). A detected cycle of any length (A→B→A, or A→B→C→A) is a `needs-human` escalation: set the participating lanes' `escalation` object (`axis: "human"`, `reason: "dependsOn-cycle: <lane chain>"`, `raisedAt`), append a description of the cycle to `pendingHumanReport`, and do **not** dispatch any lane in the cycle until the human removes an edge. This is a constraint check, not a convergence brake — it does not consume `globalBudget` and is orthogonal to the three-brake priority order (see `lib/convergence.md § Dependency-graph pre-check`).
+
+**(b) Eligibility resolution** — for each pending/held lane, recompute whether every `dependsOn` target has reached `status: "done"`. Clear `blockedBy` and `phaseStatus: "parked"` on lanes whose edges all resolved — they become dispatch-eligible for the next segment.
+
+**(c) Parked-dependency surface** — if any `dependsOn` target is `parked` (not `done`), the dependent lane cannot resolve: keep its `blockedBy` entry and append a co-presented entry to `pendingHumanReport` naming both the dependent lane and the parked target's escalation reason (FR-3). Resolving the parked target's escalation unblocks the dependent lane on the next reconcile pass.
+
+Eligibility is checked **at the reconcile boundary** (segment-granular), never mid-segment — consistent with the segment model where Sol does not talk to running workers (`lib/goal-state.md` § Mutate protocol). Cite `lib/convergence.md` for the convergence governor (this step runs before it) and `lib/goal-state.md` for the mutate protocol.
+
 ### 3. Apply the convergence governor
 
 Apply the three brakes in priority order per `.prism/skills/prism-conductor/lib/convergence.md`:

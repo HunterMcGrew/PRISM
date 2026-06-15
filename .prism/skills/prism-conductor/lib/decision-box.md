@@ -27,6 +27,8 @@ Sol dispatches Nora with the deduped signal and its `target`. Nora:
 3. If the disposition warrants a ticket: drafts it as a DoR-draft (estimate null, flagged for human ratification). The Linear write is **deferred** — Nora returns the draft, she does not commit it yet.
 4. Returns `{ disposition, draftTicket, escalationReason? }` where `escalationReason` is `"blast-radius"` when set. A genuinely ambiguous same-scope-vs-split call is **not** escalated — Nora resolves it herself (over-emit < under-emit; conservative default is the lighter disposition, `fold-active` / `followup-pr`, over a new ticket).
 
+When the originating signal was emitted by a lane with a non-null `team`, Sol carries that `team` value into the decision-box context and onto any resulting lane (fold-in or new ticket) — the new lane inherits the emitting lane's `team` unless the operator or decompose chain explicitly overrides it. **Sol does not strip or reassign team tags** (FR-7; ADR-0049 "Sol never reassigns"). This is a deterministic carry, not a Nora scope judgment — Nora judges scope, Sol carries the team tag.
+
 Sol writes `pendingTicketCommit: true` on the lane and records the step as `routed` in goal-state before proceeding.
 
 ### Step B — Fold-vs-follow-up resolution (Sol, deterministic)
@@ -59,6 +61,7 @@ When Nora returns no `escalationReason`:
 3. If `disposition` is `fold-active`, `followup-pr`, or `new-ticket` AND the autonomy gate clears:
    - Nora commits the Linear ticket (if warranted).
    - Sol records the outcome in the lane's `signals[]` entry (`disposition`, `processedAt`).
+   - The committed ticket / spawned lane records the inherited `team` in its `lanes[]` entry (carried from the emitting lane per the team-tag carry in Step A).
 4. If the autonomy gate does not clear (`internal`/`launch` above trivial): Nora returns `needs-human`; Sol batches the draft into `pendingHumanReport`.
 
 ## Crash safety
