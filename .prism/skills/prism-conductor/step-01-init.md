@@ -8,7 +8,7 @@ Intake the goal and establish the run. Ask two questions once, up front:
 **Detect resume.** Read `.prism/conductor-state.json` per the Read protocol in `.prism/skills/prism-conductor/lib/goal-state.md`:
 
 - **Absent** → fresh run. Do not seed the state file now — it is born lazily on the first phase transition (`.prism/rules/lazy-artifacts.md`).
-- **Present** → validate `version` against the schema. On a version mismatch, refuse to mutate and follow the doc's Corruption-recovery path (back up the file or abort — the human chooses). On a clean read, follow the Resume-detection table: surface `pendingHumanReport`, then jump to the step matching each lane's `currentPhase`.
+- **Present** → validate `version` against the schema. On a version mismatch, refuse to mutate and follow the doc's Corruption-recovery path (back up the file or abort — the human chooses). On a clean read, follow the Resume-detection table: surface `pendingHumanReport`, then jump to the step matching each lane's `currentPhase`. For a **partitioned run** (root index carries `partitionManifest`), Sol reads the root index first per `lib/partition-store.md § Read strategy` — a partitioned run resumes from the manifest and `lanesSummary` without reading every partition file upfront (NFR-3). Run the stale-partition check from `lib/partition-store.md § Stale-partition detection` before re-dispatching any lane.
 
 On a fresh run, lay down at least one lane (one per independently-shippable unit) with `currentPhase` unset until the first transition. Cite `lib/goal-state.md` for the schema and the read/write/mutate protocol — do not restate it here.
 

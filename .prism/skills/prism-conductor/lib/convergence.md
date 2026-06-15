@@ -39,6 +39,14 @@ The three brakes evaluate at reconcile time in a fixed priority order. The budge
 
 A reconcile that yields ≤12 candidate lanes dispatches them; the runtime queues the overflow against the cap, which is safe. A team wanting no silent queueing can lower the breadth gate below its cap via the config seam. The default is kept at 12 to honor the calibration; do not lower it without a team config change.
 
+## Scale ceiling at ~100 lanes
+
+Phase D targets runs up to ~100 lanes. Runs trending beyond that size are expected to hit the breadth gate or dispatch budget before reaching that size — the ceiling is a **governance expectation enforced by existing brakes**, not a new hard limit Sol checks. No new "100-lane" counter is added.
+
+The budget (default 100 dispatches) and breadth gate (12 per reconcile) are the existing backstops: a run cannot dispatch more than 100 times total, and any single reconcile that yields more than 12 new lanes surfaces to a human. Together they prevent a run from silently scaling past the ceiling without operator awareness. The relationship between ceiling and brakes is additive: batching + partitioning raise the practical run size the conductor handles (more lanes fit in memory and fewer I/O round-trips are needed), while the governor brakes remain the enforcement ceiling.
+
+Expressing the ceiling as a lane count (rather than "2 teams × 50" or "5 epics × 20") keeps it composable with the partition threshold (default 50 lanes, also lane-count) and the budget. The alternative formulations are instances of ~100 lanes, not different ceilings.
+
 ## Termination-reason invariant
 
 Every completed run records exactly one of:
@@ -65,6 +73,22 @@ The run still terminates on `converged` (zero-delta reconcile) or `budget-exhaus
 ### Subtree budget attribution — read-time aggregation, no per-lane counter
 
 Subtree budget attribution is **read-time aggregation** for reporting only. At report time, a leaf lane's share of `globalBudget.spent` rolls up to its parent issue, which rolls up to its parent epic, by summing the dispatches attributed to each subtree's leaves. There is **no per-lane budget counter** in the schema and **no write-time aggregation** — `globalBudget.spent` remains a single shape-agnostic counter (the primary brake, unchanged). Read-time math has no schema cost and no second source of truth that can disagree with the global counter — subtree attribution is *reporting*, not a brake.
+
+## Brakes are run-wide under partitioning (FR-9, NFR-6) {#brakes-run-wide}
+
+Partitioning splits lane records across files; the governor brakes are unaffected. Every brake evaluates against the **full run's state**, never a per-partition subset. This is a strong architectural invariant: no brake is weakened by partitioning.
+
+Specifically:
+
+**(a) Budget counter is root-level.** `globalBudget` lives only in the root index (v3 schema, `lib/goal-state.md § Schema (v3 — partitioned layout)`). Every dispatch in any partition's lanes increments the one counter. There is no per-partition budget.
+
+**(b) Generation cap reads `generation` from `lanesSummary` across all partitions.** `lanesSummary` in the root index is the run-wide source for generation values — the cap applies to the full discovered-lineage graph, not to the lanes in any one partition file.
+
+**(c) The breadth gate counts distinct new lanes summed across all partitions in a single reconcile.** A 6-lane expansion in partition epic-1 plus a 7-lane expansion in partition epic-2 is a 13-lane reconcile that trips the gate of 12, even though neither partition alone exceeds it. The count is over the **reconcile pass's full candidate set**, never per-partition. This is the critical correctness point: a per-partition breadth count is the natural mistake and the invariant this section exists to prevent.
+
+The priority order in `## Priority order at reconcile time` below is unchanged — budget first, generation cap second, breadth gate third. Partitioning adds no new brake and changes no brake's evaluation logic; it only requires that evaluation is run against the run-wide state in the root index rather than against any single partition file.
+
+**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.
 
 ## Priority order at reconcile time
 

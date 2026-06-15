@@ -128,13 +128,13 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
     - **Hybrid (c)** minimizes file size but multiplies partition count combinatorially (teams × epics) and *re-introduces* the cross-team-edge-crosses-boundary problem within each epic. Most complexity, reintroduces the rejected failure mode. Rejected.
   - **Chosen approach:** partition by **epic-subtree root** (`conductor-state.epic-<laneId>.json`, key = `walkToEpicRoot(laneId)`). `team` stays a **field on the lane**, surfaced in the report by grouping (task 7) — partition-by-epic and report-by-team are orthogonal, so Phase B's tree *and* Phase C's teams are both honored without either driving the file boundary into the wrong place. A flat run with no epic ancestor partitions under a synthetic `epic-root` key (or stays single-file below threshold).
   - **Implementation guidance:** the partition key derivation (`walkToEpicRoot`) walks `parentId` to the tree root — it depends on Phase B being on `main` (build dependency). `lanesSummary[laneId].partitionKey` caches the derived key so the walk runs once per lane, not per dependency check.
-  - **→ ADR candidate ADR-0055: "Conductor partitions run-control by epic-subtree, not by team."** Promote on Hunter's ratification. This generalizes (it's the durable answer to "how does Sol's state scale") and has a real rejected alternative grounded in a runtime cost — exactly the ADR bar. (Number reserved 0055 — sequenced after Phase B's 0051/0052 and Phase C's 0053/0054 in the roadmap.)
+  - **→ promoted to [ADR-0055](../spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md)** ("Conductor — Run-Control State Partitions by Epic-Subtree Root, Not by Team"), `status: accepted`. Ratified by Hunter at the plan-ready gate (History 2026-06-14); written during the Phase D build. This generalizes (it's the durable answer to "how does Sol's state scale") and has a real rejected alternative grounded in a runtime cost — exactly the ADR bar.
 
 - **D-A3-companion — Governor brakes stay run-wide under partitioning. (confirm — ADR candidate)**
   - **Root cause:** partitioning splits *lane records* across files; the risk is that a brake silently becomes per-partition (e.g., a breadth gate that counts per-file would let two partitions each expand 11 lanes — 22 total — without tripping a gate of 12).
   - **Chosen approach:** the budget counter, generation counts, and signal registry live **only in the root index** (task 1), and every brake evaluates against the summed full-run state (task 8). The breadth gate counts distinct new lanes **summed across all partitions** per reconcile. No brake reads a per-partition subset.
   - **Why an ADR:** this is the invariant that keeps Phase D from quietly eroding the ADR-0050 convergence governor. It's load-bearing, cross-cutting (it constrains every future partition-aware change), and non-obvious (the per-partition counting bug is the natural mistake). Strong ADR candidate.
-  - **→ ADR candidate ADR-0056: "Conductor governor brakes are evaluated run-wide, never per-partition."** Promote on Hunter's ratification. (Number reserved 0056.)
+  - **→ promoted to [ADR-0056](../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md)** ("Conductor — Convergence Governor Brakes Are Evaluated Run-Wide, Never Per-Partition"), `status: accepted`. Ratified by Hunter at the plan-ready gate (History 2026-06-14); written during the Phase D build.
 
 ### Resolved assumptions
 
@@ -195,6 +195,11 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 
 - 2026-06-14 [hmcgrew/sol-product-lead-prd]: Authored Phase D epic plan from the finalized PRD. Resolved all 10 assumptions — D-A3 partition key = epic-subtree (localizes the hot cross-team `dependsOn` path, the sharding-by-right-key argument), `team` stays a reporting dimension. Named two ADR candidates (partition-by-epic; run-wide brakes under partitioning); flagged D-A5/D-A7 for Hunter.
 - 2026-06-14 [hmcgrew/sol-phase-b-prd]: Plan-ready gate cleared (Hunter, Winston's defaults). D-A5 confirmed no telemetry surface; D-A7 per-team autonomy confirmed out-of-scope. ADR candidates 0055 (partition-by-epic) / 0056 (brakes-run-wide) ratified — written during the Phase D build. Build-ordered third (after B and C on main).
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Implemented Clove tasks 1–13. Schema v3 (additive partitioned layout) added to lib/goal-state.md; new lib/partition-store.md and lib/batcher.md; batcher wired into step-04, partition store into step-01/step-09; cross-partition deps in lib/fleet.md; partition-aware report in step-10; run-wide brakes + scale ceiling in lib/convergence.md; run-wide registry in lib/reconcile.md; scale framing added to shared.md. pnpm prism:build + prism:check green (158/158 tests, zero drift); no goal-state.json real paths introduced.
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston wrote the two ratified Phase D ADRs — ADR-0055 (partition by epic-subtree, not team) and ADR-0056 (governor brakes run-wide, never per-partition); added README index rows and resolved both D-A3 promotion pointers to the live ADRs.
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Briar self-review writing-voice minors: replaced stale ADR-candidate note in convergence.md with declarative ADR-0056 pointer; replaced opaque D-A* plan labels across batcher.md, partition-store.md, fleet.md, reconcile.md, goal-state.md, step-10-report.md, and convergence.md with plain-language descriptions or ADR-0055/0056 cross-links.
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston adjudicated Eric's Major (PR #146) — chose to rephrase rather than defend the ADR cites; replaced the opaque inline `(epic plan D-A9 / Build dependency / D-A4)` cites in ADR-0055/0056 with plain-language prose, since the References-section anchors already carry provenance. Corrected Review Issue #2's bookkeeping mismatch (`8517d11` never touched the ADRs).
+- 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Eric PR-review Minors — updated `§ Schema (v3)` section cites in convergence.md and reconcile.md to `§ Schema (v3 — partitioned layout)` (matching real heading); rewrote batcher.md:3 from imperative to declarative authoring-voice matching partition-store.md:3. `206d573`.
 
 ---
 
@@ -235,17 +240,65 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 
 ---
 
+## Review Issues
+
+### Stale ADR-note in convergence.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/convergence.md:91`
+- **Problem:** The `## Brakes are run-wide under partitioning` section ends with `**ADR note:** this invariant is a strong ADR candidate (D-A3 companion, reserved ADR-0056: …) — promote on Hunter's ratification.` — ADR-0056 is already written and `accepted` on this branch; the "ADR candidate / promote on ratification" text is stale session-context leakage.
+- **Suggested fix:** Replace the stale ADR note sentence with a plain forward reference: `**See** [ADR-0056](../../spec/adrs/0056-conductor-governor-brakes-evaluated-run-wide.md) — the accepted ADR recording this invariant.`
+- **Fixed in:** `8517d11`
+
+### Internal plan labels (D-A*, FR-N) in durable skill files
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/batcher.md:13,17,36,43`, `lib/partition-store.md:11,15`, `lib/convergence.md:42,48`, `lib/fleet.md:66`, `lib/reconcile.md:17,57`, `step-10-report.md:30`; also `.prism/spec/adrs/0055:10,22,40`, `0056:32`
+- **Problem:** Internal plan labels (`Decision D-A1`, `D-A3`, `D-A2`, `D-A9`, `D-A10`, `FR-N`, `NFR-N`) appear throughout durable skill files and the new ADRs. These are session-scoped references from the epic plan that mean nothing to a cold reader. The pattern is inherited from Phase C (not a new regression), but it remains a `writing-voice.md § Anti-pattern: Session-context leakage` violation. The ADR refs are particularly visible: `0055` cited `(epic plan D-A9)` and `epic plan, Build dependency`; `0056` cited `(epic plan D-A4)`.
+- **Suggested fix:** In `lib/batcher.md` and `lib/partition-store.md`, replace `Decision D-A1`/`Decision D-A2`/`Decision D-A3` with `ADR-0055`/`ADR-0056` cross-links where applicable. In the ADRs, replace the opaque inline `epic plan D-*` cites with plain-language prose naming what each decision says. Lower-impact `FR-N`/`NFR-N` inline cues can be deferred as prior-phase convention.
+- **Fixed in:** lib/step files (`batcher.md`, `partition-store.md`, `convergence.md`, `fleet.md`, `reconcile.md`, `step-10-report.md`) in `8517d11`. ADR-0055/0056 opaque inline cites rephrased to plain language in a separate commit (Eric review escalation) — `8517d11` never touched the ADRs, so this entry's ADR scope was not actually closed by it until now. Reference-section anchors (`§ Decisions D-A3`) are legitimate provenance per ADR-0047 and are intentionally retained.
+
+### Section-name citation mismatch (§ Schema v3)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/convergence.md:83`, `lib/reconcile.md:13`
+- **Problem:** Both files cite `lib/goal-state.md § Schema (v3)` but the actual heading in `goal-state.md` is `## Schema (v3 — partitioned layout)`. The short-form citation doesn't match the real heading.
+- **Suggested fix:** Update both cites to `§ Schema (v3 — partitioned layout)`.
+- **Fixed in:** `206d573`
+
+### Imperative authoring-voice in batcher.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/batcher.md:3`
+- **Problem:** Line 3 uses imperative authoring-voice ("do not restate this content in the step file") where its sibling `lib/partition-store.md:3` uses a cleaner declarative form ("step files and the crash-resume path cite this doc instead of restating the protocol").
+- **Suggested fix:** Rewrite to match the declarative pattern in `partition-store.md:3`.
+- **Fixed in:** `206d573`
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
 ## PR Readiness
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
 - [ ] No critical or major issues
-- [ ] Schema v3 additive — single-file runs still parse; no breaking migration
-- [ ] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
-- [ ] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
-- [ ] ADR candidates ratified by Hunter before promotion (partition-by-epic; run-wide brakes)
-- [ ] Build passes — `pnpm prism:build && pnpm prism:check` green
+- [x] Schema v3 additive — single-file runs still parse; no breaking migration
+- [x] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
+- [x] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
+- [x] ADR-0055 and ADR-0056 written, accepted, README rows added — ratification confirmed
+- [x] Build passes — `pnpm prism:build && pnpm prism:check` green (158/158 tests, 2026-06-14)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to ADRs (after ratification)
+- [x] Lasting decisions promoted to ADRs (ADR-0055, ADR-0056)
+- [x] Stale ADR note in convergence.md:91 fixed
+- [x] Internal plan labels in durable files cleaned up
 
-**Last updated:** 2026-06-14
+**Last updated:** 2026-06-14 (Clove — review minors fixed)

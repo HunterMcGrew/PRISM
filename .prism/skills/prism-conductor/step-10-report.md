@@ -18,6 +18,19 @@ Cover for the run as a whole:
 - **Stub sites surfaced** — any stub site flagged by the reconcile step (from the broken-dependency convention in `followup-scope.md § Worker emit pre-filter`) that the fix lane's landing has not yet cleared. These need human or follow-up attention.
 - **Termination reason** — the run's terminal state: `converged` (zero-delta reconcile, run closed cleanly) or `budget-exhausted` (dispatch budget hit, remaining lanes parked). One of these two, always set. A run that ends without a recorded termination reason is a bug — set `converged` as the safe default.
 
+## Partition-aware summary (FR-10)
+
+When the run partitioned (root index carries `partitionManifest`), the report aggregates across all partitions and surfaces a **per-partition summary** for each epic-subtree partition:
+
+- **Lane count** for the partition.
+- **Status breakdown** — count of active / parked / done lanes within the partition.
+- **Discovered-work count** — lanes with `generation ≥ 1` originating within this partition's subtree.
+- **Budget consumed by this subtree** — read-time aggregation of dispatches attributed to this epic's leaf lanes (same mechanism as Phase B's per-subtree budget attribution in `lib/convergence.md § Subtree budget attribution`; no per-lane counter is added).
+
+The report also groups lanes by `team` (Phase C's per-team view, `## Per-team view`) — partition-by-epic and report-by-team are orthogonal (see [ADR-0055](../../spec/adrs/0055-conductor-partitions-run-control-by-epic-subtree.md)), so the report carries **both** an epic-partition summary and a team summary. The existing flat lane list is preserved in full in the detail section for compatibility (FR-10). Cross-reference `lib/partition-store.md` for the partition file layout and key derivation.
+
+When the run did not partition (single-file, sub-threshold), this section is omitted — the report renders exactly as in Phases A–C.
+
 ## Tree-structured view
 
 When the run drove a tree (lanes carry `parentId` children), the report renders the tree shape — each epic, its child issues, and their child tickets, with per-lane `status` and termination reason, indented to show the `parentId` hierarchy.

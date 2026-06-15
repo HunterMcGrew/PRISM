@@ -10,9 +10,11 @@ The registry is the live `signals[]` + `lanes[]` in goal-state (`lib/goal-state.
 
 Open goal-state and load `signals[]` and `lanes[]`. Identify all signals whose `processedAt` is `null` — these are unprocessed signals pending reconciliation this segment.
 
+**Under the partitioned layout (v3):** the `signals[]` registry is read from the **root index** only — never from individual partition files. The registry lives exclusively in the root index (`lib/goal-state.md § Schema (v3 — partitioned layout)`, `lib/partition-store.md`), so a signal emitted by a lane in partition P1 is immediately visible to dedup logic checking partition P2. The registry is run-wide by construction; no per-partition registry exists.
+
 ### 2. Structural dedup at the door
 
-For each unprocessed signal, match its `target` against existing registry entries (both in-flight and already-disposed signals) by structural identity:
+For each unprocessed signal, match its `target` against existing registry entries (both in-flight and already-disposed signals) by structural identity. Under the partitioned layout, signals from all partitions are compared against the same run-wide registry — dedup is run-wide because the registry is root-level, never per-partition (FR-4). A signal deduped in segment 1 (partition P1) is never re-dispatched in segment 2 (partition P2) because the registry spans all partitions.
 
 - **Primary match:** same `target.file` AND same `target.symbol` (when non-null).
 - **Secondary match (any one):** same `target.scopeSlug`, or same `target.errorSignature` (when non-null).
@@ -49,6 +51,10 @@ This primitive is called at every segment boundary. It is not specific to the di
 - **Phase C:** reconciles cross-team dependency signals into sequenced lanes.
 
 The input is always `signals[]` + `lanes[]` in goal-state; the output is always a lane delta (distinct candidates) and an updated registry. The calling step applies the convergence governor (`lib/convergence.md`) to decide which candidates auto-dispatch vs. park.
+
+## Field notes
+
+- **Registry size cap:** the root registry has no size cap in v1. At the ~100-lane scale ceiling, structural dedup keeps the registry in the low hundreds — a JSON array of small objects, cheap to parse. A cap/prune mechanism (archiving `processedAt`-old entries out of the hot registry) is a named future refinement; it is not implemented in v1. The registry location (`lib/partition-store.md`) ensures the root read pays this cost once per segment boundary, not once per partition.
 
 ## Cross-references
 
