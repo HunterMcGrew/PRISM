@@ -189,6 +189,7 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Wrote ADR-0053 (`type` integration marker, no default persona) and ADR-0054 (integration gate always-human, incl. hobby) as accepted; added README index rows; resolved C-A4/C-A5 promotion pointers and marked the ADR-not-written Review Issue fixed.
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Implemented Clove tasks 1–13 + C-A1 seam/read path. Adds type/blockedBy/teamConfig[] schema, per-team ordering + dependency-gated eligibility in step-04, DFS cycle check + eligibility resolution in step-09 § 2.5, convergence pre-check, team-tag carry through decision box, per-team/integration-gate views in step-10, integration gate in fleet.md + gate registry. pnpm prism:build && prism:check: 158/158 pass.
 - 2026-06-14 [hmcgrew/sol-phase-c-teams]: Fixed 4 writing-voice minors from Briar self-review (64caa04) — replaced instruction-voice "Cite ADR-..." with declarative "See ADR-..." in fleet.md and step-10-report.md, dropped opaque "C-A1 read path" label from step-04-dispatch.md, replaced "(see Phase C Decision: C-A2)" with "(the four-value status model is unchanged)" in goal-state.md. 158/158 pass.
+- 2026-06-14 [hmcgrew/sol-phase-c-teams]: Fixed 2 writing-voice minors from Eric PR review (PLACEHOLDER) — rewrote "Cite...do not restate them" in step-04-dispatch.md:15 to declarative form; added modelTier vocabulary cite to shared.md § Model tiering in goal-state.md:79. 158/158 pass.
 
 ---
 
@@ -239,6 +240,24 @@ No ADR for C-A2 (state representation — ticket-tactical, lives in schema doc),
 - **Suggested fix:** No change needed before PR; ADR authoring happens at plan close per the Decisions section. Non-blocking.
 - **Resolution:** 2026-06-14 — both ADRs written as `status: accepted` (numbers confirmed free; max was 0052). README index rows added. Plan promotion pointers resolved to the live files.
 
+### Writing-voice: "Cite `lib/fleet.md`...do not restate them" instruction in step-04-dispatch.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/step-04-dispatch.md:15`
+- **Problem:** `Cite \`lib/fleet.md\` for the conflict gate (unchanged) and \`claude.md § The autonomous segment\` for the \`pipeline(lanes, …)\` mechanism — do not restate them.` is instruction voice — a directive to a reader, not a declaration.
+- **Suggested fix:** Replace with declarative form: `The conflict gate is defined in \`lib/fleet.md\`; the \`pipeline(lanes, …)\` mechanism is defined in \`claude.md § The autonomous segment\`.`
+- **Fixed in:** PLACEHOLDER
+
+### Writing-voice: `teamConfig[].modelTier` typed `string | null` without pointing to valid tier vocabulary in goal-state.md
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:79`
+- **Problem:** `modelTier: string | null` field is self-described but doesn't point to the valid values — a reader can't tell what strings are valid without searching.
+- **Suggested fix:** Add a brief cite noting valid values are the model tiers defined in `shared.md § Model tiering` (e.g. `opus`/`sonnet`), and `null` means the run-wide model.
+- **Fixed in:** PLACEHOLDER
+
 ---
 
 ## Cleanup Items
@@ -261,7 +280,7 @@ Living checklist — updated by Briar self-review 2026-06-14.
 - [x] Team tag never stripped through the decision box (FR-7)
 - [x] Build passes — `pnpm prism:build && pnpm prism:check` — last run: 2026-06-14 (158/158 pass)
 - [x] No critical or major issues — zero critical/major findings (Briar self-review 2026-06-14)
-- [ ] 4 minor writing-voice cleanup items (see ## Review Issues) — fixable inline before or after PR open
+- [x] 6 minor writing-voice cleanup items (see ## Review Issues) — all fixed
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted (C-A4 → ADR-0053, C-A5 → ADR-0054 if ratified; conductor architect doc)
 

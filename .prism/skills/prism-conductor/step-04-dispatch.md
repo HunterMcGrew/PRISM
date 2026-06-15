@@ -12,7 +12,7 @@ The runtime equivalents for other adapters (`@openai/codex-sdk`, `@cursor/sdk`, 
 
 Sol reads each eligible lane's `team` field and applies a team-aware ordering layer on top of the existing slot-fill — lanes sharing a `team` value form a logical queue (preserving their `lanes[]` array order); Sol interleaves teams round-robin as concurrency slots open, so no single team starves another within the shared concurrency cap. A lane with `team: null` is its own implicit singleton group, ordered by array position.
 
-This is an **ordering layer on the existing single-conductor dispatch loop, not a second scheduler** (NFR-3) — the concurrency cap, conflict gate, and budget are unchanged shared resources. Cite `lib/fleet.md` for the conflict gate (unchanged) and `claude.md § The autonomous segment` for the `pipeline(lanes, …)` mechanism — do not restate them.
+This is an **ordering layer on the existing single-conductor dispatch loop, not a second scheduler** (NFR-3) — the concurrency cap, conflict gate, and budget are unchanged shared resources. The conflict gate is defined in `lib/fleet.md`; the `pipeline(lanes, …)` mechanism is defined in `claude.md § The autonomous segment`.
 
 When recording dispatch state in goal-state, Sol tags each dispatched lane's segment-membership by `team` — the `team` value on the lane is the grouping key the end-of-run report (step-10) reads to produce the per-team view. No new schema field is needed; the existing `team` value serves as the grouping key. This is a documentation note only: no build effect.
 
