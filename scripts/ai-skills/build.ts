@@ -15,9 +15,11 @@
  * Ported from TracTru/thrive#1758's scripts/ai-skills/sync.ts. Renamed to
  * build.ts to free up "sync" for the future Phase 2 consumer-side install flow.
  */
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import {
 	collectTier1RuleBodies,
@@ -27,6 +29,7 @@ import {
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
+import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
 import {
 	codexRuleDialect,
 	cursorRuleDialect,
@@ -234,12 +237,12 @@ export function buildClaudeAgentMarkdown({
 	return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
 }
 
-interface RelativeDirectoryEntry {
+export interface RelativeDirectoryEntry {
 	kind: "directory" | "file";
 	relativePath: string;
 }
 
-async function listRelativeDirectoryEntries(
+export async function listRelativeDirectoryEntries(
 	rootPath: string,
 	currentPath: string = rootPath
 ): Promise<RelativeDirectoryEntry[]> {
@@ -978,6 +981,44 @@ export function buildRoleMap(
 	return roleMap;
 }
 
+const execFileAsync = promisify(execFile);
+
+/**
+ * Reads the `version` field from the repo-root `package.json`, falling back to
+ * `"0.0.0"` when the field is missing so manifest generation never throws on a
+ * malformed package file.
+ */
+async function resolvePrismVersion(repoRootArg: string): Promise<string> {
+	const packageJsonPath = path.join(repoRootArg, "package.json");
+	const raw = await readFileIfExists(packageJsonPath);
+	if (raw === null) {
+		return "0.0.0";
+	}
+
+	try {
+		const parsed = JSON.parse(raw) as { version?: unknown };
+		return typeof parsed.version === "string" ? parsed.version : "0.0.0";
+	} catch {
+		return "0.0.0";
+	}
+}
+
+/**
+ * Resolves the current commit SHA via `git rev-parse HEAD`, returning
+ * `"unknown"` when git is unavailable or the repo root is not a git checkout
+ * (e.g. a tarball install) so the manifest still generates.
+ */
+async function resolveSourceCommit(repoRootArg: string): Promise<string> {
+	try {
+		const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
+			cwd: repoRootArg,
+		});
+		return stdout.trim() || "unknown";
+	} catch {
+		return "unknown";
+	}
+}
+
 async function main(): Promise<void> {
 	const pathDefinitions = await loadPathDefinitions(repoRoot);
 	const roleDefinitions = await loadJsonFile<RolesDefinitions>(
@@ -1255,6 +1296,19 @@ async function main(): Promise<void> {
 				tokenMap,
 				dialect
 			);
+		}
+
+		// The manifest carries per-build volatile fields (sourceCommit,
+		// generatedAt), so it is a build-mode-only output and gitignored — not a
+		// drift target. Skipping it in check mode keeps prism:check stable across
+		// commits instead of reporting drift on every new SHA.
+		if (!checkMode) {
+			const syncManifest = await generateSyncManifest(contentRoot, {
+				prismVersion: await resolvePrismVersion(repoRoot),
+				sourceCommit: await resolveSourceCommit(repoRoot),
+				generatedAt: new Date().toISOString(),
+			});
+			await writeSyncManifest(contentRoot, syncManifest, false, changedPaths);
 		}
 	}
 

@@ -242,6 +242,8 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Eric PR-review (#156) found a 3rd Major round — the moved ADRs' own `## References` sections still pointed at flat `architect/skills-ecosystem.md`. Sol's corrected sweep (prior passes were `.md`-scoped and a `grep -v "_toolkit/"` filter matched the line's path prefix — a false-clean) found the complete set: 28 source files (13 canonical `_toolkit/` ADRs + 13 template twins + 2 template architect docs).
 - 2026-06-15 [hmcgrew/prism-update-phase-1-namespace-reorg]: Clove (Opus, #155, `cf22072`) applied 37 substring-safe `architect/<doc>` → `architect/_toolkit/<doc>` replacements across the 28 files + regenerated platform copies + fixed the `AGENTS.md.tmpl:119` minor. Sol independently re-verified the corrected sweep clean; Eric re-review clean (`pnpm prism:check` 175/175).
 - 2026-06-15 [main]: Phase 1 MERGED via PR #156 (squash `519b0f5`). Phases 2 (hash manifest) and 5 (ownership classifier) unblocked. Run paused for handoff to a fresh Sol session.
+- 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Phase 2 complete (#158) — added `hashContent`/`hashFile` (utils.ts), `generateSyncManifest`/`loadSyncManifest` (new `sync-manifest.ts`), exported `listRelativeDirectoryEntries`, and wired the build-mode-only `.prism/.sync-manifest.json` write into `build.ts main()`. The manifest carves consumer-owned globs back out of the broader PRISM-owned globs so flat `spec/adrs/*.md`/`architect/*.md` never enter it; it is gitignored (volatile `sourceCommit`/`generatedAt`) so it is never a `prism:check` drift target. `pnpm prism:check` green 182/182 (was 175; +7 from `sync-manifest.test.ts`).
+- 2026-06-15 [hmcgrew/prism-update-phase-2-hash-manifest]: Addressed Eric's Phase 2 PR minors (#158) — passed `false` explicitly at the `writeSyncManifest` call site in `build.ts` (was threading `checkMode` which is always `false` inside the `if (!checkMode)` guard); added no-op idempotency test to `sync-manifest.test.ts` (8/8 pass, `pnpm prism:check` green 183/183).
 
 ---
 
@@ -280,6 +282,24 @@ Tests written alongside each phase (`withTempRoots` pattern from `content-copy.t
 - **Problem:** `CONTEXT.md` was not changed in Phase 1. It contains multiple prose references to `architect/skills-ecosystem.md`, `architect/audit-workflow.md`, and `architect/install-layout.md` — all docs that moved to `_toolkit/`. These are not clickable hyperlinks in the current format, but they are load-bearing references that agents and humans follow. The plan's Phase 1 scope said "Plans directory is out of scope" but CONTEXT.md is a root-level glossary file, not a plan — it should have been included.
 - **Suggested fix:** Update `CONTEXT.md` to replace `architect/skills-ecosystem.md` → `architect/_toolkit/skills-ecosystem.md`, `architect/audit-workflow.md` → `architect/_toolkit/audit-workflow.md`, and `architect/install-layout.md` → `architect/_toolkit/install-layout.md` throughout.
 
+### Phase 2 minor — dead `checkMode` param in `writeSyncManifest` call
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `#158` address-minors commit — `scripts/ai-skills/build.ts:1311`: changed `writeSyncManifest(contentRoot, syncManifest, checkMode, changedPaths)` to pass `false` explicitly. The call is inside `if (!checkMode)` so the param was always `false`; passing the variable made the dead inner check-mode branch look reachable.
+- **File:** `scripts/ai-skills/build.ts:1311`
+- **Problem:** `checkMode` was threaded through to `writeSyncManifest` even though the call site sits inside `if (!checkMode)`, making `checkMode` always `false` at that point. The inner check-mode early-return in `writeSyncManifest` was therefore dead code for this caller, which was misleading.
+- **Suggested fix:** Pass `false` explicitly to make the intent clear at the call site.
+
+### Phase 2 minor — missing no-op test for `writeSyncManifest` idempotency
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `#158` address-minors commit — added "writeSyncManifest does not push to changedPaths when content is unchanged" test to `scripts/ai-skills/sync-manifest.test.ts`. Writes the manifest, then calls again with identical content and asserts `changedPaths.length === 0`. Suite is now 8/8.
+- **File:** `scripts/ai-skills/sync-manifest.test.ts`
+- **Problem:** The idempotent/no-op path in `writeSyncManifest` (when serialized content equals disk content, return early without pushing to `changedPaths`) had no test coverage. Phase 3's `prism:update` will call `writeSyncManifest` after every run; a no-op must not register as a change.
+- **Suggested fix:** Add a test that writes the manifest twice with identical input and asserts the second call does not populate `changedPaths`.
+
 ---
 
 ## Acceptance Criteria
@@ -289,7 +309,7 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 ### Behavioral
 
 - [ ] Given Phase 1 is complete, When `pnpm prism:check` runs on a fresh checkout, Then it exits green (path-guard + seed-drift + manifest-coverage + check-mode copy all pass). (REQ-1: Phase 1 gate)
-- [ ] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
+- [x] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
 - [ ] Given Phase 3 is complete, When `pnpm prism:test` runs, Then `update.test.ts` passes all per-file branches (new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback / consumer-owned untouched / deleted-in-PRISM removed). (REQ-3: Phase 3 gate)
 - [ ] Given Phase 4 is complete, When `pnpm prism:test` runs, Then `overlay-copy.test.ts` passes for all 3 platforms, marker present, scoped cleanup does not touch base files. (REQ-4: Phase 4 gate)
 - [ ] Given Phase 5 is complete, When `pnpm prism:test` runs, Then `ownership.test.ts` passes classifier verdicts for `_toolkit/**` (prism), flat `architect/*.md` (consumer), `custom/**` (consumer), `SPEC.md` (prism), `plans/**` (consumer). (REQ-5: Phase 5 gate)
@@ -320,19 +340,19 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 
 ## PR Readiness
 
-Phase 1 branch only.
+Phase 2 branch (`hmcgrew/prism-update-phase-2-hash-manifest`). Phase 1 merged (PR #156, `519b0f5`).
 
-- [x] No critical or major issues — all 3 major issues fixed in `#155`
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm prism:check-types` clean)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (path-guard, verify-manifest-coverage updated)
+- [x] Tests written for new logic and edge cases (`sync-manifest.test.ts`: hash stability, exact PRISM-owned-glob coverage, load/parse round-trip, null-on-missing, check-mode no-write)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 175/175 tests pass; note: path-guard does not scan hyperlink text in prose, so stale prose ADR links pass the guard)
-- [x] PR description up to date (PR #156 body authored from template; agent-owned sections current)
-- [x] Lasting decisions promoted to architect context (not applicable for Phase 1 — namespace reorg decisions stay in plan per `→ no promotion needed` verdicts)
-- [x] Phase 1 MERGED — PR #156 squash-merged to `main` as `519b0f5` (2026-06-15)
+- [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 182/182 tests pass)
+- [ ] PR description up to date (PR not yet opened)
+- [x] Lasting decisions promoted to architect context (not applicable for Phase 2 — `.sync-manifest.json` shape decisions stay in plan; manifest may graduate to ADR when Phase 3 consumes it)
+- [ ] Phase 2 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Sol — Phase 1 merged; run paused for handoff)
+**Last updated:** 2026-06-15 (Briar — self-review complete, zero findings, ready for PR)
 
 ---
 
