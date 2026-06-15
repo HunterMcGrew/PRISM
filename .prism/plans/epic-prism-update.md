@@ -290,7 +290,7 @@ Derived from per-phase gates and the end-to-end verification section of the appr
 ### Behavioral
 
 - [ ] Given Phase 1 is complete, When `pnpm prism:check` runs on a fresh checkout, Then it exits green (path-guard + seed-drift + manifest-coverage + check-mode copy all pass). (REQ-1: Phase 1 gate)
-- [ ] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
+- [x] Given Phase 2 is complete, When `pnpm prism:test` runs, Then `sync-manifest.test.ts` passes (hash stability, generateSyncManifest covers PRISM-owned globs, load/parse round-trip, null on missing manifest). (REQ-2: Phase 2 gate)
 - [ ] Given Phase 3 is complete, When `pnpm prism:test` runs, Then `update.test.ts` passes all per-file branches (new / no-op / clean-overwrite / diverged→.bak / no-manifest fallback / consumer-owned untouched / deleted-in-PRISM removed). (REQ-3: Phase 3 gate)
 - [ ] Given Phase 4 is complete, When `pnpm prism:test` runs, Then `overlay-copy.test.ts` passes for all 3 platforms, marker present, scoped cleanup does not touch base files. (REQ-4: Phase 4 gate)
 - [ ] Given Phase 5 is complete, When `pnpm prism:test` runs, Then `ownership.test.ts` passes classifier verdicts for `_toolkit/**` (prism), flat `architect/*.md` (consumer), `custom/**` (consumer), `SPEC.md` (prism), `plans/**` (consumer). (REQ-5: Phase 5 gate)
@@ -329,11 +329,11 @@ Phase 2 branch (`hmcgrew/prism-update-phase-2-hash-manifest`). Phase 1 merged (P
 - [x] Tests written for new logic and edge cases (`sync-manifest.test.ts`: hash stability, exact PRISM-owned-glob coverage, load/parse round-trip, null-on-missing, check-mode no-write)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-15 (`pnpm prism:check` green, 182/182 tests pass)
-- [ ] PR description up to date (PR not yet opened — conductor runs Briar self-review first)
+- [ ] PR description up to date (PR not yet opened)
 - [x] Lasting decisions promoted to architect context (not applicable for Phase 2 — `.sync-manifest.json` shape decisions stay in plan; manifest may graduate to ADR when Phase 3 consumes it)
-- [ ] Phase 2 PR open / merged — pending self-review and conductor dispatch
+- [ ] Phase 2 PR open / merged — pending PR open and conductor dispatch
 
-**Last updated:** 2026-06-15 (Clove — Phase 2 implemented; awaiting Briar self-review)
+**Last updated:** 2026-06-15 (Briar — self-review complete, zero findings, ready for PR)
 
 ---
 
