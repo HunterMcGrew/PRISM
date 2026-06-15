@@ -102,6 +102,7 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Clove implemented tasks 2–8. Added `codexRuleDialect` (strips `paths:` from `.codex/rules/` Tier-2 copies), `agents-md-block.ts` (Tier-1 body collection + block render/replace), wired both into `build.ts`. `pnpm prism:build` updated 8 files (7 `.codex/rules/` + `AGENTS.md`); `pnpm prism:check` green 0 failures; drift-detection spot-test confirmed non-zero exit on manual edit.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Briar self-review. 3 minor issues found: insertion-point test assertion trivially true (test doesn't catch wrong placement), AC wording used rejected "manifest-listed" discriminator (corrected), `rule-loading-tiers.md` dev doc now diverged ("byte-identical" claim no longer true; Codex inlining not mentioned). All behavioral ACs pass on spot-test; build and check green; Cursor dialect untouched.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed trivially-true insertion-point assertion in `agents-md-block.test.ts`. Anchored `standaloneSepPos` via `indexOf("\n---\n", tableRowPos)` so the `| --- |` table-header divider cannot match; asserts `blockPos < standaloneSepPos` so a wrong-location insertion now fails the test.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Eli updated `docs/content/dev/architecture/rule-loading-tiers.md` to correct the byte-identical claim (Claude verbatim; Codex strips stray `paths:`; Cursor full dialect) and document the Codex Tier-1 AGENTS.md inlining behavior and Tier-1-only limitation. `pnpm prism:check` green.
 
 ---
 
@@ -156,10 +157,11 @@ Spike posted to issue #73 corrected the original premise:
 ### `rule-loading-tiers.md` dev doc is diverged after the Codex changes
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `docs/content/dev/architecture/rule-loading-tiers.md`
 - **File:** `docs/content/dev/architecture/rule-loading-tiers.md:47`
-- **Problem:** Line 47 states "Claude and Codex receive byte-identical copies" — which was true before this branch but is no longer true. Codex copies now have the `paths:` frontmatter stripped via `codexRuleDialect`. The doc also makes no mention of Tier-1 bodies being inlined into `AGENTS.md` for Codex, which is the primary behavioral change this PR ships.
-- **Suggested fix:** Update line 47 to say Codex receives copies with the stray `paths:` key stripped (not byte-identical to canonical), and add a sentence explaining that Tier-1 rule bodies are inlined into `AGENTS.md` because Codex auto-loads only that file. Eli is the right persona for this update.
+- **Problem:** Line 47 stated "Claude and Codex receive byte-identical copies" — which was true before this branch but is no longer true. Codex copies now have the `paths:` frontmatter stripped via `codexRuleDialect`. The doc also made no mention of Tier-1 bodies being inlined into `AGENTS.md` for Codex, which is the primary behavioral change this PR ships.
+- **Suggested fix:** Updated the per-platform emission paragraph to: correct the byte-identical claim (Claude verbatim; Codex has `paths:` stripped; Cursor gets the full dialect translation); document the Codex AGENTS.md Tier-1 inlining behavior and why it exists; document the Tier-1-only limitation and why Tier-2 rules are excluded.
 
 ---
 
