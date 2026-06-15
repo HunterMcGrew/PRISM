@@ -1,5 +1,7 @@
 # Plan: issue-73
 
+> Closed: 2026-06-15
+
 ## Ticket
 
 GitHub issue #73 — https://github.com/HunterMcGrew/PRISM/issues/73
@@ -74,7 +76,7 @@ Spike posted to issue #73 corrected the original premise:
   - **Tier-3 conflation is empty in practice:** ADR-0035 says Tier 3 = "no manifest entry, referenced from one skill." Verified: all 20 `.prism/rules/*.md` files without `paths:` frontmatter are universal-class — each is either in AGENTS.md's `## Behavioral norms` table or in ADR-0035's explicit Tier-1 list. PRISM has zero Tier-3 rules under `.prism/rules/` today. The frontmatter test is correct for the current rule set.
   - **Chosen approach:** Tier-1 set = every `.prism/rules/*.md` whose frontmatter has no `paths:` key. Future-proofing: a small explicit exclusion constant (`CODEX_INLINE_EXCLUDE`, empty today) lets a future Tier-3 rule opt out without reintroducing the manifest dependency. Beats the AND-test because it is faithful to ADR-0035's stated discriminator and does not inherit manifest staleness.
   - **Implementation guidance:** reuse `splitFrontmatter` from `rule-dialect.ts` to detect the `paths:` key; iterate `.prism/rules/*.md` in alphabetical order (matches `listRelativeDirectoryEntries` sort) for deterministic block output.
-  - → promotes to ADR-0035 reference (already names the frontmatter discriminator); no new architect doc needed — confirmed in this plan's Decisions and the dev doc `docs/content/dev/architecture/rule-loading-tiers.md`.
+  - → no promotion needed. The Codex build inlines the frontmatter-less set, and that behavior is documented in the dev doc `docs/content/dev/architecture/rule-loading-tiers.md` (Tier-1 = no `paths:` field) and ADR-0035 (Tier 1 "has no frontmatter"). The rejection-of-manifest-membership rationale is Codex-build-path-specific and stays in this plan. Caveat for a future reader: ADR-0035 and the dev doc still describe Tier-1 identification as manifest-registered *and* frontmatter-less; this decision establishes that the Codex build keys on frontmatter-absence alone because the manifest is stale in both directions. That nuance lives here, not in the ADR — flagged as a follow-up below rather than reworking ADR-0035 within this ticket's scope.
 
 - **RESOLVED (2026-06-15, Winston). Inline Tier-1 only; Tier-2 rules are NOT inlined and NOT given nested `AGENTS.md` files.** Codex gets a Tier-1-only always-on set, by deliberate acceptance.
   - **Root cause of the rejection of nested AGENTS.md:** PRISM's Tier-2 rules gate on file *globs* (`accessibility.md` → `**/*.tsx`, `**/*.jsx`, ...), not directories. Codex's nested-`AGENTS.md` mechanism keys on cwd/directory, not glob match. A glob like `**/*.tsx` cannot be expressed as a directory-rooted `AGENTS.md` without either massive duplication across every directory containing a `.tsx` file or false matches in directories that mix file types. The primitive does not fit the gating model.
@@ -105,6 +107,7 @@ Spike posted to issue #73 corrected the original premise:
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Eli updated `docs/content/dev/architecture/rule-loading-tiers.md` to correct the byte-identical claim (Claude verbatim; Codex strips stray `paths:`; Cursor full dialect) and document the Codex Tier-1 AGENTS.md inlining behavior and Tier-1-only limitation. `pnpm prism:check` green.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Draft PR #153 opened — https://github.com/HunterMcGrew/PRISM/pull/153.
 - 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Fixed Eric Major: threaded `tokenMap` through `syncAgentsMdTier1Block` → `collectTier1RuleBodies`; apply `substituteTokens` to each rule body. Added regression test asserting no `${` survives. `pnpm prism:build` updated `AGENTS.md` (0 placeholders in block); `pnpm prism:check` green; 175/175 tests pass.
+- 2026-06-15 [hmcgrew/issue-73-codex-tier-inlining]: Winston closed the plan on the final PR branch (PR #153, ready). Ran the decision verdict gate — all five Decisions carry verdicts (Cursor-dialect promoted to install-layout.md + dev doc; the other four stay local). Flipped the stale AC-wording Review Issue to `fixed` (line 115 verified corrected). No new architect/ADR promotion: ADR-0035 + the dev doc already carry the Tier model; the frontmatter-vs-manifest discriminator nuance stays plan-local with a follow-up flag.
 
 ---
 
@@ -160,10 +163,11 @@ Spike posted to issue #73 corrected the original premise:
 ### AC first behavioral item uses "manifest-listed" wording that contradicts Decision 1
 
 - **Severity:** `minor`
-- **Status:** `open`
-- **File:** `.prism/plans/issue-73.md:110`
-- **Problem:** The first behavioral AC item says "every Tier-1 rule body (manifest-listed rules without `paths:` frontmatter)" — but Decision 1 explicitly rejected manifest membership as a discriminator. `lazy-artifacts.md` is correctly included by the implementation (frontmatter-only test) yet is NOT individually manifest-listed, so the AC wording misrepresents the actual discriminator.
-- **Suggested fix:** Change to "every Tier-1 rule body (rules in `.prism/rules/` with no `paths:` frontmatter)" to match Decision 1 and the implementation.
+- **Status:** `fixed`
+- **Fixed in:** `.prism/plans/issue-73.md:115` (first behavioral AC item)
+- **File:** `.prism/plans/issue-73.md:115`
+- **Problem:** The first behavioral AC item said "every Tier-1 rule body (manifest-listed rules without `paths:` frontmatter)" — but Decision 1 explicitly rejected manifest membership as a discriminator. `lazy-artifacts.md` is correctly included by the implementation (frontmatter-only test) yet is NOT individually manifest-listed, so the AC wording misrepresented the actual discriminator.
+- **Suggested fix:** Change to "every Tier-1 rule body (rules in `.prism/rules/` with no `paths:` frontmatter)" to match Decision 1 and the implementation. Applied by Briar 2026-06-15 (see AC Sync Log); status was left `open` in error and flipped to `fixed` at plan close after verifying line 115 carries the corrected wording.
 
 ### `rule-loading-tiers.md` dev doc is diverged after the Codex changes
 
@@ -184,14 +188,14 @@ Spike posted to issue #73 corrected the original premise:
 
 ## PR Readiness (Codex inlining — tasks 2–8)
 
-- [ ] No critical or major issues — **1 major fixed (token substitution); 2 minors fixed; 1 minor open (AC wording — cosmetic)**
+- [x] No critical or major issues — **1 major fixed (token substitution); all 3 minors fixed (AC-wording minor flipped to `fixed` at close)**
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (`rule-dialect.test.ts` + `agents-md-block.test.ts`)
 - [x] All OPEN decisions resolved (Winston gate — all three resolved 2026-06-15)
 - [x] Build passes — last run: 2026-06-15 (`pnpm prism:build` updated 8 files; `pnpm prism:check` green; drift-detection spot-test passed by Briar 2026-06-15)
-- [x] PR description up to date — PR #153 opened as draft 2026-06-15
-- [ ] Lasting decisions promoted to architect context — `rule-loading-tiers.md` diverged; Eli update needed before close
+- [x] PR description up to date — PR #153 (flipped to ready 2026-06-15)
+- [x] Lasting decisions promoted to architect context — Cursor-dialect promoted to `install-layout.md` + dev doc; the Codex inlining/dialect/tier-discriminator decisions stay plan-local (covered by ADR-0035 + the dev doc); verdict gate run at close
 
 **Last updated:** 2026-06-15
 
