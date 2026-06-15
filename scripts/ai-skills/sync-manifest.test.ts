@@ -129,6 +129,23 @@ test("loadSyncManifest returns null when the manifest is absent", async () => {
 	});
 });
 
+test("writeSyncManifest does not push to changedPaths when content is unchanged", async () => {
+	await withContentRoot(async (contentRoot) => {
+		await writeContentFile(contentRoot, "rules/alpha.md", "# Alpha\n");
+
+		const generated = await generateSyncManifest(contentRoot, FIXED_OPTIONS);
+
+		// First write — establishes the on-disk content.
+		await writeSyncManifest(contentRoot, generated, false, []);
+
+		// Second write with identical manifest — must be a no-op.
+		const changedPaths: string[] = [];
+		await writeSyncManifest(contentRoot, generated, false, changedPaths);
+
+		assert.equal(changedPaths.length, 0, "no-op write must not register as a change");
+	});
+});
+
 test("writeSyncManifest in check mode reports drift without writing", async () => {
 	await withContentRoot(async (contentRoot) => {
 		await writeContentFile(contentRoot, "rules/alpha.md", "# Alpha\n");

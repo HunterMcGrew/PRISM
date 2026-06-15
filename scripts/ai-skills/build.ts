@@ -1308,7 +1308,7 @@ async function main(): Promise<void> {
 				sourceCommit: await resolveSourceCommit(repoRoot),
 				generatedAt: new Date().toISOString(),
 			});
-			await writeSyncManifest(contentRoot, syncManifest, checkMode, changedPaths);
+			await writeSyncManifest(contentRoot, syncManifest, false, changedPaths);
 		}
 	}
 
