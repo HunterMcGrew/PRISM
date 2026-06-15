@@ -48,6 +48,12 @@ Every completed run records exactly one of:
 
 A run never ends with termination reason `killed` or with no reason set. If a run would otherwise end without a termination reason, set `converged` — a zero-delta reconcile is convergence.
 
+## Dependency-graph pre-check (Phase C)
+
+Before the three brakes evaluate, the reconcile step runs a `dependsOn`-graph cycle check (defined in `step-09-reconcile.md § 2.5`). A detected cycle is a `needs-human` escalation — never a silent hang. This is a **constraint check, not a brake**: it does not park for budget/generation/breadth reasons and it does not consume `globalBudget` (no dispatch occurs). It escalates a malformed graph.
+
+The check is orthogonal to the three-brake priority order and runs *before* it. See `step-09-reconcile.md § 2.5` for the full DFS procedure — it is not restated here.
+
 ## Tree convergence — parent close gated on children
 
 A container lane (≥1 child) is `done` **only when all its children are `done` or `dropped`** — this is a convergence-*check* change, not a governor change: the three brakes (budget / generation cap / breadth gate) are **unchanged** and still evaluate exactly as documented above.
