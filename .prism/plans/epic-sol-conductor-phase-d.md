@@ -1,5 +1,7 @@
 # Plan: epic-sol-conductor-phase-d
 
+> Closed: 2026-06-15
+
 ## Ticket
 
 GitHub epic — *to be opened by Nora* (PRISM tracks on GitHub issues, not Linear). Sourced from the finalized PRD at [`.prism/prds/sol-conductor-phase-d-scale.md`](../prds/sol-conductor-phase-d-scale.md) (`internal` stakes), §7.1/§7.5/§7.8 of [`.prism/plans/sol-product-lead-vision-brief.md`](./sol-product-lead-vision-brief.md), ADR-0049 (sub-conductors permanently rejected), and ADR-0050 (growth loop + convergence governor, whose brakes stay run-wide under partitioning).
@@ -184,10 +186,12 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **D-A5 — No separate telemetry/dashboard surface in Phase D. (default path; Hunter confirms before merge)**
   - **Default path (used until resolved):** progress is observed via the partition-aware end-of-run report (task 7) and `conductor-state` partition-file inspection — the same observability surface as Phase A (whose D-A1 made the identical call). No instrumentation is added.
   - **Why flagged for Hunter:** the PRD routes telemetry to Hunter as a "resolve before merge" confirmation, consistent with Phase A. Winston's recommendation is **confirm no telemetry** — all six Phase D success metrics are observable from the report + partition files, and a dashboard is a later-initiative concern. But the call is Hunter's to ratify, not Winston's to close.
+  - **→ no promotion needed (resolved at the plan-ready gate — Hunter confirmed no telemetry surface, History 2026-06-14; a no-instrumentation scoping call, consistent with Phase A's identical decision, with no durable architectural claim to graduate).**
 
 - **D-A7 — Autonomy stays run-wide; no per-team or per-partition autonomy ceilings in Phase D. (default path; Hunter decides scope)**
   - **Default path (used until resolved):** one run-wide autonomy ceiling (NFR-5), as in Phases A–C. Partitioning does not introduce per-partition autonomy.
   - **Why flagged for Hunter:** the vision brief (Q8) named per-team autonomy as an open question; Phase C also routed it to Hunter (its D-A3). This is a **policy decision about initiative scope** — whether per-team autonomy belongs to the initiative at all, and if so which phase — not a technical call Winston resolves. Winston's read: per-team autonomy is *not* a Phase D requirement (Phase D is scale-mechanics; autonomy granularity is orthogonal), and if it's ever in scope it's a distinct future initiative. But the scope call is Hunter's.
+  - **→ no promotion needed (resolved at the plan-ready gate — Hunter confirmed per-team autonomy out-of-scope for Phase D, History 2026-06-14; a scope-deferral decision, not a durable architectural claim — the run-wide-autonomy invariant it preserves is already promoted in ADR-0049).**
 
 ---
 
@@ -200,6 +204,8 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Briar self-review writing-voice minors: replaced stale ADR-candidate note in convergence.md with declarative ADR-0056 pointer; replaced opaque D-A* plan labels across batcher.md, partition-store.md, fleet.md, reconcile.md, goal-state.md, step-10-report.md, and convergence.md with plain-language descriptions or ADR-0055/0056 cross-links.
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Winston adjudicated Eric's Major (PR #146) — chose to rephrase rather than defend the ADR cites; replaced the opaque inline `(epic plan D-A9 / Build dependency / D-A4)` cites in ADR-0055/0056 with plain-language prose, since the References-section anchors already carry provenance. Corrected Review Issue #2's bookkeeping mismatch (`8517d11` never touched the ADRs).
 - 2026-06-14 [hmcgrew/sol-phase-d-scale]: Fixed two Eric PR-review Minors — updated `§ Schema (v3)` section cites in convergence.md and reconcile.md to `§ Schema (v3 — partitioned layout)` (matching real heading); rewrote batcher.md:3 from imperative to declarative authoring-voice matching partition-store.md:3. `206d573`.
+- 2026-06-14 [hmcgrew/sol-conductor-bcd-epic-close]: Eli task D-14 complete — added Phase D section to conductor.md covering the batcher (four ordering rules, per-run budget), partitioned layout (root index + partition files, ADR-0055), cross-partition dependency resolution via lanesSummary, crash-safe resume, run-wide brakes invariant (ADR-0056), and partition-aware report (ee47647).
+- 2026-06-15 [hmcgrew/sol-conductor-bcd-epic-close]: Epic closed — implementation merged (PR #146), ADRs 0055/0056 promoted, dev doc shipped. Verdict gate passed — added `→ no promotion needed` verdicts to the two Hunter-policy Decisions (D-A5 telemetry, D-A7 per-team autonomy), both resolved at the plan-ready gate. No separate architect-doc promotion needed — durable decisions captured in ADRs 0055/0056.
 
 ---
 
@@ -278,6 +284,15 @@ Scale the Sol conductor to large runs (~100 lanes) by **batching dispatch agains
 - **Suggested fix:** Rewrite to match the declarative pattern in `partition-store.md:3`.
 - **Fixed in:** `206d573`
 
+### History date-ordering regression in epic close — phase-d plan
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-sol-conductor-phase-d.md:207-208` (pre-fix)
+- **Problem:** The two close-branch History entries were appended in reverse chronological order: the `2026-06-15` epic-close entry (commit `44b9d98`, Winston) appeared before the `2026-06-14` Eli doc task entry (commit `7bda1a8`). History is append-only working notes; the Eli commit landed after the close commit, creating a date-regression (older date listed after newer date).
+- **Suggested fix:** Swap the two entries so `2026-06-14` Eli entry precedes `2026-06-15` close entry.
+- **Fixed in:** Briar close-PR review on this branch — entries reordered in place.
+
 ---
 
 ## Cleanup Items
@@ -290,15 +305,16 @@ None.
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [ ] No critical or major issues
+- [x] No critical or major issues — Eric's Major (PR #146) adjudicated and rephrased; all review issues fixed
 - [x] Schema v3 additive — single-file runs still parse; no breaking migration
 - [x] No `goal-state.json` real file introduced — every real path is `conductor-state*.json`
 - [x] All `[ASSUMPTION-N]` items resolved or flagged to Hunter (D-A5, D-A7)
 - [x] ADR-0055 and ADR-0056 written, accepted, README rows added — ratification confirmed
 - [x] Build passes — `pnpm prism:build && pnpm prism:check` green (158/158 tests, 2026-06-14)
-- [ ] PR description up to date
+- [x] PR description up to date
 - [x] Lasting decisions promoted to ADRs (ADR-0055, ADR-0056)
 - [x] Stale ADR note in convergence.md:91 fixed
 - [x] Internal plan labels in durable files cleaned up
+- [x] History date ordering corrected (Briar, close-PR review)
 
-**Last updated:** 2026-06-14 (Clove — review minors fixed)
+**Last updated:** 2026-06-15 (Briar, close-PR self-review — zero critical/major; History ordering minor fixed; pnpm prism:check green 158/158)
