@@ -168,10 +168,10 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
 ### first-contact-step-sequence-documentation-setup-misplaced
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed` — narrowed "2–9" block to "2–7" and added standalone step 11 for documentation setup; mirrors regenerated (commit e309eea)
 - **File:** `.ai-skills/skills/prism-onboarding/shared.md` (first-contact step sequence, line ~119)
-- **Problem:** The first-contact step sequence lists "2–9. Same as first-install (... → existing standards → documentation setup)" — including documentation setup in the 2–9 block. But the interactive flow now places documentation setup at step 11 in first-contact mode (after asset-path survey at step 8 and discovery sweep at step 9). An Atlas operator reading the first-contact step sequence would incorrectly infer that documentation setup fires before the new first-contact steps, not after.
-- **Suggested fix:** Narrow "2–7. Same as first-install through existing standards (project name → ticket prefix → GitHub org/repo → Linear workspace → Linear team key → product domain → existing standards)." Add a step 11 entry: "**Documentation setup** — same as first-install (§ Interactive flow → Documentation question set)." This matches the actual interactive flow and removes the contradiction.
+- **Problem:** The first-contact step sequence listed "2–9. Same as first-install (... → existing standards → documentation setup)" — including documentation setup in the 2–9 block. But the interactive flow places documentation setup at step 11 in first-contact mode (after asset-path survey at step 8 and discovery sweep at step 9).
+- **Resolution:** Narrowed to "2–7. Same as first-install through existing standards …" and added step 10 (Slack channel) and step 11 (Documentation setup) as standalone entries, matching § Interactive flow exactly. All 4 platform mirrors regenerated via `pnpm prism:build`.
 
 ---
 
@@ -183,18 +183,18 @@ None found.
 
 ## PR Readiness
 
-Living checklist — updated by Briar self-review 2026-06-16 (Lane 2).
+Living checklist — updated by Briar re-review 2026-06-16 (Lane 2, commit e309eea).
 
-- [x] No critical or major issues — Lane 1 major (dry-run claim) resolved by Winston ruling B. Lane 1 minor (split import) fixed in this lane. 1 new minor in this lane (first-contact step sequence numbering drift — documentation setup misplaced in 2–9 block); fix-now call: see Review Issues.
+- [x] No critical or major issues — all resolved; zero open minors after e309eea fix
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts (console.log calls in `reportSummary` are intentional CLI output)
-- [x] Tests written for new logic and edge cases — `runAdopt` guard test (line 297) asserts guard runs inside `runAdopt` not just `main`; step-ordering tests (lines 75–98) assert `asset-path-survey` precedes `discovery-sweep` and both seed pending; 322/322 tests green
+- [x] Tests written for new logic and edge cases — 322/322 green; step-ordering and guard tests confirmed
 - [x] All debugged issues resolved (no `open` entries in Debugged Issues)
-- [x] Build passes — `pnpm prism:check-types` clean, `pnpm prism:test` (322/322) green, `pnpm prism:check` passed (mirrors in sync) — all verified 2026-06-16; full `pnpm prism:build` skipped — diff touches canonical skill content which `pnpm prism:check` verified; no bundled output affected
+- [x] Build passes — `pnpm prism:check-types` clean, `pnpm prism:test` (322/322) green, `pnpm prism:check` passed (mirrors in sync) — verified 2026-06-16 on e309eea
 - [x] Platform mirrors match canonical — `pnpm prism:check passed. Generated outputs are in sync.`
 - [x] No team-specific literals (Thrive/SPC) in shared.md, adopt.ts, adopt.test.ts, onboarding-state.ts, onboarding-types.ts — plan file carries context-only references as expected
+- [x] first-contact step sequence minor fixed — documentation setup at step 11, mirrors regenerated (e309eea)
 - [ ] PR description up to date — no PR exists yet
 - [ ] Lasting decisions promoted to architect context — Lane 3 task (deferred per plan)
-- [ ] first-contact step sequence minor fixed (documentation setup at step 11, not inside 2–9)
 
-**Last updated:** 2026-06-16 (Lane 2 Briar self-review)
+**Last updated:** 2026-06-16 (Lane 2 Briar re-review, e309eea)
