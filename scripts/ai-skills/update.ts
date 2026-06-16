@@ -351,7 +351,7 @@ async function refreshPlatformDirs(
  * back to the `prismSource` field in the consumer's config. Returns `null` when
  * neither is set so the caller can emit the guidance message.
  */
-function resolvePrismSource(
+export function resolvePrismSource(
 	argv: string[],
 	consumerRepoRoot: string
 ): string | null {
