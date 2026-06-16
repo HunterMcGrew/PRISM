@@ -3,7 +3,10 @@ Number: 0023
 Title: Architect Docs Require Source-Verified Review
 Status: accepted
 Date: 2026-04-28
+Superseded-in-part-by: 0058
 ---
+
+> **Superseded in part by [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md).** Only this ADR's paired-dev-doc clause is retired — the extension of source-verified review to `docs/content/dev/architecture/**`. The core decision — architect docs at `.prism/architect/**` require source-verified review — stands and is live.
 
 ## Context
 
