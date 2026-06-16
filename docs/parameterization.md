@@ -17,16 +17,16 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 
 ```json
 {
-  "org": "TracTru",
+  "org": "Acme",
   "project": "KTC",
   "ticketPrefix": "KTC",
   "ticketSystem": {
     "kind": "linear",
-    "workspace": "tractru",
+    "workspace": "acme",
     "projectId": "abc-def-123",
     "teamKey": "KTC"
   },
-  "github": { "owner": "tractru", "repo": "ktc-frontend" },
+  "github": { "owner": "acme", "repo": "ktc-frontend" },
   "defaultBranch": "main",
   "techStack": ["nextjs", "react", "typescript", "tailwind"],
   "rules": {
@@ -59,16 +59,16 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 
 | Token | Source | Example |
 |---|---|---|
-| `${ORG}` | `org` | `TracTru` |
+| `${ORG}` | `org` | `Acme` |
 | `${PROJECT}` | `project` | `KTC` |
 | `${PROJECT_LOWERCASE}` | derived from `project` | `ktc` |
 | `${TICKET_PREFIX}` | `ticketPrefix` | `KTC` |
 | `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix` | `ktc` |
-| `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `tractru` |
+| `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `acme` |
 | `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` |
 | `${TICKET_TRACKER}` | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` |
-| `${GITHUB_OWNER}` | `github.owner` | `tractru` |
-| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `tractru` |
+| `${GITHUB_OWNER}` | `github.owner` | `acme` |
+| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `acme` |
 | `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` |
 | `${DEFAULT_BRANCH}` | `defaultBranch` | `main` |
 | `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` |
@@ -81,7 +81,7 @@ Adding a new derived token: extend the substitution map in `scripts/ai-skills/li
 
 Canonical sources at `.prism/` and `.ai-skills/skills/` stay tokenized — the `${TOKEN}` literals never get rewritten on disk. The build script reads `.ai-skills/config.json`, derives the token map, and substitutes during platform-output assembly. Consumer teams running `pnpm prism:build` against their own `config.json` get platform outputs that reflect their team's values; PRISM itself runs the same build against its dogfood `config.json` and produces platform outputs with `PROJECT=PRISM` substituted.
 
-A literal-Thrive guard runs as the last build step against platform outputs (`.claude/`, `.codex/`, `.cursor/`, `.generated/cursor-skills/`). The guard scans for `Thrive`, `tractru`, `TracTru/thrive`, `THR-[0-9]+`, and `thrive.<key>` patterns and fails the build on any non-allowlisted hit. The allowlist at `.ai-skills/definitions/literal-allowlist.json` exempts files where literal references are intentional — frozen incident citations in `lessons.md`, originating-incident ADRs, and their platform-copy mirrors.
+A literal guard runs as the last build step against platform outputs (`.claude/`, `.codex/`, `.cursor/`, `.generated/cursor-skills/`). The guard scans for origin-specific tokens — the originating project's name, its ticket prefix pattern, and its config-key namespace — and fails the build on any non-allowlisted hit. This catches unsubstituted literals leaking from the canonical source into platform outputs that should carry only the consuming team's values. The allowlist at `.ai-skills/definitions/literal-allowlist.json` exempts files where literal references are intentional — frozen incident citations in `lessons.md`, originating-incident ADRs, and their platform-copy mirrors.
 
 ## Tech-stack flags
 

@@ -138,7 +138,7 @@ The convergence governor is what keeps a self-growing fleet from running away. T
 
 The three brakes are evaluated in the order above, stopping at the first brake that fires. Every completed run records exactly one termination reason: `converged` (zero-delta reconcile) or `budget-exhausted` (dispatch budget hit). A run never ends with termination reason `killed` or with no reason set.
 
-Governor thresholds — budget ceiling, K, and the breadth gate — are config-driven, not hardcoded. The values above are the defaults for Thrive; a consuming team overrides them via the config seam in goal-state.
+Governor thresholds — budget ceiling, K, and the breadth gate — are config-driven, not hardcoded. The values above are the shipped defaults; a consuming team overrides them via the config seam in goal-state.
 
 ## Tree semantics — epics, issues, and tickets as a lane hierarchy
 
