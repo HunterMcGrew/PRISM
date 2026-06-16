@@ -188,6 +188,15 @@ export function toOnDiskConfig(
 		onDisk.slackChannel = options.slackChannel;
 	}
 
+	if (config.documentation !== undefined) {
+		onDisk.documentation = {
+			location: config.documentation.location,
+			audience: config.documentation.audience,
+			keepsDevDocs: config.documentation.keepsDevDocs,
+			format: config.documentation.format,
+		};
+	}
+
 	return onDisk;
 }
 
@@ -329,6 +338,13 @@ function serializeConfig(config: PrismOnDiskConfig): string {
 		"optIn",
 	];
 
+	const orderedDocumentation: Array<keyof NonNullable<PrismOnDiskConfig["documentation"]>> = [
+		"location",
+		"audience",
+		"keepsDevDocs",
+		"format",
+	];
+
 	const renderedTopLevel: Record<string, unknown> = {};
 	for (const key of orderedTopLevel) {
 		const value = config[key];
@@ -369,6 +385,18 @@ function serializeConfig(config: PrismOnDiskConfig): string {
 				}
 			}
 			renderedTopLevel[key] = r;
+			continue;
+		}
+
+		if (key === "documentation" && config.documentation) {
+			const doc: Record<string, unknown> = {};
+			for (const docKey of orderedDocumentation) {
+				const docValue = config.documentation[docKey];
+				if (docValue !== undefined) {
+					doc[docKey] = docValue;
+				}
+			}
+			renderedTopLevel[key] = doc;
 			continue;
 		}
 
