@@ -156,7 +156,7 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
 ### decision-6-verdict-tense
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed` — verdict tense corrected to `→ promoted to ADR-0059 Decision (b)`; commit 3827440
 - **File:** `.prism/plans/epic-prism-first-contact-reconciliation.md:101`
 - **Problem:** Decision #6 (repo-agnostic) verdict uses present-tense imperative `→ promote to ADR-0059's Decision section` instead of the canonical past-tense format `→ promoted to`. All other five verdicts use `→ promoted to` correctly. The content is present in ADR-0059 Decision (b), so this is a format inconsistency, not a missing verdict.
 - **Suggested fix:** Change `→ promote to ADR-0059's Decision section (the agnostic principle is design-defining; folded in task 11)` to `→ promoted to ADR-0059 Decision (b) (the agnostic principle is design-defining; folded in task 11)`.
@@ -197,7 +197,7 @@ None found.
 
 Living checklist — updated by Winston at epic close 2026-06-16 (Lane 3, ADR-0059 + install-layout).
 
-- [x] No critical or major issues — all resolved; 1 open minor (decision-6 verdict tense, format-only)
+- [x] No critical or major issues — all resolved; zero open minors
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts (console.log calls in `reportSummary` are intentional CLI output)
 - [x] Tests written for new logic and edge cases — 322/322 green; step-ordering and guard tests confirmed
