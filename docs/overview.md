@@ -20,7 +20,7 @@ PRISM addresses this by giving each AI tool a set of personas — specialists wi
 
 - **Named personas** — each owning a domain (architecture, implementation, review, debugging, documentation, and more). See [personas.md](./personas.md) for the full reference.
 - **Multi-platform skill generation** — author once in `.ai-skills/`, generate platform-specific outputs for Claude Code, Codex, and Cursor.
-- **A tiered context system** — rules load at the right scope: universal rules always, path-scoped rules when the diff touches their domain, skill-internal rules when the skill fires. See [SPEC.md](../.prism/SPEC.md) for the tier detail.
+- **A tiered context system** — rules, architectural context, and skill behavior each live at the right scope, so agents load what applies rather than everything at once. See [SPEC.md](../.prism/SPEC.md) for the full hierarchy.
 - **Per-team parameterization** — your org name, ticket prefix, GitHub repo, and tech stack flow through the install. See [parameterization.md](./parameterization.md) for the config reference.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, and standup summaries shaped for cross-team consistency.
 
