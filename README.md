@@ -4,7 +4,7 @@ A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona sk
 
 ## Status
 
-_As of 2026-06-16:_ Epic A (docs overhaul) has shipped — all user guides are live, the README is slimmed, and ADR-0058 retires the paired-dev-doc convention. The Sol multi-agent conductor and all named personas are active. See [CHANGELOG.md](./CHANGELOG.md) for the full history.
+_As of 2026-06-16:_ Epic C (first-contact reconciliation) has shipped — established repos can now adopt PRISM via `pnpm prism:adopt` and Atlas's first-contact onboarding mode without losing existing work. This completes the internal roadmap. Epic A (docs overhaul) also shipped: all user guides are live and ADR-0058 retires the paired-dev-doc convention. The Sol multi-agent conductor and all named personas are active. See [CHANGELOG.md](./CHANGELOG.md) for the full history.
 
 ## Overview
 
