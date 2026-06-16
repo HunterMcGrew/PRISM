@@ -240,6 +240,7 @@ The lint must catch a moved-`_toolkit/` path that no longer resolves — the exa
 - 2026-06-15 [hmcgrew/prism-163-crossref-lint]: Clove shipped the lint to draft PR #175 (commit `a1aa94d`) — infra sound (36/36 tests, gate fixture catches moved-`_toolkit/`), but the resolve-against-own-directory model over-flagged 354 refs on the live tree, mostly false positives. Clove also excluded `.json`/`.toml` from the walk (deviation from v1 spec).
 - 2026-06-15 [main]: Winston re-planned the resolution model. Investigation measured 4 candidate models (resolve-own-dir 354, mirror-rebase 465, within-root 245, repo-root-absolute 32→~4-genuine) and chose repo-root-absolute-only. Root cause: canonical links are authored for the consumer's installed tree, not the partial monorepo; see Decision: Resolution model reversed. Ratified the `.json`/`.toml` walk-exclusion as the correct v1 call (deferred to follow-up). True-positive remainder is ~4 genuine stale refs that fold into #163.
 - 2026-06-15 [hmcgrew/prism-163-crossref-lint]: Clove rewrote the resolution model (VERIFIABLE_ROOT_PREFIXES gate, isLazyOrHistoricalTarget predicate, illustrative-ref allowlist), updated the test suite to 47 tests against the repo-root-absolute model, fixed all 3 genuine stale refs (validate.py drop, plugin-management.md de-dangle ×2, SPEC.md display-text fix) at canonical + seed twin, rebuilt generated mirrors. prism:check green; gate proven (deliberate stale `.prism/...` ref → exit 1; reverted → exit 0).
+- 2026-06-16 [hmcgrew/prism-163-crossref-lint]: Briar self-review and Eric PR review both clean — `fs.readdir` overload type error fixed (commit `8bb26ff`), `pnpm prism:check-types` exit 0. Plan markers reconciled: `fs.readdir` Review Issue added as fixed, PR Readiness updated to reflect passing state.
 
 ---
 
@@ -328,6 +329,14 @@ These are the genuine stale refs the corrected lint surfaces — tracked here so
 - **Problem:** Link display text reads `` `.prism/spec/adrs/README.md` `` while the href correctly points at `./spec/adrs/_toolkit/README.md`. Seed twin also had a stale href.
 - **Fixed in:** commit `c60e70b` — updated display text and seed-twin href to `_toolkit/README.md` in both files.
 
+### `fs.readdir` overload type error in `listCarrierFiles`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/crossref-lint.ts`
+- **Problem:** `fs.readdir` call used an overload TypeScript couldn't resolve on `listCarrierFiles`, causing a type error caught by Briar in self-review.
+- **Fixed in:** commit `8bb26ff` — switched to the `{ withFileTypes: true }` overload signature TypeScript accepts; `pnpm prism:check-types` exit 0 confirmed.
+
 ---
 
 ## Architect Context Updates
@@ -344,7 +353,7 @@ These are the genuine stale refs the corrected lint surfaces — tracked here so
 - [x] Tests written for new logic and edge cases (47 tests, all green)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — `pnpm prism:check` green — last run: 2026-06-15
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] PR description up to date
+- [ ] Lasting decisions promoted to architect context (if applicable — none needed per all Decisions verdicts)
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-16
