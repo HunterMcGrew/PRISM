@@ -14,5 +14,11 @@
 	"rules": {
 		"universal": "all"
 	},
-	"slackChannel": "#prism-dev"
+	"slackChannel": "#prism-dev",
+	"documentation": {
+		"location": "docs/",
+		"audience": "developer-user",
+		"keepsDevDocs": false,
+		"format": "flat-markdown-guides"
+	}
 }

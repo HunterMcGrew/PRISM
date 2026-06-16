@@ -54,6 +54,13 @@ export interface PrismOnDiskConfig {
 		optIn?: string[];
 	};
 	slackChannel?: string;
+	documentation?: {
+		location?: string;
+		audience?: string;
+		keepsDevDocs?: boolean;
+		/** Open string — not validated against an enum. New consumers add their own value without changing this type. */
+		format?: string;
+	};
 }
 
 export interface WriteOnboardingConfigOptions {
@@ -302,6 +309,7 @@ function serializeConfig(config: PrismOnDiskConfig): string {
 		"techStack",
 		"rules",
 		"slackChannel",
+		"documentation",
 	];
 
 	const orderedTicketSystem: Array<keyof PrismOnDiskConfig["ticketSystem"]> = [

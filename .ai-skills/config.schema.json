@@ -115,6 +115,32 @@
 			"type": "string",
 			"description": "Optional Slack channel for Lilac standup posting.",
 			"examples": ["#tractru-dev"]
+		},
+		"documentation": {
+			"type": "object",
+			"description": "Documentation configuration. Populated by Atlas during onboarding (Phase 2). Eli reads these values to write guides shaped for the team's actual doc system — the format field in particular drives which patterns Eli uses. format is an open string, never a closed union: a new consumer adds their value here without a schema migration.",
+			"properties": {
+				"location": {
+					"type": "string",
+					"description": "Root path where the team's user-facing docs live, relative to the repo root.",
+					"examples": ["docs/", "documentation/", "site/"]
+				},
+				"audience": {
+					"type": "string",
+					"description": "Primary audience for the docs. Use `developer-user` when the repo itself is a developer tool (the reader is also a builder). Other values are open — Atlas writes whatever the team's onboarding answer produces.",
+					"examples": ["developer-user", "end-user", "mixed"]
+				},
+				"keepsDevDocs": {
+					"type": "boolean",
+					"description": "Whether the team maintains technical/dev docs separate from user-facing docs. When true, Eli's paired-doc workflow is active (prism-doc-walker steps 05/06/07). When false, all docs are user-facing and the paired-doc flow is skipped."
+				},
+				"format": {
+					"type": "string",
+					"description": "Doc format the team uses. Open string — not a closed union. Atlas writes the value that matches the team's actual setup; Eli adapts its output to the declared format. Known values: `flat-markdown-guides` (PRISM), `nextra-blocks` (Thrive). New consumers add their own value here without a schema migration.",
+					"examples": ["flat-markdown-guides", "nextra-blocks"]
+				}
+			},
+			"additionalProperties": false
 		}
 	}
 }

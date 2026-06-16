@@ -77,6 +77,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 - 2026-05-29 [claude/stupefied-ardinghelli-189bdd]: Plan created from a Winston design session (party mode: Atlas, Eli, Mira, Sage, Clove). Captured the de-Thrive + config-driven-Eli direction; B and C split into deferred sibling epics.
 - 2026-06-16 [hmcgrew/epic-a-plan-sync]: Winston build-readiness pass for Sol. Synced two stale task lines to current main: Clove task 3 now names both `architect-doc-verification.md` copies (canonical + templates mirror); Winston task 1 now names ADR-0058, the `_toolkit/` dual-write path, and scopes supersession to the dev-doc half only. Design unchanged — no replan.
+- 2026-06-16 [hmcgrew/epic-a-pr1-doc-config]: PR-1 — added `documentation` config block to `.ai-skills/config.schema.json` (open-string format, four properties) and answered it in `.ai-skills/config.json` for PRISM; updated `PrismOnDiskConfig` interface and `serializeConfig` key order in `scripts/ai-skills/lib/onboarding-config.ts`. All checks green (prism:check, prism:check-types).
 
 ## Acceptance Criteria
 
