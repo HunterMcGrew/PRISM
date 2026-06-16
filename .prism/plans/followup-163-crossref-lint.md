@@ -239,6 +239,7 @@ The lint must catch a moved-`_toolkit/` path that no longer resolves — the exa
 - 2026-06-15 [main]: Plan created by Winston for issue #163 — prose cross-reference lint. Design locked: standalone `crossref-lint.ts` wired as a 4th `prism:check` step; scans `.md`/`.tmpl`/`.mdc`/`.json`/`.toml` across canonical + seed-twin roots (excluding plans/lessons/agent-working surfaces); resolves markdown-link + inline-code + JSON/TOML-string path refs relative to each ref's own content root; excludes fences, externals, anchors, tokens, and a precise `(file,ref)` allowlist; gate proven by a PR #156-class stale-`_toolkit/`-ref fixture.
 - 2026-06-15 [hmcgrew/prism-163-crossref-lint]: Clove shipped the lint to draft PR #175 (commit `a1aa94d`) — infra sound (36/36 tests, gate fixture catches moved-`_toolkit/`), but the resolve-against-own-directory model over-flagged 354 refs on the live tree, mostly false positives. Clove also excluded `.json`/`.toml` from the walk (deviation from v1 spec).
 - 2026-06-15 [main]: Winston re-planned the resolution model. Investigation measured 4 candidate models (resolve-own-dir 354, mirror-rebase 465, within-root 245, repo-root-absolute 32→~4-genuine) and chose repo-root-absolute-only. Root cause: canonical links are authored for the consumer's installed tree, not the partial monorepo; see Decision: Resolution model reversed. Ratified the `.json`/`.toml` walk-exclusion as the correct v1 call (deferred to follow-up). True-positive remainder is ~4 genuine stale refs that fold into #163.
+- 2026-06-15 [hmcgrew/prism-163-crossref-lint]: Clove rewrote the resolution model (VERIFIABLE_ROOT_PREFIXES gate, isLazyOrHistoricalTarget predicate, illustrative-ref allowlist), updated the test suite to 47 tests against the repo-root-absolute model, fixed all 3 genuine stale refs (validate.py drop, plugin-management.md de-dangle ×2, SPEC.md display-text fix) at canonical + seed twin, rebuilt generated mirrors. prism:check green; gate proven (deliberate stale `.prism/...` ref → exit 1; reverted → exit 0).
 
 ---
 
@@ -306,26 +307,26 @@ These are the genuine stale refs the corrected lint surfaces — tracked here so
 ### Stale `scripts/office/validate.py` reference
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/references/changelog/doc-generation.md:23` (+ `templates/install/` twin)
 - **Problem:** References `scripts/office/validate.py`, a Thrive-era path that doesn't exist in PRISM.
-- **Suggested fix:** Replace with the correct PRISM validation step or remove the dead path. `[HITL]` if no PRISM equivalent is determinable from the changelog skill source.
+- **Fixed in:** commit `c60e70b` — dropped the dead bullet from both canonical and seed twin.
 
 ### Stale `.prism/architect/plugin-management.md` precedent reference
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/references/architect/plan-mode.md:38` and `:135` (+ `templates/install/` twin)
 - **Problem:** Cites `.prism/architect/plugin-management.md` as the paired-dev-doc precedent, but the file doesn't exist in PRISM (Thrive-era leftover).
-- **Suggested fix:** Substitute an extant `.prism/architect/` paired-doc precedent, or rewrite the sentence to describe the pairing rule without citing a missing example. `[HITL]` if no extant precedent exists.
+- **Fixed in:** commit `c60e70b` — rewrote both sentences to describe the pairing rule generically ("Each pair cross-links the other") without citing the missing file.
 
 ### Stale display text in SPEC.md ADR-README link
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/SPEC.md:142` (+ `SPEC.md.tmpl` twin)
-- **Problem:** Link display text reads `` `.prism/spec/adrs/README.md` `` while the href correctly points at `./spec/adrs/_toolkit/README.md`. The link works; the backtick display text is stale.
-- **Suggested fix:** Update display text to `` `.prism/spec/adrs/_toolkit/README.md` ``.
+- **Problem:** Link display text reads `` `.prism/spec/adrs/README.md` `` while the href correctly points at `./spec/adrs/_toolkit/README.md`. Seed twin also had a stale href.
+- **Fixed in:** commit `c60e70b` — updated display text and seed-twin href to `_toolkit/README.md` in both files.
 
 ---
 
@@ -337,12 +338,12 @@ These are the genuine stale refs the corrected lint surfaces — tracked here so
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts (the lint's `console.error`/`console.log` are intentional reporting)
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — `pnpm prism:check` green end-to-end
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts (the lint's `console.error`/`console.log` are intentional reporting)
+- [x] Tests written for new logic and edge cases (47 tests, all green)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:check` green — last run: 2026-06-15
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
