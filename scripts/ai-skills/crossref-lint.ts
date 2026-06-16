@@ -216,7 +216,7 @@ export async function resolveGitignored(
 				}
 
 				// exit 1 with empty stderr — zero paths matched (not an error)
-				const code = (error as NodeJS.ErrnoException & { code?: number }).code;
+				const code = error.code;
 				if (code === 1 && stderr.trim() === "") {
 					resolve(new Set());
 
@@ -687,6 +687,10 @@ export async function runCrossRefLint(
 					!cleaned ||
 					!VERIFIABLE_ROOT_PREFIXES.some((p) => cleaned.startsWith(p))
 				) {
+					continue;
+				}
+
+				if (isLazyOrHistoricalTarget(cleaned)) {
 					continue;
 				}
 

@@ -843,6 +843,28 @@ test("resolveGitignored: returns ignored paths and excludes non-ignored ones", a
 	);
 });
 
+test("resolveGitignored: returns empty Set without throwing when git is unavailable (fail-open)", async () => {
+	// A temp dir with no git init — git check-ignore exits 128 (not a git repo).
+	// The fail-open branch must return an empty Set rather than throwing.
+	await withTempTree(
+		async (_root) => {
+			// Intentionally no git init — the directory is not a git repo
+		},
+		async (root) => {
+			const result = await resolveGitignored(
+				[".prism/.sync-manifest.json"],
+				root
+			);
+			assert.ok(result instanceof Set, "result must be a Set");
+			assert.equal(
+				result.size,
+				0,
+				"fail-open branch must return an empty Set without throwing"
+			);
+		}
+	);
+});
+
 // ---------------------------------------------------------------------------
 // scanLines — gitignore gate
 // ---------------------------------------------------------------------------
