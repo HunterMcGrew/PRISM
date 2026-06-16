@@ -93,3 +93,41 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 - [ ] No user guide contains point-in-time language ("current," "in progress"); status lives only in CHANGELOG + dated README block.
 - [ ] `documentation.format` in the schema is an open/growable type, not a closed union.
 - [ ] ADRs 0023, 0038, and the dev-doc half of 0044 are marked superseded with a successor ADR.
+
+---
+
+## Review Issues
+
+### PR-1: `additionalProperties: false` inconsistent with sibling schema blocks
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/config.schema.json` — `documentation` block
+- **Problem:** The `documentation` object block sets `additionalProperties: false`; all sibling object blocks (`rules`, `github`, `ticketSystem`) leave it unset. The plan says to "mirror the shape/validation style of the existing `techStack` and `rules` blocks." Runtime impact is zero (JSON schema is IDE tooling only; `validateOnDiskConfig` does not enforce it). The inconsistency is a forward-compatibility footgun: any future undeclared key Atlas writes to `documentation` would appear as an IDE schema violation, while siblings accept unknown keys silently.
+- **Suggested fix:** Remove `additionalProperties: false` from the `documentation` block to match sibling style.
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
+## PR Readiness
+
+Living checklist for PR-1 (`hmcgrew/epic-a-pr1-doc-config`, PR #181).
+
+- [x] No critical or major issues
+- [x] Types correct — `documentation` block optional, all sub-fields optional, `format` is `string` not enum
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic — no new logic paths requiring tests (schema addition + serializer key order only)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — skipped (diff does not affect Next.js bundle; only `.ai-skills/config*.json` and `scripts/ai-skills/lib/onboarding-config.ts`)
+- [x] `pnpm prism:check` — green (exit 0, 2026-06-16)
+- [x] `pnpm prism:check-types` — exit 0 (2026-06-16)
+- [ ] Minor: `additionalProperties: false` inconsistency (see Review Issues) — non-blocking, acceptable to ship
+- [x] PR description up to date
+- [x] Scope clean — 4 files only; stash on unrelated branch; cherry-pick left no artifacts; HEAD `4db5521`
+
+**Last updated:** 2026-06-16
