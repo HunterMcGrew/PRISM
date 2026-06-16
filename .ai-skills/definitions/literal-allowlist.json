@@ -153,6 +153,18 @@
 			"reason": "platform-copy mirror of ADR-0044"
 		},
 		{
+			"path": ".claude/spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
+			"reason": "ADR cites Thrive's Nextra/block context as the setting the retired paired-doc convention was correct for"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
+			"reason": "platform-copy mirror of ADR-0058"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
+			"reason": "platform-copy mirror of ADR-0058"
+		},
+		{
 			"path": ".claude/rules/architect-doc-verification.md",
 			"reason": "rule cites THR-1775 as the originating incident in the Why"
 		},

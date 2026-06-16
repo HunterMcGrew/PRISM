@@ -1,8 +1,9 @@
 ---
 Number: 0038
 Title: Paired Dev Doc Gates for Architect Docs
-Status: accepted
+Status: superseded
 Date: 2026-05-22
+Superseded-by: 0058
 ---
 
 ## Context
