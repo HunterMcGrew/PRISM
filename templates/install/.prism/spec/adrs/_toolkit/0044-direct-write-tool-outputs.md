@@ -36,7 +36,7 @@ Delete `.generated/` and the staging-aware install scripts targeting it.
 - The committed-vs-ignored split inside each tool namespace becomes a rule that consumers internalize. Recorded in [`.ai-skills/docs/compatibility.md § Per-Tool Directory Ownership`](../../../.ai-skills/docs/compatibility.md).
 - Drift risk: someone hand-edits `.cursor/skills/<id>/SKILL.md` directly instead of `.ai-skills/skills/<id>/`. Mitigated by the existing `.ai-skill-generated` marker file convention and `pnpm prism:check` drift detection, both of which already shipped before this ADR.
 - Consumer migration cost: PRISM teams with stale clones containing `.generated/` need a one-time `rm -rf .generated/` after pulling. Noted in PR release notes.
-- A separate paired dev doc lands at [`docs/content/dev/ai-skills/compatibility.md`](../../../docs/content/dev/ai-skills/compatibility.md) per [ADR-0038](./0038-paired-dev-doc-gates.md). The architect file is the agent-facing spec; the dev doc is the teammate-facing narrative.
+- A separate paired dev doc lands at [`docs/ai-skills/compatibility.md`](../../../docs/ai-skills/compatibility.md) per [ADR-0038](./0038-paired-dev-doc-gates.md). The architect file is the agent-facing spec; the dev doc is the teammate-facing narrative.
 
 ## Alternatives considered
 
