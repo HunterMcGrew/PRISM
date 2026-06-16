@@ -16,7 +16,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 1. **Add a `documentation` block to `.ai-skills/config.schema.json`.** Lightweight and *extensible, not exhaustive* (see Decisions): `location` (string, e.g. `docs/`), `audience` (string/short growable enum, e.g. `developer-user`), `keepsDevDocs` (boolean — does this team maintain technical/dev docs separate from user docs), `format` (open string or growable enum — NOT a closed union; PRISM = flat-markdown-guides, Thrive = nextra-blocks). Mirror the shape/validation style of the existing `techStack` and `rules` blocks. Update `.ai-skills/config.json` (PRISM's own) to answer it: `{ location: "docs/", audience: "developer-user", keepsDevDocs: false, format: "flat-markdown-guides" }`.
 2. **Flatten the docs tree.** Collapse `docs/content/dev/` and the Thrive-shaped `docs/content/user/` taxonomy into a flat `docs/<files>` + `docs/<folders>`. Move `docs/parameterization.md` stays at `docs/`. Migrate the genuinely PRISM-relevant content out of `docs/content/dev/` (most is contributor/build internals — keep what a user needs, drop the rest; `distribution.md` content is needed by Epic B docs, preserve it). No `content/` wrapper.
-3. **Remove dead references to the paired-dev-doc convention** once Winston supersedes the ADRs (task below): strip the `docs/content/dev/architecture/**` path from `.prism/rules/architect-doc-verification.md` frontmatter; confirm no build script references the (never-implemented) pairing gate — `package.json` `prism:check` does NOT call a pairing check today, verified 2026-05-29.
+3. **Remove dead references to the paired-dev-doc convention** once Winston supersedes the ADRs (task below): strip the `docs/content/dev/architecture/**` path from the `architect-doc-verification.md` frontmatter in **both** copies — canonical `.prism/rules/architect-doc-verification.md` AND the templates mirror `templates/install/.prism/rules/architect-doc-verification.md` (the two share identical frontmatter; only the `**Why:**` prose body differs, so edit the `paths:` block in each). Confirm no build script references the (never-implemented) pairing gate — `package.json` `prism:check` does NOT call a pairing check today (it calls build-check, prism:test, prism:verify-manifest, prism:crossref-lint), verified 2026-06-16.
 
 ### Atlas (onboarding)
 
@@ -38,7 +38,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 ### Winston (architecture)
 
-1. **Supersede the paired-dev-doc ADRs.** Write one ADR that supersedes ADR-0023 (source-verified review of dev docs), ADR-0038 (paired-dev-doc gates), and the dev-doc half of ADR-0044 — documenting that PRISM has one audience (the developer-user), dev/user doc pairing is retired, and doc format is now a per-team onboarding output. Note these were correct for Thrive's Nextra/block context; the context changed when PRISM became its own product.
+1. **Supersede the paired-dev-doc ADRs.** Write one ADR — **next number is 0058** — that supersedes ADR-0023 (source-verified review of dev docs), ADR-0038 (paired-dev-doc gates), and the dev-doc half of ADR-0044 — documenting that PRISM has one audience (the developer-user), dev/user doc pairing is retired, and doc format is now a per-team onboarding output. Note these were correct for Thrive's Nextra/block context; the context changed when PRISM became its own product. **Dual-write to both `.prism/spec/adrs/_toolkit/0058-<slug>.md` AND `templates/install/.prism/spec/adrs/_toolkit/0058-<slug>.md`** (the `_toolkit/` subdir and the canonical+templates dual-write are both live conventions post the `_toolkit` reorg, #155, and the prism:update epic). Also flip the `Status:` line of all three superseded ADRs to `superseded by 0058` in **both** their canonical and templates copies (6 files: 0023/0038/0044 × 2 trees). 0023 and 0038 retain accuracy-bar value for the *architect-doc* surface (`.prism/architect/**`) — supersession retires only the **paired dev-doc** half, not source-verified review of architect docs themselves; the superseding ADR must say so explicitly.
 2. **Rework Theo's paired-doc workflow.** `.prism/skills/prism-doc-walker/` steps 05/06/07 draft paired dev docs as a core flow. Demote paired-doc drafting to *config-conditional* (only when `documentation.keepsDevDocs` is true). Hand the actual edits to Clove/Eli once the ADR lands.
 
 ---
@@ -76,6 +76,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 ## History
 
 - 2026-05-29 [claude/stupefied-ardinghelli-189bdd]: Plan created from a Winston design session (party mode: Atlas, Eli, Mira, Sage, Clove). Captured the de-Thrive + config-driven-Eli direction; B and C split into deferred sibling epics.
+- 2026-06-16 [hmcgrew/epic-a-plan-sync]: Winston build-readiness pass for Sol. Synced two stale task lines to current main: Clove task 3 now names both `architect-doc-verification.md` copies (canonical + templates mirror); Winston task 1 now names ADR-0058, the `_toolkit/` dual-write path, and scopes supersession to the dev-doc half only. Design unchanged — no replan.
 
 ## Acceptance Criteria
 
