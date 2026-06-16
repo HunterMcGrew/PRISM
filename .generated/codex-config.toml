@@ -1,7 +1,0 @@
-# AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.
-# Source: .ai-skills/definitions/roles.json
-# Target: codex-config | Regenerate with: pnpm prism:build
-
-[agents]
-max_threads = 6
-max_depth = 1
