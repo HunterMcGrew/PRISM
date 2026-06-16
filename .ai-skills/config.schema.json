@@ -139,8 +139,7 @@
 					"description": "Doc format the team uses. Open string — not a closed union. Atlas writes the value that matches the team's actual setup; Eli adapts its output to the declared format. Known values: `flat-markdown-guides` (PRISM), `nextra-blocks` (Thrive). New consumers add their own value here without a schema migration.",
 					"examples": ["flat-markdown-guides", "nextra-blocks"]
 				}
-			},
-			"additionalProperties": false
+			}
 		}
 	}
 }
