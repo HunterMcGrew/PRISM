@@ -1,5 +1,7 @@
 # Plan: epic-prism-docs-overhaul
 
+> Closed: 2026-06-16
+
 ## Ticket
 
 No Linear ticket — PRISM's own work tracks via plan files + PRs. Epic A of a three-epic program (A: docs, B: prism:sync steady-state, C: first-contact reconciliation). See `epic-prism-sync-steady-state.md` and `epic-prism-first-contact-reconciliation.md` for the deferred siblings.
@@ -46,16 +48,16 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 ## Decisions
 
 - **Doc format is an Atlas onboarding output, not a hardcoded default.** Extends the existing `techStack` → per-team rule-generation precedent (Phase 2). **Why:** hardcoding a PRISM-native format just repeats the Thrive mistake for the next consumer — replacing one hardcoded format with another is the same bug with a new default.
-  - → no promotion needed (captured in the superseding ADR per Winston task 1).
+  - → promoted to ADR-0058 (Decision: doc format/placement is a per-team onboarding output Atlas owns) and `.prism/architect/_toolkit/documentation.md` (§ Model overview — reads `documentation.format` from config).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **One Eli mechanism; PRISM is its first consumer.** PRISM's own `config.json` answers the doc questions for PRISM; Eli reads config and writes PRISM's flat guides *through* the same mechanism a consumer team uses. No separate "PRISM docs" vs "consumer docs" systems. Dogfooding holds.
   - → no promotion needed (ticket-tactical; the config-driven principle lands in the ADR).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Lightweight config + adaptive Eli — no format-generator matrix yet.** PRISM (flat-markdown-guides) and Thrive (nextra-blocks) are two genuinely divergent formats *today*, which earns the config-driven *seam* now (per code-standards.md "two adapters earn the seam"). It does NOT earn a pluggable per-framework generator. Build the seam; defer format-specific handlers until a second concrete format forces one. Considered: building Nextra/Docusaurus/Storybook adapters now — rejected as premature abstraction against formats no live consumer has specified.
-  - → promoted to the superseding ADR (the seam-vs-fill split is a durable architectural decision).
+  - → promoted to ADR-0058 (the seam-vs-fill split is a durable architectural decision — config-driven seam now, format-specific handlers deferred until a second concrete format forces one).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Config schema extensible, not exhaustive.** `documentation.format` is an open string / growable enum, never a closed union. **Why:** keeps SPC (and any future team) a one-field config change, not a schema migration.
-  - → promoted to the superseding ADR.
+  - → promoted to ADR-0058 (extensibility is the durable contract behind the per-team-onboarding-output decision); shipped in `.ai-skills/config.schema.json` (PR-1, #181 — `format` is an open `string`, `additionalProperties: false` removed per PR-1 re-review).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Guides only; deep-divers read SPEC + ADRs.** No new technical-doc tier. `SPEC.md`, `AGENTS.md`, and `.prism/spec/adrs/` already *are* the deep-dive record for the "how does it work" reader, kept current as a matter of course. Guides link to them.
   - → no promotion needed (scoping decision, self-evident from the docs themselves).
@@ -70,7 +72,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
   - → no promotion needed (ticket-tactical).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 - **Docs are team-owned content; sync must never clobber them.** The `documentation.location` field tells the Epic B sync layer where the team's docs live so the merge leaves that path alone — same hands-off class as `.prism/plans/` and `lessons.md`. **Why (Eli):** forward dependency — wire it now so a future `prism:sync` can't stomp a team's `docs/`.
-  - → promoted to the superseding ADR (cross-epic contract).
+  - → promoted to ADR-0058 (cross-epic contract — `documentation.location` as the Epic B sync hands-off boundary; ADR-0058 records doc placement as a per-team output the sync layer must respect).
   - **Zoe verdict (2026-06-05):** `live` — Epic A active, implementation not started (no `documentation` block in config.schema.json as of this audit); decision governs upcoming work.
 
 ## History
@@ -80,21 +82,23 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 - 2026-06-16 [hmcgrew/epic-a-pr1-doc-config]: PR-1 — added `documentation` config block to `.ai-skills/config.schema.json` (open-string format, four properties) and answered it in `.ai-skills/config.json` for PRISM; updated `PrismOnDiskConfig` interface and `serializeConfig` key order in `scripts/ai-skills/lib/onboarding-config.ts`. All checks green (prism:check, prism:check-types).
 - 2026-06-16 [hmcgrew/epic-a-pr1-doc-config]: PR-1 re-review (Briar) — Clove removed `additionalProperties: false` from the `documentation` schema block (commit `e1159a0`; only `.ai-skills/config.schema.json` touched). Four properties intact, `format` still open string, sibling extensibility restored. `pnpm prism:check` green, `pnpm prism:check-types` exit 0. Minor resolved; PR #181 ready for Eric.
 - 2026-06-16 [hmcgrew/epic-a-pr2-adr0058]: PR-2 — authored ADR-0058 (single-audience retires paired dev docs) dual-written to canonical + templates trees; flipped 0038 to `superseded` (wholesale) and added `Superseded-in-part-by: 0058` notes to 0023 (architect-doc gate survives) and 0044 (direct-write spine survives) across both trees; added 0058 to the ADR index and allowlisted its Thrive-context literal. Downstream prose sweep (Clove task 3, Winston task 2) remains separate Epic A lanes.
+- 2026-06-16 [epic-a parallel-wave lanes, consolidated at close]: Sol tracked the remaining lanes in run-state to avoid merge conflicts; capturing them here. PR-1 documentation config block (#181), PR-2 ADR-0058 (#182), PR-3-eli config-driven Eli kit + de-Thrive references (#185), PR-3-atlas documentation onboarding question set with established-repo detection (#186), PR-4a paired-dev-doc retirement from spec surfaces (#184), PR-4b docs-tree flatten + taxonomy de-Thrive (#183), PR-5 user guides + slim README + CHANGELOG (#187). All seven merged 2026-06-16.
+- 2026-06-16 [hmcgrew/epic-a-close]: Epic A closed (#180). Ran the decision verdict gate — all ten Decisions carry explicit verdicts; finalized the four ADR-promoted verdicts to name landed surfaces (ADR-0058 + `documentation.md` + config.schema.json) and confirmed the six `no-promotion-needed` calls hold. Verified ADR-0058 dual-write, the 0038/0023/0044 status flips in both trees, and the config-driven `documentation.md` all landed; checked the satisfied AC boxes.
 
 ## Acceptance Criteria
 
 ### Behavioral
 
-- [ ] Given a developer who has never used PRISM, When they open the README, Then they reach a working setup in their repo by following links into one getting-started guide (no setup steps duplicated across README/guide/Atlas).
-- [ ] Given a developer mid-feature, When they read the practitioner guide, Then they can tell which persona to invoke next and what it hands off to, without reading any SKILL.md.
-- [ ] Given the PRISM repo itself, When Eli writes a doc, Then the output shape comes from PRISM's `config.json` `documentation` block, not from hardcoded WordPress/block assumptions.
+- [x] Given a developer who has never used PRISM, When they open the README, Then they reach a working setup in their repo by following links into one getting-started guide (no setup steps duplicated across README/guide/Atlas).
+- [x] Given a developer mid-feature, When they read the practitioner guide, Then they can tell which persona to invoke next and what it hands off to, without reading any SKILL.md.
+- [x] Given the PRISM repo itself, When Eli writes a doc, Then the output shape comes from PRISM's `config.json` `documentation` block, not from hardcoded WordPress/block assumptions.
 
 ### Non-behavioral
 
-- [ ] No user-facing doc restates the tier table, the persona roster, or config keys inline — each links to its single source (SPEC.md / AGENTS.md / parameterization.md).
-- [ ] No user guide contains point-in-time language ("current," "in progress"); status lives only in CHANGELOG + dated README block.
-- [ ] `documentation.format` in the schema is an open/growable type, not a closed union.
-- [ ] ADRs 0023, 0038, and the dev-doc half of 0044 are marked superseded with a successor ADR.
+- [x] No user-facing doc restates the tier table, the persona roster, or config keys inline — each links to its single source (SPEC.md / AGENTS.md / parameterization.md).
+- [x] No user guide contains point-in-time language ("current," "in progress"); status lives only in CHANGELOG + dated README block.
+- [x] `documentation.format` in the schema is an open/growable type, not a closed union.
+- [x] ADRs 0023, 0038, and the dev-doc half of 0044 are marked superseded with a successor ADR.
 
 ---
 
