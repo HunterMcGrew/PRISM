@@ -8,7 +8,7 @@
 		"prism:adopt": "tsx scripts/ai-skills/adopt.ts",
 		"prism:bootstrap": "tsx scripts/ai-skills/bootstrap-from-claude.ts",
 		"prism:build": "tsx scripts/ai-skills/build.ts && pnpm run prism:test",
-		"prism:check": "tsx scripts/ai-skills/build.ts --check && pnpm run prism:test && pnpm run prism:verify-manifest && pnpm run prism:crossref-lint",
+		"prism:check": "tsx scripts/ai-skills/build.ts --check && pnpm run prism:check-types && pnpm run prism:test && pnpm run prism:verify-manifest && pnpm run prism:crossref-lint",
 		"prism:check-types": "tsc --noEmit -p scripts/ai-skills/tsconfig.json",
 		"prism:crossref-lint": "tsx scripts/ai-skills/crossref-lint.ts",
 		"prism:migrate-skill": "tsx scripts/ai-skills/migrate-skill.ts",
