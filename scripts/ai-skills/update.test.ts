@@ -15,7 +15,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { runUpdate } from "./update";
+import { assertSourceIsPlausible, runUpdate } from "./update";
 import { hashContent } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
@@ -342,6 +342,37 @@ test("rewrites the consumer manifest to the new PRISM base hashes after the run"
 		assert.ok(
 			manifest.files["SPEC.md"],
 			"newly written file is recorded in the manifest"
+		);
+	});
+});
+
+test("assertSourceIsPlausible refuses when the source has no PRISM-owned files", async () => {
+	await withTempRoots(async ({ prismContentRoot }) => {
+		await assert.rejects(
+			() => assertSourceIsPlausible(prismContentRoot, 42),
+			(err: unknown) => {
+				assert.ok(err instanceof Error);
+				assert.ok(
+					err.message.includes("--prism-source looks empty"),
+					`expected refusal message, got: ${err.message}`
+				);
+				assert.ok(
+					err.message.includes("refusing 42"),
+					`expected deletion count in message, got: ${err.message}`
+				);
+
+				return true;
+			}
+		);
+	});
+});
+
+test("assertSourceIsPlausible passes when the source has at least one PRISM-owned file", async () => {
+	await withTempRoots(async ({ prismContentRoot }) => {
+		await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+
+		await assert.doesNotReject(() =>
+			assertSourceIsPlausible(prismContentRoot, 5)
 		);
 	});
 });

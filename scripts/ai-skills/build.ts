@@ -37,6 +37,7 @@ import {
 	verbatimRuleDialect,
 } from "./rule-dialect";
 import {
+	buildPlatformDirs,
 	ensureDirectory,
 	escapeToml,
 	escapeTomlMultiline,
@@ -1349,21 +1350,7 @@ async function main(): Promise<void> {
 	}
 
 	if (await pathExists(contentRoot)) {
-		const platformCopies = pathDefinitions.generated.platformContentCopies;
-		const platformDirs: { dir: string; dialect: RuleDialect }[] = [
-			{
-				dir: path.join(repoRoot, platformCopies.claude),
-				dialect: verbatimRuleDialect,
-			},
-			{
-				dir: path.join(repoRoot, platformCopies.codex),
-				dialect: codexRuleDialect,
-			},
-			{
-				dir: path.join(repoRoot, platformCopies.cursor),
-				dialect: cursorRuleDialect,
-			},
-		];
+		const platformDirs = buildPlatformDirs(repoRoot, pathDefinitions);
 		await syncAllPlatformContentCopies(
 			contentRoot,
 			platformDirs,
