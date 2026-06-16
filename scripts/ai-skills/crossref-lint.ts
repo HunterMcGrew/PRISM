@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
  * Prose cross-reference lint: fails when a content carrier in a scanned root
- * references a repo-relative path that does not exist on disk.
+ * references a repo-root-absolute path that does not exist on disk.
  *
  * Closes the gap that PR #156's three-pass sweep revealed — existing checks
  * guard generated-output drift and manifest coverage, but none guards source-
@@ -12,6 +12,13 @@
  * `verify-manifest-coverage.ts` standalone-script-per-invariant pattern.
  * Independently runnable: `npx tsx scripts/ai-skills/crossref-lint.ts`.
  *
+ * Resolution model: only repo-root-absolute refs starting with `.prism/`,
+ * `scripts/`, `.ai-skills/`, or `templates/` are resolved. Relative links
+ * (`./`, `../`, bare paths) and refs into generated/published surfaces
+ * (`.claude/`, `.codex/`, `.cursor/`, `.github/`, `docs/`) are skipped —
+ * canonical content authors those to resolve in the consumer's installed tree,
+ * not in this partial monorepo. See the plan's resolution-model decision.
+ *
  * Scan roots: `.prism/{rules,architect,spec,references,templates}` +
  * `templates/install/.prism/` mirror + repo-root loose files (AGENTS.md,
  * templates/install/AGENTS.md.tmpl, templates/install/.claude/CLAUDE.md.tmpl).
@@ -20,9 +27,6 @@
  * `audits/`, `retros/`, `prds/`, `design/` — historical and agent-generated
  * working surfaces that legitimately reference moved/deleted paths as working
  * records or evidence.
- *
- * Each content root is self-contained: seed-twin refs resolve against the
- * seed tree; canonical refs against the canonical tree.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -66,7 +70,9 @@ const PROSE_SCAN_EXTENSIONS = [".md", ".tmpl", ".mdc"] as const;
 
 /**
  * Repo-root segments that identify a path as repo-root-absolute regardless of
- * the referencing file's location.
+ * the referencing file's location. Used by `extractRefs` / `looksLikeRepoPath`
+ * for shape-testing only — resolution uses the narrower VERIFIABLE_ROOT_PREFIXES
+ * set below.
  */
 const REPO_ROOT_SEGMENTS = [
 	".prism/",
@@ -74,6 +80,21 @@ const REPO_ROOT_SEGMENTS = [
 	"scripts/",
 	".ai-skills/",
 	".claude/",
+] as const;
+
+/**
+ * Repo-root-absolute prefixes the monorepo materializes and can verify. A ref
+ * is resolved only when it starts with one of these — relative links and refs
+ * into generated/published surfaces (.claude/, .codex/, .cursor/, .github/,
+ * docs/) are authored to resolve in the consumer's installed tree, not in this
+ * partial canonical tree, so the monorepo can't validate them. See the plan's
+ * resolution-model decision.
+ */
+const VERIFIABLE_ROOT_PREFIXES = [
+	".prism/",
+	"scripts/",
+	".ai-skills/",
+	"templates/",
 ] as const;
 
 /**
@@ -126,12 +147,57 @@ export interface CrossRefViolation {
  * Matched by exact `(relativePath, ref)` pair — never by path-substring grep.
  */
 export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
-	// No entries yet. Add as: "relative/path/to/file.md::the/ref/text"
+	// Atlas generates these per consumer stack (see rule-generation.md);
+	// PRISM does not ship them — illustrative references to generated output.
+	".prism/architect/_toolkit/onboarding.md::.prism/rules/security.md",
+	"templates/install/.prism/architect/_toolkit/onboarding.md::.prism/rules/security.md",
+	".prism/architect/_toolkit/rule-generation.md::.prism/rules/security.md",
+	"templates/install/.prism/architect/_toolkit/rule-generation.md::.prism/rules/security.md",
+	".prism/architect/_toolkit/rule-generation.md::.prism/rules/react-guidelines.md",
+	"templates/install/.prism/architect/_toolkit/rule-generation.md::.prism/rules/react-guidelines.md",
+	// ADR-0029 illustrates the self-declare rule with a manifest.json example;
+	// PRISM does not ship manifest.json — generated per consumer stack.
+	".prism/spec/adrs/_toolkit/0029-rules-self-declare-applicability.md::.prism/rules/manifest.json",
+	"templates/install/.prism/spec/adrs/_toolkit/0029-rules-self-declare-applicability.md::.prism/rules/manifest.json",
+	// ADR-0044 narrates this script's intentional absence in PRISM (extracted
+	// before install-cursor.ts was added) — prose mention, not a live link.
+	".prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
+	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
+	// .sync-manifest.json is runtime-created and gitignored; ADR-0057 describes
+	// how it works — intentionally absent in the repo at authoring time.
+	".prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
+	"templates/install/.prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
 ]);
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for tests)
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns true for repo-root-absolute targets that are intentionally absent —
+ * persona state files created on first write (per lazy-artifacts.md), the
+ * onboarding registry, lazy archive files, and historical plan citations.
+ * These are skipped before the existence check.
+ */
+export function isLazyOrHistoricalTarget(cleaned: string): boolean {
+	if (/^\.prism\/[a-z-]+-state\.json(\.tmp)?$/.test(cleaned)) {
+		return true;
+	}
+
+	if (cleaned.startsWith(".ai-skills/registry/")) {
+		return true;
+	}
+
+	if (/(^|\/)lessons-archive\.md$/.test(cleaned)) {
+		return true;
+	}
+
+	if (cleaned.startsWith(".prism/plans/")) {
+		return true;
+	}
+
+	return false;
+}
 
 /** Markdown inline-link regex: [text](target) */
 const MARKDOWN_LINK_RE = /\[[^\]]*\]\(([^)]+)\)/g;
@@ -280,6 +346,10 @@ export function extractRefs(line: string): string[] {
  * Repo-root-absolute refs (starting with a known root segment) resolve against
  * `repoRootPath`. All other refs resolve relative to the referencing file's
  * own directory.
+ *
+ * Kept exported for the test suite. `scanLines` no longer calls this function —
+ * under the repo-root-absolute-only model it resolves directly via
+ * `path.resolve(repoRootPath, cleaned)` after gating on VERIFIABLE_ROOT_PREFIXES.
  */
 export function resolveRef(
 	referencingFileAbsPath: string,
@@ -374,20 +444,23 @@ export async function scanLines(
 			}
 
 			// Strip anchor/query to get the path part
-			const pathPart = rawRef.split("#")[0].split("?")[0];
+			const cleaned = rawRef.split("#")[0].split("?")[0];
 
 			// Skip pure-anchor refs (empty path part)
-			if (!pathPart) {
+			if (!cleaned) {
 				continue;
 			}
 
-			const resolved = resolveRef(
-				referencingFileAbsPath,
-				repoRootPath,
-				rawRef
-			);
+			// Resolve only repo-root-absolute refs with verifiable prefixes.
+			// Relative links (./,  ../, bare paths) and refs into generated/
+			// published surfaces (.claude/, .codex/, docs/) are authored for
+			// the consumer's installed tree — the monorepo can't validate them.
+			if (!VERIFIABLE_ROOT_PREFIXES.some((p) => cleaned.startsWith(p))) {
+				continue;
+			}
 
-			if (!resolved) {
+			// Skip lazy-artifact and historical-plan targets — intentionally absent.
+			if (isLazyOrHistoricalTarget(cleaned)) {
 				continue;
 			}
 
@@ -395,6 +468,8 @@ export async function scanLines(
 			if (allowlist.has(allowlistKey)) {
 				continue;
 			}
+
+			const resolved = path.resolve(repoRootPath, cleaned);
 
 			if (!(await refResolves(resolved))) {
 				violations.push({

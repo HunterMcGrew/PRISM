@@ -6,9 +6,9 @@
  * walks fixed scan roots, tests that need a controlled filesystem use the
  * exported pure functions instead.
  *
- * Gate test (PR #156-class catch): a doc referencing a pre-move path
- * `../architect/skills-ecosystem.md` when only
- * `../architect/_toolkit/skills-ecosystem.md` exists must produce one
+ * Gate test (PR #156-class catch): a doc with a repo-root-absolute backtick
+ * ref `.prism/architect/skills-ecosystem.md` (pre-move path) when only
+ * `.prism/architect/_toolkit/skills-ecosystem.md` exists must produce one
  * violation; the corrected ref must pass clean.
  */
 import fs from "node:fs/promises";
@@ -21,6 +21,7 @@ import {
 	extractRefs,
 	looksLikeRepoPath,
 	isExternalOrToken,
+	isLazyOrHistoricalTarget,
 	resolveRef,
 	refResolves,
 	scanLines,
@@ -237,65 +238,260 @@ test("refResolves: true when .md form exists for a .tmpl ref", async () => {
 // scanLines — PR #156-class catch (the gate)
 // ---------------------------------------------------------------------------
 
-test("scanLines: PR #156-class catch — stale pre-move path yields one violation", async () => {
+test("scanLines: PR #156-class catch — stale repo-root-absolute pre-move ref yields one violation", async () => {
 	await withTempTree(
 		async (root) => {
-			// Only the _toolkit/ path exists — pre-move path does not
-			await fs.mkdir(path.join(root, "architect", "_toolkit"), {
-				recursive: true,
-			});
+			// Only the _toolkit/ path exists in the temp tree — pre-move path does not
+			await fs.mkdir(
+				path.join(root, ".prism", "architect", "_toolkit"),
+				{ recursive: true }
+			);
 			await fs.writeFile(
-				path.join(root, "architect", "_toolkit", "skills-ecosystem.md"),
+				path.join(root, ".prism", "architect", "_toolkit", "skills-ecosystem.md"),
 				"# Skills Ecosystem\n"
 			);
-			await fs.mkdir(path.join(root, "rules"), { recursive: true });
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "rules", "sample.md"),
-				"See [the roster](../architect/skills-ecosystem.md).\n"
+				path.join(root, ".prism", "rules", "sample.md"),
+				"Read `.prism/architect/skills-ecosystem.md` for the roster.\n"
 			);
 		},
 		async (root) => {
-			const refFile = path.join(root, "rules", "sample.md");
+			const refFile = path.join(root, ".prism", "rules", "sample.md");
 			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
 			const violations = await scanLines(
 				lines,
-				"rules/sample.md",
+				".prism/rules/sample.md",
 				refFile,
 				root
 			);
-			assert.equal(violations.length, 1, "stale pre-move ref must be flagged");
-			assert.equal(violations[0].ref, "../architect/skills-ecosystem.md");
+			assert.equal(violations.length, 1, "stale pre-move repo-root-absolute ref must be flagged");
+			assert.equal(violations[0].ref, ".prism/architect/skills-ecosystem.md");
 			assert.equal(violations[0].line, 1);
 		}
 	);
 });
 
-test("scanLines: PR #156-class catch — corrected ref passes clean", async () => {
+test("scanLines: PR #156-class catch — corrected repo-root-absolute ref passes clean", async () => {
 	await withTempTree(
 		async (root) => {
-			await fs.mkdir(path.join(root, "architect", "_toolkit"), {
-				recursive: true,
-			});
+			await fs.mkdir(
+				path.join(root, ".prism", "architect", "_toolkit"),
+				{ recursive: true }
+			);
 			await fs.writeFile(
-				path.join(root, "architect", "_toolkit", "skills-ecosystem.md"),
+				path.join(root, ".prism", "architect", "_toolkit", "skills-ecosystem.md"),
 				"# Skills Ecosystem\n"
 			);
-			await fs.mkdir(path.join(root, "rules"), { recursive: true });
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "rules", "sample.md"),
-				"See [the roster](../architect/_toolkit/skills-ecosystem.md).\n"
+				path.join(root, ".prism", "rules", "sample.md"),
+				"Read `.prism/architect/_toolkit/skills-ecosystem.md` for the roster.\n"
 			);
 		},
 		async (root) => {
-			const refFile = path.join(root, "rules", "sample.md");
+			const refFile = path.join(root, ".prism", "rules", "sample.md");
 			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
 			const violations = await scanLines(
 				lines,
-				"rules/sample.md",
+				".prism/rules/sample.md",
 				refFile,
 				root
 			);
-			assert.equal(violations.length, 0, "corrected ref must pass clean");
+			assert.equal(violations.length, 0, "corrected repo-root-absolute ref must pass clean");
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// scanLines — relative and non-verifiable-surface refs are skipped (REQ-10)
+// ---------------------------------------------------------------------------
+
+test("scanLines: relative link is not resolved or flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			// The target does NOT exist — if resolved it would be a violation
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See [the skill](../skills/prism-architect/SKILL.md).\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"relative link must not be resolved or flagged"
+			);
+		}
+	);
+});
+
+test("scanLines: .claude/ ref is not resolved or flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See [the skill](.claude/skills/prism-architect/SKILL.md).\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(
+				violations.length,
+				0,
+				".claude/ ref must not be resolved or flagged"
+			);
+		}
+	);
+});
+
+test("scanLines: docs/ ref is not resolved or flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See [docs](docs/content/dev/architecture/plugin-management.md).\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(violations.length, 0, "docs/ ref must not be resolved or flagged");
+		}
+	);
+});
+
+test("scanLines: .github/ ref is not resolved or flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See [template](.github/pull_request_template.md).\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(violations.length, 0, ".github/ ref must not be resolved or flagged");
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// scanLines — lazy-artifact and historical targets skipped (REQ-11)
+// ---------------------------------------------------------------------------
+
+test("isLazyOrHistoricalTarget: state json files match", () => {
+	assert.equal(isLazyOrHistoricalTarget(".prism/sasha-state.json"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/ren-state.json"), true);
+	assert.equal(isLazyOrHistoricalTarget(".prism/theo-state.json.tmp"), true);
+});
+
+test("isLazyOrHistoricalTarget: ai-skills registry matches", () => {
+	assert.equal(
+		isLazyOrHistoricalTarget(".ai-skills/registry/onboarding-state.json"),
+		true
+	);
+});
+
+test("isLazyOrHistoricalTarget: lessons-archive matches", () => {
+	assert.equal(
+		isLazyOrHistoricalTarget(".prism/archived/lessons-archive.md"),
+		true
+	);
+});
+
+test("isLazyOrHistoricalTarget: prism/plans/ matches", () => {
+	assert.equal(
+		isLazyOrHistoricalTarget(".prism/plans/old-plan.md"),
+		true
+	);
+});
+
+test("isLazyOrHistoricalTarget: normal prism paths do not match", () => {
+	assert.equal(
+		isLazyOrHistoricalTarget(".prism/rules/code-standards.md"),
+		false
+	);
+	assert.equal(
+		isLazyOrHistoricalTarget(".prism/architect/_toolkit/install-layout.md"),
+		false
+	);
+});
+
+test("scanLines: lazy-artifact state json ref is not flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `.prism/sasha-state.json` for state.\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(violations.length, 0, "lazy state-json ref must not be flagged");
+		}
+	);
+});
+
+test("scanLines: plans/ historical ref is not flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `.prism/plans/old-plan.md` for context.\n"
+			);
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root
+			);
+			assert.equal(violations.length, 0, "plans/ historical ref must not be flagged");
 		}
 	);
 });
@@ -521,34 +717,37 @@ test("scanLines: prose with slash but no carrier ext or root is not flagged", as
 // scanLines — .tmpl twin fallback
 // ---------------------------------------------------------------------------
 
-test("scanLines: ref to .md resolves when only .md.tmpl exists", async () => {
+test("scanLines: repo-root-absolute ref to .md resolves when only .md.tmpl exists", async () => {
 	await withTempTree(
 		async (root) => {
-			await fs.mkdir(path.join(root, "spec", "adrs"), { recursive: true });
-			// Only the .tmpl twin exists, not the .md
+			// Only the .tmpl twin exists under templates/ — not the .md
+			await fs.mkdir(
+				path.join(root, "templates", "install", ".prism", "spec", "adrs"),
+				{ recursive: true }
+			);
 			await fs.writeFile(
-				path.join(root, "spec", "adrs", "0003.md.tmpl"),
+				path.join(root, "templates", "install", ".prism", "spec", "adrs", "0003.md.tmpl"),
 				"# ADR\n"
 			);
-			await fs.mkdir(path.join(root, "rules"), { recursive: true });
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "rules", "doc.md"),
-				"See [ADR-0003](../spec/adrs/0003.md).\n"
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `templates/install/.prism/spec/adrs/0003.md`.\n"
 			);
 		},
 		async (root) => {
-			const refFile = path.join(root, "rules", "doc.md");
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
 			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
 			const violations = await scanLines(
 				lines,
-				"rules/doc.md",
+				".prism/rules/doc.md",
 				refFile,
 				root
 			);
 			assert.equal(
 				violations.length,
 				0,
-				"ref to .md resolves when .tmpl twin exists"
+				"repo-root-absolute ref to .md resolves when .tmpl twin exists"
 			);
 		}
 	);
@@ -561,22 +760,22 @@ test("scanLines: ref to .md resolves when only .md.tmpl exists", async () => {
 test("scanLines: allowlisted (file, ref) pair is not flagged", async () => {
 	await withTempTree(
 		async (root) => {
-			// Missing file — would be a violation without allowlist
-			await fs.mkdir(path.join(root, "rules"), { recursive: true });
+			// .prism/rules/security.md is missing — would be a violation without allowlist
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
 			await fs.writeFile(
-				path.join(root, "rules", "doc.md"),
-				"See [old](../architect/skills-ecosystem.md).\n"
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `.prism/rules/security.md` for generated security rules.\n"
 			);
 		},
 		async (root) => {
-			const refFile = path.join(root, "rules", "doc.md");
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
 			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
 			const customAllowlist = new Set([
-				"rules/doc.md::../architect/skills-ecosystem.md",
+				".prism/rules/doc.md::.prism/rules/security.md",
 			]);
 			const violations = await scanLines(
 				lines,
-				"rules/doc.md",
+				".prism/rules/doc.md",
 				refFile,
 				root,
 				customAllowlist
