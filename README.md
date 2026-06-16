@@ -2,7 +2,9 @@
 
 A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
-<!-- Sage: dated status block + CHANGELOG link here (PR-5) -->
+## Status
+
+_As of 2026-06-16:_ Epic A (docs overhaul) is in progress — timeless user guides are written and the README has been slimmed. The `prism:update` distribution-pull epic (#154) shipped in June 2026. The Sol multi-agent conductor and all named personas are active. See [CHANGELOG.md](./CHANGELOG.md) for the full history.
 
 ## Overview
 
