@@ -20,7 +20,6 @@ Generate using `docx` npm package (`npm install -g docx`). Use the following str
 - **Font:** Arial throughout
 - Use `LevelFormat.BULLET` with numbering config — never unicode bullets
 - Use `ShadingType.CLEAR` for any table shading
-- Validate with `scripts/office/validate.py` after generation
 
 Save to: `<repo-root>/.claude/changelogs/<old-tag>-to-<new-tag>.docx`
 
