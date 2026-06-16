@@ -54,15 +54,7 @@ When the branch is ready, Clove commits, pushes, and opens the PR. Eli documents
 
 ## Why rules load when they do
 
-PRISM uses a tiered context system so rules load at the right scope, not all at once:
-
-- **Tier 1 (Constitution)** — `AGENTS.md`. Loaded on every chat for every skill. Cross-skill behavioral principles.
-- **Tier 2 (Durable Rules)** — `.prism/rules/`. Always loaded. Engineering standards that apply across all tickets.
-- **Tier 3 (Architectural Context)** — `.prism/architect/`. Loaded only when the diff touches matching file paths, via `manifest.json`. Pattern guides for specific areas of the codebase.
-- **Tier 4 (Skill Behavior)** — the skill file itself. Loaded only when the skill fires.
-- **Tier 5 (Plans)** — `.prism/plans/<ticket-id>.md`. Per-ticket working memory.
-
-The tier system prevents context bloat: a rule about WordPress blocks doesn't load when you're working on a TypeScript utility. Only what's relevant loads. See [SPEC.md](../.prism/SPEC.md) for the full tier detail and the [ADR for the three-tier rule loading model](../.prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md).
+The tier system is built so rules load at the right scope rather than all at once — a rule about WordPress blocks doesn't load when you're working on a TypeScript utility. See [SPEC.md](../.prism/SPEC.md) for the full tier breakdown and the [ADR for the three-tier rule loading model](../.prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md).
 
 ---
 

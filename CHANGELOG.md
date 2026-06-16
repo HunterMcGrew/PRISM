@@ -13,7 +13,7 @@ Epic tracking issue: #180
 - Flattened the `docs/` tree and de-Thrived the taxonomy — `content/dev/` moved to top-level `docs/` (#183)
 - Retired the paired-dev-doc convention from spec surfaces; added ADR-0058 (#182, #184)
 - Added documentation config block to `.ai-skills/config.schema.json` (#181)
-- Wrote timeless user guides (`docs/overview.md`, `docs/getting-started.md`, `docs/workflow.md`, `docs/personas.md`) and slimmed the README
+- Wrote timeless user guides (`docs/overview.md`, `docs/getting-started.md`, `docs/workflow.md`, `docs/personas.md`) and slimmed the README (#187)
 
 ---
 

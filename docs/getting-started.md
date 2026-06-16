@@ -79,7 +79,7 @@ pnpm install
 pnpm prism:build
 ```
 
-Then re-run `pnpm prism:check` in your target repo to verify the install is still in sync. A dedicated `prism:sync` flow (three-way merge into a consumer repo) is planned — until then, `pnpm prism:build` + copy is the path.
+Then re-run `pnpm prism:check` in your target repo to verify the install is still in sync.
 
 ## Config reference
 
