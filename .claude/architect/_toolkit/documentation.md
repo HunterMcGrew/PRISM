@@ -1,33 +1,42 @@
 # Documentation Convention
 
-The convention for organizing human-readable documentation alongside agent-facing context. Routed to any agent working under `docs/`.
+The convention for organizing human-readable documentation alongside agent-facing context. Routed to any agent working under the team's doc root.
 
-## Two-audience model
+## Model overview
 
-Teams with `documentation.keepsDevDocs: true` split human-readable docs by audience under `docs/`:
+Doc format, location, and audience are per-team onboarding outputs — set by Atlas in `.ai-skills/config.json` during Phase 2 onboarding. Agents read these values before writing any docs:
 
-- **`docs/content/dev/`** — developer documentation: architecture, standards, operations, setup guides, AI skills reference. Audience: engineers working on this codebase.
-- **`docs/content/user/`** — user documentation: feature guides, configuration how-tos, troubleshooting. Audience: non-engineering users (depending on the product, this might be admins, operators, support staff, customers).
+- **`documentation.location`** — the root path where this team's docs live (e.g. `docs/`, `documentation/`, `site/`)
+- **`documentation.audience`** — the primary audience (`developer-user`, `end-user`, `mixed`, or a team-defined value)
+- **`documentation.keepsDevDocs`** — whether the team maintains a separate dev doc tree alongside user-facing docs
+- **`documentation.format`** — the doc format (`flat-markdown-guides`, `nextra-blocks`, or a team-defined value)
 
-The split is a team choice (configured during onboarding via Atlas), not a mandate. Single-audience products — including PRISM itself — collapse to one tree. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
+PRISM itself is a single-audience product (`audience: developer-user`, `keepsDevDocs: false`, `format: flat-markdown-guides`). Its docs live under `docs/` as flat markdown guides. Other teams may configure different values — the doc system adapts to what Atlas writes at onboarding, not the other way around. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
 
-Agent-facing context (`.prism/rules/`, `.prism/architect/`, `.claude/skills/`) is **not** duplicated into `docs/`. When a `docs/` page covers the same topic as a `.claude/` file, the `docs/` page provides the human-readable onboarding narrative and cross-references the `.claude/` file for the precise, enforceable spec.
+## Single-audience vs. split-audience teams
 
-## Ownership rules
+**Single-audience teams** (`keepsDevDocs: false`) have one doc tree under `documentation.location`. All docs — feature guides, setup instructions, reference material — live in a single tree organized by topic. PRISM's own docs are this shape.
 
-| Path                 | Owner             | Load pattern                                                                                                                                |
-| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.prism/rules/`     | Agents            | Cross-cutting specs auto-loaded into every conversation (writing voice, code standards, git conventions, accessibility — apply to all work) |
-| `.prism/architect/` | Agents            | Scoped specs loaded via manifest file-match — context files and rules that only apply when specific files are in scope                      |
-| `.claude/skills/`    | Agents            | Skill definitions invoked by name                                                                                                           |
-| `docs/content/dev/`  | Developers        | Human-readable dev guides and references                                                                                                    |
-| `docs/content/user/` | End users         | Product / feature / admin guides                                                                                                            |
+**Split-audience teams** (`keepsDevDocs: true`) maintain two parallel trees: one for user-facing guides and one for developer-facing docs. A common arrangement is `docs/content/user/` and `docs/content/dev/` — but the actual paths come from the team's onboarding configuration, not from a PRISM default. The dev-doc template applies only when `keepsDevDocs: true`.
 
-When content overlaps, `.claude/` is the source of truth for agent enforcement. `docs/` is the source of truth for human onboarding. Neither duplicates the other — they cross-reference. Within `.claude/`, rules that apply to all work live in `rules/`; rules and context that apply only to specific directory trees live in `architect/` and are keyed to those trees in `.prism/architect/manifest.json`.
+The split is a team choice configured during onboarding, not a mandate. When in doubt, read `documentation.keepsDevDocs` before creating any new doc file.
+
+## What goes where
+
+Agent-facing context (`.prism/rules/`, `.prism/architect/`, `.ai-skills/skills/`) is **not** duplicated into the doc root. When a `docs/` page covers the same topic as a `.prism/` file, the `docs/` page provides the human-readable onboarding narrative and cross-references the `.prism/` file for the precise, enforceable spec.
+
+| Path                        | Owner   | Load pattern                                                                               |
+| --------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| `.prism/rules/`             | Agents  | Cross-cutting specs auto-loaded into every conversation                                    |
+| `.prism/architect/`         | Agents  | Scoped specs loaded via manifest file-match                                                |
+| `.ai-skills/skills/`        | Agents  | Skill definitions invoked by name                                                          |
+| `${documentation.location}` | Humans  | Human-readable guides and references, organized per team config                            |
+
+When content overlaps, `.prism/` is the source of truth for agent enforcement. The doc root is the source of truth for human onboarding. Neither duplicates the other — they cross-reference.
 
 ## Frontmatter schema
 
-Every file in `docs/` should include YAML frontmatter:
+Every file in the team's doc root (`documentation.location`) should include YAML frontmatter:
 
 ```yaml
 ---
@@ -42,7 +51,7 @@ last_updated: "YYYY-MM-DD"
 - **title**: Display title for the page. Used by static site generators and search.
 - **description**: Single sentence. Appears in search results and link previews.
 - **category**: Match the subdirectory the file lives in. The category list lives in the team's docs README — extend it when a new directory is added.
-- **audience**: `dev` for `docs/content/dev/` files, `user` for `docs/content/user/` files.
+- **audience**: `user` for user-facing docs; `dev` for developer-facing docs (only used when `keepsDevDocs: true`). For single-audience teams, `user` is the default.
 - **last_updated**: The date the page content was last meaningfully updated. Format: `YYYY-MM-DD`. Set to today's date whenever a doc is created or its content is edited.
 
 Optional fields:
@@ -53,27 +62,13 @@ Optional fields:
 
 ### Path convention
 
-Image paths in docs use **relative format** from the doc file to the `public/` directory (or the team's image root). Many static site generators don't resolve absolute paths reliably from inside markdown content.
+Image paths in docs use **relative format** from the doc file to the image root. Many static site generators don't resolve absolute paths reliably from inside markdown content.
 
 ```markdown
-![Alt text](../../../public/images/<area>/<topic>/<image>.png)
+![Alt text](<relative-path-to-image-root>/<area>/<topic>/<image>.png)
 ```
 
-The number of `../` segments depends on the doc's depth in the tree.
-
-### Directory structure
-
-Mirror the docs tree:
-
-```
-docs/public/images/
-  user/
-    <feature-area>/<topic>/
-  dev/
-    architecture/<topic>/
-    operations/<topic>/
-    getting-started/<topic>/
-```
+The number of `../` segments depends on the doc's depth in the tree and the team's image root location.
 
 ### File naming
 
@@ -97,7 +92,7 @@ Rules: most pages should have 1–3 callouts. Beyond 3, each additional callout 
 
 ## Architecture + operations pairing (two-reader model)
 
-Architecture docs in `docs/content/dev/architecture/` and operations docs in `docs/content/dev/operations/` are paired by topic. A topic that has both a design dimension (why the system looks the way it does) and an execution dimension (how to run it in production) splits across the two directories and cross-links.
+Teams that use a `dev/` doc tree often organize architecture docs under an `architecture/` subdirectory and operations docs under `operations/` — but the actual paths follow `documentation.location` in `.ai-skills/config.json`. A topic that has both a design dimension (why the system looks the way it does) and an execution dimension (how to run it in production) splits across the two directories and cross-links.
 
 **Why this pairing exists.** Two distinct readers: the first-time architect (a new engineer, a CTO onboarding, someone evaluating the design) who needs shape and reasoning, and the 3am-operator reader who needs a checklist. A single doc that serves both compromises both — the architect is buried under keystrokes, the operator has to hunt through reasoning paragraphs for the next step.
 
@@ -109,15 +104,14 @@ Architecture docs in `docs/content/dev/architecture/` and operations docs in `do
 
 ## Cross-Reference Map
 
-A team-specific table mapping `.claude/` agent files to their `docs/` human-readable counterparts. Briar uses this for staleness detection: when a file on either side changes, the corresponding file on the other side may need updating.
+A team-specific table mapping `.prism/` agent files to their human-readable doc counterparts. Briar uses this for staleness detection: when a file on either side changes, the corresponding file on the other side may need updating.
 
-The map is per-team and lives at the bottom of this file once your team's architect docs are populated (during onboarding, Phase 3). Format:
+The map is per-team and lives at the bottom of this file once your team's docs are populated (during onboarding, Phase 3). Paths on the right use the team's configured `documentation.location`. Format:
 
 | Agent File | Docs Counterpart | Relationship |
 |------------|------------------|--------------|
-| `.prism/rules/<rule>.md` | `docs/content/dev/standards/<rule>.md` | Rules file has enforceable spec; docs file is narrative onboarding |
-| `.prism/architect/<topic>.md` | `docs/content/dev/architecture/<topic>.md` | Architect file has patterns and review rules; docs file walks readers through the topic |
-| `.prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md` | `docs/content/dev/architecture/rule-loading-tiers.md` | ADR specifies the rule-loading tier model; dev doc walks teammates through the same model |
+| `.prism/rules/<rule>.md` | `${documentation.location}<path>.md` | Rules file has enforceable spec; docs file is narrative onboarding |
+| `.prism/architect/<topic>.md` | `${documentation.location}<path>.md` | Architect file has patterns and review rules; docs file walks readers through the topic |
 
 Add rows as architect docs land. The map is informal — its job is to surface counterpart files during edit, not to be exhaustive.
 
