@@ -14,27 +14,29 @@ Read this after the doc content is written, before the closing. `prism-documenta
 
 1. Add a `## Per-Block Documentation` section to the paired `.prism/architect/<topic>.md` file listing the collection — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
 2. Add a Cross-Reference Map row in `documentation.md` per audience — if both user and dev per-block docs exist, add both rows.
-3. Add audience-parallel intros to `docs/content/index.mdx` — if both user and dev sides have a section for the category, both need a drill-down intro sentence, not just one.
+3. Add audience-parallel intros to the team's doc landing page (at `${documentation.location}` root — e.g. `docs/index.md` or `docs/index.mdx`) — if both user and dev sides have a section for the category, both need a drill-down intro sentence, not just one.
 
-## 1. Update sidebar navigation (`_meta.js`)
+## 1. Update sidebar navigation
 
-**Required for every new page.** Add the new page's slug and display name to the `_meta.js` file in the target directory. Pages not in `_meta.js` appear alphabetically at the bottom of the sidebar with their raw filename as the label — that's not acceptable.
+**When `documentation.format` uses a sidebar config file (e.g. Nextra's `_meta.js`):** add the new page's slug and display name to the sidebar config in the target directory. Pages not in the config appear alphabetically at the bottom with their raw filename as the label.
 
-Example — adding a new block doc:
+Example for teams with a Nextra-style `_meta.js`:
 
 ```js
-// docs/content/user/blocks/_meta.js
+// <documentation.location>/<category>/_meta.js
 export default {
 	colophon: "Colophon",
 	"mega-menu": "Mega Menu", // ← new entry
 };
 ```
 
-Place the entry in logical order (alphabetical within its section, or grouped by category if the section has established groupings).
+**When `documentation.format` is `flat-markdown-guides` (PRISM's own format):** no sidebar config applies — skip this step. Pages are discovered from the filesystem directly.
+
+Place any sidebar entries in logical order (alphabetical within a section, or grouped by category if the section has established groupings).
 
 ## 2. Update the landing page index
 
-If the doc is new and the audience section on `docs/content/index.mdx` doesn't have a link for it, add one. Keep the index concise — only add links for docs that a new reader would want to find from the home page.
+If the doc is new and the landing page at `${documentation.location}` doesn't have a link for it, add one. Keep the index concise — only add links for docs that a new reader would want to find from the home page.
 
 ## 3. Update the cross-reference map
 
