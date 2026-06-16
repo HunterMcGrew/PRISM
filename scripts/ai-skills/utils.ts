@@ -2,6 +2,13 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import {
+	codexRuleDialect,
+	cursorRuleDialect,
+	type RuleDialect,
+	verbatimRuleDialect,
+} from "./rule-dialect";
+
 export const MANAGED_MARKER = ".ai-skill-generated";
 
 /**
@@ -281,4 +288,33 @@ export async function loadPathDefinitions(
 			`Invalid path definitions JSON at ${pathDefinitionsPath}: ${error instanceof Error ? error.message : String(error)}`
 		);
 	}
+}
+
+/**
+ * Builds the platform-dir list from a repo root and its path definitions.
+ *
+ * Both `prism:build` and `prism:update` need the same three platform dirs
+ * (Claude verbatim, Codex stripped, Cursor `.mdc`). Centralizing here keeps the
+ * two entry points from drifting on which dirs they write to.
+ */
+export function buildPlatformDirs(
+	repoRoot: string,
+	pathDefinitions: PathDefinitions
+): { dir: string; dialect: RuleDialect }[] {
+	const platformCopies = pathDefinitions.generated.platformContentCopies;
+
+	return [
+		{
+			dir: path.join(repoRoot, platformCopies.claude),
+			dialect: verbatimRuleDialect,
+		},
+		{
+			dir: path.join(repoRoot, platformCopies.codex),
+			dialect: codexRuleDialect,
+		},
+		{
+			dir: path.join(repoRoot, platformCopies.cursor),
+			dialect: cursorRuleDialect,
+		},
+	];
 }

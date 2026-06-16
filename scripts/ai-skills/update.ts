@@ -25,19 +25,18 @@ import { syncAllPlatformContentCopies } from "./build";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { classifyPath } from "./ownership";
 import {
-	codexRuleDialect,
-	cursorRuleDialect,
-	type RuleDialect,
-	verbatimRuleDialect,
-} from "./rule-dialect";
-import {
 	generateSyncManifest,
 	listPrismOwnedRelativePaths,
 	loadSyncManifest,
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
 } from "./sync-manifest";
-import { hashFile, loadPathDefinitions, pathExists } from "./utils";
+import {
+	buildPlatformDirs,
+	hashFile,
+	loadPathDefinitions,
+	pathExists,
+} from "./utils";
 
 /** What happened to a single file during the update pass. */
 export type FileAction =
@@ -288,32 +287,19 @@ async function rewriteConsumerManifest(
 }
 
 /**
- * Resolves the consumer's platform output dirs from its own `paths.json`,
- * pairing each with its rule dialect. Mirrors `build.ts main()` so both entry
- * points read the same `generated.platformContentCopies` source — a consumer
- * that customized those paths gets `prism:update` writing to the same place
- * `prism:build` would.
+ * Resolves the consumer's platform output dirs from its own `paths.json`.
+ *
+ * Delegates to `buildPlatformDirs` so both `prism:update` and `prism:build`
+ * share one definition of which dirs to write and which dialect each uses — a
+ * consumer that customized those paths gets `prism:update` writing to the same
+ * place `prism:build` would.
  */
 async function resolveConsumerPlatformDirs(
 	consumerRepoRoot: string
-): Promise<{ dir: string; dialect: RuleDialect }[]> {
+): Promise<ReturnType<typeof buildPlatformDirs>> {
 	const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
-	const platformCopies = pathDefinitions.generated.platformContentCopies;
 
-	return [
-		{
-			dir: path.join(consumerRepoRoot, platformCopies.claude),
-			dialect: verbatimRuleDialect,
-		},
-		{
-			dir: path.join(consumerRepoRoot, platformCopies.codex),
-			dialect: codexRuleDialect,
-		},
-		{
-			dir: path.join(consumerRepoRoot, platformCopies.cursor),
-			dialect: cursorRuleDialect,
-		},
-	];
+	return buildPlatformDirs(consumerRepoRoot, pathDefinitions);
 }
 
 /** Subdir name for the `.prism/custom` overlay's source and platform output. */
@@ -337,7 +323,7 @@ const OVERLAY_SUBPATH = "custom";
 async function refreshPlatformDirs(
 	consumerContentRoot: string,
 	overlayContentRoot: string,
-	platformDirs: { dir: string; dialect: RuleDialect }[],
+	platformDirs: ReturnType<typeof buildPlatformDirs>,
 	tokenMap: Map<string, string>
 ): Promise<void> {
 	await syncAllPlatformContentCopies(
@@ -387,6 +373,27 @@ function resolvePrismSource(
 	return null;
 }
 
+/**
+ * Guards against applying updates from a source that looks empty or mispointed.
+ *
+ * A valid PRISM source always contains PRISM-owned files under its `.prism/`
+ * dir. Zero owned files means the path is wrong, the tree was accidentally
+ * cleared, or the source was never built. Proceeding would treat every file in
+ * the consumer's recorded manifest as "deleted by PRISM" and remove them all.
+ */
+export async function assertSourceIsPlausible(
+	prismContentRoot: string,
+	pendingDeletionCount: number
+): Promise<void> {
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot);
+
+	if (ownedPaths.length === 0) {
+		throw new Error(
+			`prism:update: --prism-source looks empty (${prismContentRoot}) — refusing ${pendingDeletionCount} deletion(s)`
+		);
+	}
+}
+
 async function main(): Promise<void> {
 	const consumerRepoRoot = process.cwd();
 	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
@@ -415,6 +422,18 @@ async function main(): Promise<void> {
 			`PRISM source has no .prism/ directory at ${prismContentRoot}.`
 		);
 	}
+
+	// Count how many PRISM-owned files the consumer has recorded — these would
+	// all be deleted if the source is empty. Load before the sanity check so the
+	// refusal message can report the exact deletion count.
+	const consumerManifest = await loadSyncManifest(consumerContentRoot);
+	const pendingDeletionCount = consumerManifest
+		? Object.keys(consumerManifest.files).filter(
+				(p) => classifyPath(p) === "prism"
+			).length
+		: 0;
+
+	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
 
 	// Resolve and validate everything the platform refresh needs before the file
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
