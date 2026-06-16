@@ -1,6 +1,6 @@
 # Audit Workflow
 
-Human-facing version: `docs/content/dev/architecture/audit-workflow.md`.
+The Zoe skill source is at `.ai-skills/skills/prism-surface-audit/`.
 
 This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs.
 

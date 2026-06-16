@@ -1,6 +1,6 @@
 # Developer Documentation Template
 
-Template for developer-facing docs in `docs/content/dev/`. Audience: engineers working on the ${PROJECT} codebase — experienced with the tech stack but potentially new to this project.
+Template for developer-facing docs in `docs/`. Audience: engineers working on the ${PROJECT} codebase — experienced with the tech stack but potentially new to this project.
 
 ## When to use
 
@@ -17,9 +17,8 @@ Not every code change needs a dev doc. If the code is self-documenting and follo
 
 The base template below covers dev docs in general. Some categories have additional shape rules that layer on top:
 
-- **`category: architecture`** — docs in `docs/content/dev/architecture/` follow the four-beat opening arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`. Apply that rule alongside this template.
-- **`category: operations`** — operations docs pair with architecture counterparts (same base filename where the topics align) per the Two-Reader Model described in `.prism/architect/_toolkit/documentation.md § Architecture + Operations Pairing`.
-- **`category: blocks`** — dev block docs in `docs/content/dev/blocks/` are a category layer on this base template. Apply the standard template structure; add a Structure paths table, Block Attributes, Editor Controls split into Toolbar + Sidebar, Inner Blocks, Block Supports, and a Notes section for block-specific quirks.
+- **`category: architecture`** — architecture docs follow the four-beat opening arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`. Apply that rule alongside this template.
+- **`category: blocks`** — dev block docs are a category layer on this base template. Apply the standard template structure; add a Structure paths table, Block Attributes, Editor Controls split into Toolbar + Sidebar, Inner Blocks, Block Supports, and a Notes section for block-specific quirks.
 
 ---
 
@@ -29,7 +28,7 @@ The base template below covers dev docs in general. Some categories have additio
 ---
 title: "[Feature Name]"
 description: "One-line description for search and meta tags"
-category: "getting-started | architecture | standards | testing | operations | ai-skills | references"
+category: "getting-started | architecture | standards | testing | operations | ai-skills | references | blocks"
 audience: "dev"
 last_updated: "YYYY-MM-DD"
 ---
@@ -99,7 +98,7 @@ Links to related dev docs and cross-references to `.claude/` files.
 - Include code examples where they clarify concepts
 - Keep pages focused — one topic per page
 - Always include a **Related Pages** section linking to relevant docs and `.claude/` files
-- **Image paths** use relative format from the doc to `public/`: `../../../public/images/dev/{category}/{topic}/descriptive-name.png` (adjust `../` depth based on file location)
+- **Image paths** use relative format from the doc to `public/`: `../../public/images/dev/{category}/{topic}/descriptive-name.png` (adjust `../` depth based on file location)
 - **Callouts** — use GitHub alert syntax for important architectural constraints, common pitfalls, and tips. See `.prism/references/doc-callouts.md` for when to use each type.
 
 ## Sections to omit

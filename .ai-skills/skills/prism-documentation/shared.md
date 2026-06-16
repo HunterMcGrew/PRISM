@@ -134,8 +134,8 @@ Atlas populates the team's control-inventory shape during onboarding from the te
 
 Docs are written directly to `docs/` using topic-based naming per `documentation.md`:
 
-- **User docs** → `docs/content/user/{category}/{topic}.md`
-- **Dev docs** → `docs/content/dev/{category}/{topic}.md`
+- **User docs** → `docs/{category}/{topic}.md` or `docs/{topic}.md` (flat, per team's format)
+- **Dev docs** → `docs/{category}/{topic}.md` or `docs/{topic}.md` (flat, per team's format)
 
 **Naming rules:**
 
@@ -174,9 +174,9 @@ Templates are in `.prism/references/` — the single source of truth for doc str
 
 Category-specific templates layer on top of the base when writing into a specialized category:
 
-- **User block docs** (`docs/content/user/blocks/`): use `.prism/references/user-doc-template.md` — block docs are a category layer on the base user template
-- **Dev block docs** (`docs/content/dev/blocks/`): use `.prism/references/dev-doc-template.md` — block docs are a category layer on the base dev template
-- **Architecture docs** (`docs/content/dev/architecture/`): follow the four-beat arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`
+- **User block docs**: use `.prism/references/user-doc-template.md` — block docs are a category layer on the base user template
+- **Dev block docs**: use `.prism/references/dev-doc-template.md` — block docs are a category layer on the base dev template
+- **Architecture docs**: follow the four-beat arc and supporting principles in `.prism/architect/_toolkit/architecture-doc-shape.md`
 
 Follow the template structure, writing rules, and image conventions defined there. Do not deviate from the template format unless the content genuinely doesn't fit (e.g. a customization guide doesn't need a Block Options section).
 

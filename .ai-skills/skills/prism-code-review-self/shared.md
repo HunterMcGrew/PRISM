@@ -233,7 +233,7 @@ For every UI change in the diff, check: semantic HTML, keyboard accessibility, f
 
 > _Verified / Diverged / Missing source-verification triage for architect docs._
 
-**When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, read [`.prism/references/review-doc-class-triage.md`](../../../.prism/references/review-doc-class-triage.md) and classify every claim against its cited source.**
+**When the diff includes `.prism/architect/**` files, read [`.prism/references/review-doc-class-triage.md`](../../../.prism/references/review-doc-class-triage.md) and classify every claim against its cited source.**
 
 ## Test Coverage
 

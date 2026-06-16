@@ -9,7 +9,7 @@ Present the draft to the user. Iterate on feedback until accept or discard.
 
 ## Actions
 
-1. **Present the draft.** Render the architect doc inline in chat with a clear `Architect doc: .prism/architect/<topic>.md` header. If a paired dev doc was drafted, render it below with `Paired dev doc: docs/content/dev/architecture/<topic>.md`. If the paired doc was skipped per ADR-0038 gates, surface the gate verdict instead ("Paired dev doc skipped: category-fit gate failed — this is implementation detail, not architecture").
+1. **Present the draft.** Render the architect doc inline in chat with a clear `Architect doc: .prism/architect/<topic>.md` header. If step-05 flagged this topic as warranting narrative documentation, surface that note here: "This topic may benefit from a narrative dev doc — route to Eli after accepting?"
 
 2. **Prompt for choice:**
 

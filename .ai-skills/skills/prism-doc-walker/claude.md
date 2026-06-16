@@ -24,9 +24,4 @@ If the user picks resume, jump directly to the step file for that phase. If the 
 
 Schema detail lives at `.prism/skills/prism-doc-walker/lib/state.md` (PR-2.5.3).
 
-**Paired dev doc gates.** When writing a paired dev doc, run ADR-0038's two gates explicitly in chat before drafting:
-
-1. Category-fit — does the topic belong in `docs/content/dev/architecture/`?
-2. Pairing-value — does the narrative version carry information the agent-facing version doesn't?
-
-If either gate fails, write the architect doc only and document the gate result in the state file entry. Don't ship a paired dev doc that's a pure restatement.
+**Dev doc routing.** ADR-0058 retires the automatic paired dev doc pattern at `docs/content/dev/architecture/<topic>.md`. After writing an architect doc, flag to the user whether the topic warrants human-readable narrative documentation. If yes, route to Eli — Eli decides the appropriate `docs/` path under the flat layout. Do not auto-write to `docs/content/dev/architecture/`.

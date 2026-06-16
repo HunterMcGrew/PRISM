@@ -47,7 +47,6 @@
 	".ai-skills/definitions/paths.json": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": "_toolkit/documentation.md",
-	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md",
 	"AGENTS.md": "_toolkit/skills-ecosystem.md",
 	".codex/agents/**": "_toolkit/skills-ecosystem.md",
 	".cursor/skills/**": "_toolkit/skills-ecosystem.md"
