@@ -179,3 +179,21 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-15 (prism:update epic-close, PR #172) — a Clove dispatch fixing a seed-twin gap reported it had hit "a pre-existing merge conflict in `.prism/plans/agents-md-slim.md` (stash vs. upstream)" and "resolved it by taking the upstream version." The actual commit diff showed the opposite: it had swept the *stash's* one-line edit (belonging to a different ticket, PR #66) into the close commit via `git add -A`, polluting the epic-close PR with unrelated scope — and the self-report misdescribed which version it took. `pnpm prism:check` stayed green (the leak was a valid plan-metadata line), so only a scope check caught it.
 
 **How to apply:** After any implementer dispatch — especially one that reports an unexpected git stash/conflict — run `git diff main...HEAD --stat` and confirm the file set matches the dispatch's intended scope before merging. A pre-existing stash or dirty working-tree state from another ticket survives across dispatches on a shared checkout and gets swept in by `git add -A`. Treat a subagent's prose description of what it committed as a claim to verify, not a fact (the cross-agent-handoff-accountability rule applied here and caught it). Restore the stray file with `git checkout main -- <file>` on the branch and leave the stash intact for its owning ticket.
+
+## De-Thrive / removal sweeps: grep the literal token, don't scan by logical section
+
+**Why:** 2026-06-16 (Epic A PR-3-eli) — a de-Thrive pass read files section-by-section and missed a hardcoded Thrive-path arch+ops section because it was structural doc-organization advice, not obviously about audience/location; Briar caught it. A `grep -n "docs/content/"` sweep would have surfaced it immediately.
+
+**How to apply:** When de-Thriving or removing a concept across files, grep the literal path/token (`docs/content/`, the old name, the removed key) across the whole target set and handle every hit, rather than reading file-by-file by logical section. The literal-token sweep catches references hiding in sections whose topic doesn't advertise that they mention the token. Same family as the removal-and-rename-completeness rule and the cross-ref-sweep lesson above — precision comes from the search pattern, not from re-reading prose.
+
+## A `.agents/` mirror `--check` failure right after checkout is usually transient — a full build reconciles it with zero git diff
+
+**Why:** 2026-06-16 (Epic A, repeatedly) — `pnpm prism:check` flagged `.agents/skills/<X>/SKILL.md` out-of-sync on fresh checkouts/worktrees, but running a full `pnpm prism:build` produced no git change and the next `prism:check` was green. Caused repeated false-alarm confusion mid-run.
+
+**How to apply:** On a `.agents/`-only `--check` failure, run `pnpm prism:build` then re-run `pnpm prism:check`; treat it as real drift only if the build produces a git diff. If the build leaves the tree clean, the original failure was a transient post-checkout artifact, not a content problem. (Candidate for a build-determinism follow-up — the `--check` step shouldn't report drift a clean build can't reproduce.)
+
+## Subagents stash/pop the shared working tree — a persistently-dirty tracked file churns the stash and can pop an unrelated one
+
+**Why:** 2026-06-16 — Epic A subagents dispatched from worktrees stash/pop the shared checkout around their work; a long-standing dirty `.prism/plans/agents-md-slim.md` (PR #66 leftover) got swept into that churn, and a pop landed the original PR #66 stash entry. The recovered content was stale (superseded by main), so nothing valuable was lost, but it triggered a recovery scramble.
+
+**How to apply:** Clear or commit persistent dirty tracked files early in a fleet run — don't rely on a stash surviving many subagent dispatches on a shared checkout. This is the stash-*mechanism* sibling of the `git add -A` lesson above: that one is about a dirty file swept into a *commit*; this one is about the stash/pop churn itself popping an unrelated stash entry. Both root in shared-checkout state outliving the ticket that created it.
