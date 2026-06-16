@@ -1,7 +1,10 @@
 # ADR-0044: Direct-write tool outputs; commit `.cursor/skills/`
 
 **Status:** Accepted
+**Superseded-in-part-by:** ADR-0058
 **Date:** 2026-05-23
+
+> **Superseded in part by [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md).** Only this ADR's paired-doc obligation is retired — the mandated companion at `docs/content/dev/ai-skills/compatibility.md`. The direct-write spine — tool-namespaced build outputs, the `.generated/` staging collapse, and the committed-`.cursor/skills/`-vs-ignored-Codex-config split — stands and is live.
 
 ## Context
 

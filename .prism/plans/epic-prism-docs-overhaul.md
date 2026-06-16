@@ -77,6 +77,7 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 - 2026-05-29 [claude/stupefied-ardinghelli-189bdd]: Plan created from a Winston design session (party mode: Atlas, Eli, Mira, Sage, Clove). Captured the de-Thrive + config-driven-Eli direction; B and C split into deferred sibling epics.
 - 2026-06-16 [hmcgrew/epic-a-plan-sync]: Winston build-readiness pass for Sol. Synced two stale task lines to current main: Clove task 3 now names both `architect-doc-verification.md` copies (canonical + templates mirror); Winston task 1 now names ADR-0058, the `_toolkit/` dual-write path, and scopes supersession to the dev-doc half only. Design unchanged — no replan.
+- 2026-06-16 [hmcgrew/epic-a-pr2-adr0058]: PR-2 — authored ADR-0058 (single-audience retires paired dev docs) dual-written to canonical + templates trees; flipped 0038 to `superseded` (wholesale) and added `Superseded-in-part-by: 0058` notes to 0023 (architect-doc gate survives) and 0044 (direct-write spine survives) across both trees; added 0058 to the ADR index and allowlisted its Thrive-context literal. Downstream prose sweep (Clove task 3, Winston task 2) remains separate Epic A lanes.
 
 ## Acceptance Criteria
 
