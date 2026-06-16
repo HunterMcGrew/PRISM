@@ -1,16 +1,15 @@
 ---
 paths:
   - ".prism/architect/**/*.md"
-  - "docs/content/dev/architecture/**/*.md"
 ---
 
 # Architect Doc Verification
 
-When authoring or reviewing an architect doc (`.prism/architect/**`) or its paired dev doc (`docs/content/dev/architecture/**`), every claim about source behavior is checked against the source as written. Glance-mode review — reading the prose without opening the files it describes — is not enough for this class of change.
+When authoring or reviewing an architect doc (`.prism/architect/**`), every claim about source behavior is checked against the source as written. Glance-mode review — reading the prose without opening the files it describes — is not enough for this class of change.
 
 **Why:** Architect docs are durable agent context. The `manifest.json` routes them into every relevant edit, so future agents load them as authoritative. A confident-sounding doc that drifts from source actively misleads — it's worse than no doc, because the reader trusts it. An early-Phase architect doc shipped with several accuracy gaps because the PR received glance review — right-sized for the change count, wrong-sized for the change class. See [ADR-0023](../spec/adrs/_toolkit/0023-architect-docs-source-verified-review.md).
 
-**How to apply:** When the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**`, walk every claim in the doc against the cited source. Source includes anything the manifest can route to: YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes — whatever the doc references. Classify each claim into one of three buckets:
+**How to apply:** When the diff includes `.prism/architect/**`, walk every claim in the doc against the cited source. Source includes anything the manifest can route to: YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes — whatever the doc references. Classify each claim into one of three buckets:
 
 - **Verified** — the claim matches the source as written.
 - **Diverged** — the claim contradicts the source. Flag for fix.

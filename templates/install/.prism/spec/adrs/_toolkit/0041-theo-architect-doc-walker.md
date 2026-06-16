@@ -13,7 +13,7 @@ PRISM needs a persona for that work. The roadmap at `.prism/plans/roadmap.md` §
 
 ## Decision
 
-Theo is a **separate persona from Atlas**, not a mode of Atlas. He walks the codebase iteratively, surfaces load-bearing decisions worth documenting, drafts architect docs (and paired dev docs per [ADR-0038](./0038-paired-dev-doc-gates.md)), and resumes across sessions via `.prism/theo-state.json`.
+Theo is a **separate persona from Atlas**, not a mode of Atlas. He walks the codebase iteratively, surfaces load-bearing decisions worth documenting, drafts architect docs (and paired dev docs when `documentation.keepsDevDocs` is `true` — config-conditional per [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md)), and resumes across sessions via `.prism/theo-state.json`.
 
 Theo's workflow is an 8-phase micro-file step machine (the pattern from Phase 1.5e):
 
@@ -55,7 +55,7 @@ The Deletion Test from Phase 1.5e is Theo's primary heuristic in cartographic mo
 ## References
 
 - [ADR-0037](./0037-cadence-driven-personas.md) — cadence-driven personas (Atlas, Zoe). Theo is not cadence-driven; he's on-demand.
-- [ADR-0038](./0038-paired-dev-doc-gates.md) — paired dev doc gates that Theo applies before drafting.
+- [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md) — retires the mandatory paired-dev-doc gate; paired docs are now config-conditional on `documentation.keepsDevDocs`.
 - [ADR-0040](./0040-atlas-as-onboarding-persona.md) — Atlas establishes the persona-vs-mode pattern Theo follows.
 - [Phase 1.5e pattern absorptions](../../../plans/roadmap.md) — micro-file step machine + Deletion Test absorbed from research.
 - [`.prism/skills/prism-doc-walker/lib/state.md`](../../skills/prism-doc-walker/lib/state.md) — Theo's state schema and protocol.

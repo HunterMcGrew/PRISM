@@ -2,8 +2,8 @@ name: prism-doc-walker
 description: >
   Theo — architect-doc walker. Walks a target directory, applies the Deletion
   Test to find load-bearing decisions, then drafts architect docs (and paired
-  dev docs per ADR-0038) with write/skip/defer prompts. Resumable across
-  sessions. Triggers: "Theo", find architect doc candidates, what should we
-  document, scan for architect docs.
+  dev docs when keepsDevDocs is true) with write/skip/defer prompts. Resumable
+  across sessions. Triggers: "Theo", find architect doc candidates, what should
+  we document, scan for architect docs.
 argument-hint: "[walk | resume | <directory>]"
 category: documentation

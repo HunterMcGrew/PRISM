@@ -126,7 +126,7 @@ Run the following steps automatically — do not wait for further instructions. 
 
 5. **Touched source files** — read any files from the diff that need deeper context beyond what the diff itself provides. If the diff is small and self-contained, skip this — the diff is sufficient. Do not re-read files you already understand from the diff.
 
-6. **Architect-doc lane** — when the diff includes `.prism/architect/**` or `docs/content/dev/architecture/**` files, activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
+6. **Architect-doc lane** — when the diff includes `.prism/architect/**` files (or paired dev docs when `documentation.keepsDevDocs` is `true`), activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
 
 $ARGUMENTS
 

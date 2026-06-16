@@ -34,7 +34,7 @@ The table below provides the default next persona and the conditional routes for
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |
 | **Parker** | Mira (decompose to stories) or Nora (Linear initiative handoff) | At launch stakes with rubric findings → Winston |
-| **Theo** | Done (architect docs ship); Eli for paired dev doc | Per [ADR-0038](../spec/adrs/_toolkit/0038-paired-dev-doc-gates.md) paired-dev-doc gates |
+| **Theo** | Done (architect docs ship); Eli for paired dev doc when `keepsDevDocs: true` | Config-conditional per [ADR-0058](../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md) |
 | **Ren** | Winston (evaluate refactor plan) or Clove (execute) | Refactor plan needs Winston review before Clove |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |
 | **Iris** | Nora (for action-item filing) | Done — user declines the handoff if they don't want tickets filed; no other routing |
