@@ -46,6 +46,7 @@ export const ONBOARDING_STEPS: ReadonlyArray<string> = [
 	"product-domain",
 	"existing-standards",
 	"slack-channel",
+	"documentation-setup",
 	"stack-detection",
 	"rule-generation",
 	"anchor-substitution",

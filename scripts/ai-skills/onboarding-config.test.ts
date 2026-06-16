@@ -221,3 +221,77 @@ test("writeOnboardingConfig honors options.org and options.slackChannel", async 
 		assert.equal(parsed.ticketSystem.workspace, "tractru");
 	});
 });
+
+test("writeOnboardingConfig writes the documentation block when provided", async () => {
+	await withTempRepo(async (root) => {
+		const configWithDocs: OnboardingConfig = {
+			...SAMPLE_CONFIG,
+			documentation: {
+				location: "docs/",
+				audience: "developer-user",
+				keepsDevDocs: true,
+				format: "nextra-blocks",
+			},
+		};
+
+		const result = await writeOnboardingConfig(root, configWithDocs);
+		const parsed = JSON.parse(
+			await fs.readFile(result.path, "utf8")
+		) as PrismOnDiskConfig;
+
+		assert.deepEqual(parsed.documentation, {
+			location: "docs/",
+			audience: "developer-user",
+			keepsDevDocs: true,
+			format: "nextra-blocks",
+		});
+	});
+});
+
+test("writeOnboardingConfig omits the documentation block when not provided", async () => {
+	await withTempRepo(async (root) => {
+		const result = await writeOnboardingConfig(root, SAMPLE_CONFIG);
+		const parsed = JSON.parse(
+			await fs.readFile(result.path, "utf8")
+		) as PrismOnDiskConfig;
+
+		assert.equal(parsed.documentation, undefined);
+	});
+});
+
+test("toOnDiskConfig preserves the open-string format field verbatim", () => {
+	const config: OnboardingConfig = {
+		...SAMPLE_CONFIG,
+		documentation: {
+			location: "site/content/",
+			audience: "mixed",
+			keepsDevDocs: false,
+			format: "my-custom-format",
+		},
+	};
+
+	const onDisk = toOnDiskConfig(config);
+	assert.equal(onDisk.documentation?.format, "my-custom-format");
+});
+
+test("documentation block round-trips: same input produces byte-identical output", async () => {
+	await withTempRepo(async (root) => {
+		const configWithDocs: OnboardingConfig = {
+			...SAMPLE_CONFIG,
+			documentation: {
+				location: "docs/",
+				audience: "end-user",
+				keepsDevDocs: false,
+				format: "flat-markdown-guides",
+			},
+		};
+
+		const first = await writeOnboardingConfig(root, configWithDocs);
+		const firstBytes = await fs.readFile(first.path, "utf8");
+
+		const second = await writeOnboardingConfig(root, configWithDocs);
+		const secondBytes = await fs.readFile(second.path, "utf8");
+
+		assert.equal(secondBytes, firstBytes);
+	});
+});

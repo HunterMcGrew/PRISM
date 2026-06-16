@@ -16,6 +16,32 @@
 import type { DetectedStack } from "./stack-detect";
 
 /**
+ * Documentation layout detected from the repo before Atlas asks the
+ * documentation question set. Atlas proposes this as the default answer
+ * — the user confirms or corrects.
+ */
+export interface DetectedDocLayout {
+	/** Root path of the team's docs directory, relative to the repo root. */
+	location?: string;
+	/** Doc tool inferred from config-file fingerprints. */
+	tool?: "nextra" | "docusaurus" | "mkdocs" | "vitepress" | "plain-markdown";
+	/** Files that surfaced the detection. */
+	evidence: string[];
+}
+
+/**
+ * Documentation answers gathered from Atlas's interactive flow. Maps 1:1
+ * onto the `documentation` block in the on-disk schema.
+ */
+export interface DocumentationConfig {
+	location: string;
+	audience: string;
+	keepsDevDocs: boolean;
+	/** Open string — not validated against an enum. Consumers add their own value without a schema change. */
+	format: string;
+}
+
+/**
  * In-session config assembled across Atlas's interactive flow. Fields named
  * here align with the prompts in Atlas's shared.md § Interactive flow.
  */
@@ -28,6 +54,8 @@ export interface OnboardingConfig {
 	productDomain: string;
 	techStack: DetectedStack;
 	existingStandards: string[];
+	/** Present when the user has answered the documentation question set. */
+	documentation?: DocumentationConfig;
 }
 
 /**
