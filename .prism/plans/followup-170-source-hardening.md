@@ -34,6 +34,7 @@ Harden `pnpm prism:update` against a wrong `--prism-source` path that could caus
 
 - 2026-06-16 [hmcgrew/prism-170-source-hardening]: Created plan; implementing tripwire + shared platform-dir extractor for two Eric minors from PR #167.
 - 2026-06-16 [hmcgrew/prism-170-source-hardening]: Implemented `assertSourceIsPlausible` tripwire in `update.ts`, extracted `buildPlatformDirs` to `utils.ts`, updated both callers in `update.ts` and `build.ts`; 217 tests pass, `prism:check` green, no generated-file churn.
+- 2026-06-16 [hmcgrew/prism-170-source-hardening]: Briar self-review clean (extraction byte-identical, tripwire aborts before writes, 219/219 tests pass). Eric PR-review clean (Opus, both safety holes closed). Merge-ready.
 
 ---
 
@@ -52,12 +53,19 @@ Harden `pnpm prism:update` against a wrong `--prism-source` path that could caus
 
 ---
 
+## Review Issues
+
+None.
+
+---
+
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct
-- [ ] Tests written for tripwire
-- [ ] Build passes
-- [ ] PR description up to date
+- [x] No critical or major issues
+- [x] Types correct — `pnpm prism:check-types` exit 0
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (2 tripwire cases in `update.test.ts`, 219/219 pass)
+- [x] Build passes — last run: 2026-06-16 (`pnpm prism:check` green, zero generated-file churn)
+- [x] PR description up to date
 
 **Last updated:** 2026-06-16
