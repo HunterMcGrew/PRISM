@@ -495,30 +495,29 @@ export async function scanLines(
  */
 async function listCarrierFiles(dirPath: string): Promise<string[]> {
 	const out: string[] = [];
-	let entries: Awaited<ReturnType<typeof fs.readdir>>;
-
 	try {
-		entries = await fs.readdir(dirPath, { withFileTypes: true });
+		const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+		for (const entry of entries) {
+			if (entry.name.startsWith(".")) {
+				continue;
+			}
+			const entryPath = path.join(dirPath, entry.name);
+			if (entry.isDirectory()) {
+				out.push(...(await listCarrierFiles(entryPath)));
+				continue;
+			}
+			if (entry.isFile()) {
+				const ext = path.extname(entry.name);
+				if ((PROSE_SCAN_EXTENSIONS as ReadonlyArray<string>).includes(ext)) {
+					out.push(entryPath);
+				}
+			}
+		}
 	} catch {
 		return out;
 	}
 
-	for (const entry of entries) {
-		if (entry.name.startsWith(".")) {
-			continue;
-		}
-		const entryPath = path.join(dirPath, entry.name);
-		if (entry.isDirectory()) {
-			out.push(...(await listCarrierFiles(entryPath)));
-			continue;
-		}
-		if (entry.isFile()) {
-			const ext = path.extname(entry.name);
-			if ((PROSE_SCAN_EXTENSIONS as ReadonlyArray<string>).includes(ext)) {
-				out.push(entryPath);
-			}
-		}
-	}
 	return out;
 }
 
