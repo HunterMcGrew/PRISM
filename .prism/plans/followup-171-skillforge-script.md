@@ -122,13 +122,15 @@ The CLI is one new script — `scripts/ai-skills/migrate-skill.ts` — plus a `p
 - **Re-tokenizing substituted literals is out of v1 scope.** Reverse token-substitution (`Acme Corp` → `{{org}}`) is lossy and ambiguous. v1 prints a reminder naming the config tokens and leaves the scan to the human, matching the migrate procedure's "best-effort, never block." Auto-reversal can be a follow-up if it proves needed.
   - → no promotion needed (codified in the skill-body procedure and this plan).
 
-- **OPEN — TBD, needs Hunter input.** Whether the in-PRISM ID-normalization exception (org token `prism` → keep `prism-` prefix) should instead require an explicit `--id` to ever emit a `prism-*` ID, so a consumer who happens to set `"org": "prism"` can't accidentally claim the PRISM namespace. **Default path (used until resolved):** honor the config `org` token verbatim (org `prism` → `prism-<role>`), since PRISM's own `config.json` already declares `"org": "PRISM"` and this is the repo where contributing `prism-*` skills is legitimate. The `--id` override always wins regardless.
+- **ID normalization: honor org token verbatim; `--id` always overrides.** The OPEN question (require explicit `--id` to emit `prism-*` IDs?) resolved to the default path per Sol's ruling (2026-06-16): `normalizeSkillId` honors the config `org` token verbatim — when org is `prism` (case-insensitive), the ID stays `prism-<role>` (in-PRISM exception). A consumer who sets `"org": "prism"` would produce `prism-*` IDs, which is acceptable because that's an explicit config choice; `--id` always overrides for any caller who needs a different namespace.
+  - → no promotion needed (ticket-tactical; documents the API contract of `normalizeSkillId`).
 
 ---
 
 ## History
 
 - 2026-06-16 [hmcgrew/prism-171-skillforge-script]: Winston planned the migrate-mode CLI (`scripts/ai-skills/migrate-skill.ts`) — 4 reverse transforms, ID normalization, round-trip-via-rebuild verification. Plan only; no code.
+- 2026-06-16 [worktree-agent-ab7eeff042de82435]: Clove implemented `migrate-skill.ts` + `migrate-skill.test.ts` + `package.json` `prism:migrate-skill` entry; `pnpm prism:check` green, `prism:check-types` exit 0, 297/297 tests pass.
 
 ---
 
