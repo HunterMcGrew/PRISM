@@ -2,7 +2,7 @@
 
 Architecture docs explain _choices_, not just what exists. An architect reasons from the business need to the technical flows that fall out of it, matches those requirements to an existing solution, and builds custom only where nothing fits. A doc that walks the reader through the same reasoning chain is easier to understand, harder to regress, and survives contact with questions the original author didn't anticipate.
 
-This rule governs the shape of docs in `docs/content/dev/architecture/`. Apply it to new architecture docs and to restructures of existing ones. Companion operational procedures move to `docs/content/dev/operations/` — see the operational-bleed principle below.
+This rule governs the shape of architecture docs in `docs/`. Apply it to new architecture docs and to restructures of existing ones. Companion operational procedures belong in a separate operations doc — see the operational-bleed principle below.
 
 This file lives in `.prism/architect/` (not `.prism/rules/`) because it applies only to architecture docs — the manifest loads it when an architecture doc is in scope, not on every conversation.
 
@@ -71,11 +71,11 @@ Specific limits read like this:
 
 ### Operational bleed anti-pattern
 
-Architecture docs explain shape; operations docs explain procedure. The moment a section reads like a checklist — "1. Open the Actions tab 2. Uncheck pre-release 3. Check Latest" — it belongs in a paired operations doc under `docs/content/dev/operations/`.
+Architecture docs explain shape; operations docs explain procedure. The moment a section reads like a checklist — "1. Open the Actions tab 2. Uncheck pre-release 3. Check Latest" — it belongs in a companion operations doc.
 
-**Why:** Two readers with two different needs. The first-time architect reader wants to understand the design; the 3am operator reader wants a checklist. A single doc that serves both compromises both — the architect is buried under keystrokes, the operator has to hunt through reasoning paragraphs for the next step. This is the Two-Reader Model (see `.prism/architect/_toolkit/documentation.md`).
+**Why:** Two readers with two different needs. The first-time architect reader wants to understand the design; the 3am operator reader wants a checklist. A single doc that serves both compromises both — the architect is buried under keystrokes, the operator has to hunt through reasoning paragraphs for the next step.
 
-**How to apply:** pair architecture and operations docs by topic — `docs/content/dev/architecture/<topic>.md` and `docs/content/dev/operations/<topic>.md` — and cross-link both ways. The architecture doc explains _why_ a procedure is the shape it is; the operations doc owns _how_ to execute it. When you're tempted to add a step-by-step section to an architecture doc, that's the signal to create or update the operations counterpart.
+**How to apply:** separate architecture and operations content by topic, cross-linking both ways. The architecture doc explains _why_ a procedure is the shape it is; the operations doc owns _how_ to execute it. When you're tempted to add a step-by-step section to an architecture doc, that's the signal to create or update the operations counterpart.
 
 ---
 

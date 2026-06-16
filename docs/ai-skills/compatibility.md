@@ -82,4 +82,4 @@ The committed-vs-ignored split and the install-script rule are codified as [ADR-
 See also:
 
 - [`.prism/architect/_toolkit/install-layout.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/_toolkit/install-layout.md) — the agent-facing routing summary for the install layout.
-- [`docs/content/dev/ai-skills/syncing.md`](./syncing.md) — the operational workflow for keeping platform outputs in sync.
+- [`docs/ai-skills/syncing.md`](./syncing.md) — the operational workflow for keeping platform outputs in sync.

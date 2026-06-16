@@ -115,4 +115,4 @@ Platforms without managed content are treated as opt-out, not drift. The signal 
 - `scripts/ai-skills/build.ts` — the copy and cleanup orchestration in `main()`
 - `scripts/ai-skills/path-guard.ts` — the standalone guard module
 - `.ai-skills/definitions/paths.json` — `canonical.contentRoot` and `generated.platformContentCopies` declare the source/target dirs
-- `docs/content/dev/architecture/install-layout.md` — the longer human-readable companion
+- [ADR-0031](../spec/adrs/_toolkit/0031-bifurcated-install-layout.md) — the decision, alternatives considered, and full reasoning

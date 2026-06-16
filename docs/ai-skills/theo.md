@@ -3,7 +3,7 @@ title: "Theo — the architect-doc walker"
 description: "How Theo finds load-bearing decisions in your codebase and proposes them as architect docs."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-05-22"
+last_updated: "2026-06-16"
 ---
 
 ## What Theo does
@@ -29,8 +29,9 @@ Resumability is structural — Theo writes his progress to `.prism/theo-state.js
 Theo produces three file types:
 
 - **Architect docs** at `.prism/architect/<topic>.md` — the agent-facing record of load-bearing decisions. Read by every PRISM agent during relevant edits via the manifest.
-- **Paired dev docs** at `docs/content/dev/architecture/<topic>.md` — the narrative companion for engineers, gated by [ADR-0038](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0038-paired-dev-doc-gates.md)'s two checks (category-fit + pairing-value).
 - **State file** at `.prism/theo-state.json` — operational state for resume. Gitignored; not durable spec.
+
+When a topic warrants human-readable narrative documentation, Theo flags it and routes to Eli. Eli decides the appropriate `docs/` path. The automatic paired dev doc at `docs/content/dev/architecture/<topic>.md` is retired per [ADR-0058](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
 
 Architect docs follow the four-beat arc named in [`.prism/architect/_toolkit/architecture-doc-shape.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/architect/_toolkit/architecture-doc-shape.md).
 

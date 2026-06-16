@@ -36,7 +36,7 @@ Atlas detects your stack, asks the questions it needs, generates per-team rules 
 
 ## Repo shape
 
-The install layout is bifurcated: platform-agnostic content lives at `.prism/`, platform dirs hold build-time copies plus their own platform-specific outputs. See [docs/content/dev/architecture/install-layout.md](./docs/content/dev/architecture/install-layout.md) for the full reasoning.
+The install layout is bifurcated: platform-agnostic content lives at `.prism/`, platform dirs hold build-time copies plus their own platform-specific outputs. See [ADR-0031](./.prism/spec/adrs/_toolkit/0031-bifurcated-install-layout.md) for the decision and reasoning.
 
 ```
 PRISM/

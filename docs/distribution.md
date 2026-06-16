@@ -3,12 +3,12 @@ title: "Distribution"
 description: "How PRISM lands in a consumer repo, how updates flow under the bifurcated layout, and what stays under team control."
 category: "operations"
 audience: "dev"
-last_updated: "2026-05-03"
+last_updated: "2026-06-16"
 ---
 
 # Distribution
 
-How PRISM gets into a consumer team's codebase, how updates flow, and what stays under team control. The install layout is bifurcated — canonical platform-agnostic content at `.prism/`, build-time copies at each platform dir. See [Install Layout](../architecture/install-layout.md) for why.
+How PRISM gets into a consumer team's codebase, how updates flow, and what stays under team control. The install layout is bifurcated — canonical platform-agnostic content at `.prism/`, build-time copies at each platform dir. See [ADR-0031](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0031-bifurcated-install-layout.md) for the decision and reasoning.
 
 ## Model: sibling repo + script
 

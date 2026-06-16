@@ -12,7 +12,7 @@ Lightweight blocks with 1-2 self-evident options can use a shorter form — skip
 
 The base template below covers user docs in general. Some categories have additional shape rules that layer on top:
 
-- **`category: blocks`** — block docs in `docs/content/user/blocks/` are a category layer on this base template. Apply the standard template structure; add a Block Options section (as tables per location: Toolbar + Sidebar), a Parent & Child Blocks section for navigating the block hierarchy, and omit cross-links into `docs/content/dev/`.
+- **`category: blocks`** — block docs are a category layer on this base template. Apply the standard template structure; add a Block Options section (as tables per location: Toolbar + Sidebar), a Parent & Child Blocks section for navigating the block hierarchy, and omit cross-links into developer docs.
 
 Other user categories (`byo`, `configuration`, `customization`, `integrations`) follow the base template below — no additional rules today.
 
@@ -91,6 +91,6 @@ Edge cases, limitations, or non-obvious behavior worth flagging. Use callout syn
 - Start with an action verb (e.g. "Navigate to...", "Click...", "Verify that...")
 - **Document every block option** — toolbar, sidebar panels, toggles, dropdowns. Nothing skipped.
 - **Generate the TOC after writing** — Nextra auto-generates a table of contents from headings, so a manual TOC is not needed unless the page is very long
-- **Image paths** use relative format from the doc to `public/`: `../../../public/images/user/{category}/{topic}/descriptive-name.png` (adjust `../` depth based on file location)
+- **Image paths** use relative format from the doc to `public/`: `../../public/images/user/{category}/{topic}/descriptive-name.png` (adjust `../` depth based on file location)
 - **Alt text** must describe what the screenshot shows, not just label it: "The block settings sidebar showing the Headline Level dropdown" not "Block settings"
 - **Callouts** — use GitHub alert syntax for tips, warnings, and important notes. See `.prism/references/doc-callouts.md` for when to use each type.
