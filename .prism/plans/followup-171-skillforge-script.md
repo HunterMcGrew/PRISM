@@ -131,6 +131,7 @@ The CLI is one new script — `scripts/ai-skills/migrate-skill.ts` — plus a `p
 
 - 2026-06-16 [hmcgrew/prism-171-skillforge-script]: Winston planned the migrate-mode CLI (`scripts/ai-skills/migrate-skill.ts`) — 4 reverse transforms, ID normalization, round-trip-via-rebuild verification. Plan only; no code.
 - 2026-06-16 [worktree-agent-ab7eeff042de82435]: Clove implemented `migrate-skill.ts` + `migrate-skill.test.ts` + `package.json` `prism:migrate-skill` entry; `pnpm prism:check` green, `prism:check-types` exit 0, 297/297 tests pass.
+- 2026-06-16 [hmcgrew/prism-171-skillforge-script]: Briar self-review — zero critical/major findings; all 4 reverse transforms verified correct; `prism:check` green; `prism:check-types` exit 0; 297/297 tests pass. PR ready for Eric.
 
 ---
 
@@ -165,14 +166,26 @@ Reference: `.prism/templates/acceptance-criteria.md`.
 
 ---
 
+## Review Issues
+
+None found.
+
+---
+
+## Cleanup Items
+
+None found.
+
+---
+
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — `pnpm prism:check-types` clean
-- [ ] No stray console.logs (the CLI's user-facing `console.log` output is intentional)
-- [ ] Tests written — one round-trip per source shape + `normalizeSkillId` units
-- [ ] Build passes — `pnpm prism:build` + `pnpm prism:check` green
+- [x] No critical or major issues
+- [x] Types correct — `pnpm prism:check-types` exit 0
+- [x] No stray console.logs (the CLI's user-facing `console.log` output is intentional)
+- [x] Tests written — one round-trip per source shape + `normalizeSkillId` units + TOML unescape + `detectSourceShape` + `detectPersona` (297/297 pass)
+- [x] Build passes — `pnpm prism:check` green (build --check + prism:test + verify-manifest + crossref-lint)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted (round-trip-fidelity property → architect doc / ADR)
+- [ ] Lasting decisions promoted (round-trip-fidelity property → architect doc / ADR, pending plan close)
 
 **Last updated:** 2026-06-16
