@@ -1,5 +1,7 @@
 # Plan: followup-192-check-nondeterminism
 
+> Closed: 2026-06-16
+
 ## Ticket
 
 GitHub issue #192
@@ -25,7 +27,7 @@ Fix `pnpm prism:check` intermittently reporting `.agents/skills/<X>/SKILL.md` ou
   - **Alternatives considered:** (a) Add `.agents/` to a "skip in check mode" list by path pattern. (b) Clear `.agents/` before running check mode. (c) Use `!checkMode` unconditionally — chosen.
   - **Chosen approach:** `codex: !checkMode`. Mirrors the existing sync-manifest guard at `build.ts:~1366`, which already skips a gitignored generated artifact in check mode for exactly this reason. Path-pattern skip list adds indirection for no benefit; clearing `.agents/` before check mode mutates disk state during a read-only operation.
   - **Implementation guidance:** one-line change at `build.ts:1142` with a comment explaining the gitignore constraint. Build mode still evaluates to `true` and writes `.agents/` normally.
-  - **`codexConfig` observation:** `codexConfig: !checkMode || (await pathExists(codexConfigPath))` has the same gitignore exposure (`.codex/codex-config.toml` is also gitignored per `.gitignore:9`). Not manifesting as a bug because `codex-config.toml` content is stable across branches. Out of scope for this fix.
+  - **`codexConfig` guard:** `.codex/codex-config.toml` has the same gitignore exposure (`.gitignore:9`). Folded in on Eric's review; `codexConfig` is now also `!checkMode` for consistency. Build mode still evaluates `pathExists` and writes the file normally.
   - → no promotion needed (ticket-tactical fix; the gitignore-means-skip-check pattern is already established by the sync-manifest guard)
 
 ---
@@ -33,3 +35,4 @@ Fix `pnpm prism:check` intermittently reporting `.agents/skills/<X>/SKILL.md` ou
 ## History
 
 - 2026-06-16 [hmcgrew/prism-192-check-nondeterminism]: Fixed phantom drift in `pnpm prism:check` for `.agents/` by skipping `skillsRootHasManagedContent` in check mode; `.agents/` is gitignored so stale branch content triggered false positives.
+- 2026-06-16 [hmcgrew/prism-192-check-nondeterminism]: Folded in Eric's minor — guarded `codexConfig` with `!checkMode` for the same gitignore reason; closed plan.

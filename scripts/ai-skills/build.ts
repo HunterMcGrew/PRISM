@@ -1152,7 +1152,10 @@ async function main(): Promise<void> {
 		claudeAgents:
 			!checkMode ||
 			(await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
-		codexConfig: !checkMode || (await pathExists(codexConfigPath)),
+		// `.codex/codex-config.toml` is gitignored (per-user), so a branch
+		// checkout leaves prior-branch content on disk. Skipping the pathExists
+		// check in check mode prevents stale presence from being treated as drift.
+		codexConfig: !checkMode,
 	};
 
 	if (!checkMode) {
