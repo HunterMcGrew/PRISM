@@ -19,8 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadSyncManifest } from "./sync-manifest";
-import { runUpdate, type UpdateSummary } from "./update";
-import { resolvePrismSource } from "./update";
+import { resolvePrismSource, runUpdate, type UpdateSummary } from "./update";
 import { ensureDirectory, pathExists } from "./utils";
 
 export interface SeedSummary {
