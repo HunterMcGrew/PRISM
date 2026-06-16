@@ -107,6 +107,8 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
 - 2026-06-16 [hmcgrew/prism-195-l1-seed-sync]: Briar self-review complete. One major (plan task 3 dry-run verification claim is false — `--dry-run` not implemented), one minor (split import from same module). All three verification commands independently confirmed green.
 - 2026-06-16 [sol-replan]: Winston ruled the dry-run fork — **B (retract the claim)**, not implement. First-contact's safety is recover-after-`.bak` (seed never overwrites; sync no-ops/`.bak`s), so a preview duplicates `reportSummary` and would add net-new conditional behavior to `update.ts` against Decision #1's "no second engine." Amended task 3 verification to a throwaway-fixture run; recorded the decision (→ ADR-0059); no source change to `adopt.ts`/`update.ts` for dry-run.
 - 2026-06-16 [hmcgrew/prism-195-l2-firstcontact-discovery]: Lane 2 complete — added `first-contact` mode to `prism-onboarding/shared.md` (tasks 6–9: mode definition, Batch-1 probe 6, asset-path survey, discovery sweep, seed-and-sync handoff), registered `asset-path-survey` and `discovery-sweep` in `ONBOARDING_STEPS` and `first-contact` in the mode union (task 10), moved `assertConsumerIsEstablished` guard into `runAdopt` (folded fix), added `runAdopt` manifest-exists test to `adopt.test.ts`. `pnpm prism:build` regenerated 6 platform mirrors. All verification green: `prism:check-types`, `prism:test` (322/322), `prism:check`.
+- 2026-06-16 [hmcgrew/prism-195-l2-firstcontact-discovery]: Briar Lane-2 self-review complete. 1 minor open: first-contact step sequence lists documentation setup in "2–9" block but interactive flow places it at step 11 after the new first-contact steps; fix-now call (same file, Lane 2 authoring, direct consequence of the lane's insertion). All verification independently confirmed green.
+- 2026-06-16 [hmcgrew/prism-195-l2-firstcontact-discovery]: Fixed Briar minor — narrowed "2–9" block to "2–7" (through existing standards) and added standalone step 11 for documentation setup, matching § Interactive flow ordering. Mirrors regenerated; all verification green (322/322).
 
 ---
 
@@ -158,10 +160,18 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
 ### split-import-from-same-module
 
 - **Severity:** `minor`
-- **Status:** `open` — folded into the Lane-1 fix pass (Clove)
-- **File:** `scripts/ai-skills/adopt.ts:22-23`
-- **Problem:** `runUpdate` / `UpdateSummary` and `resolvePrismSource` are imported from `./update` in two separate import statements.
-- **Suggested fix:** Merge into one: `import { runUpdate, resolvePrismSource, type UpdateSummary } from "./update";`
+- **Status:** `fixed` — merged into single import in `adopt.ts:22`
+- **File:** `scripts/ai-skills/adopt.ts:22`
+- **Problem:** `runUpdate` / `UpdateSummary` and `resolvePrismSource` were imported from `./update` in two separate import statements.
+- **Resolution:** Merged into one: `import { resolvePrismSource, runUpdate, type UpdateSummary } from "./update";`
+
+### first-contact-step-sequence-documentation-setup-misplaced
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md` (first-contact step sequence, line ~119)
+- **Problem:** The first-contact step sequence lists "2–9. Same as first-install (... → existing standards → documentation setup)" — including documentation setup in the 2–9 block. But the interactive flow now places documentation setup at step 11 in first-contact mode (after asset-path survey at step 8 and discovery sweep at step 9). An Atlas operator reading the first-contact step sequence would incorrectly infer that documentation setup fires before the new first-contact steps, not after.
+- **Suggested fix:** Narrow "2–7. Same as first-install through existing standards (project name → ticket prefix → GitHub org/repo → Linear workspace → Linear team key → product domain → existing standards)." Add a step 11 entry: "**Documentation setup** — same as first-install (§ Interactive flow → Documentation question set)." This matches the actual interactive flow and removes the contradiction.
 
 ---
 
@@ -173,15 +183,18 @@ None found.
 
 ## PR Readiness
 
-Living checklist — updated by Briar self-review 2026-06-16.
+Living checklist — updated by Briar self-review 2026-06-16 (Lane 2).
 
-- [x] No critical or major issues — the 1 major (dry-run claim) is resolved by Winston's ruling B (retract; see Review Issues + `## Decisions`). 1 minor (split import) folded into the Lane-1 fix pass.
+- [x] No critical or major issues — Lane 1 major (dry-run claim) resolved by Winston ruling B. Lane 1 minor (split import) fixed in this lane. 1 new minor in this lane (first-contact step sequence numbering drift — documentation setup misplaced in 2–9 block); fix-now call: see Review Issues.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts (console.log calls in `reportSummary` are intentional CLI output)
-- [x] Tests written for new logic and edge cases — all 5 plan-specified cases covered, 8 tests, all green
+- [x] Tests written for new logic and edge cases — `runAdopt` guard test (line 297) asserts guard runs inside `runAdopt` not just `main`; step-ordering tests (lines 75–98) assert `asset-path-survey` precedes `discovery-sweep` and both seed pending; 322/322 tests green
 - [x] All debugged issues resolved (no `open` entries in Debugged Issues)
-- [x] Build passes — `pnpm prism:check-types`, `pnpm prism:test` (319/319), `pnpm prism:check` all green (2026-06-16); full `pnpm prism:build` skipped — diff is scripts-only (no `.prism/` canonical content affected)
+- [x] Build passes — `pnpm prism:check-types` clean, `pnpm prism:test` (322/322) green, `pnpm prism:check` passed (mirrors in sync) — all verified 2026-06-16; full `pnpm prism:build` skipped — diff touches canonical skill content which `pnpm prism:check` verified; no bundled output affected
+- [x] Platform mirrors match canonical — `pnpm prism:check passed. Generated outputs are in sync.`
+- [x] No team-specific literals (Thrive/SPC) in shared.md, adopt.ts, adopt.test.ts, onboarding-state.ts, onboarding-types.ts — plan file carries context-only references as expected
 - [ ] PR description up to date — no PR exists yet
 - [ ] Lasting decisions promoted to architect context — Lane 3 task (deferred per plan)
+- [ ] first-contact step sequence minor fixed (documentation setup at step 11, not inside 2–9)
 
-**Last updated:** 2026-06-16
+**Last updated:** 2026-06-16 (Lane 2 Briar self-review)

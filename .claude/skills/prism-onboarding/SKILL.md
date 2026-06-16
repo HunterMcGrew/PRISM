@@ -132,9 +132,11 @@ The mode is permanently, fully repo-agnostic — every established repo rides th
 **Step sequence for first-contact (additions to first-install, in order):**
 
 1. Survey — share detection results, detected established-asset signals, and the mode.
-2–9. Same as first-install (project name → ticket prefix → GitHub org/repo → Linear workspace → Linear team key → product domain → existing standards → documentation setup).
-10. **Asset-path survey** — ask the user to confirm or correct the auto-detected paths for each asset class: skills, architect docs, ADRs, rules, and docs. (§ Interactive flow → Asset-path survey question set)
-11. **Discovery sweep** — scan the union of auto-detected and user-supplied paths; per asset class, decide adopt or leave. (§ Interactive flow → Discovery-sweep question set)
+2–7. Same as first-install through existing standards (project name → ticket prefix → GitHub org/repo → Linear workspace → Linear team key → product domain → existing standards).
+8. **Asset-path survey** — ask the user to confirm or correct the auto-detected paths for each asset class: skills, architect docs, ADRs, rules, and docs. (§ Interactive flow → Asset-path survey question set)
+9. **Discovery sweep** — scan the union of auto-detected and user-supplied paths; per asset class, decide adopt or leave. (§ Interactive flow → Discovery-sweep question set)
+10. **Slack channel** — same as first-install (optional).
+11. **Documentation setup** — same as first-install (§ Interactive flow → Documentation question set).
 12. Generate per-team rules via `runRuleGenerators`.
 13. Populate stub anchors via `runAnchorSubstitution`.
 14. Write `.ai-skills/config.json` atomically.
