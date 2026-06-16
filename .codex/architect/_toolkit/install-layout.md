@@ -75,6 +75,19 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 **Enforcement:** Seed drift is enforced by `checkSeedDrift()` in `scripts/ai-skills/build.ts`; `pnpm prism:check` fails if a non-curated canonical file diverges from the seed or is missing from the seed. The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 
+## First-contact adoption: `prism:adopt`
+
+The seed surface above is what a consumer repo *receives*; `pnpm prism:adopt` is what *lays it down* the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. ADR-0059 records the design; `scripts/ai-skills/adopt.ts` implements it.
+
+`runAdopt` runs two steps in sequence:
+
+1. **Seed `.prism/` from `templates/install/.prism/`.** `seedConsumerContentRoot` recursively copies the install seed into the consumer's `.prism/`, writing only paths the consumer does **not** already have and skipping any that exist. It never overwrites an existing consumer file — it mirrors the `consumerHash === null → written` posture from `applyIncomingFile`.
+2. **Run the first sync.** `runAdopt` then delegates to `runUpdate` (ADR-0057), which applies PRISM-owned files and writes the steady-state baseline manifest via `rewriteConsumerManifest`. The no-op-before-`.bak` ordering means byte-identical consumer files are left untouched and only genuinely diverged files are preserved as `.bak` — so the first sync into an established repo with no baseline manifest is safe (ADR-0057's no-manifest path).
+
+After this one run, `.prism/.sync-manifest.json` exists and the repo is in steady-state: `pnpm prism:update` handles all future syncs.
+
+**The manifest-exists refusal is the install-vs-steady-state guard.** `runAdopt` calls `assertConsumerIsEstablished` before seeding; if a `.sync-manifest.json` is already present, it throws `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` The guard lives inside `runAdopt`, not only in the CLI `main()`, so every caller of `runAdopt` inherits the invariant. This mirrors `update.ts`'s source==consumer refusal: each entry point refuses the other's job so the two flows' preconditions stay clean. There is no `--dry-run` preview — first-contact's safety is recover-after-`.bak` (the seed never overwrites; the sync no-ops byte-identical files and `.bak`-snapshots divergence), not see-before-write (ADR-0059).
+
 ## Cross-reference convention
 
 When canonical content cites another canonical file, use `.prism/<area>/<file>`. Every platform's copy of the citing file will resolve correctly via its own auto-load — Claude reads the citation from `.claude/rules/<rule>.md` and resolves `.prism/<area>/<file>` against the canonical location. Codex and Cursor do the same.
