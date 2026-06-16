@@ -76,6 +76,6 @@ export interface OnboardingStep {
 export interface OnboardingState {
 	startedAt: string;
 	updatedAt: string;
-	mode: "first-install" | "reconfigure" | "dogfood-self";
+	mode: "first-install" | "reconfigure" | "dogfood-self" | "first-contact";
 	steps: OnboardingStep[];
 }

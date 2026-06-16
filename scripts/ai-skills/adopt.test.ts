@@ -293,3 +293,30 @@ test("assertConsumerIsEstablished passes when no .sync-manifest.json exists", as
 		);
 	});
 });
+
+test("runAdopt throws when a .sync-manifest.json already exists", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			// Seed a PRISM source file so runUpdate has something to operate on,
+			// then pre-seed a manifest to simulate a repo already in steady-state.
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await writeConsumerManifest(consumerContentRoot, {});
+
+			await assert.rejects(
+				() => runAdopt({ prismSourceRoot, consumerRepoRoot }),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("already has a PRISM baseline"),
+						`expected refusal message, got: ${err.message}`
+					);
+					assert.ok(
+						err.message.includes("pnpm prism:update"),
+						`expected update guidance in message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+		}
+	);
+});

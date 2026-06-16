@@ -45,6 +45,8 @@ export const ONBOARDING_STEPS: ReadonlyArray<string> = [
 	"linear-team-key",
 	"product-domain",
 	"existing-standards",
+	"asset-path-survey",
+	"discovery-sweep",
 	"slack-channel",
 	"documentation-setup",
 	"stack-detection",
