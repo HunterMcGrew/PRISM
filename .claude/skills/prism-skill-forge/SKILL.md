@@ -127,6 +127,11 @@ run `pnpm prism:check-types` clean.
 
 ## Migrate mode — decompose a generated skill into canonical source
 
+**For the mechanical case, run `pnpm prism:migrate-skill <source>` — it handles
+the four source shapes automatically. Fall back to the steps below when the CLI
+flags ambiguity (persona/utility disambiguation, per-platform delta recovery,
+re-tokenization).**
+
 Migrate recovers canonical source from an already-generated platform skill —
 useful when a team hand-authored a skill directly in a platform directory and
 wants it inside the pipeline. Follow the patterns in
