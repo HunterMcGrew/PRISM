@@ -139,7 +139,7 @@ If a second preference emerges, write an ADR first to generalize the mechanism b
 
 `.prism/spec/adrs/` is the home for durable, cross-cutting architectural decisions — skill ecosystem, codebase architecture, spec structure. Not ticket-tactical decisions (those stay in the plan's `## Decisions`). An ADR captures the context, the decision, and the consequences in one durable place, so the reasoning survives even when the skill or rule that cites it is later reorganized.
 
-See [`.prism/spec/adrs/README.md`](./spec/adrs/_toolkit/README.md) for numbering, status lifecycle, and when to write an ADR vs. when to leave a decision in a plan.
+See [`.prism/spec/adrs/_toolkit/README.md`](./spec/adrs/_toolkit/README.md) for numbering, status lifecycle, and when to write an ADR vs. when to leave a decision in a plan.
 
 ---
 
