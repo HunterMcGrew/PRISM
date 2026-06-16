@@ -14,7 +14,7 @@ Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 an
 
 ### Clove (implementation)
 
-1. `git rm -r .generated/cursor-skills/` — remove 34 tracked files. Confirm `pnpm prism:check` is green after deletion.
+1. `git rm -r .generated/cursor-skills/` — remove the orphaned `.generated/cursor-skills/` tree. Confirm `pnpm prism:check` is green after deletion.
 
 ---
 
@@ -29,7 +29,7 @@ Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 an
 
 ## History
 
-- 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Deleted `.generated/cursor-skills/` (34 tracked files) — confirmed orphaned after ADR-0044 moved Cursor output to `.cursor/skills/`.
+- 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Deleted `.generated/cursor-skills/` (33 files) — confirmed orphaned after ADR-0044 moved Cursor output to `.cursor/skills/`.
 - 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Folded in `eric-pr104-summary.md` and `pr105-eric-summary.md` — same-scope orphan cleanup per followup-scope.md; grep confirmed zero consumers.
 
 ---
@@ -55,7 +55,7 @@ Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 an
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — N/A (deletion)
 - [x] All debugged issues resolved
-- [ ] Build passes — last run: pending
+- [x] Build passes — last run: 2026-06-15 (pnpm prism:check green, 217 tests pass)
 - [ ] PR description up to date
 
 **Last updated:** 2026-06-15
