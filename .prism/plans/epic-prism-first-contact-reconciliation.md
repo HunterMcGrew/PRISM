@@ -98,7 +98,7 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
   - **Chosen approach:** (B) retract. Beats (A) because the safety a preview would buy is already structural and load-bearing: seed **never overwrites** an existing consumer file (`consumerHash === null → written`, skip otherwise — `adopt.ts:seedConsumerContentRoot`), and the sync pass only touches PRISM-owned paths, no-ops byte-identical files, and `.bak`-snapshots every divergence with a non-clobbering name the run summary prints (`update.ts:applyIncomingFile`, ADR-0057). The first-contact catastrophe ("first run eats my existing setup") cannot occur, so a preview duplicates `reportSummary`'s after-the-fact account of a fully-reversible run. (A) also adds net-new conditional behavior to `update.ts` — the steady-state merge core ADR-0057 froze — doubling every write site into a would-write/write branch on PRISM's most safety-critical path, contradicting Decision #1's "no second engine" rejection.
   - **Implementation guidance:** task 3 verification is now a throwaway-fixture run asserting the `AdoptSummary` and the `.sync-manifest.json` baseline. No code change to add `--dry-run`. Clove's Lane-1 fix pass only updates the plan-promised verification behavior (already amended) — `adopt.ts`/`update.ts` need no dry-run handling.
   - **→ promoted to ADR-0059 (task 11)** — fold into ADR-0059's Decision section alongside Decision #1; the "recover-after-`.bak`, no preview engine" posture is the same design principle and belongs in the same durable record.
-- **First-contact mode is permanently, fully repo-agnostic — SPC is treated exactly like Thrive or any third-party repo, with zero team-specific code.** First-contact detects and adopts whatever an established repo already has (its skills, architect docs, ADRs, rules, docs — in standard *or* non-standard locations) through one generic path: survey the user about each asset class and its paths → run the discovery sweep (auto-detection cross-checked against the user's stated paths) → construct everything correctly into canonical PRISM structure (adopt) or record as consumer-owned (leave). The entire flow is driven by detection + `config.json` only; there is never a branch that keys on "is this SPC." SPC's existing setup, doc format, and asset locations ride the same channel as Thrive's and any other repo's. **Why:** Hunter ruled "we will treat SPC just like Thrive or some other random repo" (History 2026-06-16) — first-contact is generic by design, not generic-pending-a-future-special-case. A repo-specific branch is the failure mode this decision permanently forecloses. Alternatives considered: keep the question open until SPC onboards and special-case its shape then — rejected, it invites a team-specific code path the agnostic design is built to prevent; the survey + discovery + seed-and-sync flow already handles arbitrary established repos, so there is nothing left to resolve. **This resolves the prior OPEN decision** (was: "OPEN — TBD, needs Hunter + SPC input," see History 2026-06-16). → promote to ADR-0059's Decision section (the agnostic principle is design-defining; folded in task 11).
+- **First-contact mode is permanently, fully repo-agnostic — SPC is treated exactly like Thrive or any third-party repo, with zero team-specific code.** First-contact detects and adopts whatever an established repo already has (its skills, architect docs, ADRs, rules, docs — in standard *or* non-standard locations) through one generic path: survey the user about each asset class and its paths → run the discovery sweep (auto-detection cross-checked against the user's stated paths) → construct everything correctly into canonical PRISM structure (adopt) or record as consumer-owned (leave). The entire flow is driven by detection + `config.json` only; there is never a branch that keys on "is this SPC." SPC's existing setup, doc format, and asset locations ride the same channel as Thrive's and any other repo's. **Why:** Hunter ruled "we will treat SPC just like Thrive or some other random repo" (History 2026-06-16) — first-contact is generic by design, not generic-pending-a-future-special-case. A repo-specific branch is the failure mode this decision permanently forecloses. Alternatives considered: keep the question open until SPC onboards and special-case its shape then — rejected, it invites a team-specific code path the agnostic design is built to prevent; the survey + discovery + seed-and-sync flow already handles arbitrary established repos, so there is nothing left to resolve. **This resolves the prior OPEN decision** (was: "OPEN — TBD, needs Hunter + SPC input," see History 2026-06-16). → promoted to ADR-0059's Decision section (the agnostic principle is design-defining; folded in task 11).
 
 ## History
 
@@ -153,6 +153,14 @@ No two lanes share a file, so cross-lane parallelism is safe *once Lane 1 lands*
 
 ## Review Issues
 
+### decision-6-verdict-tense
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/epic-prism-first-contact-reconciliation.md:101`
+- **Problem:** Decision #6 (repo-agnostic) verdict uses present-tense imperative `→ promote to ADR-0059's Decision section` instead of the canonical past-tense format `→ promoted to`. All other five verdicts use `→ promoted to` correctly. The content is present in ADR-0059 Decision (b), so this is a format inconsistency, not a missing verdict.
+- **Suggested fix:** Change `→ promote to ADR-0059's Decision section (the agnostic principle is design-defining; folded in task 11)` to `→ promoted to ADR-0059 Decision (b) (the agnostic principle is design-defining; folded in task 11)`.
+
 ### plan-task-3-dry-run-claim-is-false
 
 - **Severity:** `major`
@@ -189,7 +197,7 @@ None found.
 
 Living checklist — updated by Winston at epic close 2026-06-16 (Lane 3, ADR-0059 + install-layout).
 
-- [x] No critical or major issues — all resolved; zero open minors
+- [x] No critical or major issues — all resolved; 1 open minor (decision-6 verdict tense, format-only)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts (console.log calls in `reportSummary` are intentional CLI output)
 - [x] Tests written for new logic and edge cases — 322/322 green; step-ordering and guard tests confirmed
@@ -201,4 +209,4 @@ Living checklist — updated by Winston at epic close 2026-06-16 (Lane 3, ADR-00
 - [ ] PR description up to date — Sol authors the Lane-3 PR body (no PR opened by this run)
 - [x] Lasting decisions promoted to architect context — ADR-0059 written (5 of 6 Decisions); verdict gate complete; one Decision is no-promotion-needed
 
-**Last updated:** 2026-06-16 (Lane 3 epic close, Winston)
+**Last updated:** 2026-06-16 (Lane 3 Briar self-review)
