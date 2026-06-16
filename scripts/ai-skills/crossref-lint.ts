@@ -165,8 +165,12 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
 	// .sync-manifest.json is runtime-created and gitignored; ADR-0057 describes
 	// how it works — intentionally absent in the repo at authoring time.
+	// install-layout.md's § first-contact adoption section references it for the
+	// same reason: describing the post-adopt steady-state, not a live file.
 	".prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
 	"templates/install/.prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
+	".prism/architect/_toolkit/install-layout.md::.prism/.sync-manifest.json",
+	"templates/install/.prism/architect/_toolkit/install-layout.md::.prism/.sync-manifest.json",
 ]);
 
 // ---------------------------------------------------------------------------
