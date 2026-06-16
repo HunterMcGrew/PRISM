@@ -72,6 +72,31 @@ test("initialState seeds every canonical step as pending", () => {
 	}
 });
 
+test("initialState seeds asset-path-survey and discovery-sweep as pending", () => {
+	const state = initialState("first-contact", fixedClock);
+
+	const assetSurvey = state.steps.find((s) => s.name === "asset-path-survey");
+	const discoverySweep = state.steps.find((s) => s.name === "discovery-sweep");
+
+	assert.ok(assetSurvey, "asset-path-survey must be present in the step list");
+	assert.equal(assetSurvey.status, "pending");
+
+	assert.ok(discoverySweep, "discovery-sweep must be present in the step list");
+	assert.equal(discoverySweep.status, "pending");
+});
+
+test("asset-path-survey precedes discovery-sweep in ONBOARDING_STEPS", () => {
+	const surveyIndex = ONBOARDING_STEPS.indexOf("asset-path-survey");
+	const sweepIndex = ONBOARDING_STEPS.indexOf("discovery-sweep");
+
+	assert.notEqual(surveyIndex, -1, "asset-path-survey must be in ONBOARDING_STEPS");
+	assert.notEqual(sweepIndex, -1, "discovery-sweep must be in ONBOARDING_STEPS");
+	assert.ok(
+		surveyIndex < sweepIndex,
+		`asset-path-survey (index ${surveyIndex}) must precede discovery-sweep (index ${sweepIndex})`
+	);
+});
+
 test("markStepComplete transitions a pending step and updates updatedAt", () => {
 	const state = initialState("first-install", () => "2026-05-22T12:00:00.000Z");
 	const next = markStepComplete(

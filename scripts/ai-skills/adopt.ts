@@ -103,6 +103,10 @@ export async function assertConsumerIsEstablished(
  * surface, then runs the PRISM-owned file sync (which writes the baseline
  * manifest as a byproduct via `rewriteConsumerManifest`). After this one run
  * the consumer uses `pnpm prism:update` for all future syncs.
+ *
+ * Refuses when a `.sync-manifest.json` already exists — that is `prism:update`
+ * territory, not `prism:adopt`. The guard lives here (not only in `main()`) so
+ * any caller of `runAdopt` gets the safety invariant, not just the CLI path.
  */
 export async function runAdopt(options: {
 	prismSourceRoot: string;
@@ -113,6 +117,8 @@ export async function runAdopt(options: {
 	const installSeedRoot = path.join(prismSourceRoot, "templates", "install", ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
 	const prismContentRoot = path.join(prismSourceRoot, ".prism");
+
+	await assertConsumerIsEstablished(consumerContentRoot);
 
 	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
 	const update = await runUpdate({ prismContentRoot, consumerContentRoot });
@@ -132,10 +138,8 @@ async function main(): Promise<void> {
 		);
 	}
 
-	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
-
-	await assertConsumerIsEstablished(consumerContentRoot);
-
+	// The manifest-exists guard lives in runAdopt so every caller is protected,
+	// not just this CLI path. main() relies on runAdopt's guard.
 	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot });
 
 	reportSummary(summary);
