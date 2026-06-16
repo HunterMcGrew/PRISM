@@ -52,10 +52,12 @@ const DOC_TOOL_FINGERPRINTS: ReadonlyArray<{
 const DOC_DIR_CANDIDATES = ["docs", "documentation", "doc", "site/content"];
 
 /**
- * Detects the existing documentation layout in the repo. Probes all known
- * config-file fingerprints in parallel, then checks for a doc directory.
- * Returns an empty-evidence result when the repo has no recognizable doc
- * layout — Atlas treats that as "ask cold."
+ * Detects the existing documentation layout in the repo. Runs the two
+ * sub-detectors — tool detection and location detection — concurrently via
+ * `Promise.all`. Tool detection itself probes fingerprints sequentially in
+ * declaration order (see `DOC_TOOL_FINGERPRINTS`). Returns an empty-evidence
+ * result when the repo has no recognizable doc layout — Atlas treats that as
+ * "ask cold."
  */
 export async function detectDocLayout(repoRoot: string): Promise<DetectedDocLayout> {
 	const [toolResult, locationResult] = await Promise.all([
