@@ -74,7 +74,7 @@ PRISM/
 ├── scripts/ai-skills/            # generator + tooling (TypeScript via tsx)
 │   ├── build.ts                  # canonical → platform outputs + content copy
 │   ├── path-guard.ts             # build-time path-reference guard
-│   ├── literal-guard.ts          # detects unsubstituted literals leaking into canonical
+│   ├── literal-guard.ts          # fails the build if origin-specific literals leak into generated outputs
 │   ├── lib/                      # Atlas helpers (stack detection, rule generators, anchors)
 │   └── *.test.ts                 # regression suite
 │
