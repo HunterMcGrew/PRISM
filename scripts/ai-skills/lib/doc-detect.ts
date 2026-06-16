@@ -17,9 +17,11 @@ import type { DetectedDocLayout } from "./onboarding-types";
 
 /**
  * Config-file fingerprints keyed by the doc tool they identify. The detector
- * checks each path in parallel; the first hit wins for `tool` identification.
- * Multiple hits are possible (e.g. a Nextra project with a `docs/` directory)
- * but only one `tool` label is returned — precedence runs in declaration order.
+ * probes each entry sequentially in declaration order, returning on the first
+ * hit — so declaration order is the precedence order. Multiple hits are
+ * possible (e.g. a Nextra project with a `docs/` directory) but only one
+ * `tool` label is returned. Do not parallelize the probe loop: parallel
+ * execution removes the first-match precedence guarantee.
  */
 const DOC_TOOL_FINGERPRINTS: ReadonlyArray<{
 	files: string[];
