@@ -4,6 +4,16 @@ PRISM has no versioned releases. This file tracks the evolution of the toolkit b
 
 ---
 
+## [Epic C — First-Contact Reconciliation] — 2026-06-16
+
+Epic tracking issue: #195
+
+- Added `pnpm prism:adopt` install entry — seeds `.prism/` from `templates/install/.prism/`, then runs the first sync to establish the steady-state baseline manifest (#196)
+- Added first-contact onboarding mode to Atlas — detects established repos, surveys existing skills/architect-docs/ADRs/rules/docs (and their paths), runs a discovery sweep, and adopts-or-leaves per asset class without overwriting existing work (#197)
+- Added ADR-0059 (first-contact adopts via seed-and-sync), updated install-layout doc with first-contact section, and closed the epic (#198)
+
+---
+
 ## [Epic A — Docs Overhaul] — 2026-06-16
 
 Epic tracking issue: #180
