@@ -14,7 +14,7 @@ Compose the architect doc (and optional paired dev doc). Drafts live in working 
 2. **Check `documentation.keepsDevDocs` in `.ai-skills/config.json`.** This field controls whether paired dev docs are drafted at all. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md) — PRISM has one audience, so paired dev docs are config-conditional, not automatic.
 
 3. **Branch on the config value:**
-   - **`keepsDevDocs: true`** → draft a paired dev doc as a narrative companion. The target path is `${documentation.location}/<topic>.md` (or the team's configured path). Cross-link both ways.
+   - **`keepsDevDocs: true`** → draft a paired dev doc as a narrative companion. The target path is `${documentation.location}/architecture/<topic>.md`. Cross-link both ways.
    - **`keepsDevDocs: false` (or absent)** → skip the paired dev doc. Record `pairedDevDoc: "skipped — keepsDevDocs: false"` in the candidate's state entry. Surface this verdict in step-06 so the user knows the skip was config-driven, not a content judgment.
 
 4. **Update state.** Set `currentPhase: "grilling"` (review loop coming). Append `step-05-draft` to `stepsCompleted`. Atomic write. Do NOT write the doc to disk yet — drafts live inline in chat until step-07.
