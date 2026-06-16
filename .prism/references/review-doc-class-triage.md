@@ -2,7 +2,7 @@
 
 Shared source-verification triage consumed by Briar (self-review, `prism-code-review-self`) and Eric (PR review, `prism-code-review-pr`).
 
-When the diff includes `.prism/architect/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../rules/architect-doc-verification.md). For every claim in the doc, classify against the cited source:
+When the diff includes `.prism/architect/**` files, auto-trip into source-verification mode per [`architect-doc-verification.md`](../rules/architect-doc-verification.md). When `documentation.keepsDevDocs` is `true` and paired dev docs are in the diff, apply the same bar to them — they carry the same durability risk as the architect docs they pair with. For every claim in the doc, classify against the cited source:
 
 - **Verified** — the claim matches the source as written.
 - **Diverged** — the claim contradicts the source. Flag as **Major** or higher.

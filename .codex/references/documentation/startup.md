@@ -105,7 +105,7 @@ Before writing anything new:
 When context involves a block (branch diff touches `frontend/blocks/{name}/` or `backend/.../blocks/{name}/`), check whether docs exist:
 
 - **User doc:** check for `docs/content/user/blocks/{name}.md`
-- **Dev doc:** check for `docs/content/dev/architecture/{name}.md` or a relevant dev doc
+- **Dev doc (when `keepsDevDocs: true`):** check for a paired dev doc at `${documentation.location}/architecture/{name}.md` or a relevant dev doc in the configured location
 
 If a doc is missing, nudge the user — don't auto-create:
 

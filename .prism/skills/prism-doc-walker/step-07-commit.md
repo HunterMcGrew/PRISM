@@ -10,9 +10,17 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 ## Actions
 
-1. **Write the architect doc.** Use the `Write` tool against `.prism/architect/<topic>.md`. The `<topic>` is a kebab-case derivation of the candidate's `topic` field.
+1. **Write the architect doc.** Use the `Write` tool against `.prism/architect/<topic>.md`. The `<topic>` is a kebab-case derivation of the candidate's `topic` field. When a paired dev doc was drafted (`keepsDevDocs: true`), append a closing line:
 
-2. **Update the manifest.** Open `.prism/architect/manifest.json`, add a new entry routing the architect doc to the candidate's `files` field's path patterns. Example structure:
+   > `Paired dev doc: <target path>`
+
+   Omit the line when no paired dev doc was drafted.
+
+2. **Write the paired dev doc** (if drafted — `keepsDevDocs: true` only). Use the `Write` tool against the team's configured doc location. Append a closing line:
+
+   > `Agent-facing spec: .prism/architect/<topic>.md`
+
+3. **Update the manifest.** Open `.prism/architect/manifest.json`, add a new entry routing the architect doc to the candidate's `files` field's path patterns. Example structure:
 
    ```json
    {
@@ -26,8 +34,8 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 5. **Confirm to user.** One-line summary:
 
-   > "Wrote `.prism/architect/<topic>.md`. Manifest updated. State committed."
+   > "Wrote `.prism/architect/<topic>.md`<and paired dev doc if applicable>. Manifest updated. State committed."
 
 ## Exit condition
 
-Architect doc exists on disk. Manifest contains the new routing entry. Candidate `status: "committed"`. Advance to step-03 (next pending) or step-08 (continue/finish).
+Both files exist on disk (architect doc plus optional paired dev doc). Manifest contains the new routing entry. Candidate `status: "committed"`. Advance to step-03 (next pending) or step-08 (continue/finish).

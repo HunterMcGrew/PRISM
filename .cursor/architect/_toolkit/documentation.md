@@ -4,12 +4,12 @@ The convention for organizing human-readable documentation alongside agent-facin
 
 ## Two-audience model
 
-Most teams split human-readable docs by audience under `docs/`:
+Teams with `documentation.keepsDevDocs: true` split human-readable docs by audience under `docs/`:
 
 - **`docs/content/dev/`** — developer documentation: architecture, standards, operations, setup guides, AI skills reference. Audience: engineers working on this codebase.
 - **`docs/content/user/`** — user documentation: feature guides, configuration how-tos, troubleshooting. Audience: non-engineering users (depending on the product, this might be admins, operators, support staff, customers).
 
-The split is the recommendation, not a mandate. Single-audience products can collapse to one tree.
+The split is a team choice (configured during onboarding via Atlas), not a mandate. Single-audience products — including PRISM itself — collapse to one tree. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
 
 Agent-facing context (`.prism/rules/`, `.prism/architect/`, `.claude/skills/`) is **not** duplicated into `docs/`. When a `docs/` page covers the same topic as a `.claude/` file, the `docs/` page provides the human-readable onboarding narrative and cross-references the `.claude/` file for the precise, enforceable spec.
 

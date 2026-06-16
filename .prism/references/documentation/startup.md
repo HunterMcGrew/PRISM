@@ -91,12 +91,12 @@ Before writing anything new:
 
 **Existing doc check:**
 
-1. Check the relevant path in `docs/` — flat files or `docs/<category>/` depending on the team's format
+1. Check the relevant category directory (`docs/content/dev/{category}/` or `docs/content/user/{category}/`)
 2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md`, check the counterpart file
 3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
 4. If no existing doc: determine the output path using the naming convention from `documentation.md`
 
-**Sibling overlap check (required for new pages):** 5. Read the `_meta.js` in the target directory (if present) to see what pages already exist 6. Scan the **headings** of each sibling page for sections that overlap with what you're about to write. You don't need to read every page in full — read the TOC or skim the `##` headings. 7. If a sibling already covers a topic you plan to write about: **don't duplicate it.** Write a brief summary (2-3 sentences) and link to the sibling page. The sibling owns the full description. 8. Check the Doc-to-Doc Overlap table in `documentation.md` — if you're creating overlap, add an entry so Briar can track staleness.
+**Sibling overlap check (required for new pages):** 5. Read the `_meta.js` in the target directory to see what pages already exist 6. Scan the **headings** of each sibling page for sections that overlap with what you're about to write. You don't need to read every page in full — read the TOC or skim the `##` headings. 7. If a sibling already covers a topic you plan to write about: **don't duplicate it.** Write a brief summary (2-3 sentences) and link to the sibling page. The sibling owns the full description. 8. Check the Doc-to-Doc Overlap table in `documentation.md` — if you're creating overlap, add an entry so Briar can track staleness.
 
 ---
 
@@ -104,8 +104,8 @@ Before writing anything new:
 
 When context involves a block (branch diff touches `frontend/blocks/{name}/` or `backend/.../blocks/{name}/`), check whether docs exist:
 
-- **User doc:** check for a `docs/` file matching the block name
-- **Dev doc:** check for a `docs/` file covering the feature area or architecture topic
+- **User doc:** check for `docs/content/user/blocks/{name}.md`
+- **Dev doc (when `keepsDevDocs: true`):** check for a paired dev doc at `${documentation.location}/architecture/{name}.md` or a relevant dev doc in the configured location
 
 If a doc is missing, nudge the user — don't auto-create:
 

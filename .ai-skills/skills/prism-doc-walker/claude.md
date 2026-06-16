@@ -24,4 +24,4 @@ If the user picks resume, jump directly to the step file for that phase. If the 
 
 Schema detail lives at `.prism/skills/prism-doc-walker/lib/state.md` (PR-2.5.3).
 
-**Dev doc routing.** ADR-0058 retires the automatic paired dev doc pattern at `docs/content/dev/architecture/<topic>.md`. After writing an architect doc, flag to the user whether the topic warrants human-readable narrative documentation. If yes, route to Eli — Eli decides the appropriate `docs/` path under the flat layout. Do not auto-write to `docs/content/dev/architecture/`.
+**Paired dev doc (config-conditional).** Before drafting a paired dev doc, check `documentation.keepsDevDocs` in `.ai-skills/config.json`. When `false` (or absent), skip the paired doc and record `pairedDevDoc: "skipped — keepsDevDocs: false"` in the candidate's state entry. When `true`, draft the paired doc — the target path is the team's configured doc location. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).

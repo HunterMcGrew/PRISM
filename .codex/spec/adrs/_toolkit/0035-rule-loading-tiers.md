@@ -25,7 +25,7 @@ PRISM rules load through a three-tier model:
 
 - **Tier 1 — Always loaded.** Rules that apply universally across all sessions. Registered in the manifest with no path filter; loaded on every invocation. Examples: `.prism/rules/code-comments.md`, `.prism/rules/code-standards.md`, `.prism/rules/branch-plan.md`, `.prism/rules/git-conventions.md`, `.prism/rules/pr-description.md`, `.prism/rules/context-reuse.md`, `.prism/rules/followup-scope.md`, `.prism/rules/lazy-artifacts.md`, `.prism/rules/writing-voice.md` (Tier 1 because its most common surfaces — commit messages, PR bodies, Linear comments — are not file edits and can never match a `paths:` gate).
 
-- **Tier 2 — Path-scoped.** Rules that apply only when the diff touches certain paths. Registered in the manifest, but the rule's own `paths:` YAML frontmatter governs when the loader fires. Examples: `.prism/rules/accessibility.md` with `paths: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html"]`; `.prism/rules/architect-doc-verification.md` with `paths: [".prism/architect/**/*.md", "docs/content/dev/architecture/**/*.md"]`.
+- **Tier 2 — Path-scoped.** Rules that apply only when the diff touches certain paths. Registered in the manifest, but the rule's own `paths:` YAML frontmatter governs when the loader fires. Examples: `.prism/rules/accessibility.md` with `paths: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.html"]`; `.prism/rules/architect-doc-verification.md` with `paths: [".prism/architect/**/*.md"]`.
 
 - **Tier 3 — Skill-internal.** Rules referenced only by specific skills. No manifest entry; the skill's `shared.md` references the rule by path. The rule loads lazily when the skill loads, and stays out of context for sessions that don't invoke the skill.
 
@@ -47,4 +47,3 @@ The `paths:` frontmatter convention follows the shape used by `.prism/rules/acce
 - Thrive PR #1970 — the original three-tier loading design this ADR backports.
 - [ADR-0029](./0029-rules-self-declare-applicability.md) — sibling decision: rules self-declare their applicability via a "Who runs this rule" section. Tier 2's `paths:` frontmatter is the machine-readable counterpart to that self-declaration.
 - [ADR-0031](./0031-bifurcated-install-layout.md) — related: rules under `.prism/rules/` are canonical; platform-dir copies regenerate via `pnpm prism:build`. Frontmatter additions to canonical sources mirror byte-identically to platform copies and to `templates/install/.prism/rules/`.
-- [`docs/content/dev/architecture/rule-loading-tiers.md`](../../../docs/content/dev/architecture/rule-loading-tiers.md) — paired human-readable companion to this ADR (Eli convention; see `.prism/architect/_toolkit/documentation.md` § Cross-Reference Map).

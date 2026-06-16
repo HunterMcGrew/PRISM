@@ -77,6 +77,8 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 
 - 2026-05-29 [claude/stupefied-ardinghelli-189bdd]: Plan created from a Winston design session (party mode: Atlas, Eli, Mira, Sage, Clove). Captured the de-Thrive + config-driven-Eli direction; B and C split into deferred sibling epics.
 - 2026-06-16 [hmcgrew/epic-a-plan-sync]: Winston build-readiness pass for Sol. Synced two stale task lines to current main: Clove task 3 now names both `architect-doc-verification.md` copies (canonical + templates mirror); Winston task 1 now names ADR-0058, the `_toolkit/` dual-write path, and scopes supersession to the dev-doc half only. Design unchanged — no replan.
+- 2026-06-16 [hmcgrew/epic-a-pr1-doc-config]: PR-1 — added `documentation` config block to `.ai-skills/config.schema.json` (open-string format, four properties) and answered it in `.ai-skills/config.json` for PRISM; updated `PrismOnDiskConfig` interface and `serializeConfig` key order in `scripts/ai-skills/lib/onboarding-config.ts`. All checks green (prism:check, prism:check-types).
+- 2026-06-16 [hmcgrew/epic-a-pr1-doc-config]: PR-1 re-review (Briar) — Clove removed `additionalProperties: false` from the `documentation` schema block (commit `e1159a0`; only `.ai-skills/config.schema.json` touched). Four properties intact, `format` still open string, sibling extensibility restored. `pnpm prism:check` green, `pnpm prism:check-types` exit 0. Minor resolved; PR #181 ready for Eric.
 - 2026-06-16 [hmcgrew/epic-a-pr2-adr0058]: PR-2 — authored ADR-0058 (single-audience retires paired dev docs) dual-written to canonical + templates trees; flipped 0038 to `superseded` (wholesale) and added `Superseded-in-part-by: 0058` notes to 0023 (architect-doc gate survives) and 0044 (direct-write spine survives) across both trees; added 0058 to the ADR index and allowlisted its Thrive-context literal. Downstream prose sweep (Clove task 3, Winston task 2) remains separate Epic A lanes.
 
 ## Acceptance Criteria
@@ -93,3 +95,41 @@ Retire Thrive's inherited documentation system, stand up a flat config-driven `d
 - [ ] No user guide contains point-in-time language ("current," "in progress"); status lives only in CHANGELOG + dated README block.
 - [ ] `documentation.format` in the schema is an open/growable type, not a closed union.
 - [ ] ADRs 0023, 0038, and the dev-doc half of 0044 are marked superseded with a successor ADR.
+
+---
+
+## Review Issues
+
+### PR-1: `additionalProperties: false` inconsistent with sibling schema blocks
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/config.schema.json` — `documentation` block
+- **Problem:** The `documentation` object block sets `additionalProperties: false`; all sibling object blocks (`rules`, `github`, `ticketSystem`) leave it unset. The plan says to "mirror the shape/validation style of the existing `techStack` and `rules` blocks." Runtime impact is zero (JSON schema is IDE tooling only; `validateOnDiskConfig` does not enforce it). The inconsistency is a forward-compatibility footgun: any future undeclared key Atlas writes to `documentation` would appear as an IDE schema violation, while siblings accept unknown keys silently.
+- **Suggested fix:** Remove `additionalProperties: false` from the `documentation` block to match sibling style.
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
+## PR Readiness
+
+Living checklist for PR-1 (`hmcgrew/epic-a-pr1-doc-config`, PR #181).
+
+- [x] No critical or major issues
+- [x] Types correct — `documentation` block optional, all sub-fields optional, `format` is `string` not enum
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic — no new logic paths requiring tests (schema addition + serializer key order only)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — skipped (diff does not affect Next.js bundle; only `.ai-skills/config*.json` and `scripts/ai-skills/lib/onboarding-config.ts`)
+- [x] `pnpm prism:check` — green (exit 0, 2026-06-16)
+- [x] `pnpm prism:check-types` — exit 0 (2026-06-16)
+- [ ] Minor: `additionalProperties: false` inconsistency (see Review Issues) — non-blocking, acceptable to ship
+- [x] PR description up to date
+- [x] Scope clean — 4 files only; stash on unrelated branch; cherry-pick left no artifacts; HEAD `4db5521`
+
+**Last updated:** 2026-06-16
