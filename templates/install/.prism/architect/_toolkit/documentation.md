@@ -36,7 +36,7 @@ When content overlaps, `.prism/` is the source of truth for agent enforcement. T
 
 ## Frontmatter schema
 
-Every file in `docs/` should include YAML frontmatter:
+Every file in the team's doc root (`documentation.location`) should include YAML frontmatter:
 
 ```yaml
 ---
@@ -92,7 +92,7 @@ Rules: most pages should have 1–3 callouts. Beyond 3, each additional callout 
 
 ## Architecture + operations pairing (two-reader model)
 
-Architecture docs in `docs/content/dev/architecture/` and operations docs in `docs/content/dev/operations/` are paired by topic. A topic that has both a design dimension (why the system looks the way it does) and an execution dimension (how to run it in production) splits across the two directories and cross-links.
+Teams that use a `dev/` doc tree often organize architecture docs under an `architecture/` subdirectory and operations docs under `operations/` — but the actual paths follow `documentation.location` in `.ai-skills/config.json`. A topic that has both a design dimension (why the system looks the way it does) and an execution dimension (how to run it in production) splits across the two directories and cross-links.
 
 **Why this pairing exists.** Two distinct readers: the first-time architect (a new engineer, a CTO onboarding, someone evaluating the design) who needs shape and reasoning, and the 3am-operator reader who needs a checklist. A single doc that serves both compromises both — the architect is buried under keystrokes, the operator has to hunt through reasoning paragraphs for the next step.
 
