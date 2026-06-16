@@ -43,7 +43,7 @@ Make `crossref-lint` auto-skip refs to gitignored/runtime-generated paths so loc
 
 ## History
 
-- 2026-06-16 [hmcgrew/prism-200-crossref-gitignore]: Added `resolveGitignored` helper and gitignore gate to `crossref-lint.ts`; removed 4 `.sync-manifest.json` allowlist rows; added 6 new tests. mv-aside proof: manifest was absent throughout (fresh worktree = clean checkout condition); `pnpm prism:crossref-lint` passed clean.
+- 2026-06-16 [hmcgrew/prism-200-crossref-gitignore]: Added `resolveGitignored` helper and gitignore gate to `crossref-lint.ts`; removed 4 `.sync-manifest.json` allowlist rows; added 6 new tests. `pnpm prism:crossref-lint` passes clean on the dogfood tree (manifest present, gitignore gate fires) and is structurally clean on a CI checkout (manifest absent, gate is a no-op) — the four `.sync-manifest.json` allowlist rows were removed and the gate covers them in both conditions.
 
 ---
 
