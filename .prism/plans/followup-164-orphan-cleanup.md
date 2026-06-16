@@ -22,7 +22,7 @@ Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 an
 
 - `.generated/cursor-skills/` is confirmed orphaned. `paths.json` resolves `cursorSkillsRoot` to `.cursor/skills` since ADR-0044. All build code references `pathDefinitions.generated.cursorSkillsRoot` which resolves to `.cursor/skills` — no path in `scripts/ai-skills/` reads from `.generated/cursor-skills/` directly. `literal-allowlist.json` has no entries for the old path. `path-guard.ts` does not reference `.generated/` at all. ADR prose referencing `.generated/cursor-skills/` is historical context, not a consumer.
   - → no promotion needed (ticket-tactical cleanup; the architectural decision lives in ADR-0044)
-- The other `.generated/` files (`codex-config.toml`, two eric PR summary files) are out of scope for this issue — scoped to `cursor-skills/` only per issue #164.
+- `eric-pr104-summary.md` and `pr105-eric-summary.md` in `.generated/` folded into this PR per `.prism/rules/followup-scope.md` (same-scope, pre-merge) — grep confirms zero consumers (sole hit: `conductor-state.json` noting them as orphaned). `codex-config.toml` left for separate investigation — may be an intentional staging artifact.
   - → no promotion needed (scope decision local to this ticket)
 
 ---
@@ -30,6 +30,7 @@ Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 an
 ## History
 
 - 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Deleted `.generated/cursor-skills/` (34 tracked files) — confirmed orphaned after ADR-0044 moved Cursor output to `.cursor/skills/`.
+- 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Folded in `eric-pr104-summary.md` and `pr105-eric-summary.md` — same-scope orphan cleanup per followup-scope.md; grep confirmed zero consumers.
 
 ---
 
