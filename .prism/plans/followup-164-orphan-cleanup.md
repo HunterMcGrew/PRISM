@@ -1,0 +1,61 @@
+# Plan: followup-164-orphan-cleanup
+
+## Ticket
+
+GitHub issue #164 — no Linear ticket. Follow-up to #154 per `.prism/rules/followup-scope.md`.
+
+## Goal
+
+Delete the orphaned `.generated/cursor-skills/` tree, which predates ADR-0044 and is no longer a build target.
+
+---
+
+## Implementation Tasks
+
+### Clove (implementation)
+
+1. `git rm -r .generated/cursor-skills/` — remove the orphaned `.generated/cursor-skills/` tree. Confirm `pnpm prism:check` is green after deletion.
+
+---
+
+## Decisions
+
+- `.generated/cursor-skills/` is confirmed orphaned. `paths.json` resolves `cursorSkillsRoot` to `.cursor/skills` since ADR-0044. All build code references `pathDefinitions.generated.cursorSkillsRoot` which resolves to `.cursor/skills` — no path in `scripts/ai-skills/` reads from `.generated/cursor-skills/` directly. `literal-allowlist.json` has no entries for the old path. `path-guard.ts` does not reference `.generated/` at all. ADR prose referencing `.generated/cursor-skills/` is historical context, not a consumer.
+  - → no promotion needed (ticket-tactical cleanup; the architectural decision lives in ADR-0044)
+- `eric-pr104-summary.md` and `pr105-eric-summary.md` in `.generated/` folded into this PR per `.prism/rules/followup-scope.md` (same-scope, pre-merge) — grep confirms zero consumers (sole hit: `conductor-state.json` noting them as orphaned). `codex-config.toml` left for separate investigation — may be an intentional staging artifact.
+  - → no promotion needed (scope decision local to this ticket)
+
+---
+
+## History
+
+- 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Deleted `.generated/cursor-skills/` (33 files) — confirmed orphaned after ADR-0044 moved Cursor output to `.cursor/skills/`.
+- 2026-06-15 [hmcgrew/prism-164-orphan-cleanup]: Folded in `eric-pr104-summary.md` and `pr105-eric-summary.md` — same-scope orphan cleanup per followup-scope.md; grep confirmed zero consumers.
+
+---
+
+## Acceptance Criteria
+
+### Behavioral
+
+- [ ] `.generated/cursor-skills/` tree no longer exists in the repo
+- [ ] `pnpm prism:check` exits green after deletion
+
+### AC Sync Log
+
+| Date | Agent | Action | Plan | Linear |
+| ---- | ----- | ------ | ---- | ------ |
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues
+- [x] Types correct — deletion only, no type changes
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — N/A (deletion)
+- [x] All debugged issues resolved
+- [x] Build passes — last run: 2026-06-15 (pnpm prism:check green, 217 tests pass)
+- [ ] PR description up to date
+
+**Last updated:** 2026-06-15
