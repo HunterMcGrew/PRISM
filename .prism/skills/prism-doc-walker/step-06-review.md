@@ -9,7 +9,7 @@ Present the draft to the user. Iterate on feedback until accept or discard.
 
 ## Actions
 
-1. **Present the draft.** Render the architect doc inline in chat with a clear `Architect doc: .prism/architect/<topic>.md` header. If a paired dev doc was drafted, render it below with `Paired dev doc: docs/content/dev/architecture/<topic>.md`. If the paired doc was skipped per ADR-0038 gates, surface the gate verdict instead ("Paired dev doc skipped: category-fit gate failed — this is implementation detail, not architecture").
+1. **Present the draft.** Render the architect doc inline in chat with a clear `Architect doc: .prism/architect/<topic>.md` header. If a paired dev doc was drafted (`keepsDevDocs: true`), render it below with `Paired dev doc: <target path>`. If the paired doc was skipped because `keepsDevDocs: false`, surface the config verdict instead ("Paired dev doc skipped — `documentation.keepsDevDocs` is `false` for this team").
 
 2. **Prompt for choice:**
 

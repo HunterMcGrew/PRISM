@@ -10,13 +10,13 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 ## Actions
 
-1. **Write the architect doc.** Use the `Write` tool against `.prism/architect/<topic>.md`. The `<topic>` is a kebab-case derivation of the candidate's `topic` field. Append a closing line:
+1. **Write the architect doc.** Use the `Write` tool against `.prism/architect/<topic>.md`. The `<topic>` is a kebab-case derivation of the candidate's `topic` field. When a paired dev doc was drafted (`keepsDevDocs: true`), append a closing line:
 
-   > `Paired dev doc: docs/content/dev/architecture/<topic>.md`
+   > `Paired dev doc: <target path>`
 
    Omit the line when no paired dev doc was drafted.
 
-2. **Write the paired dev doc** (if drafted). Use the `Write` tool against `docs/content/dev/architecture/<topic>.md`. Append a closing line:
+2. **Write the paired dev doc** (if drafted — `keepsDevDocs: true` only). Use the `Write` tool against the team's configured doc location. Append a closing line:
 
    > `Agent-facing spec: .prism/architect/<topic>.md`
 

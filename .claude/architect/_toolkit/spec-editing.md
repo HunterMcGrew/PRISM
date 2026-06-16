@@ -8,7 +8,7 @@ Rules that apply to spec edits include, but aren't limited to:
 
 - `.prism/rules/writing-voice.md` — onboarding voice, not mandate voice; explain the why; keep it short enough to be read
 - `.prism/rules/branch-plan.md` — plan file structure and lifecycle (applies to `.prism/plans/**`)
-- `.prism/rules/architect-doc-verification.md` — source-verified review for architect docs and paired dev docs
+- `.prism/rules/architect-doc-verification.md` — source-verified review for architect docs (and paired dev docs when `documentation.keepsDevDocs` is `true`)
 
 The "include, but aren't limited to" framing is load-bearing — don't collapse it into a closed list. Treating an enumerated list as exhaustive is a known LLM failure mode that has produced voice drift in spec content; see ADR-0015 for the originating reasoning. When a new rule governs spec content, add it to this list and keep the preamble.
 

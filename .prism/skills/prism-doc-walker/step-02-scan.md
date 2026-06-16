@@ -38,7 +38,7 @@ Walk the target directory and surface candidate decisions worth documenting. Car
    }
    ```
 
-   Apply ADR-0038's two gates (category-fit + pairing-value) when deciding `pairedDevDoc`. Flag `adr-candidate` when the triple-gate from Phase 1.5e fires (hard-to-reverse + surprising + genuine trade-off).
+   Check `documentation.keepsDevDocs` in `.ai-skills/config.json` when deciding `pairedDevDoc` — when `false` (or absent), set `pairedDevDoc: false`; when `true`, consider a paired dev doc. Flag `adr-candidate` when the triple-gate from Phase 1.5e fires (hard-to-reverse + surprising + genuine trade-off).
 
 5. **Update state.** Set `currentPhase: "presenting"`, push the directory onto `visitedPaths`, append `step-02-scan` to `stepsCompleted`. Atomic write.
 
