@@ -1138,8 +1138,12 @@ async function main(): Promise<void> {
 	const optedIn = {
 		claude:
 			!checkMode || (await skillsRootHasManagedContent(targetRoots.claude)),
-		codex:
-			!checkMode || (await skillsRootHasManagedContent(targetRoots.codex)),
+		// `.agents/` is gitignored (the per-user Codex skills root), so a branch
+		// checkout leaves prior-branch content in place. In check mode that stale
+		// content would make skillsRootHasManagedContent return true, causing
+		// drift against the freshly-generated output — a false positive. Build
+		// mode still writes `.agents/` normally.
+		codex: !checkMode,
 		cursor:
 			!checkMode || (await skillsRootHasManagedContent(targetRoots.cursor)),
 		codexAgents:
@@ -1148,7 +1152,10 @@ async function main(): Promise<void> {
 		claudeAgents:
 			!checkMode ||
 			(await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
-		codexConfig: !checkMode || (await pathExists(codexConfigPath)),
+		// `.codex/codex-config.toml` is gitignored (per-user), so a branch
+		// checkout leaves prior-branch content on disk. Skipping the pathExists
+		// check in check mode prevents stale presence from being treated as drift.
+		codexConfig: !checkMode,
 	};
 
 	if (!checkMode) {
