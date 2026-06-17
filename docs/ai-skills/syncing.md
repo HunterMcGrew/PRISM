@@ -47,7 +47,7 @@ Whichever path you take, do **not** touch `~/.codex/codex-config.toml` from PRIS
 
 Cursor reads skills from `.cursor/skills/<id>/SKILL.md` directly in the repo. Since `.cursor/skills/` is committed (per [ADR-0044](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md)), Cursor consumers get every persona on `git pull` — no install step required.
 
-This is the Phase 1.5f change. Before it, `.cursor/skills/` was generated and gitignored. PRISM never shipped a Cursor install script (the upstream Thrive dogfood had one; PRISM was extracted before that script was added). So pre-1.5f, Cursor consumers of PRISM had no clean install path — direct-write + commit closes that gap.
+This is the Phase 1.5f change. Before it, `.cursor/skills/` was generated and gitignored. PRISM never shipped a Cursor install script (the upstream dogfood had one; PRISM was extracted before that script was added). So pre-1.5f, Cursor consumers of PRISM had no clean install path — direct-write + commit closes that gap.
 
 ## Why the split
 

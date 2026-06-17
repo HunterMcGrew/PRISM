@@ -2,15 +2,18 @@
 
 A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
-## Status
-
-_As of 2026-06-16:_ Epic C (first-contact reconciliation) has shipped — established repos can now adopt PRISM via `pnpm prism:adopt` and Atlas's first-contact onboarding mode without losing existing work. This completes the internal roadmap. Epic A (docs overhaul) also shipped: all user guides are live and ADR-0058 retires the paired-dev-doc convention. The Sol multi-agent conductor and all named personas are active. See [CHANGELOG.md](./CHANGELOG.md) for the full history.
-
 ## Overview
 
-PRISM gives AI tools a set of personas — specialists with defined roles, defined inputs, and defined outputs. When Winston plans architecture, Clove implements it, Briar reviews it, and Eli documents it, each one picks up where the last left off. The branch plan carries context across sessions; a tiered rule system carries conventions across the codebase.
+PRISM gives AI tools a set of named personas — specialists with defined roles, defined inputs, and defined outputs. When Winston plans architecture, Clove implements it, Briar reviews it, and Eli documents it, each picks up where the last left off. The branch plan carries context across sessions; a tiered rule system carries conventions across the codebase.
 
-See [docs/overview.md](./docs/overview.md) for the full overview.
+**What you get:**
+
+- **Named personas across the dev lifecycle** — architect (Winston), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), debugger (Sasha), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
+- **Multi-platform skill sync** — one canonical skill source (`.ai-skills/`) builds to Claude Code, Codex, and Cursor. `pnpm prism:build` regenerates all platform outputs; `pnpm prism:check` catches drift on CI.
+- **Drop-in adoption for existing repos** — `pnpm prism:adopt` lets Atlas onboard an established codebase without disrupting existing work. Stack detection, config writing, and first-contact reconciliation are handled.
+- **Sol — the multi-agent conductor** — orchestrates the full dev lifecycle for a stated goal: dispatches personas in sequence, pauses at human gates, and runs parallel lanes when blast radius doesn't overlap.
+
+See [docs/overview.md](./docs/overview.md) for the full overview. See [CHANGELOG.md](./CHANGELOG.md) for history.
 
 ## Quick start
 
@@ -71,7 +74,7 @@ PRISM/
 ├── scripts/ai-skills/            # generator + tooling (TypeScript via tsx)
 │   ├── build.ts                  # canonical → platform outputs + content copy
 │   ├── path-guard.ts             # build-time path-reference guard
-│   ├── literal-guard.ts          # detects unsubstituted literals leaking into canonical
+│   ├── literal-guard.ts          # fails the build if origin-specific literals leak into generated outputs
 │   ├── lib/                      # Atlas helpers (stack detection, rule generators, anchors)
 │   └── *.test.ts                 # regression suite
 │
@@ -103,7 +106,7 @@ Teams configure PRISM via `.ai-skills/config.json` in their own repo. Atlas writ
 
 ## Background
 
-PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The multi-platform skill-sync pattern was proved out in [TracTru/thrive#1758](https://github.com/TracTru/thrive/pull/1758) — that PR is read-only context for this repo's evolution.
+PRISM was extracted from a personal multi-platform `.claude/` toolkit install. The multi-platform skill-sync pattern was proved out in that codebase before PRISM was spun off as a standalone tool.
 
 ## Development
 
