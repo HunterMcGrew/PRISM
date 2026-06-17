@@ -24,6 +24,7 @@ import {
 	isLazyOrHistoricalTarget,
 	resolveRef,
 	refResolves,
+	resolveGitignored,
 	scanLines,
 } from "./crossref-lint";
 
@@ -784,6 +785,172 @@ test("scanLines: allowlisted (file, ref) pair is not flagged", async () => {
 				violations.length,
 				0,
 				"allowlisted (file, ref) pair must not be flagged"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveGitignored — helper contract
+// ---------------------------------------------------------------------------
+
+test("resolveGitignored: returns empty Set for empty candidate list without throwing", async () => {
+	// A git repo is not required for the empty-input fast path
+	const result = await resolveGitignored([], "/tmp");
+	assert.ok(result instanceof Set);
+	assert.equal(result.size, 0);
+});
+
+test("resolveGitignored: returns empty Set when zero candidates match gitignore", async () => {
+	await withTempTree(
+		async (root) => {
+			// Initialize a git repo with a .gitignore that does not match our candidate
+			await fs.writeFile(path.join(root, ".gitignore"), "unrelated.json\n");
+			const { execFileSync } = await import("node:child_process");
+			execFileSync("git", ["init"], { cwd: root });
+		},
+		async (root) => {
+			const result = await resolveGitignored(
+				[".prism/rules/code-standards.md"],
+				root
+			);
+			assert.equal(result.size, 0, "non-ignored path must not appear in the Set");
+		}
+	);
+});
+
+test("resolveGitignored: returns ignored paths and excludes non-ignored ones", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.writeFile(path.join(root, ".gitignore"), ".prism/.sync-manifest.json\n");
+			const { execFileSync } = await import("node:child_process");
+			execFileSync("git", ["init"], { cwd: root });
+		},
+		async (root) => {
+			const result = await resolveGitignored(
+				[".prism/.sync-manifest.json", ".prism/rules/code-standards.md"],
+				root
+			);
+			assert.ok(
+				result.has(".prism/.sync-manifest.json"),
+				"ignored path must be in the returned Set"
+			);
+			assert.ok(
+				!result.has(".prism/rules/code-standards.md"),
+				"non-ignored path must not be in the returned Set"
+			);
+		}
+	);
+});
+
+test("resolveGitignored: returns empty Set without throwing when git is unavailable (fail-open)", async () => {
+	// A temp dir with no git init — git check-ignore exits 128 (not a git repo).
+	// The fail-open branch must return an empty Set rather than throwing.
+	await withTempTree(
+		async (_root) => {
+			// Intentionally no git init — the directory is not a git repo
+		},
+		async (root) => {
+			const result = await resolveGitignored(
+				[".prism/.sync-manifest.json"],
+				root
+			);
+			assert.ok(result instanceof Set, "result must be a Set");
+			assert.equal(
+				result.size,
+				0,
+				"fail-open branch must return an empty Set without throwing"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// scanLines — gitignore gate
+// ---------------------------------------------------------------------------
+
+test("scanLines: gitignored absent ref yields zero violations", async () => {
+	// Core regression test: a gitignored path that does not exist on disk must
+	// not be flagged when the caller passes it in gitignoredSet.
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `.prism/.sync-manifest.json` for the sync state.\n"
+			);
+			// .prism/.sync-manifest.json intentionally NOT created on disk
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			const gitignoredSet = new Set([".prism/.sync-manifest.json"]);
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root,
+				new Set(),
+				gitignoredSet
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"gitignored absent ref must not be flagged"
+			);
+		}
+	);
+});
+
+test("scanLines: non-ignored absent ref still yields one violation", async () => {
+	// Proves the gitignore gate does not blanket-suppress real dangling refs.
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "doc.md"),
+				"See `.prism/rules/ghost.md` for details.\n"
+			);
+			// .prism/rules/ghost.md intentionally NOT created on disk
+		},
+		async (root) => {
+			const refFile = path.join(root, ".prism", "rules", "doc.md");
+			const lines = (await fs.readFile(refFile, "utf8")).split(/\r?\n/);
+			// Empty gitignoredSet — ghost.md is not gitignored
+			const violations = await scanLines(
+				lines,
+				".prism/rules/doc.md",
+				refFile,
+				root,
+				new Set(),
+				new Set()
+			);
+			assert.equal(
+				violations.length,
+				1,
+				"non-ignored absent ref must still be flagged"
+			);
+			assert.equal(violations[0].ref, ".prism/rules/ghost.md");
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveGitignored — git glob matching flows through
+// ---------------------------------------------------------------------------
+
+test("resolveGitignored: glob pattern in .gitignore matches candidate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.writeFile(path.join(root, ".gitignore"), "foo.*.json\n");
+			const { execFileSync } = await import("node:child_process");
+			execFileSync("git", ["init"], { cwd: root });
+		},
+		async (root) => {
+			const result = await resolveGitignored(["foo.1.json"], root);
+			assert.ok(
+				result.has("foo.1.json"),
+				"glob-matched gitignored path must be in the returned Set"
 			);
 		}
 	);

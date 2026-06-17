@@ -30,6 +30,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
+import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { pathExists } from "./utils";
@@ -145,6 +146,10 @@ export interface CrossRefViolation {
  * with a source comment explaining why the specific ref is exempt.
  *
  * Matched by exact `(relativePath, ref)` pair — never by path-substring grep.
+ *
+ * Gitignored targets (e.g. `.prism/.sync-manifest.json`) do not need entries
+ * here — the gitignore gate in `runCrossRefLint` / `resolveGitignored` skips
+ * them upstream before the existence check, so they never reach this allowlist.
  */
 export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	// Atlas generates these per consumer stack (see rule-generation.md);
@@ -163,15 +168,70 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	// before install-cursor.ts was added) — prose mention, not a live link.
 	".prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
 	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
-	// .sync-manifest.json is runtime-created and gitignored; ADR-0057 describes
-	// how it works — intentionally absent in the repo at authoring time.
-	// install-layout.md's § first-contact adoption section references it for the
-	// same reason: describing the post-adopt steady-state, not a live file.
-	".prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
-	"templates/install/.prism/spec/adrs/_toolkit/0057-prism-update-merge-model.md::.prism/.sync-manifest.json",
-	".prism/architect/_toolkit/install-layout.md::.prism/.sync-manifest.json",
-	"templates/install/.prism/architect/_toolkit/install-layout.md::.prism/.sync-manifest.json",
 ]);
+
+// ---------------------------------------------------------------------------
+// Gitignore gate
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the subset of `candidates` that git considers gitignored, resolved
+ * against `repoRootPath`.
+ *
+ * Shells out to `git check-ignore --stdin` — pattern-based, not
+ * filesystem-based — so it returns the same result on the dogfood tree and
+ * on a clean CI checkout, which is the property that fixes the
+ * local-false-pass problem.
+ *
+ * Exit-code handling:
+ *   exit 0  — some paths matched; stdout lists them one per line.
+ *   exit 1 with empty stderr — zero paths matched; not an error.
+ *   any other code (e.g. 128 = not a git repo) — fail-open: return an empty
+ *   Set so resolution falls through to the normal existence check rather than
+ *   crashing the lint.
+ */
+export async function resolveGitignored(
+	candidates: string[],
+	repoRootPath: string
+): Promise<Set<string>> {
+	if (candidates.length === 0) {
+		return new Set();
+	}
+
+	return new Promise((resolve) => {
+		const child = execFile(
+			"git",
+			["check-ignore", "--stdin"],
+			{ cwd: repoRootPath },
+			(error, stdout, stderr) => {
+				// exit 0 — some paths matched
+				if (!error) {
+					const ignored = stdout
+						.split(/\r?\n/)
+						.filter((line) => line.length > 0);
+
+					resolve(new Set(ignored));
+
+					return;
+				}
+
+				// exit 1 with empty stderr — zero paths matched (not an error)
+				const code = error.code;
+				if (code === 1 && stderr.trim() === "") {
+					resolve(new Set());
+
+					return;
+				}
+
+				// Any other exit code — fail-open: degrade to today's behavior
+				resolve(new Set());
+			}
+		);
+
+		child.stdin?.write(candidates.join("\n"));
+		child.stdin?.end();
+	});
+}
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for tests)
@@ -410,13 +470,18 @@ export async function refResolves(resolvedAbsPath: string): Promise<boolean> {
  * `referencingFileAbsPath` is the absolute path of the file being scanned.
  * `repoRootPath` is the absolute repo root.
  * `allowlist` defaults to `CROSSREF_FILE_ALLOWLIST`.
+ * `gitignoredSet` is the pre-resolved set of gitignored paths (repo-root-relative
+ * POSIX strings). Refs matching this set are skipped before the existence check —
+ * gitignored targets are runtime-generated and absent on clean checkouts by design.
+ * Defaults to an empty Set so callers that don't batch the git call still work.
  */
 export async function scanLines(
 	lines: string[],
 	relativePath: string,
 	referencingFileAbsPath: string,
 	repoRootPath: string,
-	allowlist: ReadonlySet<string> = CROSSREF_FILE_ALLOWLIST
+	allowlist: ReadonlySet<string> = CROSSREF_FILE_ALLOWLIST,
+	gitignoredSet: ReadonlySet<string> = new Set()
 ): Promise<CrossRefViolation[]> {
 	const violations: CrossRefViolation[] = [];
 	let inFence = false;
@@ -465,6 +530,12 @@ export async function scanLines(
 
 			// Skip lazy-artifact and historical-plan targets — intentionally absent.
 			if (isLazyOrHistoricalTarget(cleaned)) {
+				continue;
+			}
+
+			// Skip gitignored targets — runtime-generated files are absent on
+			// clean checkouts by design; the gitignore gate handles them upstream.
+			if (gitignoredSet.has(cleaned)) {
 				continue;
 			}
 
@@ -530,13 +601,18 @@ async function listCarrierFiles(dirPath: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 /**
- * Walks all `CROSSREF_SCAN_ROOTS` descriptors, reads each carrier file, and
- * collects cross-reference violations. Returns `[]` when a root does not exist.
+ * Collects the (relativePath, absPath, lines) tuples for every carrier file
+ * across all `CROSSREF_SCAN_ROOTS` descriptors. Shared by `runCrossRefLint`
+ * so the full file list is available before the gitignore batch call.
  */
-export async function runCrossRefLint(
+async function collectCarrierFiles(
 	repoRootPath: string
-): Promise<CrossRefViolation[]> {
-	const violations: CrossRefViolation[] = [];
+): Promise<Array<{ relativePath: string; absPath: string; lines: string[] }>> {
+	const files: Array<{
+		relativePath: string;
+		absPath: string;
+		lines: string[];
+	}> = [];
 
 	for (const scanRoot of CROSSREF_SCAN_ROOTS) {
 		const rootAbsPath =
@@ -544,27 +620,23 @@ export async function runCrossRefLint(
 				? repoRootPath
 				: path.resolve(repoRootPath, scanRoot.contentRoot);
 
-		// Walk area subdirectories
 		for (const area of scanRoot.areas) {
 			const areaAbsPath = path.join(rootAbsPath, area);
+
 			if (!(await pathExists(areaAbsPath))) {
 				continue;
 			}
 
-			const filePaths = await listCarrierFiles(areaAbsPath);
-			for (const absPath of filePaths) {
+			for (const absPath of await listCarrierFiles(areaAbsPath)) {
 				const relativePath = path
 					.relative(repoRootPath, absPath)
 					.split(path.sep)
 					.join("/");
 				const lines = (await fs.readFile(absPath, "utf8")).split(/\r?\n/);
-				violations.push(
-					...(await scanLines(lines, relativePath, absPath, repoRootPath))
-				);
+				files.push({ relativePath, absPath, lines });
 			}
 		}
 
-		// Walk loose files
 		for (const looseFile of scanRoot.looseFiles) {
 			const absPath =
 				scanRoot.contentRoot === null
@@ -580,10 +652,71 @@ export async function runCrossRefLint(
 				.split(path.sep)
 				.join("/");
 			const lines = (await fs.readFile(absPath, "utf8")).split(/\r?\n/);
-			violations.push(
-				...(await scanLines(lines, relativePath, absPath, repoRootPath))
-			);
+			files.push({ relativePath, absPath, lines });
 		}
+	}
+
+	return files;
+}
+
+/**
+ * Walks all `CROSSREF_SCAN_ROOTS` descriptors, reads each carrier file, and
+ * collects cross-reference violations. Returns `[]` when a root does not exist.
+ *
+ * Batches the gitignore check: collects all candidate refs across all files
+ * first, resolves the ignored set once (one `git check-ignore` call), then
+ * passes the set into `scanLines` so ignored targets are never existence-checked.
+ */
+export async function runCrossRefLint(
+	repoRootPath: string
+): Promise<CrossRefViolation[]> {
+	const carrierFiles = await collectCarrierFiles(repoRootPath);
+
+	// Collect every cleaned candidate ref across all files to batch the git call.
+	const candidateSet = new Set<string>();
+	for (const { lines } of carrierFiles) {
+		for (const line of lines) {
+			for (const rawRef of extractRefs(line)) {
+				if (isExternalOrToken(rawRef)) {
+					continue;
+				}
+
+				const cleaned = rawRef.split("#")[0].split("?")[0];
+
+				if (
+					!cleaned ||
+					!VERIFIABLE_ROOT_PREFIXES.some((p) => cleaned.startsWith(p))
+				) {
+					continue;
+				}
+
+				if (isLazyOrHistoricalTarget(cleaned)) {
+					continue;
+				}
+
+				candidateSet.add(cleaned);
+			}
+		}
+	}
+
+	const gitignoredSet = await resolveGitignored(
+		[...candidateSet],
+		repoRootPath
+	);
+
+	const violations: CrossRefViolation[] = [];
+
+	for (const { relativePath, absPath, lines } of carrierFiles) {
+		violations.push(
+			...(await scanLines(
+				lines,
+				relativePath,
+				absPath,
+				repoRootPath,
+				CROSSREF_FILE_ALLOWLIST,
+				gitignoredSet
+			))
+		);
 	}
 
 	return violations;
