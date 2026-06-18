@@ -1,5 +1,7 @@
 # Plan: prism-216
 
+> Closed: 2026-06-18
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/216
@@ -117,6 +119,18 @@ Sequence: task 0 (name) is [HITL] and blocks 1–4. Run authoring only after Hun
 
 ---
 
+## Review Issues
+
+### Cross-persona name coupling in "How Ellis thinks" prose
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `.ai-skills/skills/prism-finance/shared.md`
+- **Problem:** Ellis's "How Ellis thinks" prose names the sibling market research persona (Kora) by name, coupling the two persona specs; the reverse coupling exists in prism-215. Eric flagged as non-blocking, possibly intentional.
+- **Suggested fix:** Deferred — Hunter decides at the merge gate whether the named cross-reference stays (intentional roster cohesion) or is genericized.
+
+---
+
 ## Acceptance Criteria
 
 AC is largely non-user-facing here (the deliverable is a persona spec, not a running app). Citations: REQ-N maps to #216's deliverables checklist.
@@ -146,9 +160,12 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 
 ## PR Readiness
 
+- [x] No critical or major issues (Briar self-review + Eric PR review confirmed; one non-blocking minor deferred)
 - [x] Build passes — last run: 2026-06-18 (`pnpm prism:build` 329 tests pass; `pnpm prism:check` green)
-- [x] Self-review pass (Briar) — clean, no critical/major/minor issues found
+- [x] Self-review pass (Briar) — clean, no critical/major issues found
+- [x] PR review pass (Eric) — merge-ready pending human; one non-blocking minor (cross-persona name coupling) recorded as deferred
 - [x] PR description up to date
+- [x] Lasting decisions promoted to architect context — none new; all decisions follow ADR-0060 + `_toolkit/business-layer.md` (already covering the convention)
 
 **Last updated:** 2026-06-18
 
@@ -161,3 +178,4 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Authored Ellis (`prism-finance`) — `frontmatter.yml` + `shared.md` mirroring Vera, plus the `roles.json` entry. Built in the single shared `pnpm prism:build` (329 tests pass) and `pnpm prism:check` (green) covering both Wave 1 personas; all five adapters generated. No `.prism/business/strategy.md` seeded.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Briar self-review — clean pass. Build green, all adapters verified, roles.json valid, no seed violations, no session-context leakage, no hardcoded literals. AC items satisfiable by shipped content. Ready for PR.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Draft PR #217 opened against main — closes #215 and #216 together (shared branch/build). Pending Eric review and Hunter merge.
+- 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Plan closed by Winston. All Decisions follow ADR-0060 + business-layer.md — nothing new to promote. Eric's one minor (cross-persona name coupling) recorded as deferred for Hunter to decide; PR #217 stays draft, parked at the human merge gate.
