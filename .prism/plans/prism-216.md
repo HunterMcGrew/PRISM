@@ -148,7 +148,7 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 
 - [x] Build passes — last run: 2026-06-18 (`pnpm prism:build` 329 tests pass; `pnpm prism:check` green)
 - [x] Self-review pass (Briar) — clean, no critical/major/minor issues found
-- [ ] PR description up to date
+- [x] PR description up to date
 
 **Last updated:** 2026-06-18
 
@@ -160,3 +160,4 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Winston populated Implementation Tasks, Decisions, and AC mirroring the Vera (prism-213) worked example. Persona ID `prism-finance`; host capability `xlsx`; design settled by ADR-0060. Gate: needs Hunter to pick the persona name at the A/P/C gate before skill-forge authoring runs; shared-branch single-build coordination noted with prism-215.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Authored Ellis (`prism-finance`) — `frontmatter.yml` + `shared.md` mirroring Vera, plus the `roles.json` entry. Built in the single shared `pnpm prism:build` (329 tests pass) and `pnpm prism:check` (green) covering both Wave 1 personas; all five adapters generated. No `.prism/business/strategy.md` seeded.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Briar self-review — clean pass. Build green, all adapters verified, roles.json valid, no seed violations, no session-context leakage, no hardcoded literals. AC items satisfiable by shipped content. Ready for PR.
+- 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Draft PR #217 opened against main — closes #215 and #216 together (shared branch/build). Pending Eric review and Hunter merge.
