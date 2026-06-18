@@ -1,5 +1,7 @@
 # Plan: prism-213
 
+> Closed: 2026-06-18
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/213
@@ -128,6 +130,7 @@ All substrate decisions are recorded in full in [ADR-0060](../spec/adrs/_toolkit
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Briar self-review found Major issue (seed drift: 3 new .prism/ files lacked install-seed copies; crossref-lint failing on lazy-artifact refs). Fixed in commit fdb69c1 — added seed copies + CROSSREF_FILE_ALLOWLIST entries. pnpm prism:check green. All checklist items pass.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Branch pushed and draft PR #214 opened against main. Pending Eric's PR review.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Eric's PR review found the install-seed ADR README was missing rows 0049–0056 and 0060. Synced seed to canonical and added the missing crossref-lint allowlist entry for the ADR-0060 lazy-artifact ref; pnpm prism:check green.
+- 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Closed Phase 1 plan — implementation, self-review, and PR review all clean. Lasting decisions confirmed promoted to ADR-0060 (rationale) and `.prism/architect/_toolkit/business-layer.md` (contextual map); all `## Decisions` carry verdict sub-bullets. PR #214 stays draft, parked at the human merge gate.
 
 ---
 
