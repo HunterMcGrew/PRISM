@@ -114,4 +114,6 @@ PRISM uses itself for its own evolution — Winston for architectural decisions,
 
 ## License
 
-Private. Internal-org use only.
+MIT — see [LICENSE](./LICENSE). Use it, fork it, build on it. The license keeps the
+copyright notice attached to the source; beyond that, a shout-out is appreciated but
+not required.
