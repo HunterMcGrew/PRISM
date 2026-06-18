@@ -177,6 +177,7 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	".prism/spec/adrs/_toolkit/0060-business-layer-substrate.md::.prism/business/strategy.md",
 	"templates/install/.prism/spec/adrs/_toolkit/0060-business-layer-substrate.md::.prism/business/strategy.md",
 	".prism/spec/adrs/_toolkit/README.md::.prism/business/strategy.md",
+	"templates/install/.prism/spec/adrs/_toolkit/README.md::.prism/business/strategy.md",
 	".prism/templates/business-strategy.md::.prism/business/strategy.md",
 	"templates/install/.prism/templates/business-strategy.md::.prism/business/strategy.md",
 ]);
