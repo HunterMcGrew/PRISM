@@ -74,18 +74,18 @@ Tasks meet the detail bar in `.prism/rules/implementation-task-detail.md`. The p
 2. **Add the ADR-0060 index row** to `.prism/spec/adrs/_toolkit/README.md` (every ADR from 0022 onward gets a row). _Done this session._
 3. **Resolve the OPEN strategy-doc-shape Decision** to single-file in this plan's `## Decisions`. _Done this session._
 
-### prism-skill-forge create-mode (founder/strategy persona authoring) — blocked on name gate
+### prism-skill-forge create-mode (founder/strategy persona authoring) — tasks 5–8 DONE
 
 Sequence: task 4 first (blocks 5–8). Run only after Hunter ratifies ADR-0060 and picks the persona name at the A/P/C gate.
 
-4. [HITL] **Pick the founder/strategy persona name.** Blocked on Hunter's choice at the gate from the 2–3 candidates in this plan's `## Decisions`. Every downstream file embeds the chosen name; do not start 5–8 until it is set. The persona ID is `prism-founder` regardless of the human name chosen (function-descriptive ID convention; the human name is the `persona` field only).
-5. **Scaffold the persona via `prism-skill-forge` create-mode** with ID `prism-founder`, type persona (the default — no `type` field). This writes three things:
+4. [HITL] **Pick the founder/strategy persona name.** _Done — Hunter ratified **Vera**._ The persona ID is `prism-founder` regardless of the human name chosen (function-descriptive ID convention; the human name is the `persona` field only).
+5. **DONE — Scaffold the persona via `prism-skill-forge` create-mode** with ID `prism-founder`, type persona (the default — no `type` field). This writes three things:
    - `.ai-skills/skills/prism-founder/frontmatter.yml` — fields per Parker's shape (`.ai-skills/skills/prism-prd/frontmatter.yml`): `name: prism-founder`; `description` as a YAML folded scalar (`>`, ≤1000 chars) following the 4-part pattern (persona name + role | what it does | artifact location | `Triggers:` list — include the chosen name, "strategy doc", "OKRs", "set strategy"); `argument-hint: "[<topic> | strategy]"`; `category: business`.
    - `.ai-skills/skills/prism-founder/shared.md` — body following Parker's heading structure: `You are <Name>` voice paragraph → `## Personality` → `## How <Name> thinks` (strategy/prioritization lens) → `## The strategy doc` (output shape, pointing at `.prism/business/strategy.md`) → `## Intro` → `## Startup` (read `.prism/business/strategy.md` if it exists; this is the persona's state per ADR-0043's artifact-IS-state model — no separate state file) → `## Orchestrating over host capabilities` (the ADR-0060 rule: reference `deep-research`/`brand-voice`/`xlsx` at runtime via schema read, degrade gracefully when absent, document what-if-missing — mirror Lilac's Slack-MCP pattern) → `## Project Engineering Standards` → `## Ownership & Handoff` (owns `.prism/business/`; hands off INTO Parker by pointing Parker at the relevant strategy-doc section as upstream PRD context) → `## When dispatched by Sol` → `## Next persona` (default route: Parker for PRD) → `## Definition of Done` → `## Lessons Check`. Keep generated body ≤500 lines (discovery test enforces).
    - The `roles.json` entry in `.ai-skills/definitions/roles.json` — append `{ "id": "prism-founder", "persona": "<Name>" }` to the `skills` array (no `type` field; persona is the default per ADR-0046).
-6. **Add the strategy-doc template** at `.prism/templates/business-strategy.md` — the single-file shape from ADR-0060: sections for mission/positioning, OKRs, cross-functional priorities, a `## Decisions` log (durable, auditable), and a metrics section documented as the future outbound-seam landing spot. Mirror the section-with-template shape of `.prism/rules/branch-plan.md`. Do NOT create `.prism/business/strategy.md` itself — lazy-artifacts rule: it comes into existence on the founder persona's first real write.
-7. **Add the manifest routing entry** for `.prism/business/**` to `.prism/architect/manifest.json` (route to `_toolkit/spec-editing.md`, matching the existing `.prism/**` and area entries) so architect-context lookups resolve for the new area.
-8. **Run `pnpm prism:build`** (runs `tsx scripts/ai-skills/build.ts` then `pnpm prism:test`). Confirm green: discovery tests (`scripts/ai-skills/discovery-metadata.test.ts` — canonical files present, role-map shape valid, description ≤1000 chars, body ≤500 lines, managed markers), literal guard (no hardcoded team literals in generated output), path tests (`scripts/ai-skills/path-guard.test.ts` — no cross-platform path leakage). Verify the build generated `.claude/skills/prism-founder/SKILL.md`, `.cursor/skills/prism-founder/SKILL.md`, `.agents/skills/prism-founder/SKILL.md`, and the Codex agent adapter `.codex/agents/prism-founder.toml` (persona entries get an adapter per ADR-0046).
+6. **DONE — Add the strategy-doc template** at `.prism/templates/business-strategy.md` — the single-file shape from ADR-0060: sections for mission/positioning, OKRs, cross-functional priorities, a `## Decisions` log (durable, auditable), and a metrics section documented as the future outbound-seam landing spot. Mirror the section-with-template shape of `.prism/rules/branch-plan.md`. Do NOT create `.prism/business/strategy.md` itself — lazy-artifacts rule: it comes into existence on the founder persona's first real write.
+7. **DONE — Add the manifest routing entry** for `.prism/business/**` to `.prism/architect/manifest.json` (route to `_toolkit/spec-editing.md`, matching the existing `.prism/**` and area entries) so architect-context lookups resolve for the new area.
+8. **DONE — Run `pnpm prism:build`** (runs `tsx scripts/ai-skills/build.ts` then `pnpm prism:test`). _Green: 329 tests pass, 0 fail; all four adapters generated._ Confirm green: discovery tests (`scripts/ai-skills/discovery-metadata.test.ts` — canonical files present, role-map shape valid, description ≤1000 chars, body ≤500 lines, managed markers), literal guard (no hardcoded team literals in generated output), path tests (`scripts/ai-skills/path-guard.test.ts` — no cross-platform path leakage). Verify the build generated `.claude/skills/prism-founder/SKILL.md`, `.cursor/skills/prism-founder/SKILL.md`, `.agents/skills/prism-founder/SKILL.md`, and the Codex agent adapter `.codex/agents/prism-founder.toml` (persona entries get an adapter per ADR-0046).
 
 ### Eli (documentation) — optional, after task 8
 
@@ -123,6 +123,7 @@ All substrate decisions are recorded in full in [ADR-0060](../spec/adrs/_toolkit
 
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Created plan; branch foundation established for Winston to populate.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Winston wrote ADR-0060 (business-layer substrate), resolved the OPEN strategy-doc-shape question to single-file, and populated Implementation Tasks, Decisions, and AC. Gate: needs Hunter to ratify the ADR and pick the persona name before skill-forge authoring runs.
+- 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Authored the Vera founder/strategy persona (`prism-founder`) via skill-forge create-mode — frontmatter.yml, shared.md, roles.json entry, the `.prism/templates/business-strategy.md` template, and the `.prism/business/**` manifest route. `pnpm prism:build` green (329 tests, 0 fail); all four runtime adapters plus the Codex toml generated; `.prism/business/strategy.md` not seeded (lazy-artifacts).
 
 ---
 
@@ -177,7 +178,7 @@ None.
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
+- [x] Build passes — last run: 2026-06-18
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 

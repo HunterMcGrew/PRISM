@@ -33,6 +33,7 @@
 	".prism/architect/**": "_toolkit/spec-editing.md",
 	".prism/references/**": "_toolkit/spec-editing.md",
 	".prism/plans/**": "_toolkit/spec-editing.md",
+	".prism/business/**": "_toolkit/spec-editing.md",
 	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
 	".ai-skills/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
 	"scripts/ai-skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
