@@ -87,9 +87,9 @@ Sequence: task 4 first (blocks 5–8). Run only after Hunter ratifies ADR-0060 a
 7. **DONE — Add the manifest routing entry** for `.prism/business/**` to `.prism/architect/manifest.json` (route to `_toolkit/spec-editing.md`, matching the existing `.prism/**` and area entries) so architect-context lookups resolve for the new area.
 8. **DONE — Run `pnpm prism:build`** (runs `tsx scripts/ai-skills/build.ts` then `pnpm prism:test`). _Green: 329 tests pass, 0 fail; all four adapters generated._ Confirm green: discovery tests (`scripts/ai-skills/discovery-metadata.test.ts` — canonical files present, role-map shape valid, description ≤1000 chars, body ≤500 lines, managed markers), literal guard (no hardcoded team literals in generated output), path tests (`scripts/ai-skills/path-guard.test.ts` — no cross-platform path leakage). Verify the build generated `.claude/skills/prism-founder/SKILL.md`, `.cursor/skills/prism-founder/SKILL.md`, `.agents/skills/prism-founder/SKILL.md`, and the Codex agent adapter `.codex/agents/prism-founder.toml` (persona entries get an adapter per ADR-0046).
 
-### Eli (documentation) — optional, after task 8
+### Eli (documentation) — DONE
 
-9. **Add an architect doc for the business layer** at `.prism/architect/_toolkit/business-layer.md` IF the substrate warrants durable architect context beyond the ADR — covering the strategy-doc → Parker seam and the orchestrate-over-host-capabilities rule for future Wave personas. Defer if ADR-0060 + the strategy-doc template are judged sufficient; the ADR is the canonical rationale and the template is the canonical shape, so this doc earns its place only if Wave 2 authors need a contextual pointer the ADR doesn't give. Decide at authoring time.
+9. **DONE — Add an architect doc for the business layer** at `.prism/architect/_toolkit/business-layer.md` — covering the wrap-the-pipeline model, where the layer grounds, the anchor persona (Vera), and the four rules every Wave 2+ business persona author must follow (ground in strategy doc, orchestrate over host capabilities, hand off into Parker, follow persona type). Updated `.prism/architect/manifest.json` to route `.prism/business/**` to `_toolkit/business-layer.md` (was `spec-editing.md`; spec-editing still loads via the `.prism/**` catch-all).
 
 ### Briar (self-review) — after task 8
 
@@ -124,6 +124,7 @@ All substrate decisions are recorded in full in [ADR-0060](../spec/adrs/_toolkit
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Created plan; branch foundation established for Winston to populate.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Winston wrote ADR-0060 (business-layer substrate), resolved the OPEN strategy-doc-shape question to single-file, and populated Implementation Tasks, Decisions, and AC. Gate: needs Hunter to ratify the ADR and pick the persona name before skill-forge authoring runs.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Authored the Vera founder/strategy persona (`prism-founder`) via skill-forge create-mode — frontmatter.yml, shared.md, roles.json entry, the `.prism/templates/business-strategy.md` template, and the `.prism/business/**` manifest route. `pnpm prism:build` green (329 tests, 0 fail); all four runtime adapters plus the Codex toml generated; `.prism/business/strategy.md` not seeded (lazy-artifacts).
+- 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Eli wrote `_toolkit/business-layer.md` — the contextual map for Wave 2+ business persona authors covering the wrap-the-pipeline model, strategy-doc grounding, and the four authoring rules. Updated manifest route for `.prism/business/**` from `spec-editing.md` to `business-layer.md` so lookups in that area resolve to the new doc.
 
 ---
 
