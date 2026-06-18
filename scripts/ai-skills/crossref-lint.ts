@@ -168,6 +168,17 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	// before install-cursor.ts was added) — prose mention, not a live link.
 	".prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
 	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md::scripts/ai-skills/install-cursor.ts",
+	// .prism/business/strategy.md is a lazy artifact — Vera (prism-founder) creates
+	// it on first real write per lazy-artifacts.md; it is never seeded in the
+	// monorepo tree. ADR-0060, business-layer.md, the strategy template, and the
+	// ADR README all reference it as the live artifact location.
+	".prism/architect/_toolkit/business-layer.md::.prism/business/strategy.md",
+	"templates/install/.prism/architect/_toolkit/business-layer.md::.prism/business/strategy.md",
+	".prism/spec/adrs/_toolkit/0060-business-layer-substrate.md::.prism/business/strategy.md",
+	"templates/install/.prism/spec/adrs/_toolkit/0060-business-layer-substrate.md::.prism/business/strategy.md",
+	".prism/spec/adrs/_toolkit/README.md::.prism/business/strategy.md",
+	".prism/templates/business-strategy.md::.prism/business/strategy.md",
+	"templates/install/.prism/templates/business-strategy.md::.prism/business/strategy.md",
 ]);
 
 // ---------------------------------------------------------------------------
