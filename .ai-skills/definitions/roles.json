@@ -77,6 +77,10 @@
 			"persona": "Sol"
 		},
 		{
+			"id": "prism-founder",
+			"persona": "Vera"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},
