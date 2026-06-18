@@ -81,6 +81,14 @@
 			"persona": "Vera"
 		},
 		{
+			"id": "prism-market-research",
+			"persona": "Kora"
+		},
+		{
+			"id": "prism-finance",
+			"persona": "Ellis"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},

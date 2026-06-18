@@ -67,7 +67,7 @@ Sequence: task 0 (name) is [HITL] and blocks 1–4. Run authoring only after Hun
 
 0. [HITL] **Pick the market research persona name.** Blocked on Hunter's choice at the gate (see `## Decisions` → name candidates). The persona ID is `prism-market-research` regardless of the human name chosen (function-descriptive ID convention per `.prism/rules/skill-authoring.md`; the human name is the `persona` field only). Substitute the ratified name everywhere `<Name>` appears below.
 
-1. **Scaffold the persona via `prism-skill-forge` create-mode** with ID `prism-market-research`, type persona (the default — no `type` field). This writes two source files; the `roles.json` append is task 3. Mirror Vera (`.ai-skills/skills/prism-founder/`) as the structural model.
+1. **[DONE]** **Scaffold the persona via `prism-skill-forge` create-mode** with ID `prism-market-research`, type persona (the default — no `type` field). This writes two source files; the `roles.json` append is task 3. Mirror Vera (`.ai-skills/skills/prism-founder/`) as the structural model.
    - **`.ai-skills/skills/prism-market-research/frontmatter.yml`** — fields per Vera's shape:
      - `name: prism-market-research`
      - `description:` as a YAML folded scalar (`>`, ≤1000 chars; target 250–400) following the 4-part pattern per `.prism/rules/skill-authoring.md` § Description field shape: (1) `<Name> — market research analyst persona.` (2) WHAT — produces competitive teardowns, TAM/segment sizing, and ICP research; grounds in and writes to `.prism/business/strategy.md`; orchestrates over the `deep-research` host capability. (3) grain line — sits in the business layer; hands off into Parker's PRD. (4) `Triggers:` line — `"<Name>"`, plus distinctive keywords: `market research`, `competitive teardown`, `TAM`, `segment sizing`, `ICP`, `market sizing`.
@@ -90,9 +90,9 @@ Sequence: task 0 (name) is [HITL] and blocks 1–4. Run authoring only after Hun
 
 2. **(Covered by task 1's two files.)** _No separate task — frontmatter.yml and shared.md are both written in task 1._
 
-3. **Append the `roles.json` entry.** In `.ai-skills/definitions/roles.json`, add `{ "id": "prism-market-research", "persona": "<Name>" }` to the `skills` array (no `type` field — persona is the default per ADR-0046). Place it adjacent to the other business personas (after the `prism-founder` entry at line ~80–82 is the natural home; finance's entry from prism-216 sits beside it). **Coordination:** this is the shared-file touchpoint — prism-216 also appends here. Both entries must be present before the single build runs.
+3. **[DONE]** **Append the `roles.json` entry.** In `.ai-skills/definitions/roles.json`, add `{ "id": "prism-market-research", "persona": "<Name>" }` to the `skills` array (no `type` field — persona is the default per ADR-0046). Place it adjacent to the other business personas (after the `prism-founder` entry at line ~80–82 is the natural home; finance's entry from prism-216 sits beside it). **Coordination:** this is the shared-file touchpoint — prism-216 also appends here. Both entries must be present before the single build runs.
 
-4. **Run the shared `pnpm prism:build`** (runs `tsx scripts/ai-skills/build.ts` then `pnpm prism:test`) — ONE run covering both Wave 1 personas; do not run a per-persona build. Confirm green: discovery tests (`scripts/ai-skills/discovery-metadata.test.ts` — canonical files present, role-map shape valid, description ≤1000 chars, body ≤500 lines, managed markers), literal guard (no hardcoded team literals), path tests (`scripts/ai-skills/path-guard.test.ts`). Verify the build generated this persona's four runtime adapters — `.claude/skills/prism-market-research/SKILL.md`, `.cursor/skills/prism-market-research/SKILL.md`, `.agents/skills/prism-market-research/SKILL.md`, and the Codex agent adapter `.codex/agents/prism-market-research.toml` (persona entries get an adapter per ADR-0046) — alongside prism-216's four adapters. Also run `pnpm prism:check` for seed/crossref drift (prism-213's Briar pass caught seed-copy gaps — but these personas live in `.ai-skills/` with no `templates/install/` mirror, so no seed copies are required per ADR-0059; confirm `prism:check` is green regardless).
+4. **[DONE]** **Run the shared `pnpm prism:build`** (runs `tsx scripts/ai-skills/build.ts` then `pnpm prism:test`) — ONE run covering both Wave 1 personas; do not run a per-persona build. Confirm green: discovery tests (`scripts/ai-skills/discovery-metadata.test.ts` — canonical files present, role-map shape valid, description ≤1000 chars, body ≤500 lines, managed markers), literal guard (no hardcoded team literals), path tests (`scripts/ai-skills/path-guard.test.ts`). Verify the build generated this persona's four runtime adapters — `.claude/skills/prism-market-research/SKILL.md`, `.cursor/skills/prism-market-research/SKILL.md`, `.agents/skills/prism-market-research/SKILL.md`, and the Codex agent adapter `.codex/agents/prism-market-research.toml` (persona entries get an adapter per ADR-0046) — alongside prism-216's four adapters. Also run `pnpm prism:check` for seed/crossref drift (prism-213's Briar pass caught seed-copy gaps — but these personas live in `.ai-skills/` with no `templates/install/` mirror, so no seed copies are required per ADR-0059; confirm `prism:check` is green regardless).
 
 ### Briar (self-review) — after task 4 (covers both Wave 1 personas)
 
@@ -144,7 +144,18 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 
 ---
 
+## PR Readiness
+
+- [x] Build passes — last run: 2026-06-18 (`pnpm prism:build` 329 tests pass; `pnpm prism:check` green)
+- [ ] Self-review pass (Briar) — pending its lane
+- [ ] PR description up to date
+
+**Last updated:** 2026-06-18
+
+---
+
 ## History
 
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Plan created by Nora; Wave 1 branch set up from origin/main at 44a91fe.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Winston populated Implementation Tasks, Decisions, and AC mirroring the Vera (prism-213) worked example. Persona ID `prism-market-research`; design settled by ADR-0060. Gate: needs Hunter to pick the persona name at the A/P/C gate before skill-forge authoring runs; shared-branch single-build coordination noted with prism-216.
+- 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Authored Kora (`prism-market-research`) — `frontmatter.yml` + `shared.md` mirroring Vera, plus the `roles.json` entry. Ran the single shared `pnpm prism:build` (329 tests pass) and `pnpm prism:check` (green) covering both Wave 1 personas; all five adapters generated. No `.prism/business/strategy.md` seeded.
