@@ -126,6 +126,7 @@ All substrate decisions are recorded in full in [ADR-0060](../spec/adrs/_toolkit
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Authored the Vera founder/strategy persona (`prism-founder`) via skill-forge create-mode — frontmatter.yml, shared.md, roles.json entry, the `.prism/templates/business-strategy.md` template, and the `.prism/business/**` manifest route. `pnpm prism:build` green (329 tests, 0 fail); all four runtime adapters plus the Codex toml generated; `.prism/business/strategy.md` not seeded (lazy-artifacts).
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Eli wrote `_toolkit/business-layer.md` — the contextual map for Wave 2+ business persona authors covering the wrap-the-pipeline model, strategy-doc grounding, and the four authoring rules. Updated manifest route for `.prism/business/**` from `spec-editing.md` to `business-layer.md` so lookups in that area resolve to the new doc.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Briar self-review found Major issue (seed drift: 3 new .prism/ files lacked install-seed copies; crossref-lint failing on lazy-artifact refs). Fixed in commit fdb69c1 — added seed copies + CROSSREF_FILE_ALLOWLIST entries. pnpm prism:check green. All checklist items pass.
+- 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Branch pushed and draft PR #214 opened against main. Pending Eric's PR review.
 
 ---
 
@@ -188,7 +189,7 @@ None.
 - [x] Tests written for new logic and edge cases — 329 tests pass (discovery, literal-guard, path, manifest-coverage, crossref-lint)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-18 (329 tests, 0 fail); pnpm prism:check passes clean after fdb69c1
-- [ ] PR description up to date
+- [x] PR description up to date — PR #214 opened as draft
 - [x] Lasting decisions promoted to architect context — see Decisions section (all four → ADR-0060, plus business-layer.md)
 
 **Last updated:** 2026-06-18
