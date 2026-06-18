@@ -127,6 +127,7 @@ All substrate decisions are recorded in full in [ADR-0060](../spec/adrs/_toolkit
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Eli wrote `_toolkit/business-layer.md` — the contextual map for Wave 2+ business persona authors covering the wrap-the-pipeline model, strategy-doc grounding, and the four authoring rules. Updated manifest route for `.prism/business/**` from `spec-editing.md` to `business-layer.md` so lookups in that area resolve to the new doc.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Briar self-review found Major issue (seed drift: 3 new .prism/ files lacked install-seed copies; crossref-lint failing on lazy-artifact refs). Fixed in commit fdb69c1 — added seed copies + CROSSREF_FILE_ALLOWLIST entries. pnpm prism:check green. All checklist items pass.
 - 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Branch pushed and draft PR #214 opened against main. Pending Eric's PR review.
+- 2026-06-18 [hmcgrew/prism-213-business-substrate-founder-persona]: Eric's PR review found the install-seed ADR README was missing rows 0049–0056 and 0060. Synced seed to canonical and added the missing crossref-lint allowlist entry for the ADR-0060 lazy-artifact ref; pnpm prism:check green.
 
 ---
 
