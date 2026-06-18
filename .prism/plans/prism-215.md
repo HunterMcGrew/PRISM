@@ -124,10 +124,11 @@ Sequence: task 0 (name) is [HITL] and blocks 1–4. Run authoring only after Hun
 ### Cross-persona name coupling in "How Kora thinks" prose
 
 - **Severity:** `minor`
-- **Status:** `deferred`
+- **Status:** `fixed`
 - **File:** `.ai-skills/skills/prism-market-research/shared.md`
 - **Problem:** Kora's "How Kora thinks" prose names the sibling finance persona (Ellis) by name, coupling the two persona specs; the reverse coupling exists in prism-216. Eric flagged as non-blocking, possibly intentional.
-- **Suggested fix:** Deferred — Hunter decides at the merge gate whether the named cross-reference stays (intentional roster cohesion) or is genericized.
+- **Suggested fix:** Replaced `Ellis's pricing and unit-economics models` with `the finance persona's pricing and unit-economics models` in the thinking-principle prose only. Handoff and Next-persona routing lines left unchanged.
+- **Fixed in:** commit on `hmcgrew/prism-wave1-market-research-finance` resolving Eric's minor from PR #217 review.
 
 ---
 
@@ -179,3 +180,4 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Briar self-review — clean pass. Build green, all adapters verified, roles.json valid, no seed violations, no session-context leakage, no hardcoded literals. AC items satisfiable by shipped content. Ready for PR.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Draft PR #217 opened against main — closes #215 and #216 together (shared branch/build). Pending Eric review and Hunter merge.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Plan closed by Winston. All Decisions follow ADR-0060 + business-layer.md — nothing new to promote. Eric's one minor (cross-persona name coupling) recorded as deferred for Hunter to decide; PR #217 stays draft, parked at the human merge gate.
+- 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Fixed Eric's minor — replaced `Ellis's pricing and unit-economics models` with `the finance persona's pricing and unit-economics models` in thinking-principle prose only; handoff and routing lines unchanged. Build green (329 tests, crossref-lint passed).
