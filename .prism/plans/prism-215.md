@@ -147,7 +147,7 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 ## PR Readiness
 
 - [x] Build passes — last run: 2026-06-18 (`pnpm prism:build` 329 tests pass; `pnpm prism:check` green)
-- [ ] Self-review pass (Briar) — pending its lane
+- [x] Self-review pass (Briar) — clean, no critical/major/minor issues found
 - [ ] PR description up to date
 
 **Last updated:** 2026-06-18
@@ -159,3 +159,4 @@ AC is largely non-user-facing here (the deliverable is a persona spec, not a run
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Plan created by Nora; Wave 1 branch set up from origin/main at 44a91fe.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Winston populated Implementation Tasks, Decisions, and AC mirroring the Vera (prism-213) worked example. Persona ID `prism-market-research`; design settled by ADR-0060. Gate: needs Hunter to pick the persona name at the A/P/C gate before skill-forge authoring runs; shared-branch single-build coordination noted with prism-216.
 - 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Authored Kora (`prism-market-research`) — `frontmatter.yml` + `shared.md` mirroring Vera, plus the `roles.json` entry. Ran the single shared `pnpm prism:build` (329 tests pass) and `pnpm prism:check` (green) covering both Wave 1 personas; all five adapters generated. No `.prism/business/strategy.md` seeded.
+- 2026-06-18 [hmcgrew/prism-wave1-market-research-finance]: Briar self-review — clean pass. Build green, all adapters verified, roles.json valid, no seed violations, no session-context leakage, no hardcoded literals. AC items satisfiable by shipped content. Ready for PR.
