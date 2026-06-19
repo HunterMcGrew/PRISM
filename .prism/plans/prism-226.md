@@ -103,6 +103,8 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Scaffolded plan alongside #225; both plans committed on Recruiting branch (plans live on main, Winston fills them there; Legal branch cut from main after Recruiting merges).
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Winston filled Implementation Tasks (5 Clove tasks w/ disclaimer encoded at 4 points 2a–2d) and AC (~25); decided `## Legal & Compliance` ownership, disclaimer-as-architecture, `deep-research` orchestration; name placeholder `<LEGAL_NAME>` pending Hunter. See Decisions.
 - 2026-06-19 [hmcgrew/prism-wave4-legal]: Clove authored Lex (they/them, prism-legal) — frontmatter.yml, shared.md with all four disclaimer points (2a–2d), roles.json entry, business-layer.md updated in both source and install seed; `pnpm prism:build` + `pnpm prism:check` GREEN (329/329 tests, crossref-lint clean).
+- 2026-06-19 [hmcgrew/prism-wave4-legal]: Briar self-review — all four disclaimer points verified in source; one minor (description 519 chars, trim substrate boilerplate to ≤450); no blockers. Build confirmed 329/329 clean.
+- 2026-06-19 [hmcgrew/prism-wave4-legal]: Trimmed Lex description from 519 to 422 chars — removed substrate boilerplate clause; disclaimer and routing signal intact. Build + check GREEN (329/329).
 
 ---
 
@@ -111,6 +113,15 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 ---
 
 ## Review Issues
+
+### Description length at 519 chars — over peer range
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.ai-skills/skills/prism-legal/frontmatter.yml` — removed substrate boilerplate clause; trimmed to 422 chars. Disclaimer clause and all routing signal preserved.
+- **File:** `.ai-skills/skills/prism-legal/frontmatter.yml`
+- **Problem:** Description is 519 chars; target is 250–400 (skill-authoring.md); peer max is Penny at 481. The substrate boilerplate clause "sits in the business layer below Vera on grain; hands off into Parker's PRD as upstream context" (79 chars) is not routing-critical and is the trim opportunity.
+- **Suggested fix:** Remove the substrate boilerplate clause. Removing it lands at ~440 chars — exclusion clause and all routing-signal content stays. Alternatively keep it and accept ~440 as within "toward the upper end" since the exclusion clause earns the extra length; but the full 519 is outside the peer range and should be trimmed.
 
 ---
 
@@ -168,5 +179,6 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 - [x] Build passes — last run: 2026-06-19 (329/329 pass, crossref-lint clean)
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (business-layer.md updated with Lex roster entry + disclaimer-as-architecture note)
+- [x] Minor: description trimmed from 519 to 422 chars (removed substrate boilerplate clause; disclaimer intact)
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Clove post-review fix — description minor resolved)
