@@ -1,5 +1,7 @@
 # Plan: prism-229
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/229
@@ -79,3 +81,4 @@ Living checklist — updated by Briar self-review on 2026-06-19.
 - 2026-06-18 [hmcgrew/prism-229-sol-merge-authority-adr]: Wrote ADR-0061; cross-referenced from `git-conventions.md § Who merges` and the README index. Follow-up off main, post Epic #212.
 - 2026-06-19 [hmcgrew/prism-229-sol-merge-authority-adr]: Briar self-review — build green (329 pass), crossref-lint clean. Two minors: install-template README missing 0061 row; scope-boundary wording tension in seeded ADR copy.
 - 2026-06-19 [hmcgrew/prism-229-sol-merge-authority-adr]: Fixed both Briar minors — added 0061 row to install-seed README; rephrased "travels nowhere" to "applies only to PRISM's own repository" in source ADR, propagated via prism:build to runtime mirrors and hand-mirrored to install seed. 329 pass.
+- 2026-06-19 [hmcgrew/prism-229-sol-merge-authority-adr]: Plan closed on final PR branch before #232 merges. Eric reviewed CLEAN, build 329 green. Decision verdict confirmed (→ promoted to ADR-0061); no architect-context rebuild needed — the ADR is itself the durable artifact.
