@@ -1032,14 +1032,13 @@ export async function writeSeedMirror(
 				continue;
 			}
 
+			const seedFilePath = path.join(seedRoot, relPath);
+			const seedFileIsNew = !(await pathExists(seedFilePath));
 			const raw = await fs.readFile(path.join(sourceArea, entry.relativePath), "utf8");
-			await writeFileIfChanged(
-				path.join(seedRoot, relPath),
-				raw,
-				checkModeArg,
-				changedPathsArg
-			);
-			unclassifiedMirrored.push(relPath);
+			await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
+			if (seedFileIsNew) {
+				unclassifiedMirrored.push(relPath);
+			}
 		}
 	}
 
@@ -1060,14 +1059,13 @@ export async function writeSeedMirror(
 			continue;
 		}
 
+		const seedFilePath = path.join(seedRoot, looseFile);
+		const seedFileIsNew = !(await pathExists(seedFilePath));
 		const raw = await fs.readFile(sourcePath, "utf8");
-		await writeFileIfChanged(
-			path.join(seedRoot, looseFile),
-			raw,
-			checkModeArg,
-			changedPathsArg
-		);
-		unclassifiedMirrored.push(relPath);
+		await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
+		if (seedFileIsNew) {
+			unclassifiedMirrored.push(relPath);
+		}
 	}
 }
 

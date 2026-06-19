@@ -373,7 +373,7 @@ test("writeSeedMirror — renamed file is not written under its canonical name",
 	);
 });
 
-test("writeSeedMirror — idempotent: second run produces no changedPaths", async () => {
+test("writeSeedMirror — idempotent: second run produces no changedPaths and no unclassifiedMirrored", async () => {
 	await withTempRoots(
 		async (contentRoot, _seedRoot) => {
 			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
@@ -388,6 +388,7 @@ test("writeSeedMirror — idempotent: second run produces no changedPaths", asyn
 			const firstUnclassified: string[] = [];
 			await writeSeedMirror(contentRoot, seedRoot, emptyCuration, false, firstChanged, firstUnclassified);
 			assert.ok(firstChanged.length > 0, "first run should write the file");
+			assert.ok(firstUnclassified.length > 0, "first run should flag the new seed entry as unclassified");
 
 			const secondChanged: string[] = [];
 			const secondUnclassified: string[] = [];
@@ -396,6 +397,11 @@ test("writeSeedMirror — idempotent: second run produces no changedPaths", asyn
 				secondChanged.length,
 				0,
 				"second run must produce no changedPaths — writeFileIfChanged no-ops on identical content"
+			);
+			assert.equal(
+				secondUnclassified.length,
+				0,
+				"second run must produce no unclassifiedMirrored — seed path already exists, not a new entry"
 			);
 		}
 	);

@@ -169,6 +169,8 @@ Eliminate the recurring manual seed-mirror step when editing canonical `.prism/`
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Scaffolded plan; Sasha investigation complete — see Debugged Issues.
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Winston ratified Option A (verified diagnosis independently); corrected the write mechanism to raw bytes (not substitution) and added renames as a third skip class; ruled unclassified-file handling as WARN-not-FAIL (open question for Hunter). Filled Implementation Tasks, Decisions, AC.
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Clove implemented all 7 tasks — `writeSeedMirror()` in build.ts, build-mode call + warn block, install-layout.md prose updated in both dogfood and seed copies, 6 new test cases (all pass); prism:check GREEN (335 tests); idempotency confirmed (zero git diff on second build); auto-mirror demo passed.
+- 2026-06-19 [hmcgrew/prism-230-seed-parity]: Briar self-review — major issue found: WARN fires on all 119 non-curated files every build, not only on genuinely new seed entries; trains users to ignore warnings; fix is to scope push to unclassifiedMirrored only when seed path is new. Minor: idempotent AC is true for files but not for console output. Both fixed by same change. Needs Clove fix before Eric.
+- 2026-06-19 [hmcgrew/prism-230-seed-parity]: Clove post-review fix — scoped unclassifiedMirrored.push to new seed paths only (pathExists check before write in both loops); extended idempotency test to assert secondUnclassified.length === 0; 335 tests GREEN; second build produces zero WARN + zero seed git diff.
 
 ---
 
@@ -275,6 +277,19 @@ Winston should scope the implementation to:
 
 ## Review Issues
 
+### WARN fires on all 119 non-curated files every build — noise defeats its own signal
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `hmcgrew/prism-230-seed-parity` — scoped `unclassifiedMirrored.push` to only fire when the seed path did not previously exist (checked via `pathExists` before the write). Files already present in the seed are proven-classified by prior build history; only genuinely new seed paths trigger the warn.
+- **File:** `scripts/ai-skills/build.ts` (`writeSeedMirror`, areas loop and loose-files loop)
+
+### idempotency claim is partially wrong: WARN still fires on every build even when no seed files changed
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `hmcgrew/prism-230-seed-parity` — resolved by the same change as the Major above. Second build on an unchanged tree now produces zero `unclassifiedMirrored` entries and zero WARN lines.
+
 ---
 
 ## Acceptance Criteria
@@ -313,10 +328,11 @@ Winston should scope the implementation to:
 - [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (6 new `writeSeedMirror` cases)
+- [x] Tests written for new logic and edge cases (6 new `writeSeedMirror` cases + updated idempotency assertion)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:check passed`, 335 tests, 0 fail)
+- [x] Build passes — last run: 2026-06-19 (`prism:check passed`, 335 tests, 0 fail); second build produces zero WARN + zero seed git diff
 - [x] PR description up to date — draft PR #234 opened
 - [x] Lasting decisions promoted to architect context (install-layout.md updated; mechanism is ticket-tactical per Decisions)
+- [x] WARN scoped to genuinely-new seed files — fixed; fires only when a seed path did not previously exist
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Clove post-review fix)
