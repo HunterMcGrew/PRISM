@@ -1,5 +1,7 @@
 # Plan: prism-219
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/219
@@ -84,7 +86,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
   - **Alternatives considered:** (a) fold Sales content under Marketing; (b) each owns a private ICP copy.
   - **Chosen approach:** message-vs-pipeline split with ICP as a shared Kora-owned input. Beats (a) — proposals/outreach/objections are a distinct discipline — and (b) — duplicate ICP copies drift and Kora owns ICP.
   - **Implementation guidance:** encode in both personas' `## Ownership & Handoff` with verbatim-consistent wording. Sales owns `## Sales`; Marketing owns `## Marketing`.
-  - → promoted to `.prism/architect/_toolkit/business-layer.md` at close (durable cross-persona boundary; recorded once, cited from both plans).
+  - → promoted to `.prism/architect/_toolkit/business-layer.md` § "Dividing ownership when two personas share an input" (source + install seed), 2026-06-19. Durable cross-persona boundary; recorded once as the worked example of a general shared-input ownership rule, cited from both #218 and #219.
 - **Name proposals (placeholder until Hunter picks at the name gate).** Source uses marker `<SALES_NAME>`. Candidates:
   - **Cole** — "close"-adjacent; short, confident, pipeline-forward; pairs cleanly with a Marketing counterpart.
   - **Sol-conflict check:** Sol is taken (Conductor) — not proposing it. Noting to avoid a near-collision.
@@ -100,6 +102,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Winston filled Implementation Tasks (skill-forge author lane, Marketing-first sequence, shared Integration build), AC (13 behavioral + 7 non-behavioral), and Decisions incl. the Marketing↔Sales boundary (wording mirrors prism-218). Name placeholder `<SALES_NAME>`; 3 candidates proposed for the name gate.
 - 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove authored Quinn (they/them) as prism-sales — frontmatter.yml and shared.md mirroring Kora's structure; Marketing-first sequence honored; roles.json entry appended with Charlie's; Marketing↔Sales boundary encoded verbatim-consistent across both personas; pnpm prism:build + prism:check passed (329/329 green).
 - 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove fixed Eric/Briar minors — trimmed sales description from 503→381 chars; trimmed marketing description from 474→385 chars; see prism-218 History for full detail.
+- 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Winston closed plan — Marketing↔Sales boundary promoted to `business-layer.md` § "Dividing ownership when two personas share an input" (recorded once, cited from both #218 and #219); all Decisions carry verdicts; plan marked closed. Rebuild + seed mirror handed back to Sol (business-layer.md edited).
 
 ---
 
@@ -177,6 +180,6 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (329/329 green, prism:check passed; crossref-lint clean)
 - [x] PR description up to date
-- [ ] Lasting decisions promoted to architect context — pending plan close (Marketing↔Sales boundary promotion deferred to close per plan conventions; PR not yet merged)
+- [x] Lasting decisions promoted to architect context — Marketing↔Sales boundary promoted to `business-layer.md` (source + install seed) at close; recorded once, cited from both #218 and #219
 
-**Last updated:** 2026-06-19 (Clove minor fixes post-review)
+**Last updated:** 2026-06-19 (Winston plan close)

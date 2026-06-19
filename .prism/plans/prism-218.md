@@ -1,5 +1,7 @@
 # Plan: prism-218
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/218
@@ -82,7 +84,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
   - **Root cause / reasoning:** SEO is keyword/intent targeting and on-page structure in service of the same messaging hierarchy marketing already owns — splitting it out would fork ownership of "the words that reach the buyer" across two personas.
   - **Alternatives considered:** a standalone `prism-seo` persona.
   - **Chosen approach:** SEO as a mode the marketing persona enters. Beats a separate persona because SEO content and brand messaging share one owner; a split creates a boundary dispute over every content brief.
-  - → promoted to `.prism/architect/_toolkit/business-layer.md` (roster note) at close if the roster map is updated; otherwise stays plan-local.
+  - → no promotion needed (the SEO-as-a-mode structure is encoded in the persona spec itself; the roster line in `business-layer.md` names the persona, and the persona's internal mode structure is not durable cross-persona context).
 - Orchestrates over the `brand-voice` host capability per ADR-0060; graceful degradation required when `brand-voice` is absent. This persona establishes the `brand-voice` seam (no prior business persona uses it) — Sales inherits the same pattern.
   - → no promotion needed (ADR-0060 already owns the orchestrate-over-host-capabilities rule; this is its first `brand-voice` application).
 - **Marketing↔Sales boundary (the load-bearing decision).** Marketing owns *outbound message*: positioning, messaging hierarchy, campaign briefs, content briefs, SEO. Sales owns *pipeline mechanics*: ICP-to-pipeline qualification, proposals, outreach sequences, objection handling. The shared seam is the ICP — **Kora researches who the buyer is, Marketing frames the message to that buyer, Sales works the pipeline against that buyer.** Sales reads Marketing's `## Marketing` section for the messaging its outreach inherits; Marketing does not write outreach sequences, Sales does not write positioning.
@@ -90,7 +92,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
   - **Alternatives considered:** (a) fold Sales content under Marketing; (b) let each own a private ICP copy.
   - **Chosen approach:** message-vs-pipeline split with ICP as a shared, Kora-owned input. Beats (a) — proposals/outreach/objection-handling are a distinct discipline from positioning — and beats (b) — two ICP copies drift and Kora already owns ICP research.
   - **Implementation guidance:** encode the boundary in both personas' `## Ownership & Handoff` sections (verbatim-consistent wording across both). Marketing owns `## Marketing`; Sales owns `## Sales` (or `## Go-to-Market`) in `strategy.md`.
-  - → promoted to `.prism/architect/_toolkit/business-layer.md` at close (the boundary is durable cross-persona context every future GTM persona needs).
+  - → promoted to `.prism/architect/_toolkit/business-layer.md` § "Dividing ownership when two personas share an input" (source + install seed), 2026-06-19. The boundary is durable cross-persona context every future GTM persona needs; recorded as the worked example of a general shared-input ownership rule.
 - **Name proposals (placeholder until Hunter picks at the name gate).** Source uses marker `<MKT_NAME>`; skill-forge substitutes the chosen name. Candidates:
   - **Margo** — phonetically near "marketing"; warm, brand-voice-forward; clean single first name.
   - **Reid** — "reach"/readership connotation; crisp, channel-oriented; pairs well tonally with a Sales counterpart.
@@ -105,6 +107,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Winston filled Implementation Tasks (skill-forge author lane + shared serial Integration group), AC (13 behavioral + 7 non-behavioral), and Decisions incl. the Marketing↔Sales boundary; see Decision "Marketing↔Sales boundary". Name placeholder `<MKT_NAME>`; 3 candidates proposed for the name gate.
 - 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove authored Charlie (she/her) as prism-marketing — frontmatter.yml and shared.md mirroring Kora's structure; appended roles.json entry; updated business-layer.md roster note (source + install seed); ran single pnpm prism:build + prism:check (329/329 green); all runtime adapters (.claude/.agents/.cursor SKILL.md, .codex toml, .claude/agents md) generated.
 - 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove fixed Eric/Briar minors — trimmed marketing description from 474→385 chars; trimmed sales description from 503→381 chars; rewrote changelog-voice line in business-layer.md (source + install seed) to durable membership; prism:build + prism:check 329/329 green.
+- 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Winston closed plan — promoted the Marketing↔Sales boundary to `business-layer.md` § "Dividing ownership when two personas share an input" (source + install seed) as the worked example of a general shared-input ownership rule; all Decisions carry verdicts; plan marked closed. Rebuild + seed mirror handed back to Sol (business-layer.md edited).
 
 ---
 
@@ -180,6 +183,6 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (329/329 green, prism:check passed; crossref-lint clean)
 - [x] PR description up to date
-- [ ] Lasting decisions promoted to architect context — pending plan close (Marketing↔Sales boundary + SEO-mode promotion deferred to close per plan conventions; PR not yet merged)
+- [x] Lasting decisions promoted to architect context — Marketing↔Sales boundary promoted to `business-layer.md` (source + install seed) at close; SEO-as-a-mode stays plan-local (encoded in the persona spec)
 
-**Last updated:** 2026-06-19 (Clove minor fixes post-review)
+**Last updated:** 2026-06-19 (Winston plan close)
