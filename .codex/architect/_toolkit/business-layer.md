@@ -7,7 +7,7 @@ The business layer is a suite of personas that wraps the existing engineering pi
 The business layer doesn't fork the engineering pipeline — it wraps it at two seams:
 
 - **Inbound seam (live):** Business personas produce strategy; Vera hands off to Parker by pointing Parker at the relevant `strategy.md` section as upstream PRD context. Parker, Mira, Winston, and Clove are untouched. The handoff reuses the existing PRD seam rather than building a parallel one.
-- **Outbound seam (Wave 3, not yet built):** Engineering ships → a data/metrics persona measures outcomes → results flow back into `strategy.md`'s `## Metrics` section, closing the loop to Vera. The landing spot is documented now; the persona is deferred.
+- **Outbound seam (live — Tess, `prism-data`):** Engineering ships → Tess measures outcomes → results flow back into `strategy.md`'s `## Metrics` section, closing the loop to Vera. Tess owns the `## Metrics` section; her default handoff is back to Vera (loop closure), inverting the Parker-default the other business personas use.
 
 Every business persona operates inside this model. None of them touch the engineering pipeline directly; they either feed into Parker or (future) receive from the data persona.
 
@@ -31,7 +31,7 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on grain. Every other business persona reads and writes the strategy doc she owns. Her spec lives at `.ai-skills/skills/prism-founder/shared.md`; read its `## Orchestrating over host capabilities` section as the worked example for every subsequent business persona.
 
-Charlie (`prism-marketing`, marketing strategist) and Quinn (`prism-sales`, sales persona) are in the business layer alongside Vera. Wave 3+ roster and planned focus are tracked in epic #212.
+Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), and Remy (`prism-customer-success`, customer success and support) are in the business layer alongside Vera. Planned additions are tracked in epic #212.
 
 ### Dividing ownership when two personas share an input
 

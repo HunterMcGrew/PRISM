@@ -79,6 +79,7 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
 
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Scaffolded plan; Wave 3 serial topology, shares branch with prism-222.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston filled Implementation Tasks (to detail bar), AC (~23), and Decisions; reframed the CS↔Eli boundary from audience to content-class against Eli's real scope and resolved the contested usage-guides/onboarding seam. Build/check deferred to prism-222 tasks 4–5 (single build). See Decision: CS ↔ Eli output boundary.
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Clove authored `prism-customer-success` — `frontmatter.yml` (395 chars, in range) and `shared.md` with CS↔Eli boundary + contested-seam resolution encoded in lens #5, Ownership & Handoff, and DoD. Roles.json entry appended. Business-layer.md roster updated (both surfaces).
 
 ---
 
@@ -148,8 +149,8 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check`, 329 pass, 0 fail — shared with prism-222 per serial topology)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Clove — authored, build deferred to prism-222 tasks 4–5, check green)

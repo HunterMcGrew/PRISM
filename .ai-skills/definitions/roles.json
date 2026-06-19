@@ -97,6 +97,14 @@
 			"persona": "Quinn"
 		},
 		{
+			"id": "prism-data",
+			"persona": "Tess"
+		},
+		{
+			"id": "prism-customer-success",
+			"persona": "Remy"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},

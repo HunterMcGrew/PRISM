@@ -78,6 +78,7 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
 
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Scaffolded plan; Wave 3 serial topology, shares branch with prism-223.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston filled Implementation Tasks (to detail bar), AC (~22), and Decisions; recorded the `## Metrics` outbound-seam ownership + loop-closure-to-Vera. Serial single-build topology (build/check tasks 4–5 shared with prism-223). See Decision: Outbound metrics seam.
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Clove authored `prism-data` — `frontmatter.yml` (397 chars, in range) and `shared.md`; appended roles.json entry; updated business-layer.md outbound seam to "live" (both live doc and install seed). Single build+check: 329 tests, all pass, adapter parity green.
 
 ---
 
@@ -145,8 +146,8 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check`, 329 pass, 0 fail)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Clove — authored, built, check green)
