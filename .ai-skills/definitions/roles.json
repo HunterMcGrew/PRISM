@@ -105,6 +105,10 @@
 			"persona": "Remy"
 		},
 		{
+			"id": "prism-recruiting",
+			"persona": "Penny"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},

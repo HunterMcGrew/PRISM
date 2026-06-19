@@ -87,6 +87,7 @@ No documentation tasks. The persona spec is self-documenting (frontmatter + shar
 
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Scaffolded plan; issues #225 (Recruiting) and #226 (Legal) filed; Recruiting branch created from origin/main @ 30234af.
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Winston filled Implementation Tasks (5 Clove tasks, single-persona PR) and AC (~21); decided `## People` section ownership and `brand-voice` orchestration; name placeholder `<RECRUITER_NAME>` pending Hunter's pick. See Decisions.
+- 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Clove authored Penny (`prism-recruiting`) — frontmatter.yml + shared.md, roles.json entry (after prism-customer-success), business-layer.md roster updated in both live and install-seed surfaces; pnpm prism:build + prism:check GREEN (329/329 tests).
 
 ---
 
@@ -140,13 +141,13 @@ No documentation tasks. The persona spec is self-documenting (frontmatter + shar
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (329/329 pass — build tests cover all persona adapters)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check` GREEN)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (business-layer.md updated in live + install-seed)
 
 **Last updated:** 2026-06-19
