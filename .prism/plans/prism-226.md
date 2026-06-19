@@ -102,6 +102,7 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Scaffolded plan alongside #225; both plans committed on Recruiting branch (plans live on main, Winston fills them there; Legal branch cut from main after Recruiting merges).
 - 2026-06-19 [hmcgrew/prism-wave4-recruiting]: Winston filled Implementation Tasks (5 Clove tasks w/ disclaimer encoded at 4 points 2a–2d) and AC (~25); decided `## Legal & Compliance` ownership, disclaimer-as-architecture, `deep-research` orchestration; name placeholder `<LEGAL_NAME>` pending Hunter. See Decisions.
+- 2026-06-19 [hmcgrew/prism-wave4-legal]: Clove authored Lex (they/them, prism-legal) — frontmatter.yml, shared.md with all four disclaimer points (2a–2d), roles.json entry, business-layer.md updated in both source and install seed; `pnpm prism:build` + `pnpm prism:check` GREEN (329/329 tests, crossref-lint clean).
 
 ---
 
@@ -159,13 +160,13 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (build pipeline, 329/329)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-19 (329/329 pass, crossref-lint clean)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (business-layer.md updated with Lex roster entry + disclaimer-as-architecture note)
 
 **Last updated:** 2026-06-19

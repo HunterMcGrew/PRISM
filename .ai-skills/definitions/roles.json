@@ -109,6 +109,10 @@
 			"persona": "Penny"
 		},
 		{
+			"id": "prism-legal",
+			"persona": "Lex"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},
