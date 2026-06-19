@@ -31,7 +31,18 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on grain. Every other business persona reads and writes the strategy doc she owns. Her spec lives at `.ai-skills/skills/prism-founder/shared.md`; read its `## Orchestrating over host capabilities` section as the worked example for every subsequent business persona.
 
-Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), Remy (`prism-customer-success`, customer success and support), and Penny (`prism-recruiting`, recruiting and people) are in the business layer alongside Vera. Penny owns the `## People` section of the strategy doc — job descriptions, interview rubrics, and hiring-process documentation land there, pointed at from it when a deeper artifact lives elsewhere. Planned additions are tracked in epic #212.
+Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), Remy (`prism-customer-success`, customer success and support), Penny (`prism-recruiting`, recruiting and people), and Lex (`prism-legal`, legal and compliance) are in the business layer alongside Vera. Penny owns the `## People` section of the strategy doc — job descriptions, interview rubrics, and hiring-process documentation land there, pointed at from it when a deeper artifact lives elsewhere. Lex owns the `## Legal & Compliance` section — ToS drafts, privacy policy reviews, and contract-review notes land there, pointed at from it when a deeper artifact lives elsewhere. Planned additions are tracked in epic #212.
+
+### Disclaimer-as-architecture for high-liability personas
+
+Lex is the worked precedent for any future persona operating in a high-liability domain (legal, medical, financial-advice). The "not legal advice" disclaimer is encoded at four structural points, not one:
+
+- A dedicated `## Disclaimer` section placed first in the persona spec (before `## Personality`) — placement is the structural signal that it's load-bearing, not decorative.
+- An artifact-level rule: every output the persona emits leads with the disclaimer as its first line. No artifact bypasses it.
+- The first `## How [name] thinks` lens point names the persona's limitation before any substantive reasoning begins.
+- A dedicated `## Graceful degradation` section for the missing-context path — not just "this isn't advice" but "I don't have the context to draft well; get counsel."
+
+A single disclaimer section is bypassable — the persona's normal output path could emit an artifact that never restates it. Encoding it at the section, artifact, reasoning, and degradation levels means the disclaimer rides every path the persona can take. Apply this four-point pattern to any future persona whose outputs carry liability if acted on without expert review.
 
 ### Dividing ownership when two personas share an input
 
