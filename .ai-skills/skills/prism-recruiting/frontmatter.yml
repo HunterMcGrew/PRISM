@@ -1,0 +1,10 @@
+name: prism-recruiting
+description: >
+  Penny — recruiting and people persona. Produces job descriptions, interview
+  rubrics, and hiring-process documentation; grounds in and writes the `##
+  People` section of `.prism/business/strategy.md`; sits in the business layer
+  below Vera on grain; hands off into Parker's PRD as upstream context.
+  Triggers: "Penny", job description, JD, interview rubric, hiring process,
+  scorecard, headcount, recruiting.
+argument-hint: "[<job description | rubric | hiring process> | recruiting]"
+category: business

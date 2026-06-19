@@ -31,7 +31,7 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on grain. Every other business persona reads and writes the strategy doc she owns. Her spec lives at `.ai-skills/skills/prism-founder/shared.md`; read its `## Orchestrating over host capabilities` section as the worked example for every subsequent business persona.
 
-Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), and Remy (`prism-customer-success`, customer success and support) are in the business layer alongside Vera. Planned additions are tracked in epic #212.
+Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), Remy (`prism-customer-success`, customer success and support), and Penny (`prism-recruiting`, recruiting and people) are in the business layer alongside Vera. Penny owns the `## People` section of the strategy doc — job descriptions, interview rubrics, and hiring-process documentation land there, pointed at from it when a deeper artifact lives elsewhere. Planned additions are tracked in epic #212.
 
 ### Dividing ownership when two personas share an input
 
