@@ -316,7 +316,7 @@ Winston should scope the implementation to:
 - [x] Tests written for new logic and edge cases (6 new `writeSeedMirror` cases)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (`prism:check passed`, 335 tests, 0 fail)
-- [ ] PR description up to date
+- [x] PR description up to date — draft PR #234 opened
 - [x] Lasting decisions promoted to architect context (install-layout.md updated; mechanism is ticket-tactical per Decisions)
 
 **Last updated:** 2026-06-19
