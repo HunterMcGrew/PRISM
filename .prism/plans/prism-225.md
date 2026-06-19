@@ -147,7 +147,7 @@ No documentation tasks. The persona spec is self-documenting (frontmatter + shar
 - [x] Tests written for new logic and edge cases (329/329 pass — build tests cover all persona adapters)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check` GREEN)
-- [ ] PR description up to date
+- [x] PR description up to date (draft PR #227)
 - [x] Lasting decisions promoted to architect context (business-layer.md updated in live + install-seed)
 
 **Last updated:** 2026-06-19
