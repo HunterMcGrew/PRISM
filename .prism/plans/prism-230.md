@@ -168,6 +168,7 @@ Eliminate the recurring manual seed-mirror step when editing canonical `.prism/`
 
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Scaffolded plan; Sasha investigation complete — see Debugged Issues.
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Winston ratified Option A (verified diagnosis independently); corrected the write mechanism to raw bytes (not substitution) and added renames as a third skip class; ruled unclassified-file handling as WARN-not-FAIL (open question for Hunter). Filled Implementation Tasks, Decisions, AC.
+- 2026-06-19 [hmcgrew/prism-230-seed-parity]: Clove implemented all 7 tasks — `writeSeedMirror()` in build.ts, build-mode call + warn block, install-layout.md prose updated in both dogfood and seed copies, 6 new test cases (all pass); prism:check GREEN (335 tests); idempotency confirmed (zero git diff on second build); auto-mirror demo passed.
 
 ---
 
@@ -175,7 +176,8 @@ Eliminate the recurring manual seed-mirror step when editing canonical `.prism/`
 
 ### Seed-parity manual mirror step is invisible until CI fails
 
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** `hmcgrew/prism-230-seed-parity` — `writeSeedMirror()` added to `scripts/ai-skills/build.ts`; `pnpm prism:build` now auto-mirrors all non-curated files to the install seed.
 - **Severity:** Medium
 - **Confidence:** `High` (Confirmed root cause + deterministic repro — see below)
 - **Environment:** Observed repeatedly during Epic #212 (business persona waves); reproducible on any edit to a non-curated canonical `.prism/` file without a matching seed update.
@@ -308,13 +310,13 @@ Winston should scope the implementation to:
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: N/A (diagnosis only, no code changes)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (6 new `writeSeedMirror` cases)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-19 (`prism:check passed`, 335 tests, 0 fail)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (install-layout.md updated; mechanism is ticket-tactical per Decisions)
 
 **Last updated:** 2026-06-19

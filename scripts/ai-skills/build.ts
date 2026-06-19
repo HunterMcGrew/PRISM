@@ -978,6 +978,99 @@ export async function checkSeedDrift(
 	}
 }
 
+/**
+ * Writes non-curated canonical files to the install seed so prism:build is the
+ * single command that keeps templates/install/.prism/ in parity. The build-mode
+ * inverse of checkSeedDrift: same classification (excluded / renames / curated
+ * skipped), but writes the raw canonical bytes instead of comparing them.
+ *
+ * Raw bytes, not substituted: the seed ships tokens as literals (ADR-0030), and
+ * checkSeedDrift compares raw bytes — so the write path must NOT call
+ * substituteTokens or copyContentFileWithSubstitution. Use writeFileIfChanged
+ * with fs.readFile output directly. Idempotent: writeFileIfChanged is a no-op
+ * when the seed already matches, so a second prism:build produces no git diff.
+ *
+ * unclassifiedMirrored collects non-curated files that are absent from every
+ * tier in seed-curation.json — main() warns on these so a forgotten curation
+ * decision surfaces at build time (see Decision: unclassified-file handling).
+ */
+export async function writeSeedMirror(
+	contentRoot: string,
+	seedRoot: string,
+	curation: SeedCuration,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	unclassifiedMirrored: string[]
+): Promise<void> {
+	const excludedSet = new Set(curation.excluded);
+	const curatedSet = new Set(curation.curated);
+	const renames = curation.renames;
+
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
+
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+
+			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
+
+			if (excludedSet.has(relPath)) {
+				continue;
+			}
+
+			if (relPath in renames) {
+				continue;
+			}
+
+			if (curatedSet.has(relPath)) {
+				continue;
+			}
+
+			const raw = await fs.readFile(path.join(sourceArea, entry.relativePath), "utf8");
+			await writeFileIfChanged(
+				path.join(seedRoot, relPath),
+				raw,
+				checkModeArg,
+				changedPathsArg
+			);
+			unclassifiedMirrored.push(relPath);
+		}
+	}
+
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const relPath = looseFile;
+		const seedOnlySet = new Set(curation.seedOnly);
+
+		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+			continue;
+		}
+
+		if (relPath in renames) {
+			continue;
+		}
+
+		const sourcePath = path.join(contentRoot, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+
+		const raw = await fs.readFile(sourcePath, "utf8");
+		await writeFileIfChanged(
+			path.join(seedRoot, looseFile),
+			raw,
+			checkModeArg,
+			changedPathsArg
+		);
+		unclassifiedMirrored.push(relPath);
+	}
+}
+
 async function removeDeletedManagedAgentFiles(
 	outputRoot: string,
 	validSkillIds: Set<string>,
@@ -1380,6 +1473,18 @@ async function main(): Promise<void> {
 		}
 	}
 
+	const unclassifiedMirrored: string[] = [];
+	if (!checkMode && (await pathExists(contentRoot))) {
+		await writeSeedMirror(
+			contentRoot,
+			templatesContentRoot,
+			seedCuration,
+			checkMode,
+			changedPaths,
+			unclassifiedMirrored
+		);
+	}
+
 	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
 	await removeDeletedManagedSkills(
@@ -1457,6 +1562,18 @@ async function main(): Promise<void> {
 
 		console.log("prism:check passed. Generated outputs are in sync.");
 		return;
+	}
+
+	if (unclassifiedMirrored.length > 0) {
+		console.warn(
+			`prism:build auto-mirrored ${unclassifiedMirrored.length} unclassified file(s) to the install seed as non-curated:`
+		);
+		for (const relPath of unclassifiedMirrored) {
+			console.warn(` - ${relPath}`);
+		}
+		console.warn(
+			"If any of these should be curated (consumer-facing simplified) or excluded (dogfood-only), add them to .ai-skills/definitions/seed-curation.json and rebuild."
+		);
 	}
 
 	if (changedPaths.length === 0) {

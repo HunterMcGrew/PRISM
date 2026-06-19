@@ -10,7 +10,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkSeedDrift, type SeedCuration } from "./build";
+import { checkSeedDrift, writeSeedMirror, type SeedCuration } from "./build";
 
 async function withTempRoots(
 	build: (contentRoot: string, seedRoot: string) => Promise<void>,
@@ -243,6 +243,187 @@ test("rename — canonical has manifest.json; seed has manifest.stub.json; chang
 				changedPaths.length,
 				0,
 				"renamed file in seed is recognized as present"
+			);
+		}
+	);
+});
+
+test("writeSeedMirror — non-curated canonical file is written to the seed", async () => {
+	await withTempRoots(
+		async (contentRoot, _seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "business-style.md"),
+				"# Style\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, emptyCuration, false, changedPaths, unclassified);
+			const seedPath = path.join(seedRoot, "rules", "business-style.md");
+			const seedContent = await fs.readFile(seedPath, "utf8");
+			assert.equal(seedContent, "# Style\n", "seed file matches canonical bytes");
+			assert.ok(
+				changedPaths.some((p) => p.includes("business-style.md")),
+				`expected seed path in changedPaths, got: ${JSON.stringify(changedPaths)}`
+			);
+			assert.ok(
+				unclassified.includes("rules/business-style.md"),
+				`expected unclassified to include rules/business-style.md, got: ${JSON.stringify(unclassified)}`
+			);
+		}
+	);
+});
+
+test("writeSeedMirror — curated file is not written", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.mkdir(path.join(seedRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "verification-commands.md"),
+				"# Canonical\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "rules", "verification-commands.md"),
+				"# Stub\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				curated: ["rules/verification-commands.md"],
+			};
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, curation, false, changedPaths, unclassified);
+			const seedContent = await fs.readFile(
+				path.join(seedRoot, "rules", "verification-commands.md"),
+				"utf8"
+			);
+			assert.equal(seedContent, "# Stub\n", "curated seed copy left untouched");
+			assert.equal(unclassified.length, 0, "curated file not added to unclassified");
+		}
+	);
+});
+
+test("writeSeedMirror — excluded file is not written", async () => {
+	await withTempRoots(
+		async (contentRoot, _seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "core-principles.md"),
+				"# Core principles\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				excluded: ["rules/core-principles.md"],
+			};
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, curation, false, changedPaths, unclassified);
+			const seedPath = path.join(seedRoot, "rules", "core-principles.md");
+			const exists = await fs.access(seedPath).then(() => true).catch(() => false);
+			assert.equal(exists, false, "excluded file must not appear in seed");
+			assert.equal(unclassified.length, 0, "excluded file not added to unclassified");
+		}
+	);
+});
+
+test("writeSeedMirror — renamed file is not written under its canonical name", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "architect"), { recursive: true });
+			await fs.mkdir(path.join(seedRoot, "architect"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "architect", "manifest.json"),
+				'{"renamed": true}\n',
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "architect", "manifest.stub.json"),
+				'{"v":1}\n',
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+			};
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, curation, false, changedPaths, unclassified);
+			const canonicalNameInSeed = path.join(seedRoot, "architect", "manifest.json");
+			const canonicalCreated = await fs.access(canonicalNameInSeed).then(() => true).catch(() => false);
+			assert.equal(canonicalCreated, false, "canonical name must not be created in seed");
+			const stubContent = await fs.readFile(
+				path.join(seedRoot, "architect", "manifest.stub.json"),
+				"utf8"
+			);
+			assert.equal(stubContent, '{"v":1}\n', "renamed stub left untouched");
+		}
+	);
+});
+
+test("writeSeedMirror — idempotent: second run produces no changedPaths", async () => {
+	await withTempRoots(
+		async (contentRoot, _seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "idempotent.md"),
+				"# Idempotent\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const firstChanged: string[] = [];
+			const firstUnclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, emptyCuration, false, firstChanged, firstUnclassified);
+			assert.ok(firstChanged.length > 0, "first run should write the file");
+
+			const secondChanged: string[] = [];
+			const secondUnclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, emptyCuration, false, secondChanged, secondUnclassified);
+			assert.equal(
+				secondChanged.length,
+				0,
+				"second run must produce no changedPaths — writeFileIfChanged no-ops on identical content"
+			);
+		}
+	);
+});
+
+test("writeSeedMirror — raw bytes: token literals are not substituted in the seed", async () => {
+	const canonicalContent = "# Rule with token\nOrg: ${ORG}\n";
+	await withTempRoots(
+		async (contentRoot, _seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "tokened.md"),
+				canonicalContent,
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, emptyCuration, false, changedPaths, unclassified);
+			const seedContent = await fs.readFile(
+				path.join(seedRoot, "rules", "tokened.md"),
+				"utf8"
+			);
+			assert.equal(
+				seedContent,
+				canonicalContent,
+				"seed bytes match canonical verbatim — no token substitution applied"
 			);
 		}
 	);
