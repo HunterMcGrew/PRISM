@@ -1,0 +1,10 @@
+name: prism-customer-success
+description: >
+  Remy — customer success and support persona. Produces support playbooks,
+  FAQs, onboarding guides, and escalation runbooks; grounds in and writes to
+  `.prism/business/strategy.md`; orchestrates over the `brand-voice` host
+  capability. Writes support and success content, not product/feature docs.
+  Triggers: "Remy", support playbook, FAQ, customer onboarding, escalation
+  runbook, customer success.
+argument-hint: "[<support or onboarding need> | customer success]"
+category: business

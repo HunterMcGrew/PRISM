@@ -7,7 +7,7 @@ The business layer is a suite of personas that wraps the existing engineering pi
 The business layer doesn't fork the engineering pipeline — it wraps it at two seams:
 
 - **Inbound seam (live):** Business personas produce strategy; Vera hands off to Parker by pointing Parker at the relevant `strategy.md` section as upstream PRD context. Parker, Mira, Winston, and Clove are untouched. The handoff reuses the existing PRD seam rather than building a parallel one.
-- **Outbound seam (Wave 3, not yet built):** Engineering ships → a data/metrics persona measures outcomes → results flow back into `strategy.md`'s `## Metrics` section, closing the loop to Vera. The landing spot is documented now; the persona is deferred.
+- **Outbound seam (live — Tess, `prism-data`):** Engineering ships → Tess measures outcomes → results flow back into `strategy.md`'s `## Metrics` section, closing the loop to Vera. Tess owns the `## Metrics` section; her default handoff is back to Vera (loop closure), inverting the Parker-default the other business personas use.
 
 Every business persona operates inside this model. None of them touch the engineering pipeline directly; they either feed into Parker or (future) receive from the data persona.
 
@@ -31,7 +31,7 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on grain. Every other business persona reads and writes the strategy doc she owns. Her spec lives at `.ai-skills/skills/prism-founder/shared.md`; read its `## Orchestrating over host capabilities` section as the worked example for every subsequent business persona.
 
-Charlie (`prism-marketing`, marketing strategist) and Quinn (`prism-sales`, sales persona) are in the business layer alongside Vera. Wave 3+ roster and planned focus are tracked in epic #212.
+Charlie (`prism-marketing`, marketing strategist), Quinn (`prism-sales`, sales persona), Tess (`prism-data`, data and metrics analyst), and Remy (`prism-customer-success`, customer success and support) are in the business layer alongside Vera. Planned additions are tracked in epic #212.
 
 ### Dividing ownership when two personas share an input
 
@@ -41,7 +41,13 @@ When two business personas both touch the same input and both produce the same c
 - **Marketing owns the outbound message:** positioning, messaging hierarchy, campaign briefs, content briefs, SEO. It does not write outreach sequences.
 - **Sales owns pipeline mechanics:** ICP-to-pipeline qualification, proposals, outreach sequences, objection handling. It does not write positioning — it reads Marketing's `## Marketing` section so outreach inherits one voice.
 
-The general rule for future GTM personas: a shared input gets one researching owner; downstream personas read it rather than forking private copies, and each owns a distinct *function* over that input. Two copies of a shared input drift; one owner with downstream readers does not.
+A second worked instance crosses the business/engineering boundary: **Customer Success (Remy, `prism-customer-success`) and Eli (`prism-documentation`) share the feature itself as input.** The split is content-class, not audience — both write customer-facing content, so audience can't separate them.
+
+- **Eli owns the single canonical description of how the feature works** (the researching-owner role): control behavior, settings, feature reference and usage mechanics.
+- **Customer Success reads Eli's docs and writes how the customer succeeds with the feature** (the downstream-reader role): support playbooks, FAQs, escalation runbooks, and outcome-framed onboarding to first win. It never forks a second copy of feature mechanics.
+- **Contested seam:** a usage guide that explains *what a feature does and how to operate its controls* is Eli's (mechanics); a guide that *sequences a customer's path to an outcome* is CS's (success). A guide doing both is split — CS writes the success narrative and links to Eli's mechanics.
+
+The general rule for future personas: a shared input gets one researching owner; downstream personas read it rather than forking private copies, and each owns a distinct *function* over that input. Two copies of a shared input drift; one owner with downstream readers does not.
 
 ## Rules for adding a new business persona
 
