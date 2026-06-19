@@ -33,6 +33,16 @@ Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on
 
 Charlie (`prism-marketing`, marketing strategist) and Quinn (`prism-sales`, sales persona) are in the business layer alongside Vera. Wave 3+ roster and planned focus are tracked in epic #212.
 
+### Dividing ownership when two personas share an input
+
+When two business personas both touch the same input and both produce the same class of output, split ownership by *function*, not by giving each a private copy of the shared input. Marketing and Sales are the worked example: both legitimately touch the ICP and both produce buyer-facing words, so the split is message-vs-pipeline with the ICP as a shared, single-owner input.
+
+- **Kora researches the buyer** (owns ICP research) — Marketing frames the message to that buyer, Sales works the pipeline against that buyer.
+- **Marketing owns the outbound message:** positioning, messaging hierarchy, campaign briefs, content briefs, SEO. It does not write outreach sequences.
+- **Sales owns pipeline mechanics:** ICP-to-pipeline qualification, proposals, outreach sequences, objection handling. It does not write positioning — it reads Marketing's `## Marketing` section so outreach inherits one voice.
+
+The general rule for future GTM personas: a shared input gets one researching owner; downstream personas read it rather than forking private copies, and each owns a distinct *function* over that input. Two copies of a shared input drift; one owner with downstream readers does not.
+
 ## Rules for adding a new business persona
 
 When authoring a Wave 2+ business persona, four rules apply. The ADR establishes all four; this section gives the author-facing guidance on applying them.
