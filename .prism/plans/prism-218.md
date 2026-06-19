@@ -103,6 +103,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
 
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Scaffolded plan; issues #218 and #219 filed; branch created from origin/main.
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Winston filled Implementation Tasks (skill-forge author lane + shared serial Integration group), AC (13 behavioral + 7 non-behavioral), and Decisions incl. the Marketing↔Sales boundary; see Decision "Marketing↔Sales boundary". Name placeholder `<MKT_NAME>`; 3 candidates proposed for the name gate.
+- 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove authored Charlie (she/her) as prism-marketing — frontmatter.yml and shared.md mirroring Kora's structure; appended roles.json entry; updated business-layer.md roster note (source + install seed); ran single pnpm prism:build + prism:check (329/329 green); all runtime adapters (.claude/.agents/.cursor SKILL.md, .codex toml, .claude/agents md) generated.
 
 ---
 
@@ -167,8 +168,8 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [ ] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [ ] Build passes — last run: 2026-06-19 (329/329 green, prism:check passed)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-06-18
+**Last updated:** 2026-06-19

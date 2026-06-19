@@ -89,6 +89,14 @@
 			"persona": "Ellis"
 		},
 		{
+			"id": "prism-marketing",
+			"persona": "Charlie"
+		},
+		{
+			"id": "prism-sales",
+			"persona": "Quinn"
+		},
+		{
 			"id": "prism-handoff",
 			"type": "utility"
 		},
