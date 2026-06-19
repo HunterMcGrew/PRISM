@@ -1,5 +1,7 @@
 # Plan: prism-223
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/223
@@ -67,7 +69,7 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
     - A **task- or outcome-oriented onboarding/success guide that walks a customer to their first win** (e.g. "get your first store live in 20 minutes," "from signup to first published page") is **<CS_NAME>'s** — it sequences across features toward a customer outcome and is strategy-feeding success content, not feature reference.
     - The discriminator: **does the artifact describe a feature's mechanics (Eli) or sequence a customer's path to an outcome (CS)?** A guide that does both is split — CS writes the success narrative and links to Eli's mechanics rather than restating them.
   - **Implementation guidance:** encode the boundary in the "How <CS_NAME> thinks" boundary lens (#5) and `## Ownership & Handoff`; require the forward reference to `.ai-skills/skills/prism-documentation/`; require the Startup step that reads Eli's `docs/` as the feature-mechanics source of truth; add the DoD line "no duplication of Eli's feature mechanics."
-  - → promoted to .prism/architect/_toolkit/business-layer.md (on close, add a short subsection under § Dividing ownership documenting the CS↔Eli content-class boundary as the second worked instance of shared-input ownership, alongside the Marketing/Sales/ICP example — see this plan's Architect Context Updates). Defer the edit to plan close per branch-plan.md § Before Closing.
+  - → promoted to .prism/architect/_toolkit/business-layer.md § Dividing ownership when two personas share an input — added the CS↔Eli content-class boundary as the second worked instance alongside the Marketing/Sales/ICP example (Eli owns feature mechanics as the researching owner; CS reads them and writes the success path as the downstream reader; contested usage-guide/onboarding seam resolved inline). Landed at close in both the source doc and the install seed `templates/install/.prism/architect/_toolkit/business-layer.md`. A `pnpm prism:build` is needed to regenerate the runtime mirrors (`.claude/.cursor/.codex`).
 - **Host capability: `brand-voice`.** Detect at runtime via `ToolSearch select:brand-voice` before relying on it. Graceful degradation when absent: produce support content in plain markdown from strategy-doc tone cues; flag once that output is not brand-voice-styled; offer to rerun when capability is present. Same pattern as Charlie/Quinn (Wave 2, ADR-0060 decision 3).
   - → no promotion needed (orchestrate-over-host-capabilities is already durable in ADR-0060 and business-layer.md rule 2; instance, not new pattern).
 - **Persona ID `prism-customer-success`, no `type` field in roles.json.** Function-descriptive ID per skill-authoring.md; persona (not utility) per ADR-0060 decision 4.
@@ -80,6 +82,8 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Scaffolded plan; Wave 3 serial topology, shares branch with prism-222.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston filled Implementation Tasks (to detail bar), AC (~23), and Decisions; reframed the CS↔Eli boundary from audience to content-class against Eli's real scope and resolved the contested usage-guides/onboarding seam. Build/check deferred to prism-222 tasks 4–5 (single build). See Decision: CS ↔ Eli output boundary.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Clove authored `prism-customer-success` — `frontmatter.yml` (395 chars, in range) and `shared.md` with CS↔Eli boundary + contested-seam resolution encoded in lens #5, Ownership & Handoff, and DoD. Roles.json entry appended. Business-layer.md roster updated (both surfaces).
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Briar self-review — clean sweep, no issues. PR Readiness updated; plan ready for Eric.
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston plan close — verdict gate confirmed (3/3 decisions); promoted the CS↔Eli content-class boundary to business-layer.md § Dividing ownership as the second worked instance (source + install seed); finalized its verdict bullet; PR Readiness ticked; marked closed. See Decision: CS ↔ Eli output boundary.
 
 ---
 
@@ -91,7 +95,9 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
 
 ## Review Issues
 
-<!-- Briar / Eric fill this section -->
+<!-- Briar self-review 2026-06-19 — no findings -->
+
+_Clean sweep. No critical, major, or minor issues found._
 
 ---
 
@@ -144,13 +150,13 @@ Names are not load-bearing in source yet; use the placeholder `<CS_NAME>` wherev
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (spec-only persona; no source types)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (329 tests pass; persona authoring tested via prism:check discovery/literal/path tests)
+- [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check`, 329 pass, 0 fail — shared with prism-222 per serial topology)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] PR description up to date (draft PR #224 body current; Eric reviewed against it)
+- [x] Lasting decisions promoted to architect context (CS↔Eli boundary → business-layer.md § Dividing ownership in both source and install seed, second worked instance)
 
-**Last updated:** 2026-06-19 (Clove — authored, build deferred to prism-222 tasks 4–5, check green)
+**Last updated:** 2026-06-19 (Winston — plan close, ready to merge)

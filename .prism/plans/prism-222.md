@@ -1,5 +1,7 @@
 # Plan: prism-222
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/222
@@ -66,7 +68,7 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
   - **Alternatives considered:** (a) let Vera self-measure by appending to her own `## Metrics`; rejected — Vera sets targets, and a target-setter grading her own outcomes is the conflict ADR-0060 avoided by making this a distinct persona. (b) Fold metrics into Ellis (finance); rejected — finance measures unit economics and runway (dollars), product/funnel/cohort metrics are a distinct function over a distinct denominator; folding them produces one persona with two unrelated measurement surfaces.
   - **Chosen approach:** distinct persona owning `## Metrics` only; default handoff is **back to Vera** (loop closure), inverting the Parker-default that every other business persona uses. Beats the alternatives because it keeps target-setting and outcome-measurement in separate hands and keeps the loop's return path explicit.
   - **Implementation guidance:** encode the loop-closure in the "How <DATA_NAME> thinks" outbound-seam lens (#5), in `## Ownership & Handoff`, and in the `## Next persona` default-route-to-Vera. The persona writes `## Metrics` and nothing else in the strategy doc.
-  - → promoted to .prism/architect/_toolkit/business-layer.md (the outbound seam is described there as "Wave 3, not yet built"; on close, update that line to "live" and name the Data persona as its owner — see this plan's Architect Context Updates). Defer the actual edit to plan close per branch-plan.md § Before Closing.
+  - → promoted to .prism/architect/_toolkit/business-layer.md. The outbound-seam line landed in this PR (Clove flipped it from "Wave 3, not yet built" to "live — Tess, `prism-data`," naming the Data persona as the `## Metrics` owner) in both the source doc and the install seed. Verified at close: business-layer.md line 10 reads "Outbound seam (live — Tess, `prism-data`)."
 - **Host capability: `xlsx` + analytics.** Detect at runtime via `ToolSearch select:xlsx` before relying on it. Graceful degradation when absent: derive metrics from user-supplied summaries or pasted exports; flag once that analysis is not computed from raw data; offer to rerun when capability is present. Same pattern as Ellis → `xlsx` and Kora → `deep-research` (ADR-0060 decision 3).
   - → no promotion needed (the orchestrate-over-host-capabilities rule is already durable in ADR-0060 decision 3 and business-layer.md rule 2; this is an instance, not a new pattern).
 - **Persona ID `prism-data`, no `type` field in roles.json.** Function-descriptive ID per skill-authoring.md § Persona name vs. slash-command ID; persona (not utility) per ADR-0060 decision 4.
@@ -79,6 +81,8 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Scaffolded plan; Wave 3 serial topology, shares branch with prism-223.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston filled Implementation Tasks (to detail bar), AC (~22), and Decisions; recorded the `## Metrics` outbound-seam ownership + loop-closure-to-Vera. Serial single-build topology (build/check tasks 4–5 shared with prism-223). See Decision: Outbound metrics seam.
 - 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Clove authored `prism-data` — `frontmatter.yml` (397 chars, in range) and `shared.md`; appended roles.json entry; updated business-layer.md outbound seam to "live" (both live doc and install seed). Single build+check: 329 tests, all pass, adapter parity green.
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Briar self-review — clean sweep, no issues. PR Readiness updated; plan ready for Eric.
+- 2026-06-19 [hmcgrew/prism-wave3-data-customer-success]: Winston plan close — verdict gate confirmed (3/3 decisions); finalized stale outbound-seam verdict bullet (Clove's "live — Tess" edit landed in-PR, not deferred); PR Readiness ticked; marked closed. Outbound seam already promoted to business-layer.md in this PR.
 
 ---
 
@@ -90,7 +94,9 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
 
 ## Review Issues
 
-<!-- Briar / Eric fill this section -->
+<!-- Briar self-review 2026-06-19 — no findings -->
+
+_Clean sweep. No critical, major, or minor issues found._
 
 ---
 
@@ -141,13 +147,13 @@ Names are not load-bearing in source yet; use the placeholder `<DATA_NAME>` wher
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (spec-only persona; no source types)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (329 tests pass; persona authoring tested via prism:check discovery/literal/path tests)
+- [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (`pnpm prism:build` + `pnpm prism:check`, 329 pass, 0 fail)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] PR description up to date (draft PR #224 body current; Eric reviewed against it)
+- [x] Lasting decisions promoted to architect context (outbound seam → business-layer.md; live in both source and install seed)
 
-**Last updated:** 2026-06-19 (Clove — authored, built, check green)
+**Last updated:** 2026-06-19 (Winston — plan close, ready to merge)
