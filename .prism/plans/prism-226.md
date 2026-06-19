@@ -166,7 +166,7 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 - [x] Tests written for new logic and edge cases (build pipeline, 329/329)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (329/329 pass, crossref-lint clean)
-- [ ] PR description up to date
+- [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (business-layer.md updated with Lex roster entry + disclaimer-as-architecture note)
 
 **Last updated:** 2026-06-19
