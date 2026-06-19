@@ -1,5 +1,7 @@
 # Plan: prism-226
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/226
@@ -84,12 +86,12 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 - **Highest-risk persona in the suite. "Not legal advice" disclaimer is architectural, encoded at four points.** Winston translated Nora's DoR constraint into four reviewable structural elements (tasks 2a–2d): (2a) a dedicated `## Disclaimer` section placed first, right after the persona opener; (2b) the disclaimer surfaced at the artifact/template level — every output leads with it, stated as a rule a reviewer can confirm ("no legal artifact is emitted without the disclaimer at its head"); (2c) the FIRST `## How <name> thinks` lens point makes the persona lead with its limitation before any substantive reasoning; (2d) a dedicated `## Graceful degradation` section for the missing-context path.
   - **Why four points, not one:** a single `## Disclaimer` section is bypassable — the persona's normal output path could emit an artifact that never re-states it. Encoding it at the section level (2a), the artifact level (2b), and the reasoning level (2c) means the disclaimer rides every path the persona can take. The degradation section (2d) covers the case the disclaimer alone doesn't: not just "this isn't advice" but "I don't have the context to even draft well — get counsel."
   - **Implementation guidance:** the `## Disclaimer` section is placed *first* (before `## Personality`) deliberately — it is the most-visible element, and placement is the structural signal that it's load-bearing, not decorative. The frontmatter `description` keeps a load-bearing exclusion sentence (per skill-authoring § Exclusions) naming the disclaimer — this is one of the few personas where the negation clause earns its place.
-  - → promoted to `.prism/architect/_toolkit/business-layer.md` at close (add a short "disclaimer-as-architecture" note to the business-layer doc as the worked precedent for any future high-liability persona — medical, financial-advice, etc.).
+  - → promoted to `.prism/architect/_toolkit/business-layer.md` — landed inline in this PR (commit cc59df7). The `### Disclaimer-as-architecture for high-liability personas` subsection captures the four-point pattern as the worked precedent for any future high-liability persona (medical, financial-advice, etc.); written to both source and the install seed.
 - **Legal owns the `## Legal & Compliance` section of `.prism/business/strategy.md`.** Follows the Charlie/Quinn/Tess precedent — one named section per persona.
   - **Alternatives considered:** ground without owning a section; a sibling `.prism/business/legal.md`.
   - **Chosen approach:** own `## Legal & Compliance`. Jurisdiction, entity type, and product context are durable strategy-grain inputs the persona reads on every run (and whose absence triggers 2d) — they need a home in the strategy doc, not a parallel file (single-file-with-sections rule, ADR-0060). ToS/privacy/contract artifacts are pointed at *from* the section.
   - **Implementation guidance:** template not pre-listing `## Legal & Compliance` is correct (matches Charlie's `## Marketing`); persona appends on first write.
-  - → promoted to `.prism/architect/_toolkit/business-layer.md` at close (add Legal + `## Legal & Compliance` to the persona roster).
+  - → promoted to `.prism/architect/_toolkit/business-layer.md` — landed inline in this PR (commit cc59df7). Lex + `## Legal & Compliance` added to the business-layer persona roster; written to both source and the install seed.
 - **Ships in its own PR with focused disclaimer review; branch cut from updated `main` AFTER Recruiting (#225) merges.** Sequential topology — do not create the Legal branch alongside Recruiting's.
   - **Root cause:** shared `roles.json` append + shared `pnpm prism:build` regen output collide across parallel branches; and Legal's risk profile earns an isolated disclaimer-only review a combined PR would dilute.
   - → no promotion needed (ticket-tactical Wave 4 sequencing; same rationale recorded in #225's Decisions).
@@ -105,6 +107,7 @@ No documentation tasks. Spec is self-documenting. Adding Legal to the business-l
 - 2026-06-19 [hmcgrew/prism-wave4-legal]: Clove authored Lex (they/them, prism-legal) — frontmatter.yml, shared.md with all four disclaimer points (2a–2d), roles.json entry, business-layer.md updated in both source and install seed; `pnpm prism:build` + `pnpm prism:check` GREEN (329/329 tests, crossref-lint clean).
 - 2026-06-19 [hmcgrew/prism-wave4-legal]: Briar self-review — all four disclaimer points verified in source; one minor (description 519 chars, trim substrate boilerplate to ≤450); no blockers. Build confirmed 329/329 clean.
 - 2026-06-19 [hmcgrew/prism-wave4-legal]: Trimmed Lex description from 519 to 422 chars — removed substrate boilerplate clause; disclaimer and routing signal intact. Build + check GREEN (329/329).
+- 2026-06-19 [hmcgrew/prism-wave4-legal]: Winston closed plan — verdict gate confirmed (4/4 Decisions carry verdicts; two promotion verdicts sharpened from "at close" to "landed inline in this PR"). No new promotion needed (disclaimer-as-architecture + section ownership already landed in cc59df7, source + seed). Plan-only close, no rebuild. Closes Epic #212 (Waves 1–4 complete).
 
 ---
 
