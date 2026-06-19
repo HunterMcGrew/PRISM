@@ -1,5 +1,7 @@
 # Plan: prism-231
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 Issue #231 — consolidate business-layer.md roster + patterns
@@ -31,6 +33,13 @@ Readability consolidation of `.prism/architect/_toolkit/business-layer.md`: conv
 ## History
 
 - 2026-06-19 [hmcgrew/prism-231-business-layer-consolidation]: Converted run-on roster to 9-persona table and grouped pattern subsections under `## Business-layer patterns`; build + check GREEN, source == seed.
+- 2026-06-19 [hmcgrew/prism-231-business-layer-consolidation]: Closed plan — Eric CLEAN, build green, PR #233 ready to merge. No decisions promoted (readability refactor; consolidated doc is itself the architect context, shipping in this PR).
+
+---
+
+## Review Issues
+
+None found.
 
 ---
 
@@ -49,3 +58,20 @@ Readability consolidation of `.prism/architect/_toolkit/business-layer.md`: conv
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
+
+---
+
+## PR Readiness
+
+Living checklist — last updated 2026-06-19 by Briar.
+
+- [x] No critical or major issues
+- [x] No type safety concerns (doc-only change)
+- [x] No stray debug artifacts
+- [x] Tests not applicable (architect doc, no logic)
+- [x] All debugged issues resolved (none opened)
+- [x] Build passes — last run: 2026-06-19 (329/329, crossref-lint clean)
+- [x] PR description references #231
+- [x] Lasting decisions: one Decision entry with verdict sub-bullet (`→ no promotion needed`) — correctly scoped as readability refactor
+
+**Last updated:** 2026-06-19
