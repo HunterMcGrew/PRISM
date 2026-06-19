@@ -31,7 +31,7 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 Vera is the Wave 1 anchor — she owns the strategy doc and sits above Parker on grain. Every other business persona reads and writes the strategy doc she owns. Her spec lives at `.ai-skills/skills/prism-founder/shared.md`; read its `## Orchestrating over host capabilities` section as the worked example for every subsequent business persona.
 
-The Wave 2 roster (epic #212) adds Charlie (`prism-marketing`, marketing strategist) and Quinn (`prism-sales`, sales persona). Wave 3+ roster and planned focus remain in epic #212.
+Charlie (`prism-marketing`, marketing strategist) and Quinn (`prism-sales`, sales persona) are in the business layer alongside Vera. Wave 3+ roster and planned focus are tracked in epic #212.
 
 ## Rules for adding a new business persona
 

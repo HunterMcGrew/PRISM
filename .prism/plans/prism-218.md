@@ -104,6 +104,7 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Scaffolded plan; issues #218 and #219 filed; branch created from origin/main.
 - 2026-06-18 [hmcgrew/prism-wave2-marketing-sales]: Winston filled Implementation Tasks (skill-forge author lane + shared serial Integration group), AC (13 behavioral + 7 non-behavioral), and Decisions incl. the Marketing↔Sales boundary; see Decision "Marketing↔Sales boundary". Name placeholder `<MKT_NAME>`; 3 candidates proposed for the name gate.
 - 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove authored Charlie (she/her) as prism-marketing — frontmatter.yml and shared.md mirroring Kora's structure; appended roles.json entry; updated business-layer.md roster note (source + install seed); ran single pnpm prism:build + prism:check (329/329 green); all runtime adapters (.claude/.agents/.cursor SKILL.md, .codex toml, .claude/agents md) generated.
+- 2026-06-19 [hmcgrew/prism-wave2-marketing-sales]: Clove fixed Eric/Briar minors — trimmed marketing description from 474→385 chars; trimmed sales description from 503→381 chars; rewrote changelog-voice line in business-layer.md (source + install seed) to durable membership; prism:build + prism:check 329/329 green.
 
 ---
 
@@ -112,6 +113,15 @@ Persona name is a **placeholder** until Hunter picks at the name gate (see `## D
 ---
 
 ## Review Issues
+
+### Description field over style target
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-marketing/frontmatter.yml`
+- **Problem:** Description is 475 chars — above the 250–400 style target in `skill-authoring.md`. Hard cap is 1000 (enforced by `prism:check`), so the build passes; Wave 1 peers run 396–432 chars. Slightly over target but consistent with the practiced range.
+- **Suggested fix:** Trim the description to under 400 chars by condensing the exclusion sentence and the Triggers clause. Optional — follow-up acceptable given Wave 1 precedent.
+- **Fixed in:** `hmcgrew/prism-wave2-marketing-sales` — trimmed to 385 chars (dropped low-signal triggers and exclusion clause; kept "Charlie", positioning, messaging, SEO, marketing strategy).
 
 ---
 
@@ -163,13 +173,13 @@ Add entries here via the architect skill (Winston). Reference `.prism/templates/
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: 2026-06-19 (329/329 green, prism:check passed)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — N/A (content-only persona spec; no executable logic)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-19 (329/329 green, prism:check passed; crossref-lint clean)
+- [x] PR description up to date
+- [ ] Lasting decisions promoted to architect context — pending plan close (Marketing↔Sales boundary + SEO-mode promotion deferred to close per plan conventions; PR not yet merged)
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Clove minor fixes post-review)
