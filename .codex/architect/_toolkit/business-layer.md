@@ -41,7 +41,13 @@ When two business personas both touch the same input and both produce the same c
 - **Marketing owns the outbound message:** positioning, messaging hierarchy, campaign briefs, content briefs, SEO. It does not write outreach sequences.
 - **Sales owns pipeline mechanics:** ICP-to-pipeline qualification, proposals, outreach sequences, objection handling. It does not write positioning — it reads Marketing's `## Marketing` section so outreach inherits one voice.
 
-The general rule for future GTM personas: a shared input gets one researching owner; downstream personas read it rather than forking private copies, and each owns a distinct *function* over that input. Two copies of a shared input drift; one owner with downstream readers does not.
+A second worked instance crosses the business/engineering boundary: **Customer Success (Remy, `prism-customer-success`) and Eli (`prism-documentation`) share the feature itself as input.** The split is content-class, not audience — both write customer-facing content, so audience can't separate them.
+
+- **Eli owns the single canonical description of how the feature works** (the researching-owner role): control behavior, settings, feature reference and usage mechanics.
+- **Customer Success reads Eli's docs and writes how the customer succeeds with the feature** (the downstream-reader role): support playbooks, FAQs, escalation runbooks, and outcome-framed onboarding to first win. It never forks a second copy of feature mechanics.
+- **Contested seam:** a usage guide that explains *what a feature does and how to operate its controls* is Eli's (mechanics); a guide that *sequences a customer's path to an outcome* is CS's (success). A guide doing both is split — CS writes the success narrative and links to Eli's mechanics.
+
+The general rule for future personas: a shared input gets one researching owner; downstream personas read it rather than forking private copies, and each owns a distinct *function* over that input. Two copies of a shared input drift; one owner with downstream readers does not.
 
 ## Rules for adding a new business persona
 
