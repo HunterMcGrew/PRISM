@@ -1,5 +1,7 @@
 # Plan: prism-230
 
+> Closed: 2026-06-19
+
 ## Ticket
 
 PRISM-230
@@ -160,7 +162,8 @@ Eliminate the recurring manual seed-mirror step when editing canonical `.prism/`
   - **Alternatives considered:** (a) hard FAIL the build on any unclassified file — rejected: punishes the common case (most new files are genuinely non-curated) to catch the rare forgot-to-curate case; (b) silent mirror + log only (Sasha's original mitigation) — rejected: logs scroll past and "build succeeded" reads as "nothing to review," so the curation-forgot case stays invisible.
   - **Chosen approach:** loud, distinct `console.warn` block listing every auto-mirrored unclassified file with a prompt to classify in `seed-curation.json` — visible at build time without taxing the 90% case. `prism:check` remains the CI backstop for hand-edited-seed drift.
   - **Implementation guidance:** task 3 — `console.warn`, never `process.exit`; keep the warn block separate from the success summary so it shows on a clean build.
-  - → **OPEN sub-note for Hunter:** WARN is the ratified default; if the team would rather force an explicit classify decision on every new file, this can harden to FAIL by changing task 3's `console.warn` to `console.error` + `process.exit(1)`. Surfaced as an Open Question, not a blocker.
+  - **Resolution (2026-06-19):** WARN is the chosen default. Hunter was offered the FAIL option in-session and did not request it, so the shipped WARN behavior stands. Hardening to FAIL remains a documented future option — change task 3's `console.warn` to `console.error` + `process.exit(1)` — if the team later wants to force an explicit classify decision on every new file.
+  - → no promotion needed (ticket-tactical behavior; the durable contract — non-curated auto-mirror + author-classifies-new-files — is promoted via `install-layout.md` in this PR, tasks 4–5).
 
 ---
 
@@ -171,6 +174,7 @@ Eliminate the recurring manual seed-mirror step when editing canonical `.prism/`
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Clove implemented all 7 tasks — `writeSeedMirror()` in build.ts, build-mode call + warn block, install-layout.md prose updated in both dogfood and seed copies, 6 new test cases (all pass); prism:check GREEN (335 tests); idempotency confirmed (zero git diff on second build); auto-mirror demo passed.
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Briar self-review — major issue found: WARN fires on all 119 non-curated files every build, not only on genuinely new seed entries; trains users to ignore warnings; fix is to scope push to unclassifiedMirrored only when seed path is new. Minor: idempotent AC is true for files but not for console output. Both fixed by same change. Needs Clove fix before Eric.
 - 2026-06-19 [hmcgrew/prism-230-seed-parity]: Clove post-review fix — scoped unclassifiedMirrored.push to new seed paths only (pathExists check before write in both loops); extended idempotency test to assert secondUnclassified.length === 0; 335 tests GREEN; second build produces zero WARN + zero seed git diff.
+- 2026-06-19 [hmcgrew/prism-230-seed-parity]: Eric PR review CLEAN (#234); build 335 green. Winston closed plan — resolved the OPEN unclassified-file question (WARN is the chosen default; FAIL stays a documented future option); all four Decisions carry verdict sub-bullets; durable contract already promoted to install-layout.md in this PR; no rebuild needed (plan-only close).
 
 ---
 
