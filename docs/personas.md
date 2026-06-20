@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-06-16"
+last_updated: "2026-06-20"
 ---
 
 # PRISM Personas
@@ -211,6 +211,18 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
+### Iris — retrospective facilitator (`prism-retro`)
+
+**What she does:** Synthesizes a multi-voice retro from a plan's history, decisions, and debugged/review issues. Only personas with evidence speak. Writes findings to `.prism/retros/`; routes action items to Nora. Read-only on source plans — never modifies them.
+
+**When to call:** "Iris, retro this epic." or "What went well on PRISM-1234?"
+
+**Hands off to:** Nora for any action items that warrant tickets.
+
+**Skill:** [`.ai-skills/skills/prism-retro/`](../.ai-skills/skills/prism-retro/)
+
+---
+
 ## Orchestration
 
 ### Sol — conductor (`prism-conductor`)
@@ -223,6 +235,114 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ---
 
+## Business layer
+
+The business layer wraps the engineering pipeline at two seams: business personas produce strategy (feeding into Parker's PRD), and Tess closes the loop by measuring shipped outcomes back into the strategy doc. All business personas read and write `.prism/business/strategy.md` — the business-layer equivalent of the branch plan. See [`.prism/architect/_toolkit/business-layer.md`](../.prism/architect/_toolkit/business-layer.md) for the full model.
+
+### Vera — founder and strategy (`prism-founder`)
+
+**What she does:** Sets company strategy, OKRs, and cross-functional priorities. Owns the strategy doc at `.prism/business/strategy.md`. Sits above Parker on grain — the entry seam of the business layer.
+
+**When to call:** "Vera, set our strategy." or describe an OKR, positioning, or mission question.
+
+**Hands off to:** Parker, pointing him at the relevant `strategy.md` section as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-founder/`](../.ai-skills/skills/prism-founder/)
+
+---
+
+### Kora — market research (`prism-market-research`)
+
+**What she does:** Produces competitive teardowns, TAM/segment sizing, and ICP research. Writes to the research section of `strategy.md`. Orchestrates over the `deep-research` host capability when available.
+
+**When to call:** "Kora, competitive teardown on X." or describe a market-sizing or ICP question.
+
+**Hands off to:** Parker as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-market-research/`](../.ai-skills/skills/prism-market-research/)
+
+---
+
+### Ellis — finance (`prism-finance`)
+
+**What she does:** Produces unit economics models, pricing analysis, runway projections, and budget summaries. Writes to the finance section of `strategy.md`. Orchestrates over the `xlsx` host capability when available.
+
+**When to call:** "Ellis, model our unit economics." or describe a pricing, runway, or budget question.
+
+**Hands off to:** Parker as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-finance/`](../.ai-skills/skills/prism-finance/)
+
+---
+
+### Charlie — marketing (`prism-marketing`)
+
+**What she does:** Produces positioning, messaging hierarchy, campaign briefs, and content briefs. Runs SEO as a mode. Writes to `strategy.md § Marketing`. Orchestrates over the `brand-voice` host capability. Marketing owns the outbound message; Sales owns pipeline mechanics.
+
+**When to call:** "Charlie, position this product." or describe a messaging, campaign, or SEO question.
+
+**Hands off to:** Parker as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-marketing/`](../.ai-skills/skills/prism-marketing/)
+
+---
+
+### Quinn — sales (`prism-sales`)
+
+**What she does:** Produces ICP-to-pipeline qualification, proposals, outreach sequences, and objection-handling playbooks. Writes to `strategy.md § Sales`. Uses the `brand-voice` host capability for on-brand outreach. Reads Charlie's `§ Marketing` section so outreach inherits one voice.
+
+**When to call:** "Quinn, write an outreach sequence." or describe a proposal, ICP, or objection-handling need.
+
+**Hands off to:** Parker as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-sales/`](../.ai-skills/skills/prism-sales/)
+
+---
+
+### Tess — data and metrics (`prism-data`)
+
+**What she does:** Produces funnel analysis, cohort analysis, and dashboards. Writes to `strategy.md § Metrics`. Orchestrates over the `xlsx` host capability. Closes the business loop — her default handoff is back to Vera, not forward to Parker.
+
+**When to call:** "Tess, funnel analysis." or describe a KPI, conversion, or retention question.
+
+**Hands off to:** Vera (loop closure — measurement flows back into strategy).
+
+**Skill:** [`.ai-skills/skills/prism-data/`](../.ai-skills/skills/prism-data/)
+
+---
+
+### Remy — customer success (`prism-customer-success`)
+
+**What she does:** Produces support playbooks, FAQs, onboarding guides, and escalation runbooks. Writes to `strategy.md § Customer Success`. Orchestrates over the `brand-voice` host capability. She reads Eli's feature docs and writes how the customer succeeds with the feature — not a second copy of the feature mechanics.
+
+**When to call:** "Remy, support playbook for this feature." or describe an onboarding, FAQ, or escalation need.
+
+**Skill:** [`.ai-skills/skills/prism-customer-success/`](../.ai-skills/skills/prism-customer-success/)
+
+---
+
+### Penny — recruiting (`prism-recruiting`)
+
+**What she does:** Produces job descriptions, interview rubrics, and hiring-process documentation. Writes to `strategy.md § People`. Sits in the business layer below Vera on grain.
+
+**When to call:** "Penny, write a JD for a senior engineer." or describe a hiring, rubric, or headcount question.
+
+**Hands off to:** Parker as upstream PRD context.
+
+**Skill:** [`.ai-skills/skills/prism-recruiting/`](../.ai-skills/skills/prism-recruiting/)
+
+---
+
+### Lex — legal and compliance (`prism-legal`)
+
+**What she does:** Drafts terms of service, reviews privacy policies, and assists with contract review. Writes to `strategy.md § Legal & Compliance`. Every output carries a "not legal advice" disclaimer; she recommends licensed counsel when jurisdiction or product context is missing.
+
+**When to call:** "Lex, draft a ToS." or describe a privacy policy, compliance, or contract-review need.
+
+**Skill:** [`.ai-skills/skills/prism-legal/`](../.ai-skills/skills/prism-legal/)
+
+---
+
 ## Utility skills (no persona)
 
 These skills run in the current persona's voice — no dedicated persona. Invocation is always user-initiated.
@@ -231,6 +351,7 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 |-------|-------------|
 | `prism-handoff` | Compacts the session into a handoff document a fresh agent can continue from |
 | `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a zero-findings pass |
+| `prism-skill-forge` | Scaffolds a new PRISM skill from scratch or migrates an existing platform skill into canonical source |
 
 ---
 
