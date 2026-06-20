@@ -39,7 +39,7 @@ Every autonomous persona gets:
 | `channels/slack.ts` | Slack channel config using `connectSlackCredentials`, sourced from `eve.yml`'s `slackConnectUid`. Omitted for repo-state personas, which have no Slack surface. |
 | `channels/eve.ts` | HTTP channel with `localDev()` + `placeholderAuth()`. Correct for local validation; swap the auth helper before any non-local deploy. |
 
-Repo-state personas (Sage and Zoe) also emit:
+Repo-state personas (Sage and Zoe) emit `sandbox/sandbox.ts` in place of `channels/slack.ts` — they have no Slack surface. The sandbox file is:
 
 | File | What it is |
 |------|------------|
