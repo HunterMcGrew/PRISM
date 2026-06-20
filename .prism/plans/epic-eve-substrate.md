@@ -117,6 +117,90 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 
 ---
 
+## Wave 2 — Sage and Zoe (repo-state personas, FR-4)
+
+Wave 2 ports the first two repo-state personas onto the FR-4 design resolved above (`## Decisions` § FR-4 state-location, § Q2 general idempotency; ADR-0063). It decomposes into **three Sol-laneable units**:
+
+- **Unit G** (Clove) — the emitter FR-4 extension: new `eve.yml` sandbox/write-back keys + a `buildEveSandboxFile` that generates `sandbox/sandbox.ts`. **Shared infrastructure — must land first; H and I both depend on it.**
+- **Unit H** (Clove) — port Sage: add her `eve.yml`, add her to `EVE_AUTONOMOUS_PERSONAS`, hand-author her sandbox/write-back reference, regenerate-and-diff.
+- **Unit I** (Clove) — port Zoe: same shape as H.
+
+**Parallelism / serialization:** G blocks both H and I. H and I are independent in *content* (different personas, different `eve.yml`, different reference fixtures) but **both edit one line — the `EVE_AUTONOMOUS_PERSONAS` set in `build.ts:250` — and both add a wave-2 byte-diff test case.** That single shared edit is the serialization point: run H and I **sequentially** (H then I, or I then H), or lane them in parallel only with an explicit merge step that unions the set membership and concatenates the test cases. Recommended: G first (solo), then H and I sequentially in one lane. The live eve run of either persona stays Docker-manual — no CI AC requires Node 24, same split as Lilac.
+
+The verification split is unchanged from wave 1: the emitter extension and the two byte-diffs are CI-green on host Node; the actual clone → fetch → read → write → push runtime is the Docker milestone.
+
+### Clove (implementation)
+
+#### Unit G — Emitter FR-4 extension (shared; must land before H and I)
+
+19. **Extend the `EveAgentConfig` type and `loadEveAgentConfig`** in `scripts/ai-skills/build.ts` (config type near the existing eve config interface; loader at `build.ts:292`). Add these optional flat `eve.yml` keys, parser-safe (flat scalars and `[a, b]` lists only — the frontmatter parser drops nested blocks, per Decision: Canonical input vs template split):
+    - `sandbox: boolean` (default `false`) — when `true`, emit a `sandbox/sandbox.ts`.
+    - `sandboxBackend: "docker" | "microsandbox"` — required when `sandbox: true`; the loader **throws** if `sandbox: true` and the backend is absent or is `justbash` (per ADR-0063 Decision 3 — `justbash` has no real binaries and cannot run `git`).
+    - `repoCheckout: boolean` (default `false`) — when `true`, the generated `sandbox.ts` includes the bootstrap clone + onSession refresh.
+    - `writeBackGate: "always"` — the HITL approval helper for the write-back push (only `always` is valid in wave 2; the loader throws on any other value).
+    - `writeBackPaths: [a, b]` — the paths the write-back commits (Sage: the changelog output dir; Zoe: `.prism/audits`, `.prism/plans`, `.prism/audit-state.json`). Used in the skill-body write-back instruction, not in `sandbox.ts`.
+    Keep Lilac's `eve.yml` valid with all keys absent (the defaults make her a no-sandbox persona). Verification: `pnpm prism:check-types` passes; the existing Lilac byte-diff is unchanged (no new keys in her `eve.yml`).
+
+20. **Add `buildEveSandboxFile`** to `build.ts` as a sibling to `buildEveAgentFiles` (`build.ts:467`). It is a pure function: given the `EveAgentConfig`, the default branch name, and the token map, it returns the `sandbox/sandbox.ts` content. Emit nothing (return no entry) when `eveConfig.sandbox` is `false`. When `true`, generate `defineSandbox({ backend, revalidationKey, bootstrap, onSession })`:
+    - `backend`: `docker()` or `microsandbox()` from `eveConfig.sandboxBackend` (import from `eve/sandbox`).
+    - `revalidationKey: () => "<persona-id>-repo-bootstrap-v1"` — stable so the template image is reused (per `sandbox.mdx`).
+    - `bootstrap({ use })` (only when `repoCheckout`): clone the PRISM repo into `/workspace` — `git clone <repo-url> .` — leaving network open for the clone. Use a token-substituted repo URL (`${GITHUB_OWNER}/${PROJECT}` derived; reuse the token map so a consumer's repo substitutes).
+    - `onSession({ use })` (only when `repoCheckout`): `git fetch origin && git reset --hard origin/<default-branch>` so each session reads current state (defeats the stale-snapshot trap).
+    The function takes the same `substituteTokens(..., tokenMap)` treatment as the other generated files (all six wave-1 files already pass through `substituteTokens` — keep the seventh consistent). Verification: `pnpm prism:check-types` passes.
+
+21. **Wire `buildEveSandboxFile` into the emit loop** in `main()` at the eve emit block (`build.ts:1706` where `buildEveAgentFiles` is called). After building the agent files map, call `buildEveSandboxFile(...)`; if it returns content, add `sandbox/sandbox.ts` to the written files alongside the rest of the directory. The marker write (`build.ts:1722`) and `writeFileIfChanged` loop already cover any new relative path — no change there. Verification: `pnpm prism:build` runs without error; for Lilac (no sandbox), `.eve/agents/prism-standup-summary/sandbox/` does **not** appear (assert in the test, task 22).
+
+22. **Add wave-2 emitter tests** to `scripts/ai-skills/eve-emitter.test.ts`. Assert: (a) `buildEveSandboxFile` returns no entry when `sandbox` is `false` (Lilac's regression guard — no `sandbox/` dir); (b) it returns a `sandbox/sandbox.ts` containing `defineSandbox`, the chosen backend, the bootstrap `git clone`, and the onSession `git reset --hard` when `sandbox` + `repoCheckout` are `true`; (c) `loadEveAgentConfig` throws when `sandbox: true` and `sandboxBackend` is `justbash` or absent; (d) `loadEveAgentConfig` throws when `writeBackGate` is anything but `always`. Tests run on host Node (assert generated content, not eve runtime). Verification: `pnpm prism:test` passes; confirm the new cases are picked up by the existing `scripts/ai-skills/*.test.ts` glob.
+
+#### Unit H — Port Sage (after G)
+
+23. **Add Sage to `EVE_AUTONOMOUS_PERSONAS`** at `build.ts:250` — union in `"prism-changelog"`. **Serialization note:** this line is also edited by Unit I; if H and I run in separate worktrees, the merge must union both ids, not overwrite. Verification: `pnpm prism:check-types` passes.
+
+24. **Author Sage's `eve.yml`** at `.ai-skills/skills/prism-changelog/eve.yml`. Use Lilac's `eve.yml` as the shape template. Keys:
+    - `model: claude-sonnet-4.6` (match Lilac; Sage is not reasoning-heavy).
+    - `scheduleName: changelog`, `scheduleCron` — **decide cadence with Hunter** (see Open Decision below); default-path body: a release-tag-range prompt. Note: Sage's real trigger is a tag push, which eve schedules cannot express (cron only). Wave-2 default is a manual dev-trigger / HTTP invocation, not a cron — so `scheduleCron` may be a placeholder weekly cron with the body instructing "only run when a new release tag exists since the last changelog." Flag this as the open cadence question.
+    - `sandbox: true`, `sandboxBackend: docker`, `repoCheckout: true` — Sage reads git history, needs the checkout.
+    - `writeBackGate: always`, `writeBackPaths: [<changelog output dir>]` — confirm Sage's output dir from `doc-generation.md` (the changelog reference) at author time.
+    - `instructionsSections: [Personality, How Sage Thinks]` — identity only (matches Lilac's split).
+    - `skillSections: [Changelog Standards, Startup, Commit parsing, Categorization, Change consolidation, Document structure, Document generation, Definition of Done]` — the workflow. Omit `Framework Knowledge`/`Common Issues`/`Domain Context`/`Post-Delivery Closing`/`Next persona`/`Session close` sections whose bodies are `.prism/references/` load-links the eve world can't resolve (the reference-scaffolding stripping handles links inside included sections, but sections that are *only* a load-link add nothing — leave them out). Verification: covered by task 26's byte-diff.
+    - **Write-back adaptation:** Sage's `Post-Delivery Closing` section references the shared shipping-flow (commit → push → PR). In the eve world there is no interactive shipping flow — replace it with the FR-4 write-back: write the changelog into `/workspace`, then `git add <output> && commit && push` behind the `always()` gate. This adaptation is a `skillSections` content concern — if `Post-Delivery Closing` can't be cleanly stripped to the write-back, hand-author the write-back instruction into the reference fixture (task 25) and have the emitter reproduce it. Note the divergence in a `## Decisions` sub-bullet if the section is adapted rather than included verbatim.
+
+25. **Hand-author Sage's eve agent reference** at `scripts/ai-skills/__fixtures__/eve-sage-reference/` (mirror the `eve-lilac-reference/` location and shape from wave 1, Unit D task 11). This is the runtime-intent reference the emitter must reproduce. Include the `sandbox/sandbox.ts` with the docker backend + clone bootstrap + onSession refresh. Verification: none yet — validated by task 26's diff and the Docker milestone.
+
+26. **Regenerate and prove byte-identical.** Run `pnpm prism:build`, then `diff -r .eve/agents/prism-changelog scripts/ai-skills/__fixtures__/eve-sage-reference`. Zero diff is the proof. If they differ, fix the emitter (Unit G) or the `eve.yml` (task 24), not the fixture — unless the delta is a token substitution (then the fixture carries the substituted form, per Decision: Token substitution). Add a Sage byte-diff case to `eve-emitter.test.ts`. Verification: `diff -r` empty; `pnpm prism:test` passes.
+
+#### Unit I — Port Zoe (after G)
+
+27. **Add Zoe to `EVE_AUTONOMOUS_PERSONAS`** at `build.ts:250` — union in `"prism-surface-audit"`. Same serialization note as task 23. Verification: `pnpm prism:check-types` passes.
+
+28. **Author Zoe's `eve.yml`** at `.ai-skills/skills/prism-surface-audit/eve.yml`. Keys:
+    - `model: claude-sonnet-4.6`.
+    - `scheduleName: audit`, `scheduleCron: "0 9 * * 1"` (Mondays 09:00 UTC — Zoe's cadence is weekly, advisory; the cron is the natural fit, unlike Sage's tag-driven trigger). Body: "Audit the `.prism/` surface — plans, lessons, ADRs, architect docs — issue per-Decision verdicts and write the report."
+    - `sandbox: true`, `sandboxBackend: docker`, `repoCheckout: true` — Zoe reads the `.prism/` tree.
+    - `writeBackGate: always`, `writeBackPaths: [.prism/audits, .prism/plans, .prism/audit-state.json]` — her audit report, plan verdict annotations, and state file.
+    - `instructionsSections: [Personality]` — Zoe's `shared.md` has no "How X Thinks" section; identity is `Personality` plus the front-matter frame. Confirm the identity preamble (the "You are **Zoe**…" opener) is captured by `extractIdentityPreamble` — Zoe's `shared.md` opens with `## Personality` at line 5, so verify the preamble extractor handles a persona whose first section is `Personality` (Lilac may differ). If the extractor misses Zoe's opener, that's an emitter gap — fix it in Unit G, not by reshaping Zoe's source.
+    - `skillSections: [When this skill is invoked, Purpose, Cadence, Audit surfaces, Per-Decision verdict procedure, Archive classification, Plan-archive lane, Open-question Decision variant, Output format, State file, What Zoe does NOT do]` — the full audit workflow.
+    - **Write-back adaptation:** Zoe's write-back is the genuine `.prism/`-write-back — audit report to `.prism/audits/`, verdict sub-bullets onto plan files, state file. The skill body already describes these writes; the FR-4 addition is the `git add .prism/ && commit && push` behind the `always()` gate after the writes land in `/workspace`. Her "No silent edits" contract already requires confirmation — the gate expresses it.
+    Verification: covered by task 30's byte-diff.
+
+29. **Hand-author Zoe's eve agent reference** at `scripts/ai-skills/__fixtures__/eve-zoe-reference/`. Same shape as Sage's (task 25), with Zoe's sandbox + write-back paths. Verification: validated by task 30.
+
+30. **Regenerate and prove byte-identical.** `pnpm prism:build`, then `diff -r .eve/agents/prism-surface-audit scripts/ai-skills/__fixtures__/eve-zoe-reference`. Add a Zoe byte-diff case to `eve-emitter.test.ts`. Verification: `diff -r` empty; `pnpm prism:test` passes.
+
+#### Unit E-coverage check (folds into H/I; no new unit)
+
+31. **Confirm the wave-1 drift/cleanup/guard machinery covers the two new personas with no change.** The cleanup uses `eveValidIds = knownSkillIds ∩ EVE_AUTONOMOUS_PERSONAS` (`build.ts:1864-1872`) — adding Sage/Zoe to the set automatically extends cleanup to their dirs. The literal guard root (`targetRoots.eveAgents`) already covers the whole `.eve/agents/` tree, so the new `sandbox/sandbox.ts` files are literal-guarded for free — **verify Sage/Zoe source carries no Thrive-flavored literal** (if it does, tokenize the canonical source per the wave-1 flow). Seed-curation needs no entry (`.eve/` is outside `COPIED_CONTENT_AREAS`, confirmed wave 1). Verification: `pnpm prism:check` green (drift, literal guard, seed all pass for the two new personas).
+
+### Eli (documentation)
+
+#### Unit J — Document FR-4 (after G, H, I)
+
+32. **Extend `.prism/architect/_toolkit/eve-runtime.md`** with an FR-4 section: the sandbox bootstrap clone + onSession refresh, the `docker`/`microsandbox`-only backend constraint (`justbash` invalid for repo-state personas), and the HITL-gated write-back push. Add Sage and Zoe to the Docker milestone steps — for each: clone fires in the sandbox, the persona reads the checkout, writes its artifact, and the write-back push surfaces the `always()` HITL gate. Note the runtime-only unknowns (git auth in the sandbox, network policy, concurrent-push races) as things the milestone verifies that CI cannot. Cite ADR-0063. Verification: `pnpm prism:crossref-lint` passes.
+
+33. **Update `.prism/architect/_toolkit/install-layout.md`** to add `sandbox/sandbox.ts` to the eve generated-file inventory (the wave-1 subsection lists six derived files; the seventh is the conditional sandbox file, emitted only for repo-state personas declaring `sandbox: true`). Cite ADR-0063. Verification: `pnpm prism:crossref-lint` passes; `pnpm prism:verify-manifest` passes (the `.eve/**` route already covers the new file kind).
+
+---
+
 ## Decisions
 
 - **Sequencing: hand-author Lilac first (Unit A), then extract the emitter (Unit C), then regenerate-and-diff (Unit D) — not emitter-first.**
@@ -139,7 +223,22 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
   - **Implementation guidance:** Unit A task 6 wraps the Slack-post action in the `always()` gate. The general layer is the resolver's call when the first such persona ships (Winston).
   - → promoted to ADR-0062 § Decision 6.
 
-- **OPEN — TBD, needs Winston (wave-2 plan) input.** State-location design for FR-4 (Open Q3): the concrete clone → read → commit → (push?) flow for a persona operating on `.prism/` state inside the sandbox, and where idempotency gates the push. **Default path (used until resolved):** unspecified beyond the PRD surface description; slice 1 (Lilac) does not exercise it — her inputs come from the GitHub API and her output is a Slack post, neither of which touches `.prism/` repo state. The design lands when the first repo-state persona (Sage: reads tags/commits; or Zoe: reads `.prism/` plans) is built in wave 2. The push step is exactly where the deferred idempotency problem bites hardest, so the FR-4 design and the Q2 general-idempotency layer resolve together.
+- **FR-4 state-location (Open Q3): clone in the sandbox, refresh per-session, write back through a HITL-gated push.** A repo-state persona gets its checkout from a generated `agent/sandbox/sandbox.ts` (`defineSandbox`) — `bootstrap` clones the PRISM repo into `/workspace` once at template build, `onSession` runs `git fetch && git reset --hard origin/<default-branch>` so each session reads current state. Reads use the default-harness `bash`/`read_file`/`grep`/`glob` against `/workspace`; no new tools.
+  - **Root cause of the choice:** the GitHub *channel's* pre-call checkout requires the Vercel backend (ADR-0062 Decision 3), but the eve *sandbox* provides its own checkout that runs on local backends. The spike's channel-framing obscured this — repo-state personas are schedule/HTTP-driven, not channel-driven, so the channel constraint never applied to them. Source-verified against `docs/sandbox.mdx`: the `bootstrap` hook's canonical use is "cloning a baseline repo," and the network policy is "leave the factory open so `bootstrap` can `git clone`, then lock down in `onSession`."
+  - **Alternatives considered:** GitHub-channel checkout (needs Vercel — rejected, violates NFR-2); a dedicated `tools/checkout-repo.ts` typed tool (rejected — deletion-test failure: it wraps `git clone` the agent can already run via the `bash` tool, relocating complexity rather than removing it); clone only in `bootstrap` (rejected — `bootstrap` runs once at template build and freezes the checkout, so personas read stale state).
+  - **Chosen approach:** sandbox `bootstrap` baseline clone + `onSession` refresh. Beats channel checkout because it runs off-Vercel on `docker()`/`microsandbox()`; beats a dedicated tool because it reuses eve's designed sandbox seam and the default `bash` tool; beats bootstrap-only because the onSession refresh defeats the stale-snapshot trap.
+  - **Backend constraint:** `docker()` or `microsandbox()` only — never `justbash()`, which has "no real binaries" and cannot run `git`. The emitter restricts a checkout persona's backend to the real backends.
+  - **Implementation guidance:** the emitter gains a `buildEveSandboxFile` that produces `sandbox/sandbox.ts` when `eve.yml` declares `sandbox: true`. Lilac declares no sandbox key → emits no sandbox dir → her byte-diff is unchanged (the regression guard). Full clone/fetch/git-auth/network-policy correctness is Docker-manual, not CI — the byte-diff proves the emitter generates a correct `sandbox.ts`, not that it clones at runtime.
+  - → promoted to ADR-0063 § Decisions 1–3.
+
+- **Q2 general idempotency: stays deferred; the repo-state write-back rides the ADR-0062 HITL gate.** Both wave-2 personas write back through one side-effect class — a `git commit && git push` of their artifact (Sage: changelog document; Zoe: audit report + plan verdicts + state file) — gated behind `needsApproval: always()`. No idempotency key, no dedup layer.
+  - **Root cause of the choice:** eve re-runs a step interrupted mid-execution, so a `git push` caught mid-step by a crash can fire twice. A push behind `always()` cannot fire from a re-run step without a fresh human decision — the same narrow-risk mitigation ADR-0062 Decision 6 chose for Lilac's Slack post.
+  - **Alternatives considered:** build a general idempotency layer now (dedup keys / check-before-act — rejected as speculative infrastructure against a beta runtime); gate behind HITL (chosen); do nothing (rejected — the double-push risk is real).
+  - **Chosen approach:** HITL `always()` on the write-back push. The gate is each persona's existing contract in eve's primitive: Sage's changelog already ships through a human-owned release PR, and Zoe's contract already forbids silent edits ("everything else waits for go-ahead"). A general idempotency layer earns its place only when a repo-state persona has a write-back that *shouldn't* require approval on every run — none in wave 2 does. The concrete trigger to revisit: the first repo-state persona whose push should be unattended (e.g. an unattended weekly audit), or a Docker-milestone finding that the write-back races concurrent human commits and needs a `git pull --rebase` before push.
+  - **Implementation guidance:** the write-back is a documented action in each persona's eve skill body, wrapped in the `always()` gate. Sage and Zoe's write-backs collapse to one gated primitive — the idempotency story is one rule, not two.
+  - → promoted to ADR-0063 § Decision 4.
+
+- **OPEN — TBD, needs Hunter input.** Sage's eve trigger cadence. Sage's natural trigger is a *release-tag push*, but eve schedules are cron-only (verified, `docs/schedules.mdx`) — there is no tag-push schedule. Zoe maps cleanly to a weekly cron; Sage does not. **Default path (used until resolved):** wave 2 ships Sage with a placeholder weekly cron whose body instructs "only produce a changelog when a new release tag exists since the last run," plus a manual dev-trigger / HTTP invocation as the real entry point — the cron is a heartbeat, not the trigger. The clean resolutions (a GitHub-channel tag-push hook, or an external CI job that POSTs Sage's session route on tag push) are wave-3 candidates: both reintroduce the GitHub-channel/Vercel-backend question ADR-0062 Decision 3 flagged, so they need their own evaluation. This open question does not block Unit H — the placeholder-cron default lets Sage's port land and byte-diff on host CI; the live trigger is a Docker-milestone/wave-3 concern.
 
 - **OPEN — TBD, needs the first non-local deploy as the trigger (resolver: Winston/Hunter at deploy time).** Production auth helper for the eve session routes. **Default path (used until resolved):** slice 1 runs entirely on loopback under `localDev()`, with `placeholderAuth()` failing closed behind it (Unit A task 7). `vercelOidc()` is omitted because the no-Vercel-lock-in goal means we must not rely on it alone. The first non-local deploy is the trigger to choose `httpBasic` / `jwtHmac` / `jwtEcdsa` / `oidc` / a custom `AuthFn`; under Option B, the receiving persona agent's auth walk must accept whatever outbound auth Sol presents (`bearer` / `basic` / OIDC).
 
@@ -185,6 +284,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed 4 Briar findings — AC NFR-1 reworded to reference `.ai-skill-generated` marker; all 6 eve-generated files now pass through `substituteTokens` (slice-1 byte-diff ZERO confirmed); `docs/getting-started.md` lists `.eve/agents/` as the fourth compile target; ADR-0062 `/tmp` ephemeral reference replaced with durable language in canonical + all 4 platform mirrors. 341/341 tests pass; `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove pushed branch and opened draft PR #236 for issue #235.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed Eric's 3 PR-review findings — added `@vercel/connect@0.2.2` to the eve-runtime.md dep enumeration (Major) with no-lock-in rationale, added 3 emitter throw-path tests (344 total, up from 341), and replaced the silent byte-match no-op with `assert.fail`. Byte-diff zero; `prism:check` green.
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Winston resolved FR-4 (Open Q3) and Q2 idempotency, wrote ADR-0063, and planned the Sage/Zoe port. Source-verified the eve sandbox against `docs/sandbox.mdx`: read path is a sandbox `bootstrap` clone + `onSession` refresh on a local `docker`/`microsandbox` backend (off-Vercel — the channel-checkout-needs-Vercel framing never applied to repo-state personas); write path is one HITL-gated `git push`, so Q2 stays deferred. Decomposed into Units G (emitter FR-4 extension, first), H (Sage), I (Zoe) — H and I serialize on the shared `EVE_AUTONOMOUS_PERSONAS` edit. Flagged Sage's tag-push-vs-cron cadence as an OPEN needing Hunter.
 
 ---
 
@@ -274,6 +374,25 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - [ ] `.prism/` markdown remains the single source of truth — eve output is generated, drift-checked, and managed via the per-persona `.ai-skill-generated` marker; no eve output is hand-edited (NFR-1).
 - [ ] The slice introduces no dependency on a Vercel-only service; the agent's model routing is direct-to-Anthropic and durability is the local on-disk world (NFR-2).
 - [ ] [Docker / manual] Lilac runs on eve's local on-disk world (`.workflow-data`) under Node 24 with no Vercel service — this is a manual milestone, explicitly not a host-CI gate (the host runs Node 22).
+
+### Wave 2 — Sage and Zoe (FR-4)
+
+**Behavioral:**
+
+- [ ] When the build runs for a repo-state persona (one whose `eve.yml` declares `sandbox: true`), Then the emitter produces a `sandbox/sandbox.ts` containing the chosen backend, a bootstrap repo clone, and an onSession refresh.
+- [ ] When the build runs for a persona that declares no sandbox (Lilac), Then no `sandbox/` directory is produced — her generated output is unchanged from wave 1.
+- [ ] Given a persona declares `sandbox: true`, When its `eve.yml` sets `sandboxBackend` to `justbash` or omits the backend, Then the build fails with an error naming the persona and the backend constraint.
+- [ ] Given the hand-authored Sage reference exists, When the emitter regenerates Sage, Then the generated directory is byte-identical to the reference.
+- [ ] Given the hand-authored Zoe reference exists, When the emitter regenerates Zoe, Then the generated directory is byte-identical to the reference.
+- [ ] [Docker / manual] Given Sage's generated agent is built and served on eve under Node 24, When her schedule (or dev-trigger) fires, Then the sandbox clones the repo, Sage reads the tag range and composes the changelog, and the write-back push surfaces a preview-and-confirm HITL approval before pushing.
+- [ ] [Docker / manual] Given Zoe's generated agent is built and served on eve under Node 24, When her weekly schedule (or dev-trigger) fires, Then the sandbox clones the `.prism/` tree, Zoe writes the audit report and plan verdicts into the checkout, and the write-back push surfaces a preview-and-confirm HITL approval before pushing.
+
+**Non-behavioral:**
+
+- [ ] `pnpm prism:build` and `pnpm prism:check` pass on a clean tree with Sage and Zoe in the autonomous set — drift, literal guard, and seed all green for the two new personas (host Node).
+- [ ] `pnpm prism:test` passes, including the wave-2 emitter cases (sandbox-file generation, the no-sandbox regression guard, the backend-constraint throw, and the Sage/Zoe byte-diffs) (host Node).
+- [ ] The FR-4 read path introduces no Vercel-only dependency — the sandbox clone runs on a local backend (`docker`/`microsandbox`), holding NFR-2 for repo-state personas.
+- [ ] [Docker / manual] The full FR-4 runtime flow (clone → fetch → read → write → HITL-gated push) for Sage and Zoe is a manual milestone, explicitly not a host-CI gate.
 
 ---
 
