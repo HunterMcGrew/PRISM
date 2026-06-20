@@ -253,6 +253,7 @@ export function buildClaudeAgentMarkdown({
 export const EVE_AUTONOMOUS_PERSONAS = new Set<string>([
   "prism-standup-summary",
   "prism-changelog",
+  "prism-surface-audit",
 ]);
 
 const EVE_AGENT_FILE_INSTRUCTIONS = "instructions.md";

@@ -190,6 +190,14 @@ test("the generated Sage eve tree byte-matches the Sage reference fixture", asyn
   );
 });
 
+test("the generated Zoe eve tree byte-matches the Zoe reference fixture", async () => {
+  const zoeSkillId = "prism-surface-audit";
+  await assertTreeByteMatch(
+    path.join(repoRoot, ".eve", "agents", zoeSkillId),
+    path.join(scriptDirectory, "__fixtures__", "eve-zoe-reference"),
+  );
+});
+
 const tokenMap = deriveTokenMap(loadConfig(repoRoot));
 
 function sandboxConfigMap(
