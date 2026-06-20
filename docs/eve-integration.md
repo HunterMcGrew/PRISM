@@ -128,8 +128,8 @@ scheduleName: <name>             # Schedule file name and dev-trigger slug
 scheduleCron: "0 13 * * 1-5"    # Cron expression (UTC)
 scheduleBody: >                  # Prompt sent when the schedule fires
   <what the persona should do>
-instructionsSections: [...]      # Sections from shared.md for instructions.md
-skillSections: [...]             # Sections from shared.md / SKILL.md for the skill
+instructionsSections: [...]      # Section names from skill dir files (conventionally shared.md) → instructions.md
+skillSections: [...]             # Section names from skill dir files (conventionally shared.md) → the skill
 
 # Optional — omit for non-Slack personas
 slackConnectUid: slack/<name>    # Vercel Connect credential UID for Slack
