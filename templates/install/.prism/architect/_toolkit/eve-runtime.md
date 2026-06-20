@@ -42,7 +42,7 @@ This mounts the repo root into `/workspace` and forwards port 3000 so the local 
 cd .eve && npm install
 ```
 
-`.eve/package.json` declares the standalone dependency set: `eve@^0.11.6`, `@ai-sdk/anthropic`, `ai@7.0.0-beta.178` (pinned — see ADR-0062 § Decision 5 for the version-pinning rationale), and `zod`. The `engines.node` field is `24.x`, which is satisfied by the container.
+`.eve/package.json` declares the standalone dependency set: `eve@^0.11.6`, `@ai-sdk/anthropic`, `ai@7.0.0-beta.178` (pinned — see ADR-0062 § Decision 5 for the version-pinning rationale), `zod`, and `@vercel/connect@0.2.2`. The `@vercel/connect` package provides the `connectSlackCredentials` helper imported by `channels/slack.ts` — it is a build-time connection dependency (the Vercel Connect credential bridge), not a Vercel runtime-service dependency, so it is consistent with the no-Vercel-lock-in goal (ADR-0062 § Decision 5). The `engines.node` field is `24.x`, which is satisfied by the container.
 
 ### Step 3 — Build the agent
 
@@ -114,7 +114,7 @@ The emitter's correctness is proved on the host by `pnpm prism:test` (the `eve-e
 
 - [ADR-0062](../spec/adrs/_toolkit/0062-eve-substrate-port.md) — all locked decisions (agent topology, model routing, scope, idempotency, Node-floor split)
 - `.prism/architect/_toolkit/install-layout.md` § Eve agent output — the committed-vs-ignored split and the per-file derivation table
-- `.eve/package.json` — pinned dependency versions (`eve@^0.11.6`, `ai@7.0.0-beta.178`)
+- `.eve/package.json` — pinned dependency versions (`eve@^0.11.6`, `@ai-sdk/anthropic`, `@vercel/connect@0.2.2`, `ai@7.0.0-beta.178`, `zod@4.4.3`)
 - `.eve/agents/prism-standup-summary/` — the generated Lilac agent directory
 - `.ai-skills/skills/prism-standup-summary/eve.yml` — the canonical eve config sibling
 - `scripts/ai-skills/build.ts` — the emitter implementation

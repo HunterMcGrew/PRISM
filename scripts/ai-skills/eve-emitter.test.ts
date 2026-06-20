@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 
 import {
 	buildEveAgentFiles,
+	EVE_AUTONOMOUS_PERSONAS,
 	extractDescriptionBlock,
 	loadEveAgentConfig,
 } from "./build";
@@ -146,8 +147,9 @@ test("the generated eve tree byte-matches the Lilac reference fixture", async ()
 	try {
 		generated = await readTree(generatedRoot);
 	} catch {
-		// Pre-build state — nothing generated yet, nothing to compare against.
-		return;
+		assert.fail(
+			`Generated eve tree not found at ${generatedRoot} — run 'pnpm prism:build' before running this test suite.`
+		);
 	}
 
 	const fixture = await readTree(fixtureRoot);
@@ -173,6 +175,67 @@ test("the generated eve tree byte-matches the Lilac reference fixture", async ()
 		assert.ok(
 			generatedBytes.equals(fixtureBytes),
 			`${entry.relativePath} byte-matches the fixture`
+		);
+	}
+});
+
+test("extractDescriptionBlock throws when frontmatter is missing a description", () => {
+	const frontmatterWithoutDescription = [
+		"name: prism-standup-summary",
+		"model: claude-sonnet-4.6",
+	].join("\n");
+
+	assert.throws(
+		() => extractDescriptionBlock(frontmatterWithoutDescription, "prism-standup-summary"),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.strictEqual(
+				error.message,
+				"frontmatter for 'prism-standup-summary' is missing a description."
+			);
+			return true;
+		},
+		"emitter throws the expected message when description is absent"
+	);
+});
+
+test("loadEveAgentConfig throws when a required key is missing from eve.yml", () => {
+	// A map with only some keys — missing scheduleName and the rest.
+	const incompleteConfig = new Map([["model", "claude-sonnet-4.6"]]);
+
+	assert.throws(
+		() => loadEveAgentConfig(incompleteConfig, "prism-standup-summary"),
+		(error: unknown) => {
+			assert.ok(error instanceof Error);
+			assert.match(
+				error.message,
+				/eve\.yml for 'prism-standup-summary' is missing required key /,
+				"error names the skill and the missing key"
+			);
+			return true;
+		},
+		"loadEveAgentConfig throws when a required key is absent"
+	);
+});
+
+test("every EVE_AUTONOMOUS_PERSONAS member has an eve.yml (guard against the missing-eve.yml build throw)", async () => {
+	// The build loop throws "Autonomous-slice persona '${skillId}' is missing eve.yml"
+	// when a set member has no eve.yml. This test catches that condition before build
+	// time: each persona in the set must have an eve.yml on disk.
+	const sourceSkillsRoot = path.join(repoRoot, ".ai-skills", "skills");
+
+	for (const personaId of EVE_AUTONOMOUS_PERSONAS) {
+		const eveYmlPath = path.join(sourceSkillsRoot, personaId, "eve.yml");
+		let exists = false;
+		try {
+			await fs.access(eveYmlPath);
+			exists = true;
+		} catch {
+			exists = false;
+		}
+		assert.ok(
+			exists,
+			`Autonomous-slice persona '${personaId}' is missing eve.yml — every persona in EVE_AUTONOMOUS_PERSONAS needs one`
 		);
 	}
 });

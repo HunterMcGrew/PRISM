@@ -184,6 +184,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Briar self-review — all checks green (341/341 tests, zero byte-diff, prism:check clean, types clean). 2 minors: AC NFR-1 wording contradicts Header reconciliation Decision; agent.ts/slack.ts skip substituteTokens (latent token-leak risk for wave 2). No blocking issues.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed 4 Briar findings — AC NFR-1 reworded to reference `.ai-skill-generated` marker; all 6 eve-generated files now pass through `substituteTokens` (slice-1 byte-diff ZERO confirmed); `docs/getting-started.md` lists `.eve/agents/` as the fourth compile target; ADR-0062 `/tmp` ephemeral reference replaced with durable language in canonical + all 4 platform mirrors. 341/341 tests pass; `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove pushed branch and opened draft PR #236 for issue #235.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed Eric's 3 PR-review findings — added `@vercel/connect@0.2.2` to the eve-runtime.md dep enumeration (Major) with no-lock-in rationale, added 3 emitter throw-path tests (344 total, up from 341), and replaced the silent byte-match no-op with `assert.fail`. Byte-diff zero; `prism:check` green.
 
 ---
 
@@ -225,6 +226,30 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - **Problem:** `## References` cites `/tmp/eve-discovery-digest.md` — a session-scoped ephemeral path absent on any other machine. Session-context leakage in a durable artifact.
 - **Fixed in:** Both occurrences replaced with durable language. Canonical ADR and all 4 platform mirrors updated; `pnpm prism:build` confirmed no uncommitted drift remains.
 
+### eve-runtime.md dep enumeration missing @vercel/connect
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/eve-runtime.md:45`
+- **Problem:** Step 2 of the Docker runbook enumerated `.eve/package.json` deps but omitted `@vercel/connect@0.2.2`, which `channels/slack.ts` imports (`connectSlackCredentials` from `@vercel/connect/eve`). A consumer running the runbook would install an incomplete dep set and get a module-not-found error at `eve build`.
+- **Fixed in:** Added `@vercel/connect@0.2.2` to the enumerated set with a one-line rationale (build-time connection dep, not a Vercel runtime-service dep — consistent with no-lock-in goal). Also updated the `## Where to look` bullet to list the full pinned dep set. All 4 platform mirrors regenerated via `pnpm prism:build`.
+
+### Emitter throw-paths untested
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/eve-emitter.test.ts`
+- **Problem:** Three error guards in the emitter had no test coverage: (1) `extractDescriptionBlock` throwing when frontmatter has no `description` (backs behavioral AC item 2); (2) `loadEveAgentConfig` throwing on a missing required key; (3) the build loop's missing-`eve.yml` guard for a persona in `EVE_AUTONOMOUS_PERSONAS`.
+- **Fixed in:** Added three tests: throws on missing description (asserts exact error message), throws on missing required key (asserts message pattern), and every `EVE_AUTONOMOUS_PERSONAS` member has an `eve.yml` on disk (catches the loop guard condition at unit-test time). Test count: 341 → 344.
+
+### Byte-match test silently no-ops when generated tree is absent
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/eve-emitter.test.ts:148`
+- **Problem:** The catch block in the byte-match test silently returned when `.eve/agents/prism-standup-summary` didn't exist, making `pnpm prism:test` pass green on a clean checkout with no prior build — the correctness proof silently vaporized.
+- **Fixed in:** Replaced the silent `return` with `assert.fail(...)` that names the missing path and instructs the user to run `pnpm prism:build` first.
+
 ---
 
 ## Acceptance Criteria
@@ -263,10 +288,11 @@ _No open items._
 - [x] No critical or major issues (all review issues resolved — see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case; 341/341 pass)
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 9 tests — includes cleanup case + 3 throw-path tests; 344/344 pass)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 341 tests pass; byte-diff zero; literal guard passes; crossref-lint passes; manifest coverage passes)
-- [x] PR description up to date (draft PR #236 opened 2026-06-19)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 344 tests pass; byte-diff zero; literal guard passes; crossref-lint passes; manifest coverage passes)
+- [x] PR description up to date (PR #236 — pending body sync for Eric's fixes)
 - [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest)
+- [x] No open Review Issues (3 from Eric — all fixed)
 
-**Last updated:** 2026-06-19 (Clove: addressed 4 Briar self-review findings — AC NFR-1 wording, substituteTokens uniformity, docs compile-target list, ADR-0062 ephemeral /tmp reference; all checks green)
+**Last updated:** 2026-06-19 (Clove: addressed Eric's 3 PR-review findings — dep enumeration, emitter throw-path tests, silent byte-match no-op)
