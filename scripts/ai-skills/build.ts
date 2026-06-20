@@ -22,87 +22,87 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import {
-  collectTier1RuleBodies,
-  renderTier1Block,
-  replaceTier1Block,
+	collectTier1RuleBodies,
+	renderTier1Block,
+	replaceTier1Block,
 } from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
 import {
-  codexRuleDialect,
-  cursorRuleDialect,
-  type RuleDialect,
-  verbatimRuleDialect,
+	codexRuleDialect,
+	cursorRuleDialect,
+	type RuleDialect,
+	verbatimRuleDialect,
 } from "./rule-dialect";
 import {
-  buildPlatformDirs,
-  ensureDirectory,
-  escapeToml,
-  escapeTomlMultiline,
-  GENERATED_HEADER_LINE,
-  listDirectories,
-  loadPathDefinitions,
-  MANAGED_MARKER,
-  MAX_FRONTMATTER_DESCRIPTION_LENGTH,
-  normalizeFrontmatter,
-  parseFrontmatter,
-  pathExists,
-  readFileIfExists,
-  removeDeletedManagedSkills,
-  writeFileIfChanged,
+	buildPlatformDirs,
+	ensureDirectory,
+	escapeToml,
+	escapeTomlMultiline,
+	GENERATED_HEADER_LINE,
+	listDirectories,
+	loadPathDefinitions,
+	MANAGED_MARKER,
+	MAX_FRONTMATTER_DESCRIPTION_LENGTH,
+	normalizeFrontmatter,
+	parseFrontmatter,
+	pathExists,
+	readFileIfExists,
+	removeDeletedManagedSkills,
+	writeFileIfChanged,
 } from "./utils";
 
 export interface RoleDefinition {
-  id: string;
-  persona?: string;
-  type?: "persona" | "utility";
+	id: string;
+	persona?: string;
+	type?: "persona" | "utility";
 }
 
 export interface RolesDefinitions {
-  skills: RoleDefinition[];
+	skills: RoleDefinition[];
 }
 
 export interface SeedCuration {
-  excluded: string[];
-  curated: string[];
-  seedOnly: string[];
-  renames: Record<string, string>;
+	excluded: string[];
+	curated: string[];
+	seedOnly: string[];
+	renames: Record<string, string>;
 }
 
 interface SkillSource {
-  claudeBody: string;
-  codexBody: string;
-  cursorBody: string;
-  eveConfigMap: Map<string, string> | null;
-  frontmatter: string;
-  frontmatterMap: Map<string, string>;
-  sharedBody: string;
+	claudeBody: string;
+	codexBody: string;
+	cursorBody: string;
+	eveConfigMap: Map<string, string> | null;
+	frontmatter: string;
+	frontmatterMap: Map<string, string>;
+	sharedBody: string;
 }
 
 interface BuildSkillMarkdownArgs {
-  frontmatter: string;
-  platformBody: string;
-  platformName: string;
-  sharedBody: string;
-  skillId: string;
-  tokenMap: Map<string, string>;
+	frontmatter: string;
+	platformBody: string;
+	platformName: string;
+	sharedBody: string;
+	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 interface BuildCodexAgentTomlArgs {
-  codexSkillMarkdown: string;
-  description: string;
-  roleDefinition: RoleDefinition;
-  skillId: string;
-  tokenMap: Map<string, string>;
+	codexSkillMarkdown: string;
+	description: string;
+	roleDefinition: RoleDefinition;
+	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 interface BuildClaudeAgentMarkdownArgs {
-  claudeSkillMarkdown: string;
-  description: string;
-  skillId: string;
-  tokenMap: Map<string, string>;
+	claudeSkillMarkdown: string;
+	description: string;
+	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 /**
@@ -114,93 +114,92 @@ interface BuildClaudeAgentMarkdownArgs {
  * defaults to the cheaper tier and escalates only on a stall signal at runtime.
  */
 export const CLAUDE_AGENT_MODEL_DEFAULTS = new Map<string, string>([
-  ["prism-conductor", "opus"],
-  ["prism-architect", "opus"],
+	["prism-conductor", "opus"],
+	["prism-architect", "opus"],
 ]);
 const DEFAULT_CLAUDE_AGENT_MODEL = "sonnet";
 
-const GENERATED_MARKDOWN_HEADER_LINE =
-  "<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->";
+const GENERATED_MARKDOWN_HEADER_LINE = "<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->";
 
 type OptionalSkillPayload =
-  | { kind: "directory"; relativePath: string }
-  | { kind: "file"; relativePath: string };
+	| { kind: "directory"; relativePath: string }
+	| { kind: "file"; relativePath: string };
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.PRISM_REPO_ROOT
-  ? path.resolve(process.env.PRISM_REPO_ROOT)
-  : path.resolve(scriptDirectory, "../..");
+	? path.resolve(process.env.PRISM_REPO_ROOT)
+	: path.resolve(scriptDirectory, "../..");
 
 const checkMode = process.argv.includes("--check");
 const changedPaths: string[] = [];
 const optionalSkillPayloads: OptionalSkillPayload[] = [
-  { kind: "directory", relativePath: "assets" },
-  { kind: "directory", relativePath: "references" },
-  { kind: "directory", relativePath: "scripts" },
-  { kind: "file", relativePath: path.join("agents", "openai.yaml") },
+	{ kind: "directory", relativePath: "assets" },
+	{ kind: "directory", relativePath: "references" },
+	{ kind: "directory", relativePath: "scripts" },
+	{ kind: "file", relativePath: path.join("agents", "openai.yaml") },
 ];
 
 function buildSkillMarkdown({
-  frontmatter,
-  platformBody,
-  platformName,
-  sharedBody,
-  skillId,
-  tokenMap,
+	frontmatter,
+	platformBody,
+	platformName,
+	sharedBody,
+	skillId,
+	tokenMap,
 }: BuildSkillMarkdownArgs): string {
-  const header = [
-    "<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->",
-    `<!-- Source: .ai-skills/skills/${skillId} -->`,
-    `<!-- Target: ${platformName} | Regenerate with: pnpm prism:build -->`,
-  ].join("\n");
+	const header = [
+		"<!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->",
+		`<!-- Source: .ai-skills/skills/${skillId} -->`,
+		`<!-- Target: ${platformName} | Regenerate with: pnpm prism:build -->`,
+	].join("\n");
 
-  const contentSections = [sharedBody.trim(), platformBody.trim()]
-    .filter(Boolean)
-    .join("\n\n");
+	const contentSections = [sharedBody.trim(), platformBody.trim()]
+		.filter(Boolean)
+		.join("\n\n");
 
-  const assembled = `---\n${frontmatter}\n---\n\n${header}\n\n${contentSections}\n`;
+	const assembled = `---\n${frontmatter}\n---\n\n${header}\n\n${contentSections}\n`;
 
-  return substituteTokens(assembled, tokenMap);
+	return substituteTokens(assembled, tokenMap);
 }
 
 export function buildCodexAgentToml({
-  codexSkillMarkdown,
-  description,
-  roleDefinition,
-  skillId,
-  tokenMap,
+	codexSkillMarkdown,
+	description,
+	roleDefinition,
+	skillId,
+	tokenMap,
 }: BuildCodexAgentTomlArgs): string {
-  const header = [
-    GENERATED_HEADER_LINE,
-    `# Source: .ai-skills/skills/${skillId}`,
-    "# Target: codex-agent | Regenerate with: pnpm prism:build",
-    "",
-  ].join("\n");
+	const header = [
+		GENERATED_HEADER_LINE,
+		`# Source: .ai-skills/skills/${skillId}`,
+		"# Target: codex-agent | Regenerate with: pnpm prism:build",
+		"",
+	].join("\n");
 
-  const substitutedDescription = substituteTokens(description, tokenMap);
-  // Utility entries carry no persona — the adapter opens with the skill
-  // source line instead of a "You are X." identity.
-  const substitutedPersona = roleDefinition.persona
-    ? substituteTokens(roleDefinition.persona, tokenMap)
-    : undefined;
+	const substitutedDescription = substituteTokens(description, tokenMap);
+	// Utility entries carry no persona — the adapter opens with the skill
+	// source line instead of a "You are X." identity.
+	const substitutedPersona = roleDefinition.persona
+		? substituteTokens(roleDefinition.persona, tokenMap)
+		: undefined;
 
-  const developerInstructions = [
-    ...(substitutedPersona ? [`You are ${substitutedPersona}.`] : []),
-    `Canonical skill source: .ai-skills/skills/${skillId}`,
-    "Follow this generated skill definition:",
-    "",
-    codexSkillMarkdown.trim(),
-  ].join("\n");
+	const developerInstructions = [
+		...(substitutedPersona ? [`You are ${substitutedPersona}.`] : []),
+		`Canonical skill source: .ai-skills/skills/${skillId}`,
+		"Follow this generated skill definition:",
+		"",
+		codexSkillMarkdown.trim(),
+	].join("\n");
 
-  return [
-    header,
-    `name = "${escapeToml(skillId)}"`,
-    `description = "${escapeToml(substitutedDescription)}"`,
-    'developer_instructions = """',
-    escapeTomlMultiline(developerInstructions),
-    '"""',
-    "",
-  ].join("\n");
+	return [
+		header,
+		`name = "${escapeToml(skillId)}"`,
+		`description = "${escapeToml(substitutedDescription)}"`,
+		'developer_instructions = """',
+		escapeTomlMultiline(developerInstructions),
+		'"""',
+		"",
+	].join("\n");
 }
 
 /**
@@ -211,76 +210,63 @@ export function buildCodexAgentToml({
  * CLAUDE_AGENT_MODEL_DEFAULTS, falling back to the cheaper worker tier.
  */
 export function buildClaudeAgentMarkdown({
-  claudeSkillMarkdown,
-  description,
-  skillId,
-  tokenMap,
+	claudeSkillMarkdown,
+	description,
+	skillId,
+	tokenMap,
 }: BuildClaudeAgentMarkdownArgs): string {
-  const header = [
-    GENERATED_MARKDOWN_HEADER_LINE,
-    `<!-- Source: .ai-skills/skills/${skillId} -->`,
-    "<!-- Target: claude-agent | Regenerate with: pnpm prism:build -->",
-  ].join("\n");
+	const header = [
+		GENERATED_MARKDOWN_HEADER_LINE,
+		`<!-- Source: .ai-skills/skills/${skillId} -->`,
+		"<!-- Target: claude-agent | Regenerate with: pnpm prism:build -->",
+	].join("\n");
 
-  const substitutedDescription = substituteTokens(
-    description,
-    tokenMap,
-  ).replace(/\s+/g, " ");
-  const model =
-    CLAUDE_AGENT_MODEL_DEFAULTS.get(skillId) ?? DEFAULT_CLAUDE_AGENT_MODEL;
+	const substitutedDescription = substituteTokens(description, tokenMap).replace(
+		/\s+/g,
+		" "
+	);
+	const model =
+		CLAUDE_AGENT_MODEL_DEFAULTS.get(skillId) ?? DEFAULT_CLAUDE_AGENT_MODEL;
 
-  const frontmatter = [
-    "---",
-    `name: ${skillId}`,
-    `description: ${JSON.stringify(substitutedDescription)}`,
-    `model: ${model}`,
-    "---",
-  ].join("\n");
+	const frontmatter = [
+		"---",
+		`name: ${skillId}`,
+		`description: ${JSON.stringify(substitutedDescription)}`,
+		`model: ${model}`,
+		"---",
+	].join("\n");
 
-  return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
+	return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
 }
 
 /**
  * Personas whose canonical source is compiled to an eve agent directory.
  *
- * eve emission is gated to the autonomous slice — an always-on, schedule- or
- * channel-driven agent is the wrong shape for the build-loop personas
- * (Winston/Clove/Briar), which run on demand inside a chat. The slice holds
- * Lilac (Slack-driven standup) plus the repo-state personas Sage (changelog)
- * and Zoe (surface audit, joining in Unit I). A persona outside this set is
- * skipped even if it carries an eve.yml.
+ * eve emission is gated to the autonomous slice — an always-on, channel-driven
+ * agent is the wrong shape for the build-loop personas (Winston/Clove/Briar),
+ * which run on demand inside a chat. Slice 1 ships Lilac; Sage and Zoe join in
+ * wave 2. A persona outside this set is skipped even if it carries an eve.yml.
  */
-export const EVE_AUTONOMOUS_PERSONAS = new Set<string>([
-  "prism-standup-summary",
-  "prism-changelog",
-  "prism-surface-audit",
-]);
+export const EVE_AUTONOMOUS_PERSONAS = new Set<string>(["prism-standup-summary"]);
 
 const EVE_AGENT_FILE_INSTRUCTIONS = "instructions.md";
 
-type EveSandboxBackend = "docker" | "microsandbox";
-
 interface EveAgentConfig {
-  model: string;
-  scheduleName: string;
-  scheduleCron: string;
-  scheduleBody: string;
-  slackConnectUid: string | null;
-  instructionsSections: string[];
-  skillSections: string[];
-  sandbox: boolean;
-  sandboxBackend: EveSandboxBackend | null;
-  repoCheckout: boolean;
-  writeBackGate: "always" | null;
-  writeBackPaths: string[];
+	model: string;
+	scheduleName: string;
+	scheduleCron: string;
+	scheduleBody: string;
+	slackConnectUid: string;
+	instructionsSections: string[];
+	skillSections: string[];
 }
 
 interface BuildEveAgentFilesArgs {
-  descriptionBlock: string;
-  eveConfig: EveAgentConfig;
-  sharedBody: string;
-  skillId: string;
-  tokenMap: Map<string, string>;
+	descriptionBlock: string;
+	eveConfig: EveAgentConfig;
+	sharedBody: string;
+	skillId: string;
+	tokenMap: Map<string, string>;
 }
 
 /**
@@ -291,11 +277,11 @@ interface BuildEveAgentFilesArgs {
  * `"[Personality, How Lilac Thinks]"` and get split at this boundary.
  */
 function parseInlineList(value: string): string[] {
-  const trimmed = value.trim().replace(/^\[/, "").replace(/\]$/, "");
-  return trimmed
-    .split(",")
-    .map((member) => member.trim())
-    .filter(Boolean);
+	const trimmed = value.trim().replace(/^\[/, "").replace(/\]$/, "");
+	return trimmed
+		.split(",")
+		.map((member) => member.trim())
+		.filter(Boolean);
 }
 
 /**
@@ -304,96 +290,50 @@ function parseInlineList(value: string): string[] {
  * build instead of emitting a malformed agent directory.
  */
 export function loadEveAgentConfig(
-  eveConfigMap: Map<string, string>,
-  skillId: string,
+	eveConfigMap: Map<string, string>,
+	skillId: string
 ): EveAgentConfig {
-  const require_ = (key: string): string => {
-    const value = eveConfigMap.get(key);
-    if (value === undefined || value === "") {
-      throw new Error(
-        `eve.yml for '${skillId}' is missing required key '${key}'.`,
-      );
-    }
-    return value;
-  };
+	const require_ = (key: string): string => {
+		const value = eveConfigMap.get(key);
+		if (value === undefined || value === "") {
+			throw new Error(
+				`eve.yml for '${skillId}' is missing required key '${key}'.`
+			);
+		}
+		return value;
+	};
 
-  const optionalBoolean = (key: string): boolean =>
-    eveConfigMap.get(key)?.trim() === "true";
-
-  const sandbox = optionalBoolean("sandbox");
-  const repoCheckout = optionalBoolean("repoCheckout");
-
-  const backendValue = eveConfigMap.get("sandboxBackend")?.trim() ?? "";
-  if (sandbox && backendValue !== "docker" && backendValue !== "microsandbox") {
-    throw new Error(
-      `eve.yml for '${skillId}' declares sandbox: true but sandboxBackend is '${backendValue || "absent"}' — a repo-state persona must run on 'docker' or 'microsandbox' (never 'justbash', which has no real binaries and cannot run git). See ADR-0063 Decision 3.`,
-    );
-  }
-  const sandboxBackend = sandbox ? (backendValue as EveSandboxBackend) : null;
-
-  const writeBackGateValue = eveConfigMap.get("writeBackGate")?.trim() ?? "";
-  if (writeBackGateValue !== "" && writeBackGateValue !== "always") {
-    throw new Error(
-      `eve.yml for '${skillId}' sets writeBackGate to '${writeBackGateValue}' — only 'always' is valid in wave 2 (the write-back push rides the HITL approval gate). See ADR-0063 Decision 4.`,
-    );
-  }
-  const writeBackGate = writeBackGateValue === "always" ? "always" : null;
-
-  const writeBackPathsValue = eveConfigMap.get("writeBackPaths");
-  const writeBackPaths =
-    writeBackPathsValue === undefined || writeBackPathsValue.trim() === ""
-      ? []
-      : parseInlineList(writeBackPathsValue);
-
-  const slackConnectUidValue =
-    eveConfigMap.get("slackConnectUid")?.trim() ?? "";
-  const slackConnectUid =
-    slackConnectUidValue === "" ? null : slackConnectUidValue;
-
-  return {
-    model: require_("model"),
-    scheduleName: require_("scheduleName"),
-    scheduleCron: require_("scheduleCron"),
-    scheduleBody: require_("scheduleBody"),
-    slackConnectUid,
-    instructionsSections: parseInlineList(require_("instructionsSections")),
-    skillSections: parseInlineList(require_("skillSections")),
-    sandbox,
-    sandboxBackend,
-    repoCheckout,
-    writeBackGate,
-    writeBackPaths,
-  };
+	return {
+		model: require_("model"),
+		scheduleName: require_("scheduleName"),
+		scheduleCron: require_("scheduleCron"),
+		scheduleBody: require_("scheduleBody"),
+		slackConnectUid: require_("slackConnectUid"),
+		instructionsSections: parseInlineList(require_("instructionsSections")),
+		skillSections: parseInlineList(require_("skillSections")),
+	};
 }
 
 /**
  * Returns the `## <name>` block from a shared-body markdown string, from the
  * heading through the line before the next top-level (`## `) heading.
- *
- * Tracks fenced-code-block state so that `## ` lines inside a ``` fence are
- * not mistaken for section boundaries. A line beginning with ``` toggles the
- * fence — the section ends only when a `## ` line appears outside a fence.
  */
-export function extractSharedSection(sharedBody: string, name: string): string {
-  const lines = sharedBody.split("\n");
-  const startIndex = lines.findIndex((line) => line === `## ${name}`);
-  if (startIndex === -1) {
-    throw new Error(`shared.md section '## ${name}' not found.`);
-  }
+function extractSharedSection(sharedBody: string, name: string): string {
+	const lines = sharedBody.split("\n");
+	const startIndex = lines.findIndex((line) => line === `## ${name}`);
+	if (startIndex === -1) {
+		throw new Error(`shared.md section '## ${name}' not found.`);
+	}
 
-  let endIndex = lines.length;
-  let insideFence = false;
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].startsWith("```")) {
-      insideFence = !insideFence;
-    }
-    if (!insideFence && lines[index].startsWith("## ")) {
-      endIndex = index;
-      break;
-    }
-  }
+	let endIndex = lines.length;
+	for (let index = startIndex + 1; index < lines.length; index += 1) {
+		if (lines[index].startsWith("## ")) {
+			endIndex = index;
+			break;
+		}
+	}
 
-  return lines.slice(startIndex, endIndex).join("\n").replace(/\n+$/, "");
+	return lines.slice(startIndex, endIndex).join("\n").replace(/\n+$/, "");
 }
 
 /**
@@ -401,15 +341,14 @@ export function extractSharedSection(sharedBody: string, name: string): string {
  * heading in the shared body (the "You are X" opening paragraph).
  */
 function extractIdentityPreamble(sharedBody: string): string {
-  const lines = sharedBody.split("\n");
-  const firstHeadingIndex = lines.findIndex((line) => line.startsWith("## "));
-  const preambleLines =
-    firstHeadingIndex === -1 ? lines : lines.slice(0, firstHeadingIndex);
-  return preambleLines.join("\n").replace(/\n+$/, "");
+	const lines = sharedBody.split("\n");
+	const firstHeadingIndex = lines.findIndex((line) => line.startsWith("## "));
+	const preambleLines =
+		firstHeadingIndex === -1 ? lines : lines.slice(0, firstHeadingIndex);
+	return preambleLines.join("\n").replace(/\n+$/, "");
 }
 
-const EVE_REFERENCE_LINK =
-  /^\*\*.*\bread \[.*\]\([^)]*\.prism\/references\/[^)]*\).*\*\*\s*$/;
+const EVE_REFERENCE_LINK = /^\*\*.*\bread \[.*\]\([^)]*\.prism\/references\/[^)]*\).*\*\*\s*$/;
 const EVE_TEASER_BLOCKQUOTE = /^> _.*_\s*$/;
 
 /**
@@ -422,49 +361,49 @@ const EVE_TEASER_BLOCKQUOTE = /^> _.*_\s*$/;
  * runs that result — produces the runtime-valid eve form.
  */
 function stripEveReferenceScaffolding(section: string): string {
-  const lines = section.split("\n");
-  const withoutLinks = lines.filter(
-    (line) =>
-      !EVE_REFERENCE_LINK.test(line) && !EVE_TEASER_BLOCKQUOTE.test(line),
-  );
+	const lines = section.split("\n");
+	const withoutLinks = lines.filter(
+		(line) =>
+			!EVE_REFERENCE_LINK.test(line) && !EVE_TEASER_BLOCKQUOTE.test(line)
+	);
 
-  const withoutEmptyHeadings: string[] = [];
-  let index = 0;
-  while (index < withoutLinks.length) {
-    const line = withoutLinks[index];
-    if (line.startsWith("### ")) {
-      let lookahead = index + 1;
-      const body: string[] = [];
-      while (
-        lookahead < withoutLinks.length &&
-        !withoutLinks[lookahead].startsWith("### ") &&
-        !withoutLinks[lookahead].startsWith("## ")
-      ) {
-        body.push(withoutLinks[lookahead]);
-        lookahead += 1;
-      }
-      if (body.every((bodyLine) => bodyLine.trim() === "")) {
-        index = lookahead;
-        continue;
-      }
-    }
-    withoutEmptyHeadings.push(line);
-    index += 1;
-  }
+	const withoutEmptyHeadings: string[] = [];
+	let index = 0;
+	while (index < withoutLinks.length) {
+		const line = withoutLinks[index];
+		if (line.startsWith("### ")) {
+			let lookahead = index + 1;
+			const body: string[] = [];
+			while (
+				lookahead < withoutLinks.length &&
+				!withoutLinks[lookahead].startsWith("### ") &&
+				!withoutLinks[lookahead].startsWith("## ")
+			) {
+				body.push(withoutLinks[lookahead]);
+				lookahead += 1;
+			}
+			if (body.every((bodyLine) => bodyLine.trim() === "")) {
+				index = lookahead;
+				continue;
+			}
+		}
+		withoutEmptyHeadings.push(line);
+		index += 1;
+	}
 
-  const collapsed: string[] = [];
-  for (const line of withoutEmptyHeadings) {
-    if (
-      line.trim() === "" &&
-      collapsed.length > 0 &&
-      collapsed[collapsed.length - 1].trim() === ""
-    ) {
-      continue;
-    }
-    collapsed.push(line);
-  }
+	const collapsed: string[] = [];
+	for (const line of withoutEmptyHeadings) {
+		if (
+			line.trim() === "" &&
+			collapsed.length > 0 &&
+			collapsed[collapsed.length - 1].trim() === ""
+		) {
+			continue;
+		}
+		collapsed.push(line);
+	}
 
-  return collapsed.join("\n").replace(/\n+$/, "");
+	return collapsed.join("\n").replace(/\n+$/, "");
 }
 
 /**
@@ -472,11 +411,11 @@ function stripEveReferenceScaffolding(section: string): string {
  * so each emitted section carries only runtime-valid eve content.
  */
 function buildEveSectionBody(sharedBody: string, sections: string[]): string {
-  return sections
-    .map((name) =>
-      stripEveReferenceScaffolding(extractSharedSection(sharedBody, name)),
-    )
-    .join("\n\n");
+	return sections
+		.map((name) =>
+			stripEveReferenceScaffolding(extractSharedSection(sharedBody, name))
+		)
+		.join("\n\n");
 }
 
 /**
@@ -486,60 +425,26 @@ function buildEveSectionBody(sharedBody: string, sections: string[]): string {
  * persona authored, not the parser's space-collapsed value.
  */
 export function extractDescriptionBlock(
-  frontmatter: string,
-  skillId: string,
+	frontmatter: string,
+	skillId: string
 ): string {
-  const lines = frontmatter.split("\n");
-  const startIndex = lines.findIndex((line) => /^description:/.test(line));
-  if (startIndex === -1) {
-    throw new Error(`frontmatter for '${skillId}' is missing a description.`);
-  }
+	const lines = frontmatter.split("\n");
+	const startIndex = lines.findIndex((line) =>
+		/^description:/.test(line)
+	);
+	if (startIndex === -1) {
+		throw new Error(`frontmatter for '${skillId}' is missing a description.`);
+	}
 
-  const block = [lines[startIndex]];
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (!lines[index].startsWith(" ")) {
-      break;
-    }
-    block.push(lines[index]);
-  }
+	const block = [lines[startIndex]];
+	for (let index = startIndex + 1; index < lines.length; index += 1) {
+		if (!lines[index].startsWith(" ")) {
+			break;
+		}
+		block.push(lines[index]);
+	}
 
-  return block.join("\n");
-}
-
-/**
- * Synthesizes the FR-4 write-back section appended to a repo-state persona's
- * generated SKILL.md.
- *
- * A repo-state persona's chat-harness shipping flow (commit → push → PR through
- * the interactive shipping-flow reference) has no analogue in the eve world —
- * there is no interactive session to drive it. The write-back replaces it: the
- * persona writes its artifact into the `/workspace` checkout, then commits and
- * pushes behind eve's HITL approval gate. The `always()` gate is each persona's
- * existing confirm-before-write contract expressed as an eve primitive, and the
- * step-replay safeguard for the non-idempotent push (ADR-0063 Decision 4).
- *
- * Returns the empty string when the persona declares no write-back gate, so a
- * non-repo-state persona's SKILL.md is unchanged.
- */
-function buildWriteBackSection(eveConfig: EveAgentConfig): string {
-  if (eveConfig.writeBackGate === null) {
-    return "";
-  }
-
-  const stagePaths =
-    eveConfig.writeBackPaths.length > 0
-      ? eveConfig.writeBackPaths.join(" ")
-      : "<artifact path>";
-
-  return [
-    "## Write-back",
-    "",
-    "This persona runs in an eve sandbox holding a fresh checkout of the repo at `/workspace` (cloned at bootstrap, refreshed each session). Its output is written into that checkout and pushed back, not delivered through an interactive shipping flow.",
-    "",
-    `After the artifact is written, stage and push it: \`git add ${stagePaths} && git commit && git push\`. The push is gated behind eve's \`needsApproval: always()\` human-in-the-loop approval — surface the staged diff for preview and confirm before pushing. Nothing is pushed without an explicit approval.`,
-    "",
-    "The gate is not new friction — it expresses the confirm-before-write contract this persona already carries, and it is the step-replay safeguard for the non-idempotent push (a push caught mid-step by a crash cannot re-fire without a fresh human decision). See ADR-0063 Decision 4.",
-  ].join("\n");
+	return block.join("\n");
 }
 
 /**
@@ -560,342 +465,261 @@ function buildWriteBackSection(eveConfig: EveAgentConfig): string {
  * header.
  */
 export function buildEveAgentFiles({
-  descriptionBlock,
-  eveConfig,
-  sharedBody,
-  skillId,
-  tokenMap,
+	descriptionBlock,
+	eveConfig,
+	sharedBody,
+	skillId,
+	tokenMap,
 }: BuildEveAgentFilesArgs): Map<string, string> {
-  const files = new Map<string, string>();
+	const files = new Map<string, string>();
 
-  const identityPreamble = extractIdentityPreamble(sharedBody);
-  const instructionsSectionBody = buildEveSectionBody(
-    sharedBody,
-    eveConfig.instructionsSections,
-  );
-  const instructions = `${identityPreamble}\n\n${instructionsSectionBody}\n`;
-  files.set(
-    EVE_AGENT_FILE_INSTRUCTIONS,
-    substituteTokens(instructions, tokenMap),
-  );
+	const identityPreamble = extractIdentityPreamble(sharedBody);
+	const instructionsSectionBody = buildEveSectionBody(
+		sharedBody,
+		eveConfig.instructionsSections
+	);
+	const instructions = `${identityPreamble}\n\n${instructionsSectionBody}\n`;
+	files.set(EVE_AGENT_FILE_INSTRUCTIONS, substituteTokens(instructions, tokenMap));
 
-  const workflowBody = buildEveSectionBody(sharedBody, eveConfig.skillSections);
-  const writeBackSection = buildWriteBackSection(eveConfig);
-  const skillBody = writeBackSection
-    ? `${workflowBody}\n\n${writeBackSection}`
-    : workflowBody;
-  const skillMarkdown = `---\n${descriptionBlock}\n---\n\n${skillBody}\n`;
-  files.set(
-    path.posix.join("skills", skillId, "SKILL.md"),
-    substituteTokens(skillMarkdown, tokenMap),
-  );
+	const skillBody = buildEveSectionBody(sharedBody, eveConfig.skillSections);
+	const skillMarkdown = `---\n${descriptionBlock}\n---\n\n${skillBody}\n`;
+	files.set(
+		path.posix.join("skills", skillId, "SKILL.md"),
+		substituteTokens(skillMarkdown, tokenMap)
+	);
 
-  const agentTs = `import { defineAgent } from "eve";\nimport { anthropic } from "@ai-sdk/anthropic";\n\nexport default defineAgent({\n  model: anthropic("${eveConfig.model}"),\n});\n`;
-  files.set("agent.ts", substituteTokens(agentTs, tokenMap));
+	const agentTs = `import { defineAgent } from "eve";\nimport { anthropic } from "@ai-sdk/anthropic";\n\nexport default defineAgent({\n  model: anthropic("${eveConfig.model}"),\n});\n`;
+	files.set("agent.ts", substituteTokens(agentTs, tokenMap));
 
-  const scheduleMarkdown = `---\ncron: "${eveConfig.scheduleCron}"\n---\n\n${eveConfig.scheduleBody}\n`;
-  files.set(
-    path.posix.join("schedules", `${eveConfig.scheduleName}.md`),
-    substituteTokens(scheduleMarkdown, tokenMap),
-  );
+	const scheduleMarkdown = `---\ncron: "${eveConfig.scheduleCron}"\n---\n\n${eveConfig.scheduleBody}\n`;
+	files.set(
+		path.posix.join("schedules", `${eveConfig.scheduleName}.md`),
+		substituteTokens(scheduleMarkdown, tokenMap)
+	);
 
-  if (eveConfig.slackConnectUid !== null) {
-    const slackChannelTs = `import { connectSlackCredentials } from "@vercel/connect/eve";\nimport { slackChannel } from "eve/channels/slack";\n\n// connectSlackCredentials requires a Vercel Connect client UID (e.g. "${eveConfig.slackConnectUid}").\n// Set up the Connect client via \`vercel connect create slack --triggers\` before deploying.\n// See .prism/architect/_toolkit/eve-runtime.md for the full setup runbook.\nexport default slackChannel({\n  credentials: connectSlackCredentials("${eveConfig.slackConnectUid}"),\n});\n`;
-    files.set(
-      path.posix.join("channels", "slack.ts"),
-      substituteTokens(slackChannelTs, tokenMap),
-    );
-  }
+	const slackChannelTs = `import { connectSlackCredentials } from "@vercel/connect/eve";\nimport { slackChannel } from "eve/channels/slack";\n\n// connectSlackCredentials requires a Vercel Connect client UID (e.g. "${eveConfig.slackConnectUid}").\n// Set up the Connect client via \`vercel connect create slack --triggers\` before deploying.\n// See .prism/architect/_toolkit/eve-runtime.md for the full setup runbook.\nexport default slackChannel({\n  credentials: connectSlackCredentials("${eveConfig.slackConnectUid}"),\n});\n`;
+	files.set(path.posix.join("channels", "slack.ts"), substituteTokens(slackChannelTs, tokenMap));
 
-  const eveChannelTs = `import { eveChannel } from "eve/channels/eve";\nimport { localDev, placeholderAuth } from "eve/channels/auth";\n\nexport default eveChannel({\n  auth: [localDev(), placeholderAuth()],\n});\n`;
-  files.set(
-    path.posix.join("channels", "eve.ts"),
-    substituteTokens(eveChannelTs, tokenMap),
-  );
+	const eveChannelTs = `import { eveChannel } from "eve/channels/eve";\nimport { localDev, placeholderAuth } from "eve/channels/auth";\n\nexport default eveChannel({\n  auth: [localDev(), placeholderAuth()],\n});\n`;
+	files.set(path.posix.join("channels", "eve.ts"), substituteTokens(eveChannelTs, tokenMap));
 
-  return files;
-}
-
-/**
- * Builds the `sandbox/sandbox.ts` file for a repo-state persona, or returns
- * `null` when the persona declares no sandbox (the regression guard — a
- * non-sandbox persona like Lilac emits no `sandbox/` directory at all).
- *
- * The generated `defineSandbox` gives the persona a working checkout of the
- * repo inside its isolated `/workspace`: `bootstrap` clones once at template
- * build (the baseline every later session inherits), and `onSession` runs
- * `git fetch && git reset --hard` each session so the persona reads current
- * state rather than the frozen bootstrap snapshot. The backend is `docker()`
- * or `microsandbox()` — never `justbash()`, which has no real binaries and
- * cannot run git (the loader rejects that combination). Source-verified against
- * eve's `docs/sandbox.mdx`; see ADR-0063 Decisions 1–3.
- *
- * Returns a single `[relativePath, content]` entry so the caller can fold it
- * into the same `writeFileIfChanged` loop as the rest of the directory.
- */
-export function buildEveSandboxFile(
-  eveConfig: EveAgentConfig,
-  tokenMap: Map<string, string>,
-): [string, string] | null {
-  if (!eveConfig.sandbox) {
-    return null;
-  }
-
-  const backend = eveConfig.sandboxBackend ?? "docker";
-  const backendImport = `import { ${backend} } from "eve/sandbox/${backend}";`;
-  const revalidationKey = `${eveConfig.scheduleName}-repo-bootstrap-v1`;
-
-  const lines = [
-    `import { defineSandbox } from "eve/sandbox";`,
-    backendImport,
-    "",
-    "export default defineSandbox({",
-    `  backend: ${backend}(),`,
-    `  revalidationKey: () => "${revalidationKey}",`,
-  ];
-
-  if (eveConfig.repoCheckout) {
-    lines.push(
-      "  async bootstrap({ use }) {",
-      "    const sandbox = await use();",
-      "    await sandbox.run({",
-      "      command:",
-      '        "git clone https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}.git .",',
-      "    });",
-      "  },",
-      "  async onSession({ use }) {",
-      "    const sandbox = await use();",
-      "    await sandbox.run({",
-      "      command:",
-      '        "git fetch origin && git reset --hard origin/${DEFAULT_BRANCH}",',
-      "    });",
-      "  },",
-    );
-  }
-
-  lines.push("});", "");
-
-  const sandboxTs = lines.join("\n");
-  return [
-    path.posix.join("sandbox", "sandbox.ts"),
-    substituteTokens(sandboxTs, tokenMap),
-  ];
+	return files;
 }
 
 export interface RelativeDirectoryEntry {
-  kind: "directory" | "file";
-  relativePath: string;
+	kind: "directory" | "file";
+	relativePath: string;
 }
 
 export async function listRelativeDirectoryEntries(
-  rootPath: string,
-  currentPath: string = rootPath,
+	rootPath: string,
+	currentPath: string = rootPath
 ): Promise<RelativeDirectoryEntry[]> {
-  const entries = await fs.readdir(currentPath, { withFileTypes: true });
-  const relativeEntries: RelativeDirectoryEntry[] = [];
+	const entries = await fs.readdir(currentPath, { withFileTypes: true });
+	const relativeEntries: RelativeDirectoryEntry[] = [];
 
-  for (const entry of entries) {
-    if (entry.name.startsWith(".")) {
-      continue;
-    }
+	for (const entry of entries) {
+		if (entry.name.startsWith(".")) {
+			continue;
+		}
 
-    const entryPath = path.join(currentPath, entry.name);
-    const relativePath = path.relative(rootPath, entryPath);
+		const entryPath = path.join(currentPath, entry.name);
+		const relativePath = path.relative(rootPath, entryPath);
 
-    if (entry.isDirectory()) {
-      relativeEntries.push({ kind: "directory", relativePath });
-      relativeEntries.push(
-        ...(await listRelativeDirectoryEntries(rootPath, entryPath)),
-      );
-      continue;
-    }
+		if (entry.isDirectory()) {
+			relativeEntries.push({ kind: "directory", relativePath });
+			relativeEntries.push(
+				...(await listRelativeDirectoryEntries(rootPath, entryPath))
+			);
+			continue;
+		}
 
-    if (entry.isFile()) {
-      relativeEntries.push({ kind: "file", relativePath });
-    }
-  }
+		if (entry.isFile()) {
+			relativeEntries.push({ kind: "file", relativePath });
+		}
+	}
 
-  return relativeEntries.sort((a, b) =>
-    a.relativePath.localeCompare(b.relativePath),
-  );
+	return relativeEntries.sort((a, b) =>
+		a.relativePath.localeCompare(b.relativePath)
+	);
 }
 
 async function filesAreEqual(
-  sourcePath: string,
-  targetPath: string,
+	sourcePath: string,
+	targetPath: string
 ): Promise<boolean> {
-  const sourceContent = await fs.readFile(sourcePath);
-  const targetContent = await fs.readFile(targetPath);
+	const sourceContent = await fs.readFile(sourcePath);
+	const targetContent = await fs.readFile(targetPath);
 
-  return sourceContent.equals(targetContent);
+	return sourceContent.equals(targetContent);
 }
 
 async function directoriesAreEqual(
-  sourcePath: string,
-  targetPath: string,
+	sourcePath: string,
+	targetPath: string
 ): Promise<boolean> {
-  const sourceEntries = await listRelativeDirectoryEntries(sourcePath);
-  const targetEntries = await listRelativeDirectoryEntries(targetPath);
+	const sourceEntries = await listRelativeDirectoryEntries(sourcePath);
+	const targetEntries = await listRelativeDirectoryEntries(targetPath);
 
-  if (sourceEntries.length !== targetEntries.length) {
-    return false;
-  }
+	if (sourceEntries.length !== targetEntries.length) {
+		return false;
+	}
 
-  for (let index = 0; index < sourceEntries.length; index += 1) {
-    const sourceEntry = sourceEntries[index];
-    const targetEntry = targetEntries[index];
-    if (
-      sourceEntry.kind !== targetEntry.kind ||
-      sourceEntry.relativePath !== targetEntry.relativePath
-    ) {
-      return false;
-    }
+	for (let index = 0; index < sourceEntries.length; index += 1) {
+		const sourceEntry = sourceEntries[index];
+		const targetEntry = targetEntries[index];
+		if (
+			sourceEntry.kind !== targetEntry.kind ||
+			sourceEntry.relativePath !== targetEntry.relativePath
+		) {
+			return false;
+		}
 
-    if (
-      sourceEntry.kind === "file" &&
-      !(await filesAreEqual(
-        path.join(sourcePath, sourceEntry.relativePath),
-        path.join(targetPath, sourceEntry.relativePath),
-      ))
-    ) {
-      return false;
-    }
-  }
+		if (
+			sourceEntry.kind === "file" &&
+			!(await filesAreEqual(
+				path.join(sourcePath, sourceEntry.relativePath),
+				path.join(targetPath, sourceEntry.relativePath)
+			))
+		) {
+			return false;
+		}
+	}
 
-  return true;
+	return true;
 }
 
 async function payloadIsDifferent(
-  sourcePath: string,
-  targetPath: string,
-  payloadKind: "file" | "directory",
+	sourcePath: string,
+	targetPath: string,
+	payloadKind: "file" | "directory"
 ): Promise<boolean> {
-  if (!(await pathExists(targetPath))) {
-    return true;
-  }
+	if (!(await pathExists(targetPath))) {
+		return true;
+	}
 
-  if (payloadKind === "file") {
-    return !(await filesAreEqual(sourcePath, targetPath));
-  }
+	if (payloadKind === "file") {
+		return !(await filesAreEqual(sourcePath, targetPath));
+	}
 
-  return !(await directoriesAreEqual(sourcePath, targetPath));
+	return !(await directoriesAreEqual(sourcePath, targetPath));
 }
 
 async function syncOptionalSkillPayloads(
-  sourceSkillRoot: string,
-  targetSkillRoot: string,
+	sourceSkillRoot: string,
+	targetSkillRoot: string
 ): Promise<void> {
-  for (const payload of optionalSkillPayloads) {
-    const sourcePath = path.join(sourceSkillRoot, payload.relativePath);
-    const targetPath = path.join(targetSkillRoot, payload.relativePath);
-    const sourceExists = await pathExists(sourcePath);
-    const targetExists = await pathExists(targetPath);
+	for (const payload of optionalSkillPayloads) {
+		const sourcePath = path.join(sourceSkillRoot, payload.relativePath);
+		const targetPath = path.join(targetSkillRoot, payload.relativePath);
+		const sourceExists = await pathExists(sourcePath);
+		const targetExists = await pathExists(targetPath);
 
-    if (!sourceExists && !targetExists) {
-      continue;
-    }
+		if (!sourceExists && !targetExists) {
+			continue;
+		}
 
-    if (!sourceExists) {
-      changedPaths.push(targetPath);
-      if (!checkMode) {
-        await fs.rm(targetPath, {
-          force: true,
-          recursive: payload.kind === "directory",
-        });
-      }
-      continue;
-    }
+		if (!sourceExists) {
+			changedPaths.push(targetPath);
+			if (!checkMode) {
+				await fs.rm(targetPath, {
+					force: true,
+					recursive: payload.kind === "directory",
+				});
+			}
+			continue;
+		}
 
-    if (!(await payloadIsDifferent(sourcePath, targetPath, payload.kind))) {
-      continue;
-    }
+		if (!(await payloadIsDifferent(sourcePath, targetPath, payload.kind))) {
+			continue;
+		}
 
-    changedPaths.push(targetPath);
-    if (checkMode) {
-      continue;
-    }
+		changedPaths.push(targetPath);
+		if (checkMode) {
+			continue;
+		}
 
-    await fs.rm(targetPath, {
-      force: true,
-      recursive: payload.kind === "directory",
-    });
-    await ensureDirectory(path.dirname(targetPath));
-    if (payload.kind === "file") {
-      await fs.copyFile(sourcePath, targetPath);
-      continue;
-    }
+		await fs.rm(targetPath, {
+			force: true,
+			recursive: payload.kind === "directory",
+		});
+		await ensureDirectory(path.dirname(targetPath));
+		if (payload.kind === "file") {
+			await fs.copyFile(sourcePath, targetPath);
+			continue;
+		}
 
-    await fs.cp(sourcePath, targetPath, { force: true, recursive: true });
-  }
+		await fs.cp(sourcePath, targetPath, { force: true, recursive: true });
+	}
 }
 
 async function loadJsonFile<T>(
-  relativePath: string,
-  fileLabel: string,
+	relativePath: string,
+	fileLabel: string
 ): Promise<T> {
-  const absolutePath = path.join(repoRoot, relativePath);
-  if (!(await pathExists(absolutePath))) {
-    throw new Error(`Missing ${fileLabel}: ${absolutePath}`);
-  }
+	const absolutePath = path.join(repoRoot, relativePath);
+	if (!(await pathExists(absolutePath))) {
+		throw new Error(`Missing ${fileLabel}: ${absolutePath}`);
+	}
 
-  try {
-    return JSON.parse(await fs.readFile(absolutePath, "utf8")) as T;
-  } catch (error) {
-    throw new Error(
-      `Invalid ${fileLabel} JSON at ${absolutePath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+	try {
+		return JSON.parse(await fs.readFile(absolutePath, "utf8")) as T;
+	} catch (error) {
+		throw new Error(
+			`Invalid ${fileLabel} JSON at ${absolutePath}: ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
 }
 
 async function loadSkillSource(
-  skillId: string,
-  sourceSkillsRoot: string,
+	skillId: string,
+	sourceSkillsRoot: string
 ): Promise<SkillSource> {
-  const skillRoot = path.join(sourceSkillsRoot, skillId);
-  const frontmatterPath = path.join(skillRoot, "frontmatter.yml");
-  const sharedPath = path.join(skillRoot, "shared.md");
-  const claudePath = path.join(skillRoot, "claude.md");
-  const codexPath = path.join(skillRoot, "codex.md");
-  const cursorPath = path.join(skillRoot, "cursor.md");
-  const evePath = path.join(skillRoot, "eve.yml");
+	const skillRoot = path.join(sourceSkillsRoot, skillId);
+	const frontmatterPath = path.join(skillRoot, "frontmatter.yml");
+	const sharedPath = path.join(skillRoot, "shared.md");
+	const claudePath = path.join(skillRoot, "claude.md");
+	const codexPath = path.join(skillRoot, "codex.md");
+	const cursorPath = path.join(skillRoot, "cursor.md");
+	const evePath = path.join(skillRoot, "eve.yml");
 
-  if (!(await pathExists(frontmatterPath))) {
-    throw new Error(`Missing required file: ${frontmatterPath}`);
-  }
+	if (!(await pathExists(frontmatterPath))) {
+		throw new Error(`Missing required file: ${frontmatterPath}`);
+	}
 
-  if (!(await pathExists(sharedPath))) {
-    throw new Error(`Missing required file: ${sharedPath}`);
-  }
+	if (!(await pathExists(sharedPath))) {
+		throw new Error(`Missing required file: ${sharedPath}`);
+	}
 
-  const frontmatter = await normalizeFrontmatter(frontmatterPath);
-  const frontmatterMap = parseFrontmatter(frontmatter);
-  const description = frontmatterMap.get("description");
-  if (
-    typeof description === "string" &&
-    description.length > MAX_FRONTMATTER_DESCRIPTION_LENGTH
-  ) {
-    throw new Error(
-      `Description for skill '${skillId}' is ${description.length} characters. Keep frontmatter descriptions under ${MAX_FRONTMATTER_DESCRIPTION_LENGTH} characters so Codex skill discovery can expose the skill.`,
-    );
-  }
+	const frontmatter = await normalizeFrontmatter(frontmatterPath);
+	const frontmatterMap = parseFrontmatter(frontmatter);
+	const description = frontmatterMap.get("description");
+	if (
+		typeof description === "string" &&
+		description.length > MAX_FRONTMATTER_DESCRIPTION_LENGTH
+	) {
+		throw new Error(
+			`Description for skill '${skillId}' is ${description.length} characters. Keep frontmatter descriptions under ${MAX_FRONTMATTER_DESCRIPTION_LENGTH} characters so Codex skill discovery can expose the skill.`
+		);
+	}
 
-  const sharedBody = (await fs.readFile(sharedPath, "utf8")).trim();
-  const claudeBody = ((await readFileIfExists(claudePath)) ?? "").trim();
-  const codexBody = ((await readFileIfExists(codexPath)) ?? "").trim();
-  const cursorBody = ((await readFileIfExists(cursorPath)) ?? "").trim();
-  const eveSource = await readFileIfExists(evePath);
-  const eveConfigMap =
-    eveSource === null ? null : parseFrontmatter(eveSource.trim());
+	const sharedBody = (await fs.readFile(sharedPath, "utf8")).trim();
+	const claudeBody = ((await readFileIfExists(claudePath)) ?? "").trim();
+	const codexBody = ((await readFileIfExists(codexPath)) ?? "").trim();
+	const cursorBody = ((await readFileIfExists(cursorPath)) ?? "").trim();
+	const eveSource = await readFileIfExists(evePath);
+	const eveConfigMap =
+		eveSource === null ? null : parseFrontmatter(eveSource.trim());
 
-  return {
-    claudeBody,
-    codexBody,
-    cursorBody,
-    eveConfigMap,
-    frontmatter,
-    frontmatterMap,
-    sharedBody,
-  };
+	return {
+		claudeBody,
+		codexBody,
+		cursorBody,
+		eveConfigMap,
+		frontmatter,
+		frontmatterMap,
+		sharedBody,
+	};
 }
 
 /**
@@ -904,11 +728,11 @@ async function loadSkillSource(
  * deliberately excluded — those live only at canonical.
  */
 const COPIED_CONTENT_AREAS = [
-  "rules",
-  "architect",
-  "spec",
-  "templates",
-  "references",
+	"rules",
+	"architect",
+	"spec",
+	"templates",
+	"references",
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
@@ -921,71 +745,71 @@ const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
  * `"custom"` writes into `<platformDir>/<area>/custom/` (overlay pass).
  */
 export async function copyContentToPlatformDir(
-  contentRoot: string,
-  platformDir: string,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  tokenMap: Map<string, string>,
-  dialect: RuleDialect = verbatimRuleDialect,
-  targetSubpath = "",
+	contentRoot: string,
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>,
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
-  for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path.join(contentRoot, area);
-    const targetArea = path.join(platformDir, area, targetSubpath);
-    if (!(await pathExists(sourceArea))) {
-      continue;
-    }
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		const targetArea = path.join(platformDir, area, targetSubpath);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
 
-    const entries = await listRelativeDirectoryEntries(sourceArea);
-    for (const entry of entries) {
-      if (entry.kind !== "file") {
-        continue;
-      }
-      const sourcePath = path.join(sourceArea, entry.relativePath);
-      const targetRelativePath = dialect.mapTargetRelativePath(
-        area,
-        entry.relativePath,
-      );
-      const targetPath = path.join(targetArea, targetRelativePath);
-      await copyContentFileWithSubstitution(
-        sourcePath,
-        targetPath,
-        checkModeArg,
-        changedPathsArg,
-        tokenMap,
-        (content) => dialect.transformContent(area, content),
-      );
-    }
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+			const sourcePath = path.join(sourceArea, entry.relativePath);
+			const targetRelativePath = dialect.mapTargetRelativePath(
+				area,
+				entry.relativePath
+			);
+			const targetPath = path.join(targetArea, targetRelativePath);
+			await copyContentFileWithSubstitution(
+				sourcePath,
+				targetPath,
+				checkModeArg,
+				changedPathsArg,
+				tokenMap,
+				(content) => dialect.transformContent(area, content)
+			);
+		}
 
-    await writeFileIfChanged(
-      path.join(targetArea, MANAGED_MARKER),
-      "Managed by scripts/ai-skills/build.ts\n",
-      checkModeArg,
-      changedPathsArg,
-    );
-  }
+		await writeFileIfChanged(
+			path.join(targetArea, MANAGED_MARKER),
+			"Managed by scripts/ai-skills/build.ts\n",
+			checkModeArg,
+			changedPathsArg
+		);
+	}
 
-  // Loose files (SPEC.md) belong to the base content pass only. The overlay
-  // (.prism/custom) mirrors the area dirs, not the loose top-level files, so
-  // it never carries a SPEC.md to copy. Skip them when emitting into a subpath.
-  if (targetSubpath !== "") {
-    return;
-  }
+	// Loose files (SPEC.md) belong to the base content pass only. The overlay
+	// (.prism/custom) mirrors the area dirs, not the loose top-level files, so
+	// it never carries a SPEC.md to copy. Skip them when emitting into a subpath.
+	if (targetSubpath !== "") {
+		return;
+	}
 
-  for (const looseFile of COPIED_LOOSE_FILES) {
-    const sourcePath = path.join(contentRoot, looseFile);
-    const targetPath = path.join(platformDir, looseFile);
-    if (!(await pathExists(sourcePath))) {
-      continue;
-    }
-    await copyContentFileWithSubstitution(
-      sourcePath,
-      targetPath,
-      checkModeArg,
-      changedPathsArg,
-      tokenMap,
-    );
-  }
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const sourcePath = path.join(contentRoot, looseFile);
+		const targetPath = path.join(platformDir, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+		await copyContentFileWithSubstitution(
+			sourcePath,
+			targetPath,
+			checkModeArg,
+			changedPathsArg,
+			tokenMap
+		);
+	}
 }
 
 /**
@@ -996,24 +820,22 @@ export async function copyContentToPlatformDir(
  * actually load — not on the canonical-with-token-literals source.
  */
 async function copyContentFileWithSubstitution(
-  sourcePath: string,
-  targetPath: string,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  tokenMap: Map<string, string>,
-  transformContent: (content: string) => string = (content) => content,
+	sourcePath: string,
+	targetPath: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>,
+	transformContent: (content: string) => string = (content) => content
 ): Promise<void> {
-  const sourceContent = await fs.readFile(sourcePath, "utf8");
-  const substituted = transformContent(
-    substituteTokens(sourceContent, tokenMap),
-  );
+	const sourceContent = await fs.readFile(sourcePath, "utf8");
+	const substituted = transformContent(substituteTokens(sourceContent, tokenMap));
 
-  await writeFileIfChanged(
-    targetPath,
-    substituted,
-    checkModeArg,
-    changedPathsArg,
-  );
+	await writeFileIfChanged(
+		targetPath,
+		substituted,
+		checkModeArg,
+		changedPathsArg
+	);
 }
 
 /**
@@ -1030,38 +852,38 @@ async function copyContentFileWithSubstitution(
  * has happened.
  */
 export async function syncPlatformContentCopy(
-  contentRoot: string,
-  platformDir: string,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  tokenMap: Map<string, string>,
-  dialect: RuleDialect = verbatimRuleDialect,
-  targetSubpath = "",
+	contentRoot: string,
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>,
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
-  if (
-    checkModeArg &&
-    !(await platformHasManagedContent(platformDir, targetSubpath))
-  ) {
-    return;
-  }
+	if (
+		checkModeArg &&
+		!(await platformHasManagedContent(platformDir, targetSubpath))
+	) {
+		return;
+	}
 
-  await copyContentToPlatformDir(
-    contentRoot,
-    platformDir,
-    checkModeArg,
-    changedPathsArg,
-    tokenMap,
-    dialect,
-    targetSubpath,
-  );
-  await removeDeletedManagedContent(
-    contentRoot,
-    platformDir,
-    checkModeArg,
-    changedPathsArg,
-    dialect,
-    targetSubpath,
-  );
+	await copyContentToPlatformDir(
+		contentRoot,
+		platformDir,
+		checkModeArg,
+		changedPathsArg,
+		tokenMap,
+		dialect,
+		targetSubpath
+	);
+	await removeDeletedManagedContent(
+		contentRoot,
+		platformDir,
+		checkModeArg,
+		changedPathsArg,
+		dialect,
+		targetSubpath
+	);
 }
 
 /**
@@ -1072,106 +894,104 @@ export async function syncPlatformContentCopy(
  * points.
  */
 export async function syncAllPlatformContentCopies(
-  contentRoot: string,
-  platformDirs: { dir: string; dialect: RuleDialect }[],
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  tokenMap: Map<string, string>,
-  targetSubpath = "",
+	contentRoot: string,
+	platformDirs: { dir: string; dialect: RuleDialect }[],
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>,
+	targetSubpath = ""
 ): Promise<void> {
-  for (const { dir, dialect } of platformDirs) {
-    await syncPlatformContentCopy(
-      contentRoot,
-      dir,
-      checkModeArg,
-      changedPathsArg,
-      tokenMap,
-      dialect,
-      targetSubpath,
-    );
-  }
+	for (const { dir, dialect } of platformDirs) {
+		await syncPlatformContentCopy(
+			contentRoot,
+			dir,
+			checkModeArg,
+			changedPathsArg,
+			tokenMap,
+			dialect,
+			targetSubpath
+		);
+	}
 }
 
 async function platformHasManagedContent(
-  platformDir: string,
-  targetSubpath = "",
+	platformDir: string,
+	targetSubpath = ""
 ): Promise<boolean> {
-  for (const area of COPIED_CONTENT_AREAS) {
-    if (
-      await pathExists(
-        path.join(platformDir, area, targetSubpath, MANAGED_MARKER),
-      )
-    ) {
-      return true;
-    }
-  }
-  return false;
+	for (const area of COPIED_CONTENT_AREAS) {
+		if (
+			await pathExists(path.join(platformDir, area, targetSubpath, MANAGED_MARKER))
+		) {
+			return true;
+		}
+	}
+	return false;
 }
 
 async function skillsRootHasManagedContent(
-  skillsRoot: string,
+	skillsRoot: string
 ): Promise<boolean> {
-  if (!(await pathExists(skillsRoot))) {
-    return false;
-  }
-  const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name.startsWith(".")) {
-      continue;
-    }
-    if (await pathExists(path.join(skillsRoot, entry.name, MANAGED_MARKER))) {
-      return true;
-    }
-  }
-  return false;
+	if (!(await pathExists(skillsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isDirectory() || entry.name.startsWith(".")) {
+			continue;
+		}
+		if (await pathExists(path.join(skillsRoot, entry.name, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+	return false;
 }
 
 async function codexAgentsRootHasManagedContent(
-  agentsRoot: string,
+	agentsRoot: string
 ): Promise<boolean> {
-  if (!(await pathExists(agentsRoot))) {
-    return false;
-  }
-  const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (
-      !entry.isFile() ||
-      !entry.name.endsWith(".toml") ||
-      entry.name.startsWith(".")
-    ) {
-      continue;
-    }
-    const content =
-      (await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
-    if (content.startsWith(GENERATED_HEADER_LINE)) {
-      return true;
-    }
-  }
-  return false;
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (
+			!entry.isFile() ||
+			!entry.name.endsWith(".toml") ||
+			entry.name.startsWith(".")
+		) {
+			continue;
+		}
+		const content =
+			(await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
+		if (content.startsWith(GENERATED_HEADER_LINE)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 async function claudeAgentsRootHasManagedContent(
-  agentsRoot: string,
+	agentsRoot: string
 ): Promise<boolean> {
-  if (!(await pathExists(agentsRoot))) {
-    return false;
-  }
-  const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (
-      !entry.isFile() ||
-      !entry.name.endsWith(".md") ||
-      entry.name.startsWith(".")
-    ) {
-      continue;
-    }
-    const content =
-      (await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
-    if (content.includes(GENERATED_MARKDOWN_HEADER_LINE)) {
-      return true;
-    }
-  }
-  return false;
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (
+			!entry.isFile() ||
+			!entry.name.endsWith(".md") ||
+			entry.name.startsWith(".")
+		) {
+			continue;
+		}
+		const content =
+			(await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
+		if (content.includes(GENERATED_MARKDOWN_HEADER_LINE)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -1184,21 +1004,21 @@ async function claudeAgentsRootHasManagedContent(
  * than the file-header check the Claude/Codex agent roots use.
  */
 async function eveAgentsRootHasManagedContent(
-  agentsRoot: string,
+	agentsRoot: string
 ): Promise<boolean> {
-  if (!(await pathExists(agentsRoot))) {
-    return false;
-  }
-  const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory() || entry.name.startsWith(".")) {
-      continue;
-    }
-    if (await pathExists(path.join(agentsRoot, entry.name, MANAGED_MARKER))) {
-      return true;
-    }
-  }
-  return false;
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isDirectory() || entry.name.startsWith(".")) {
+			continue;
+		}
+		if (await pathExists(path.join(agentsRoot, entry.name, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -1208,82 +1028,83 @@ async function eveAgentsRootHasManagedContent(
  * lack the marker.
  */
 export async function removeDeletedManagedContent(
-  contentRoot: string,
-  platformDir: string,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  dialect: RuleDialect = verbatimRuleDialect,
-  targetSubpath = "",
+	contentRoot: string,
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	dialect: RuleDialect = verbatimRuleDialect,
+	targetSubpath = ""
 ): Promise<void> {
-  for (const area of COPIED_CONTENT_AREAS) {
-    const targetArea = path.join(platformDir, area, targetSubpath);
-    const sourceArea = path.join(contentRoot, area);
-    const markerPath = path.join(targetArea, MANAGED_MARKER);
-    if (!(await pathExists(targetArea)) || !(await pathExists(markerPath))) {
-      continue;
-    }
+	for (const area of COPIED_CONTENT_AREAS) {
+		const targetArea = path.join(platformDir, area, targetSubpath);
+		const sourceArea = path.join(contentRoot, area);
+		const markerPath = path.join(targetArea, MANAGED_MARKER);
+		if (!(await pathExists(targetArea)) || !(await pathExists(markerPath))) {
+			continue;
+		}
 
-    const entries = await listRelativeDirectoryEntries(targetArea);
-    for (const entry of entries) {
-      if (entry.kind !== "file") {
-        continue;
-      }
-      if (entry.relativePath === MANAGED_MARKER) {
-        continue;
-      }
-      // Scope the base pass to its own files: when no subpath is set, the
-      // overlay's custom/ subtree is a separate managed tree with its own
-      // marker. Its files have no canonical source under the base area, so
-      // the base cleanup would otherwise treat every overlay file as an
-      // orphan and delete it. Base and overlay cleanup never cross.
-      if (
-        targetSubpath === "" &&
-        entry.relativePath.startsWith(`custom${path.sep}`)
-      ) {
-        continue;
-      }
-      const sourceRelativePath = dialect.mapSourceRelativePath(
-        area,
-        entry.relativePath,
-      );
-      const sourcePath = path.join(sourceArea, sourceRelativePath);
-      // A target is live only when its canonical source exists AND that
-      // source maps forward to this exact target name. The forward check
-      // catches stale verbatim copies left behind when the dialect renames
-      // (e.g. a pre-existing `.cursor/rules/foo.md` once the Cursor dialect
-      // began emitting `foo.mdc`): the source `foo.md` still exists, but it
-      // now maps to `foo.mdc`, so the old `.md` copy is an orphan.
-      const sourceExists = await pathExists(sourcePath);
-      const sourceMapsBack =
-        dialect.mapTargetRelativePath(area, sourceRelativePath) ===
-        entry.relativePath;
-      if (sourceExists && sourceMapsBack) {
-        continue;
-      }
-      const targetPath = path.join(targetArea, entry.relativePath);
-      changedPathsArg.push(targetPath);
-      if (checkModeArg) {
-        continue;
-      }
-      await fs.rm(targetPath, { force: true });
-    }
+		const entries = await listRelativeDirectoryEntries(targetArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
+			if (entry.relativePath === MANAGED_MARKER) {
+				continue;
+			}
+			// Scope the base pass to its own files: when no subpath is set, the
+			// overlay's custom/ subtree is a separate managed tree with its own
+			// marker. Its files have no canonical source under the base area, so
+			// the base cleanup would otherwise treat every overlay file as an
+			// orphan and delete it. Base and overlay cleanup never cross.
+			if (targetSubpath === "" && entry.relativePath.startsWith(`custom${path.sep}`)) {
+				continue;
+			}
+			const sourceRelativePath = dialect.mapSourceRelativePath(
+				area,
+				entry.relativePath
+			);
+			const sourcePath = path.join(sourceArea, sourceRelativePath);
+			// A target is live only when its canonical source exists AND that
+			// source maps forward to this exact target name. The forward check
+			// catches stale verbatim copies left behind when the dialect renames
+			// (e.g. a pre-existing `.cursor/rules/foo.md` once the Cursor dialect
+			// began emitting `foo.mdc`): the source `foo.md` still exists, but it
+			// now maps to `foo.mdc`, so the old `.md` copy is an orphan.
+			const sourceExists = await pathExists(sourcePath);
+			const sourceMapsBack =
+				dialect.mapTargetRelativePath(area, sourceRelativePath) ===
+				entry.relativePath;
+			if (sourceExists && sourceMapsBack) {
+				continue;
+			}
+			const targetPath = path.join(targetArea, entry.relativePath);
+			changedPathsArg.push(targetPath);
+			if (checkModeArg) {
+				continue;
+			}
+			await fs.rm(targetPath, { force: true });
+		}
 
-    if (!(await pathExists(sourceArea))) {
-      // A base pass must not recursively remove an area whose overlay
-      // subtree (custom/) is still managed — that subtree has its own
-      // source under .prism/custom and its own cleanup pass. Removing the
-      // area wholesale here would cross into the overlay's lane.
-      const overlayMarkerPath = path.join(targetArea, "custom", MANAGED_MARKER);
-      if (targetSubpath === "" && (await pathExists(overlayMarkerPath))) {
-        continue;
-      }
+		if (!(await pathExists(sourceArea))) {
+			// A base pass must not recursively remove an area whose overlay
+			// subtree (custom/) is still managed — that subtree has its own
+			// source under .prism/custom and its own cleanup pass. Removing the
+			// area wholesale here would cross into the overlay's lane.
+			const overlayMarkerPath = path.join(
+				targetArea,
+				"custom",
+				MANAGED_MARKER
+			);
+			if (targetSubpath === "" && (await pathExists(overlayMarkerPath))) {
+				continue;
+			}
 
-      changedPathsArg.push(targetArea);
-      if (!checkModeArg) {
-        await fs.rm(targetArea, { force: true, recursive: true });
-      }
-    }
-  }
+			changedPathsArg.push(targetArea);
+			if (!checkModeArg) {
+				await fs.rm(targetArea, { force: true, recursive: true });
+			}
+		}
+	}
 }
 
 /**
@@ -1295,34 +1116,34 @@ export async function removeDeletedManagedContent(
  * Follows the same check-mode / changedPaths contract as `writeFileIfChanged`.
  */
 export async function syncAgentsMdTier1Block(
-  repoRootArg: string,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  tokenMap: Map<string, string>,
+	repoRootArg: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	tokenMap: Map<string, string>
 ): Promise<void> {
-  const agentsPath = path.join(repoRootArg, "AGENTS.md");
+	const agentsPath = path.join(repoRootArg, "AGENTS.md");
 
-  if (!(await pathExists(agentsPath))) {
-    return;
-  }
+	if (!(await pathExists(agentsPath))) {
+		return;
+	}
 
-  const current = await fs.readFile(agentsPath, "utf8");
-  const rules = await collectTier1RuleBodies(
-    path.join(repoRootArg, ".prism", "rules"),
-    tokenMap,
-  );
-  const block = renderTier1Block(rules);
-  const next = replaceTier1Block(current, block);
+	const current = await fs.readFile(agentsPath, "utf8");
+	const rules = await collectTier1RuleBodies(
+		path.join(repoRootArg, ".prism", "rules"),
+		tokenMap
+	);
+	const block = renderTier1Block(rules);
+	const next = replaceTier1Block(current, block);
 
-  if (next === current) {
-    return;
-  }
+	if (next === current) {
+		return;
+	}
 
-  changedPathsArg.push(agentsPath);
+	changedPathsArg.push(agentsPath);
 
-  if (!checkModeArg) {
-    await fs.writeFile(agentsPath, next, "utf8");
-  }
+	if (!checkModeArg) {
+		await fs.writeFile(agentsPath, next, "utf8");
+	}
 }
 
 /**
@@ -1336,150 +1157,125 @@ export async function syncAgentsMdTier1Block(
  * token-bearing file.
  */
 export async function checkSeedDrift(
-  contentRoot: string,
-  seedRoot: string,
-  curation: SeedCuration,
-  changedPathsArg: string[],
+	contentRoot: string,
+	seedRoot: string,
+	curation: SeedCuration,
+	changedPathsArg: string[]
 ): Promise<void> {
-  if (!(await pathExists(seedRoot))) {
-    return;
-  }
+	if (!(await pathExists(seedRoot))) {
+		return;
+	}
 
-  const excludedSet = new Set(curation.excluded);
-  const curatedSet = new Set(curation.curated);
-  const seedOnlySet = new Set(curation.seedOnly);
-  const renames = curation.renames;
-  const renameValues = new Set(Object.values(renames));
+	const excludedSet = new Set(curation.excluded);
+	const curatedSet = new Set(curation.curated);
+	const seedOnlySet = new Set(curation.seedOnly);
+	const renames = curation.renames;
+	const renameValues = new Set(Object.values(renames));
 
-  for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path.join(contentRoot, area);
-    if (!(await pathExists(sourceArea))) {
-      continue;
-    }
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
 
-    const entries = await listRelativeDirectoryEntries(sourceArea);
-    for (const entry of entries) {
-      if (entry.kind !== "file") {
-        continue;
-      }
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
 
-      const relPath = path.posix.join(
-        area,
-        entry.relativePath.replace(/\\/g, "/"),
-      );
+			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
 
-      if (excludedSet.has(relPath)) {
-        const seedPath = path.join(seedRoot, relPath);
-        if (await pathExists(seedPath)) {
-          changedPathsArg.push(`seed contains excluded file: ${relPath}`);
-        }
-        continue;
-      }
+			if (excludedSet.has(relPath)) {
+				const seedPath = path.join(seedRoot, relPath);
+				if (await pathExists(seedPath)) {
+					changedPathsArg.push(`seed contains excluded file: ${relPath}`);
+				}
+				continue;
+			}
 
-      if (relPath in renames) {
-        const renamedRelPath = renames[relPath];
-        const renamedSeedPath = path.join(seedRoot, renamedRelPath);
-        if (!(await pathExists(renamedSeedPath))) {
-          changedPathsArg.push(
-            `seed drift: ${relPath} (expected renamed as ${renamedRelPath})`,
-          );
-        }
-        continue;
-      }
+			if (relPath in renames) {
+				const renamedRelPath = renames[relPath];
+				const renamedSeedPath = path.join(seedRoot, renamedRelPath);
+				if (!(await pathExists(renamedSeedPath))) {
+					changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
+				}
+				continue;
+			}
 
-      if (curatedSet.has(relPath)) {
-        const seedPath = path.join(seedRoot, relPath);
-        if (!(await pathExists(seedPath))) {
-          changedPathsArg.push(
-            `seed drift: ${relPath} (curated file missing from seed)`,
-          );
-        }
-        continue;
-      }
+			if (curatedSet.has(relPath)) {
+				const seedPath = path.join(seedRoot, relPath);
+				if (!(await pathExists(seedPath))) {
+					changedPathsArg.push(`seed drift: ${relPath} (curated file missing from seed)`);
+				}
+				continue;
+			}
 
-      const seedPath = path.join(seedRoot, relPath);
-      if (!(await pathExists(seedPath))) {
-        changedPathsArg.push(`seed drift: ${relPath}`);
-        continue;
-      }
+			const seedPath = path.join(seedRoot, relPath);
+			if (!(await pathExists(seedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath}`);
+				continue;
+			}
 
-      if (
-        !(await filesAreEqual(
-          path.join(sourceArea, entry.relativePath),
-          seedPath,
-        ))
-      ) {
-        changedPathsArg.push(`seed drift: ${relPath}`);
-      }
-    }
-  }
+			if (!(await filesAreEqual(path.join(sourceArea, entry.relativePath), seedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath}`);
+			}
+		}
+	}
 
-  for (const looseFile of COPIED_LOOSE_FILES) {
-    const relPath = looseFile;
-    if (
-      excludedSet.has(relPath) ||
-      seedOnlySet.has(relPath) ||
-      curatedSet.has(relPath)
-    ) {
-      continue;
-    }
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const relPath = looseFile;
+		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+			continue;
+		}
 
-    if (relPath in renames) {
-      const renamedRelPath = renames[relPath];
-      const renamedSeedPath = path.join(seedRoot, renamedRelPath);
-      if (!(await pathExists(renamedSeedPath))) {
-        changedPathsArg.push(
-          `seed drift: ${relPath} (expected renamed as ${renamedRelPath})`,
-        );
-      }
-      continue;
-    }
+		if (relPath in renames) {
+			const renamedRelPath = renames[relPath];
+			const renamedSeedPath = path.join(seedRoot, renamedRelPath);
+			if (!(await pathExists(renamedSeedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
+			}
+			continue;
+		}
 
-    const sourcePath = path.join(contentRoot, looseFile);
-    const seedPath = path.join(seedRoot, looseFile);
-    if (!(await pathExists(sourcePath))) {
-      continue;
-    }
-    if (!(await pathExists(seedPath))) {
-      changedPathsArg.push(`seed drift: ${relPath}`);
-      continue;
-    }
-    if (!(await filesAreEqual(sourcePath, seedPath))) {
-      changedPathsArg.push(`seed drift: ${relPath}`);
-    }
-  }
+		const sourcePath = path.join(contentRoot, looseFile);
+		const seedPath = path.join(seedRoot, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+		if (!(await pathExists(seedPath))) {
+			changedPathsArg.push(`seed drift: ${relPath}`);
+			continue;
+		}
+		if (!(await filesAreEqual(sourcePath, seedPath))) {
+			changedPathsArg.push(`seed drift: ${relPath}`);
+		}
+	}
 
-  for (const area of COPIED_CONTENT_AREAS) {
-    const seedArea = path.join(seedRoot, area);
-    if (!(await pathExists(seedArea))) {
-      continue;
-    }
+	for (const area of COPIED_CONTENT_AREAS) {
+		const seedArea = path.join(seedRoot, area);
+		if (!(await pathExists(seedArea))) {
+			continue;
+		}
 
-    const seedEntries = await listRelativeDirectoryEntries(seedArea);
-    for (const seedEntry of seedEntries) {
-      if (seedEntry.kind !== "file") {
-        continue;
-      }
+		const seedEntries = await listRelativeDirectoryEntries(seedArea);
+		for (const seedEntry of seedEntries) {
+			if (seedEntry.kind !== "file") {
+				continue;
+			}
 
-      const relPath = path.posix.join(
-        area,
-        seedEntry.relativePath.replace(/\\/g, "/"),
-      );
+			const relPath = path.posix.join(area, seedEntry.relativePath.replace(/\\/g, "/"));
 
-      if (
-        curatedSet.has(relPath) ||
-        seedOnlySet.has(relPath) ||
-        renameValues.has(relPath)
-      ) {
-        continue;
-      }
+			if (curatedSet.has(relPath) || seedOnlySet.has(relPath) || renameValues.has(relPath)) {
+				continue;
+			}
 
-      const canonicalPath = path.join(contentRoot, relPath);
-      if (!(await pathExists(canonicalPath))) {
-        changedPathsArg.push(`seed orphan: ${relPath}`);
-      }
-    }
-  }
+			const canonicalPath = path.join(contentRoot, relPath);
+			if (!(await pathExists(canonicalPath))) {
+				changedPathsArg.push(`seed orphan: ${relPath}`);
+			}
+		}
+	}
 }
 
 /**
@@ -1499,135 +1295,120 @@ export async function checkSeedDrift(
  * decision surfaces at build time (see Decision: unclassified-file handling).
  */
 export async function writeSeedMirror(
-  contentRoot: string,
-  seedRoot: string,
-  curation: SeedCuration,
-  checkModeArg: boolean,
-  changedPathsArg: string[],
-  unclassifiedMirrored: string[],
+	contentRoot: string,
+	seedRoot: string,
+	curation: SeedCuration,
+	checkModeArg: boolean,
+	changedPathsArg: string[],
+	unclassifiedMirrored: string[]
 ): Promise<void> {
-  const excludedSet = new Set(curation.excluded);
-  const curatedSet = new Set(curation.curated);
-  const renames = curation.renames;
+	const excludedSet = new Set(curation.excluded);
+	const curatedSet = new Set(curation.curated);
+	const renames = curation.renames;
 
-  for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path.join(contentRoot, area);
-    if (!(await pathExists(sourceArea))) {
-      continue;
-    }
+	for (const area of COPIED_CONTENT_AREAS) {
+		const sourceArea = path.join(contentRoot, area);
+		if (!(await pathExists(sourceArea))) {
+			continue;
+		}
 
-    const entries = await listRelativeDirectoryEntries(sourceArea);
-    for (const entry of entries) {
-      if (entry.kind !== "file") {
-        continue;
-      }
+		const entries = await listRelativeDirectoryEntries(sourceArea);
+		for (const entry of entries) {
+			if (entry.kind !== "file") {
+				continue;
+			}
 
-      const relPath = path.posix.join(
-        area,
-        entry.relativePath.replace(/\\/g, "/"),
-      );
+			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
 
-      if (excludedSet.has(relPath)) {
-        continue;
-      }
+			if (excludedSet.has(relPath)) {
+				continue;
+			}
 
-      if (relPath in renames) {
-        continue;
-      }
+			if (relPath in renames) {
+				continue;
+			}
 
-      if (curatedSet.has(relPath)) {
-        continue;
-      }
+			if (curatedSet.has(relPath)) {
+				continue;
+			}
 
-      const seedFilePath = path.join(seedRoot, relPath);
-      const seedFileIsNew = !(await pathExists(seedFilePath));
-      const raw = await fs.readFile(
-        path.join(sourceArea, entry.relativePath),
-        "utf8",
-      );
-      await writeFileIfChanged(
-        seedFilePath,
-        raw,
-        checkModeArg,
-        changedPathsArg,
-      );
-      if (seedFileIsNew) {
-        unclassifiedMirrored.push(relPath);
-      }
-    }
-  }
+			const seedFilePath = path.join(seedRoot, relPath);
+			const seedFileIsNew = !(await pathExists(seedFilePath));
+			const raw = await fs.readFile(path.join(sourceArea, entry.relativePath), "utf8");
+			await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
+			if (seedFileIsNew) {
+				unclassifiedMirrored.push(relPath);
+			}
+		}
+	}
 
-  for (const looseFile of COPIED_LOOSE_FILES) {
-    const relPath = looseFile;
-    const seedOnlySet = new Set(curation.seedOnly);
+	for (const looseFile of COPIED_LOOSE_FILES) {
+		const relPath = looseFile;
+		const seedOnlySet = new Set(curation.seedOnly);
 
-    if (
-      excludedSet.has(relPath) ||
-      seedOnlySet.has(relPath) ||
-      curatedSet.has(relPath)
-    ) {
-      continue;
-    }
+		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
+			continue;
+		}
 
-    if (relPath in renames) {
-      continue;
-    }
+		if (relPath in renames) {
+			continue;
+		}
 
-    const sourcePath = path.join(contentRoot, looseFile);
-    if (!(await pathExists(sourcePath))) {
-      continue;
-    }
+		const sourcePath = path.join(contentRoot, looseFile);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
 
-    const seedFilePath = path.join(seedRoot, looseFile);
-    const seedFileIsNew = !(await pathExists(seedFilePath));
-    const raw = await fs.readFile(sourcePath, "utf8");
-    await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
-    if (seedFileIsNew) {
-      unclassifiedMirrored.push(relPath);
-    }
-  }
+		const seedFilePath = path.join(seedRoot, looseFile);
+		const seedFileIsNew = !(await pathExists(seedFilePath));
+		const raw = await fs.readFile(sourcePath, "utf8");
+		await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
+		if (seedFileIsNew) {
+			unclassifiedMirrored.push(relPath);
+		}
+	}
 }
 
 async function removeDeletedManagedAgentFiles(
-  outputRoot: string,
-  validSkillIds: Set<string>,
-  extension: string,
-  headerLine: string,
+	outputRoot: string,
+	validSkillIds: Set<string>,
+	extension: string,
+	headerLine: string
 ): Promise<void> {
-  if (!(await pathExists(outputRoot))) {
-    return;
-  }
+	if (!(await pathExists(outputRoot))) {
+		return;
+	}
 
-  const entries = await fs.readdir(outputRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (
-      !entry.isFile() ||
-      !entry.name.endsWith(extension) ||
-      entry.name.startsWith(".")
-    ) {
-      continue;
-    }
+	const entries = await fs.readdir(outputRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (
+			!entry.isFile() ||
+			!entry.name.endsWith(extension) ||
+			entry.name.startsWith(".")
+		) {
+			continue;
+		}
 
-    const skillId = entry.name.slice(0, -extension.length);
-    if (validSkillIds.has(skillId)) {
-      continue;
-    }
+		const skillId = entry.name.slice(0, -extension.length);
+		if (validSkillIds.has(skillId)) {
+			continue;
+		}
 
-    const filePath = path.join(outputRoot, entry.name);
-    const fileContent = (await readFileIfExists(filePath)) ?? "";
-    // The TOML adapter leads with its header; the Markdown agent def carries
-    // the header after the YAML frontmatter, so match anywhere in the file.
-    if (!fileContent.includes(headerLine)) {
-      continue;
-    }
+		const filePath = path.join(outputRoot, entry.name);
+		const fileContent = (await readFileIfExists(filePath)) ?? "";
+		// The TOML adapter leads with its header; the Markdown agent def carries
+		// the header after the YAML frontmatter, so match anywhere in the file.
+		if (!fileContent.includes(headerLine)) {
+			continue;
+		}
 
-    changedPaths.push(filePath);
-    if (checkMode) {
-      continue;
-    }
+		changedPaths.push(filePath);
+		if (checkMode) {
+			continue;
+		}
 
-    await fs.rm(filePath, { force: true });
-  }
+		await fs.rm(filePath, { force: true });
+	}
 }
 
 /**
@@ -1637,36 +1418,36 @@ async function removeDeletedManagedAgentFiles(
  * validate with id alone — they have no persona to require.
  */
 export function buildRoleMap(
-  roleDefinitions: RolesDefinitions,
+	roleDefinitions: RolesDefinitions
 ): Map<string, RoleDefinition> {
-  const roleMap = new Map<string, RoleDefinition>();
-  for (const role of roleDefinitions.skills ?? []) {
-    // The registry arrives through an unchecked JSON cast, so the
-    // discriminator is validated here — an unrecognized value would
-    // otherwise fall through to persona semantics silently.
-    if (
-      role.type !== undefined &&
-      role.type !== "persona" &&
-      role.type !== "utility"
-    ) {
-      throw new Error(
-        `Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", or omit type.`,
-      );
-    }
-    if (!role.id || (role.type !== "utility" && !role.persona)) {
-      throw new Error(
-        'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".',
-      );
-    }
-    if (role.type === "utility" && role.persona) {
-      throw new Error(
-        `Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`,
-      );
-    }
-    roleMap.set(role.id, role);
-  }
+	const roleMap = new Map<string, RoleDefinition>();
+	for (const role of roleDefinitions.skills ?? []) {
+		// The registry arrives through an unchecked JSON cast, so the
+		// discriminator is validated here — an unrecognized value would
+		// otherwise fall through to persona semantics silently.
+		if (
+			role.type !== undefined &&
+			role.type !== "persona" &&
+			role.type !== "utility"
+		) {
+			throw new Error(
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has unrecognized type '${role.type}' — use "persona", "utility", or omit type.`
+			);
+		}
+		if (!role.id || (role.type !== "utility" && !role.persona)) {
+			throw new Error(
+				'Each role in .ai-skills/definitions/roles.json must include id, plus persona unless type is "utility".'
+			);
+		}
+		if (role.type === "utility" && role.persona) {
+			throw new Error(
+				`Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`
+			);
+		}
+		roleMap.set(role.id, role);
+	}
 
-  return roleMap;
+	return roleMap;
 }
 
 const execFileAsync = promisify(execFile);
@@ -1677,18 +1458,18 @@ const execFileAsync = promisify(execFile);
  * malformed package file.
  */
 async function resolvePrismVersion(repoRootArg: string): Promise<string> {
-  const packageJsonPath = path.join(repoRootArg, "package.json");
-  const raw = await readFileIfExists(packageJsonPath);
-  if (raw === null) {
-    return "0.0.0";
-  }
+	const packageJsonPath = path.join(repoRootArg, "package.json");
+	const raw = await readFileIfExists(packageJsonPath);
+	if (raw === null) {
+		return "0.0.0";
+	}
 
-  try {
-    const parsed = JSON.parse(raw) as { version?: unknown };
-    return typeof parsed.version === "string" ? parsed.version : "0.0.0";
-  } catch {
-    return "0.0.0";
-  }
+	try {
+		const parsed = JSON.parse(raw) as { version?: unknown };
+		return typeof parsed.version === "string" ? parsed.version : "0.0.0";
+	} catch {
+		return "0.0.0";
+	}
 }
 
 /**
@@ -1697,485 +1478,472 @@ async function resolvePrismVersion(repoRootArg: string): Promise<string> {
  * (e.g. a tarball install) so the manifest still generates.
  */
 async function resolveSourceCommit(repoRootArg: string): Promise<string> {
-  try {
-    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
-      cwd: repoRootArg,
-    });
-    return stdout.trim() || "unknown";
-  } catch {
-    return "unknown";
-  }
+	try {
+		const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
+			cwd: repoRootArg,
+		});
+		return stdout.trim() || "unknown";
+	} catch {
+		return "unknown";
+	}
 }
 
 async function main(): Promise<void> {
-  const pathDefinitions = await loadPathDefinitions(repoRoot);
-  const roleDefinitions = await loadJsonFile<RolesDefinitions>(
-    ".ai-skills/definitions/roles.json",
-    "roles definitions",
-  );
-  const seedCuration = await loadJsonFile<SeedCuration>(
-    ".ai-skills/definitions/seed-curation.json",
-    "seed curation manifest",
-  );
-  const config = loadConfig(repoRoot);
-  const tokenMap = deriveTokenMap(config);
+	const pathDefinitions = await loadPathDefinitions(repoRoot);
+	const roleDefinitions = await loadJsonFile<RolesDefinitions>(
+		".ai-skills/definitions/roles.json",
+		"roles definitions"
+	);
+	const seedCuration = await loadJsonFile<SeedCuration>(
+		".ai-skills/definitions/seed-curation.json",
+		"seed curation manifest"
+	);
+	const config = loadConfig(repoRoot);
+	const tokenMap = deriveTokenMap(config);
 
-  const sourceSkillsRoot = path.join(
-    repoRoot,
-    pathDefinitions.canonical.skillsRoot,
-  );
-  if (!(await pathExists(sourceSkillsRoot))) {
-    throw new Error(
-      `Missing canonical skill source directory: ${sourceSkillsRoot}`,
-    );
-  }
+	const sourceSkillsRoot = path.join(
+		repoRoot,
+		pathDefinitions.canonical.skillsRoot
+	);
+	if (!(await pathExists(sourceSkillsRoot))) {
+		throw new Error(
+			`Missing canonical skill source directory: ${sourceSkillsRoot}`
+		);
+	}
 
-  const targetRoots = {
-    claude: path.join(repoRoot, pathDefinitions.generated.claudeSkillsRoot),
-    claudeAgents: path.join(
-      repoRoot,
-      pathDefinitions.generated.claudeAgentsRoot,
-    ),
-    codex: path.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
-    codexAgents: path.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
-    cursor: path.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot),
-    eveAgents: path.join(repoRoot, pathDefinitions.generated.eveAgentsRoot),
-  };
-  const codexConfigPath = path.join(
-    repoRoot,
-    pathDefinitions.generated.codexConfigFile,
-  );
+	const targetRoots = {
+		claude: path.join(repoRoot, pathDefinitions.generated.claudeSkillsRoot),
+		claudeAgents: path.join(
+			repoRoot,
+			pathDefinitions.generated.claudeAgentsRoot
+		),
+		codex: path.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
+		codexAgents: path.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
+		cursor: path.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot),
+		eveAgents: path.join(repoRoot, pathDefinitions.generated.eveAgentsRoot),
+	};
+	const codexConfigPath = path.join(
+		repoRoot,
+		pathDefinitions.generated.codexConfigFile
+	);
 
-  const optedIn = {
-    claude:
-      !checkMode || (await skillsRootHasManagedContent(targetRoots.claude)),
-    // `.agents/` is gitignored (the per-user Codex skills root), so a branch
-    // checkout leaves prior-branch content in place. In check mode that stale
-    // content would make skillsRootHasManagedContent return true, causing
-    // drift against the freshly-generated output — a false positive. Build
-    // mode still writes `.agents/` normally.
-    codex: !checkMode,
-    cursor:
-      !checkMode || (await skillsRootHasManagedContent(targetRoots.cursor)),
-    codexAgents:
-      !checkMode ||
-      (await codexAgentsRootHasManagedContent(targetRoots.codexAgents)),
-    claudeAgents:
-      !checkMode ||
-      (await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
-    eveAgents:
-      !checkMode ||
-      (await eveAgentsRootHasManagedContent(targetRoots.eveAgents)),
-    // `.codex/codex-config.toml` is gitignored (per-user), so a branch
-    // checkout leaves prior-branch content on disk. Skipping the pathExists
-    // check in check mode prevents stale presence from being treated as drift.
-    codexConfig: !checkMode,
-  };
+	const optedIn = {
+		claude:
+			!checkMode || (await skillsRootHasManagedContent(targetRoots.claude)),
+		// `.agents/` is gitignored (the per-user Codex skills root), so a branch
+		// checkout leaves prior-branch content in place. In check mode that stale
+		// content would make skillsRootHasManagedContent return true, causing
+		// drift against the freshly-generated output — a false positive. Build
+		// mode still writes `.agents/` normally.
+		codex: !checkMode,
+		cursor:
+			!checkMode || (await skillsRootHasManagedContent(targetRoots.cursor)),
+		codexAgents:
+			!checkMode ||
+			(await codexAgentsRootHasManagedContent(targetRoots.codexAgents)),
+		claudeAgents:
+			!checkMode ||
+			(await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
+		eveAgents:
+			!checkMode ||
+			(await eveAgentsRootHasManagedContent(targetRoots.eveAgents)),
+		// `.codex/codex-config.toml` is gitignored (per-user), so a branch
+		// checkout leaves prior-branch content on disk. Skipping the pathExists
+		// check in check mode prevents stale presence from being treated as drift.
+		codexConfig: !checkMode,
+	};
 
-  if (!checkMode) {
-    for (const targetRoot of Object.values(targetRoots)) {
-      await ensureDirectory(targetRoot);
-    }
-  }
+	if (!checkMode) {
+		for (const targetRoot of Object.values(targetRoots)) {
+			await ensureDirectory(targetRoot);
+		}
+	}
 
-  const roleMap = buildRoleMap(roleDefinitions);
+	const roleMap = buildRoleMap(roleDefinitions);
 
-  const skillIds = await listDirectories(sourceSkillsRoot);
-  const knownSkillIds = new Set(skillIds);
+	const skillIds = await listDirectories(sourceSkillsRoot);
+	const knownSkillIds = new Set(skillIds);
 
-  for (const skillId of skillIds) {
-    const skillSource = await loadSkillSource(skillId, sourceSkillsRoot);
-    const roleDefinition = roleMap.get(skillId);
-    if (!roleDefinition) {
-      throw new Error(
-        `Missing role definition for skill '${skillId}' in .ai-skills/definitions/roles.json`,
-      );
-    }
+	for (const skillId of skillIds) {
+		const skillSource = await loadSkillSource(skillId, sourceSkillsRoot);
+		const roleDefinition = roleMap.get(skillId);
+		if (!roleDefinition) {
+			throw new Error(
+				`Missing role definition for skill '${skillId}' in .ai-skills/definitions/roles.json`
+			);
+		}
 
-    const claudeMarkdown = buildSkillMarkdown({
-      frontmatter: skillSource.frontmatter,
-      platformBody: skillSource.claudeBody,
-      platformName: "claude",
-      sharedBody: skillSource.sharedBody,
-      skillId,
-      tokenMap,
-    });
-    const codexMarkdown = buildSkillMarkdown({
-      frontmatter: skillSource.frontmatter,
-      platformBody: skillSource.codexBody,
-      platformName: "codex",
-      sharedBody: skillSource.sharedBody,
-      skillId,
-      tokenMap,
-    });
-    const cursorMarkdown = buildSkillMarkdown({
-      frontmatter: skillSource.frontmatter,
-      platformBody: skillSource.cursorBody,
-      platformName: "cursor",
-      sharedBody: skillSource.sharedBody,
-      skillId,
-      tokenMap,
-    });
+		const claudeMarkdown = buildSkillMarkdown({
+			frontmatter: skillSource.frontmatter,
+			platformBody: skillSource.claudeBody,
+			platformName: "claude",
+			sharedBody: skillSource.sharedBody,
+			skillId,
+			tokenMap,
+		});
+		const codexMarkdown = buildSkillMarkdown({
+			frontmatter: skillSource.frontmatter,
+			platformBody: skillSource.codexBody,
+			platformName: "codex",
+			sharedBody: skillSource.sharedBody,
+			skillId,
+			tokenMap,
+		});
+		const cursorMarkdown = buildSkillMarkdown({
+			frontmatter: skillSource.frontmatter,
+			platformBody: skillSource.cursorBody,
+			platformName: "cursor",
+			sharedBody: skillSource.sharedBody,
+			skillId,
+			tokenMap,
+		});
 
-    const claudeSkillRoot = path.join(targetRoots.claude, skillId);
-    const codexSkillRoot = path.join(targetRoots.codex, skillId);
-    const cursorSkillRoot = path.join(targetRoots.cursor, skillId);
+		const claudeSkillRoot = path.join(targetRoots.claude, skillId);
+		const codexSkillRoot = path.join(targetRoots.codex, skillId);
+		const cursorSkillRoot = path.join(targetRoots.cursor, skillId);
 
-    if (optedIn.claude) {
-      await writeFileIfChanged(
-        path.join(claudeSkillRoot, "SKILL.md"),
-        claudeMarkdown,
-        checkMode,
-        changedPaths,
-      );
-      await writeFileIfChanged(
-        path.join(claudeSkillRoot, MANAGED_MARKER),
-        "Managed by scripts/ai-skills/build.ts\n",
-        checkMode,
-        changedPaths,
-      );
-    }
+		if (optedIn.claude) {
+			await writeFileIfChanged(
+				path.join(claudeSkillRoot, "SKILL.md"),
+				claudeMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(claudeSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+		}
 
-    if (optedIn.codex) {
-      await writeFileIfChanged(
-        path.join(codexSkillRoot, "SKILL.md"),
-        codexMarkdown,
-        checkMode,
-        changedPaths,
-      );
-      await writeFileIfChanged(
-        path.join(codexSkillRoot, MANAGED_MARKER),
-        "Managed by scripts/ai-skills/build.ts\n",
-        checkMode,
-        changedPaths,
-      );
-      await syncOptionalSkillPayloads(
-        path.join(sourceSkillsRoot, skillId),
-        codexSkillRoot,
-      );
-    }
+		if (optedIn.codex) {
+			await writeFileIfChanged(
+				path.join(codexSkillRoot, "SKILL.md"),
+				codexMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(codexSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+			await syncOptionalSkillPayloads(
+				path.join(sourceSkillsRoot, skillId),
+				codexSkillRoot
+			);
+		}
 
-    if (optedIn.cursor) {
-      await writeFileIfChanged(
-        path.join(cursorSkillRoot, "SKILL.md"),
-        cursorMarkdown,
-        checkMode,
-        changedPaths,
-      );
-      await writeFileIfChanged(
-        path.join(cursorSkillRoot, MANAGED_MARKER),
-        "Managed by scripts/ai-skills/build.ts\n",
-        checkMode,
-        changedPaths,
-      );
-      await syncOptionalSkillPayloads(
-        path.join(sourceSkillsRoot, skillId),
-        cursorSkillRoot,
-      );
-    }
+		if (optedIn.cursor) {
+			await writeFileIfChanged(
+				path.join(cursorSkillRoot, "SKILL.md"),
+				cursorMarkdown,
+				checkMode,
+				changedPaths
+			);
+			await writeFileIfChanged(
+				path.join(cursorSkillRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+			await syncOptionalSkillPayloads(
+				path.join(sourceSkillsRoot, skillId),
+				cursorSkillRoot
+			);
+		}
 
-    if (optedIn.codexAgents && roleDefinition.type !== "utility") {
-      const description =
-        skillSource.frontmatterMap.get("description") ??
-        `Generated codex agent adapter for ${skillId}.`;
-      const codexAgentToml = buildCodexAgentToml({
-        codexSkillMarkdown: codexMarkdown,
-        description,
-        roleDefinition,
-        skillId,
-        tokenMap,
-      });
-      await writeFileIfChanged(
-        path.join(targetRoots.codexAgents, `${skillId}.toml`),
-        codexAgentToml,
-        checkMode,
-        changedPaths,
-      );
-    }
+		if (optedIn.codexAgents && roleDefinition.type !== "utility") {
+			const description =
+				skillSource.frontmatterMap.get("description") ??
+				`Generated codex agent adapter for ${skillId}.`;
+			const codexAgentToml = buildCodexAgentToml({
+				codexSkillMarkdown: codexMarkdown,
+				description,
+				roleDefinition,
+				skillId,
+				tokenMap,
+			});
+			await writeFileIfChanged(
+				path.join(targetRoots.codexAgents, `${skillId}.toml`),
+				codexAgentToml,
+				checkMode,
+				changedPaths
+			);
+		}
 
-    if (optedIn.claudeAgents && roleDefinition.type !== "utility") {
-      const description =
-        skillSource.frontmatterMap.get("description") ??
-        `Generated claude agent definition for ${skillId}.`;
-      const claudeAgentMarkdown = buildClaudeAgentMarkdown({
-        claudeSkillMarkdown: claudeMarkdown,
-        description,
-        skillId,
-        tokenMap,
-      });
-      await writeFileIfChanged(
-        path.join(targetRoots.claudeAgents, `${skillId}.md`),
-        claudeAgentMarkdown,
-        checkMode,
-        changedPaths,
-      );
-    }
+		if (optedIn.claudeAgents && roleDefinition.type !== "utility") {
+			const description =
+				skillSource.frontmatterMap.get("description") ??
+				`Generated claude agent definition for ${skillId}.`;
+			const claudeAgentMarkdown = buildClaudeAgentMarkdown({
+				claudeSkillMarkdown: claudeMarkdown,
+				description,
+				skillId,
+				tokenMap,
+			});
+			await writeFileIfChanged(
+				path.join(targetRoots.claudeAgents, `${skillId}.md`),
+				claudeAgentMarkdown,
+				checkMode,
+				changedPaths
+			);
+		}
 
-    if (optedIn.eveAgents && EVE_AUTONOMOUS_PERSONAS.has(skillId)) {
-      if (skillSource.eveConfigMap === null) {
-        throw new Error(
-          `Autonomous-slice persona '${skillId}' is missing eve.yml — every persona in EVE_AUTONOMOUS_PERSONAS needs one to emit its eve agent directory.`,
-        );
-      }
-      const eveConfig = loadEveAgentConfig(skillSource.eveConfigMap, skillId);
-      const descriptionBlock = extractDescriptionBlock(
-        skillSource.frontmatter,
-        skillId,
-      );
-      const eveAgentFiles = buildEveAgentFiles({
-        descriptionBlock,
-        eveConfig,
-        sharedBody: skillSource.sharedBody,
-        skillId,
-        tokenMap,
-      });
-      const sandboxEntry = buildEveSandboxFile(eveConfig, tokenMap);
-      if (sandboxEntry) {
-        eveAgentFiles.set(sandboxEntry[0], sandboxEntry[1]);
-      }
-      const eveAgentRoot = path.join(targetRoots.eveAgents, skillId);
-      for (const [relativePath, content] of eveAgentFiles) {
-        await writeFileIfChanged(
-          path.join(eveAgentRoot, relativePath),
-          content,
-          checkMode,
-          changedPaths,
-        );
-      }
-      await writeFileIfChanged(
-        path.join(eveAgentRoot, MANAGED_MARKER),
-        "Managed by scripts/ai-skills/build.ts\n",
-        checkMode,
-        changedPaths,
-      );
-    }
-  }
+		if (optedIn.eveAgents && EVE_AUTONOMOUS_PERSONAS.has(skillId)) {
+			if (skillSource.eveConfigMap === null) {
+				throw new Error(
+					`Autonomous-slice persona '${skillId}' is missing eve.yml — every persona in EVE_AUTONOMOUS_PERSONAS needs one to emit its eve agent directory.`
+				);
+			}
+			const eveConfig = loadEveAgentConfig(skillSource.eveConfigMap, skillId);
+			const descriptionBlock = extractDescriptionBlock(
+				skillSource.frontmatter,
+				skillId
+			);
+			const eveAgentFiles = buildEveAgentFiles({
+				descriptionBlock,
+				eveConfig,
+				sharedBody: skillSource.sharedBody,
+				skillId,
+				tokenMap,
+			});
+			const eveAgentRoot = path.join(targetRoots.eveAgents, skillId);
+			for (const [relativePath, content] of eveAgentFiles) {
+				await writeFileIfChanged(
+					path.join(eveAgentRoot, relativePath),
+					content,
+					checkMode,
+					changedPaths
+				);
+			}
+			await writeFileIfChanged(
+				path.join(eveAgentRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+		}
+	}
 
-  if (optedIn.codexConfig) {
-    const codexConfig = [
-      GENERATED_HEADER_LINE,
-      "# Source: .ai-skills/definitions/roles.json",
-      "# Target: codex-config | Regenerate with: pnpm prism:build",
-      "",
-      "[agents]",
-      "max_threads = 6",
-      "max_depth = 1",
-      "",
-    ].join("\n");
-    await writeFileIfChanged(
-      codexConfigPath,
-      codexConfig,
-      checkMode,
-      changedPaths,
-    );
-  }
+	if (optedIn.codexConfig) {
+		const codexConfig = [
+			GENERATED_HEADER_LINE,
+			"# Source: .ai-skills/definitions/roles.json",
+			"# Target: codex-config | Regenerate with: pnpm prism:build",
+			"",
+			"[agents]",
+			"max_threads = 6",
+			"max_depth = 1",
+			"",
+		].join("\n");
+		await writeFileIfChanged(
+			codexConfigPath,
+			codexConfig,
+			checkMode,
+			changedPaths
+		);
+	}
 
-  const contentRoot = path.join(
-    repoRoot,
-    pathDefinitions.canonical.contentRoot,
-  );
-  const templatesContentRoot = path.join(
-    repoRoot,
-    pathDefinitions.canonical.templatesContentRoot,
-  );
+	const contentRoot = path.join(repoRoot, pathDefinitions.canonical.contentRoot);
+	const templatesContentRoot = path.join(
+		repoRoot,
+		pathDefinitions.canonical.templatesContentRoot
+	);
 
-  const guardedRoots: { absolutePath: string; relativeLabel: string }[] = [
-    {
-      absolutePath: contentRoot,
-      relativeLabel: pathDefinitions.canonical.contentRoot,
-    },
-    {
-      absolutePath: templatesContentRoot,
-      relativeLabel: pathDefinitions.canonical.templatesContentRoot,
-    },
-  ];
-  let totalViolations = 0;
-  for (const guardedRoot of guardedRoots) {
-    if (!(await pathExists(guardedRoot.absolutePath))) {
-      continue;
-    }
-    const violations = await runPathGuard(guardedRoot.absolutePath);
-    if (violations.length === 0) {
-      continue;
-    }
-    for (const violation of violations) {
-      console.error(
-        `path-guard: ${guardedRoot.relativeLabel}/${violation.relativePath}:${violation.line}: ${violation.text}`,
-      );
-    }
-    console.error(
-      `path-guard: ${violations.length} violation(s) found in ${guardedRoot.relativeLabel}/. Canonical content must reference .prism/<area>/ paths, not platform-dir build copies.`,
-    );
-    totalViolations += violations.length;
-  }
-  if (totalViolations > 0) {
-    process.exit(1);
-  }
+	const guardedRoots: { absolutePath: string; relativeLabel: string }[] = [
+		{
+			absolutePath: contentRoot,
+			relativeLabel: pathDefinitions.canonical.contentRoot,
+		},
+		{
+			absolutePath: templatesContentRoot,
+			relativeLabel: pathDefinitions.canonical.templatesContentRoot,
+		},
+	];
+	let totalViolations = 0;
+	for (const guardedRoot of guardedRoots) {
+		if (!(await pathExists(guardedRoot.absolutePath))) {
+			continue;
+		}
+		const violations = await runPathGuard(guardedRoot.absolutePath);
+		if (violations.length === 0) {
+			continue;
+		}
+		for (const violation of violations) {
+			console.error(
+				`path-guard: ${guardedRoot.relativeLabel}/${violation.relativePath}:${violation.line}: ${violation.text}`
+			);
+		}
+		console.error(
+			`path-guard: ${violations.length} violation(s) found in ${guardedRoot.relativeLabel}/. Canonical content must reference .prism/<area>/ paths, not platform-dir build copies.`
+		);
+		totalViolations += violations.length;
+	}
+	if (totalViolations > 0) {
+		process.exit(1);
+	}
 
-  if (await pathExists(contentRoot)) {
-    const platformDirs = buildPlatformDirs(repoRoot, pathDefinitions);
-    await syncAllPlatformContentCopies(
-      contentRoot,
-      platformDirs,
-      checkMode,
-      changedPaths,
-      tokenMap,
-    );
+	if (await pathExists(contentRoot)) {
+		const platformDirs = buildPlatformDirs(repoRoot, pathDefinitions);
+		await syncAllPlatformContentCopies(
+			contentRoot,
+			platformDirs,
+			checkMode,
+			changedPaths,
+			tokenMap
+		);
 
-    // The manifest carries per-build volatile fields (sourceCommit,
-    // generatedAt), so it is a build-mode-only output and gitignored — not a
-    // drift target. Skipping it in check mode keeps prism:check stable across
-    // commits instead of reporting drift on every new SHA.
-    if (!checkMode) {
-      const syncManifest = await generateSyncManifest(contentRoot, {
-        prismVersion: await resolvePrismVersion(repoRoot),
-        sourceCommit: await resolveSourceCommit(repoRoot),
-        generatedAt: new Date().toISOString(),
-      });
-      await writeSyncManifest(contentRoot, syncManifest, false, changedPaths);
-    }
-  }
+		// The manifest carries per-build volatile fields (sourceCommit,
+		// generatedAt), so it is a build-mode-only output and gitignored — not a
+		// drift target. Skipping it in check mode keeps prism:check stable across
+		// commits instead of reporting drift on every new SHA.
+		if (!checkMode) {
+			const syncManifest = await generateSyncManifest(contentRoot, {
+				prismVersion: await resolvePrismVersion(repoRoot),
+				sourceCommit: await resolveSourceCommit(repoRoot),
+				generatedAt: new Date().toISOString(),
+			});
+			await writeSyncManifest(contentRoot, syncManifest, false, changedPaths);
+		}
+	}
 
-  const unclassifiedMirrored: string[] = [];
-  if (!checkMode && (await pathExists(contentRoot))) {
-    await writeSeedMirror(
-      contentRoot,
-      templatesContentRoot,
-      seedCuration,
-      checkMode,
-      changedPaths,
-      unclassifiedMirrored,
-    );
-  }
+	const unclassifiedMirrored: string[] = [];
+	if (!checkMode && (await pathExists(contentRoot))) {
+		await writeSeedMirror(
+			contentRoot,
+			templatesContentRoot,
+			seedCuration,
+			checkMode,
+			changedPaths,
+			unclassifiedMirrored
+		);
+	}
 
-  await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
+	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
-  await removeDeletedManagedSkills(
-    targetRoots.claude,
-    knownSkillIds,
-    checkMode,
-    changedPaths,
-  );
-  await removeDeletedManagedSkills(
-    targetRoots.codex,
-    knownSkillIds,
-    checkMode,
-    changedPaths,
-  );
-  await removeDeletedManagedSkills(
-    targetRoots.cursor,
-    knownSkillIds,
-    checkMode,
-    changedPaths,
-  );
-  // Utility skills never own an agent adapter, so their IDs are excluded
-  // here — a skill that flips to utility gets its stale .toml cleaned up.
-  const agentSkillIds = new Set(
-    [...knownSkillIds].filter((id) => roleMap.get(id)?.type !== "utility"),
-  );
-  await removeDeletedManagedAgentFiles(
-    targetRoots.codexAgents,
-    agentSkillIds,
-    ".toml",
-    GENERATED_HEADER_LINE,
-  );
-  await removeDeletedManagedAgentFiles(
-    targetRoots.claudeAgents,
-    agentSkillIds,
-    ".md",
-    GENERATED_MARKDOWN_HEADER_LINE,
-  );
-  // Eve output is directory-per-persona (not a single file), so it uses the
-  // directory-aware cleanup path — same as the skills roots above. The valid
-  // set is the intersection of knownSkillIds and EVE_AUTONOMOUS_PERSONAS: a
-  // persona that is removed from either loses its managed marker check and its
-  // eve dir is swept on the next build.
-  const eveValidIds = new Set(
-    [...knownSkillIds].filter((id) => EVE_AUTONOMOUS_PERSONAS.has(id)),
-  );
-  await removeDeletedManagedSkills(
-    targetRoots.eveAgents,
-    eveValidIds,
-    checkMode,
-    changedPaths,
-  );
+	await removeDeletedManagedSkills(
+		targetRoots.claude,
+		knownSkillIds,
+		checkMode,
+		changedPaths
+	);
+	await removeDeletedManagedSkills(
+		targetRoots.codex,
+		knownSkillIds,
+		checkMode,
+		changedPaths
+	);
+	await removeDeletedManagedSkills(
+		targetRoots.cursor,
+		knownSkillIds,
+		checkMode,
+		changedPaths
+	);
+	// Utility skills never own an agent adapter, so their IDs are excluded
+	// here — a skill that flips to utility gets its stale .toml cleaned up.
+	const agentSkillIds = new Set(
+		[...knownSkillIds].filter((id) => roleMap.get(id)?.type !== "utility")
+	);
+	await removeDeletedManagedAgentFiles(
+		targetRoots.codexAgents,
+		agentSkillIds,
+		".toml",
+		GENERATED_HEADER_LINE
+	);
+	await removeDeletedManagedAgentFiles(
+		targetRoots.claudeAgents,
+		agentSkillIds,
+		".md",
+		GENERATED_MARKDOWN_HEADER_LINE
+	);
+	// Eve output is directory-per-persona (not a single file), so it uses the
+	// directory-aware cleanup path — same as the skills roots above. The valid
+	// set is the intersection of knownSkillIds and EVE_AUTONOMOUS_PERSONAS: a
+	// persona that is removed from either loses its managed marker check and its
+	// eve dir is swept on the next build.
+	const eveValidIds = new Set(
+		[...knownSkillIds].filter((id) => EVE_AUTONOMOUS_PERSONAS.has(id))
+	);
+	await removeDeletedManagedSkills(
+		targetRoots.eveAgents,
+		eveValidIds,
+		checkMode,
+		changedPaths
+	);
 
-  const literalGuardRoots = [
-    targetRoots.claude,
-    targetRoots.claudeAgents,
-    targetRoots.codex,
-    targetRoots.cursor,
-    targetRoots.codexAgents,
-    targetRoots.eveAgents,
-    path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
-    path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
-    path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
-  ];
-  const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
-  if (literalViolations.length > 0) {
-    for (const violation of literalViolations) {
-      console.error(
-        `literal-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`,
-      );
-    }
-    console.error(
-      `literal-guard: ${literalViolations.length} non-allowlisted Thrive-flavored literal(s) found in platform outputs. Tokenize the canonical source or add the file to .ai-skills/definitions/literal-allowlist.json.`,
-    );
-    process.exit(1);
-  }
+	const literalGuardRoots = [
+		targetRoots.claude,
+		targetRoots.claudeAgents,
+		targetRoots.codex,
+		targetRoots.cursor,
+		targetRoots.codexAgents,
+		targetRoots.eveAgents,
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
+		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
+	];
+	const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
+	if (literalViolations.length > 0) {
+		for (const violation of literalViolations) {
+			console.error(
+				`literal-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`
+			);
+		}
+		console.error(
+			`literal-guard: ${literalViolations.length} non-allowlisted Thrive-flavored literal(s) found in platform outputs. Tokenize the canonical source or add the file to .ai-skills/definitions/literal-allowlist.json.`
+		);
+		process.exit(1);
+	}
 
-  if (checkMode) {
-    await checkSeedDrift(
-      contentRoot,
-      templatesContentRoot,
-      seedCuration,
-      changedPaths,
-    );
+	if (checkMode) {
+		await checkSeedDrift(contentRoot, templatesContentRoot, seedCuration, changedPaths);
 
-    if (changedPaths.length > 0) {
-      console.error("prism:check failed. These files are out of sync:");
-      for (const changedPath of changedPaths) {
-        const displayPath = path.isAbsolute(changedPath)
-          ? path.relative(repoRoot, changedPath)
-          : changedPath;
-        console.error(` - ${displayPath}`);
-      }
-      process.exit(1);
-    }
+		if (changedPaths.length > 0) {
+			console.error("prism:check failed. These files are out of sync:");
+			for (const changedPath of changedPaths) {
+				const displayPath = path.isAbsolute(changedPath)
+					? path.relative(repoRoot, changedPath)
+					: changedPath;
+				console.error(` - ${displayPath}`);
+			}
+			process.exit(1);
+		}
 
-    console.log("prism:check passed. Generated outputs are in sync.");
-    return;
-  }
+		console.log("prism:check passed. Generated outputs are in sync.");
+		return;
+	}
 
-  if (unclassifiedMirrored.length > 0) {
-    console.warn(
-      `prism:build auto-mirrored ${unclassifiedMirrored.length} unclassified file(s) to the install seed as non-curated:`,
-    );
-    for (const relPath of unclassifiedMirrored) {
-      console.warn(` - ${relPath}`);
-    }
-    console.warn(
-      "If any of these should be curated (consumer-facing simplified) or excluded (dogfood-only), add them to .ai-skills/definitions/seed-curation.json and rebuild.",
-    );
-  }
+	if (unclassifiedMirrored.length > 0) {
+		console.warn(
+			`prism:build auto-mirrored ${unclassifiedMirrored.length} unclassified file(s) to the install seed as non-curated:`
+		);
+		for (const relPath of unclassifiedMirrored) {
+			console.warn(` - ${relPath}`);
+		}
+		console.warn(
+			"If any of these should be curated (consumer-facing simplified) or excluded (dogfood-only), add them to .ai-skills/definitions/seed-curation.json and rebuild."
+		);
+	}
 
-  if (changedPaths.length === 0) {
-    console.log("prism:build completed. No changes needed.");
-    return;
-  }
+	if (changedPaths.length === 0) {
+		console.log("prism:build completed. No changes needed.");
+		return;
+	}
 
-  console.log(`prism:build completed. Updated ${changedPaths.length} file(s):`);
-  for (const changedPath of changedPaths) {
-    console.log(` - ${path.relative(repoRoot, changedPath)}`);
-  }
+	console.log(`prism:build completed. Updated ${changedPaths.length} file(s):`);
+	for (const changedPath of changedPaths) {
+		console.log(` - ${path.relative(repoRoot, changedPath)}`);
+	}
 }
 
 const invokedDirectly =
-  process.argv[1] &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (invokedDirectly) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  });
+	main().catch((error) => {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exit(1);
+	});
 }
