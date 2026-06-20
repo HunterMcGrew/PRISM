@@ -9,6 +9,7 @@
 		"claudeAgentsRoot": ".claude/agents",
 		"codexSkillsRoot": ".agents/skills",
 		"codexAgentsRoot": ".codex/agents",
+		"eveAgentsRoot": ".eve/agents",
 		"codexConfigFile": ".codex/codex-config.toml",
 		"cursorSkillsRoot": ".cursor/skills",
 		"platformContentCopies": {

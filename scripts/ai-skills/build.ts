@@ -75,6 +75,7 @@ interface SkillSource {
 	claudeBody: string;
 	codexBody: string;
 	cursorBody: string;
+	eveConfigMap: Map<string, string> | null;
 	frontmatter: string;
 	frontmatterMap: Map<string, string>;
 	sharedBody: string;
@@ -236,6 +237,273 @@ export function buildClaudeAgentMarkdown({
 	].join("\n");
 
 	return `${frontmatter}\n\n${header}\n\n${claudeSkillMarkdown.trim()}\n`;
+}
+
+/**
+ * Personas whose canonical source is compiled to an eve agent directory.
+ *
+ * eve emission is gated to the autonomous slice — an always-on, channel-driven
+ * agent is the wrong shape for the build-loop personas (Winston/Clove/Briar),
+ * which run on demand inside a chat. Slice 1 ships Lilac; Sage and Zoe join in
+ * wave 2. A persona outside this set is skipped even if it carries an eve.yml.
+ */
+export const EVE_AUTONOMOUS_PERSONAS = new Set<string>(["prism-standup-summary"]);
+
+const EVE_AGENT_FILE_INSTRUCTIONS = "instructions.md";
+
+interface EveAgentConfig {
+	model: string;
+	scheduleName: string;
+	scheduleCron: string;
+	scheduleBody: string;
+	slackConnectUid: string;
+	instructionsSections: string[];
+	skillSections: string[];
+}
+
+interface BuildEveAgentFilesArgs {
+	descriptionBlock: string;
+	eveConfig: EveAgentConfig;
+	sharedBody: string;
+	skillId: string;
+	tokenMap: Map<string, string>;
+}
+
+/**
+ * Splits an inline-list frontmatter value (`[a, b, c]`) into trimmed members.
+ *
+ * The frontmatter parser captures array syntax verbatim as a string (it has no
+ * real array support), so eve.yml's section lists arrive here as the literal
+ * `"[Personality, How Lilac Thinks]"` and get split at this boundary.
+ */
+function parseInlineList(value: string): string[] {
+	const trimmed = value.trim().replace(/^\[/, "").replace(/\]$/, "");
+	return trimmed
+		.split(",")
+		.map((member) => member.trim())
+		.filter(Boolean);
+}
+
+/**
+ * Reads the eve.yml config map into the typed shape the emitter consumes,
+ * throwing when a required key is missing so a half-declared persona fails the
+ * build instead of emitting a malformed agent directory.
+ */
+export function loadEveAgentConfig(
+	eveConfigMap: Map<string, string>,
+	skillId: string
+): EveAgentConfig {
+	const require_ = (key: string): string => {
+		const value = eveConfigMap.get(key);
+		if (value === undefined || value === "") {
+			throw new Error(
+				`eve.yml for '${skillId}' is missing required key '${key}'.`
+			);
+		}
+		return value;
+	};
+
+	return {
+		model: require_("model"),
+		scheduleName: require_("scheduleName"),
+		scheduleCron: require_("scheduleCron"),
+		scheduleBody: require_("scheduleBody"),
+		slackConnectUid: require_("slackConnectUid"),
+		instructionsSections: parseInlineList(require_("instructionsSections")),
+		skillSections: parseInlineList(require_("skillSections")),
+	};
+}
+
+/**
+ * Returns the `## <name>` block from a shared-body markdown string, from the
+ * heading through the line before the next top-level (`## `) heading.
+ */
+function extractSharedSection(sharedBody: string, name: string): string {
+	const lines = sharedBody.split("\n");
+	const startIndex = lines.findIndex((line) => line === `## ${name}`);
+	if (startIndex === -1) {
+		throw new Error(`shared.md section '## ${name}' not found.`);
+	}
+
+	let endIndex = lines.length;
+	for (let index = startIndex + 1; index < lines.length; index += 1) {
+		if (lines[index].startsWith("## ")) {
+			endIndex = index;
+			break;
+		}
+	}
+
+	return lines.slice(startIndex, endIndex).join("\n").replace(/\n+$/, "");
+}
+
+/**
+ * Returns the identity-frame preamble — everything before the first `## `
+ * heading in the shared body (the "You are X" opening paragraph).
+ */
+function extractIdentityPreamble(sharedBody: string): string {
+	const lines = sharedBody.split("\n");
+	const firstHeadingIndex = lines.findIndex((line) => line.startsWith("## "));
+	const preambleLines =
+		firstHeadingIndex === -1 ? lines : lines.slice(0, firstHeadingIndex);
+	return preambleLines.join("\n").replace(/\n+$/, "");
+}
+
+const EVE_REFERENCE_LINK = /^\*\*.*\bread \[.*\]\([^)]*\.prism\/references\/[^)]*\).*\*\*\s*$/;
+const EVE_TEASER_BLOCKQUOTE = /^> _.*_\s*$/;
+
+/**
+ * Strips PRISM's chat-harness reference-loading scaffolding from a section.
+ *
+ * The eve agent directory carries no `references/` tree, so the
+ * "read [`phases.md`](.prism/references/...)" load directives and their `> _…_`
+ * teaser blockquotes are dead links in the eve world. Removing them — plus any
+ * `### ` subsection heading left with an empty body, then collapsing the blank
+ * runs that result — produces the runtime-valid eve form.
+ */
+function stripEveReferenceScaffolding(section: string): string {
+	const lines = section.split("\n");
+	const withoutLinks = lines.filter(
+		(line) =>
+			!EVE_REFERENCE_LINK.test(line) && !EVE_TEASER_BLOCKQUOTE.test(line)
+	);
+
+	const withoutEmptyHeadings: string[] = [];
+	let index = 0;
+	while (index < withoutLinks.length) {
+		const line = withoutLinks[index];
+		if (line.startsWith("### ")) {
+			let lookahead = index + 1;
+			const body: string[] = [];
+			while (
+				lookahead < withoutLinks.length &&
+				!withoutLinks[lookahead].startsWith("### ") &&
+				!withoutLinks[lookahead].startsWith("## ")
+			) {
+				body.push(withoutLinks[lookahead]);
+				lookahead += 1;
+			}
+			if (body.every((bodyLine) => bodyLine.trim() === "")) {
+				index = lookahead;
+				continue;
+			}
+		}
+		withoutEmptyHeadings.push(line);
+		index += 1;
+	}
+
+	const collapsed: string[] = [];
+	for (const line of withoutEmptyHeadings) {
+		if (
+			line.trim() === "" &&
+			collapsed.length > 0 &&
+			collapsed[collapsed.length - 1].trim() === ""
+		) {
+			continue;
+		}
+		collapsed.push(line);
+	}
+
+	return collapsed.join("\n").replace(/\n+$/, "");
+}
+
+/**
+ * Joins selected shared-body sections, applying reference-scaffolding stripping
+ * so each emitted section carries only runtime-valid eve content.
+ */
+function buildEveSectionBody(sharedBody: string, sections: string[]): string {
+	return sections
+		.map((name) =>
+			stripEveReferenceScaffolding(extractSharedSection(sharedBody, name))
+		)
+		.join("\n\n");
+}
+
+/**
+ * Extracts the raw folded `description: >` block from the normalized
+ * frontmatter string — the `description:` line plus its indented continuation
+ * lines — so the eve SKILL.md frontmatter carries the same wrapped form the
+ * persona authored, not the parser's space-collapsed value.
+ */
+export function extractDescriptionBlock(
+	frontmatter: string,
+	skillId: string
+): string {
+	const lines = frontmatter.split("\n");
+	const startIndex = lines.findIndex((line) =>
+		/^description:/.test(line)
+	);
+	if (startIndex === -1) {
+		throw new Error(`frontmatter for '${skillId}' is missing a description.`);
+	}
+
+	const block = [lines[startIndex]];
+	for (let index = startIndex + 1; index < lines.length; index += 1) {
+		if (!lines[index].startsWith(" ")) {
+			break;
+		}
+		block.push(lines[index]);
+	}
+
+	return block.join("\n");
+}
+
+/**
+ * Builds the eve agent directory's file contents from canonical source.
+ *
+ * Two files derive from `shared.md` (the identity/workflow split): an always-on
+ * `instructions.md` (identity frame + the sections eve.yml names as identity)
+ * and an on-match `SKILL.md` (the routing description plus the workflow
+ * sections, with chat-harness reference scaffolding stripped). The remaining
+ * four files are eve runtime config templated from eve.yml — the agent's model,
+ * a schedule, and the Slack and eve channel handlers.
+ *
+ * Eve files carry no generated-header comment: a leading comment would push
+ * SKILL.md's frontmatter off line 1 and break eve's `description`-only routing,
+ * and the runtime channel/agent files are plain TypeScript. Managed-ness and
+ * drift protection ride on the per-persona `.ai-skill-generated` marker written
+ * alongside these files (the directory-based managed pattern), not an in-content
+ * header.
+ */
+export function buildEveAgentFiles({
+	descriptionBlock,
+	eveConfig,
+	sharedBody,
+	skillId,
+	tokenMap,
+}: BuildEveAgentFilesArgs): Map<string, string> {
+	const files = new Map<string, string>();
+
+	const identityPreamble = extractIdentityPreamble(sharedBody);
+	const instructionsSectionBody = buildEveSectionBody(
+		sharedBody,
+		eveConfig.instructionsSections
+	);
+	const instructions = `${identityPreamble}\n\n${instructionsSectionBody}\n`;
+	files.set(EVE_AGENT_FILE_INSTRUCTIONS, substituteTokens(instructions, tokenMap));
+
+	const skillBody = buildEveSectionBody(sharedBody, eveConfig.skillSections);
+	const skillMarkdown = `---\n${descriptionBlock}\n---\n\n${skillBody}\n`;
+	files.set(
+		path.posix.join("skills", skillId, "SKILL.md"),
+		substituteTokens(skillMarkdown, tokenMap)
+	);
+
+	const agentTs = `import { defineAgent } from "eve";\nimport { anthropic } from "@ai-sdk/anthropic";\n\nexport default defineAgent({\n  model: anthropic("${eveConfig.model}"),\n});\n`;
+	files.set("agent.ts", substituteTokens(agentTs, tokenMap));
+
+	const scheduleMarkdown = `---\ncron: "${eveConfig.scheduleCron}"\n---\n\n${eveConfig.scheduleBody}\n`;
+	files.set(
+		path.posix.join("schedules", `${eveConfig.scheduleName}.md`),
+		substituteTokens(scheduleMarkdown, tokenMap)
+	);
+
+	const slackChannelTs = `import { connectSlackCredentials } from "@vercel/connect/eve";\nimport { slackChannel } from "eve/channels/slack";\n\n// connectSlackCredentials requires a Vercel Connect client UID (e.g. "${eveConfig.slackConnectUid}").\n// Set up the Connect client via \`vercel connect create slack --triggers\` before deploying.\n// See .prism/architect/_toolkit/eve-runtime.md for the full setup runbook.\nexport default slackChannel({\n  credentials: connectSlackCredentials("${eveConfig.slackConnectUid}"),\n});\n`;
+	files.set(path.posix.join("channels", "slack.ts"), substituteTokens(slackChannelTs, tokenMap));
+
+	const eveChannelTs = `import { eveChannel } from "eve/channels/eve";\nimport { localDev, placeholderAuth } from "eve/channels/auth";\n\nexport default eveChannel({\n  auth: [localDev(), placeholderAuth()],\n});\n`;
+	files.set(path.posix.join("channels", "eve.ts"), substituteTokens(eveChannelTs, tokenMap));
+
+	return files;
 }
 
 export interface RelativeDirectoryEntry {
@@ -413,6 +681,7 @@ async function loadSkillSource(
 	const claudePath = path.join(skillRoot, "claude.md");
 	const codexPath = path.join(skillRoot, "codex.md");
 	const cursorPath = path.join(skillRoot, "cursor.md");
+	const evePath = path.join(skillRoot, "eve.yml");
 
 	if (!(await pathExists(frontmatterPath))) {
 		throw new Error(`Missing required file: ${frontmatterPath}`);
@@ -438,11 +707,15 @@ async function loadSkillSource(
 	const claudeBody = ((await readFileIfExists(claudePath)) ?? "").trim();
 	const codexBody = ((await readFileIfExists(codexPath)) ?? "").trim();
 	const cursorBody = ((await readFileIfExists(cursorPath)) ?? "").trim();
+	const eveSource = await readFileIfExists(evePath);
+	const eveConfigMap =
+		eveSource === null ? null : parseFrontmatter(eveSource.trim());
 
 	return {
 		claudeBody,
 		codexBody,
 		cursorBody,
+		eveConfigMap,
 		frontmatter,
 		frontmatterMap,
 		sharedBody,
@@ -715,6 +988,33 @@ async function claudeAgentsRootHasManagedContent(
 		const content =
 			(await readFileIfExists(path.join(agentsRoot, entry.name))) ?? "";
 		if (content.includes(GENERATED_MARKDOWN_HEADER_LINE)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Reports whether the eve agents root carries managed output.
+ *
+ * eve output is a directory per persona, and its runtime files carry no
+ * in-content header (a header would break SKILL.md's frontmatter routing), so
+ * managed-ness is signalled by the per-persona `.ai-skill-generated` marker —
+ * the directory-based pattern, mirroring `skillsRootHasManagedContent` rather
+ * than the file-header check the Claude/Codex agent roots use.
+ */
+async function eveAgentsRootHasManagedContent(
+	agentsRoot: string
+): Promise<boolean> {
+	if (!(await pathExists(agentsRoot))) {
+		return false;
+	}
+	const entries = await fs.readdir(agentsRoot, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isDirectory() || entry.name.startsWith(".")) {
+			continue;
+		}
+		if (await pathExists(path.join(agentsRoot, entry.name, MANAGED_MARKER))) {
 			return true;
 		}
 	}
@@ -1220,6 +1520,7 @@ async function main(): Promise<void> {
 		codex: path.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
 		codexAgents: path.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
 		cursor: path.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot),
+		eveAgents: path.join(repoRoot, pathDefinitions.generated.eveAgentsRoot),
 	};
 	const codexConfigPath = path.join(
 		repoRoot,
@@ -1243,6 +1544,9 @@ async function main(): Promise<void> {
 		claudeAgents:
 			!checkMode ||
 			(await claudeAgentsRootHasManagedContent(targetRoots.claudeAgents)),
+		eveAgents:
+			!checkMode ||
+			(await eveAgentsRootHasManagedContent(targetRoots.eveAgents)),
 		// `.codex/codex-config.toml` is gitignored (per-user), so a branch
 		// checkout leaves prior-branch content on disk. Skipping the pathExists
 		// check in check mode prevents stale presence from being treated as drift.
@@ -1387,6 +1691,41 @@ async function main(): Promise<void> {
 				changedPaths
 			);
 		}
+
+		if (optedIn.eveAgents && EVE_AUTONOMOUS_PERSONAS.has(skillId)) {
+			if (skillSource.eveConfigMap === null) {
+				throw new Error(
+					`Autonomous-slice persona '${skillId}' is missing eve.yml — every persona in EVE_AUTONOMOUS_PERSONAS needs one to emit its eve agent directory.`
+				);
+			}
+			const eveConfig = loadEveAgentConfig(skillSource.eveConfigMap, skillId);
+			const descriptionBlock = extractDescriptionBlock(
+				skillSource.frontmatter,
+				skillId
+			);
+			const eveAgentFiles = buildEveAgentFiles({
+				descriptionBlock,
+				eveConfig,
+				sharedBody: skillSource.sharedBody,
+				skillId,
+				tokenMap,
+			});
+			const eveAgentRoot = path.join(targetRoots.eveAgents, skillId);
+			for (const [relativePath, content] of eveAgentFiles) {
+				await writeFileIfChanged(
+					path.join(eveAgentRoot, relativePath),
+					content,
+					checkMode,
+					changedPaths
+				);
+			}
+			await writeFileIfChanged(
+				path.join(eveAgentRoot, MANAGED_MARKER),
+				"Managed by scripts/ai-skills/build.ts\n",
+				checkMode,
+				changedPaths
+			);
+		}
 	}
 
 	if (optedIn.codexConfig) {
@@ -1520,6 +1859,20 @@ async function main(): Promise<void> {
 		".md",
 		GENERATED_MARKDOWN_HEADER_LINE
 	);
+	// Eve output is directory-per-persona (not a single file), so it uses the
+	// directory-aware cleanup path — same as the skills roots above. The valid
+	// set is the intersection of knownSkillIds and EVE_AUTONOMOUS_PERSONAS: a
+	// persona that is removed from either loses its managed marker check and its
+	// eve dir is swept on the next build.
+	const eveValidIds = new Set(
+		[...knownSkillIds].filter((id) => EVE_AUTONOMOUS_PERSONAS.has(id))
+	);
+	await removeDeletedManagedSkills(
+		targetRoots.eveAgents,
+		eveValidIds,
+		checkMode,
+		changedPaths
+	);
 
 	const literalGuardRoots = [
 		targetRoots.claude,
@@ -1527,6 +1880,7 @@ async function main(): Promise<void> {
 		targetRoots.codex,
 		targetRoots.cursor,
 		targetRoots.codexAgents,
+		targetRoots.eveAgents,
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
