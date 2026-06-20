@@ -1859,6 +1859,20 @@ async function main(): Promise<void> {
 		".md",
 		GENERATED_MARKDOWN_HEADER_LINE
 	);
+	// Eve output is directory-per-persona (not a single file), so it uses the
+	// directory-aware cleanup path — same as the skills roots above. The valid
+	// set is the intersection of knownSkillIds and EVE_AUTONOMOUS_PERSONAS: a
+	// persona that is removed from either loses its managed marker check and its
+	// eve dir is swept on the next build.
+	const eveValidIds = new Set(
+		[...knownSkillIds].filter((id) => EVE_AUTONOMOUS_PERSONAS.has(id))
+	);
+	await removeDeletedManagedSkills(
+		targetRoots.eveAgents,
+		eveValidIds,
+		checkMode,
+		changedPaths
+	);
 
 	const literalGuardRoots = [
 		targetRoots.claude,
@@ -1866,6 +1880,7 @@ async function main(): Promise<void> {
 		targetRoots.codex,
 		targetRoots.cursor,
 		targetRoots.codexAgents,
+		targetRoots.eveAgents,
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),

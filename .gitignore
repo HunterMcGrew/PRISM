@@ -11,6 +11,7 @@ node_modules/
 .claude/worktrees/
 .codex/worktrees/
 .cursor/worktrees/
+.eve/worktrees/
 # Per-user local overrides — ignored.
 .claude/settings.local.json
 

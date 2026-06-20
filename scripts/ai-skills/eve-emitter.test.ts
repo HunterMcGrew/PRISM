@@ -4,6 +4,7 @@
  *   - the routing description riding into the generated SKILL.md frontmatter
  *   - reference-scaffolding stripping (no `.prism/references/` load links survive)
  *   - the emitted tree byte-matching the preserved Lilac reference fixture
+ *   - orphan eve persona dirs are swept when a persona leaves EVE_AUTONOMOUS_PERSONAS
  *
  * The fixture at `__fixtures__/eve-lilac-reference/` is the runtime-validated
  * hand-authored reference, regenerated to the token-substituted form an actual
@@ -27,7 +28,12 @@ import {
 	listRelativeDirectoryEntries,
 	type RelativeDirectoryEntry,
 } from "./build";
-import { normalizeFrontmatter, parseFrontmatter } from "./utils";
+import {
+	MANAGED_MARKER,
+	normalizeFrontmatter,
+	parseFrontmatter,
+	removeDeletedManagedSkills,
+} from "./utils";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
@@ -168,5 +174,40 @@ test("the generated eve tree byte-matches the Lilac reference fixture", async ()
 			generatedBytes.equals(fixtureBytes),
 			`${entry.relativePath} byte-matches the fixture`
 		);
+	}
+});
+
+test("removeDeletedManagedSkills sweeps an orphan eve persona dir", async () => {
+	const tmpRoot = await fs.mkdtemp(path.join(scriptDirectory, ".tmp-eve-test-"));
+	try {
+		// Simulate a persona that was once in EVE_AUTONOMOUS_PERSONAS but has since
+		// been removed — its dir remains on disk with a managed marker.
+		const orphanDir = path.join(tmpRoot, "prism-old-persona");
+		await fs.mkdir(orphanDir, { recursive: true });
+		await fs.writeFile(
+			path.join(orphanDir, MANAGED_MARKER),
+			"Managed by scripts/ai-skills/build.ts\n"
+		);
+
+		// The valid set does not include "prism-old-persona" — it was removed.
+		const validIds = new Set(["prism-standup-summary"]);
+		const swept: string[] = [];
+
+		await removeDeletedManagedSkills(tmpRoot, validIds, false, swept);
+
+		assert.ok(
+			swept.some((p) => p.includes("prism-old-persona")),
+			"the orphan dir path was recorded in changedPaths"
+		);
+
+		let orphanExists = true;
+		try {
+			await fs.access(orphanDir);
+		} catch {
+			orphanExists = false;
+		}
+		assert.ok(!orphanExists, "the orphan eve persona dir was removed");
+	} finally {
+		await fs.rm(tmpRoot, { force: true, recursive: true });
 	}
 });

@@ -179,6 +179,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Units A+B — hand-authored Lilac's eve agent directory (agent.ts, instructions.md, skills/prism-standup-summary/SKILL.md, schedules/standup.md, channels/slack.ts, channels/eve.ts) and added the standalone .eve/package.json plus eveAgentsRoot to paths.json. Import paths confirmed against eve docs; Slack channel uses connectSlackCredentials (Vercel Connect); schedule uses markdown form; pnpm prism:check-types passes.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit C — added the `buildEveAgentFiles` emitter to `build.ts` (identity/workflow split + reference-scaffolding stripping + `eve.yml`-templated config), the `eve.yml` canonical sibling for Lilac, the `eveAgentsRoot` field on the `PathDefinitions` type, and the `EVE_AUTONOMOUS_PERSONAS`-gated wiring in `main()` (optedIn, targetRoots, marker, `eveAgentsRootHasManagedContent`). See Decisions: Header reconciliation and Canonical input vs template split.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit D — preserved the reference to `__fixtures__/eve-lilac-reference/`, regenerated `.eve/agents/prism-standup-summary/`, and proved `diff -r` is ZERO (every original delta was a token substitution; fixture updated to the substituted generated form). Added `eve-emitter.test.ts` (5 tests, identity-split + non-empty description + byte-match) and excluded `__fixtures__` from the build tsconfig (eve `.ts` files import eve, absent on host). See Decision: Token substitution.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit E — added eve cleanup (directory-based via `removeDeletedManagedSkills` on `eveValidIds = knownSkillIds ∩ EVE_AUTONOMOUS_PERSONAS`), added `targetRoots.eveAgents` to `literalGuardRoots`, confirmed seed-curation.json needs no entry (`.eve/` is outside all `COPIED_CONTENT_AREAS` paths), and added `.eve/worktrees/` to `.gitignore`. Cleanup test added to `eve-emitter.test.ts` (341 tests pass); `prism:check` green.
 
 ---
 
@@ -224,10 +225,10 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - [ ] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 5 tests)
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; eve byte-diff zero; 340 tests pass)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; literal guard passes with eveAgents root; 341 tests pass)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (Unit F / plan close — eve.yml-sibling + identity/workflow split are promotion candidates)
 
-**Last updated:** 2026-06-19 (Units C+D complete — eve emitter ships, byte-diff zero)
+**Last updated:** 2026-06-19 (Unit E complete — cleanup, literal-guard, seed-curation confirmed, gitignore)
