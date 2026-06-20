@@ -183,6 +183,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Eli completed Unit F — updated `install-layout.md` (eve agent output subsection: committed/ignored split, six derived files, no-header rationale, `eve.yml` sibling pattern), wrote `eve-runtime.md` (Docker validation runbook: Node-floor split, `eve build`/`eve start`, dev schedule trigger route, HITL gate, auth note), added `.eve/**` + `build.ts` manifest routes. All claims verified against source. `pnpm prism:build` updated 11 mirrors; `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Briar self-review — all checks green (341/341 tests, zero byte-diff, prism:check clean, types clean). 2 minors: AC NFR-1 wording contradicts Header reconciliation Decision; agent.ts/slack.ts skip substituteTokens (latent token-leak risk for wave 2). No blocking issues.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed 4 Briar findings — AC NFR-1 reworded to reference `.ai-skill-generated` marker; all 6 eve-generated files now pass through `substituteTokens` (slice-1 byte-diff ZERO confirmed); `docs/getting-started.md` lists `.eve/agents/` as the fourth compile target; ADR-0062 `/tmp` ephemeral reference replaced with durable language in canonical + all 4 platform mirrors. 341/341 tests pass; `prism:check` green.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove pushed branch and opened draft PR #236 for issue #235.
 
 ---
 
@@ -265,7 +266,7 @@ _No open items._
 - [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case; 341/341 pass)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 341 tests pass; byte-diff zero; literal guard passes; crossref-lint passes; manifest coverage passes)
-- [ ] PR description up to date (no PR yet — open before marking)
+- [x] PR description up to date (draft PR #236 opened 2026-06-19)
 - [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest)
 
 **Last updated:** 2026-06-19 (Clove: addressed 4 Briar self-review findings — AC NFR-1 wording, substituteTokens uniformity, docs compile-target list, ADR-0062 ephemeral /tmp reference; all checks green)
