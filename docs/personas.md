@@ -161,7 +161,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Sage — changelog (`prism-changelog`)
 
-**What he does:** Generates changelogs and release notes between git tags. Ships changelog PRs.
+**What he does:** Generates changelogs and release notes between git tags. Ships changelog PRs. Also runs as an always-on scheduled agent on Vercel eve, detecting new release tags on a weekly schedule and writing the changelog back to the repo behind an approval gate.
 
 **When to call:** "Sage, generate the changelog for v1.2.0." or give him two version tags.
 
@@ -171,7 +171,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Lilac — standup summary (`prism-standup-summary`)
 
-**What she does:** Generates standup summaries from recent git activity, PRs, and branch context.
+**What she does:** Generates standup summaries from recent git activity, PRs, and branch context. Also runs as an always-on scheduled agent on Vercel eve, posting to Slack on a weekday cadence after a preview-and-confirm step.
 
 **When to call:** "Lilac, standup summary for today."
 
@@ -203,7 +203,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Zoe — cadence audit (`prism-surface-audit`)
 
-**What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules.
+**What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules. Also runs as an always-on scheduled agent on Vercel eve, auditing the `.prism/` surface on a weekly cadence and writing reports back behind an approval gate.
 
 **When to call:** "Zoe, run a cadence audit." — typically at the end of a sprint or release cycle.
 
@@ -237,3 +237,5 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 ## Going deeper
 
 The full skill behavior for each persona lives in its skill file. The routing table — which intent maps to which persona — is in [AGENTS.md](../AGENTS.md) § Skill Auto-Routing. The skill authoring model (what stays in the skill body vs. what lives in references) is documented in [ADR-0045](../.prism/spec/adrs/_toolkit/0045-skill-content-disclosure-model.md).
+
+For running Lilac, Sage, and Zoe as always-on scheduled agents on Vercel eve, see [eve-integration.md](./eve-integration.md).
