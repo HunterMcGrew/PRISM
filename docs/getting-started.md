@@ -8,7 +8,7 @@ last_updated: "2026-06-16"
 
 # Getting Started
 
-This guide takes you from zero to a working PRISM install in your repository. By the end you'll have a configured `.claude/`, `.codex/`, `.cursor/`, or `.eve/agents/` directory written to your repo with personas, rules, and templates tailored to your stack.
+This guide takes you from zero to a working PRISM install in your repository. By the end you'll have a configured `.claude/`, `.codex/`, or `.cursor/` directory written to your repo with personas, rules, and templates tailored to your stack.
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ pnpm install
 pnpm prism:build
 ```
 
-`pnpm prism:build` generates platform-specific outputs (`.claude/`, `.codex/`, `.cursor/`, `.eve/agents/`) from the canonical sources in `.ai-skills/`. `.eve/agents/` is the autonomous-slice persona output for deployment on Vercel eve. You only need to run this once per PRISM update.
+`pnpm prism:build` generates platform-specific outputs (`.claude/`, `.codex/`, `.cursor/`) from the canonical sources in `.ai-skills/`. You only need to run this once per PRISM update.
 
 ## Step 2 — Run Atlas in your target repo
 

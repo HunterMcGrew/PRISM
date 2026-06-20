@@ -45,7 +45,6 @@ export interface PathDefinitions {
 		claudeAgentsRoot: string;
 		codexSkillsRoot: string;
 		codexAgentsRoot: string;
-		eveAgentsRoot: string;
 		codexConfigFile: string;
 		cursorSkillsRoot: string;
 		platformContentCopies: {

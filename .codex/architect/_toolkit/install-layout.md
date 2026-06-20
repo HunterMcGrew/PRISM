@@ -65,28 +65,9 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
 - `.agents/` is **ignored** — per-user Codex skills root; consumers will populate it via a per-user install script planned for Phase 2 (not yet shipped in PRISM).
-- `.eve/agents/<persona>/` is **committed** — generated eve agent directories are in-repo destinations, so consumers receive them via `git pull` with no extra install step. `.eve/worktrees/` is ignored (operational state, same as every other tool's `worktrees/` dir).
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../.ai-skills/docs/compatibility.md) for the full reasoning.
-
-### Eve agent output
-
-`pnpm prism:build` generates an eve agent directory at `.eve/agents/<persona>/` for each persona in the autonomous-persona set (`EVE_AUTONOMOUS_PERSONAS` in `scripts/ai-skills/build.ts`). The set is defined by membership rule: every persona that carries an `eve.yml` sibling in its skill dir and is entered in `EVE_AUTONOMOUS_PERSONAS` is in scope. As of wave 2, that is Lilac (`prism-standup-summary`), Sage (`prism-changelog`), and Zoe (`prism-surface-audit`).
-
-The input for each persona is the same canonical source as every other platform target — `.ai-skills/skills/<id>/` — plus an `eve.yml` sibling (flat YAML: model, schedule cron/name/body, Slack Connect UID, section lists that drive the identity/workflow split, and optional sandbox/write-back keys for repo-state personas). The emitter derives six files from that source for every persona; repo-state personas (Sage, Zoe) emit `sandbox/sandbox.ts` in place of `channels/slack.ts` rather than adding a seventh:
-
-- `instructions.md` — the always-on identity frame: the persona's identity, personality, and voice sections from `shared.md` (the `instructionsSections` list in `eve.yml`). Never contains procedural workflow.
-- `skills/<id>/SKILL.md` — the on-demand skill: workflow, standards, anti-patterns (the `skillSections` list in `eve.yml`), plus a synthesized `## Write-back` section for repo-state personas. The `description` frontmatter is the eve routing key — it maps verbatim from the persona's existing frontmatter `description` field, which already reads as a trigger hint.
-- `agent.ts` — direct-to-Anthropic model config (`anthropic("...")`), templated from `eve.yml`'s `model` key. Direct routing reads `ANTHROPIC_API_KEY` with no Vercel AI Gateway required.
-- `schedules/<name>.md` — the cron schedule in markdown form (frontmatter `cron` + body prompt), templated from `eve.yml`'s `scheduleCron`, `scheduleName`, and `scheduleBody` keys.
-- `channels/slack.ts` — Slack channel config using `connectSlackCredentials`, templated from `eve.yml`'s `slackConnectUid`. Omitted when `slackConnectUid` is absent (repo-state personas have no Slack surface).
-- `channels/eve.ts` — HTTP channel with `localDev()` + `placeholderAuth()` (fixed boilerplate; swap for a real auth helper before any non-local deploy).
-- `sandbox/sandbox.ts` — **(repo-state personas only)** generated when `eve.yml` declares `sandbox: true`. Calls `defineSandbox` with the declared backend (`docker()` or `microsandbox()` — never `justbash()`, which has no real binaries and cannot run `git`), a bootstrap hook that clones the repo into `/workspace`, and an `onSession` hook that runs `git fetch && git reset --hard` so each session reads current state. See `eve-runtime.md` § Repo-state personas and [ADR-0063](../spec/adrs/_toolkit/0063-eve-repo-state-personas.md).
-
-Eve output files carry **no in-content generated-header comment** — unlike the Claude/Codex `.md` emitters, which prepend `<!-- AUTO-GENERATED -->`. The reason: `SKILL.md`'s frontmatter must begin on line 1 (a leading HTML comment pushes it off and risks breaking eve's description-based routing). Managed-ness and drift protection ride on the per-persona `.ai-skill-generated` marker written alongside the files, not on a file header. `eveAgentsRootHasManagedContent` in `build.ts` checks this marker.
-
-A persona joins the autonomous slice by (1) entering `EVE_AUTONOMOUS_PERSONAS` and (2) adding an `eve.yml` sibling to its skill dir. The emitter throws at build time if a set member is missing `eve.yml`, a required key, or declares `sandbox: true` with an invalid backend. Running the generated agent on eve requires Node 24 (see `eve-runtime.md` for the Docker validation runbooks). See [ADR-0062](../spec/adrs/_toolkit/0062-eve-substrate-port.md) and [ADR-0063](../spec/adrs/_toolkit/0063-eve-repo-state-personas.md) for the full decision records.
 
 ## The templates/install seed surface
 

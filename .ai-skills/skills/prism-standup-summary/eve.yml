@@ -1,9 +1,0 @@
-model: claude-sonnet-4.6
-scheduleName: standup
-scheduleCron: "0 13 * * 1-5"
-scheduleBody: >
-  Compose today's standup from recent PR activity and post it to the team Slack
-  channel after preview-and-confirm.
-slackConnectUid: slack/prism-standup
-instructionsSections: [Personality, How Lilac Thinks]
-skillSections: [Default Configuration, Workflow, Standup Standards, Definition of Done]
