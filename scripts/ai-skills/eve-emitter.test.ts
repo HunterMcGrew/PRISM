@@ -138,17 +138,20 @@ async function readTree(
   return { entries: await listRelativeDirectoryEntries(root), root };
 }
 
-test("the generated eve tree byte-matches the Lilac reference fixture", async () => {
+async function assertTreeByteMatch(
+  generatedDir: string,
+  fixtureDir: string,
+): Promise<void> {
   let generated: { entries: RelativeDirectoryEntry[]; root: string };
   try {
-    generated = await readTree(generatedRoot);
+    generated = await readTree(generatedDir);
   } catch {
     assert.fail(
-      `Generated eve tree not found at ${generatedRoot} — run 'pnpm prism:build' before running this test suite.`,
+      `Generated eve tree not found at ${generatedDir} — run 'pnpm prism:build' before running this test suite.`,
     );
   }
 
-  const fixture = await readTree(fixtureRoot);
+  const fixture = await readTree(fixtureDir);
 
   const generatedPaths = generated.entries.map((entry) => entry.relativePath);
   const fixturePaths = fixture.entries.map((entry) => entry.relativePath);
@@ -173,6 +176,18 @@ test("the generated eve tree byte-matches the Lilac reference fixture", async ()
       `${entry.relativePath} byte-matches the fixture`,
     );
   }
+}
+
+test("the generated eve tree byte-matches the Lilac reference fixture", async () => {
+  await assertTreeByteMatch(generatedRoot, fixtureRoot);
+});
+
+test("the generated Sage eve tree byte-matches the Sage reference fixture", async () => {
+  const sageSkillId = "prism-changelog";
+  await assertTreeByteMatch(
+    path.join(repoRoot, ".eve", "agents", sageSkillId),
+    path.join(scriptDirectory, "__fixtures__", "eve-sage-reference"),
+  );
 });
 
 const tokenMap = deriveTokenMap(loadConfig(repoRoot));

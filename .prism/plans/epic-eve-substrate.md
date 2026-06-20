@@ -238,6 +238,13 @@ The verification split is unchanged from wave 1: the emitter extension and the t
   - **Implementation guidance:** the write-back is a documented action in each persona's eve skill body, wrapped in the `always()` gate. Sage and Zoe's write-backs collapse to one gated primitive — the idempotency story is one rule, not two.
   - → promoted to ADR-0063 § Decision 4.
 
+- **FR-4 emitter synthesis (Unit G): the write-back instruction is a SKILL.md section the emitter synthesizes, Slack is conditional, and load-link-only sections are dropped from `skillSections`.** Three emitter shapes Unit I (Zoe) must follow verbatim.
+  - **Root cause:** the generated `SKILL.md` body is assembled from `skillSections` of `shared.md`, so there is no slot for the FR-4 write-back. Sage's chat-harness `Post-Delivery Closing` references the interactive shipping flow, which has no eve analogue. And `Document generation` strips to a bare heading (its body is only a `.prism/references/` load-link + teaser).
+  - **Alternatives considered:** hand-author the write-back into each fixture and have the emitter reproduce it (rejected — non-reproducible across personas, breaks on the next persona); include `Document generation` and tolerate the empty heading (rejected — dead weight, plan task 24 says leave it out).
+  - **Chosen approach:** `buildWriteBackSection` synthesizes a `## Write-back` section appended to `SKILL.md` when the eve config declares `writeBackGate` — token-substituted, deterministic, byte-diffable. `slackConnectUid` is optional; the Slack channel emits only when present (Sage/Zoe have no Slack surface). A section whose body is *only* a load-link is omitted from `skillSections`, not stripped to a bare heading.
+  - **Implementation guidance:** Zoe declares `writeBackGate: always` + `writeBackPaths` and gets the same synthesized section with her paths; she omits `slackConnectUid` (no Slack channel); she drops any `skillSections` entry whose body is load-link-only. The write-back command renders `git add <paths joined by space> && git commit && git push` inside one backtick span — no per-path backticks (nested backticks break markdown).
+  - → no promotion needed (ticket-tactical; the synthesis rationale lives here and in the `buildWriteBackSection`/`buildEveSandboxFile` JSDoc).
+
 - **OPEN — TBD, needs Hunter input.** Sage's eve trigger cadence. Sage's natural trigger is a *release-tag push*, but eve schedules are cron-only (verified, `docs/schedules.mdx`) — there is no tag-push schedule. Zoe maps cleanly to a weekly cron; Sage does not. **Default path (used until resolved):** wave 2 ships Sage with a placeholder weekly cron whose body instructs "only produce a changelog when a new release tag exists since the last run," plus a manual dev-trigger / HTTP invocation as the real entry point — the cron is a heartbeat, not the trigger. The clean resolutions (a GitHub-channel tag-push hook, or an external CI job that POSTs Sage's session route on tag push) are wave-3 candidates: both reintroduce the GitHub-channel/Vercel-backend question ADR-0062 Decision 3 flagged, so they need their own evaluation. This open question does not block Unit H — the placeholder-cron default lets Sage's port land and byte-diff on host CI; the live trigger is a Docker-milestone/wave-3 concern.
 
 - **OPEN — TBD, needs the first non-local deploy as the trigger (resolver: Winston/Hunter at deploy time).** Production auth helper for the eve session routes. **Default path (used until resolved):** slice 1 runs entirely on loopback under `localDev()`, with `placeholderAuth()` failing closed behind it (Unit A task 7). `vercelOidc()` is omitted because the no-Vercel-lock-in goal means we must not rely on it alone. The first non-local deploy is the trigger to choose `httpBasic` / `jwtHmac` / `jwtEcdsa` / `oidc` / a custom `AuthFn`; under Option B, the receiving persona agent's auth walk must accept whatever outbound auth Sol presents (`bearer` / `basic` / OIDC).
@@ -285,6 +292,8 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove pushed branch and opened draft PR #236 for issue #235.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed Eric's 3 PR-review findings — added `@vercel/connect@0.2.2` to the eve-runtime.md dep enumeration (Major) with no-lock-in rationale, added 3 emitter throw-path tests (344 total, up from 341), and replaced the silent byte-match no-op with `assert.fail`. Byte-diff zero; `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Winston resolved FR-4 (Open Q3) and Q2 idempotency, wrote ADR-0063, and planned the Sage/Zoe port. Source-verified the eve sandbox against `docs/sandbox.mdx`: read path is a sandbox `bootstrap` clone + `onSession` refresh on a local `docker`/`microsandbox` backend (off-Vercel — the channel-checkout-needs-Vercel framing never applied to repo-state personas); write path is one HITL-gated `git push`, so Q2 stays deferred. Decomposed into Units G (emitter FR-4 extension, first), H (Sage), I (Zoe) — H and I serialize on the shared `EVE_AUTONOMOUS_PERSONAS` edit. Flagged Sage's tag-push-vs-cron cadence as an OPEN needing Hunter.
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove completed Unit G — `loadEveAgentConfig` gained the `sandbox`/`sandboxBackend`/`repoCheckout`/`writeBackGate`/`writeBackPaths` keys with the two ADR-0063 throws (justbash/absent backend; non-`always` gate), `buildEveSandboxFile` emits `sandbox/sandbox.ts` (defineSandbox + backend + bootstrap clone + onSession reset) or `null` for non-sandbox personas, and the skill body gains a synthesized `## Write-back` section. Made `slackConnectUid` optional so non-Slack repo-state personas omit the Slack channel. 4 new wave-2 tests; Lilac byte-diff stays ZERO. See Decision: FR-4 emitter synthesis.
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove completed Unit H — added Sage's `eve.yml` (placeholder weekly cron per the OPEN cadence default; docker sandbox; `writeBackPaths: [.claude/changelogs]`; no `slackConnectUid`), unioned `prism-changelog` into `EVE_AUTONOMOUS_PERSONAS`, preserved the verified reference to `__fixtures__/eve-sage-reference/` before build, and proved `diff -r .eve/agents/prism-changelog` is ZERO. Dropped `Document generation` from `skillSections` (its body strips to a bare heading — only a `.prism/references/` load-link). Added the Sage byte-diff test; 349 tests pass (up from 344); `prism:check` green.
 
 ---
 
@@ -379,19 +388,19 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 
 **Behavioral:**
 
-- [ ] When the build runs for a repo-state persona (one whose `eve.yml` declares `sandbox: true`), Then the emitter produces a `sandbox/sandbox.ts` containing the chosen backend, a bootstrap repo clone, and an onSession refresh.
-- [ ] When the build runs for a persona that declares no sandbox (Lilac), Then no `sandbox/` directory is produced — her generated output is unchanged from wave 1.
-- [ ] Given a persona declares `sandbox: true`, When its `eve.yml` sets `sandboxBackend` to `justbash` or omits the backend, Then the build fails with an error naming the persona and the backend constraint.
-- [ ] Given the hand-authored Sage reference exists, When the emitter regenerates Sage, Then the generated directory is byte-identical to the reference.
+- [x] When the build runs for a repo-state persona (one whose `eve.yml` declares `sandbox: true`), Then the emitter produces a `sandbox/sandbox.ts` containing the chosen backend, a bootstrap repo clone, and an onSession refresh.
+- [x] When the build runs for a persona that declares no sandbox (Lilac), Then no `sandbox/` directory is produced — her generated output is unchanged from wave 1.
+- [x] Given a persona declares `sandbox: true`, When its `eve.yml` sets `sandboxBackend` to `justbash` or omits the backend, Then the build fails with an error naming the persona and the backend constraint.
+- [x] Given the hand-authored Sage reference exists, When the emitter regenerates Sage, Then the generated directory is byte-identical to the reference.
 - [ ] Given the hand-authored Zoe reference exists, When the emitter regenerates Zoe, Then the generated directory is byte-identical to the reference.
 - [ ] [Docker / manual] Given Sage's generated agent is built and served on eve under Node 24, When her schedule (or dev-trigger) fires, Then the sandbox clones the repo, Sage reads the tag range and composes the changelog, and the write-back push surfaces a preview-and-confirm HITL approval before pushing.
 - [ ] [Docker / manual] Given Zoe's generated agent is built and served on eve under Node 24, When her weekly schedule (or dev-trigger) fires, Then the sandbox clones the `.prism/` tree, Zoe writes the audit report and plan verdicts into the checkout, and the write-back push surfaces a preview-and-confirm HITL approval before pushing.
 
 **Non-behavioral:**
 
-- [ ] `pnpm prism:build` and `pnpm prism:check` pass on a clean tree with Sage and Zoe in the autonomous set — drift, literal guard, and seed all green for the two new personas (host Node).
-- [ ] `pnpm prism:test` passes, including the wave-2 emitter cases (sandbox-file generation, the no-sandbox regression guard, the backend-constraint throw, and the Sage/Zoe byte-diffs) (host Node).
-- [ ] The FR-4 read path introduces no Vercel-only dependency — the sandbox clone runs on a local backend (`docker`/`microsandbox`), holding NFR-2 for repo-state personas.
+- [ ] `pnpm prism:build` and `pnpm prism:check` pass on a clean tree with Sage and Zoe in the autonomous set — drift, literal guard, and seed all green for the two new personas (host Node). _(Sage green; Zoe pending Unit I.)_
+- [ ] `pnpm prism:test` passes, including the wave-2 emitter cases (sandbox-file generation, the no-sandbox regression guard, the backend-constraint throw, and the Sage/Zoe byte-diffs) (host Node). _(Sage cases green; Zoe byte-diff pending Unit I.)_
+- [x] The FR-4 read path introduces no Vercel-only dependency — the sandbox clone runs on a local backend (`docker`/`microsandbox`), holding NFR-2 for repo-state personas.
 - [ ] [Docker / manual] The full FR-4 runtime flow (clone → fetch → read → write → HITL-gated push) for Sage and Zoe is a manual milestone, explicitly not a host-CI gate.
 
 ---
@@ -407,11 +416,11 @@ _No open items._
 - [x] No critical or major issues (all review issues resolved — see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 9 tests — includes cleanup case + 3 throw-path tests; 344/344 pass)
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 14 tests — wave-2: no-sandbox guard, sandbox content, backend throw, writeBackGate throw, Sage byte-diff; 349/349 pass)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 344 tests pass; byte-diff zero; literal guard passes; crossref-lint passes; manifest coverage passes)
-- [x] PR description up to date (PR #236 — pending body sync for Eric's fixes)
-- [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 349 tests pass; Sage + Lilac byte-diffs zero; literal guard passes; crossref-lint passes; manifest coverage passes)
+- [ ] PR description up to date (PR #236 — pending body sync after wave-2 Units G+H land; Unit I still ahead)
+- [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest; FR-4 docs are Unit J, after Unit I)
 - [x] No open Review Issues (3 from Eric — all fixed)
 
-**Last updated:** 2026-06-19 (Clove: addressed Eric's 3 PR-review findings — dep enumeration, emitter throw-path tests, silent byte-match no-op)
+**Last updated:** 2026-06-19 (Clove: completed wave-2 Units G+H — FR-4 emitter extension + Sage port; Sage/Lilac byte-diffs ZERO; 349 tests pass)

@@ -243,13 +243,16 @@ export function buildClaudeAgentMarkdown({
 /**
  * Personas whose canonical source is compiled to an eve agent directory.
  *
- * eve emission is gated to the autonomous slice — an always-on, channel-driven
- * agent is the wrong shape for the build-loop personas (Winston/Clove/Briar),
- * which run on demand inside a chat. Slice 1 ships Lilac; Sage and Zoe join in
- * wave 2. A persona outside this set is skipped even if it carries an eve.yml.
+ * eve emission is gated to the autonomous slice — an always-on, schedule- or
+ * channel-driven agent is the wrong shape for the build-loop personas
+ * (Winston/Clove/Briar), which run on demand inside a chat. The slice holds
+ * Lilac (Slack-driven standup) plus the repo-state personas Sage (changelog)
+ * and Zoe (surface audit, joining in Unit I). A persona outside this set is
+ * skipped even if it carries an eve.yml.
  */
 export const EVE_AUTONOMOUS_PERSONAS = new Set<string>([
   "prism-standup-summary",
+  "prism-changelog",
 ]);
 
 const EVE_AGENT_FILE_INSTRUCTIONS = "instructions.md";
@@ -514,17 +517,17 @@ function buildWriteBackSection(eveConfig: EveAgentConfig): string {
     return "";
   }
 
-  const pathsClause =
+  const stagePaths =
     eveConfig.writeBackPaths.length > 0
-      ? eveConfig.writeBackPaths.map((path_) => `\`${path_}\``).join(", ")
-      : "the artifact path";
+      ? eveConfig.writeBackPaths.join(" ")
+      : "<artifact path>";
 
   return [
     "## Write-back",
     "",
     "This persona runs in an eve sandbox holding a fresh checkout of the repo at `/workspace` (cloned at bootstrap, refreshed each session). Its output is written into that checkout and pushed back, not delivered through an interactive shipping flow.",
     "",
-    `After the artifact is written, stage and push it: \`git add ${pathsClause} && git commit && git push\`. The push is gated behind eve's \`needsApproval: always()\` human-in-the-loop approval — surface the staged diff for preview and confirm before pushing. Nothing is pushed without an explicit approval.`,
+    `After the artifact is written, stage and push it: \`git add ${stagePaths} && git commit && git push\`. The push is gated behind eve's \`needsApproval: always()\` human-in-the-loop approval — surface the staged diff for preview and confirm before pushing. Nothing is pushed without an explicit approval.`,
     "",
     "The gate is not new friction — it expresses the confirm-before-write contract this persona already carries, and it is the step-replay safeguard for the non-idempotent push (a push caught mid-step by a crash cannot re-fire without a fresh human decision). See ADR-0063 Decision 4.",
   ].join("\n");
