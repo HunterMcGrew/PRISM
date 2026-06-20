@@ -489,7 +489,7 @@ export function buildEveAgentFiles({
 	);
 
 	const agentTs = `import { defineAgent } from "eve";\nimport { anthropic } from "@ai-sdk/anthropic";\n\nexport default defineAgent({\n  model: anthropic("${eveConfig.model}"),\n});\n`;
-	files.set("agent.ts", agentTs);
+	files.set("agent.ts", substituteTokens(agentTs, tokenMap));
 
 	const scheduleMarkdown = `---\ncron: "${eveConfig.scheduleCron}"\n---\n\n${eveConfig.scheduleBody}\n`;
 	files.set(
@@ -498,10 +498,10 @@ export function buildEveAgentFiles({
 	);
 
 	const slackChannelTs = `import { connectSlackCredentials } from "@vercel/connect/eve";\nimport { slackChannel } from "eve/channels/slack";\n\n// connectSlackCredentials requires a Vercel Connect client UID (e.g. "${eveConfig.slackConnectUid}").\n// Set up the Connect client via \`vercel connect create slack --triggers\` before deploying.\n// See .prism/architect/_toolkit/eve-runtime.md for the full setup runbook.\nexport default slackChannel({\n  credentials: connectSlackCredentials("${eveConfig.slackConnectUid}"),\n});\n`;
-	files.set(path.posix.join("channels", "slack.ts"), slackChannelTs);
+	files.set(path.posix.join("channels", "slack.ts"), substituteTokens(slackChannelTs, tokenMap));
 
 	const eveChannelTs = `import { eveChannel } from "eve/channels/eve";\nimport { localDev, placeholderAuth } from "eve/channels/auth";\n\nexport default eveChannel({\n  auth: [localDev(), placeholderAuth()],\n});\n`;
-	files.set(path.posix.join("channels", "eve.ts"), eveChannelTs);
+	files.set(path.posix.join("channels", "eve.ts"), substituteTokens(eveChannelTs, tokenMap));
 
 	return files;
 }

@@ -181,6 +181,8 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit D — preserved the reference to `__fixtures__/eve-lilac-reference/`, regenerated `.eve/agents/prism-standup-summary/`, and proved `diff -r` is ZERO (every original delta was a token substitution; fixture updated to the substituted generated form). Added `eve-emitter.test.ts` (5 tests, identity-split + non-empty description + byte-match) and excluded `__fixtures__` from the build tsconfig (eve `.ts` files import eve, absent on host). See Decision: Token substitution.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit E — added eve cleanup (directory-based via `removeDeletedManagedSkills` on `eveValidIds = knownSkillIds ∩ EVE_AUTONOMOUS_PERSONAS`), added `targetRoots.eveAgents` to `literalGuardRoots`, confirmed seed-curation.json needs no entry (`.eve/` is outside all `COPIED_CONTENT_AREAS` paths), and added `.eve/worktrees/` to `.gitignore`. Cleanup test added to `eve-emitter.test.ts` (341 tests pass); `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Eli completed Unit F — updated `install-layout.md` (eve agent output subsection: committed/ignored split, six derived files, no-header rationale, `eve.yml` sibling pattern), wrote `eve-runtime.md` (Docker validation runbook: Node-floor split, `eve build`/`eve start`, dev schedule trigger route, HITL gate, auth note), added `.eve/**` + `build.ts` manifest routes. All claims verified against source. `pnpm prism:build` updated 11 mirrors; `prism:check` green.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Briar self-review — all checks green (341/341 tests, zero byte-diff, prism:check clean, types clean). 2 minors: AC NFR-1 wording contradicts Header reconciliation Decision; agent.ts/slack.ts skip substituteTokens (latent token-leak risk for wave 2). No blocking issues.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove addressed 4 Briar findings — AC NFR-1 reworded to reference `.ai-skill-generated` marker; all 6 eve-generated files now pass through `substituteTokens` (slice-1 byte-diff ZERO confirmed); `docs/getting-started.md` lists `.eve/agents/` as the fourth compile target; ADR-0062 `/tmp` ephemeral reference replaced with durable language in canonical + all 4 platform mirrors. 341/341 tests pass; `prism:check` green.
 
 ---
 
@@ -189,6 +191,38 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 ---
 
 ## Review Issues
+
+### AC NFR-1 text contradicts Header reconciliation Decision
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/epic-eve-substrate.md:214`
+- **Problem:** Non-behavioral AC item says eve output "carries the generated-file header" but the Header reconciliation Decision explicitly states eve files carry NO in-content generated-header comment (because a leading comment breaks SKILL.md frontmatter routing). The AC is contradicted by a locked Decision.
+- **Fixed in:** AC NFR-1 reworded to reference the `.ai-skill-generated` marker instead of an in-content header.
+
+### agent.ts and channels/slack.ts skipped by substituteTokens
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:491-501`
+- **Problem:** `agentTs` and `slackChannelTs` are not passed through `substituteTokens`. The literal-guard (Thrive-product-specific) doesn't catch PRISM-team-token placeholders leaking into those files. For slice 1 `eve.yml` has no token placeholders in `model` or `slackConnectUid`, so no drift today — but a future wave-2 persona whose `eve.yml` carries e.g. `slackConnectUid: slack/${SLACK_TEAM}` would emit a raw placeholder.
+- **Fixed in:** All six generated eve files now pass through `substituteTokens`. Slice-1 byte-diff confirmed ZERO after the change.
+
+### docs/getting-started.md missing .eve/agents/ compile target
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/getting-started.md:11,31`
+- **Problem:** `pnpm prism:build` output list named `.claude/`, `.codex/`, `.cursor/` but omitted `.eve/agents/` as a fourth compile target.
+- **Fixed in:** Both occurrences updated; `.eve/agents/` added with a phrase describing it as the autonomous-slice persona output.
+
+### ADR-0062 References section cites an ephemeral /tmp path
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/_toolkit/0062-eve-substrate-port.md:12,76`
+- **Problem:** `## References` cites `/tmp/eve-discovery-digest.md` — a session-scoped ephemeral path absent on any other machine. Session-context leakage in a durable artifact.
+- **Fixed in:** Both occurrences replaced with durable language. Canonical ADR and all 4 platform mirrors updated; `pnpm prism:build` confirmed no uncommitted drift remains.
 
 ---
 
@@ -211,7 +245,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - [ ] `pnpm prism:check` passes on a clean tree — no drift reported for eve output, the literal guard passes, the path guard passes, and the existing platform emitters are unaffected (host Node).
 - [ ] `pnpm prism:test` passes, including the new eve-emitter test (host Node).
 - [ ] The eve emitter is isolated in `build.ts` such that a breaking eve/`ai`-SDK upstream change is contained to the emitter, not the whole build (NFR-4); eve and `ai`-SDK versions are pinned.
-- [ ] `.prism/` markdown remains the single source of truth — eve output is generated, drift-checked, and carries the generated-file header; no eve output is hand-edited (NFR-1).
+- [ ] `.prism/` markdown remains the single source of truth — eve output is generated, drift-checked, and managed via the per-persona `.ai-skill-generated` marker; no eve output is hand-edited (NFR-1).
 - [ ] The slice introduces no dependency on a Vercel-only service; the agent's model routing is direct-to-Anthropic and durability is the local on-disk world (NFR-2).
 - [ ] [Docker / manual] Lilac runs on eve's local on-disk world (`.workflow-data`) under Node 24 with no Vercel service — this is a manual milestone, explicitly not a host-CI gate (the host runs Node 22).
 
@@ -219,17 +253,19 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 
 ## Cleanup Items
 
+_No open items._
+
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
+- [x] No critical or major issues (all review issues resolved — see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case)
-- [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; literal guard passes with eveAgents root; 341 tests pass; 11 mirrors updated after Unit F doc edits)
-- [ ] PR description up to date
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case; 341/341 pass)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 341 tests pass; byte-diff zero; literal guard passes; crossref-lint passes; manifest coverage passes)
+- [ ] PR description up to date (no PR yet — open before marking)
 - [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest)
 
-**Last updated:** 2026-06-19 (Unit F complete — install-layout.md updated, eve-runtime.md written, manifest routes added, all mirrors regenerated, prism:check green)
+**Last updated:** 2026-06-19 (Clove: addressed 4 Briar self-review findings — AC NFR-1 wording, substituteTokens uniformity, docs compile-target list, ADR-0062 ephemeral /tmp reference; all checks green)
