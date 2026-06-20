@@ -369,8 +369,12 @@ export function loadEveAgentConfig(
 /**
  * Returns the `## <name>` block from a shared-body markdown string, from the
  * heading through the line before the next top-level (`## `) heading.
+ *
+ * Tracks fenced-code-block state so that `## ` lines inside a ``` fence are
+ * not mistaken for section boundaries. A line beginning with ``` toggles the
+ * fence — the section ends only when a `## ` line appears outside a fence.
  */
-function extractSharedSection(sharedBody: string, name: string): string {
+export function extractSharedSection(sharedBody: string, name: string): string {
   const lines = sharedBody.split("\n");
   const startIndex = lines.findIndex((line) => line === `## ${name}`);
   if (startIndex === -1) {
@@ -378,8 +382,12 @@ function extractSharedSection(sharedBody: string, name: string): string {
   }
 
   let endIndex = lines.length;
+  let insideFence = false;
   for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].startsWith("## ")) {
+    if (lines[index].startsWith("```")) {
+      insideFence = !insideFence;
+    }
+    if (!insideFence && lines[index].startsWith("## ")) {
       endIndex = index;
       break;
     }

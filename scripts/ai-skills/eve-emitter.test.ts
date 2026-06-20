@@ -23,6 +23,7 @@ import {
   buildEveSandboxFile,
   EVE_AUTONOMOUS_PERSONAS,
   extractDescriptionBlock,
+  extractSharedSection,
   loadEveAgentConfig,
 } from "./build";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
@@ -195,6 +196,75 @@ test("the generated Zoe eve tree byte-matches the Zoe reference fixture", async 
   await assertTreeByteMatch(
     path.join(repoRoot, ".eve", "agents", zoeSkillId),
     path.join(scriptDirectory, "__fixtures__", "eve-zoe-reference"),
+  );
+});
+
+test("Zoe's generated SKILL.md contains the Output format section with balanced code fences", async () => {
+  const skillMdPath = path.join(
+    repoRoot,
+    ".eve",
+    "agents",
+    "prism-surface-audit",
+    "skills",
+    "prism-surface-audit",
+    "SKILL.md",
+  );
+  const content = await fs.readFile(skillMdPath, "utf8");
+
+  assert.match(
+    content,
+    /^## Output format$/m,
+    "SKILL.md must contain the ## Output format heading",
+  );
+
+  const fenceMatches = content.match(/^```/gm);
+  const fenceCount = fenceMatches?.length ?? 0;
+  assert.strictEqual(
+    fenceCount % 2,
+    0,
+    `code fences must be balanced (found ${fenceCount} fence markers, expected an even number)`,
+  );
+});
+
+test("extractSharedSection extracts a section whose body contains embedded ## headings inside a fenced code block", () => {
+  const sharedBody = [
+    "## Before",
+    "Content before.",
+    "",
+    "## Target section",
+    "Prose before the fence.",
+    "",
+    "```markdown",
+    "## Heading inside fence",
+    "Content inside fence.",
+    "```",
+    "",
+    "Prose after the fence.",
+    "",
+    "## After",
+    "Content after.",
+  ].join("\n");
+
+  const extracted = extractSharedSection(sharedBody, "Target section");
+
+  assert.ok(
+    extracted.includes("## Heading inside fence"),
+    "the embedded ## heading inside the fence must be preserved, not treated as a section boundary",
+  );
+  assert.ok(
+    extracted.includes("Prose after the fence."),
+    "prose after the closing fence must be included in the extracted section",
+  );
+  assert.ok(
+    !extracted.includes("## After"),
+    "the next top-level ## heading outside the fence must end the section",
+  );
+
+  const fenceCount = (extracted.match(/^```/gm) ?? []).length;
+  assert.strictEqual(
+    fenceCount,
+    2,
+    "extracted section must contain exactly one opening and one closing fence marker",
   );
 });
 

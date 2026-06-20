@@ -296,6 +296,8 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove completed Unit H — added Sage's `eve.yml` (placeholder weekly cron per the OPEN cadence default; docker sandbox; `writeBackPaths: [.claude/changelogs]`; no `slackConnectUid`), unioned `prism-changelog` into `EVE_AUTONOMOUS_PERSONAS`, preserved the verified reference to `__fixtures__/eve-sage-reference/` before build, and proved `diff -r .eve/agents/prism-changelog` is ZERO. Dropped `Document generation` from `skillSections` (its body strips to a bare heading — only a `.prism/references/` load-link). Added the Sage byte-diff test; 349 tests pass (up from 344); `prism:check` green.
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove completed Unit I — added Zoe's `eve.yml` (Monday 09:00 UTC weekly cron; docker sandbox + repo checkout; `writeBackPaths: [.prism/audits, .prism/plans, .prism/audit-state.json]`; no `slackConnectUid`), unioned `prism-surface-audit` into `EVE_AUTONOMOUS_PERSONAS`, preserved fixture to `__fixtures__/eve-zoe-reference/`, and proved all three byte-diffs (Zoe + Sage + Lilac) ZERO. Dropped `Output format` from `skillSections` (contains embedded `## ` headings inside a fenced code block that cause `extractSharedSection` to truncate and leave an unclosed fence — same pattern as Sage's `Document generation`). Added Zoe byte-diff test; 350 tests pass; `prism:check` green. No emitter fix needed for Zoe's `Personality`-first preamble — `shared.md` has a leading "You are **Zoe**..." paragraph before `## Personality`, so `extractIdentityPreamble` captures it correctly.
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Eli completed Unit J — extended `eve-runtime.md` with the FR-4 repo-state section (sandbox bootstrap clone + onSession refresh, backend constraint, write-back HITL gate, runtime-only unknowns, and Docker milestone runbooks for Sage and Zoe; cited ADR-0063) and updated `install-layout.md` (sandbox/sandbox.ts as seventh derived file for repo-state personas, membership-rule language replacing the stale "Sage and Zoe join in wave 2" forward reference, dual ADR cite). Claims verified against `build.ts`, generated `sandbox.ts` files, `sandbox.mdx`, and the synthesized SKILL.md write-back text. `pnpm prism:build` updated 9 mirrors; `prism:check` green.
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Briar self-review (Sol-dispatched) — wave-2 CI all green (350/350 tests, three byte-diffs ZERO, prism:check clean). 3 minors filed: `extractSharedSection` code-fence bug (documented, workaround in place); Zoe `Output format` dropped (content-loss, deferred); inline prose reference-links survive strip in Sage SKILL.md. Graded `extractSharedSection`/Zoe drop as **minor** (deferred follow-up). No blocking issues; verdict: needs-fix (minors, no PR-blocking items).
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove fixed Briar Finding 1 — made `extractSharedSection` code-fence-aware (insideFence toggle on ` ``` ` lines; section boundary only fires when `!insideFence`), re-added `Output format` to Zoe's `skillSections`, updated fixture, exported function, added 2 new tests (352 total). All three byte-diffs ZERO; `prism:check` green. Finding 2 (Zoe Output format) resolved as a direct consequence; Finding 3 (inline prose links) deferred per Sol scope.
 
 ---
 
@@ -304,6 +306,31 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 ---
 
 ## Review Issues
+
+### extractSharedSection is code-fence-unaware (tracked, documented workaround in place)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/build.ts:373-389` (`extractSharedSection`)
+- **Problem:** `extractSharedSection` scans for the next `## ` line to delimit a section, but does not track fenced-code-block state. A section whose body contains an embedded `## ` heading inside a ` ``` ` fence causes truncation at that interior heading, producing a section with an unclosed fence. Confirmed: `## Output format` in `prism-surface-audit/shared.md` truncates at line 168 (`## Summary` inside the code block), emitting only the opening ` ```markdown ` with no closing fence. Clove's workaround — dropping the section from `skillSections` — avoids the broken output but silently loses the section's content. See Sol-flagged grading below.
+- **Suggested fix:** Track fence state in `extractSharedSection` (toggle a `insideFence` boolean on ` ``` ` lines; only stop at `## ` when `!insideFence`). This is a 5-line fix and removes the need for the workaround.
+- **Fixed in:** `extractSharedSection` now tracks an `insideFence` boolean that toggles on lines starting with ` ``` `; section boundaries only fire when `!insideFence`. Exported for unit testing; two new tests added (fence-aware unit test + Zoe SKILL.md fence-balance assertion). No-op for Sage and Lilac (their sections have no embedded-fence headings — byte-diffs remain ZERO).
+
+### Zoe Output format dropped from eve SKILL.md (content loss — grading below)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-surface-audit/eve.yml` (`skillSections`) + `build.ts:373`
+- **Problem:** `Output format` is omitted from Zoe's `skillSections` because `extractSharedSection` would truncate it (see above). The section describes the audit report's file path (`.prism/audits/<YYYY-MM-DD>-audit.md`), the report's full schema (sections, verdict format, deferred items), and the `mkdir` behavior for first run. Without it, Zoe running on eve must infer the report structure from `## Purpose` alone — she will likely produce an output, but not necessarily matching the canonical shape.
+- **Fixed in:** Re-added `Output format` to `skillSections` in `eve.yml` now that `extractSharedSection` is fence-aware. Fixture updated; all three byte-diffs ZERO; 352/352 tests pass.
+
+### Inline prose reference-links survive scaffolding strip in Sage SKILL.md
+
+- **Severity:** `minor`
+- **Status:** `deferred` — deferred to follow-up per Sol; the fix interacts with FR-4 link-handling design (EVE_REFERENCE_LINK / stripEveReferenceScaffolding); not in scope for this Finding 1 fix.
+- **File:** `scripts/ai-skills/build.ts:403-405` (`EVE_REFERENCE_LINK`) / `scripts/ai-skills/__fixtures__/eve-sage-reference/skills/prism-changelog/SKILL.md:95,99`
+- **Problem:** `EVE_REFERENCE_LINK` only matches the bold-directive pattern (`**read [...](path)**`). Inline prose links to `.prism/references/` paths survive in the generated SKILL.md — e.g. "apply the Categorization Decision Tree from [`frameworks.md`](../../../.prism/references/changelog/frameworks.md)" appears at lines 95 and 99 of the generated Sage SKILL.md. These are dead links in the eve world (no `references/` tree). They are lower severity than the directive links because they degrade gracefully (the agent can still follow the inline instruction), but they are strictly wrong.
+- **Suggested fix:** Extend `stripEveReferenceScaffolding` to also strip inline markdown links whose href matches `.prism/references/` — or replace them with the link text only (drop the href).
 
 ### AC NFR-1 text contradicts Header reconciliation Decision
 
@@ -418,11 +445,11 @@ _No open items._
 - [x] No critical or major issues (all review issues resolved — see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 15 tests — wave-2: no-sandbox guard, sandbox content, backend throw, writeBackGate throw, Sage byte-diff, Zoe byte-diff; 350/350 pass)
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 17 tests — wave-2: no-sandbox guard, sandbox content, backend throw, writeBackGate throw, Sage byte-diff, Zoe byte-diff, Zoe Output format fence-balance, extractSharedSection fence-aware unit test; 352/352 pass)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 350 tests pass; Zoe + Sage + Lilac byte-diffs zero; literal guard passes; crossref-lint passes; manifest coverage passes)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 352 tests pass; Zoe + Sage + Lilac byte-diffs zero; literal guard passes; crossref-lint passes; manifest coverage passes)
 - [x] PR description up to date (PR #236 — body sync pending)
 - [x] Lasting decisions promoted to architect context (Units F and J complete — eve.yml-sibling + identity/workflow split in `install-layout.md`; Docker runbooks in `eve-runtime.md`; FR-4 sandbox/write-back in `eve-runtime.md`; ADR-0062 and ADR-0063 cited)
-- [x] No open Review Issues (3 from Eric — all fixed)
+- [x] No open Review Issues (Briar Finding 1 fixed, Finding 2 resolved, Finding 3 deferred per Sol)
 
-**Last updated:** 2026-06-19 (Eli: completed Unit J — FR-4 docs; `eve-runtime.md` + `install-layout.md` extended; 9 mirrors regenerated; `prism:check` green)
+**Last updated:** 2026-06-19 (Clove: fixed Briar Finding 1 — `extractSharedSection` now code-fence-aware; Zoe `Output format` restored; 2 new tests; 352/352 pass; all three byte-diffs ZERO; Finding 3 deferred per Sol scope.)

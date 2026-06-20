@@ -10,4 +10,4 @@ repoCheckout: true
 writeBackGate: always
 writeBackPaths: [.prism/audits, .prism/plans, .prism/audit-state.json]
 instructionsSections: [Personality]
-skillSections: [When this skill is invoked, Purpose, Cadence, Audit surfaces, Per-Decision verdict procedure, Archive classification, Plan-archive lane, Open-question Decision variant, State file, What Zoe does NOT do]
+skillSections: [When this skill is invoked, Purpose, Cadence, Audit surfaces, Per-Decision verdict procedure, Archive classification, Plan-archive lane, Open-question Decision variant, Output format, State file, What Zoe does NOT do]

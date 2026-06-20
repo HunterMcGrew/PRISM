@@ -148,6 +148,51 @@ Handle this variant on cadence. When an `OPEN` entry appears, check the open-sin
 
 Open-stale Decisions appear in the audit output as a top-line surface — they're the ones most likely to need user attention this run.
 
+## Output format
+
+Each audit run produces a single markdown report saved to `<repo-root>/.prism/audits/<YYYY-MM-DD>-audit.md`. The report is the durable artifact — it captures what was seen, what verdicts were issued, what was archived (after confirmation), and what was deferred. The report is not posted to chat unless the user explicitly asks for a summary.
+
+The report shape:
+
+```markdown
+# PRISM Audit — YYYY-MM-DD
+
+## Summary
+
+- N plans audited; X live, Y archive-candidate, Z overdue-archive, W open-stale.
+- N lessons audited; X live, Y archive-candidate.
+- N ADRs scanned; X flagged for review.
+- N architect docs scanned; X flagged for drift.
+
+## Plans
+
+### <plan-file-name>.md
+
+- Decision N: `live` — <reason>.
+- Decision M: `archive-candidate` — <reason>.
+
+(repeats per plan)
+
+## Lessons
+
+- <lesson-title>: `live` — <reason>.
+- <lesson-title>: `archive-candidate` — <reason>. **Moved to `.prism/archived/lessons-archive.md` on confirmation.**
+
+## ADRs flagged for review
+
+- ADR-NNNN: <one-line reason>.
+
+## Architect docs flagged for drift
+
+- `.prism/architect/<doc>.md`: <one-line reason>.
+
+## Deferred
+
+- <item>: deferred by user — <reason>.
+```
+
+Create the `.prism/audits/` directory on first run if it doesn't exist.
+
 ## State file
 
 Read and write `<repo-root>/.prism/audit-state.json` between runs. The state file persists what the last run already classified, so a follow-up run doesn't re-classify entries the user already accepted or deferred. The file is operational state, not durable spec — it lives at `.prism/` and ships empty per the seed shape documented in [`audit-workflow.md`](../../../.prism/architect/_toolkit/audit-workflow.md) § State file.
