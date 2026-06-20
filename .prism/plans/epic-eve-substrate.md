@@ -157,6 +157,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Created epic branch plan and issue #235.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Winston added the architecture, ADR-0062, and the implementation plan. Verified all 14 load-bearing eve runtime claims against the actual docs before relying on them; decomposed into six units (A: hand-author Lilac, B: prereqs, C: emitter, D: regenerate+diff, E: drift/guard/seed, F: docs). Resolved Open Q2 (idempotency → HITL gate default) and Q3 (state-location → wave-2 open variant); see Decision: Sequencing for the Lilac-by-hand-first call.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Units A+B — hand-authored Lilac's eve agent directory (agent.ts, instructions.md, skills/prism-standup-summary/SKILL.md, schedules/standup.md, channels/slack.ts, channels/eve.ts) and added the standalone .eve/package.json plus eveAgentsRoot to paths.json. Import paths confirmed against eve docs; Slack channel uses connectSlackCredentials (Vercel Connect); schedule uses markdown form; pnpm prism:check-types passes.
 
 ---
 
@@ -208,4 +209,4 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (Units A+B complete)
