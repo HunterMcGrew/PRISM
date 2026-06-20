@@ -151,6 +151,25 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 
 - **Scope: autonomous slice only (Lilac → Sage → Zoe); the emitter gates emission to an explicit persona set.** The build loop (Winston/Clove/Briar) is not ported. Eric-via-GitHub-webhook is a documented wave-2 candidate, deferred because the GitHub channel's pre-call checkout requires the Vercel backend, conflicting with the local-world goal. → promoted to ADR-0062 § Decision 3.
 
+- **Header reconciliation (Unit C): eve runtime files carry NO in-content generated-header comment.** The Claude/Codex `.md` emitters prepend a `<!-- AUTO-GENERATED -->` block; the eve emitter does not.
+  - **Root cause:** eve routes to a skill by its frontmatter `description` only (its single routing mechanism). A leading HTML comment before `SKILL.md`'s opening `---` pushes the frontmatter off line 1 and risks breaking that routing; `agent.ts`/`channels/*.ts` are plain TypeScript a comment doesn't belong in. The hand-authored, runtime-intent reference deliberately carries no header.
+  - **Alternatives considered:** prepend the header to match the other emitters (breaks routing); header on `.md` files only (still breaks SKILL.md); no header, marker-based managed detection (chosen).
+  - **Chosen approach:** no in-content header. Managed-ness and drift protection (NFR-1) ride on the per-persona `.ai-skill-generated` marker written alongside the files — the directory-based managed pattern (`skillsRootHasManagedContent`), not the file-header pattern the Claude/Codex agent roots use. `eveAgentsRootHasManagedContent` checks the marker.
+  - **Implementation guidance:** the fixture (= reference) was already header-free, so it is correct as-is; the emitter matches it. Do not "fix" the eve emitter to add headers — it would break Lilac's routing.
+  - → no promotion needed (ticket-tactical; the marker-vs-header rationale lives here and in the emitter JSDoc).
+
+- **Token substitution (Unit D): the eve emitter substitutes `${TOKEN}` placeholders, like every other platform; the preserved fixture carries substituted values.** The hand-authored reference kept literal `${PROJECT}` / `${GITHUB_OWNER}` etc.
+  - **Root cause:** the reference was hand-copied from `shared.md` without running token substitution — a hand-authoring artifact, not the correct generated shape. Literal `${PROJECT}` in a deployed eve agent is broken (eve cannot resolve a PRISM build token). Every other platform output (Claude/Codex/Cursor) substitutes, and the literal-guard requires no raw source literals leak.
+  - **Chosen approach:** the emitter substitutes (correct, guard-safe, every-platform behavior). The fixture was regenerated from the corrected emitter output, so it carries `PRISM` / `HunterMcGrew/PRISM` / `#prism-dev`. This is "defining the expected generated artifact," not "fixing the test to pass" — per the byte-diff: every delta between emitter and original reference was a token substitution, with zero body/structural differences.
+  - **Implementation guidance:** the fixture is the *generated* artifact (substituted), not the raw hand-authored copy. A consumer build re-substitutes against their own config.
+  - → no promotion needed (ticket-tactical).
+
+- **Canonical input vs template split (Unit C): per-persona eve config lives in a new `eve.yml` sibling, NOT in `frontmatter.yml`.** Two files derive from `shared.md` (identity/workflow split); four are templated from `eve.yml`.
+  - **Root cause:** `frontmatter.yml` is embedded verbatim into every platform's `SKILL.md` frontmatter, so eve keys added there would leak into Claude/Codex/Cursor output and drift many files. The frontmatter parser also rejects nested blocks (verified: a nested `eve:` block silently drops its indented children) — only flat keys parse.
+  - **Chosen approach:** add `eve.yml` (flat keys: `model`, `scheduleName`/`scheduleCron`/`scheduleBody`, `slackConnectUid`, `instructionsSections`/`skillSections`) as a fifth sibling alongside `claude.md`/`codex.md`/`cursor.md` in the skill dir — read only by the eve emitter, invisible to other emitters and to `optionalSkillPayloads`/seed-curation. Section lists use `[a, b]` syntax (parser captures verbatim; emitter splits). The two derived files: `instructions.md` = identity preamble + `instructionsSections` (identity, no workflow); `SKILL.md` = folded `description` block + `skillSections` with `.prism/references/` load-link scaffolding stripped (those links are dead in the eve world — the eve agent has no `references/` tree). `agent.ts`/`schedules/<name>.md`/`channels/slack.ts` templated from `eve.yml`; `channels/eve.ts` is fixed boilerplate.
+  - **Implementation guidance:** a persona joins the eve slice by (1) entering `EVE_AUTONOMOUS_PERSONAS` and (2) adding an `eve.yml`. The emitter throws if a set member lacks `eve.yml` or a required key.
+  - → promotion candidate for Unit F's install-layout doc and ADR-0062 (the `eve.yml`-sibling + identity/workflow-split shape); leave promotion to plan close.
+
 ---
 
 ## History
@@ -158,6 +177,8 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Created epic branch plan and issue #235.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Winston added the architecture, ADR-0062, and the implementation plan. Verified all 14 load-bearing eve runtime claims against the actual docs before relying on them; decomposed into six units (A: hand-author Lilac, B: prereqs, C: emitter, D: regenerate+diff, E: drift/guard/seed, F: docs). Resolved Open Q2 (idempotency → HITL gate default) and Q3 (state-location → wave-2 open variant); see Decision: Sequencing for the Lilac-by-hand-first call.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Units A+B — hand-authored Lilac's eve agent directory (agent.ts, instructions.md, skills/prism-standup-summary/SKILL.md, schedules/standup.md, channels/slack.ts, channels/eve.ts) and added the standalone .eve/package.json plus eveAgentsRoot to paths.json. Import paths confirmed against eve docs; Slack channel uses connectSlackCredentials (Vercel Connect); schedule uses markdown form; pnpm prism:check-types passes.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit C — added the `buildEveAgentFiles` emitter to `build.ts` (identity/workflow split + reference-scaffolding stripping + `eve.yml`-templated config), the `eve.yml` canonical sibling for Lilac, the `eveAgentsRoot` field on the `PathDefinitions` type, and the `EVE_AUTONOMOUS_PERSONAS`-gated wiring in `main()` (optedIn, targetRoots, marker, `eveAgentsRootHasManagedContent`). See Decisions: Header reconciliation and Canonical input vs template split.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit D — preserved the reference to `__fixtures__/eve-lilac-reference/`, regenerated `.eve/agents/prism-standup-summary/`, and proved `diff -r` is ZERO (every original delta was a token substitution; fixture updated to the substituted generated form). Added `eve-emitter.test.ts` (5 tests, identity-split + non-empty description + byte-match) and excluded `__fixtures__` from the build tsconfig (eve `.ts` files import eve, absent on host). See Decision: Token substitution.
 
 ---
 
@@ -201,12 +222,12 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 ## PR Readiness
 
 - [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
+- [x] Types correct — no `any`, no unsafe `as` (`prism:check-types` passes)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 5 tests)
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: TBD
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; eve byte-diff zero; 340 tests pass)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (Unit F / plan close — eve.yml-sibling + identity/workflow split are promotion candidates)
 
-**Last updated:** 2026-06-19 (Units A+B complete)
+**Last updated:** 2026-06-19 (Units C+D complete — eve emitter ships, byte-diff zero)

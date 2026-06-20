@@ -9,13 +9,13 @@ description: >
 
 ## Default Configuration
 
-- **Repo:** `${GITHUB_OWNER}/${GITHUB_REPO}`
+- **Repo:** `HunterMcGrew/PRISM`
 - **Default window:** the full calendar day of yesterday, local time
 - **Monday exception:** on Mondays, default to the full calendar day of last Friday
 - **User override:** honor any range the user specifies ("since Friday", "this week", etc.)
-- **Default Slack channel:** `${SLACK_CHANNEL}` (canonical name; Lilac resolves this to a channel ID at runtime via `slack_search_channels` before calling the post tool, since the MCP typically requires `channel_id`, not the `#name` form)
+- **Default Slack channel:** `#prism-dev` (canonical name; Lilac resolves this to a channel ID at runtime via `slack_search_channels` before calling the post tool, since the MCP typically requires `channel_id`, not the `#name` form)
 - **Channel override:** honor any channel the user specifies per-invocation ("post this one to #planning") — do not infer the channel from context; same name-to-ID resolution applies
-- **Default project name:** `${PROJECT}` (hardcoded for now; revisit when multi-project standups become a need)
+- **Default project name:** `PRISM` (hardcoded for now; revisit when multi-project standups become a need)
 - **Bot identity:** Lilac posts via the Slack MCP's bot user. The posted message has no attribution line — it starts at the first `**Bold:**` section label. The standup owner is implied by which Slack user the bot posts on behalf of.
 
 ## Workflow
@@ -53,7 +53,7 @@ Using `#` / `##` / `###` for section labels. A real run posting through `slack_s
 
 ### Anti-pattern: Blank lines as the only separator between sections or between a top-level label and its content
 
-Relying on a truly empty line where a paragraph break needs to survive. Slack collapses empty lines when rendering a posted message — between adjacent sections AND between a top-level prompt and its first content line (including when the content is another bold label, like `**What did you do yesterday?**` → `**Merged:**`). Two real runs demonstrated this: first between sections (`${PROJECT}What did you do yesterday?` on a single line), then between `**What did you do yesterday?**` and `**Merged:**` rendering flush. A spacer line containing one zero-width space (U+200B) is the workaround: it counts as non-empty to the renderer and produces the gap without showing a visible character. Only subsection-label-to-entries transitions (e.g. `**Merged:**` → `${TICKET_PREFIX}-1627: ...`) can rely on a plain blank line, since entry lines are non-bold and Slack's renderer handles the break naturally.
+Relying on a truly empty line where a paragraph break needs to survive. Slack collapses empty lines when rendering a posted message — between adjacent sections AND between a top-level prompt and its first content line (including when the content is another bold label, like `**What did you do yesterday?**` → `**Merged:**`). Two real runs demonstrated this: first between sections (`PRISMWhat did you do yesterday?` on a single line), then between `**What did you do yesterday?**` and `**Merged:**` rendering flush. A spacer line containing one zero-width space (U+200B) is the workaround: it counts as non-empty to the renderer and produces the gap without showing a visible character. Only subsection-label-to-entries transitions (e.g. `**Merged:**` → `PRISM-1627: ...`) can rely on a plain blank line, since entry lines are non-bold and Slack's renderer handles the break naturally.
 
 ### Anti-pattern: Posting without explicit confirmation
 
@@ -77,13 +77,13 @@ Emitting output that "basically matches" the template without re-reading it. Rea
 
 ### Anti-pattern: Modifying the PR title
 
-Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `${TICKET_PREFIX}-NNNN:` prefix, split it into the ticket ID and title parts per the template.
+Summarizing, shortening, or rewording a PR title. Emit it exactly as GitHub has it. If the title has a `PRISM-NNNN:` prefix, split it into the ticket ID and title parts per the template.
 
 ### Anti-pattern: Paraphrasing the user's Today or Blockers answers
 
 Rewriting, summarizing, or reinterpreting what the user said for the Today or Blockers sections. The user is the authority on their own plan — their words stay theirs.
 
-Light list normalization is not paraphrase and is expected (see Phase 6). The split is mechanical — delimiter-based, with surgical filler removal — and preserves every meaningful word the user typed. Paraphrase is swapping words for other words (e.g. "${PROJECT} sprint planning" → "attending the ${PROJECT} sprint planning session"); that's not allowed.
+Light list normalization is not paraphrase and is expected (see Phase 6). The split is mechanical — delimiter-based, with surgical filler removal — and preserves every meaningful word the user typed. Paraphrase is swapping words for other words (e.g. "PRISM sprint planning" → "attending the PRISM sprint planning session"); that's not allowed.
 
 ## Definition of Done
 
