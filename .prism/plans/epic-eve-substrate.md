@@ -299,6 +299,7 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Briar self-review (Sol-dispatched) — wave-2 CI all green (350/350 tests, three byte-diffs ZERO, prism:check clean). 3 minors filed: `extractSharedSection` code-fence bug (documented, workaround in place); Zoe `Output format` dropped (content-loss, deferred); inline prose reference-links survive strip in Sage SKILL.md. Graded `extractSharedSection`/Zoe drop as **minor** (deferred follow-up). No blocking issues; verdict: needs-fix (minors, no PR-blocking items).
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove fixed Briar Finding 1 — made `extractSharedSection` code-fence-aware (insideFence toggle on ` ``` ` lines; section boundary only fires when `!insideFence`), re-added `Output format` to Zoe's `skillSections`, updated fixture, exported function, added 2 new tests (352 total). All three byte-diffs ZERO; `prism:check` green. Finding 2 (Zoe Output format) resolved as a direct consequence; Finding 3 (inline prose links) deferred per Sol scope.
 - 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove opened draft PR #237 for wave 2 (Sage + Zoe, FR-4 sandbox/write-back) — body authored from template; branch is clean.
+- 2026-06-19 [hmcgrew/eve-wave2-sage-zoe]: Clove fixed Eric Minor 1 — rewrote `install-layout.md:77` to describe the Slack→sandbox swap rather than a seventh file; regenerated three platform mirrors; all three byte-diffs ZERO; 352/352 pass. Minor 2 (inline prose links) acknowledged on PR thread as correctly deferred; Eric's corrected path-resolution framing recorded in Review Issues.
 
 ---
 
@@ -325,12 +326,20 @@ The verification split is unchanged from wave 1: the emitter extension and the t
 - **Problem:** `Output format` is omitted from Zoe's `skillSections` because `extractSharedSection` would truncate it (see above). The section describes the audit report's file path (`.prism/audits/<YYYY-MM-DD>-audit.md`), the report's full schema (sections, verdict format, deferred items), and the `mkdir` behavior for first run. Without it, Zoe running on eve must infer the report structure from `## Purpose` alone — she will likely produce an output, but not necessarily matching the canonical shape.
 - **Fixed in:** Re-added `Output format` to `skillSections` in `eve.yml` now that `extractSharedSection` is fence-aware. Fixture updated; all three byte-diffs ZERO; 352/352 tests pass.
 
+### install-layout.md file-count wording describes a seventh file rather than the swap
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/install-layout.md:77`
+- **Problem:** "six for schedule-only personas (Lilac), a seventh for repo-state personas (Sage, Zoe)" mis-states the math. Both classes emit six files. Repo-state personas trade `channels/slack.ts` for `sandbox/sandbox.ts` — they do not add a seventh.
+- **Fixed in:** Rewording: "The emitter derives six files from that source for every persona; repo-state personas (Sage, Zoe) emit `sandbox/sandbox.ts` in place of `channels/slack.ts` rather than adding a seventh." Canonical `install-layout.md` edited; `pnpm prism:build` regenerated three platform mirrors (`.claude/`, `.codex/`, `.cursor/`). Eve agent output unchanged — all three byte-diffs ZERO.
+
 ### Inline prose reference-links survive scaffolding strip in Sage SKILL.md
 
 - **Severity:** `minor`
-- **Status:** `deferred` — deferred to follow-up per Sol; the fix interacts with FR-4 link-handling design (EVE_REFERENCE_LINK / stripEveReferenceScaffolding); not in scope for this Finding 1 fix.
+- **Status:** `deferred` — deferred to follow-up per Sol; the fix interacts with FR-4 link-handling design (EVE_REFERENCE_LINK / stripEveReferenceScaffolding); not in scope for this wave-2 increment.
 - **File:** `scripts/ai-skills/build.ts:403-405` (`EVE_REFERENCE_LINK`) / `scripts/ai-skills/__fixtures__/eve-sage-reference/skills/prism-changelog/SKILL.md:95,99`
-- **Problem:** `EVE_REFERENCE_LINK` only matches the bold-directive pattern (`**read [...](path)**`). Inline prose links to `.prism/references/` paths survive in the generated SKILL.md — e.g. "apply the Categorization Decision Tree from [`frameworks.md`](../../../.prism/references/changelog/frameworks.md)" appears at lines 95 and 99 of the generated Sage SKILL.md. These are dead links in the eve world (no `references/` tree). They are lower severity than the directive links because they degrade gracefully (the agent can still follow the inline instruction), but they are strictly wrong.
+- **Problem:** `EVE_REFERENCE_LINK` only matches the bold-directive pattern (`**read [...](path)**`). Inline prose links to `.prism/references/` paths survive in the generated SKILL.md — e.g. "apply the Categorization Decision Tree from [`frameworks.md`](../../../.prism/references/changelog/frameworks.md)" appears at lines 95 and 99 of the generated Sage SKILL.md. These are dead links in the eve world (no `references/` tree). They are lower severity than the directive links because they degrade gracefully (the agent can still follow the inline instruction), but they are strictly wrong. **Corrected framing (from Eric PR review):** the "files exist in `/workspace` so it degrades gracefully" rationale is slightly off — the relative path as written doesn't resolve to the checked-out file. From `skills/prism-changelog/SKILL.md`, the path `../../../.prism/references/...` climbs above the agent root (`skills/prism-changelog` → `skills` → `<agent-root>` → escapes). In the repo clone it resolves to the non-existent `.eve/agents/.prism/references/...`. The fix is a real path-rewrite-vs-strip design decision (persona-dependent, FR-4-interacting), not a no-op.
 - **Suggested fix:** Extend `stripEveReferenceScaffolding` to also strip inline markdown links whose href matches `.prism/references/` — or replace them with the link text only (drop the href).
 
 ### AC NFR-1 text contradicts Header reconciliation Decision
@@ -451,6 +460,6 @@ _No open items._
 - [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; 352 tests pass; Zoe + Sage + Lilac byte-diffs zero; literal guard passes; crossref-lint passes; manifest coverage passes)
 - [x] PR description up to date (PR #236 — body sync pending)
 - [x] Lasting decisions promoted to architect context (Units F and J complete — eve.yml-sibling + identity/workflow split in `install-layout.md`; Docker runbooks in `eve-runtime.md`; FR-4 sandbox/write-back in `eve-runtime.md`; ADR-0062 and ADR-0063 cited)
-- [x] No open Review Issues (Briar Finding 1 fixed, Finding 2 resolved, Finding 3 deferred per Sol)
+- [x] No open Review Issues (Briar Finding 1 fixed, Finding 2 resolved, Finding 3 deferred per Sol; Eric Minor 1 fixed, Minor 2 acknowledged as deferred)
 
-**Last updated:** 2026-06-19 (Clove: fixed Briar Finding 1 — `extractSharedSection` now code-fence-aware; Zoe `Output format` restored; 2 new tests; 352/352 pass; all three byte-diffs ZERO; Finding 3 deferred per Sol scope.)
+**Last updated:** 2026-06-19 (Clove: fixed Eric Minor 1 — `install-layout.md` file-count wording rewritten as swap; three platform mirrors regenerated; byte-diffs ZERO; Minor 2 acknowledged on PR #237 thread.)
