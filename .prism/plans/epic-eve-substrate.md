@@ -180,6 +180,7 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit C — added the `buildEveAgentFiles` emitter to `build.ts` (identity/workflow split + reference-scaffolding stripping + `eve.yml`-templated config), the `eve.yml` canonical sibling for Lilac, the `eveAgentsRoot` field on the `PathDefinitions` type, and the `EVE_AUTONOMOUS_PERSONAS`-gated wiring in `main()` (optedIn, targetRoots, marker, `eveAgentsRootHasManagedContent`). See Decisions: Header reconciliation and Canonical input vs template split.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit D — preserved the reference to `__fixtures__/eve-lilac-reference/`, regenerated `.eve/agents/prism-standup-summary/`, and proved `diff -r` is ZERO (every original delta was a token substitution; fixture updated to the substituted generated form). Added `eve-emitter.test.ts` (5 tests, identity-split + non-empty description + byte-match) and excluded `__fixtures__` from the build tsconfig (eve `.ts` files import eve, absent on host). See Decision: Token substitution.
 - 2026-06-19 [hmcgrew/eve-substrate-port]: Clove completed Unit E — added eve cleanup (directory-based via `removeDeletedManagedSkills` on `eveValidIds = knownSkillIds ∩ EVE_AUTONOMOUS_PERSONAS`), added `targetRoots.eveAgents` to `literalGuardRoots`, confirmed seed-curation.json needs no entry (`.eve/` is outside all `COPIED_CONTENT_AREAS` paths), and added `.eve/worktrees/` to `.gitignore`. Cleanup test added to `eve-emitter.test.ts` (341 tests pass); `prism:check` green.
+- 2026-06-19 [hmcgrew/eve-substrate-port]: Eli completed Unit F — updated `install-layout.md` (eve agent output subsection: committed/ignored split, six derived files, no-header rationale, `eve.yml` sibling pattern), wrote `eve-runtime.md` (Docker validation runbook: Node-floor split, `eve build`/`eve start`, dev schedule trigger route, HITL gate, auth note), added `.eve/**` + `build.ts` manifest routes. All claims verified against source. `pnpm prism:build` updated 11 mirrors; `prism:check` green.
 
 ---
 
@@ -227,8 +228,8 @@ The Docker end-to-end validation of Lilac running on eve (`eve build && eve star
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (`eve-emitter.test.ts`, 6 tests — includes cleanup case)
 - [ ] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; literal guard passes with eveAgents root; 341 tests pass)
+- [x] Build passes — last run: 2026-06-19 (`prism:build` + `prism:check` green; literal guard passes with eveAgents root; 341 tests pass; 11 mirrors updated after Unit F doc edits)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (Unit F / plan close — eve.yml-sibling + identity/workflow split are promotion candidates)
+- [x] Lasting decisions promoted to architect context (Unit F complete — eve.yml-sibling + identity/workflow split documented in `install-layout.md`; Docker runbook in `eve-runtime.md`; ADR-0062 routes wired in manifest)
 
-**Last updated:** 2026-06-19 (Unit E complete — cleanup, literal-guard, seed-curation confirmed, gitignore)
+**Last updated:** 2026-06-19 (Unit F complete — install-layout.md updated, eve-runtime.md written, manifest routes added, all mirrors regenerated, prism:check green)
