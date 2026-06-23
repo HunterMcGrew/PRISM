@@ -12,6 +12,21 @@
 		"access": "public"
 	},
 	"type": "module",
+	"files": [
+		"dist/",
+		".prism/rules/",
+		".prism/architect/",
+		".prism/spec/",
+		".prism/references/",
+		".prism/templates/",
+		".prism/SPEC.md",
+		".prism/.sync-manifest.json",
+		"templates/install/",
+		".ai-skills/skills/",
+		".ai-skills/definitions/roles.json",
+		".ai-skills/definitions/paths.json",
+		".ai-skills/config.json"
+	],
 	"bin": {
 		"prism": "dist/cli.js"
 	},
