@@ -91,6 +91,54 @@ export async function listDirectories(rootPath: string): Promise<string[]> {
 		.sort((a, b) => a.localeCompare(b));
 }
 
+export interface RelativeDirectoryEntry {
+	kind: "directory" | "file";
+	relativePath: string;
+}
+
+export async function listRelativeDirectoryEntries(
+	rootPath: string,
+	currentPath: string = rootPath
+): Promise<RelativeDirectoryEntry[]> {
+	const entries = await fs.readdir(currentPath, { withFileTypes: true });
+	const relativeEntries: RelativeDirectoryEntry[] = [];
+
+	for (const entry of entries) {
+		if (entry.name.startsWith(".")) {
+			continue;
+		}
+
+		const entryPath = path.join(currentPath, entry.name);
+		const relativePath = path.relative(rootPath, entryPath);
+
+		if (entry.isDirectory()) {
+			relativeEntries.push({ kind: "directory", relativePath });
+			relativeEntries.push(
+				...(await listRelativeDirectoryEntries(rootPath, entryPath))
+			);
+			continue;
+		}
+
+		if (entry.isFile()) {
+			relativeEntries.push({ kind: "file", relativePath });
+		}
+	}
+
+	return relativeEntries.sort((a, b) =>
+		a.relativePath.localeCompare(b.relativePath)
+	);
+}
+
+export async function filesAreEqual(
+	sourcePath: string,
+	targetPath: string
+): Promise<boolean> {
+	const sourceContent = await fs.readFile(sourcePath);
+	const targetContent = await fs.readFile(targetPath);
+
+	return sourceContent.equals(targetContent);
+}
+
 export async function ensureDirectory(filePath: string): Promise<void> {
 	await fs.mkdir(filePath, { recursive: true });
 }
