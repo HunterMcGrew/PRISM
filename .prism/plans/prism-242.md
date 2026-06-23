@@ -90,6 +90,16 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## Decisions
 
+- **Extraction seam crossed two more files than planned, to break a cycle (Clove).** `generatePlatformSkills` imports the builder functions; `build.ts` imports `generatePlatformSkills` — a cycle if the builders stayed in `build.ts`. Resolved by moving the builders (`buildSkillMarkdown`, `buildCodexAgentToml`, `buildClaudeAgentMarkdown`, `buildRoleMap`, `loadSkillSource`, the optional-payload sync, `removeDeletedManagedAgentFiles`) into `generate-skills.ts`, and the two shared leaf helpers (`listRelativeDirectoryEntries`, `filesAreEqual`) into `utils.ts`. `build.ts` re-exports the builders + `listRelativeDirectoryEntries` so existing `from "./build"` test imports keep resolving.
+  - **Root cause:** the render loop and the orphan cleanup depend on the builder functions and `listRelativeDirectoryEntries`/`filesAreEqual`, which `build.ts` also uses elsewhere (`checkSeedDrift`) and `sync-manifest.ts` imports from `build.ts`.
+  - **Chosen approach:** shared leaves → `utils.ts` (imported by both, no cycle); render-only helpers → `generate-skills.ts`; re-export from `build.ts` to preserve the test import surface.
+  - **Implementation guidance:** `generate-skills.ts` never imports from `build.ts`. Keep it that way — that one-way edge is what keeps the graph acyclic.
+  - → no promotion needed (module-internal refactor mechanics, specific to this codebase's build scripts; not a cross-cutting pattern).
+- **`runUpdate` engine split into `applyFilePass` + refresh (Clove).** Lifting the platform refresh into `runUpdate` would have forced every per-file unit test to stand up a full consumer config + PRISM skill source. Instead, `applyFilePass` (exported) is the pure per-file engine the unit tests target; `runUpdate` = `applyFilePass` + content-copy refresh + roster render, and is the shared seam both `prism:update` `main()` and `runAdopt` call.
+  - **Alternatives considered:** make `runUpdate` itself the unit-test target (rejected — couples engine tests to a full repo fixture); duplicate the refresh into both callers (rejected by Winston's adopt-seam Decision — two call sites drift).
+  - → no promotion needed (test-ergonomics seam, ticket-local).
+- **Adopt path is blocked end-to-end by a pre-existing seed-content defect, surfaced not caused by this ticket (Clove).** The skill-gen path is proven working on `prism:update` (renders all 31 personas, tokens substituted, idempotent). But `prism:adopt` throws on the content-copy step — which now runs because of the adopt-seam fix — because `templates/install/.prism/spec/adrs/_toolkit/0030-token-substitution-at-build-time.md` carries unfenced `${TOKEN}`/`${KEY}` example literals the substitution layer can't resolve. Canonical `.prism/spec/.../0030` is clean; only the seed copy diverges. Flagged as a follow-up (background task) — it touches seed curation / ADR content, a different lane from skill distribution.
+  - → no promotion needed (defect tracked as a separate follow-up task; fix belongs in the seed-content lane).
 - **Personas install as `prism-*` IDs (Hunter confirmed).** Bodies render with the consumer `tokenMap` (`${PROJECT}` → consumer name, `${TICKET_PREFIX}` → consumer prefix). No directory ID remapping — that would break the regeneration/orphan-cleanup contract, which keys off `validSkillIds` membership plus the managed marker written into each generated skill dir (see Decision "Managed-marker invariant"). `ownership.ts` is only a glob-based path classifier (`PRISM_OWNED_GLOBS` / `CONSUMER_OWNED_GLOBS`); it holds no marker or delete logic.
 - **Two guards, not one.** A new leftover-token guard (`/\$\{[A-Z][A-Z0-9_]*\}/`) runs in both PRISM and consumer mode. The existing Thrive-literal guard (`literal-guard.ts:24`) is a de-thriving canary — PRISM-build-only, never on consumer output (the consumer legitimately contains "Thrive").
 - **Extracted fn is root-agnostic.** Each caller resolves absolute source/target paths and passes them in — removes the single-`repoRoot` read/write coupling.
@@ -114,6 +124,7 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Plan created. Branch and GitHub issue #242 opened. Architect decisions accepted. Mira (user stories) runs next.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Winston re-eval after user stories. Verified anchors against `origin/main`: corrected `syncOptionalSkillPayloads` range (340-386, was 340-372), pinned the cleanly-separable extraction boundary in task 2, and rewrote task 5 with the real wiring point. Added two Decisions — managed-marker invariant (cleanup is marker-keyed, consumer-safe) and adopt-path seam (lift platform-refresh into `runUpdate`). Verdict: ready for Clove. See Decisions.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove implemented tasks 1-6. Extracted `generatePlatformSkills` into `generate-skills.ts` (param-pure, root-agnostic); split the output guard (`runLeftoverTokenGuard`); wired the roster into the shared `runUpdate` seam so both `prism:update` and `prism:adopt` render it. PRISM build byte-identical (empty `git diff`); `prism:check` green; 349/349 tests pass. See Decisions for the cycle-break seam, the `applyFilePass` split, and the pre-existing seed-content blocker on the adopt path (flagged as a follow-up).
 
 ---
 
@@ -160,13 +171,13 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [ ] All debugged issues resolved (no `open` entries) — none filed
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:build` empty diff, `pnpm prism:check` green, 349/349 tests)
+- [ ] PR description up to date — pending (no PR yet)
+- [ ] Lasting decisions promoted to architect context (if applicable) — Eli owns task 7 (docs); promotion deferred to close
 
 **Last updated:** 2026-06-23
