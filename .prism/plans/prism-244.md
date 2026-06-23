@@ -234,6 +234,14 @@ _None._
 - **Suggested fix:** Drop the leading "So" — "This guide gets you from zero...". Eli's lane; cosmetic.
 - **Fixed in:** `e4db247`. Dropped the leading "So" — opener now leads with "This guide gets you from zero...".
 
+### Stale `main()` references in comments after the rename
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/update.ts:290` (also `:318`, `:571`; `adopt.ts:108`, `:147`)
+- **Problem:** After the `main` → `runUpdateCli`/`runAdoptCli` rename, several comments still describe the entry point as `main()`. Borderline — "main()" reads as a generic concept-name in most spots, but `update.ts:290` specifically names "`prism:update`'s `main()`" as a concrete function that no longer exists by that name.
+- **Suggested fix:** Cosmetic. Touch up `update.ts:290` (the one pinned to a concrete function) at minimum; the generic-concept uses are wave-through. Found by Eric (PR review, PR #245). Inline comment posted at `update.ts:318`.
+
 ---
 
 ## Acceptance Criteria
@@ -286,7 +294,8 @@ _None._
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` re-run by Clove after minor fixes, green: build --check, types, 355/355 tests, manifest, crossref-lint)
 - [x] Guard-lift verified — `assertSourceIsPlausible` has exactly one production call site (`update.ts:320` in `runUpdate`), fires before `applyFilePass`, and now covers the adopt path (`runAdopt`→`runUpdate`). Dispatcher exit codes confirmed by hand (unknown→1, help/no-args→0).
-- [ ] PR description up to date — pending PR open
+- [x] PR description up to date — PR #245 open with full template body
 - [ ] Lasting decisions promoted to architect context (if applicable) — safety-guard "single shared seam" invariant flagged for a future `.prism/architect/` consumer-sync-safety doc (none exists today); not promoted now per Winston's verdict
+- [x] Eric PR review (PR #245) — 0 critical, 0 major, 1 borderline-minor (stale `main()` comment refs, `open`). Guard-lift independently verified SAFE: single call site at `update.ts:329`, fires before `applyFilePass`, covers all entry points incl. adopt (closes pre-existing gap). `pnpm prism:check` re-run green (355/355). Labels: `effort:quick`, `review:has-minors`.
 
-**Last updated:** 2026-06-23 (Clove — both minors fixed)
+**Last updated:** 2026-06-23 (Eric — PR review pass, 1 minor open)
