@@ -131,16 +131,31 @@ export function resolveConsumerRoot(options: {
 /** Parses the `--consumer <dir>` / `--consumer=<dir>` flag from argv, or null. */
 export function parseConsumerFlag(argv: string[]): string | null {
 	const flagIndex = argv.indexOf("--consumer");
-	if (flagIndex !== -1 && argv[flagIndex + 1]) {
-		return argv[flagIndex + 1];
+	if (flagIndex !== -1) {
+		const value = argv[flagIndex + 1];
+		if (!value) {
+			// Flag present but value is empty or missing — explicit intent to override,
+			// but no path given. A silent fallback would target a different repo than
+			// the user intended, which is worse than the error.
+			throw new Error(
+				"--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
+			);
+		}
+
+		return value;
 	}
 
 	const inlineFlag = argv.find((arg) => arg.startsWith("--consumer="));
 	if (inlineFlag) {
 		const value = inlineFlag.slice("--consumer=".length);
-		// An empty inline value (--consumer=) is treated as not provided, matching
-		// the space-form branch's truthiness check above.
-		if (value) return value;
+		if (!value) {
+			// Same rule for the --consumer= form — present but empty is an error.
+			throw new Error(
+				"--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
+			);
+		}
+
+		return value;
 	}
 
 	return null;

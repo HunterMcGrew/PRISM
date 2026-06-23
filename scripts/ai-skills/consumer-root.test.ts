@@ -238,10 +238,38 @@ test("parseConsumerFlag reads both the space-separated and =-joined forms", () =
 	assert.equal(parseConsumerFlag([]), null);
 });
 
-test("parseConsumerFlag treats both empty-value forms as not-provided (returns null)", () => {
-	// --consumer "" (space-separated empty) — the argv[flagIndex + 1] truthiness
-	// check makes this null; the inline-= branch must behave identically.
-	assert.equal(parseConsumerFlag(["--consumer", ""]), null);
-	// --consumer= (inline empty) — sliced value is "", which is now guarded.
-	assert.equal(parseConsumerFlag(["--consumer="]), null);
+test("parseConsumerFlag throws when --consumer is present but its value is empty", () => {
+	const expectedPattern = /--consumer was given an empty value/;
+	// --consumer "" (space-separated empty) — flag is present, value is an empty
+	// string; silently falling through to detection would target a different repo
+	// than the user intended.
+	assert.throws(
+		() => parseConsumerFlag(["--consumer", ""]),
+		(err: unknown) => {
+			assert.ok(err instanceof Error);
+			assert.ok(
+				expectedPattern.test(err.message),
+				`expected empty-value error, got: ${err.message}`
+			);
+			return true;
+		}
+	);
+	// --consumer= (inline empty) — same rule applies to the =-joined form.
+	assert.throws(
+		() => parseConsumerFlag(["--consumer="]),
+		(err: unknown) => {
+			assert.ok(err instanceof Error);
+			assert.ok(
+				expectedPattern.test(err.message),
+				`expected empty-value error, got: ${err.message}`
+			);
+			return true;
+		}
+	);
+});
+
+test("parseConsumerFlag returns null when --consumer flag is absent entirely", () => {
+	// Flag absent → fall through to vendored detection / cwd; never an error.
+	assert.equal(parseConsumerFlag(["--other", "x"]), null);
+	assert.equal(parseConsumerFlag([]), null);
 });
