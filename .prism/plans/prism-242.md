@@ -148,6 +148,7 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Winston ruled the adopt-path throw. Confirmed root cause — stale curated seed copy of ADR-0030 carries the `${TOKEN}` example literal that `substituteTokens` correctly rejects; #234 mirror skips it because it's curated (not a mirror bug; blast radius one file). Ruled fold-in (the throw blocks #242's own adopt AC) and prescribed a three-line prose rephrase to match canonical's `${...}` form (task 7). See Decision: Adopt-path content-copy throw.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove completed task 7 — rephrased the three diverging token-literal lines in seed ADR-0030 to canonical's `${...}` form. The commissioned regression (content-copy over the real seed `spec/` tree) then surfaced seed ADR-0032's `${TECH_STACK}` example literal throwing the same way; folded that one-line rephrase in too (see Decision: Seed ADR-0032). Adopt AC now demonstrable end-to-end — `prism:adopt` on a consumer fixture completed with no throw and projected 31 `prism-*` skills with the consumer's tokens substituted; build empty diff, `prism:check` green, 350/350 tests.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Eli completed task 8 — documented the consumer skill-gen step in `install-layout.md` (§ Steady-state persona-skill distribution: what renders, with whose tokens, orphan cleanup, and idempotency) and the two-guard model in `skills-ecosystem.md` (§ Output guards: leftover-token guard runs everywhere; Thrive-literal guard is PRISM-build-only). Added three allowlist entries for the platform copies of `skills-ecosystem.md` (the "Output guards" section must name "Thrive" to explain what the guard checks for). `prism:check` green after build; 350/350 tests.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove fixed Briar's Minor — seed ADR-0032 line 16's real-token illustration (`Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`) was silently substituting on adopt, corrupting the mapping the ADR exists to explain; rephrased to canonical's `${...}` form. Hardened `content-copy.test.ts` to run substitution over the whole seed `spec/` tree and assert no seed file introduces a substitution canonical doesn't — catches the silent-corruption class the throw-only regression missed; confirmed it fails pre-fix and passes after. Build empty diff, `prism:check` green (351/351), adopt demo projected 93 `prism-*` skills with the 0032 illustration intact.
 
 ---
 
@@ -159,7 +160,14 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## Review Issues
 
-<!-- Briar / Eric fill this section during review. -->
+### Seed ADR-0032 line 16 carries an unfixed real-token literal that corrupts the ADR on adopt
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/spec/adrs/_toolkit/0032-canonical-skill-content-is-generic.md:16`
+- **Problem:** Task 7 fixed seed 0032 line 18 (`${TECH_STACK}`) but missed line 16, which still carries `` `Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}` `` — the very illustration of the token-mapping mechanism. These are *real* tokens, so they don't throw on the adopt content-copy path (the `${TECH_STACK}` fix made the tree non-throwing, and the `content-copy.test.ts:416` regression only catches throws, so this slipped past). But on adopt they substitute: for a consumer named Acme the line renders `` `Thrive` → `Acme`, `tractru` → `acme-owner` `` — corrupting an ADR whose whole point is to explain how the `Thrive → ${PROJECT}` *mapping* works. This is the identical defect class the plan already recognized and fixed for seed 0030 line 10 ("a latent content-correctness bug"); canonical 0032 line 16 was rephrased to the pattern-dodging `${...}` form (`project-name and owner literals map through the ${...} token form into per-team values`) and the seed copy never got the rephrase. The plan's task-7 claim that line 18 was 0032's only divergence is empirically false — `diff` of seed vs canonical shows line 16 diverges too.
+- **Suggested fix:** Replace seed 0032 line 16's `` ADR-0030 (token substitution at build time) addresses identifier mapping: `Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`, etc. `` with canonical's verbatim text: `ADR-0030 (token substitution at build time) addresses identifier mapping: project-name and owner literals map through the ${...} token form into per-team values.` Leave the line-47 epic-plan cross-ref divergence alone (intentional seed/canonical split, carries no token literal). Verify: `pnpm prism:build` empty diff (0032 is curated, so the mirror won't fight the hand-edit), `pnpm prism:check` green. Optionally extend `content-copy.test.ts:416` to assert the rendered 0032 copy contains neither `Acme` nor a bare token in the mapping line — the current test only checks 0030, which is why this class re-slipped.
+- **Fixed in:** seed 0032 line 16 rephrased to canonical's `${...}` form. Regression hardened beyond the suggested fix: rather than per-file-grepping 0032 for `Acme`, the new `content-copy.test.ts` test runs `substituteTokens` over the whole seed `spec/` tree with sentinel token values and asserts no seed file introduces a substitution its canonical counterpart doesn't — the empirical whole-tree check that catches the silent-corruption class for any ADR, not just 0032. Confirmed it fails against the pre-fix line 16 (names both `${PROJECT}` and `${GITHUB_OWNER}` corruptions) and passes after. `pnpm prism:build` empty diff, `pnpm prism:check` green (351/351), adopt demo on an AcmeWidgets/acme-industries fixture projected 93 `prism-*` skill files with the 0032 illustration intact (zero consumer-token leaks).
 
 ---
 
@@ -194,13 +202,13 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## PR Readiness
 
-- [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as`
-- [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [x] No critical or major issues — Briar's Minor (seed 0032 line 16 content-correctness) fixed 2026-06-23, regression hardened to catch the whole silent-corruption class
+- [x] Types correct — no `any`, no unsafe `as` (JSON-boundary casts validated: `buildRoleMap` checks the role discriminator; `refreshPlatformSkills` JSON.parse is try/caught)
+- [x] No stray console.logs or debug artifacts (CLI `reportSummary` console output is intentional)
+- [x] Tests written for new logic and edge cases — Briar verified depth: foreign-config render + token substitution, marker on every platform, marker-keyed cleanup safety (consumer `prism-custom` survives), real-PRISM-source check-mode zero-drift, real-seed-tree token-resolution regression, adopt roster projection, both guards + asymmetry + allowlist
 - [ ] All debugged issues resolved (no `open` entries) — none filed
-- [x] Build passes — last run: 2026-06-23 (`pnpm prism:build` empty diff, `pnpm prism:check` green, 350/350 tests — +1 adopt-seed regression)
+- [x] Build passes — Briar re-ran 2026-06-23: `pnpm prism:build` empty diff (own hand), `pnpm prism:check` exit 0 (own hand), 350+ tests green
 - [ ] PR description up to date — pending (no PR yet)
-- [ ] Lasting decisions promoted to architect context (if applicable) — Eli owns task 7 (docs); promotion deferred to close
+- [ ] Lasting decisions promoted to architect context (if applicable) — promotion deferred to close
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Clove — fixed Briar's Minor, hardened regression)
