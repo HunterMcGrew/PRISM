@@ -19,6 +19,7 @@ import {
 	resolveSelfPrismSource,
 	runUpdate,
 } from "./update";
+import { runInitCli } from "./init";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
@@ -96,6 +97,15 @@ async function writeConsumerManifest(
 		`${JSON.stringify(manifest, null, "\t")}\n`
 	);
 }
+
+// --- init subcommand reachability ---
+
+test("runInitCli is exported from init.ts and is a function", () => {
+	// The CLI dispatcher routes "init" to runInitCli. This test confirms the
+	// export exists and has the right shape — the dispatch case cannot wire to
+	// undefined.
+	assert.equal(typeof runInitCli, "function");
+});
 
 // --- self-location ---
 
