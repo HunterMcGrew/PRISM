@@ -131,7 +131,7 @@ export async function runAdopt(options: {
 	return { seed, update };
 }
 
-async function main(): Promise<void> {
+export async function runAdoptCli(): Promise<void> {
 	const consumerRepoRoot = process.cwd();
 	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
 
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
 	}
 
 	// The manifest-exists guard lives in runAdopt so every caller is protected,
-	// not just this CLI path. main() relies on runAdopt's guard.
+	// not just this CLI path. runAdoptCli relies on runAdopt's guard.
 	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot });
 
 	reportSummary(summary);
@@ -190,7 +190,7 @@ function reportSummary(summary: AdoptSummary): void {
 const isMain =
 	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
-	main().catch((error: unknown) => {
+	runAdoptCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);
 	});

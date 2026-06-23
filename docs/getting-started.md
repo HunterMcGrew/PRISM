@@ -85,6 +85,10 @@ Then re-run `pnpm prism:check` in your target repo to verify the install is stil
 
 Your install is parameterized by `.ai-skills/config.json`. Atlas writes this during onboarding; you can edit it manually too. See [parameterization.md](./parameterization.md) for the full field reference and all available tokens.
 
+## The prism command (consumer shortcut)
+
+Once you've cloned PRISM locally, you can install a `prism` command that runs `prism adopt` and `prism update` from any consumer repo without supplying path arguments. See [adopt-prism.md](./adopt-prism.md) for the one-time setup and the steady-state workflow.
+
 ## Going deeper
 
 The onboarding architecture — stack detection, rule generators, stub-anchor population — is documented in the Atlas skill at `.ai-skills/skills/prism-onboarding/`. The ADRs for the install layout and parameterization model live in [`.prism/spec/adrs/`](../.prism/spec/adrs/).
