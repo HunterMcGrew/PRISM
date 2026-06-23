@@ -118,7 +118,7 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **Why:** 2026-06-05 — writing "team identifiers stay in `${TOKEN}` form" into `.prism/architect/install-layout.md` (a copied content area) failed `pnpm prism:build`: the substitution layer throws on any well-formed-but-unknown `${...}` token in content it copies to platform dirs. Malformed literals pass through; well-formed unknowns are treated as config errors by design (tokens.ts).
 
-**How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied).
+**How to apply:** When a rule/architect doc/reference needs to *talk about* the token convention rather than *use* it, phrase it without a well-formed token literal ("stay in tokenized form per ADR-0030") or use a non-matching shape. Plans and lessons are exempt (never copied). The same class applies to the Thrive-literal guard: a section explaining what the guard checks for must mention "Thrive"-flavored words, which trips the guard on the platform copies — the fix is an allowlist entry for each platform copy, same as ADR-0030's entries. Rephrasing is not always viable; use the allowlist when the name itself is the subject.
 
 ## Skill frontmatter `model:` pins engage on fresh-session invocation only — in-session `Skill` calls run on the session's current model
 
