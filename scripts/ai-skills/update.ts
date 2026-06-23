@@ -18,6 +18,7 @@
  * `prism:build`, not `prism:update`.
  */
 import fs from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -548,15 +549,60 @@ async function refreshPlatformDirs(
 }
 
 /**
- * Derives the PRISM repo root from this script's own location. Used as the
+ * Walks up the directory tree from `startFile` until it finds a directory
+ * whose `package.json` has `"name": "@huntermcgrew/prism"`, then returns that
+ * directory as the PRISM package root.
+ *
+ * Walking to the named package.json makes root resolution correct from any
+ * depth: the dev path (`tsx scripts/ai-skills/update.ts`) walks up two levels
+ * and finds the root; the compiled path (`node dist/cli.js`) walks up one
+ * level and finds the same root. Hardcoding a depth like `../..` would break
+ * for the compiled bin, where the running file sits at depth 1 instead of
+ * depth 2.
+ *
+ * Throws when no ancestor directory contains a matching `package.json`,
+ * which prevents silent wrong-root resolution.
+ */
+export function findPrismPackageRoot(startFile: string): string {
+	const EXPECTED_NAME = "@huntermcgrew/prism";
+	let dir = path.dirname(startFile);
+
+	while (true) {
+		const pkgPath = path.join(dir, "package.json");
+		try {
+			const raw = readFileSync(pkgPath, "utf8");
+			const pkg = JSON.parse(raw) as { name?: string };
+			if (pkg.name === EXPECTED_NAME) {
+				return dir;
+			}
+		} catch {
+			// package.json absent or unreadable at this level — keep walking up
+		}
+
+		const parent = path.dirname(dir);
+		if (parent === dir) {
+			throw new Error(
+				`findPrismPackageRoot: reached filesystem root without finding a ` +
+					`package.json named "${EXPECTED_NAME}" — started from ${startFile}`
+			);
+		}
+
+		dir = parent;
+	}
+}
+
+/**
+ * Derives the PRISM package root from this module's own location. Used as the
  * last fallback in `resolvePrismSource` so a consumer running the bundled
- * `prism` CLI gets a source without passing `--prism-source` — the script
- * lives at `<prism-root>/scripts/ai-skills/update.ts`, so the root is two
- * directories up from this file.
+ * `prism` CLI gets a source without passing `--prism-source`.
+ *
+ * Delegates to `findPrismPackageRoot` rather than hardcoding a depth, so the
+ * resolution is correct both from the dev path (`scripts/ai-skills/update.ts`,
+ * depth 2) and the compiled path (`dist/cli.js`, depth 1).
  */
 export function resolveSelfPrismSource(): string {
 	const thisFile = fileURLToPath(import.meta.url);
-	return path.resolve(path.dirname(thisFile), "..", "..");
+	return findPrismPackageRoot(thisFile);
 }
 
 /**

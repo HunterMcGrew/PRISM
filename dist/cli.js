@@ -2031,6 +2031,7 @@ async function writeSyncManifest(prismContentRoot, manifest, checkMode2, changed
 
 // scripts/ai-skills/update.ts
 import fs10 from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path12 from "node:path";
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 async function hashFileIfExists(filePath) {
@@ -2282,9 +2283,31 @@ async function refreshPlatformDirs(consumerContentRoot, overlayContentRoot, plat
     );
   }
 }
+function findPrismPackageRoot(startFile) {
+  const EXPECTED_NAME = "@huntermcgrew/prism";
+  let dir = path12.dirname(startFile);
+  while (true) {
+    const pkgPath = path12.join(dir, "package.json");
+    try {
+      const raw = readFileSync(pkgPath, "utf8");
+      const pkg = JSON.parse(raw);
+      if (pkg.name === EXPECTED_NAME) {
+        return dir;
+      }
+    } catch {
+    }
+    const parent = path12.dirname(dir);
+    if (parent === dir) {
+      throw new Error(
+        `findPrismPackageRoot: reached filesystem root without finding a package.json named "${EXPECTED_NAME}" \u2014 started from ${startFile}`
+      );
+    }
+    dir = parent;
+  }
+}
 function resolveSelfPrismSource() {
   const thisFile = fileURLToPath3(import.meta.url);
-  return path12.resolve(path12.dirname(thisFile), "..", "..");
+  return findPrismPackageRoot(thisFile);
 }
 function resolvePrismSource(argv, consumerRepoRoot) {
   const flagIndex = argv.indexOf("--prism-source");
