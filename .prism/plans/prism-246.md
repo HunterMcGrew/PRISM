@@ -310,6 +310,7 @@ All tasks land in `scripts/ai-skills/`. The design adds one resolver function, w
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove implemented tasks 1–6 — new `lib/consumer-root.ts` resolver, wired into both CLI mains (guards intact), `--consumer` usage text, `consumer-root.test.ts` (8 tests). `pnpm prism:check` green (363 tests). Demonstrated all topologies end-to-end against real temp git repos: vendored adopt targets enclosing repo (31 personas projected with consumer tokens), deeper `tools/PRISM` nesting resolves to repo root not `tools/`, cwd-default (#245) path unbroken, no-enclosing-repo refuses with a clear non-zero exit. See Decision: end-to-end vendored verification.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Eli updated `docs/adopt-prism.md` — restructured to lead with the vendored-in-repo workflow (recommended, no global link/PATH needed), added `--consumer <path>` override section, demoted global-link to alternative. Updated `docs/getting-started.md` section heading and blurb to match. `pnpm prism:check` green.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove fixed Briar Minor — `parseConsumerFlag` inline-`=` branch now guards the sliced value so `--consumer=` returns `null` (falls through to detection), matching `--consumer ""` behavior. Added a two-assertion test covering both empty forms. `pnpm prism:check` green (364 tests).
+- 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Eric PR-reviewed PR #247 — zero critical/major, one deferred Minor (`--consumer` empty-flag hard-error decision). Safety + topology re-verified independently against live git repos; `pnpm prism:check` + 9/9 tests green. Labels `effort:quick`, `review:has-minors`; PR stays draft. See Review Issues and PR Readiness.
 
 ---
 
@@ -320,6 +321,14 @@ _None yet._
 ---
 
 ## Review Issues
+
+### `--consumer` empty-flag silently falls through to detection (deferred UX call)
+
+- **Severity:** `minor`
+- **Status:** `open` (deferred — judgment call surfaced to human reviewer on PR #247)
+- **File:** `scripts/ai-skills/lib/consumer-root.ts:132-147`
+- **Problem:** A present-but-valueless `--consumer` (both `--consumer` and `--consumer=`) returns `null` and silently falls through to vendored/cwd detection rather than erroring. `--consumer` is the documented safety escape-hatch; a user who typed it intended an explicit override. No data-loss path (all three downstream guards still fire) — this is a UX call, not a correctness defect. Distinct from Briar's now-fixed inline/space *consistency* issue below; this is the hard-error-vs-silent-fallback question Briar explicitly deferred.
+- **Suggested fix:** Either keep the silent fallback (simplest; safe via the engine guards) or hard-error on present-but-valueless `--consumer`. Eric leans hard-error for a safety flag but it is defensible either way. Decision belongs to Hunter/Clove — surfaced on the PR #247 inline thread.
 
 ### Empty `--consumer` flag value resolves inconsistently
 
@@ -374,5 +383,7 @@ _None yet._
 - [x] Lasting decisions promoted to architect context (if applicable) — none warranted; all Decisions are ticket-tactical with explicit `no promotion needed` verdicts
 
 **Briar self-review (2026-06-23):** Zero critical/major. One Minor (empty `--consumer` flag inconsistency, see Review Issues). Safety verified independently: resolver throws on no-enclosing-repo and on resolve-back-to-PRISM; never resolves to `/` or home (reproduced across plain/deep/standalone/non-git/nested-clone/deep-ancestor topologies). Three engine guards confirmed intact and downstream of the new resolution path. `pnpm prism:check` green (363 tests) by my own hand. PR-ready; the Minor is a follow-up-or-fix-now call, not a blocker.
+
+**Eric PR review (2026-06-23, PR #247):** Zero critical/major. One Minor — deferred UX call on the `--consumer` empty-flag (hard-error vs silent fallback); surfaced for Hunter's decision, not a blocker. Safety re-verified independently against live git repos: resolution sits upstream of all three engine guards; throws on both dangerous cases; never resolves to `/` or `$HOME`. Git topology correct across every case incl. depth-2 nested standalone clone (not unit-tested — verified manually, correct). #245 cwd-default path confirmed git-shell-out-free. `pnpm prism:check` green + 9/9 `consumer-root.test.ts` by my own hand. Labels: `effort:quick`, `review:has-minors` — PR stays draft pending the Minor decision. Eric does not approve or merge (ADR-0011).
 
 **Last updated:** 2026-06-23
