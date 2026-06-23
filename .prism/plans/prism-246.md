@@ -309,6 +309,7 @@ All tasks land in `scripts/ai-skills/`. The design adds one resolver function, w
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Winston designed consumer-target resolution; resolved all three OPEN decisions. Algorithm uses `git rev-parse` (verified against 5 git topologies); precedence is `--consumer` flag > vendored-parent detection > cwd; `--consumer` flag shipped; vendored model recommended as default. See Decisions and Implementation Tasks.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove implemented tasks 1–6 — new `lib/consumer-root.ts` resolver, wired into both CLI mains (guards intact), `--consumer` usage text, `consumer-root.test.ts` (8 tests). `pnpm prism:check` green (363 tests). Demonstrated all topologies end-to-end against real temp git repos: vendored adopt targets enclosing repo (31 personas projected with consumer tokens), deeper `tools/PRISM` nesting resolves to repo root not `tools/`, cwd-default (#245) path unbroken, no-enclosing-repo refuses with a clear non-zero exit. See Decision: end-to-end vendored verification.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Eli updated `docs/adopt-prism.md` — restructured to lead with the vendored-in-repo workflow (recommended, no global link/PATH needed), added `--consumer <path>` override section, demoted global-link to alternative. Updated `docs/getting-started.md` section heading and blurb to match. `pnpm prism:check` green.
+- 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove fixed Briar Minor — `parseConsumerFlag` inline-`=` branch now guards the sliced value so `--consumer=` returns `null` (falls through to detection), matching `--consumer ""` behavior. Added a two-assertion test covering both empty forms. `pnpm prism:check` green (364 tests).
 
 ---
 
@@ -320,7 +321,14 @@ _None yet._
 
 ## Review Issues
 
-_None yet._
+### Empty `--consumer` flag value resolves inconsistently
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/lib/consumer-root.ts:138-141` — inline-`=` branch now extracts the value before guarding; empty string returns `null`, matching the space-form branch. New test in `consumer-root.test.ts` covers both empty forms.
+- **File:** `scripts/ai-skills/lib/consumer-root.ts:132-144`
+- **Problem:** Three spellings of an empty consumer flag produce three different outcomes, none of which errors. `--consumer` (no following value) → `null` → silent fallback to vendored/cwd detection. `--consumer ""` (space-separated empty) → `null` → same fallback. But `--consumer=` (inline empty) → `""` (the `.startsWith` branch does not apply a truthiness check), which `resolveConsumerRoot` then runs through `path.resolve(cwd, "")` = cwd, bypassing vendored detection. So `--consumer=` silently targets cwd while `--consumer ""` silently targets detection — two spellings of "empty override" diverge. No data-loss path (every outcome is caught by an existing guard: source-equals-consumer refusal, `assertSourceIsPlausible`, `assertConsumerIsEstablished`), and the space-form truthiness check mirrors the existing `resolvePrismSource` convention Winston told Clove to follow. The wrinkle is the inline-`=` branch, which lacks the truthiness guard its space-form sibling has.
+- **Suggested fix:** In the inline branch, treat an empty value the same as the space-form — guard the slice result: `const value = inlineFlag.slice("--consumer=".length); if (value) return value;`. Optionally, treat a flag that is present-but-valueless as a hard error rather than a silent fallback, since `--consumer` is the documented safety escape hatch and a user who typed it intended an override. A silent fallback on a malformed safety-valve invocation is the one place this matters. Defer the hard-error decision to Clove/Winston; the inline/space consistency fix is the minimum.
 
 ---
 
@@ -361,8 +369,10 @@ _None yet._
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green, 363 tests)
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green, 364 tests)
 - [ ] PR description up to date (Clove offers; PR not yet opened)
 - [x] Lasting decisions promoted to architect context (if applicable) — none warranted; all Decisions are ticket-tactical with explicit `no promotion needed` verdicts
+
+**Briar self-review (2026-06-23):** Zero critical/major. One Minor (empty `--consumer` flag inconsistency, see Review Issues). Safety verified independently: resolver throws on no-enclosing-repo and on resolve-back-to-PRISM; never resolves to `/` or home (reproduced across plain/deep/standalone/non-git/nested-clone/deep-ancestor topologies). Three engine guards confirmed intact and downstream of the new resolution path. `pnpm prism:check` green (363 tests) by my own hand. PR-ready; the Minor is a follow-up-or-fix-now call, not a blocker.
 
 **Last updated:** 2026-06-23

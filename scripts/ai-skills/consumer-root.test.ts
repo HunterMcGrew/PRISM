@@ -237,3 +237,11 @@ test("parseConsumerFlag reads both the space-separated and =-joined forms", () =
 	assert.equal(parseConsumerFlag(["--other", "x"]), null);
 	assert.equal(parseConsumerFlag([]), null);
 });
+
+test("parseConsumerFlag treats both empty-value forms as not-provided (returns null)", () => {
+	// --consumer "" (space-separated empty) — the argv[flagIndex + 1] truthiness
+	// check makes this null; the inline-= branch must behave identically.
+	assert.equal(parseConsumerFlag(["--consumer", ""]), null);
+	// --consumer= (inline empty) — sliced value is "", which is now guarded.
+	assert.equal(parseConsumerFlag(["--consumer="]), null);
+});

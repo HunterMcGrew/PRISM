@@ -137,7 +137,10 @@ export function parseConsumerFlag(argv: string[]): string | null {
 
 	const inlineFlag = argv.find((arg) => arg.startsWith("--consumer="));
 	if (inlineFlag) {
-		return inlineFlag.slice("--consumer=".length);
+		const value = inlineFlag.slice("--consumer=".length);
+		// An empty inline value (--consumer=) is treated as not provided, matching
+		// the space-form branch's truthiness check above.
+		if (value) return value;
 	}
 
 	return null;
