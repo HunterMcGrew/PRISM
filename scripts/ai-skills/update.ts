@@ -209,16 +209,25 @@ async function applyDeletedFile(
  * This is the engine `runUpdate` wraps: it owns only `.prism/` file movement
  * and manifest bookkeeping, so it can be unit-tested against a bare `.prism/`
  * fixture without a full consumer config or PRISM skill source.
+ *
+ * `runUpdate` loads the consumer manifest up front for its plausibility guard
+ * and threads it in as `preloadedManifest` so the file isn't read twice per
+ * call; callers that don't have it (the unit tests) omit it and the manifest is
+ * loaded here.
  */
 export async function applyFilePass(
 	prismContentRoot: string,
-	consumerContentRoot: string
+	consumerContentRoot: string,
+	preloadedManifest?: SyncManifest | null
 ): Promise<UpdateSummary> {
 	const incomingRelativePaths =
 		await listPrismOwnedRelativePaths(prismContentRoot);
 	const incomingSet = new Set(incomingRelativePaths);
 
-	const consumerManifest = await loadSyncManifest(consumerContentRoot);
+	const consumerManifest =
+		preloadedManifest !== undefined
+			? preloadedManifest
+			: await loadSyncManifest(consumerContentRoot);
 	const recordedHashes = new Map<string, string>();
 	if (consumerManifest) {
 		for (const [relativePath, entry] of Object.entries(
@@ -319,7 +328,11 @@ export async function runUpdate(
 
 	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
 
-	const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+	const summary = await applyFilePass(
+		prismContentRoot,
+		consumerContentRoot,
+		consumerManifest
+	);
 
 	await refreshPlatformDirs(
 		consumerContentRoot,
