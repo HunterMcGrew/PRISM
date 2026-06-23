@@ -287,7 +287,7 @@ export async function applyFilePass(
  * persona-skill roster.
  *
  * The platform refresh lives here, not in the caller, so every caller of
- * `runUpdate` gets it: `prism:update`'s `main()` and `prism:adopt`'s `runAdopt`
+ * `runUpdate` gets it: `prism:update`'s `runUpdateCli` and `prism:adopt`'s `runAdopt`
  * both reach the same seam. The consumer config and `paths.json` are resolved
  * and validated up front so a bad config fails fast with nothing written,
  * instead of half-applying the file pass and throwing at the very end (see plan
@@ -568,7 +568,7 @@ export function resolveSelfPrismSource(): string {
  * The `string | null` return is kept for defense-in-depth: `resolveSelfPrismSource`
  * always returns a path, so `null` is effectively unreachable today, but a future
  * caller invoking this without a script-relative source could still hit it, and
- * both `main()` functions guard on it.
+ * both `runUpdateCli` and `runAdoptCli` guard on it.
  */
 export function resolvePrismSource(
 	argv: string[],

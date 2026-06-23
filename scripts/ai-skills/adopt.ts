@@ -144,7 +144,7 @@ export async function runAdoptCli(): Promise<void> {
 	}
 
 	// The manifest-exists guard lives in runAdopt so every caller is protected,
-	// not just this CLI path. main() relies on runAdopt's guard.
+	// not just this CLI path. runAdoptCli relies on runAdopt's guard.
 	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot });
 
 	reportSummary(summary);
