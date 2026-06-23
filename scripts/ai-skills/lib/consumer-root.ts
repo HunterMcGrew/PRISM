@@ -101,6 +101,14 @@ export function resolveConsumerRoot(options: {
 		return path.resolve(cwd, explicitConsumer);
 	}
 
+	// When running as an installed npm package, selfPrismRoot is inside
+	// node_modules/ — the cwd is the consumer repo by definition. Short-circuit
+	// to cwd directly, skipping the vendored-enclosing-repo detection that only
+	// applies to PRISM-inside-consumer-repo workflows.
+	if (selfPrismRoot.includes(path.sep + "node_modules" + path.sep)) {
+		return path.resolve(cwd);
+	}
+
 	const runningFromInsidePrism =
 		path.resolve(cwd) === path.resolve(selfPrismRoot);
 	if (!runningFromInsidePrism) {

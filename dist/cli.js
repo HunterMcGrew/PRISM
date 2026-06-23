@@ -48,6 +48,9 @@ function resolveConsumerRoot(options) {
   if (explicitConsumer !== null) {
     return path.resolve(cwd, explicitConsumer);
   }
+  if (selfPrismRoot.includes(path.sep + "node_modules" + path.sep)) {
+    return path.resolve(cwd);
+  }
   const runningFromInsidePrism = path.resolve(cwd) === path.resolve(selfPrismRoot);
   if (!runningFromInsidePrism) {
     return path.resolve(cwd);
