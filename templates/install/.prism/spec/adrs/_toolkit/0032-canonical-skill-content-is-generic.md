@@ -13,9 +13,9 @@ Phase 1's audit of the distribution surface surfaced three categories of bleed i
 - **Equipment dealership domain context blocks** across multiple persona sources — multi-tenant blast radius, complex inventory data, mobile field use by sales reps, B2B quote flows. A non-dealership consumer team gets every persona instructed to think about dealer sites.
 - **Originating-incident citations** with hardcoded `THR-NNNN` IDs. A consumer team has no way to look up `THR-1636` — the citation lands as a broken pointer.
 
-ADR-0029 (rules self-declare) addresses how skills cite per-team rule files: they don't, the rules declare their own applicability and the agent picks them up. ADR-0030 (token substitution at build time) addresses identifier mapping: `Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`, etc. Together those two ADRs cover the mechanical bleed — file references and identifiers.
+ADR-0029 (rules self-declare) addresses how skills cite per-team rule files: they don't, the rules declare their own applicability and the agent picks them up. ADR-0030 (token substitution at build time) addresses identifier mapping: project-name and owner literals map through the `${...}` token form into per-team values. Together those two ADRs cover the mechanical bleed — file references and identifiers.
 
-Neither covers content shape. Replacing `WordPress` with `${TECH_STACK}` is meaningless when the surrounding paragraph assumes the reader is a WordPress shop. The prose was authored against one team's stack and one team's domain; substitution alone can't decouple it.
+Neither covers content shape. Substituting a tech-stack identifier into prose is meaningless when the surrounding paragraph assumes the reader is on that stack. The prose was authored against one team's stack and one team's domain; substitution alone can't decouple it.
 
 Three approaches were considered:
 

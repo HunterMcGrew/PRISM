@@ -165,6 +165,30 @@
 			"reason": "platform-copy mirror of ADR-0058"
 		},
 		{
+			"path": ".claude/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md",
+			"reason": "ADR documents the Thrive-literal guard's PRISM-build-only asymmetry and must name the literal the guard checks for"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md",
+			"reason": "platform-copy mirror of ADR-0062"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md",
+			"reason": "platform-copy mirror of ADR-0062"
+		},
+		{
+			"path": ".claude/spec/adrs/_toolkit/README.md",
+			"reason": "ADR index row for 0062 summarizes the guard asymmetry and names the Thrive-literal canary"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/README.md",
+			"reason": "platform-copy mirror of the ADR README index"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/README.md",
+			"reason": "platform-copy mirror of the ADR README index"
+		},
+		{
 			"path": ".claude/rules/architect-doc-verification.md",
 			"reason": "rule cites THR-1775 as the originating incident in the Why"
 		},
@@ -187,6 +211,18 @@
 		{
 			"path": ".cursor/rules/branch-plan.mdc",
 			"reason": "platform-copy mirror of branch-plan (Cursor .mdc dialect)"
+		},
+		{
+			"path": ".claude/architect/_toolkit/skills-ecosystem.md",
+			"reason": "Output guards section explains the Thrive-literal guard and must name the literals it checks for"
+		},
+		{
+			"path": ".codex/architect/_toolkit/skills-ecosystem.md",
+			"reason": "platform-copy mirror of skills-ecosystem"
+		},
+		{
+			"path": ".cursor/architect/_toolkit/skills-ecosystem.md",
+			"reason": "platform-copy mirror of skills-ecosystem"
 		}
 	]
 }

@@ -1,8 +1,8 @@
 /**
- * Per-file branch coverage for `pnpm prism:update`'s `runUpdate` engine.
+ * Per-file branch coverage for `pnpm prism:update`'s `applyFilePass` engine.
  *
  * Each test seeds a throwaway PRISM source `.prism/` and a consumer `.prism/`
- * (optionally with a recorded `.sync-manifest.json`), runs `runUpdate`, and
+ * (optionally with a recorded `.sync-manifest.json`), runs `applyFilePass`, and
  * asserts the consumer file state plus the returned outcome. Branches covered:
  * new / no-op / clean-overwrite / diverged→.bak / no-manifest byte-compare
  * fallback (no .bak when already current) / consumer-owned untouched /
@@ -15,12 +15,36 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { assertSourceIsPlausible, runUpdate } from "./update";
+import { applyFilePass, assertSourceIsPlausible, runUpdate } from "./update";
 import { hashContent } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
 } from "./sync-manifest";
+
+const CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+		platformContentCopies: { claude: ".claude", codex: ".codex", cursor: ".cursor" },
+	},
+};
+
+const CONSUMER_CONFIG_JSON = {
+	org: "Acme",
+	project: "AcmeApp",
+	ticketPrefix: "ACME",
+	ticketSystem: { kind: "github-issues" },
+};
 
 async function withTempRoots(
 	body: (roots: {
@@ -93,7 +117,7 @@ async function writeConsumerManifest(
 }
 
 function outcomeFor(
-	summary: Awaited<ReturnType<typeof runUpdate>>,
+	summary: Awaited<ReturnType<typeof applyFilePass>>,
 	relativePath: string
 ) {
 	const outcome = summary.outcomes.find(
@@ -108,7 +132,7 @@ test("writes a PRISM-owned file the consumer does not have", async () => {
 	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
 		await writeFile(prismContentRoot, "rules/new-rule.md", "# New rule\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "rules/new-rule.md"),
@@ -124,7 +148,7 @@ test("no-ops when the consumer file already matches incoming", async () => {
 		await writeFile(prismContentRoot, "rules/same.md", "# Same\n");
 		await writeFile(consumerContentRoot, "rules/same.md", "# Same\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(outcomeFor(summary, "rules/same.md").action, "no-op");
 		assert.equal(summary.backups.length, 0);
@@ -139,7 +163,7 @@ test("overwrites freely when the consumer matches its recorded base", async () =
 			"rules/clean.md": "# v1\n",
 		});
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "rules/clean.md"),
@@ -159,7 +183,7 @@ test("backs up a diverged file before overwriting it", async () => {
 			"rules/diverged.md": "# original base\n",
 		});
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "rules/diverged.md"),
@@ -179,7 +203,7 @@ test("no-manifest fallback: a diverged file is backed up", async () => {
 		await writeFile(prismContentRoot, "rules/r.md", "# incoming\n");
 		await writeFile(consumerContentRoot, "rules/r.md", "# hand-edited\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(outcomeFor(summary, "rules/r.md").action, "backed-up");
 		assert.equal(
@@ -194,7 +218,7 @@ test("no-manifest fallback: an already-current file is a no-op, not a .bak", asy
 		await writeFile(prismContentRoot, "rules/current.md", "# identical\n");
 		await writeFile(consumerContentRoot, "rules/current.md", "# identical\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(outcomeFor(summary, "rules/current.md").action, "no-op");
 		assert.equal(summary.backups.length, 0);
@@ -210,7 +234,7 @@ test("leaves a consumer-owned flat architect doc untouched", async () => {
 		await writeFile(prismContentRoot, "architect/foo.md", "# PRISM version\n");
 		await writeFile(consumerContentRoot, "architect/foo.md", "# Consumer product doc\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "architect/foo.md"),
@@ -228,7 +252,7 @@ test("leaves the .prism/custom overlay source untouched", async () => {
 	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
 		await writeFile(consumerContentRoot, "custom/rules/team.md", "# Team overlay\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "custom/rules/team.md"),
@@ -248,7 +272,7 @@ test("leaves a deep-nested unknown-classified architect path untouched", async (
 		await writeFile(prismContentRoot, "architect/subdir/deep.md", "# incoming\n");
 		await writeFile(consumerContentRoot, "architect/subdir/deep.md", "# consumer\n");
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(
 			await readFile(consumerContentRoot, "architect/subdir/deep.md"),
@@ -272,7 +296,7 @@ test("removes a file present in the consumer manifest but absent from PRISM", as
 			"rules/gone.md": "# recorded base\n",
 		});
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(await fileExists(consumerContentRoot, "rules/gone.md"), false);
 		assert.equal(outcomeFor(summary, "rules/gone.md").action, "removed");
@@ -287,7 +311,7 @@ test("backs up a diverged file before removing it", async () => {
 			"rules/gone.md": "# recorded base\n",
 		});
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(await fileExists(consumerContentRoot, "rules/gone.md"), false);
 		assert.equal(
@@ -308,7 +332,7 @@ test("no-ops a manifest-recorded deletion the consumer already removed", async (
 			"rules/gone.md": "# recorded base\n",
 		});
 
-		const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		assert.equal(await fileExists(consumerContentRoot, "rules/gone.md"), false);
 		assert.equal(outcomeFor(summary, "rules/gone.md").action, "no-op");
@@ -329,7 +353,7 @@ test("rewrites the consumer manifest to the new PRISM base hashes after the run"
 			"rules/a.md": "# A v1\n",
 		});
 
-		await runUpdate({ prismContentRoot, consumerContentRoot });
+		await applyFilePass(prismContentRoot, consumerContentRoot);
 
 		const raw = await readFile(consumerContentRoot, SYNC_MANIFEST_FILENAME);
 		const manifest = JSON.parse(raw) as SyncManifest;
@@ -375,4 +399,112 @@ test("assertSourceIsPlausible passes when the source has at least one PRISM-owne
 			assertSourceIsPlausible(prismContentRoot, 5)
 		);
 	});
+});
+
+// --- runUpdate integration: file pass + content copy + roster projection ---
+
+async function withTempRepoRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+		prismContentRoot: string;
+		consumerContentRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-runupdate-"));
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	const prismContentRoot = path.join(prismRepoRoot, ".prism");
+	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+	await fs.mkdir(prismContentRoot, { recursive: true });
+	await fs.mkdir(consumerContentRoot, { recursive: true });
+
+	// Consumer config + paths.json so the platform refresh resolves.
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+	);
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/definitions/paths.json",
+		`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+	);
+
+	// PRISM source: one persona skill + the matching roles.json entry.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/skills/prism-sample/frontmatter.yml",
+		"name: prism-sample\ndescription: Sample persona for tests.\n"
+	);
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/skills/prism-sample/shared.md",
+		"You build ${PROJECT} for ${TICKET_PREFIX}.\n"
+	);
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/roles.json",
+		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+	);
+
+	try {
+		await body({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		});
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+test("runUpdate copies content and projects the persona roster", async () => {
+	await withTempRepoRoots(
+		async ({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		}) => {
+			// A PRISM-owned rule the file pass copies, plus a consumer .prism/ rule
+			// that the content-copy step mirrors into the platform dirs.
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerContentRoot, "rules/local.md", "# Local rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// File pass applied the PRISM-owned rule.
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/shipped.md"),
+				"# Shipped rule\n",
+				"file pass applied the PRISM-owned rule"
+			);
+
+			// Content copy mirrored the consumer's .prism/rules into .claude/rules.
+			assert.equal(
+				await readFile(consumerRepoRoot, ".claude/rules/local.md"),
+				"# Local rule\n",
+				"content copy ran (output unchanged by the relocation into runUpdate)"
+			);
+
+			// Roster projected with the consumer's PROJECT token substituted.
+			const skillBody = await readFile(
+				consumerRepoRoot,
+				".claude/skills/prism-sample/SKILL.md"
+			);
+			assert.match(skillBody, /You build AcmeApp for ACME\./);
+			assert.equal(
+				/\$\{[A-Z][A-Z0-9_]*\}/.test(skillBody),
+				false,
+				"no leftover token survives in the projected roster"
+			);
+		}
+	);
 });

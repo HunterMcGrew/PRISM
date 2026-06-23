@@ -9,6 +9,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -17,8 +18,11 @@ import {
 	removeDeletedManagedContent,
 	syncPlatformContentCopy,
 } from "./build";
+import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { cursorRuleDialect } from "./rule-dialect";
 import { MANAGED_MARKER } from "./utils";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 async function withTempRoots(
 	build: (contentRoot: string, platformDir: string) => Promise<void>,
@@ -406,5 +410,135 @@ test("removeDeletedManagedContent refuses to delete from a directory missing the
 			assert.match(stillThere, /Hand-authored/);
 			assert.equal(changedPaths.length, 0);
 		}
+	);
+});
+
+test("copyContentToPlatformDir resolves every token across the real install seed without throwing", async () => {
+	// The adopt-path content-copy step runs substituteTokens over each seeded
+	// file. A seed file carrying a non-resolvable example literal (a bare
+	// `${UPPER_SNAKE}` that isn't a real token) makes substituteTokens fail-fast
+	// with Unknown token, breaking prism:adopt. This exercises the real seed tree
+	// with a real consumer tokenMap so any such literal surfaces as a test
+	// failure here rather than at adopt time. Regression for the stale ADR-0030
+	// seed copy whose `${TOKEN}` example literal broke prism:adopt.
+	const seedRoot = path.join(repoRoot, "templates", "install", ".prism");
+	const tokenMap = deriveTokenMap(loadConfig(repoRoot));
+	const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "prism-adopt-seed-"));
+
+	try {
+		await assert.doesNotReject(
+			copyContentToPlatformDir(seedRoot, outputDir, false, [], tokenMap),
+			"adopt content-copy over the real install seed must not throw on any token"
+		);
+
+		const adrText = await fs.readFile(
+			path.join(
+				outputDir,
+				"spec",
+				"adrs",
+				"_toolkit",
+				"0030-token-substitution-at-build-time.md"
+			),
+			"utf8"
+		);
+		assert.doesNotMatch(
+			adrText,
+			/\$\{[A-Z][A-Z0-9_]*\}/,
+			"the seed ADR-0030 copy must carry no unresolved bare token literal after substitution"
+		);
+	} finally {
+		await fs.rm(outputDir, { force: true, recursive: true });
+	}
+});
+
+/**
+ * Recursively lists every file under `dir` as a path relative to `dir`.
+ */
+async function listFilesRecursive(
+	dir: string,
+	base = ""
+): Promise<string[]> {
+	const entries = await fs.readdir(dir, { withFileTypes: true });
+	const out: string[] = [];
+
+	for (const entry of entries) {
+		const relPath = base ? `${base}/${entry.name}` : entry.name;
+
+		if (entry.isDirectory()) {
+			out.push(...(await listFilesRecursive(path.join(dir, entry.name), relPath)));
+		} else {
+			out.push(relPath);
+		}
+	}
+
+	return out;
+}
+
+test("no seed spec/ file silently substitutes a real-token literal that its canonical counterpart preserves", async () => {
+	// The throw-class regression above (Unknown token) only catches seed files
+	// carrying a *non-resolvable* literal. A seed file carrying a *real* token
+	// literal in prose meant to show the literal — e.g. ADR-0032 illustrating
+	// `Thrive` -> `${PROJECT}` — substitutes silently on the adopt content-copy
+	// path, corrupting the very illustration the ADR exists to explain. No throw
+	// fires, so the throw-only test misses it. Canonical dodges the corruption by
+	// writing such illustrations in the `${...}` form, which the substitution
+	// pattern does not match. This drives the whole seed spec/ tree through the
+	// real substitution engine and asserts every substitution that fires in a
+	// seed file also fires in its canonical counterpart — a substitution present
+	// in the seed output but absent from canonical is exactly the corruption.
+	// Sentinel token values make a fired substitution detectable in the output.
+	const seedRoot = path.join(repoRoot, "templates", "install", ".prism", "spec");
+	const canonicalRoot = path.join(repoRoot, ".prism", "spec");
+
+	const sentinelMap = new Map(deriveTokenMap(loadConfig(repoRoot)));
+	const sentinels: Record<string, string> = {
+		PROJECT: "ZZSENTINELPROJECT",
+		PROJECT_LOWERCASE: "zzsentinelproject",
+		ORG: "ZZSENTINELORG",
+		TICKET_PREFIX: "ZZSENTINELPREFIX",
+		TICKET_PREFIX_LOWERCASE: "zzsentinelprefix",
+		GITHUB_OWNER: "zz-sentinel-owner",
+		GITHUB_OWNER_LOWERCASE: "zz-sentinel-owner",
+		GITHUB_REPO: "zz-sentinel-repo",
+	};
+	for (const [token, value] of Object.entries(sentinels)) {
+		if (sentinelMap.has(token)) {
+			sentinelMap.set(token, value);
+		}
+	}
+	const sentinelValues = [...new Set(Object.values(sentinels))];
+
+	const corruptions: string[] = [];
+
+	for (const relPath of await listFilesRecursive(seedRoot)) {
+		const canonicalPath = path.join(canonicalRoot, relPath);
+
+		let canonicalRaw: string;
+		try {
+			canonicalRaw = await fs.readFile(canonicalPath, "utf8");
+		} catch {
+			// Seed files with no canonical counterpart can't be compared; the seed
+			// tree is a subset of canonical today, so this branch is a guard, not an
+			// expected path.
+			continue;
+		}
+
+		const seedSubstituted = substituteTokens(
+			await fs.readFile(path.join(seedRoot, relPath), "utf8"),
+			sentinelMap
+		);
+		const canonicalSubstituted = substituteTokens(canonicalRaw, sentinelMap);
+
+		for (const value of sentinelValues) {
+			if (seedSubstituted.includes(value) && !canonicalSubstituted.includes(value)) {
+				corruptions.push(`${relPath} (introduces ${value})`);
+			}
+		}
+	}
+
+	assert.deepEqual(
+		corruptions,
+		[],
+		`seed spec/ files corrupt an intended-literal illustration via token substitution: ${corruptions.join(", ")}`
 	);
 });

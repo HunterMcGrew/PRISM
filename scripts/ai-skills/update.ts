@@ -22,7 +22,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { syncAllPlatformContentCopies } from "./build";
+import {
+	buildRoleMap,
+	generatePlatformSkills,
+	type RolesDefinitions,
+} from "./generate-skills";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
+import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
 import {
 	generateSyncManifest,
@@ -35,7 +41,9 @@ import {
 	buildPlatformDirs,
 	hashFile,
 	loadPathDefinitions,
+	type PathDefinitions,
 	pathExists,
+	readFileIfExists,
 } from "./utils";
 
 /** What happened to a single file during the update pass. */
@@ -59,6 +67,8 @@ export interface UpdateSummary {
 }
 
 export interface RunUpdateOptions {
+	prismRepoRoot: string;
+	consumerRepoRoot: string;
 	prismContentRoot: string;
 	consumerContentRoot: string;
 }
@@ -191,16 +201,19 @@ async function applyDeletedFile(
 }
 
 /**
- * Runs the per-file update pass, then rewrites the consumer manifest to the new
+ * Runs the per-file update pass and rewrites the consumer manifest to the new
  * PRISM base hashes (carrying `prismVersion`/`sourceCommit` from the PRISM
  * source manifest when present). Pure with respect to platform dirs — the
- * caller refreshes those separately.
+ * caller (`runUpdate`) refreshes those afterward.
+ *
+ * This is the engine `runUpdate` wraps: it owns only `.prism/` file movement
+ * and manifest bookkeeping, so it can be unit-tested against a bare `.prism/`
+ * fixture without a full consumer config or PRISM skill source.
  */
-export async function runUpdate(
-	options: RunUpdateOptions
+export async function applyFilePass(
+	prismContentRoot: string,
+	consumerContentRoot: string
 ): Promise<UpdateSummary> {
-	const { prismContentRoot, consumerContentRoot } = options;
-
 	const incomingRelativePaths =
 		await listPrismOwnedRelativePaths(prismContentRoot);
 	const incomingSet = new Set(incomingRelativePaths);
@@ -260,6 +273,58 @@ export async function runUpdate(
 }
 
 /**
+ * Applies the per-file update pass via `applyFilePass`, then refreshes the
+ * consumer's platform dirs — both the content copies and the `prism-*`
+ * persona-skill roster.
+ *
+ * The platform refresh lives here, not in the caller, so every caller of
+ * `runUpdate` gets it: `prism:update`'s `main()` and `prism:adopt`'s `runAdopt`
+ * both reach the same seam. The consumer config and `paths.json` are resolved
+ * and validated up front so a bad config fails fast with nothing written,
+ * instead of half-applying the file pass and throwing at the very end (see plan
+ * prism-242 Decision "Adopt-path seam").
+ */
+export async function runUpdate(
+	options: RunUpdateOptions
+): Promise<UpdateSummary> {
+	const {
+		prismRepoRoot,
+		consumerRepoRoot,
+		prismContentRoot,
+		consumerContentRoot,
+	} = options;
+
+	// Resolve and validate everything the platform refresh needs before the file
+	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
+	// with nothing written.
+	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
+	const consumerPathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+	const platformDirs = buildPlatformDirs(
+		consumerRepoRoot,
+		consumerPathDefinitions
+	);
+	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
+
+	const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+	await refreshPlatformDirs(
+		consumerContentRoot,
+		overlayContentRoot,
+		platformDirs,
+		tokenMap
+	);
+
+	await refreshPlatformSkills(
+		prismRepoRoot,
+		consumerRepoRoot,
+		consumerPathDefinitions,
+		tokenMap
+	);
+
+	return summary;
+}
+
+/**
  * Rewrites `.prism/.sync-manifest.json` in the consumer repo to the PRISM
  * source's current base hashes. Version/commit metadata is carried from the
  * PRISM source manifest when it ships one, falling back to a freshly generated
@@ -287,19 +352,127 @@ async function rewriteConsumerManifest(
 }
 
 /**
- * Resolves the consumer's platform output dirs from its own `paths.json`.
+ * Resolves the consumer's persona-skill output roots from its own `paths.json`.
  *
- * Delegates to `buildPlatformDirs` so both `prism:update` and `prism:build`
- * share one definition of which dirs to write and which dialect each uses — a
- * consumer that customized those paths gets `prism:update` writing to the same
- * place `prism:build` would.
+ * Reads the same `generated.*` fields `prism:build` uses, so a consumer that
+ * customized those paths gets `prism:update` writing the roster to the same
+ * place `prism:build` would. Mirrors `buildPlatformDirs`, which covers the
+ * content-copy dirs; this covers the per-skill / per-agent target roots and the
+ * Codex config file that `generatePlatformSkills` writes.
  */
-async function resolveConsumerPlatformDirs(
-	consumerRepoRoot: string
-): Promise<ReturnType<typeof buildPlatformDirs>> {
-	const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+function resolveConsumerSkillTargetRoots(
+	consumerRepoRoot: string,
+	pathDefinitions: PathDefinitions
+): {
+	targetRoots: {
+		claude: string;
+		claudeAgents: string;
+		codex: string;
+		codexAgents: string;
+		cursor: string;
+	};
+	codexConfigPath: string;
+} {
+	const { generated } = pathDefinitions;
 
-	return buildPlatformDirs(consumerRepoRoot, pathDefinitions);
+	return {
+		targetRoots: {
+			claude: path.join(consumerRepoRoot, generated.claudeSkillsRoot),
+			claudeAgents: path.join(consumerRepoRoot, generated.claudeAgentsRoot),
+			codex: path.join(consumerRepoRoot, generated.codexSkillsRoot),
+			codexAgents: path.join(consumerRepoRoot, generated.codexAgentsRoot),
+			cursor: path.join(consumerRepoRoot, generated.cursorSkillsRoot),
+		},
+		codexConfigPath: path.join(consumerRepoRoot, generated.codexConfigFile),
+	};
+}
+
+/**
+ * Renders the `prism-*` persona-skill roster into the consumer's platform skill
+ * dirs, using the PRISM source's skill bodies and `roles.json` but the
+ * consumer's own token map and output paths, then runs the leftover-token guard
+ * over the rendered output.
+ *
+ * The roster source is the PRISM checkout, not the consumer — the consumer
+ * renders whatever personas PRISM ships. `checkMode` is always `false`: this is
+ * a write, never a drift check. The Thrive-literal guard is deliberately not run
+ * here — a consumer's output legitimately contains "Thrive"-flavored words, so
+ * only the leftover-token guard applies (see plan prism-242 Decision "Two
+ * guards, not one").
+ */
+async function refreshPlatformSkills(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	consumerPathDefinitions: PathDefinitions,
+	tokenMap: Map<string, string>
+): Promise<void> {
+	const sourceSkillsRoot = path.join(prismRepoRoot, ".ai-skills", "skills");
+	if (!(await pathExists(sourceSkillsRoot))) {
+		throw new Error(
+			`PRISM source has no skill directory at ${sourceSkillsRoot}.`
+		);
+	}
+
+	const rolesPath = path.join(
+		prismRepoRoot,
+		".ai-skills",
+		"definitions",
+		"roles.json"
+	);
+	const rolesRaw = await readFileIfExists(rolesPath);
+	if (rolesRaw === null) {
+		throw new Error(`PRISM source has no roles definition at ${rolesPath}.`);
+	}
+
+	let roleDefinitions: RolesDefinitions;
+	try {
+		roleDefinitions = JSON.parse(rolesRaw) as RolesDefinitions;
+	} catch (error) {
+		throw new Error(
+			`Invalid roles definitions JSON at ${rolesPath}: ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
+
+	const roleMap = buildRoleMap(roleDefinitions);
+	const { targetRoots, codexConfigPath } = resolveConsumerSkillTargetRoots(
+		consumerRepoRoot,
+		consumerPathDefinitions
+	);
+
+	const changedPaths: string[] = [];
+	await generatePlatformSkills({
+		sourceSkillsRoot,
+		targetRoots,
+		codexConfigPath,
+		roleMap,
+		tokenMap,
+		optedIn: {
+			claude: true,
+			codex: true,
+			cursor: true,
+			codexAgents: true,
+			claudeAgents: true,
+			codexConfig: true,
+		},
+		checkMode: false,
+		changedPaths,
+	});
+
+	const leftoverTokenViolations = await runLeftoverTokenGuard(consumerRepoRoot, [
+		targetRoots.claude,
+		targetRoots.claudeAgents,
+		targetRoots.codex,
+		targetRoots.codexAgents,
+		targetRoots.cursor,
+	]);
+	if (leftoverTokenViolations.length > 0) {
+		const detail = leftoverTokenViolations
+			.map((v) => `  ${v.relativePath}:${v.line}: ${v.match}`)
+			.join("\n");
+		throw new Error(
+			`prism:update: ${leftoverTokenViolations.length} unresolved \${TOKEN} literal(s) in rendered persona skills:\n${detail}`
+		);
+	}
 }
 
 /** Subdir name for the `.prism/custom` overlay's source and platform output. */
@@ -307,7 +480,7 @@ const OVERLAY_SUBPATH = "custom";
 
 /**
  * Refreshes the consumer's platform dirs after `.prism/` is updated. The token
- * map and platform dirs are resolved and validated in `main()` before any
+ * map and platform dirs are resolved and validated in `runUpdate` before any
  * `.prism/` mutation, so this step never fails on a bad config after the file
  * pass has already written.
  *
@@ -415,7 +588,6 @@ async function main(): Promise<void> {
 
 	const prismContentRoot = path.join(prismRepoRoot, ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
-	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
 
 	if (!(await pathExists(prismContentRoot))) {
 		throw new Error(
@@ -435,20 +607,12 @@ async function main(): Promise<void> {
 
 	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
 
-	// Resolve and validate everything the platform refresh needs before the file
-	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
-	// with nothing written, instead of half-applying the update and throwing at
-	// the very end.
-	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
-	const platformDirs = await resolveConsumerPlatformDirs(consumerRepoRoot);
-
-	const summary = await runUpdate({ prismContentRoot, consumerContentRoot });
-	await refreshPlatformDirs(
+	const summary = await runUpdate({
+		prismRepoRoot,
+		consumerRepoRoot,
+		prismContentRoot,
 		consumerContentRoot,
-		overlayContentRoot,
-		platformDirs,
-		tokenMap
-	);
+	});
 
 	reportSummary(summary);
 }
