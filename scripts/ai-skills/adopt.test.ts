@@ -263,6 +263,43 @@ test("runAdopt produces a .sync-manifest.json after the first pass", async () =>
 	);
 });
 
+test("runAdopt projects the persona roster into the consumer", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			const skillBody = await readFile(
+				consumerRepoRoot,
+				".claude/skills/prism-sample/SKILL.md"
+			);
+			assert.match(
+				skillBody,
+				/the sample persona for Acme/,
+				"roster renders with the consumer's PROJECT token substituted"
+			);
+			assert.ok(
+				await fileExists(
+					consumerRepoRoot,
+					".claude/skills/prism-sample/.ai-skill-generated"
+				),
+				"managed marker written so steady-state cleanup is marker-keyed"
+			);
+			assert.ok(
+				await fileExists(consumerRepoRoot, ".codex/agents/prism-sample.toml"),
+				"codex agent adapter projected on adopt"
+			);
+			assert.equal(
+				/\$\{[A-Z][A-Z0-9_]*\}/.test(skillBody),
+				false,
+				"no leftover token survives in the projected roster"
+			);
+		}
+	);
+});
+
 test("no-manifest byte-identical consumer file is a no-op, not a .bak", async () => {
 	await withTempRoots(
 		async ({

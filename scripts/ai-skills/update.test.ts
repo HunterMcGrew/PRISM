@@ -15,12 +15,36 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { applyFilePass, assertSourceIsPlausible } from "./update";
+import { applyFilePass, assertSourceIsPlausible, runUpdate } from "./update";
 import { hashContent } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
 } from "./sync-manifest";
+
+const CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+		platformContentCopies: { claude: ".claude", codex: ".codex", cursor: ".cursor" },
+	},
+};
+
+const CONSUMER_CONFIG_JSON = {
+	org: "Acme",
+	project: "AcmeApp",
+	ticketPrefix: "ACME",
+	ticketSystem: { kind: "github-issues" },
+};
 
 async function withTempRoots(
 	body: (roots: {
@@ -375,4 +399,112 @@ test("assertSourceIsPlausible passes when the source has at least one PRISM-owne
 			assertSourceIsPlausible(prismContentRoot, 5)
 		);
 	});
+});
+
+// --- runUpdate integration: file pass + content copy + roster projection ---
+
+async function withTempRepoRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+		prismContentRoot: string;
+		consumerContentRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-runupdate-"));
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	const prismContentRoot = path.join(prismRepoRoot, ".prism");
+	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+	await fs.mkdir(prismContentRoot, { recursive: true });
+	await fs.mkdir(consumerContentRoot, { recursive: true });
+
+	// Consumer config + paths.json so the platform refresh resolves.
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+	);
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/definitions/paths.json",
+		`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+	);
+
+	// PRISM source: one persona skill + the matching roles.json entry.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/skills/prism-sample/frontmatter.yml",
+		"name: prism-sample\ndescription: Sample persona for tests.\n"
+	);
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/skills/prism-sample/shared.md",
+		"You build ${PROJECT} for ${TICKET_PREFIX}.\n"
+	);
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/roles.json",
+		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+	);
+
+	try {
+		await body({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		});
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+test("runUpdate copies content and projects the persona roster", async () => {
+	await withTempRepoRoots(
+		async ({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		}) => {
+			// A PRISM-owned rule the file pass copies, plus a consumer .prism/ rule
+			// that the content-copy step mirrors into the platform dirs.
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerContentRoot, "rules/local.md", "# Local rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// File pass applied the PRISM-owned rule.
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/shipped.md"),
+				"# Shipped rule\n",
+				"file pass applied the PRISM-owned rule"
+			);
+
+			// Content copy mirrored the consumer's .prism/rules into .claude/rules.
+			assert.equal(
+				await readFile(consumerRepoRoot, ".claude/rules/local.md"),
+				"# Local rule\n",
+				"content copy ran (output unchanged by the relocation into runUpdate)"
+			);
+
+			// Roster projected with the consumer's PROJECT token substituted.
+			const skillBody = await readFile(
+				consumerRepoRoot,
+				".claude/skills/prism-sample/SKILL.md"
+			);
+			assert.match(skillBody, /You build AcmeApp for ACME\./);
+			assert.equal(
+				/\$\{[A-Z][A-Z0-9_]*\}/.test(skillBody),
+				false,
+				"no leftover token survives in the projected roster"
+			);
+		}
+	);
 });
