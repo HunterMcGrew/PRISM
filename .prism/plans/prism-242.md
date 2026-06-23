@@ -166,10 +166,31 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Eric ran PR #243 review. Verified the load-bearing guarantee by his own hand — `pnpm prism:build` empty `git diff`, `pnpm prism:check` exit 0. Marker invariant, adopt seam (no double-run), guard asymmetry, and the `applyFilePass`/`runUpdate` split all confirmed clean; test depth proves the ACs. 0 critical / 0 major / 2 minor: dead `deriveTokenMap` import in generate-skills.ts:20, and architect docs cite ADR-0062 which doesn't exist yet (deferred to close, but must land before merge). Posted inline + summary to PR #243; labels `effort:quick` + `review:has-minors`; PR stays draft.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Winston ran the plan close. Authored ADR-0062 (`.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md`, cross-refs 0030/0032/0057/0059, all tokens in pattern-dodging `${...}` form so the seed mirror won't reintroduce the throwing-literal defect) and added the README index row on both canonical and seed surfaces (README is curated, so the auto-mirror skips it). ADR body is non-curated → auto-mirrored by `prism:build` (Clove's step). Resolved the verdict gate (all 12 Decisions carry a verdict; the 7 architectural ones promoted to ADR-0062 + Eli's install-layout.md/skills-ecosystem.md, no architect duplication added), verified all AC holds-at-merge with test-file evidence, and marked the plan closed. Hands to Clove for the dead-import drop + build + commit.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove landed the close-out. Dropped the dead `deriveTokenMap` import (Eric Minor 1); ran `prism:build` to mirror ADR-0062 into the seed and re-render the platform copies so the architect-doc citations resolve (Eric Minor 2). The build's Thrive-literal guard fired on ADR-0062's own platform copies (it names "Thrive" to document the guard asymmetry) — allowlisted them matching the ADR-0030 precedent (see Decision: ADR-0062 platform copies allowlisted). Skill render byte-identical (zero persona/agent/config drift); `prism:check` green (351/351), crossref-lint confirms the ADR-0062 citation resolves.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Eric ran the PR #243 re-review pass. Both prior Minors confirmed closed by his own hand — `deriveTokenMap` gone and unused (grep clean); ADR-0062 present on all five surfaces with the citation resolving (crossref-lint green). Scrutinized the 6 new allowlist entries: all file-scoped `.md` paths (3 ADR platform copies + 3 README index rows), no directory wildcards, mirrors the ADR-0030 precedent; the guard's prefix matcher (`literal-guard.ts:139`) exempts exactly one file per `.md` entry, so no over-broadening. `pnpm prism:build` empty diff (render byte-identical), `pnpm prism:check` green (351/351), all four ADR-0062 cross-refs (0030/0032/0057/0059) resolve. 0 critical / 0 major / 0 minor / 0 new findings. Resolved both inline threads, removed `review:has-minors`; PR ready for human merge (Eric never approves — ADR-0011).
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove fixed the CI-only failure on PR #243. The "renders PRISM's own source in check mode with no drift" test asserted zero-drift over all six target roots, including the two gitignored per-user roots (`.agents/skills`, `.codex/codex-config.toml`) that have no committed baseline — green locally only because a prior write-mode build left them on disk, 63 false-drift paths on CI's fresh checkout. Scoped the test's check-mode `optedIn` to `{ ...ALL_OPTED_IN, codex: false, codexConfig: false }`, mirroring `build.ts main()` (`build.ts:805,817`); reproduced the failure with the targets `mv`'d aside, confirmed green with them still absent, restored, `prism:check` green (351/351, tracked output byte-identical). See Debugged Issues.
 
 ---
 
 ## Debugged Issues
+
+### CI-only drift: check-mode no-drift test asserts against gitignored render targets
+
+- **Status:** `fixed`
+- **Severity:** High
+- **Confidence:** `High` (Confirmed root cause + deterministic repro)
+- **Environment:** CI `prism-check` (run 28011470435); not reproducible on a working tree where a prior write-mode `prism:build` left `.agents/`/`.codex/codex-config.toml` on disk
+- **File:** `scripts/ai-skills/generate-skills.test.ts:354` (the `optedIn: ALL_OPTED_IN` on the "renders PRISM's own source in check mode with no drift" test)
+- **Root cause:** `[Confirmed]` the test rendered into all six target roots with `ALL_OPTED_IN`, including the two gitignored per-user roots (`.agents/skills` codex, `.codex/codex-config.toml` codexConfig) which have no committed baseline; check mode against an absent target reports it as drift.
+- **Steps to Reproduce:**
+  1. `mv .agents /tmp/agents-bak; mv .codex/codex-config.toml /tmp/codex-bak` (simulate a fresh checkout where gitignored targets are absent)
+  2. `npx tsx --test --test-name-pattern="renders PRISM's own source in check mode with no drift" scripts/ai-skills/generate-skills.test.ts`
+- **Expected behavior:** zero drift on a fresh checkout.
+- **Actual behavior:** 63 false-drift paths reported — every persona's `.agents/skills/<id>/SKILL.md` + `.ai-skill-generated`, plus `.codex/codex-config.toml`; all six tracked targets clean.
+- **Refuted hypotheses:**
+  - "The extracted `generatePlatformSkills` drifts from committed output" — refuted: zero drift in the four tracked roots (`.claude/skills`, `.claude/agents`, `.codex/agents`, `.cursor/skills`); the 63 paths are exclusively the two gitignored roots.
+- **Recommended fix:** scope the test's check-mode `optedIn` to exclude the gitignored render targets (`codex: false, codexConfig: false`), mirroring `build.ts main()`'s established check-mode `optedIn` (`build.ts:805,817`). Keeps byte-identical assertion on the four tracked targets.
+- **Suggested tests:** none needed — the existing test, correctly scoped, is the regression; verified it fails pre-fix and passes post-fix with the gitignored targets absent.
+- **Linear:** `N/A` (GitHub issue #242; CI failure on PR #243)
 
 <!-- Sasha fills this section as needed. -->
 
@@ -241,9 +262,9 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 - [x] Types correct — no `any`, no unsafe `as` (JSON-boundary casts validated: `buildRoleMap` checks the role discriminator; `refreshPlatformSkills` JSON.parse is try/caught)
 - [x] No stray console.logs or debug artifacts (CLI `reportSummary` console output is intentional)
 - [x] Tests written for new logic and edge cases — Eric verified depth in PR review: foreign-config render + token substitution, marker on every platform, marker-keyed cleanup safety (consumer `prism-custom` survives), real-PRISM-source check-mode zero-drift, real-seed-tree whole-tree sentinel-substitution regression, adopt roster projection, both guards + asymmetry + allowlist
-- [ ] All debugged issues resolved (no `open` entries) — none filed
+- [x] All debugged issues resolved (no `open` entries) — one filed and fixed: CI-only drift from the check-mode test asserting against gitignored render targets (scoped `optedIn` to mirror `build.ts main()`)
 - [x] Build passes — Eric re-ran 2026-06-23 (own hand): `pnpm prism:build` empty diff, `pnpm prism:check` exit 0
 - [x] PR description up to date — synced at close-out push
 - [x] Lasting decisions promoted to architect context (if applicable) — ADR-0062 authored + auto-mirrored to the seed; canonical + README index on all surfaces. Durable decisions live in Eli's install-layout.md/skills-ecosystem.md + ADR-0062; verdict gate satisfied (all 13 Decisions carry verdicts). The two ADR-0062 architect-doc citations (install-layout.md:111, skills-ecosystem.md:364) now resolve — crossref-lint green.
 
-**Last updated:** 2026-06-23 (Clove — close-out: both Eric Minors fixed, ADR-0062 mirrored, skill render byte-identical, `prism:check` green 351/351)
+**Last updated:** 2026-06-23 (Clove — CI fix: check-mode test scoped to exclude gitignored render targets; reproduced-clean on fresh-checkout condition; `prism:check` green 351/351)

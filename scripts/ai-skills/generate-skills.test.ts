@@ -352,7 +352,13 @@ test("renders PRISM's own source in check mode with no drift", async () => {
 		),
 		roleMap: buildRoleMap(JSON.parse(rolesRaw)),
 		tokenMap: deriveTokenMap(JSON.parse(configRaw) as PrismConfig),
-		optedIn: ALL_OPTED_IN,
+		// `.agents/skills` (codex) and `.codex/codex-config.toml` (codexConfig) are
+		// gitignored per-user roots with no committed baseline to compare against,
+		// so check mode opts them out — mirroring build.ts main()'s optedIn. A fresh
+		// checkout has neither on disk; asserting zero-drift against output that is
+		// intentionally never committed would fail on CI while passing locally only
+		// because a prior write-mode build left them in the working tree.
+		optedIn: { ...ALL_OPTED_IN, codex: false, codexConfig: false },
 		checkMode: true,
 		changedPaths,
 	});
