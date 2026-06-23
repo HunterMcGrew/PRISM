@@ -18,8 +18,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { resolveConsumerRoot, parseConsumerFlag } from "./lib/consumer-root";
 import { loadSyncManifest } from "./sync-manifest";
-import { resolvePrismSource, runUpdate, type UpdateSummary } from "./update";
+import {
+	resolvePrismSource,
+	resolveSelfPrismSource,
+	runUpdate,
+	type UpdateSummary,
+} from "./update";
 import { ensureDirectory, pathExists } from "./utils";
 
 export interface SeedSummary {
@@ -132,8 +138,13 @@ export async function runAdopt(options: {
 }
 
 export async function runAdoptCli(): Promise<void> {
-	const consumerRepoRoot = process.cwd();
-	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
+	const argv = process.argv.slice(2);
+	const consumerRepoRoot = resolveConsumerRoot({
+		explicitConsumer: parseConsumerFlag(argv),
+		cwd: process.cwd(),
+		selfPrismRoot: resolveSelfPrismSource(),
+	});
+	const prismRepoRoot = resolvePrismSource(argv, consumerRepoRoot);
 
 	if (prismRepoRoot === null) {
 		throw new Error(

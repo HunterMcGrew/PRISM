@@ -22,7 +22,11 @@ Usage:
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
 
 Run from your consumer repo root. PRISM source is auto-derived from the linked
-PRISM checkout; pass --prism-source <path> to override.`;
+PRISM checkout; pass --prism-source <path> to override.
+
+Pass --consumer <path> to target a specific consumer repo (defaults to the
+current repo, or — when run from inside a vendored PRISM — the repo that
+contains PRISM).`;
 
 async function main(): Promise<void> {
 	const subcommand = process.argv[2];
