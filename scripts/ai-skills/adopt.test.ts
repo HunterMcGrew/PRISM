@@ -105,6 +105,71 @@ async function writeConsumerManifest(
 	);
 }
 
+const CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+		platformContentCopies: {
+			claude: ".claude",
+			codex: ".codex",
+			cursor: ".cursor",
+		},
+	},
+};
+
+const CONSUMER_CONFIG_JSON = {
+	org: "Acme",
+	project: "Acme",
+	ticketPrefix: "ACME",
+	ticketSystem: { kind: "github-issues" },
+};
+
+/**
+ * Gives the temp roots the minimum needed for `runUpdate`'s platform refresh to
+ * traverse: a consumer `config.json` + `paths.json`, and a PRISM source skill
+ * (one persona) plus the matching `roles.json` entry. The persona body carries a
+ * `${PROJECT}` token so the leftover-token guard has real substitution to verify.
+ */
+async function scaffoldConsumerAndSkills(roots: {
+	prismSourceRoot: string;
+	consumerRepoRoot: string;
+}): Promise<void> {
+	await writeFile(
+		roots.consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+	);
+	await writeFile(
+		roots.consumerRepoRoot,
+		".ai-skills/definitions/paths.json",
+		`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+	);
+	await writeFile(
+		roots.prismSourceRoot,
+		".ai-skills/skills/prism-sample/frontmatter.yml",
+		"name: prism-sample\ndescription: Sample persona for tests.\n"
+	);
+	await writeFile(
+		roots.prismSourceRoot,
+		".ai-skills/skills/prism-sample/shared.md",
+		"You are the sample persona for ${PROJECT}.\n"
+	);
+	await writeFile(
+		roots.prismSourceRoot,
+		".ai-skills/definitions/roles.json",
+		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+	);
+}
+
 // --- seed tests ---
 
 test("seed writes an absent file into the consumer content root", async () => {
@@ -176,6 +241,7 @@ test("runAdopt produces a .sync-manifest.json after the first pass", async () =>
 			// Seed the PRISM source .prism/ with a PRISM-owned file so runUpdate has
 			// something to apply and rewriteConsumerManifest can record it.
 			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
 
@@ -208,6 +274,7 @@ test("no-manifest byte-identical consumer file is a no-op, not a .bak", async ()
 			// Consumer already has the file at the exact same bytes as PRISM ships.
 			await writeFile(prismContentRoot, "rules/current.md", "# identical\n");
 			await writeFile(consumerContentRoot, "rules/current.md", "# identical\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
 
@@ -238,6 +305,7 @@ test("diverged consumer file is preserved as .bak during runAdopt", async () => 
 			// No manifest exists (first-contact scenario).
 			await writeFile(prismContentRoot, "rules/rule.md", "# PRISM version\n");
 			await writeFile(consumerContentRoot, "rules/rule.md", "# Hand-edited\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
 

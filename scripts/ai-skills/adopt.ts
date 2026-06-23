@@ -121,7 +121,12 @@ export async function runAdopt(options: {
 	await assertConsumerIsEstablished(consumerContentRoot);
 
 	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
-	const update = await runUpdate({ prismContentRoot, consumerContentRoot });
+	const update = await runUpdate({
+		prismRepoRoot: prismSourceRoot,
+		consumerRepoRoot,
+		prismContentRoot,
+		consumerContentRoot,
+	});
 
 	return { seed, update };
 }
