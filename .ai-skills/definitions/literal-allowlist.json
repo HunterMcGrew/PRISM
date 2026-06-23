@@ -187,6 +187,18 @@
 		{
 			"path": ".cursor/rules/branch-plan.mdc",
 			"reason": "platform-copy mirror of branch-plan (Cursor .mdc dialect)"
+		},
+		{
+			"path": ".claude/architect/_toolkit/skills-ecosystem.md",
+			"reason": "Output guards section explains the Thrive-literal guard and must name the literals it checks for"
+		},
+		{
+			"path": ".codex/architect/_toolkit/skills-ecosystem.md",
+			"reason": "platform-copy mirror of skills-ecosystem"
+		},
+		{
+			"path": ".cursor/architect/_toolkit/skills-ecosystem.md",
+			"reason": "platform-copy mirror of skills-ecosystem"
 		}
 	]
 }

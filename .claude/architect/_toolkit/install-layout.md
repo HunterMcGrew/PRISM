@@ -88,6 +88,28 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 **The manifest-exists refusal is the install-vs-steady-state guard.** `runAdopt` calls `assertConsumerIsEstablished` before seeding; if a `.sync-manifest.json` is already present, it throws `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` The guard lives inside `runAdopt`, not only in the CLI `main()`, so every caller of `runAdopt` inherits the invariant. This mirrors `update.ts`'s source==consumer refusal: each entry point refuses the other's job so the two flows' preconditions stay clean. There is no `--dry-run` preview — first-contact's safety is recover-after-`.bak` (the seed never overwrites; the sync no-ops byte-identical files and `.bak`-snapshots divergence), not see-before-write (ADR-0059).
 
+## Steady-state persona-skill distribution
+
+After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and every future `prism:adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. The mechanism lives in `runUpdate` (`scripts/ai-skills/update.ts`) — the shared seam both `prism:update`'s `main()` and `prism:adopt`'s `runAdopt` call — so both entry points reach the same render step without duplication (see plan prism-242 Decision "Adopt-path seam").
+
+**What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` (`scripts/ai-skills/generate-skills.ts`) renders the skill body with the consumer's own token map — `PRISM` becomes the consumer's project name, `PRISM` becomes their ticket prefix, and so on — and writes the rendered output to each opted-in platform directory:
+
+- `.claude/skills/<id>/SKILL.md` (Claude Code)
+- `.agents/skills/<id>/SKILL.md` (Codex)
+- `.cursor/skills/<id>/SKILL.md` (Cursor)
+
+Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into their respective output roots using the same token map. Every written skill directory carries the managed marker (`.ai-skill-generated`) so orphan cleanup knows what to remove — see the § Skill namespace ownership section above.
+
+**The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in PRISM" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard (`runLeftoverTokenGuard` in `literal-guard.ts`) runs over the consumer's skill output roots immediately after the render and fails the update if any are found (see the guard details in `skills-ecosystem.md § Output guards`).
+
+**Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism:update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target.
+
+**Consumer-authored skills are untouched.** The render writes only to roster-member IDs, and cleanup deletes only marker-bearing directories that are no longer in the roster. A consumer's own skills — whether they use a non-`prism-*` prefix or a custom-prefixed name — are never written or deleted by `prism:update`.
+
+**Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism:update` run on a repo already at the current PRISM version is a no-op across the roster.
+
+The decision record for this feature is ADR-0062 ("Consumer skill distribution via prism:update").
+
 ## Cross-reference convention
 
 When canonical content cites another canonical file, use `.prism/<area>/<file>`. Every platform's copy of the citing file will resolve correctly via its own auto-load — Claude reads the citation from `.claude/rules/<rule>.md` and resolves `.prism/<area>/<file>` against the canonical location. Codex and Cursor do the same.
