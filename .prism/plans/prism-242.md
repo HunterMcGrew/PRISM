@@ -1,5 +1,7 @@
 # Plan: prism-242
 
+> Closed: 2026-06-23
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/242
@@ -121,22 +123,34 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
   - **Chosen approach:** rephrase seed `0032` line 18 to match canonical verbatim (`Substituting a tech-stack identifier into prose is meaningless when the surrounding paragraph assumes the reader is on that stack.`). Touches nothing in the substitution engine.
   - → no promotion needed (same ticket-tactical seed-content class as the 0030 fix; relies on the same durable rule already in ADR-0030's JSDoc).
 - **Personas install as `prism-*` IDs (Hunter confirmed).** Bodies render with the consumer `tokenMap` (`${PROJECT}` → consumer name, `${TICKET_PREFIX}` → consumer prefix). No directory ID remapping — that would break the regeneration/orphan-cleanup contract, which keys off `validSkillIds` membership plus the managed marker written into each generated skill dir (see Decision "Managed-marker invariant"). `ownership.ts` is only a glob-based path classifier (`PRISM_OWNED_GLOBS` / `CONSUMER_OWNED_GLOBS`); it holds no marker or delete logic.
+  - → promoted to ADR-0062 (sub-decision 1 — canonical IDs, no remapping).
 - **Two guards, not one.** A new leftover-token guard (`/\$\{[A-Z][A-Z0-9_]*\}/`) runs in both PRISM and consumer mode. The existing Thrive-literal guard (`literal-guard.ts:24`) is a de-thriving canary — PRISM-build-only, never on consumer output (the consumer legitimately contains "Thrive").
+  - → promoted to ADR-0062 (sub-decision 4) and `.prism/architect/_toolkit/skills-ecosystem.md` § Output guards (the load-bearing asymmetry).
 - **Extracted fn is root-agnostic.** Each caller resolves absolute source/target paths and passes them in — removes the single-`repoRoot` read/write coupling.
+  - → promoted to ADR-0062 (sub-decision 2 — one renderer, two callers).
 - **Auto on every `prism:update`, no separate command** — parity with content projection.
+  - → promoted to ADR-0062 (sub-decision 6).
 - **Roster = all `prism-*`.** `seed-curation.json` is not the lever (it curates `.prism/` install-seed content, unrelated to personas).
+  - → no promotion needed (scoping clarification — the roster boundary is captured implicitly by ADR-0062's "the `prism-*` persona roster"; `seed-curation.json`'s unrelated role is documented at its own schema).
 - **Deliverable: ADR-0062** "Consumer skill distribution via prism:update." Cross-ref ADR-0030, 0032, 0057, 0059. Latest ADR on main is 0061; 0062 is next.
+  - → promoted to ADR-0062 (this decision IS the ADR; authored at `.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md` during close, README index updated on both surfaces).
 - **Managed-marker invariant — orphan cleanup is marker-keyed, and the consumer is safe.** Story 3 (consumer-authored skills never overwritten) is satisfied by the existing marker contract; verified against source.
   - **Root cause:** the concern was that a consumer's hand-placed `prism-*`-prefixed file could be clobbered on update. Tracing shows cleanup is gated on a marker file, not on the prefix.
   - **Where it actually lives:** `MANAGED_MARKER = ".ai-skill-generated"` (`utils.ts:12`), written into every generated skill dir for all opted-in platforms (`build.ts:1308-1313` Claude, `1323-1328` Codex, `1342-1347` Cursor). Agent files carry a generated header line instead of the marker file (`removeDeletedManagedAgentFiles`, `build.ts:1072-1112`).
   - **Cleanup predicate (the safety guarantee):** `removeDeletedManagedSkills` (`utils.ts:211-244`) deletes a candidate dir only when BOTH `!validSkillIds.has(name)` AND the marker file exists (`utils.ts:233-235` — `if (!(await pathExists(markerPath))) continue`). `removeDeletedManagedAgentFiles` mirrors this with a header-presence check (`build.ts:1101`). A `prism-*`-named file with NO marker is preserved. Cleanup is **marker-keyed (SAFE)**, not prefix-keyed.
   - **Alternatives considered:** key cleanup on the `prism-*` prefix alone (rejected — would clobber consumer-authored prefixed files); add a separate consumer-side allowlist (rejected — redundant; the marker already encodes "PRISM wrote this").
   - **Implementation guidance for Clove:** the extracted `generatePlatformSkills` MUST write `MANAGED_MARKER` into every generated skill dir exactly as the current loop does — the cleanup safety depends on the marker being present on everything PRISM generates. Do not skip the marker write in any platform branch. One narrow non-issue to be aware of, not fix: regeneration (`writeFileIfChanged`, `utils.ts:191-209`) overwrites on content-difference without a marker check, but it only ever writes to roster skill IDs, so a consumer's own-named file is never a write target. Add a test: a consumer fixture with a marker-less `prism-custom/SKILL.md` survives an update→cleanup cycle untouched.
+  - → promoted to ADR-0062 (sub-decision 5 — marker-keyed cleanup) and `.prism/architect/_toolkit/install-layout.md` § Steady-state persona-skill distribution + § Skill namespace ownership (marker contract, consumer-authored skills survive).
 - **Adopt-path seam — no shared seam today; lift platform-refresh into `runUpdate`.** The riskiest wiring question; resolved with a concrete relocation.
   - **Root cause:** `refreshPlatformDirs` (`update.ts:323-347`) is called only from `update.ts main()` (`update.ts:446`). `runAdopt` (`adopt.ts:111-127`) calls `runUpdate` directly (`adopt.ts:124`) and never enters update's `main()`. Result: `prism:adopt` does not refresh platform dirs at all today — a latent gap independent of this ticket, surfaced by it.
   - **Alternatives considered:** (a) duplicate the skill-gen call into both `update.ts main()` and `adopt.ts main()` — rejected, two call sites drift; (b) have `runAdopt` call update's `main()` instead of `runUpdate` — rejected, `main()` does CLI-arg parsing and process-level concerns that don't belong on the adopt path; (c) lift the platform-refresh + skill-gen step down into `runUpdate` so every caller of `runUpdate` gets it.
   - **Chosen approach:** (c). `runUpdate` is the one function both commands already share (`update.ts:445` from update's `main()`, `adopt.ts:124` from `runAdopt`). Putting the shared step there gives a single seam and fixes the latent adopt gap as a bonus.
   - **Implementation guidance for Clove:** this is a behavior change on the adopt path (intended — adopt now refreshes platform dirs and projects the roster) but must be output-identical on the update path. Add a test asserting the `prism:update` flow's output is unchanged, and a test asserting `prism:adopt` now projects the roster. Relocating the `tokenMap` resolution (`update.ts:442`) alongside the moved call may be needed since it currently lives in `main()`.
+  - → promoted to ADR-0062 (sub-decision 3 — render in the shared `runUpdate` seam, adopt-path behavior change) and `.prism/architect/_toolkit/install-layout.md` § Steady-state persona-skill distribution (the shared seam both entry points reach).
+- **ADR-0062 platform copies allowlisted against the Thrive-literal guard (Clove, close-out).** ADR-0062 documents the de-thriving guard's PRISM-build-only asymmetry, so it names the literal "Thrive" — and the build's Thrive-literal guard correctly fired on the rendered platform copies (9 hits: `.claude`/`.codex`/`.cursor` copies of the ADR plus the README index row). Same false-positive class the allowlist already handles for ADR-0030 (the ADR whose subject *is* the literal).
+  - **Alternatives considered:** rephrase the ADR to avoid "Thrive" (rejected — the ADR's core content is the guard asymmetry; it cannot explain a de-thriving canary without naming the literal it checks for); fence the literal (rejected — the guard is a flat scan with no fence-awareness, same constraint that ruled out fencing for the seed ADR throws).
+  - **Chosen approach:** six allowlist entries in `.ai-skills/definitions/literal-allowlist.json` — three for the ADR-0062 platform copies, three for the platform README index copies — matching the existing ADR-0030 precedent. Touches nothing in the guard.
+  - → no promotion needed (build-tooling allowlist mechanics; the durable rule — docs whose subject is a guarded literal get allowlisted — already lives implicitly in the allowlist's ADR-0030 entries and `skills-ecosystem.md § Output guards`).
 
 ---
 
@@ -149,6 +163,9 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove completed task 7 — rephrased the three diverging token-literal lines in seed ADR-0030 to canonical's `${...}` form. The commissioned regression (content-copy over the real seed `spec/` tree) then surfaced seed ADR-0032's `${TECH_STACK}` example literal throwing the same way; folded that one-line rephrase in too (see Decision: Seed ADR-0032). Adopt AC now demonstrable end-to-end — `prism:adopt` on a consumer fixture completed with no throw and projected 31 `prism-*` skills with the consumer's tokens substituted; build empty diff, `prism:check` green, 350/350 tests.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Eli completed task 8 — documented the consumer skill-gen step in `install-layout.md` (§ Steady-state persona-skill distribution: what renders, with whose tokens, orphan cleanup, and idempotency) and the two-guard model in `skills-ecosystem.md` (§ Output guards: leftover-token guard runs everywhere; Thrive-literal guard is PRISM-build-only). Added three allowlist entries for the platform copies of `skills-ecosystem.md` (the "Output guards" section must name "Thrive" to explain what the guard checks for). `prism:check` green after build; 350/350 tests.
 - 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove fixed Briar's Minor — seed ADR-0032 line 16's real-token illustration (`Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`) was silently substituting on adopt, corrupting the mapping the ADR exists to explain; rephrased to canonical's `${...}` form. Hardened `content-copy.test.ts` to run substitution over the whole seed `spec/` tree and assert no seed file introduces a substitution canonical doesn't — catches the silent-corruption class the throw-only regression missed; confirmed it fails pre-fix and passes after. Build empty diff, `prism:check` green (351/351), adopt demo projected 93 `prism-*` skills with the 0032 illustration intact.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Eric ran PR #243 review. Verified the load-bearing guarantee by his own hand — `pnpm prism:build` empty `git diff`, `pnpm prism:check` exit 0. Marker invariant, adopt seam (no double-run), guard asymmetry, and the `applyFilePass`/`runUpdate` split all confirmed clean; test depth proves the ACs. 0 critical / 0 major / 2 minor: dead `deriveTokenMap` import in generate-skills.ts:20, and architect docs cite ADR-0062 which doesn't exist yet (deferred to close, but must land before merge). Posted inline + summary to PR #243; labels `effort:quick` + `review:has-minors`; PR stays draft.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Winston ran the plan close. Authored ADR-0062 (`.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md`, cross-refs 0030/0032/0057/0059, all tokens in pattern-dodging `${...}` form so the seed mirror won't reintroduce the throwing-literal defect) and added the README index row on both canonical and seed surfaces (README is curated, so the auto-mirror skips it). ADR body is non-curated → auto-mirrored by `prism:build` (Clove's step). Resolved the verdict gate (all 12 Decisions carry a verdict; the 7 architectural ones promoted to ADR-0062 + Eli's install-layout.md/skills-ecosystem.md, no architect duplication added), verified all AC holds-at-merge with test-file evidence, and marked the plan closed. Hands to Clove for the dead-import drop + build + commit.
+- 2026-06-23 [hmcgrew/prism-242-consumer-skill-distribution]: Clove landed the close-out. Dropped the dead `deriveTokenMap` import (Eric Minor 1); ran `prism:build` to mirror ADR-0062 into the seed and re-render the platform copies so the architect-doc citations resolve (Eric Minor 2). The build's Thrive-literal guard fired on ADR-0062's own platform copies (it names "Thrive" to document the guard asymmetry) — allowlisted them matching the ADR-0030 precedent (see Decision: ADR-0062 platform copies allowlisted). Skill render byte-identical (zero persona/agent/config drift); `prism:check` green (351/351), crossref-lint confirms the ADR-0062 citation resolves.
 
 ---
 
@@ -169,6 +186,24 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 - **Suggested fix:** Replace seed 0032 line 16's `` ADR-0030 (token substitution at build time) addresses identifier mapping: `Thrive` → `${PROJECT}`, `tractru` → `${GITHUB_OWNER}`, etc. `` with canonical's verbatim text: `ADR-0030 (token substitution at build time) addresses identifier mapping: project-name and owner literals map through the ${...} token form into per-team values.` Leave the line-47 epic-plan cross-ref divergence alone (intentional seed/canonical split, carries no token literal). Verify: `pnpm prism:build` empty diff (0032 is curated, so the mirror won't fight the hand-edit), `pnpm prism:check` green. Optionally extend `content-copy.test.ts:416` to assert the rendered 0032 copy contains neither `Acme` nor a bare token in the mapping line — the current test only checks 0030, which is why this class re-slipped.
 - **Fixed in:** seed 0032 line 16 rephrased to canonical's `${...}` form. Regression hardened beyond the suggested fix: rather than per-file-grepping 0032 for `Acme`, the new `content-copy.test.ts` test runs `substituteTokens` over the whole seed `spec/` tree with sentinel token values and asserts no seed file introduces a substitution its canonical counterpart doesn't — the empirical whole-tree check that catches the silent-corruption class for any ADR, not just 0032. Confirmed it fails against the pre-fix line 16 (names both `${PROJECT}` and `${GITHUB_OWNER}` corruptions) and passes after. `pnpm prism:build` empty diff, `pnpm prism:check` green (351/351), adopt demo on an AcmeWidgets/acme-industries fixture projected 93 `prism-*` skill files with the 0032 illustration intact (zero consumer-token leaks).
 
+### Dead import — `deriveTokenMap` imported but unused in generate-skills.ts
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/generate-skills.ts:20`
+- **Problem:** `import { deriveTokenMap, substituteTokens } from "./lib/tokens"` imports `deriveTokenMap`, but only `substituteTokens` is referenced (4 call sites). `deriveTokenMap` is dead. It passed `prism:check` because the scripts `tsconfig.json` doesn't set `noUnusedLocals`, so `tsc --noEmit` doesn't flag it.
+- **Suggested fix:** Drop `deriveTokenMap,` from the import — change line 20 to `import { substituteTokens } from "./lib/tokens";`. Safe: the test file imports `deriveTokenMap` directly from `./lib/tokens`, not from this module, so no re-export to preserve. Found in Eric's PR #243 review.
+- **Fixed in:** line 20 changed to `import { substituteTokens } from "./lib/tokens";` during the close-out. `prism:check` green (351/351).
+
+### Architect docs cite ADR-0062 as an existing record, but it isn't in the tree
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/install-layout.md:111`, `skills-ecosystem.md:364` (+ three platform mirrors of each)
+- **Problem:** Both new architect sections state the decision record flatly ("The decision record for this feature is ADR-0062"), but `.prism/spec/adrs/_toolkit/0062-*` does not exist and the ADR README index stops at 0061. Every other architect doc cites ADRs as a markdown link to the file; these two cite bare prose because there's no file to link to — a dangling forward-reference that ships to consumers across all four platform copies. The plan correctly lists "Deliverable: ADR-0062" and defers promotion to close, but the docs were written ahead of the ADR they cite.
+- **Suggested fix:** Write `.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution.md` (canonical + seed copy + README index entry) as part of the deferred close-out on this same branch (per `branch-plan.md`, the close rides the final PR), then re-render so the citations become file links. The number is free — the abandoned eve-substrate work that previously claimed 0062 was reverted with PR #239. Found in Eric's PR #243 review.
+- **Fixed in:** Winston authored `.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md` (canonical) at close and added the README index row on both canonical and seed surfaces. The ADR body is non-curated, so `pnpm prism:build` auto-mirrors it into `templates/install/.prism/spec/adrs/_toolkit/` and re-renders the platform copies — the architect-doc citations resolve to a real file across all four platforms once Clove rebuilds. The architect docs' bare-prose phrasing is left as-is (the citation now points at an existing file; Eli owns any link-formatting refinement and it isn't load-bearing for the close).
+
 ---
 
 ## Acceptance Criteria
@@ -176,9 +211,9 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 ### Behavioral
 
 - [x] Given an onboarded consumer repo, When `prism:update`/`prism:adopt` runs, Then the `prism-*` roster appears in the consumer's skill dirs with the consumer's name/prefix rendered in bodies. Demonstrated end-to-end 2026-06-23: `prism:adopt` on a fixture consumer (org AcmeCorp / prefix ACME) projected 31 `prism-*` skills with `ACME-NNNN` rendered, no throw, no unresolved `${}` leak.
-- [ ] Given a persona is dropped from the roster, When the consumer runs `prism:update`, Then the orphaned persona is removed from the consumer's skill dirs.
-- [ ] Given a consumer-authored (non-`prism-*`) skill, When `prism:update` runs, Then it is left untouched.
-- [ ] Given `prism:update` has already run, When it runs again with no upstream change, Then it is a no-op (idempotent).
+- [x] Given a persona is dropped from the roster, When the consumer runs `prism:update`, Then the orphaned persona is removed from the consumer's skill dirs. Proven by `generate-skills.test.ts:223` ("a dropped persona is orphan-cleaned on the next render") — asserts the dropped persona's claude skill dir, codex `.toml` adapter, and claude `.md` definition are all removed while the surviving persona is untouched (US-2).
+- [x] Given a consumer-authored (non-`prism-*`) skill, When `prism:update` runs, Then it is left untouched. Proven by `generate-skills.test.ts:285` ("a consumer's marker-less prism-* dir survives orphan cleanup") — a hand-placed marker-less `prism-custom` dir survives the render+cleanup cycle; marker-keyed cleanup means even a `prism-*`-prefixed consumer dir is safe (US-3).
+- [x] Given `prism:update` has already run, When it runs again with no upstream change, Then it is a no-op (idempotent). Proven by `generate-skills.test.ts:193` ("a second run in check mode reports no changes (idempotent)") — asserts the check-mode re-render reports zero changed paths (US-2).
 
 ### Non-behavioral
 
@@ -202,13 +237,13 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## PR Readiness
 
-- [x] No critical or major issues — Briar's Minor (seed 0032 line 16 content-correctness) fixed 2026-06-23, regression hardened to catch the whole silent-corruption class
+- [x] No critical or major issues — Eric's PR #243 review confirmed zero critical/zero major; both Minors now fixed in the close-out (dead import dropped, ADR-0062 authored + mirrored so the citation resolves)
 - [x] Types correct — no `any`, no unsafe `as` (JSON-boundary casts validated: `buildRoleMap` checks the role discriminator; `refreshPlatformSkills` JSON.parse is try/caught)
 - [x] No stray console.logs or debug artifacts (CLI `reportSummary` console output is intentional)
-- [x] Tests written for new logic and edge cases — Briar verified depth: foreign-config render + token substitution, marker on every platform, marker-keyed cleanup safety (consumer `prism-custom` survives), real-PRISM-source check-mode zero-drift, real-seed-tree token-resolution regression, adopt roster projection, both guards + asymmetry + allowlist
+- [x] Tests written for new logic and edge cases — Eric verified depth in PR review: foreign-config render + token substitution, marker on every platform, marker-keyed cleanup safety (consumer `prism-custom` survives), real-PRISM-source check-mode zero-drift, real-seed-tree whole-tree sentinel-substitution regression, adopt roster projection, both guards + asymmetry + allowlist
 - [ ] All debugged issues resolved (no `open` entries) — none filed
-- [x] Build passes — Briar re-ran 2026-06-23: `pnpm prism:build` empty diff (own hand), `pnpm prism:check` exit 0 (own hand), 350+ tests green
-- [ ] PR description up to date — pending (no PR yet)
-- [ ] Lasting decisions promoted to architect context (if applicable) — promotion deferred to close
+- [x] Build passes — Eric re-ran 2026-06-23 (own hand): `pnpm prism:build` empty diff, `pnpm prism:check` exit 0
+- [x] PR description up to date — synced at close-out push
+- [x] Lasting decisions promoted to architect context (if applicable) — ADR-0062 authored + auto-mirrored to the seed; canonical + README index on all surfaces. Durable decisions live in Eli's install-layout.md/skills-ecosystem.md + ADR-0062; verdict gate satisfied (all 13 Decisions carry verdicts). The two ADR-0062 architect-doc citations (install-layout.md:111, skills-ecosystem.md:364) now resolve — crossref-lint green.
 
-**Last updated:** 2026-06-23 (Clove — fixed Briar's Minor, hardened regression)
+**Last updated:** 2026-06-23 (Clove — close-out: both Eric Minors fixed, ADR-0062 mirrored, skill render byte-identical, `prism:check` green 351/351)

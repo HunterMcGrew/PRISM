@@ -17,7 +17,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { deriveTokenMap, substituteTokens } from "./lib/tokens";
+import { substituteTokens } from "./lib/tokens";
 import {
 	ensureDirectory,
 	escapeToml,
