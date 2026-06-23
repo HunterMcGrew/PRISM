@@ -117,16 +117,16 @@ If a version ships with a bug, publish a patch release instead. If a version shi
 
 The immutability constraint is the main reason the leak audit ritual exists. One clean publish costs you five minutes; one leaked publish is permanent.
 
-## `pnpm-workspace.yaml` and `onlyBuiltDependencies`
+## `pnpm-workspace.yaml` and `allowBuilds`
 
-`pnpm-workspace.yaml` carries an `onlyBuiltDependencies` list that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
+`pnpm-workspace.yaml` carries an `allowBuilds` map that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
 
-When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `onlyBuiltDependencies` in `pnpm-workspace.yaml`:
+When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `allowBuilds` in `pnpm-workspace.yaml`:
 
 ```yaml
-onlyBuiltDependencies:
-  - esbuild
-  - your-new-package   # add here
+allowBuilds:
+  esbuild: true
+  your-new-package: true   # add here
 ```
 
 This is a pnpm-specific concern — npm install runs build scripts by default and doesn't need this configuration.

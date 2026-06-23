@@ -3,37 +3,51 @@ title: "Distribution"
 description: "How PRISM lands in a consumer repo, how updates flow under the bifurcated layout, and what stays under team control."
 category: "operations"
 audience: "dev"
-last_updated: "2026-06-16"
+last_updated: "2026-06-23"
 ---
 
 # Distribution
 
 How PRISM gets into a consumer team's codebase, how updates flow, and what stays under team control. The install layout is bifurcated — canonical platform-agnostic content at `.prism/`, build-time copies at each platform dir. See [ADR-0031](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0031-bifurcated-install-layout.md) for the decision and reasoning.
 
-## Model: sibling repo + script
+## Primary model: npm (public)
 
-PRISM lives next to the consumer's codebase, not inside it:
+PRISM is published publicly to npm as `@huntermcgrew/prism`. The recommended way to adopt it is via `npx` — no clone, no global install, no PATH setup:
 
+```bash
+cd your-repo
+npx @huntermcgrew/prism adopt
 ```
-~/work/
-├── prism/                # this repo, cloned once
-└── ktc-codebase/         # the team's own repo
+
+Updates work the same way:
+
+```bash
+npx @huntermcgrew/prism update
 ```
 
-Onboarding (Phase 2) and updates run from the `prism/` clone and write into the consumer's repo:
+See [Adopt PRISM into your repo](./adopt-prism.md) for the full consumer-facing guide, including pinning to a specific version and alternative install paths.
+
+## Alternative models: checkout-based
+
+For air-gapped environments, teams that want to customize PRISM's source directly, or contributors to PRISM itself, checkout-based installs are supported. These were the primary distribution model before the npm publish.
+
+**Vendor PRISM inside your repo** — clone PRISM as a subdirectory and run `pnpm prism:adopt` from inside the clone. The command auto-detects the enclosing consumer repo:
+
+```bash
+cd your-repo
+git clone https://github.com/HunterMcGrew/PRISM.git PRISM
+cd PRISM && pnpm install && pnpm prism:adopt
+```
+
+**Sibling repo with `--consumer` flag** — clone PRISM beside the consumer repo and pass `--consumer <path>`:
 
 ```bash
 cd prism
-pnpm prism:onboard --target ../ktc-codebase   # one-time, walks Atlas through setup
-pnpm prism:sync --target ../ktc-codebase      # subsequent updates
+pnpm prism:adopt --consumer ../ktc-codebase
+pnpm prism:update --consumer ../ktc-codebase
 ```
 
-This shape was chosen over alternatives:
-
-- **Submodule** — fragile on Windows, detached HEADs, "did you forget to update the submodule" PR comments. Rejected.
-- **Private npm package** — adds auth and registry friction in a private internal-org context, especially when each team has their own `package.json`. Rejected.
-- **Template repo (fork-on-create)** — explicitly NOT what we want; teams need to pull updates over time, not diverge from a snapshot.
-- **Git clone + sibling repo** — chosen. Cross-platform, no auth/registry friction, easy to inspect and patch locally. Pull updates with `git pull`.
+See [Adopt PRISM into your repo](./adopt-prism.md) for the global `prism` command and the `--consumer` flag details.
 
 ## What gets installed where
 
@@ -156,12 +170,3 @@ PRISM uses phase branches for major work. Phase 1 (foundation) shipped; Phase 1.
 
 Teams should pin to specific commits (record in their own repo's CHANGELOG or commit history) for production stability.
 
-## Future: registry / federated install
-
-If PRISM grows beyond a handful of consumer teams, the sibling-repo model strains. Possible evolutions:
-
-- A private npm package wrapping the generator and template content.
-- A per-org GitHub release with bundled assets that consumers download.
-- A web installer that runs in the browser and writes locally.
-
-These are explicitly out of scope until adoption justifies the operational cost. Sibling-repo + script works for the current footprint.

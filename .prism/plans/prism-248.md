@@ -188,6 +188,8 @@ These are locked — do not relitigate. Each bullet is a do-not-undo.
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Winston built Implementation Tasks (Clove 9, Eli 2) and ran the leak audit. Audit cleared: inclusion `files` allowlist excludes the operational tree by construction; client name lives only in NOT-READ dirs; Thrive/TracTru in shipped spec/architect is provenance (per literal-allowlist.json), not leak. See Decision: package-root resolution + esbuild bundle.
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Clove completed tasks 1–7. esbuild bundle produces dist/cli.js (node shebang, no tsx); findPrismPackageRoot walks up to named package.json replacing hardcoded ../.. depth; package.json renamed to @huntermcgrew/prism with files allowlist, publishConfig, prepublishOnly; leak-audit grep confirmed CLEAN (448 files, 0 operational-tree paths); node_modules short-circuit added to resolveConsumerRoot (task 7, implemented). All 365 tests pass; prism:check green. Tarball-contents listing at /tmp/prism-tarball-contents.txt for human review before task 8.
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Eli completed tasks 1–2. docs/adopt-prism.md restructured to lead npx-first with pin-vs-latest guidance; vendored/global-link/--consumer models demoted to "Alternative install methods." docs/publishing-prism.md created covering the full release ritual: version bump → prism:check → leak audit (exact grep from Clove task 5) → tarball human review → npm publish; immutability constraint, unpublish policy, and pnpm onlyBuiltDependencies noted.
+- 2026-06-23 [hmcgrew/prism-248-npm-publish]: Briar self-review. Path-math verified (findPrismPackageRoot walks to named package.json, correct at dev depth and dist depth). Independent leak-grep: CLEAN (448 files, 0 operational-tree paths). package.json publish-readiness confirmed (no private, scoped name, author/repository/publishConfig present, bin → dist/cli.js, prepublishOnly wired). 365/365 tests pass. Two minors found: distribution.md stale distribution model description (fold-in, Eli); publishing-prism.md uses onlyBuiltDependencies where pnpm v11 uses allowBuilds.
+- 2026-06-23 [hmcgrew/prism-248-npm-publish]: Eli fixed two Briar minors. distribution.md restructured: npm-public is now the primary model section; sibling-repo and other checkout paths are documented alternatives; stale "Future: registry / federated install" section removed. publishing-prism.md pnpm section updated: heading, prose, and YAML example all changed from onlyBuiltDependencies to allowBuilds (confirmed against actual pnpm-workspace.yaml, which uses `allowBuilds: esbuild: true`).
 
 ---
 
@@ -199,7 +201,21 @@ None yet.
 
 ## Review Issues
 
-None yet.
+### distribution.md describes npm as a rejected alternative (stale)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/distribution.md` — "Distribution model" section and "Future: registry / federated install" section
+- **Problem:** Doc lists "private npm package" as a rejected distribution model and describes a "sibling repo + script" as the chosen model. Both sections are now materially stale: PRISM publishes public to npm, and the sibling-repo model is demoted to a secondary alternative. Same-scope fold-in for this PR (Eli's lane, same `docs/` directory already touched, small change).
+- **Suggested fix:** Update the distribution model section to note that `@huntermcgrew/prism` on npm is now the primary distribution path; demote the sibling-repo model to secondary. Update the "Future: registry / federated install" section to note that npm distribution has shipped. Reference `publishing-prism.md` for the release ritual.
+
+### publishing-prism.md uses stale pnpm config key name
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/publishing-prism.md:122-131` — `` `pnpm-workspace.yaml` and `onlyBuiltDependencies` `` section
+- **Problem:** Doc refers to `onlyBuiltDependencies` as the pnpm-workspace key, but the actual `pnpm-workspace.yaml` uses `allowBuilds` (the pnpm v11 successor key). The section heading, prose, and YAML example all say `onlyBuiltDependencies` — a reader following the doc to add a future devDependency would use the wrong key.
+- **Suggested fix:** Replace `onlyBuiltDependencies` with `allowBuilds` in the section heading, prose, and YAML example. Confirm against pnpm v11 changelog if needed, but `pnpm-workspace.yaml` and `.modules.yaml` in this repo both confirm `allowBuilds` is the live key.
 
 ---
 
@@ -267,19 +283,20 @@ If this approach ships, promote at plan close (per branch-plan § Before Closing
 
 ## Cleanup Items
 
-None yet.
+None.
 
 ---
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues (2 minors open — docs only, see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (findPrismPackageRoot coverage via 365 passing tests)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (prism:check green, all 365 tests pass)
+- [x] Build passes — last run: 2026-06-23 (prism:check green, all 365 tests pass; independent leak-grep: CLEAN, 448 files)
+- [x] Review Issues resolved (both minors fixed — distribution.md stale model description; publishing-prism.md stale pnpm key name)
 - [ ] PR description up to date — pending (offer to Hunter)
 - [ ] Lasting decisions promoted to architect context — pending plan close (post task 8 publish)
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Briar self-review)
