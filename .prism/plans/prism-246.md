@@ -311,6 +311,7 @@ All tasks land in `scripts/ai-skills/`. The design adds one resolver function, w
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Eli updated `docs/adopt-prism.md` — restructured to lead with the vendored-in-repo workflow (recommended, no global link/PATH needed), added `--consumer <path>` override section, demoted global-link to alternative. Updated `docs/getting-started.md` section heading and blurb to match. `pnpm prism:check` green.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove fixed Briar Minor — `parseConsumerFlag` inline-`=` branch now guards the sliced value so `--consumer=` returns `null` (falls through to detection), matching `--consumer ""` behavior. Added a two-assertion test covering both empty forms. `pnpm prism:check` green (364 tests).
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Eric PR-reviewed PR #247 — zero critical/major, one deferred Minor (`--consumer` empty-flag hard-error decision). Safety + topology re-verified independently against live git repos; `pnpm prism:check` + 9/9 tests green. Labels `effort:quick`, `review:has-minors`; PR stays draft. See Review Issues and PR Readiness.
+- 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove applied Sol's hard-error decision — `parseConsumerFlag` now throws on present-but-empty `--consumer` (both forms); flag-absent still returns null. `pnpm prism:check` green (365 tests). Commit ac1a778.
 
 ---
 
@@ -325,7 +326,8 @@ _None yet._
 ### `--consumer` empty-flag silently falls through to detection (deferred UX call)
 
 - **Severity:** `minor`
-- **Status:** `open` (deferred — judgment call surfaced to human reviewer on PR #247)
+- **Status:** `fixed`
+- **Fixed in:** `scripts/ai-skills/lib/consumer-root.ts:132-162` — both empty forms (`--consumer ""` and `--consumer=`) now throw `"--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"`. Flag-absent (no `--consumer` at all) still returns `null` and falls through to detection/cwd. Test updated: the `"treats both empty-value forms as not-provided"` assertion replaced by two `assert.throws` checks and a separate `"returns null when flag is absent entirely"` test. `pnpm prism:check` green (365 tests). Decision: Sol called hard-error per the scale-footgun rationale — silent fallback to a different repo when the user explicitly passed the flag is worse than a clear error.
 - **File:** `scripts/ai-skills/lib/consumer-root.ts:132-147`
 - **Problem:** A present-but-valueless `--consumer` (both `--consumer` and `--consumer=`) returns `null` and silently falls through to vendored/cwd detection rather than erroring. `--consumer` is the documented safety escape-hatch; a user who typed it intended an explicit override. No data-loss path (all three downstream guards still fire) — this is a UX call, not a correctness defect. Distinct from Briar's now-fixed inline/space *consistency* issue below; this is the hard-error-vs-silent-fallback question Briar explicitly deferred.
 - **Suggested fix:** Either keep the silent fallback (simplest; safe via the engine guards) or hard-error on present-but-valueless `--consumer`. Eric leans hard-error for a safety flag but it is defensible either way. Decision belongs to Hunter/Clove — surfaced on the PR #247 inline thread.
@@ -378,12 +380,14 @@ _None yet._
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green, 364 tests)
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green, 365 tests)
 - [ ] PR description up to date (Clove offers; PR not yet opened)
 - [x] Lasting decisions promoted to architect context (if applicable) — none warranted; all Decisions are ticket-tactical with explicit `no promotion needed` verdicts
 
 **Briar self-review (2026-06-23):** Zero critical/major. One Minor (empty `--consumer` flag inconsistency, see Review Issues). Safety verified independently: resolver throws on no-enclosing-repo and on resolve-back-to-PRISM; never resolves to `/` or home (reproduced across plain/deep/standalone/non-git/nested-clone/deep-ancestor topologies). Three engine guards confirmed intact and downstream of the new resolution path. `pnpm prism:check` green (363 tests) by my own hand. PR-ready; the Minor is a follow-up-or-fix-now call, not a blocker.
 
 **Eric PR review (2026-06-23, PR #247):** Zero critical/major. One Minor — deferred UX call on the `--consumer` empty-flag (hard-error vs silent fallback); surfaced for Hunter's decision, not a blocker. Safety re-verified independently against live git repos: resolution sits upstream of all three engine guards; throws on both dangerous cases; never resolves to `/` or `$HOME`. Git topology correct across every case incl. depth-2 nested standalone clone (not unit-tested — verified manually, correct). #245 cwd-default path confirmed git-shell-out-free. `pnpm prism:check` green + 9/9 `consumer-root.test.ts` by my own hand. Labels: `effort:quick`, `review:has-minors` — PR stays draft pending the Minor decision. Eric does not approve or merge (ADR-0011).
+
+**Clove follow-up (2026-06-23):** Minor resolved — hard-error per Sol's call. All review issues now fixed. `pnpm prism:check` green (365 tests). No critical/major/minor open issues.
 
 **Last updated:** 2026-06-23
