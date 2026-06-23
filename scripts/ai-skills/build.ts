@@ -339,7 +339,9 @@ async function payloadIsDifferent(
 
 async function syncOptionalSkillPayloads(
 	sourceSkillRoot: string,
-	targetSkillRoot: string
+	targetSkillRoot: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
 ): Promise<void> {
 	for (const payload of optionalSkillPayloads) {
 		const sourcePath = path.join(sourceSkillRoot, payload.relativePath);
@@ -352,8 +354,8 @@ async function syncOptionalSkillPayloads(
 		}
 
 		if (!sourceExists) {
-			changedPaths.push(targetPath);
-			if (!checkMode) {
+			changedPathsArg.push(targetPath);
+			if (!checkModeArg) {
 				await fs.rm(targetPath, {
 					force: true,
 					recursive: payload.kind === "directory",
@@ -366,8 +368,8 @@ async function syncOptionalSkillPayloads(
 			continue;
 		}
 
-		changedPaths.push(targetPath);
-		if (checkMode) {
+		changedPathsArg.push(targetPath);
+		if (checkModeArg) {
 			continue;
 		}
 
@@ -1328,7 +1330,9 @@ async function main(): Promise<void> {
 			);
 			await syncOptionalSkillPayloads(
 				path.join(sourceSkillsRoot, skillId),
-				codexSkillRoot
+				codexSkillRoot,
+				checkMode,
+				changedPaths
 			);
 		}
 
@@ -1347,7 +1351,9 @@ async function main(): Promise<void> {
 			);
 			await syncOptionalSkillPayloads(
 				path.join(sourceSkillsRoot, skillId),
-				cursorSkillRoot
+				cursorSkillRoot,
+				checkMode,
+				changedPaths
 			);
 		}
 
