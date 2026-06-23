@@ -204,6 +204,7 @@ Starting hypothesis only — these are not accepted decisions. Winston owns eval
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Winston evaluated and designed the implementation. Resolved distribution to global-link, designed self-location as a third fallback slot, and surfaced that the adopt path bypasses `assertSourceIsPlausible` — fix lifts the guard into `runUpdate` so every entry point passes it. See Decisions: distribution, self-location, safety-guard, bin-runtime.
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove implemented the CLI. Added `resolveSelfPrismSource` + third fallback slot in `update.ts`, lifted `assertSourceIsPlausible` into `runUpdate` (removing the duplicate from `main()`), renamed adopt/update mains to exported `runAdoptCli`/`runUpdateCli`, created `scripts/ai-skills/cli.ts` dispatcher + `bin` entry, and added `cli.test.ts`. End-to-end verified: `prism adopt`/`update` self-locate PRISM from a virgin consumer cwd with no path arg (31 skills projected); guard fires through the adopt path; tsx resolves cleanly via the `npx tsx` shebang through a symlink. `pnpm prism:check` green, 355 tests pass.
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Eli wrote consumer quickstart at `docs/adopt-prism.md` covering one-time `pnpm link --global` setup (including the `pnpm setup` PATH gotcha), `prism adopt` first-contact, `prism update` steady-state, and `--prism-source` override. Cross-linked from `docs/getting-started.md`.
+- 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove cleared Briar's two self-review minors. Folded the manifest dedup (`applyFilePass` gained optional `preloadedManifest` param, `runUpdate` threads its already-loaded manifest — additive, no test ripple, guard/file-movement unchanged) and dropped the conversational "So" from the `adopt-prism.md` opener. `pnpm prism:check` green, 355/355.
 
 ---
 
@@ -215,7 +216,23 @@ _None._
 
 ## Review Issues
 
-_None._
+### Redundant manifest load inside runUpdate
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/update.ts:313`
+- **Problem:** The guard-lift added a `loadSyncManifest(consumerContentRoot)` call at line 313 (for `pendingDeletionCount`), but `applyFilePass` already loads the same manifest at line 221. `runUpdate` now reads the consumer manifest from disk twice per call. Not a correctness bug — the file is not mutated between the two reads — but the relocation collapsed two single-load sites (old `main()` + `applyFilePass`, in different functions) into one call chain that loads twice.
+- **Suggested fix:** Optional follow-up. Either thread the already-loaded manifest from `runUpdate` into `applyFilePass`, or compute `pendingDeletionCount` once and pass it down. Low value relative to the refactor cost on a hot-but-tiny path; safe to defer.
+- **Fixed in:** `0b169db`. Folded — clean thread-through. `applyFilePass` gained an optional `preloadedManifest?: SyncManifest | null` third param; `runUpdate` passes the manifest it already loaded for the guard. Additive signature: the 13 unit-test call sites omit the param and load as before, so zero test ripple. Guard deletion-count path and file-movement behavior unchanged (`applyFilePass` receives the identical manifest object it would have loaded). The `!== undefined` check distinguishes "not passed" (load) from "passed null" (pre-manifest consumer), preserving no-manifest semantics. `pnpm prism:check` green, 355/355.
+
+### Doc opener "So this guide..." reads as a verbal tic
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/adopt-prism.md:11`
+- **Problem:** The intro sentence opens with "So this guide gets you from zero..." The leading "So" reads as conversational filler at the top of a durable doc.
+- **Suggested fix:** Drop the leading "So" — "This guide gets you from zero...". Eli's lane; cosmetic.
+- **Fixed in:** `e4db247`. Dropped the leading "So" — opener now leads with "This guide gets you from zero...".
 
 ---
 
@@ -262,13 +279,14 @@ _None._
 
 ## PR Readiness
 
-- [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] No critical or major issues — Briar self-review: 0 critical, 0 major, 2 minor (redundant manifest load; doc opener), both fixed by Clove (`0b169db`, `e4db247`)
+- [x] Types correct — no `any`, no unsafe `as` (the `string | null` null branch is intentional defense-in-depth per task 2, not dead code)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (`cli.test.ts`: self-location, fallback order, guard-through-runUpdate)
+- [x] Tests written for new logic and edge cases (`cli.test.ts`: self-location, fallback order, flag-wins, guard-through-runUpdate asserting no deletion)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green: build --check, types, 355 tests, manifest, crossref-lint)
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` re-run by Clove after minor fixes, green: build --check, types, 355/355 tests, manifest, crossref-lint)
+- [x] Guard-lift verified — `assertSourceIsPlausible` has exactly one production call site (`update.ts:320` in `runUpdate`), fires before `applyFilePass`, and now covers the adopt path (`runAdopt`→`runUpdate`). Dispatcher exit codes confirmed by hand (unknown→1, help/no-args→0).
 - [ ] PR description up to date — pending PR open
 - [ ] Lasting decisions promoted to architect context (if applicable) — safety-guard "single shared seam" invariant flagged for a future `.prism/architect/` consumer-sync-safety doc (none exists today); not promoted now per Winston's verdict
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Clove — both minors fixed)
