@@ -24,6 +24,16 @@ import { pathExists } from "./utils";
 const LITERAL_GUARD_PATTERN =
 	/(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+)/;
 
+/**
+ * Matches a leftover `${TOKEN}` literal — an UPPER_SNAKE_CASE token that the
+ * substitution layer should have resolved before the file reached a platform
+ * output. Mirrors the token shape in `lib/tokens.ts`'s `TOKEN_LITERAL_PATTERN`.
+ * Unlike the Thrive-literal guard, this one is safe to run on consumer output:
+ * a consumer legitimately contains "Thrive"-flavored words, but should never
+ * carry an unresolved token.
+ */
+const LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
+
 export interface LiteralGuardViolation {
 	relativePath: string;
 	line: number;
@@ -135,13 +145,14 @@ function isAllowlistedPath(
 
 function scanLines(
 	lines: string[],
-	relativePath: string
+	relativePath: string,
+	pattern: RegExp
 ): LiteralGuardViolation[] {
 	const violations: LiteralGuardViolation[] = [];
 
 	for (let index = 0; index < lines.length; index += 1) {
 		const line = lines[index];
-		const match = LITERAL_GUARD_PATTERN.exec(line);
+		const match = pattern.exec(line);
 		if (match) {
 			violations.push({
 				relativePath,
@@ -155,13 +166,15 @@ function scanLines(
 }
 
 /**
- * Scans the given platform-output roots for Thrive-flavored literals. Returns
+ * Scans the given platform-output roots for lines matching `pattern`, returning
  * one violation per matching line. Files under an allowlisted path prefix are
- * exempt entirely.
+ * exempt entirely. Shared engine behind both `runLiteralGuard` (Thrive-literal,
+ * PRISM-only) and `runLeftoverTokenGuard` (leftover `${}`, PRISM and consumer).
  */
-export async function runLiteralGuard(
+async function scanPlatformRoots(
 	repoRoot: string,
-	platformRoots: string[]
+	platformRoots: string[],
+	pattern: RegExp
 ): Promise<LiteralGuardViolation[]> {
 	const allowlist = await loadAllowlist(repoRoot);
 	const violations: LiteralGuardViolation[] = [];
@@ -184,9 +197,42 @@ export async function runLiteralGuard(
 
 			const filePath = path.join(platformRoot, entry.relativePath);
 			const lines = (await fs.readFile(filePath, "utf8")).split(/\r?\n/);
-			violations.push(...scanLines(lines, relativeFromRepoRoot));
+			violations.push(...scanLines(lines, relativeFromRepoRoot, pattern));
 		}
 	}
 
 	return violations;
+}
+
+/**
+ * Scans the given platform-output roots for Thrive-flavored literals. Returns
+ * one violation per matching line. Files under an allowlisted path prefix are
+ * exempt entirely.
+ *
+ * PRISM-build-only: this is a de-thriving canary. A consumer's output
+ * legitimately contains "Thrive"-flavored words, so this guard never runs on
+ * consumer output — only `runLeftoverTokenGuard` does (see plan prism-242
+ * Decision "Two guards, not one").
+ */
+export async function runLiteralGuard(
+	repoRoot: string,
+	platformRoots: string[]
+): Promise<LiteralGuardViolation[]> {
+	return scanPlatformRoots(repoRoot, platformRoots, LITERAL_GUARD_PATTERN);
+}
+
+/**
+ * Scans the given platform-output roots for leftover `${TOKEN}` literals that
+ * the substitution layer should have resolved. Returns one violation per
+ * matching line; allowlisted paths are exempt.
+ *
+ * Safe on both PRISM and consumer output — an unresolved token is a build bug
+ * in either, so both the PRISM build and the consumer `prism:update`/`adopt`
+ * flow run this guard over their rendered skill output.
+ */
+export async function runLeftoverTokenGuard(
+	repoRoot: string,
+	platformRoots: string[]
+): Promise<LiteralGuardViolation[]> {
+	return scanPlatformRoots(repoRoot, platformRoots, LEFTOVER_TOKEN_PATTERN);
 }

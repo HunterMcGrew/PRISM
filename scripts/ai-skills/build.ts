@@ -27,7 +27,7 @@ import {
 	replaceTier1Block,
 } from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
-import { runLiteralGuard } from "./literal-guard";
+import { runLeftoverTokenGuard, runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
 import {
@@ -933,6 +933,22 @@ async function main(): Promise<void> {
 		}
 		console.error(
 			`literal-guard: ${literalViolations.length} non-allowlisted Thrive-flavored literal(s) found in platform outputs. Tokenize the canonical source or add the file to .ai-skills/definitions/literal-allowlist.json.`
+		);
+		process.exit(1);
+	}
+
+	const leftoverTokenViolations = await runLeftoverTokenGuard(
+		repoRoot,
+		literalGuardRoots
+	);
+	if (leftoverTokenViolations.length > 0) {
+		for (const violation of leftoverTokenViolations) {
+			console.error(
+				`leftover-token-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`
+			);
+		}
+		console.error(
+			`leftover-token-guard: ${leftoverTokenViolations.length} unresolved \${TOKEN} literal(s) found in platform outputs. Add the token to the build's token map or fix the canonical source.`
 		);
 		process.exit(1);
 	}
