@@ -52,7 +52,6 @@ import {
 	MANAGED_MARKER,
 	pathExists,
 	readFileIfExists,
-	removeDeletedManagedSkills,
 	writeFileIfChanged,
 } from "./utils";
 
