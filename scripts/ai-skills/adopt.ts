@@ -131,7 +131,7 @@ export async function runAdopt(options: {
 	return { seed, update };
 }
 
-async function main(): Promise<void> {
+export async function runAdoptCli(): Promise<void> {
 	const consumerRepoRoot = process.cwd();
 	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
 
@@ -190,7 +190,7 @@ function reportSummary(summary: AdoptSummary): void {
 const isMain =
 	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
-	main().catch((error: unknown) => {
+	runAdoptCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);
 	});

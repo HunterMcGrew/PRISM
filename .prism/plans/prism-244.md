@@ -202,6 +202,7 @@ Starting hypothesis only — these are not accepted decisions. Winston owns eval
 
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Plan skeleton created by Nora; Winston to evaluate design direction and populate implementation tasks, decisions, and AC.
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Winston evaluated and designed the implementation. Resolved distribution to global-link, designed self-location as a third fallback slot, and surfaced that the adopt path bypasses `assertSourceIsPlausible` — fix lifts the guard into `runUpdate` so every entry point passes it. See Decisions: distribution, self-location, safety-guard, bin-runtime.
+- 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove implemented the CLI. Added `resolveSelfPrismSource` + third fallback slot in `update.ts`, lifted `assertSourceIsPlausible` into `runUpdate` (removing the duplicate from `main()`), renamed adopt/update mains to exported `runAdoptCli`/`runUpdateCli`, created `scripts/ai-skills/cli.ts` dispatcher + `bin` entry, and added `cli.test.ts`. End-to-end verified: `prism adopt`/`update` self-locate PRISM from a virgin consumer cwd with no path arg (31 skills projected); guard fires through the adopt path; tsx resolves cleanly via the `npx tsx` shebang through a symlink. `pnpm prism:check` green, 355 tests pass.
 
 ---
 
@@ -260,13 +261,13 @@ _None._
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (`cli.test.ts`: self-location, fallback order, guard-through-runUpdate)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green: build --check, types, 355 tests, manifest, crossref-lint)
+- [ ] PR description up to date — pending PR open
+- [ ] Lasting decisions promoted to architect context (if applicable) — safety-guard "single shared seam" invariant flagged for a future `.prism/architect/` consumer-sync-safety doc (none exists today); not promoted now per Winston's verdict
 
 **Last updated:** 2026-06-23

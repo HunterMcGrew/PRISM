@@ -305,6 +305,20 @@ export async function runUpdate(
 	);
 	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
 
+	// Guard against a source that looks empty or mispointed before any file is
+	// touched. Lives here, not in main(), so every caller — prism:update,
+	// prism:adopt, and the prism CLI — passes through it. The deletion count is
+	// the consumer's recorded PRISM-owned file count, which is what an empty
+	// source would wipe.
+	const consumerManifest = await loadSyncManifest(consumerContentRoot);
+	const pendingDeletionCount = consumerManifest
+		? Object.keys(consumerManifest.files).filter(
+				(p) => classifyPath(p) === "prism"
+			).length
+		: 0;
+
+	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
+
 	const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
 
 	await refreshPlatformDirs(
@@ -520,9 +534,28 @@ async function refreshPlatformDirs(
 }
 
 /**
- * Resolves the PRISM source path from the `--prism-source` CLI arg, falling
- * back to the `prismSource` field in the consumer's config. Returns `null` when
- * neither is set so the caller can emit the guidance message.
+ * Derives the PRISM repo root from this script's own location. Used as the
+ * last fallback in `resolvePrismSource` so a consumer running the bundled
+ * `prism` CLI gets a source without passing `--prism-source` — the script
+ * lives at `<prism-root>/scripts/ai-skills/update.ts`, so the root is two
+ * directories up from this file.
+ */
+export function resolveSelfPrismSource(): string {
+	const thisFile = fileURLToPath(import.meta.url);
+	return path.resolve(path.dirname(thisFile), "..", "..");
+}
+
+/**
+ * Resolves the PRISM source path, in priority order: the `--prism-source` CLI
+ * arg, then the `prismSource` field in the consumer's config, then this
+ * script's own location (`resolveSelfPrismSource`). The self-location fallback
+ * is what lets the bundled `prism` CLI run with no path argument; explicit
+ * signals still win over it.
+ *
+ * The `string | null` return is kept for defense-in-depth: `resolveSelfPrismSource`
+ * always returns a path, so `null` is effectively unreachable today, but a future
+ * caller invoking this without a script-relative source could still hit it, and
+ * both `main()` functions guard on it.
  */
 export function resolvePrismSource(
 	argv: string[],
@@ -543,7 +576,7 @@ export function resolvePrismSource(
 		return path.resolve(consumerRepoRoot, configured);
 	}
 
-	return null;
+	return resolveSelfPrismSource();
 }
 
 /**
@@ -567,7 +600,7 @@ export async function assertSourceIsPlausible(
 	}
 }
 
-async function main(): Promise<void> {
+export async function runUpdateCli(): Promise<void> {
 	const consumerRepoRoot = process.cwd();
 	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
 
@@ -594,18 +627,6 @@ async function main(): Promise<void> {
 			`PRISM source has no .prism/ directory at ${prismContentRoot}.`
 		);
 	}
-
-	// Count how many PRISM-owned files the consumer has recorded — these would
-	// all be deleted if the source is empty. Load before the sanity check so the
-	// refusal message can report the exact deletion count.
-	const consumerManifest = await loadSyncManifest(consumerContentRoot);
-	const pendingDeletionCount = consumerManifest
-		? Object.keys(consumerManifest.files).filter(
-				(p) => classifyPath(p) === "prism"
-			).length
-		: 0;
-
-	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
 
 	const summary = await runUpdate({
 		prismRepoRoot,
@@ -645,7 +666,7 @@ function reportSummary(summary: UpdateSummary): void {
 const isMain =
 	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
-	main().catch((error: unknown) => {
+	runUpdateCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);
 	});

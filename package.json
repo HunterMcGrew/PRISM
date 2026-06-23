@@ -5,6 +5,9 @@
 	"license": "MIT",
 	"private": true,
 	"type": "module",
+	"bin": {
+		"prism": "scripts/ai-skills/cli.ts"
+	},
 	"scripts": {
 		"prism:adopt": "tsx scripts/ai-skills/adopt.ts",
 		"prism:bootstrap": "tsx scripts/ai-skills/bootstrap-from-claude.ts",
