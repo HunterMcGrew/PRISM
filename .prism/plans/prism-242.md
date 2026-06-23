@@ -12,7 +12,56 @@ Render the `prism-*` persona roster into an onboarded consumer repo, with the co
 
 ## User Stories
 
-<!-- Mira fills this section. -->
+### Story: Persona roster appears automatically on update
+
+**As a** consumer developer who has onboarded PRISM,
+**I want** the full `prism-*` persona roster to appear in my repo when I run `prism:update` (or `prism:adopt`),
+**so that** I can invoke Winston, Clove, Eric, and the rest of the persona suite in my own codebase without any manual setup step.
+
+**Acceptance criteria hints:**
+- [ ] Given a consumer repo with PRISM installed and no persona skills present, When `prism:update` runs, Then every `prism-*` skill file appears in the consumer's configured skill directory
+- [ ] Given a consumer repo, When `prism:update` runs, Then the consumer's project name and ticket prefix tokens (`${PROJECT}`, `${TICKET_PREFIX}`) are substituted in every rendered skill body
+- [ ] Given `prism:adopt` is run instead of `prism:update`, Then persona skills are also rendered (adopt path reaches the same skill-generation seam)
+- [ ] No unresolved `${}` tokens appear in any rendered output
+
+---
+
+### Story: Roster changes propagate without manual work
+
+**As a** consumer developer on a team that runs `prism:update` periodically,
+**I want** the persona roster in my repo to stay current with the upstream PRISM version automatically,
+**so that** new personas and updates reach my team without anyone on my team having to find and copy files manually.
+
+**Acceptance criteria hints:**
+- [ ] Given a persona is added to the PRISM roster upstream, When the consumer runs `prism:update`, Then the new persona skill appears in the consumer's skill directory
+- [ ] Given a persona is dropped from the PRISM roster, When the consumer runs `prism:update`, Then the corresponding skill file is removed from the consumer's skill directory
+- [ ] Given `prism:update` has already run with the current upstream version, When it runs again with no upstream change, Then no skill files are written or deleted (idempotent)
+
+---
+
+### Story: Consumer-authored skills are never overwritten
+
+**As a** consumer developer who has written custom skills alongside the PRISM personas,
+**I want** my own skills to remain untouched when `prism:update` runs,
+**so that** I can extend the persona roster with team-specific skills without worrying that an update will clobber them.
+
+**Acceptance criteria hints:**
+- [ ] Given a consumer repo contains a skill file that does not have a `prism-*` prefix, When `prism:update` runs, Then that file is unchanged
+- [ ] Given a consumer repo contains a `prism-*` skill that is not in the PRISM roster (a consumer-authored skill with the prefix), When `prism:update` runs, Then that file is left untouched (the managed-marker check governs ownership, not the prefix alone)
+- [ ] Only files carrying the managed marker written by a prior `prism:update` run are eligible for update or removal
+
+---
+
+### Story: PRISM's own build output is unchanged by the refactor
+
+**As a** PRISM maintainer shipping the `generatePlatformSkills` extraction,
+**I want** PRISM's own build to produce byte-identical output before and after the refactor,
+**so that** the extraction is a pure internal refactor with zero risk of changing what PRISM already projects into consumer repos.
+
+**Acceptance criteria hints:**
+- [ ] Given a clean PRISM repo, When `prism:build` runs after the refactor, Then `git diff` is empty (no change to any generated output)
+- [ ] Given the refactored build, When `prism:check` runs, Then it passes with no errors
+- [ ] The shared `generatePlatformSkills` function, when called with PRISM's own roots, produces the same output as the pre-refactor inline build loop
 
 ---
 
