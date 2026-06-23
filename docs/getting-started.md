@@ -85,9 +85,9 @@ Then re-run `pnpm prism:check` in your target repo to verify the install is stil
 
 Your install is parameterized by `.ai-skills/config.json`. Atlas writes this during onboarding; you can edit it manually too. See [parameterization.md](./parameterization.md) for the full field reference and all available tokens.
 
-## The prism command (consumer shortcut)
+## Adopting PRISM into a consumer repo
 
-Once you've cloned PRISM locally, you can install a `prism` command that runs `prism adopt` and `prism update` from any consumer repo without supplying path arguments. See [adopt-prism.md](./adopt-prism.md) for the one-time setup and the steady-state workflow.
+Once PRISM is cloned, run `pnpm prism:adopt` from inside the PRISM directory to seed `.prism/` and project the persona roster into the enclosing consumer repo — no global install or PATH setup needed. See [adopt-prism.md](./adopt-prism.md) for the full workflow and the alternative global `prism` command.
 
 ## Going deeper
 

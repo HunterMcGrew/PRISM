@@ -1,6 +1,6 @@
 ---
 title: "Adopt PRISM into your repo"
-description: "How a consumer maintainer installs the prism command once and uses prism adopt / prism update to keep their repo in sync."
+description: "How to adopt PRISM into a consumer repo — vendored inside the repo (recommended) or via a global prism command."
 category: "getting-started"
 audience: "developer-user"
 last_updated: "2026-06-23"
@@ -8,17 +8,68 @@ last_updated: "2026-06-23"
 
 # Adopt PRISM into your repo
 
-This guide gets you from zero to a working `prism` command — one you can run from any consumer repo without remembering internal script paths. The result: `prism adopt` on first contact, `prism update` every time you want to pull the latest, and nothing else to configure.
+`prism adopt` seeds `.prism/` and projects the full persona roster into your repo. `prism update` keeps it current. This guide covers the two ways to run those commands.
 
 ## What you need
 
 - [pnpm](https://pnpm.io/) installed (`npm install -g pnpm`)
-- A local PRISM clone (see [Getting Started](./getting-started.md) if you haven't cloned it yet)
+- Access to PRISM (clone or submodule — see below)
 - A consumer repo you want to bring into PRISM
 
-## One-time setup
+## Recommended: vendor PRISM inside your repo
 
-Do this once per machine. The `prism` command lives inside the PRISM clone; `pnpm link --global` puts it on your PATH so you can call it from anywhere.
+Clone or add PRISM as a subdirectory of your consumer repo, then run `pnpm prism:adopt` from inside it. No global link, no PATH setup.
+
+```bash
+# Clone PRISM into your repo (or use a submodule — both work)
+cd your-repo
+git clone https://github.com/HunterMcGrew/PRISM.git PRISM
+
+# Install and adopt
+cd PRISM
+pnpm install
+pnpm prism:adopt
+```
+
+`pnpm prism:adopt` detects that it's running from inside a PRISM checkout and automatically targets the enclosing repo — `your-repo` in this case. You don't pass any path arguments; the command figures it out.
+
+After this runs, open Claude Code in `your-repo` and the personas are available: "Winston, plan this out." "Clove, implement this." "Briar, review my changes."
+
+**Steady state.** Once your repo is adopted, pull in PRISM's latest on your own cadence:
+
+```bash
+cd your-repo/PRISM
+git pull
+pnpm install
+pnpm prism:update
+```
+
+`pnpm prism:update` refreshes canonical content under `.prism/` and regenerates platform outputs. It's idempotent — running it twice in a row produces the same result.
+
+**Nesting depth and submodule support.** The vendored path works at any nesting depth — `your-repo/PRISM`, `your-repo/tools/PRISM`, and deeper all resolve correctly to the consumer repo root, not an intermediate directory. PRISM as a git submodule works the same way.
+
+## First contact — prism adopt
+
+`pnpm prism:adopt` seeds `.prism/` and projects the full persona roster into `.claude/`, `.cursor/`, and `.codex/` (whichever platforms are relevant to your setup).
+
+`prism adopt` is a first-contact command. It refuses to run a second time once `.prism/` already has a sync record — that's the signal that the repo is already adopted, and `prism update` is the right command from that point on.
+
+## Override the consumer target
+
+Pass `--consumer <path>` to target a specific directory instead of the auto-detected enclosing repo. Useful when PRISM is checked out beside the consumer rather than inside it, or when you want to adopt a repo that isn't the one enclosing PRISM:
+
+```bash
+pnpm prism:adopt --consumer /path/to/your-repo
+pnpm prism:update --consumer /path/to/your-repo
+```
+
+The explicit flag always takes priority over auto-detection.
+
+Both commands also accept `--prism-source <path>` if you have multiple PRISM checkouts and want to point at a specific one. The explicit flag takes priority over the auto-derived location.
+
+## Alternative: global `prism` command
+
+If you manage many consumer repos from one PRISM clone, you can install a global `prism` command so you can run `prism adopt` and `prism update` from any consumer directory without entering the PRISM clone each time.
 
 ```bash
 cd /path/to/your/prism-clone
@@ -26,55 +77,30 @@ pnpm install
 pnpm link --global
 ```
 
-**Gotcha — pnpm global bin must be on PATH.** `pnpm link --global` puts the binary into pnpm's global bin directory. If you've never used pnpm globals before, that directory may not be on your PATH yet. Run `pnpm setup` first to add it, then restart your shell. You'll know it worked when `which prism` returns a path inside pnpm's global dir.
-
-Once linked, `prism` is available from any directory on this machine. When you pull a newer PRISM commit, run `pnpm install` in the clone again — the global link picks up the change automatically, no re-link needed.
-
-## First contact — prism adopt
-
-From inside the consumer repo you want to set up:
+Then from any consumer repo:
 
 ```bash
 cd /path/to/your-repo
 prism adopt
-```
-
-`prism adopt` seeds `.prism/` and projects the full persona roster into `.claude/`, `.cursor/`, and `.codex/` (whichever platforms are relevant to your setup). No `--prism-source` argument is needed — the command knows where it lives.
-
-After this runs, open Claude Code in your consumer repo and the personas are available: "Winston, plan this out." "Clove, implement this." "Briar, review my changes."
-
-`prism adopt` is a first-contact command. It refuses to run a second time once `.prism/` already has a sync record — that's the signal that the repo is already adopted, and `prism update` is the right command from that point on.
-
-## Steady state — prism update
-
-Once a repo is adopted, pull in PRISM's latest on your own cadence:
-
-```bash
-cd /path/to/your-repo
 prism update
 ```
 
-`prism update` refreshes canonical content under `.prism/` and regenerates platform outputs. It's idempotent — running it twice in a row produces the same result. The command prints a summary of what changed.
+**PATH setup required.** `pnpm link --global` puts the binary into pnpm's global bin directory. If you've never used pnpm globals before, that directory may not be on your PATH. Run `pnpm setup` first to add it, then restart your shell. You'll know it worked when `which prism` returns a path inside pnpm's global dir.
 
-## Override the auto-derived source
+When you pull a newer PRISM commit, run `pnpm install` in the clone again — the global link picks up the change automatically, no re-link needed.
 
-Both commands derive the PRISM source from their own location. If you have multiple PRISM checkouts and want to point at a specific one:
-
-```bash
-prism adopt --prism-source /path/to/other-prism-clone
-prism update --prism-source /path/to/other-prism-clone
-```
-
-The explicit flag takes priority over the auto-derived location.
+The global command accepts the same flags as the vendored `pnpm prism:*` scripts, including `--consumer <path>` and `--prism-source <path>`.
 
 ## Help
 
 ```bash
+pnpm prism:adopt --help
+# or, if using the global command:
 prism --help
 ```
 
-Prints available subcommands. `prism` with no arguments does the same.
+Prints available subcommands and flags.
 
 ## What's running under the hood
 
-`prism adopt` calls the same adopt script as `pnpm prism:adopt` in the PRISM repo. `prism update` calls the same update script as `pnpm prism:update`. The `prism` command is a dispatcher — it adds the global entrypoint and auto-derives the PRISM source, but the underlying logic is unchanged. If you're debugging an unexpected result, the PRISM repo's own `adopt.ts` and `update.ts` are the source of truth.
+`pnpm prism:adopt` and `prism adopt` call the same underlying adopt script. `pnpm prism:update` and `prism update` call the same update script. The vendored `pnpm prism:*` aliases and the global `prism` command are both dispatchers — the underlying logic is identical. If you're debugging an unexpected result, `adopt.ts` and `update.ts` in the PRISM repo are the source of truth.
