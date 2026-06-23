@@ -294,12 +294,20 @@ All tasks land in `scripts/ai-skills/`. The design adds one resolver function, w
   - **Implementation guidance:** `docs/adopt-prism.md` restructured (Task 7) to lead with the vendored quickstart and demote global-link to "Alternative." No code removed from the global-link path — `cli.ts` dispatch and `resolveSelfPrismSource` are untouched.
   - → no promotion needed (distribution-model decision specific to the consumer CLI; captured here and surfaced to Hunter via Sol's report-back. If the team later wants a durable "how PRISM is distributed" record, this is the candidate to promote to an ADR — flagging, not promoting, since it's one ticket's call.)
 
+- **End-to-end vendored verification (implementation-side).**
+  - **What was proven:** the `git rev-parse` algorithm holds at runtime, not just in unit tests. Built temp consumer repos with PRISM vendored as a plain subdir (`consumer/PRISM`), deeper (`consumer/tools/PRISM`), and as a standalone clone with no enclosing repo. Ran the vendored copy's own `cli.ts adopt` with cwd = vendored PRISM root.
+  - **Results:** plain-subdir and deeper-nesting both seeded `.prism/` into the enclosing repo root (deeper case correctly skipped the intermediate `tools/` dir) and projected all 31 `prism-*` personas with the consumer's own token substitution. The cwd-default path (run from a separate consumer cwd with `--prism-source`) seeded into cwd, confirming #245 is unbroken. The no-enclosing-repo standalone clone refused with the clear error and a non-zero exit.
+  - **Note on `.bak` files in the demo:** the seed lays down install-template copies, then `runUpdate` pulls newer canonical versions and preserves the seed copies as `.bak` per the documented no-manifest path. Expected safety behavior, not a defect.
+  - **Submodule fixture:** ran live in the unit test (`-c protocol.file.allow=always`) without needing softening in this environment; the test wraps the `git submodule add` in a try/catch so a CI environment that blocks file:// submodule transport skips the assertion rather than failing the suite.
+  - → no promotion needed (ticket-tactical verification record).
+
 ---
 
 ## History
 
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Nora created plan skeleton; branch set up from origin/main. Winston design pass is the next step.
 - 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Winston designed consumer-target resolution; resolved all three OPEN decisions. Algorithm uses `git rev-parse` (verified against 5 git topologies); precedence is `--consumer` flag > vendored-parent detection > cwd; `--consumer` flag shipped; vendored model recommended as default. See Decisions and Implementation Tasks.
+- 2026-06-23 [hmcgrew/prism-246-vendored-parent-target]: Clove implemented tasks 1–6 — new `lib/consumer-root.ts` resolver, wired into both CLI mains (guards intact), `--consumer` usage text, `consumer-root.test.ts` (8 tests). `pnpm prism:check` green (363 tests). Demonstrated all topologies end-to-end against real temp git repos: vendored adopt targets enclosing repo (31 personas projected with consumer tokens), deeper `tools/PRISM` nesting resolves to repo root not `tools/`, cwd-default (#245) path unbroken, no-enclosing-repo refuses with a clear non-zero exit. See Decision: end-to-end vendored verification.
 
 ---
 
@@ -319,18 +327,18 @@ _None yet._
 
 ### Behavioral
 
-- [ ] Given PRISM is vendored as a subdirectory of a consumer repo, When the user runs `pnpm prism:adopt` from inside the PRISM directory, Then `.prism/` is seeded into the enclosing consumer repo (not into PRISM itself) and the persona roster is projected into the consumer's platform directories (REQ-1)
-- [ ] Given PRISM is vendored deeper at `<consumer>/tools/PRISM`, When the user runs adopt or update from inside PRISM, Then the consumer target resolves to the top-level consumer repo, not the intermediate `tools/` directory (REQ-1)
-- [ ] Given PRISM is a standalone clone not contained in any other git repository, When the user runs `pnpm prism:adopt` from inside it, Then the command stops with a clear error explaining there is no consumer repo to target and listing how to fix it (run from the consumer, vendor PRISM inside it, or pass `--consumer`) (REQ-1)
-- [ ] Given a user passes `--consumer <path>` to adopt or update, When the command runs, Then it targets that path as the consumer repo regardless of where it was run from (REQ-1)
-- [ ] Given the consumer-side `prism update` is run from a separate consumer repo directory (the global-command workflow), When it runs, Then it targets the current directory exactly as before this change (REQ-1)
-- [ ] Given PRISM is vendored as a git submodule of the consumer repo, When the user runs adopt or update from inside the submodule, Then the consumer target resolves to the superproject (consumer) repo root (REQ-1)
+- [x] Given PRISM is vendored as a subdirectory of a consumer repo, When the user runs `pnpm prism:adopt` from inside the PRISM directory, Then `.prism/` is seeded into the enclosing consumer repo (not into PRISM itself) and the persona roster is projected into the consumer's platform directories (REQ-1) — demonstrated: 31 personas projected with consumer tokens
+- [x] Given PRISM is vendored deeper at `<consumer>/tools/PRISM`, When the user runs adopt or update from inside PRISM, Then the consumer target resolves to the top-level consumer repo, not the intermediate `tools/` directory (REQ-1) — demonstrated: seeded at repo root, absent at `tools/`
+- [x] Given PRISM is a standalone clone not contained in any other git repository, When the user runs `pnpm prism:adopt` from inside it, Then the command stops with a clear error explaining there is no consumer repo to target and listing how to fix it (run from the consumer, vendor PRISM inside it, or pass `--consumer`) (REQ-1) — demonstrated: clear refusal, non-zero exit
+- [x] Given a user passes `--consumer <path>` to adopt or update, When the command runs, Then it targets that path as the consumer repo regardless of where it was run from (REQ-1) — covered by unit test (explicit flag wins)
+- [x] Given the consumer-side `prism update` is run from a separate consumer repo directory (the global-command workflow), When it runs, Then it targets the current directory exactly as before this change (REQ-1) — demonstrated: cwd-default seeds into cwd, #245 unbroken
+- [x] Given PRISM is vendored as a git submodule of the consumer repo, When the user runs adopt or update from inside the submodule, Then the consumer target resolves to the superproject (consumer) repo root (REQ-1) — covered by unit test (submodule fixture, ran live)
 
 ### Non-behavioral
 
-- [ ] The existing adopt, update, and CLI test suites pass unchanged (REQ-1)
-- [ ] A mis-detected or empty consumer target is caught by an existing guard before any file is deleted — no resolution path can reach destructive file movement on the wrong tree (REQ-1)
-- [ ] `pnpm prism:check` passes (build check, type-check, tests, manifest verification, crossref lint) (REQ-1)
+- [x] The existing adopt, update, and CLI test suites pass unchanged (REQ-1)
+- [x] A mis-detected or empty consumer target is caught by an existing guard before any file is deleted — no resolution path can reach destructive file movement on the wrong tree (REQ-1) — three guards preserved + resolver belt-and-suspenders throw
+- [x] `pnpm prism:check` passes (build check, type-check, tests, manifest verification, crossref lint) (REQ-1)
 
 ### AC Sync Log
 
@@ -347,13 +355,13 @@ _None yet._
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-06-23 (`pnpm prism:check` green, 363 tests)
+- [ ] PR description up to date (Clove offers; PR not yet opened)
+- [x] Lasting decisions promoted to architect context (if applicable) — none warranted; all Decisions are ticket-tactical with explicit `no promotion needed` verdicts
 
 **Last updated:** 2026-06-23

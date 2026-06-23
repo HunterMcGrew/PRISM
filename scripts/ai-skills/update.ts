@@ -27,6 +27,7 @@ import {
 	generatePlatformSkills,
 	type RolesDefinitions,
 } from "./generate-skills";
+import { resolveConsumerRoot, parseConsumerFlag } from "./lib/consumer-root";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
@@ -614,8 +615,13 @@ export async function assertSourceIsPlausible(
 }
 
 export async function runUpdateCli(): Promise<void> {
-	const consumerRepoRoot = process.cwd();
-	const prismRepoRoot = resolvePrismSource(process.argv.slice(2), consumerRepoRoot);
+	const argv = process.argv.slice(2);
+	const consumerRepoRoot = resolveConsumerRoot({
+		explicitConsumer: parseConsumerFlag(argv),
+		cwd: process.cwd(),
+		selfPrismRoot: resolveSelfPrismSource(),
+	});
+	const prismRepoRoot = resolvePrismSource(argv, consumerRepoRoot);
 
 	if (prismRepoRoot === null) {
 		throw new Error(
