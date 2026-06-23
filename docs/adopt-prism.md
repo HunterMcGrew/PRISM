@@ -8,7 +8,7 @@ last_updated: "2026-06-23"
 
 # Adopt PRISM into your repo
 
-So this guide gets you from zero to a working `prism` command — one you can run from any consumer repo without remembering internal script paths. The result: `prism adopt` on first contact, `prism update` every time you want to pull the latest, and nothing else to configure.
+This guide gets you from zero to a working `prism` command — one you can run from any consumer repo without remembering internal script paths. The result: `prism adopt` on first contact, `prism update` every time you want to pull the latest, and nothing else to configure.
 
 ## What you need
 
