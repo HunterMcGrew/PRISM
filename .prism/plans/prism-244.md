@@ -205,6 +205,7 @@ Starting hypothesis only — these are not accepted decisions. Winston owns eval
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove implemented the CLI. Added `resolveSelfPrismSource` + third fallback slot in `update.ts`, lifted `assertSourceIsPlausible` into `runUpdate` (removing the duplicate from `main()`), renamed adopt/update mains to exported `runAdoptCli`/`runUpdateCli`, created `scripts/ai-skills/cli.ts` dispatcher + `bin` entry, and added `cli.test.ts`. End-to-end verified: `prism adopt`/`update` self-locate PRISM from a virgin consumer cwd with no path arg (31 skills projected); guard fires through the adopt path; tsx resolves cleanly via the `npx tsx` shebang through a symlink. `pnpm prism:check` green, 355 tests pass.
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Eli wrote consumer quickstart at `docs/adopt-prism.md` covering one-time `pnpm link --global` setup (including the `pnpm setup` PATH gotcha), `prism adopt` first-contact, `prism update` steady-state, and `--prism-source` override. Cross-linked from `docs/getting-started.md`.
 - 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove cleared Briar's two self-review minors. Folded the manifest dedup (`applyFilePass` gained optional `preloadedManifest` param, `runUpdate` threads its already-loaded manifest — additive, no test ripple, guard/file-movement unchanged) and dropped the conversational "So" from the `adopt-prism.md` opener. `pnpm prism:check` green, 355/355.
+- 2026-06-23 [hmcgrew/prism-244-consumer-prism-cli]: Clove cleared Eric's minor — three stale `main()` refs updated to `runUpdateCli`/`runAdoptCli` in comments; two generic-concept uses left unchanged. `pnpm prism:check` green, 355/355.
 
 ---
 
@@ -237,10 +238,11 @@ _None._
 ### Stale `main()` references in comments after the rename
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/update.ts:290` (also `:318`, `:571`; `adopt.ts:108`, `:147`)
 - **Problem:** After the `main` → `runUpdateCli`/`runAdoptCli` rename, several comments still describe the entry point as `main()`. Borderline — "main()" reads as a generic concept-name in most spots, but `update.ts:290` specifically names "`prism:update`'s `main()`" as a concrete function that no longer exists by that name.
 - **Suggested fix:** Cosmetic. Touch up `update.ts:290` (the one pinned to a concrete function) at minimum; the generic-concept uses are wave-through. Found by Eric (PR review, PR #245). Inline comment posted at `update.ts:318`.
+- **Fixed in:** `fa4d29c`. Updated three concrete stale references (`update.ts:290`, `update.ts:571`, `adopt.ts:147`) to the current function names. Left `update.ts:318` and `adopt.ts:108` unchanged — both name "main()" as a conceptual role, not the renamed function. `pnpm prism:check` green, 355/355.
 
 ---
 
@@ -296,6 +298,6 @@ _None._
 - [x] Guard-lift verified — `assertSourceIsPlausible` has exactly one production call site (`update.ts:320` in `runUpdate`), fires before `applyFilePass`, and now covers the adopt path (`runAdopt`→`runUpdate`). Dispatcher exit codes confirmed by hand (unknown→1, help/no-args→0).
 - [x] PR description up to date — PR #245 open with full template body
 - [ ] Lasting decisions promoted to architect context (if applicable) — safety-guard "single shared seam" invariant flagged for a future `.prism/architect/` consumer-sync-safety doc (none exists today); not promoted now per Winston's verdict
-- [x] Eric PR review (PR #245) — 0 critical, 0 major, 1 borderline-minor (stale `main()` comment refs, `open`). Guard-lift independently verified SAFE: single call site at `update.ts:329`, fires before `applyFilePass`, covers all entry points incl. adopt (closes pre-existing gap). `pnpm prism:check` re-run green (355/355). Labels: `effort:quick`, `review:has-minors`.
+- [x] Eric PR review (PR #245) — 0 critical, 0 major, 1 borderline-minor (stale `main()` comment refs, fixed in `fa4d29c`). Guard-lift independently verified SAFE: single call site at `update.ts:329`, fires before `applyFilePass`, covers all entry points incl. adopt (closes pre-existing gap). `pnpm prism:check` re-run green (355/355). Labels: `effort:quick`, `review:has-minors`.
 
-**Last updated:** 2026-06-23 (Eric — PR review pass, 1 minor open)
+**Last updated:** 2026-06-23 (Clove — cleared Eric's minor, 0 open issues)
