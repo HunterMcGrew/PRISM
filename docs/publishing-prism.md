@@ -117,19 +117,21 @@ If a version ships with a bug, publish a patch release instead. If a version shi
 
 The immutability constraint is the main reason the leak audit ritual exists. One clean publish costs you five minutes; one leaked publish is permanent.
 
-## `pnpm-workspace.yaml` and `allowBuilds`
+## `package.json` `pnpm.onlyBuiltDependencies` and build script approvals
 
-`pnpm-workspace.yaml` carries an `allowBuilds` map that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
+`package.json` carries a `pnpm.onlyBuiltDependencies` list that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
 
-When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `allowBuilds` in `pnpm-workspace.yaml`:
+When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `onlyBuiltDependencies` in `package.json`:
 
-```yaml
-allowBuilds:
-  esbuild: true
-  your-new-package: true   # add here
+```json
+"pnpm": {
+  "onlyBuiltDependencies": ["esbuild", "your-new-package"]
+}
 ```
 
 This is a pnpm-specific concern — npm install runs build scripts by default and doesn't need this configuration.
+
+Note: pnpm v11+ ignores the `pnpm` field in `package.json` and emits a warning — this is harmless locally since esbuild is already installed. The field is read by pnpm v9 (the version pinned in CI), which uses it to approve esbuild's build on cold installs.
 
 ## Related pages
 

@@ -223,6 +223,18 @@
 		{
 			"path": ".cursor/architect/_toolkit/skills-ecosystem.md",
 			"reason": "platform-copy mirror of skills-ecosystem"
+		},
+		{
+			"path": ".claude/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
+			"reason": "ADR references skills-ecosystem.md Output guards section which names the Thrive-literal guard"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
+			"reason": "platform-copy mirror of ADR-0063"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
+			"reason": "platform-copy mirror of ADR-0063"
 		}
 	]
 }

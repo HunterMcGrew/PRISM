@@ -206,12 +206,29 @@ These are locked — do not relitigate. Each bullet is a do-not-undo.
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Eli fixed two Briar minors. distribution.md restructured: npm-public is now the primary model section; sibling-repo and other checkout paths are documented alternatives; stale "Future: registry / federated install" section removed. publishing-prism.md pnpm section updated: heading, prose, and YAML example all changed from onlyBuiltDependencies to allowBuilds (confirmed against actual pnpm-workspace.yaml, which uses `allowBuilds: esbuild: true`).
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Eric OPTIONAL finding evaluated — `prepublishOnly` runs `prism:test` twice (inside `prism:build` and inside `prism:check`). No trim applied: `prism:check` uses `build.ts --check` (verify-only, no roster write), so dropping `prism:build` would remove roster regeneration and violate the locked Decision. Double-run is the deliberate cost of maintaining both guarantees on a rare manual publish operation.
 - 2026-06-23 [hmcgrew/prism-248-npm-publish]: Winston plan close (on PR #249, pre-merge). Three packaging invariants promoted to ADR-0063 (package-root walk, inclusion-allowlist + leak-audit ritual, node-shebang dist); skills-ecosystem.md gained a "Distribution: npm" note cross-referencing it. Decision verdict gate applied to all entries. Non-behavioral AC checked (verified-at-merge); behavioral AC deferred to Hunter's post-publish tasks 8–9. Plan marked closed.
+- 2026-06-23 [hmcgrew/prism-248-npm-publish]: Clove CI fix (Sol dispatch). Removed pnpm-workspace.yaml (no packages: field caused "packages field missing or empty" on CI's pnpm v9 store-path call); moved esbuild approval to package.json pnpm.onlyBuiltDependencies; added ADR-0063 platform copies to literal-allowlist.json (pre-existing literal-guard failure); docs/publishing-prism.md updated to reflect new config mechanism. prism:check passes clean.
 
 ---
 
 ## Debugged Issues
 
-None yet.
+### CI pnpm store path error — workspace file missing packages field
+
+- **Status:** `fixed`
+- **Severity:** High
+- **Confidence:** High (Confirmed root cause + deterministic repro)
+- **Environment:** GitHub Actions `prism-check` job (ubuntu-latest, pnpm v9)
+- **File:** `pnpm-workspace.yaml:1-2` (deleted)
+- **Root cause:** `[Confirmed]` — `pnpm-workspace.yaml` declared a workspace but omitted the required `packages:` field. CI's `setup-node` with `cache: pnpm` runs `pnpm store path --silent` before install; pnpm v9 errors with "packages field missing or empty" when it sees a workspace file without `packages:`. Passed locally because local pnpm v11 handled the file differently (also: warm store).
+- **Steps to Reproduce:**
+  1. Ensure CI workflow uses pnpm v9 (`pnpm/action-setup@v4` with `version: 9`)
+  2. Push branch with `pnpm-workspace.yaml` containing only `allowBuilds:` (no `packages:` field)
+  3. CI `setup-node cache: pnpm` step runs `pnpm store path --silent` → "packages field missing or empty"
+- **Expected behavior:** `pnpm store path` returns the store path; CI proceeds to install.
+- **Actual behavior:** CI errors immediately before `pnpm install` even runs.
+- **Recommended fix:** Delete `pnpm-workspace.yaml`; move esbuild build approval to `package.json` as `pnpm.onlyBuiltDependencies: ["esbuild"]` (pnpm v9 reads this; pnpm v11 ignores it with a harmless warning since esbuild is already installed locally). Updated `docs/publishing-prism.md` to reflect the new config mechanism.
+- **Suggested tests:** CI green on next push verifies fix.
+- **Linear:** `N/A`
 
 ---
 

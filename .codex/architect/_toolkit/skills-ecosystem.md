@@ -65,6 +65,12 @@ Eric is the highest-frequency review skill in the ecosystem — every PR that la
 
 In-branch mode as the default flips the economics. The common path — read the diff, read the changed files at the PR head, post inline comments and a summary — happens without touching the filesystem. Worktree mode remains available for the cases where it earns its cost: branches with divergent state where a plain read would mislead, reviews that must run formatters or tests against the PR's branch, or explicit user requests. The mode gate at session start picks the right path; the user sees the chosen mode announced in the greeting; the cost lands where the value is.
 
+### Distribution: npm
+
+PRISM publishes to public npm as `@huntermcgrew/prism`. External teams adopt with `npx @huntermcgrew/prism adopt` — the primary distribution path; the checkout models (vendored sibling repo, global link, `--consumer`/cwd) demote to documented alternatives for air-gapped, customization, and contributor cases.
+
+Three packaging invariants govern the published artifact, all in [ADR-0063](../spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md): the runtime resolves its content tree by walking up to the `@huntermcgrew/prism` `package.json` (not a hardcoded depth, so any future dist target stays correct); `files` is an inclusion allowlist and the leak-audit `tar tzf` grep gate runs before every publish (versions are immutable); and `dist/cli.js` ships a `node` shebang in place of the `tsx` dev runtime. The ADR/architect provenance strings that ship in the tarball are frozen incident citations, not a leak — see § Output guards above for why "Thrive"-flavored literals in shipped spec/architect content are legitimate, and `docs/publishing-prism.md` for the maintainer release ritual.
+
 ---
 
 ## Ticket Types
