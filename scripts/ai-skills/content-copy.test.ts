@@ -9,6 +9,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -17,8 +18,11 @@ import {
 	removeDeletedManagedContent,
 	syncPlatformContentCopy,
 } from "./build";
+import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { cursorRuleDialect } from "./rule-dialect";
 import { MANAGED_MARKER } from "./utils";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 async function withTempRoots(
 	build: (contentRoot: string, platformDir: string) => Promise<void>,
@@ -407,4 +411,42 @@ test("removeDeletedManagedContent refuses to delete from a directory missing the
 			assert.equal(changedPaths.length, 0);
 		}
 	);
+});
+
+test("copyContentToPlatformDir resolves every token across the real install seed without throwing", async () => {
+	// The adopt-path content-copy step runs substituteTokens over each seeded
+	// file. A seed file carrying a non-resolvable example literal (a bare
+	// `${UPPER_SNAKE}` that isn't a real token) makes substituteTokens fail-fast
+	// with Unknown token, breaking prism:adopt. This exercises the real seed tree
+	// with a real consumer tokenMap so any such literal surfaces as a test
+	// failure here rather than at adopt time. Regression for the stale ADR-0030
+	// seed copy whose `${TOKEN}` example literal broke prism:adopt.
+	const seedRoot = path.join(repoRoot, "templates", "install", ".prism");
+	const tokenMap = deriveTokenMap(loadConfig(repoRoot));
+	const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "prism-adopt-seed-"));
+
+	try {
+		await assert.doesNotReject(
+			copyContentToPlatformDir(seedRoot, outputDir, false, [], tokenMap),
+			"adopt content-copy over the real install seed must not throw on any token"
+		);
+
+		const adrText = await fs.readFile(
+			path.join(
+				outputDir,
+				"spec",
+				"adrs",
+				"_toolkit",
+				"0030-token-substitution-at-build-time.md"
+			),
+			"utf8"
+		);
+		assert.doesNotMatch(
+			adrText,
+			/\$\{[A-Z][A-Z0-9_]*\}/,
+			"the seed ADR-0030 copy must carry no unresolved bare token literal after substitution"
+		);
+	} finally {
+		await fs.rm(outputDir, { force: true, recursive: true });
+	}
 });
