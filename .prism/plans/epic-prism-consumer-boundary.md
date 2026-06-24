@@ -209,11 +209,12 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 ### AC format offer skip-if-exists check can never fire
 
 - **Severity:** minor
-- **Status:** deferred
+- **Status:** fixed
 - **File:** `.ai-skills/skills/prism-onboarding/shared.md:98` (all platform copies)
 - **Problem:** Step 10 gated the format offer on `acceptance-criteria.md` being absent — but `npx adopt` pre-deploys the file from the install seed before Atlas onboarding runs, so the original condition was always true and the offer was always silently skipped.
 - **Suggested fix:** remove the skip-if-exists guard; the offer fires unconditionally and Atlas rewrites the file when the team opts in.
 - **Winston adjudication:** the "remove the guard" fix ships the wrong behavior — the guard is required (skip-if-exists on reconfigure is non-negotiable). The correct fix is to restate the guard in terms of "has the team already chosen a format in a prior run" rather than file-existence alone. The guard was restored with correct two-property framing in the Winston-adjudicated re-implementation. See the rule-delivery-taxonomy Decision § AC offer.
+- **Fixed in:** hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag (commit 36a603b)
 
 ## History
 
