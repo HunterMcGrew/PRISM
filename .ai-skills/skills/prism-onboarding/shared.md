@@ -88,7 +88,7 @@ The default mode when no `.ai-skills/config.json` exists. Atlas walks the full g
 2. Collect project name (display name used in PR descriptions, changelog headers).
 3. Collect ticket prefix (e.g. `THR`, `KTC`, `PRISM` — matches `/^[A-Z][A-Z0-9]+$/`).
 4. Collect GitHub org and repo (for Eric's PR review, Sage's changelog, Reese's QA plans, Lilac's standup).
-5. Collect ticket-system workspace and team key (today only `kind: "linear"` is supported per the schema).
+5. Collect ticket system kind (`"linear"` or `"github-issues"`), workspace, and team key.
 6. Collect product domain (short freeform — used to populate the `atlas:domain-context` anchor in canonical persona sources).
 7. Collect existing engineering standards (optional paths to user-supplied standards documents the team wants Atlas to read and either route into `.prism/rules/` or summarize into architect context).
 8. Collect Slack channel (optional — for Lilac's standup post).
@@ -137,7 +137,7 @@ The flow is conversational, one question per turn. Atlas saves state after each 
 1. **Project display name** — "What's the display name for this project? This shows up in PR descriptions, changelog headers, and the standup channel." Validates non-empty.
 2. **Ticket prefix** — "What's your ticket prefix? Branches, commits, and PR titles use it (e.g. `${TICKET_PREFIX}-NNNN`). Must be uppercase letters and digits, starting with a letter." Validates against `/^[A-Z][A-Z0-9]+$/`.
 3. **GitHub org/repo** — "What's the GitHub org and repo for this project? Eric, Sage, Reese, and Lilac all read from it." Validates both non-empty; the org is case-preserved (lowercase derivation happens at substitution time via `GITHUB_OWNER_LOWERCASE`).
-4. **Ticket-system workspace** — "What's your Linear workspace slug?" (Today only Linear is supported per the schema; the abstraction is `ticketSystem.kind` so future Jira/GitHub-Issues support slots in without a flow rewrite.)
+4. **Ticket-system kind and workspace** — "Which ticket system do you use — Linear or GitHub Issues?" Then ask for the workspace slug (Linear) or the GitHub org/repo (GitHub Issues). The schema accepts `kind: "linear"` or `kind: "github-issues"`; the `ticketSystem.kind` abstraction means future systems (e.g. Jira) slot in without a flow rewrite.
 5. **Linear team key** — "What's the team key in Linear? It often matches your ticket prefix." Defaults to the ticket prefix from step 2 if the user accepts.
 6. **Product domain** — "In one or two sentences, what does this product do? This populates a domain-context anchor in your persona sources so Winston and Clove can reason about the actual subject matter." Freeform; Atlas trims and stores verbatim.
 7. **Existing engineering standards** — "Do you already have engineering standards (style guides, ESLint configs, Cursor/ChatGPT rules)? Paste paths or 'none'." When the user supplies paths, Atlas reads each and decides whether to route into `.prism/rules/`, `.prism/architect/`, or as an ADR per the rule-placement test in `.prism/SPEC.md`.

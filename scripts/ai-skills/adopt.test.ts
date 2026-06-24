@@ -399,12 +399,41 @@ test("assertConsumerIsEstablished passes when no .sync-manifest.json exists", as
 	});
 });
 
+test("runAdopt throws when .ai-skills/config.json is absent — points at prism init", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			// Intentionally do NOT write .ai-skills/config.json — simulates a cold consumer
+			// that has not run prism init yet.
+
+			await assert.rejects(
+				() => runAdopt({ prismSourceRoot, consumerRepoRoot }),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("npx @huntermcgrew/prism init"),
+						`expected init guidance in message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+		}
+	);
+});
+
 test("runAdopt throws when a .sync-manifest.json already exists", async () => {
 	await withTempRoots(
 		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
 			// Seed a PRISM source file so runUpdate has something to operate on,
 			// then pre-seed a manifest to simulate a repo already in steady-state.
+			// A repo in steady-state always has a config.json, so write one so the
+			// config-guard passes and the manifest-guard is what fires.
 			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+			);
 			await writeConsumerManifest(consumerContentRoot, {});
 
 			await assert.rejects(

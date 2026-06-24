@@ -124,6 +124,21 @@ export async function runAdopt(options: {
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
 	const prismContentRoot = path.join(prismSourceRoot, ".prism");
 
+	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
+	let configExists: boolean;
+	try {
+		await fs.access(configPath);
+		configExists = true;
+	} catch {
+		configExists = false;
+	}
+
+	if (!configExists) {
+		throw new Error(
+			"prism adopt: no .ai-skills/config.json found. Run 'npx @huntermcgrew/prism init' first to create it, then re-run adopt."
+		);
+	}
+
 	await assertConsumerIsEstablished(consumerContentRoot);
 
 	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);

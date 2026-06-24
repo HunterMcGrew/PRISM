@@ -75,9 +75,23 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 **Enforcement:** Seed drift is enforced by `checkSeedDrift()` in `scripts/ai-skills/build.ts`; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 
-## First-contact adoption: `prism:adopt`
+## First-contact adoption: `prism init` then `prism adopt`
 
-The seed surface above is what a consumer repo *receives*; `pnpm prism:adopt` is what *lays it down* the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. ADR-0059 records the design; `scripts/ai-skills/adopt.ts` implements it.
+A cold consumer — a repo that has never had PRISM — needs to run two commands before the agent-driven onboarding begins:
+
+1. **`npx @huntermcgrew/prism init`** — writes `.ai-skills/config.json` so the consumer repo is identifiable. This is deterministic and requires no AI agent: it detects the tech stack, collects a handful of required values (project name, ticket prefix, ticket system, GitHub owner, and repo), and writes the config. When stdin is a TTY, it prompts interactively. In CI or scripted contexts, pass the same values as flags: `--project`, `--ticket-prefix`, `--ticket-system` (`linear` or `github-issues`), `--github-owner`, `--github-repo`. Optional flags: `--org`, `--linear-team`, `--linear-workspace`, `--default-branch`. `init` refuses and exits if a config already exists — edit the file directly or remove it to re-init. `init` writes only `config.json` and nothing else; adopt, update, and Atlas are responsible for everything after it.
+
+2. **`npx @huntermcgrew/prism adopt`** — seeds `.prism/` and projects the full persona roster. This is the first-contact install step described in the section below. If adopt detects that `config.json` is missing, it stops and tells the consumer to run `init` first.
+
+3. **(Later, in-agent) Atlas** — handles the richer, conversational onboarding: generating per-team rules, writing stack-appropriate security guidance, and populating stub anchors with team context. ADR-0040 records why Atlas owns this layer (it requires judgment that a deterministic CLI step can't provide); ADR-0059 records why adopt is seed-and-sync rather than a merge engine.
+
+The split is intentional: `init` is the repeatable, CI-safe bootstrap; Atlas is the AI-assisted configuration pass that runs once per team.
+
+**The config write path honors both ticket systems.** `writeOnboardingConfig`/`toOnDiskConfig` in `scripts/ai-skills/lib/onboarding-config.ts` set `ticketSystem.kind` to `"github-issues"` or `"linear"` depending on the input: a non-empty `linearTeam` emits `{ kind: "linear", teamKey }`, an empty one emits `{ kind: "github-issues" }` with no team key. `validateOnDiskConfig` accepts both. This is a capability of the config layer, not an `init` detail — any caller of `writeOnboardingConfig`, including Atlas, can produce a truthful github-issues config. Atlas's existing Linear output stays byte-identical because it always supplies `linearTeam`. The build reader (`tokens.ts` `loadConfig`/`deriveTicketTracker`) and `config.schema.json` already accepted both kinds; this closed the write-side gap.
+
+---
+
+The seed surface above is what a consumer repo _receives_; `pnpm prism:adopt` is what _lays it down_ the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. ADR-0059 records the design; `scripts/ai-skills/adopt.ts` implements it.
 
 `runAdopt` runs two steps in sequence:
 

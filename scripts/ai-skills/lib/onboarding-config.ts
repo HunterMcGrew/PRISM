@@ -38,7 +38,7 @@ export interface PrismOnDiskConfig {
 	project: string;
 	ticketPrefix: string;
 	ticketSystem: {
-		kind: "linear";
+		kind: "linear" | "github-issues";
 		workspace?: string;
 		projectId?: string;
 		teamKey?: string;
@@ -163,14 +163,21 @@ export function toOnDiskConfig(
 		techStackValues.add(framework.name);
 	}
 
+	// When a non-empty linearTeam is provided the ticket system is Linear;
+	// otherwise it is GitHub Issues and no team key is emitted. This lets
+	// Atlas (which always supplies linearTeam) produce byte-identical output
+	// while allowing init to write a truthful github-issues config by passing
+	// an empty linearTeam.
+	const ticketSystem: PrismOnDiskConfig["ticketSystem"] =
+		typeof config.linearTeam === "string" && config.linearTeam.length > 0
+			? { kind: "linear", teamKey: config.linearTeam }
+			: { kind: "github-issues" };
+
 	const onDisk: PrismOnDiskConfig = {
 		org: options.org ?? config.project,
 		project: config.project,
 		ticketPrefix: config.ticketPrefix,
-		ticketSystem: {
-			kind: "linear",
-			teamKey: config.linearTeam,
-		},
+		ticketSystem,
 		github: {
 			owner: config.githubOwner,
 			repo: config.githubRepo,
@@ -231,10 +238,10 @@ export function validateOnDiskConfig(config: PrismOnDiskConfig): void {
 		);
 	}
 
-	if (config.ticketSystem.kind !== "linear") {
+	if (config.ticketSystem.kind !== "linear" && config.ticketSystem.kind !== "github-issues") {
 		throw new OnboardingConfigValidationError(
 			"ticketSystem.kind",
-			`only "linear" is supported (got ${JSON.stringify(config.ticketSystem.kind)})`
+			`must be "linear" or "github-issues" (got ${JSON.stringify(config.ticketSystem.kind)})`
 		);
 	}
 

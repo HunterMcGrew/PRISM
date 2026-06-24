@@ -259,6 +259,32 @@ test("writeOnboardingConfig omits the documentation block when not provided", as
 	});
 });
 
+test("writeOnboardingConfig writes a github-issues config when linearTeam is empty", async () => {
+	await withTempRepo(async (root) => {
+		const githubIssuesConfig: OnboardingConfig = {
+			...SAMPLE_CONFIG,
+			linearTeam: "",
+		};
+
+		const result = await writeOnboardingConfig(root, githubIssuesConfig);
+
+		const written = await fs.readFile(result.path, "utf8");
+		const parsed = JSON.parse(written) as PrismOnDiskConfig;
+
+		assert.equal(parsed.ticketSystem.kind, "github-issues");
+		assert.equal(
+			"teamKey" in parsed.ticketSystem,
+			false,
+			"github-issues config must not include teamKey"
+		);
+		assert.equal(
+			"workspace" in parsed.ticketSystem,
+			false,
+			"github-issues config must not include workspace"
+		);
+	});
+});
+
 test("toOnDiskConfig preserves the open-string format field verbatim", () => {
 	const config: OnboardingConfig = {
 		...SAMPLE_CONFIG,

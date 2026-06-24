@@ -13,11 +13,13 @@
  * clone even when invoked via a global symlink), not the consumer's PATH.
  */
 import { runAdoptCli } from "./adopt";
+import { runInitCli } from "./init";
 import { runUpdateCli } from "./update";
 
 const USAGE = `prism — PRISM consumer CLI
 
 Usage:
+  prism init     Write .ai-skills/config.json so this repo can adopt PRISM (run before adopt)
   prism adopt    Seed .prism/ and project the persona roster into this repo (first run)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
 
@@ -32,6 +34,9 @@ async function main(): Promise<void> {
 	const subcommand = process.argv[2];
 
 	switch (subcommand) {
+		case "init":
+			await runInitCli();
+			break;
 		case "adopt":
 			await runAdoptCli();
 			break;
