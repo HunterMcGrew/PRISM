@@ -100,8 +100,6 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
-**One narrow exception, this repo only:** PRISM's own self-development PRs. The repo owner granted Sol standing authority to merge them when the Briar→Eric loop is clean and there's no `review:has-minors` label ([ADR-0061](../spec/adrs/_toolkit/0061-sol-merge-authority.md)). This does not change the rule above for teams that install PRISM — their merge stays an unconditional human responsibility — and even here the auto-mode classifier ignores agent-written authority, so each session still needs an explicit in-session authorization.
-
 ---
 
 ## Keeping a Branch Current
