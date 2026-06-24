@@ -133,6 +133,24 @@ const CONSUMER_CONFIG_JSON = {
 	ticketSystem: { kind: "github-issues" },
 };
 
+// Pre-PR#2 schema: generated block omits platformContentCopies, the shape that
+// crashes buildPlatformDirs at utils.ts. Mirrors thrive's stale file.
+const STALE_CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+	},
+};
+
 /**
  * Gives the temp roots the minimum needed for `runUpdate`'s platform refresh to
  * traverse: a consumer `config.json` + `paths.json`, and a PRISM source skill
@@ -167,6 +185,14 @@ async function scaffoldConsumerAndSkills(roots: {
 		roots.prismSourceRoot,
 		".ai-skills/definitions/roles.json",
 		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+	);
+	// The provisioner copies from prismSourceRoot/.ai-skills/definitions/paths.json
+	// — write the package's copy so ensureConsumerPathDefinitions has a source to
+	// provision from in both mode-A and mode-B tests.
+	await writeFile(
+		roots.prismSourceRoot,
+		".ai-skills/definitions/paths.json",
+		`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
 	);
 }
 
@@ -450,6 +476,97 @@ test("runAdopt throws when a .sync-manifest.json already exists", async () => {
 					);
 					return true;
 				}
+			);
+		}
+	);
+});
+
+// --- paths.json provisioning tests (regression: cold-adopt crash #252) ---
+
+test("runAdopt provisions an absent paths.json and completes (Mode A)", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			// Mode A: remove the consumer paths.json that scaffolding wrote, simulating
+			// a cold consumer that ran prism init (config only) but has no paths.json.
+			await fs.rm(path.join(consumerRepoRoot, ".ai-skills/definitions/paths.json"));
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.pathsProvisioned, "written");
+			assert.ok(
+				await fileExists(consumerRepoRoot, ".ai-skills/definitions/paths.json"),
+				"paths.json provisioned"
+			);
+			assert.ok(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				"adopt completed and wrote the baseline manifest"
+			);
+		}
+	);
+});
+
+test("runAdopt repairs an incomplete paths.json and completes (Mode B)", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			// Mode B: overwrite with the pre-PR#2 stale shape that crashes the refresh
+			// because generated.platformContentCopies is absent.
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/definitions/paths.json",
+				`${JSON.stringify(STALE_CONSUMER_PATHS_JSON, null, "\t")}\n`
+			);
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.pathsProvisioned, "written");
+			const repaired = JSON.parse(
+				await readFile(consumerRepoRoot, ".ai-skills/definitions/paths.json")
+			);
+			assert.ok(
+				repaired.generated.platformContentCopies,
+				"repaired paths.json has platformContentCopies"
+			);
+			assert.ok(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				"adopt completed without the reading 'claude' crash"
+			);
+		}
+	);
+});
+
+test("runAdopt leaves a complete consumer paths.json untouched (no clobber)", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			// A complete consumer file with a customized (but structurally valid) value.
+			const customized = {
+				...CONSUMER_PATHS_JSON,
+				generated: {
+					...CONSUMER_PATHS_JSON.generated,
+					claudeSkillsRoot: ".claude/custom-skills",
+				},
+			};
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/definitions/paths.json",
+				`${JSON.stringify(customized, null, "\t")}\n`
+			);
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.pathsProvisioned, "ok");
+			const after = JSON.parse(
+				await readFile(consumerRepoRoot, ".ai-skills/definitions/paths.json")
+			);
+			assert.equal(
+				after.generated.claudeSkillsRoot,
+				".claude/custom-skills",
+				"customized complete paths.json must not be clobbered"
 			);
 		}
 	);

@@ -339,6 +339,110 @@ export async function loadPathDefinitions(
 }
 
 /**
+ * Returns true when a consumer's parsed paths.json is structurally complete —
+ * meaning it has every key that buildPlatformDirs and resolveConsumerSkillTargetRoots
+ * will dereference. A file that parses but lacks generated.platformContentCopies
+ * (pre-PR#2 schema) crashes the platform refresh; this predicate lets prism:adopt
+ * repair it instead of crashing.
+ */
+export function isPathDefinitionsComplete(value: unknown): value is PathDefinitions {
+	if (typeof value !== "object" || value === null) {
+		return false;
+	}
+
+	const generated = (value as { generated?: unknown }).generated;
+
+	if (typeof generated !== "object" || generated === null) {
+		return false;
+	}
+
+	const g = generated as Record<string, unknown>;
+	const requiredStringKeys = [
+		"claudeSkillsRoot",
+		"claudeAgentsRoot",
+		"codexSkillsRoot",
+		"codexAgentsRoot",
+		"codexConfigFile",
+		"cursorSkillsRoot",
+	];
+
+	for (const key of requiredStringKeys) {
+		if (typeof g[key] !== "string") {
+			return false;
+		}
+	}
+
+	const copies = g.platformContentCopies;
+
+	if (typeof copies !== "object" || copies === null) {
+		return false;
+	}
+
+	const c = copies as Record<string, unknown>;
+
+	return (
+		typeof c.claude === "string" &&
+		typeof c.codex === "string" &&
+		typeof c.cursor === "string"
+	);
+}
+
+/**
+ * Ensures the consumer has a structurally complete
+ * `.ai-skills/definitions/paths.json` before prism:update reads it. Writes the
+ * PRISM package's own paths.json when the consumer's is absent OR structurally
+ * incomplete (pre-PR#2 schema missing platformContentCopies). A consumer file
+ * that is already complete is left untouched — a customized-but-complete
+ * paths.json is never clobbered. Full-replace, not merge-missing-keys: a file
+ * missing platformContentCopies is broken, not customized, and the package copy
+ * is the correct shape.
+ *
+ * Returns "written" when it provisioned or repaired, "ok" when the consumer
+ * file was already complete.
+ */
+export async function ensureConsumerPathDefinitions(
+	prismSourceRoot: string,
+	consumerRepoRoot: string
+): Promise<"written" | "ok"> {
+	const consumerPathsFile = path.join(
+		consumerRepoRoot,
+		".ai-skills",
+		"definitions",
+		"paths.json"
+	);
+	const existing = await readFileIfExists(consumerPathsFile);
+
+	if (existing !== null) {
+		try {
+			if (isPathDefinitionsComplete(JSON.parse(existing))) {
+				return "ok";
+			}
+		} catch {
+			// Unparseable — fall through to provision the package copy.
+		}
+	}
+
+	const packagePathsFile = path.join(
+		prismSourceRoot,
+		".ai-skills",
+		"definitions",
+		"paths.json"
+	);
+	const packageRaw = await readFileIfExists(packagePathsFile);
+
+	if (packageRaw === null) {
+		throw new Error(
+			`prism:adopt: PRISM source has no paths.json at ${packagePathsFile} — cannot provision consumer path definitions.`
+		);
+	}
+
+	await ensureDirectory(path.dirname(consumerPathsFile));
+	await fs.writeFile(consumerPathsFile, packageRaw, "utf8");
+
+	return "written";
+}
+
+/**
  * Builds the platform-dir list from a repo root and its path definitions.
  *
  * Both `prism:build` and `prism:update` need the same three platform dirs
