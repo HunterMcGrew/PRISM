@@ -21,7 +21,7 @@
  *
  * Scan roots: `.prism/{rules,architect,spec,references,templates}` +
  * `templates/install/.prism/` mirror + repo-root loose files (AGENTS.md,
- * templates/install/AGENTS.md.tmpl, templates/install/.claude/CLAUDE.md.tmpl).
+ * templates/install/AGENTS.md.tmpl).
  *
  * Excluded by search-root choice (not by grep -v): `plans/`, `lessons.md`,
  * `audits/`, `retros/`, `prds/`, `design/` — historical and agent-generated
@@ -127,7 +127,6 @@ export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
 		looseFiles: [
 			"AGENTS.md",
 			"templates/install/AGENTS.md.tmpl",
-			"templates/install/.claude/CLAUDE.md.tmpl",
 		],
 	},
 ];
@@ -780,7 +779,7 @@ export const INSTALL_ADR_MACHINERY_ALLOWLIST: ReadonlySet<string> = new Set([
  * while the gate is in place. L5 removes entries as it distills each file.
  *
  * When this Set reaches zero, delete it and the `isInstallAdrAllowlisted`
- * call — the gate enforces strictly with only the machinery allowlist above.
+ * function — the gate enforces strictly with only the machinery allowlist above.
  */
 export const INSTALL_ADR_PRE_L5_ALLOWLIST: ReadonlySet<string> = new Set([
 	// ── Rules / references / templates that cite ADRs (distilled in L5 task 4) ──
@@ -930,9 +929,9 @@ export async function runInstallAdrGate(
 	const allFiles = await listInstallCarrierFiles(installRoot);
 	const violations: AdrGateViolation[] = [];
 
-	const effectiveAllowlist =
-		allowlistOverride ??
-		new Set([...INSTALL_ADR_MACHINERY_ALLOWLIST, ...INSTALL_ADR_PRE_L5_ALLOWLIST]);
+	const isAllowlisted = allowlistOverride
+		? (relativePath: string) => allowlistOverride.has(relativePath)
+		: isInstallAdrAllowlisted;
 
 	for (const absPath of allFiles) {
 		const relativePath = path
@@ -940,7 +939,7 @@ export async function runInstallAdrGate(
 			.split(path.sep)
 			.join("/");
 
-		if (effectiveAllowlist.has(relativePath)) {
+		if (isAllowlisted(relativePath)) {
 			continue;
 		}
 
