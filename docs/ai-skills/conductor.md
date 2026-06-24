@@ -40,22 +40,22 @@ Sol's dispatch message stays minimal — "Clove, your turn, plan at `<path>`, ta
 ## The four reliability mechanics
 
 1. **Three nested failure budgets.** A per-unit strike budget (the three-strike rule, generalized — a defect that survives three fix attempts pauses the unit and surfaces its survival history), a per-phase failure budget (repeated hard failures of the same persona on the same unit stop that phase), and a global run budget (a total dispatch cap so a runaway can't burn unbounded). A tripped budget parks the lane, not the run. "Failure" is narrow — a persona's "no" is a verdict to route, not a failure.
-2. **Three escalation axes, each trigger to a target.** _Needs a better plan_ routes to Winston to re-plan, triggered by a plan-readiness failure or a worker reporting guesswork. _Needs a stronger model_ bumps the tier on that persona's next dispatch, triggered by the cheaper model stalling the same unit twice. _Needs a human_ pauses and surfaces, triggered by an open question, a reviewer who believes a finding is wrong (the disagreement fast-path escalates immediately, not via strikes), or an inherently human gate.
-3. **Report-back — a primary verdict plus optional secondary signals.** Every dispatched persona writes to the plan and returns one _primary verdict_ (`done` · `blocked` · `needs-replan` · `needs-stronger-model` · `needs-human`) that routes the lane, plus zero or more _secondary signals_ (`found-bug` → Sasha, `found-followup-work` → Nora, `observation` → recorded) that each route independently. One enum value can't carry both a completion and an incidental follow-up, so the verdict routes the lane while each signal routes on its own. The full table: [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md).
+2. **Three escalation axes, each trigger to a target.** *Needs a better plan* routes to Winston to re-plan, triggered by a plan-readiness failure or a worker reporting guesswork. *Needs a stronger model* bumps the tier on that persona's next dispatch, triggered by the cheaper model stalling the same unit twice. *Needs a human* pauses and surfaces, triggered by an open question, a reviewer who believes a finding is wrong (the disagreement fast-path escalates immediately, not via strikes), or an inherently human gate.
+3. **Report-back — a primary verdict plus optional secondary signals.** Every dispatched persona writes to the plan and returns one *primary verdict* (`done` · `blocked` · `needs-replan` · `needs-stronger-model` · `needs-human`) that routes the lane, plus zero or more *secondary signals* (`found-bug` → Sasha, `found-followup-work` → Nora, `observation` → recorded) that each route independently. One enum value can't carry both a completion and an incidental follow-up, so the verdict routes the lane while each signal routes on its own. The full table: [`lib/report-back.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/report-back.md).
 4. **Fleet containment plus a conflict gate.** Fleet is the dispatch engine over multiple lanes — one engine; a pipeline is a one-lane fleet. Per-lane independence contains failures natively: a lane that throws drops out and skips its remaining stages while the others continue. Before parallelizing, Sol checks for **overlapping blast radius** — two lanes touching the same shared type, architect doc, or plan file — and serializes those rather than manufacturing merge conflicts (refuse-to-parallelize, the recorded default). `needs-human` pauses are batched into one end-of-segment report, never one ping per lane. The contract: [`lib/fleet.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/fleet.md).
 
 ## Model tiering
 
 Sol reads the tier off the goal-state lane and sets it per dispatch through the runtime's model override.
 
-| Role                                     | Default model                 | Escalation                                           |
-| ---------------------------------------- | ----------------------------- | ---------------------------------------------------- |
-| **Sol (Conductor)**                      | Opus (default, not hardcoded) | n/a — already top tier                               |
-| **Winston (architect / plan)**           | Always Opus, never weaker     | n/a — the firewall never runs cheap                  |
-| **Eric (PR review)**                     | Always Opus, never weaker     | n/a — high-judgment review task, top tier by default |
-| Worker personas (Clove, Sasha, Briar, …) | Sonnet                        | → Opus on signal (the worker stalled the unit twice) |
+| Role | Default model | Escalation |
+| --- | --- | --- |
+| **Sol (Conductor)** | Opus (default, not hardcoded) | n/a — already top tier |
+| **Winston (architect / plan)** | Always Opus, never weaker | n/a — the firewall never runs cheap |
+| **Eric (PR review)** | Always Opus, never weaker | n/a — high-judgment review task, top tier by default |
+| Worker personas (Clove, Sasha, Briar, …) | Sonnet | → Opus on signal (the worker stalled the unit twice) |
 
-A plan-readiness failure means _re-plan harder_ — Winston is already on the strong model — not _escalate the model_. A config seam lets other runtimes map their own tiers.
+A plan-readiness failure means *re-plan harder* — Winston is already on the strong model — not *escalate the model*. A config seam lets other runtimes map their own tiers.
 
 ## Autonomy between gates, never through them
 
@@ -71,15 +71,15 @@ Sol is a thin conductor — every dispatched persona runs its full, unmodified r
 - **Nora keeps the no-write-path boundary honest.** Sol never writes Linear or creates tickets. When a worker surfaces a `found-followup-work` signal, Sol routes it to Nora, who applies her scope-fit and Definition-of-Ready gates — the ticket gets created by the persona that owns ticket creation, not by Sol.
 - **Briar and Eric are verdict sources.** A self-review or PR review comes back as a primary verdict Sol routes (clean → advance, findings → back to Clove). Eric never approves a PR ([ADR-0011](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0011-eric-never-approves-prs.md)); review findings route, they don't clear the merge gate.
 
-Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review _segment_; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the _whole_ lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md).
+Sol is the lifecycle-scale generalization of the `prism-review-loop` utility — the review loop runs the self-review-then-PR-review gauntlet to a clean pass over the review *segment*; Sol generalizes the same loop-to-done, route-by-verdict, pass-budget shape to the *whole* lifecycle and gives it a persona. Review-loop is the review-segment ancestor: [`.ai-skills/skills/prism-review-loop/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-review-loop/shared.md).
 
 ## The self-growth loop
 
 The v1 discovery loop closes in a single run what previously required a second triage pass. When a worker persona (Clove, Briar, Eric, Sasha) finds work outside its local frame and beyond trivial, it emits a `found-bug` or `found-followup-work` signal with a structured `target` — the file, symbol, scope slug, or error signature that identifies what was found. The signal enters the run-control registry (`signals[]` in goal-state) and waits for the next segment boundary.
 
-At each segment boundary, Sol runs **step 9 — reconcile** ([`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md)). The reconcile step reads the full registry, deduplicates signals structurally, runs the decision box on each distinct target, and applies the convergence governor. The next segment's lane set is then _recomputed_ from that output — not carried forward unchanged from the run's input. The lane set is an output of the run, not only its input. A zero-delta reconcile (no new signals, or all new signals dropped) sets termination reason `converged` and hands off to step 10 — report.
+At each segment boundary, Sol runs **step 9 — reconcile** ([`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md)). The reconcile step reads the full registry, deduplicates signals structurally, runs the decision box on each distinct target, and applies the convergence governor. The next segment's lane set is then *recomputed* from that output — not carried forward unchanged from the run's input. The lane set is an output of the run, not only its input. A zero-delta reconcile (no new signals, or all new signals dropped) sets termination reason `converged` and hands off to step 10 — report.
 
-The worker pre-filter keeps the signal queue signal-to-noise honest: a worker answers two questions before emitting. Is the find inside its local frame (the function it's modifying and the helpers it extracted)? Is it trivial (a one-line fix with no design trade-off)? In-frame and trivial means fix inline and emit nothing. Everything else emits. When the worker is unsure, it over-emits rather than silently dropping the find — dedup and the decision box downstream do the filtering. When a broken dependency blocks the lane, the worker emits the signal _and_ continues on a documented stub so the lane does not stall.
+The worker pre-filter keeps the signal queue signal-to-noise honest: a worker answers two questions before emitting. Is the find inside its local frame (the function it's modifying and the helpers it extracted)? Is it trivial (a one-line fix with no design trade-off)? In-frame and trivial means fix inline and emit nothing. Everything else emits. When the worker is unsure, it over-emits rather than silently dropping the find — dedup and the decision box downstream do the filtering. When a broken dependency blocks the lane, the worker emits the signal *and* continues on a documented stub so the lane does not stall.
 
 The reconcile-delta procedure is built as a reusable primitive ([`lib/reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/reconcile.md)) — not inlined into the discovery path — so later phases ride the same seam: Phase B will drive greenfield specs into a ticket-tree via the same primitive; Phase C will reconcile cross-team dependency signals the same way.
 
@@ -94,7 +94,7 @@ Before the decision box runs, Sol deduplicates signals structurally by `target`.
 - **Primary match:** same `target.file` and same `target.symbol` (when non-null).
 - **Secondary match (any one):** same `target.scopeSlug`, or same `target.errorSignature` (when non-null).
 
-On a match, the later signal is _attached_ to the first registry entry — `processedAt` set, linked to the existing decision unit — and no second decision-box dispatch is opened for it. The structural dedup is what makes the dispatch budget buy real progress rather than redundant investigations: when N worker lanes all find the same broken helper, one decision unit handles it, not N.
+On a match, the later signal is *attached* to the first registry entry — `processedAt` set, linked to the existing decision unit — and no second decision-box dispatch is opened for it. The structural dedup is what makes the dispatch budget buy real progress rather than redundant investigations: when N worker lanes all find the same broken helper, one decision unit handles it, not N.
 
 **Sol dedups structurally only.** A structurally ambiguous "are these the same issue?" call — where `target` fields don't yield a clear match — routes to Nora, not decided by Sol. This is air-traffic control, not interpretation, and it keeps Sol on the right side of the no-semantic-judgment invariant ([ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md)).
 
@@ -117,11 +117,11 @@ A same-scope-vs-split borderline call is **not** escalated — Nora resolves it 
 
 **Crash safety.** Goal-state is written at each decision-box step before the next step begins, with `pendingTicketCommit` set:
 
-| Step                        | `pendingTicketCommit` | goal-state record                                   |
-| --------------------------- | --------------------- | --------------------------------------------------- |
-| After Nora's first dispatch | `true`                | step = `routed`                                     |
-| After Winston's verdict     | `true`                | step = `winston-verdict`                            |
-| After Nora finalizes        | `false`               | step = `finalized`, disposition + `processedAt` set |
+| Step | `pendingTicketCommit` | goal-state record |
+| ---- | -------------------- | ----------------- |
+| After Nora's first dispatch | `true` | step = `routed` |
+| After Winston's verdict | `true` | step = `winston-verdict` |
+| After Nora finalizes | `false` | step = `finalized`, disposition + `processedAt` set |
 
 A run interrupted mid-decision resumes from the last recorded step deterministically — no double-commit, no lost draft. `pendingTicketCommit: true` on resume means the ticket was drafted but not committed; Sol surfaces it to the human.
 
@@ -149,7 +149,7 @@ Phase A treated the lane list as flat. Phase B makes `parentId` load-bearing as 
 
 The invariant that falls out of the rollup rule: no container lane closes as `done` while any child remains `active`, `parked`, or otherwise unresolved. The rule enforces itself — no separate state machine is needed.
 
-**Tree depth is not generation depth.** A planned three-level tree has epic, issue, and ticket lanes that are all `generation: 0`. Generation accrues only from _unplanned_ discovery during build — a lane spawned from a discovered signal has `generation = parent.generation + 1`. The convergence governor's generation cap (brake 2 in `lib/convergence.md`) counts discovered lineage, never planned-tree depth. A planned tree of any depth does not trigger the generation cap.
+**Tree depth is not generation depth.** A planned three-level tree has epic, issue, and ticket lanes that are all `generation: 0`. Generation accrues only from *unplanned* discovery during build — a lane spawned from a discovered signal has `generation = parent.generation + 1`. The convergence governor's generation cap (brake 2 in `lib/convergence.md`) counts discovered lineage, never planned-tree depth. A planned tree of any depth does not trigger the generation cap.
 
 The canonical statements of both rules live in [`lib/goal-state.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/goal-state.md) § Field notes (the `parentId` bullet and the container-lane generation bullet). The dispatch mechanics are in [`step-04-dispatch.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-04-dispatch.md) § Tree dispatch. The full design decision is in [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0051-conductor-tree-dispatch-semantics.md).
 
@@ -225,7 +225,7 @@ The important thing this is not: a second scheduler. The concurrency cap, the co
 
 A lane can declare `dependsOn: [<laneId>, ...]` to express that it must wait for one or more other lanes to finish before it dispatches. Eligibility is checked at each segment boundary: a lane whose `dependsOn` list contains any lane not yet at `status: "done"` is held out of the dispatch set. When held, the lane stays `status: "active"` with `phaseStatus: "parked"` and a `blockedBy` field listing the unresolved edges.
 
-Eligibility is segment-granular because Sol does not talk to running workers — a dependency can only resolve when its target lane finishes and Sol observes the result at a segment boundary. A dependency that completes mid-segment unblocks the dependent lane at the _next_ boundary.
+Eligibility is segment-granular because Sol does not talk to running workers — a dependency can only resolve when its target lane finishes and Sol observes the result at a segment boundary. A dependency that completes mid-segment unblocks the dependent lane at the *next* boundary.
 
 Dependency edges form a directed acyclic graph. If the graph contains a cycle — lane A depends on B, which depends on A — the reconcile step detects it with a depth-first check and raises a `needs-human` escalation describing the cycle. No lane in the cycle dispatches until the human removes an edge. This is a constraint check on a malformed graph, not one of the three convergence brakes — it does not consume budget and runs before the brake priority order. The cycle check is in [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) § 2.5; the `lib/convergence.md § Dependency-graph pre-check` records its placement relative to the brakes.
 

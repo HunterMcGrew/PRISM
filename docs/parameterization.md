@@ -38,40 +38,40 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 
 ### Field reference
 
-| Field                    | Type     | Required | What it controls                                                                                                                                                                                                            |
-| ------------------------ | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `org`                    | string   | yes      | Display org name. Substituted as `${ORG}`. Used in PR descriptions, changelogs, references in personas' shared.md.                                                                                                          |
-| `project`                | string   | yes      | Project display name. Substituted as `${PROJECT}`. Also derives `${PROJECT_LOWERCASE}` (lowercase form, used in git-config namespaces and similar).                                                                         |
-| `ticketPrefix`           | string   | yes      | Ticket ID prefix (uppercase, no separator). Substituted as `${TICKET_PREFIX}`. Also derives `${TICKET_PREFIX_LOWERCASE}`. Pattern: `^[A-Z][A-Z0-9]+$`.                                                                      |
-| `ticketSystem.kind`      | enum     | yes      | `"linear"` or `"github-issues"`. Drives `${TICKET_TRACKER}`; the Linear-specific fields below apply only when `kind` is `linear`. The object shape is the abstraction lever for future providers (e.g. Jira).               |
-| `ticketSystem.workspace` | string   | linear   | Linear workspace slug (the part before `.linear.app`). Substituted as `${LINEAR_WORKSPACE}`.                                                                                                                                |
-| `ticketSystem.projectId` | string   | optional | Linear project UUID, if scoped to a single project.                                                                                                                                                                         |
-| `ticketSystem.teamKey`   | string   | yes      | Linear team key. Often matches `ticketPrefix`. Substituted as `${LINEAR_TEAM_KEY}`.                                                                                                                                         |
-| `github.owner`           | string   | yes      | GitHub org/user. Substituted as `${GITHUB_OWNER}`. Used by Eric (PR review), Sage (changelog), Reese (QA), Lilac (standup).                                                                                                 |
-| `github.repo`            | string   | yes      | GitHub repo name. Substituted as `${GITHUB_REPO}`.                                                                                                                                                                          |
-| `defaultBranch`          | string   | optional | Default branch name. Substituted as `${DEFAULT_BRANCH}`. Defaults to `main`.                                                                                                                                                |
-| `techStack`              | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
-| `rules.universal`        | enum     | optional | `"all"` is the only value today. Universal rules always ship.                                                                                                                                                               |
-| `rules.optIn`            | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit.                                                                                                    |
-| `slackChannel`           | string   | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`.                                                                                                                                        |
+| Field | Type | Required | What it controls |
+|---|---|---|---|
+| `org` | string | yes | Display org name. Substituted as `${ORG}`. Used in PR descriptions, changelogs, references in personas' shared.md. |
+| `project` | string | yes | Project display name. Substituted as `${PROJECT}`. Also derives `${PROJECT_LOWERCASE}` (lowercase form, used in git-config namespaces and similar). |
+| `ticketPrefix` | string | yes | Ticket ID prefix (uppercase, no separator). Substituted as `${TICKET_PREFIX}`. Also derives `${TICKET_PREFIX_LOWERCASE}`. Pattern: `^[A-Z][A-Z0-9]+$`. |
+| `ticketSystem.kind` | enum | yes | `"linear"` or `"github-issues"`. Drives `${TICKET_TRACKER}`; the Linear-specific fields below apply only when `kind` is `linear`. The object shape is the abstraction lever for future providers (e.g. Jira). |
+| `ticketSystem.workspace` | string | linear | Linear workspace slug (the part before `.linear.app`). Substituted as `${LINEAR_WORKSPACE}`. |
+| `ticketSystem.projectId` | string | optional | Linear project UUID, if scoped to a single project. |
+| `ticketSystem.teamKey` | string | yes | Linear team key. Often matches `ticketPrefix`. Substituted as `${LINEAR_TEAM_KEY}`. |
+| `github.owner` | string | yes | GitHub org/user. Substituted as `${GITHUB_OWNER}`. Used by Eric (PR review), Sage (changelog), Reese (QA), Lilac (standup). |
+| `github.repo` | string | yes | GitHub repo name. Substituted as `${GITHUB_REPO}`. |
+| `defaultBranch` | string | optional | Default branch name. Substituted as `${DEFAULT_BRANCH}`. Defaults to `main`. |
+| `techStack` | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
+| `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
+| `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
+| `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
 
-| Token                        | Source                           | Example                                                                         | Notes                                                                                        |
-| ---------------------------- | -------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `${ORG}`                     | `org`                            | `Acme`                                                                          |                                                                                              |
-| `${PROJECT}`                 | `project`                        | `KTC`                                                                           |                                                                                              |
-| `${PROJECT_LOWERCASE}`       | derived from `project`           | `ktc`                                                                           |                                                                                              |
-| `${TICKET_PREFIX}`           | `ticketPrefix`                   | `KTC`                                                                           |                                                                                              |
-| `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix`      | `ktc`                                                                           |                                                                                              |
-| `${LINEAR_WORKSPACE}`        | `ticketSystem.workspace`         | `acme`                                                                          |                                                                                              |
-| `${LINEAR_TEAM_KEY}`         | `ticketSystem.teamKey`           | `KTC`                                                                           |                                                                                              |
-| `${TICKET_TRACKER}`          | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` |                                                                                              |
-| `${GITHUB_OWNER}`            | `github.owner`                   | `acme`                                                                          |                                                                                              |
-| `${GITHUB_OWNER_LOWERCASE}`  | derived from `github.owner`      | `acme`                                                                          |                                                                                              |
-| `${GITHUB_REPO}`             | `github.repo`                    | `ktc-frontend`                                                                  |                                                                                              |
-| `${DEFAULT_BRANCH}`          | `defaultBranch`                  | `main`                                                                          |                                                                                              |
-| `${SLACK_CHANNEL}`           | `slackChannel`                   | `#ktc-dev`                                                                      | Always present in the token map; defaults to `""` when `slackChannel` is absent from config. |
+| Token | Source | Example | Notes |
+|---|---|---|---|
+| `${ORG}` | `org` | `Acme` | |
+| `${PROJECT}` | `project` | `KTC` | |
+| `${PROJECT_LOWERCASE}` | derived from `project` | `ktc` | |
+| `${TICKET_PREFIX}` | `ticketPrefix` | `KTC` | |
+| `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix` | `ktc` | |
+| `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `acme` | |
+| `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` | |
+| `${TICKET_TRACKER}` | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` | |
+| `${GITHUB_OWNER}` | `github.owner` | `acme` | |
+| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `acme` | |
+| `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` | |
+| `${DEFAULT_BRANCH}` | `defaultBranch` | `main` | |
+| `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` | Always present in the token map; defaults to `""` when `slackChannel` is absent from config. |
 
 Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (implemented in Phase 1.5d, lives in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals at build time — canonical files on disk stay tokenized, platform outputs receive substituted content.
 
