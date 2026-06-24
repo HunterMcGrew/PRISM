@@ -133,6 +133,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Folded in the Eric-Opus tiering fix and switched the tracking vehicle to a GitHub issue (Sol creates it at run start; team uses GitHub issues, not Linear). Run to be driven by Sol via `/prism-handoff`.
 - 2026-06-24 [hunter/consumer-boundary-plans]: Committed this plan and `readme-refresh.md` (both previously untracked on `main`) via a worktree agent. The README refresh is a sibling work item Sol also drives — an interactive Eli session, gated on the one-vs-two-README open question; see `.prism/plans/readme-refresh.md`.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Extended `crossref-lint.ts` with `runInstallAdrGate` — a second lint pass that detects `ADR-NNNN` references under `templates/install/` and fails unless the file is in the permanent machinery allowlist (README.md, triple-gated-adr-criterion.md) or the pre-L5 temporary allowlist covering all current violating files. `prism:check` stays green on current `main`; gate is live and gates L5.
+- 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed three Briar minors: removed phantom CLAUDE.md.tmpl from CROSSREF_SCAN_ROOTS (zero verifiable refs), wired `runInstallAdrGate` to delegate to `isInstallAdrAllowlisted` so the exported predicate is the single canonical check, corrected JSDoc ("call" → "function"), and added integration test for the pre-L5 allowlist path. 68 tests pass.
 
 ---
 
