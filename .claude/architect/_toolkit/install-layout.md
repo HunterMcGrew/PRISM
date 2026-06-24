@@ -87,6 +87,8 @@ A cold consumer — a repo that has never had PRISM — needs to run two command
 
 The split is intentional: `init` is the repeatable, CI-safe bootstrap; Atlas is the AI-assisted configuration pass that runs once per team.
 
+**The config write path honors both ticket systems.** `writeOnboardingConfig`/`toOnDiskConfig` in `scripts/ai-skills/lib/onboarding-config.ts` set `ticketSystem.kind` to `"github-issues"` or `"linear"` depending on the input: a non-empty `linearTeam` emits `{ kind: "linear", teamKey }`, an empty one emits `{ kind: "github-issues" }` with no team key. `validateOnDiskConfig` accepts both. This is a capability of the config layer, not an `init` detail — any caller of `writeOnboardingConfig`, including Atlas, can produce a truthful github-issues config. Atlas's existing Linear output stays byte-identical because it always supplies `linearTeam`. The build reader (`tokens.ts` `loadConfig`/`deriveTicketTracker`) and `config.schema.json` already accepted both kinds; this closed the write-side gap.
+
 ---
 
 The seed surface above is what a consumer repo _receives_; `pnpm prism:adopt` is what _lays it down_ the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. ADR-0059 records the design; `scripts/ai-skills/adopt.ts` implements it.

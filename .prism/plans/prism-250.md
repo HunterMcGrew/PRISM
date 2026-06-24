@@ -1,5 +1,7 @@
 # Plan: prism-250
 
+> Closed: 2026-06-24
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/250
@@ -79,7 +81,8 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
   - → no promotion needed (verified non-requirement, ticket-local).
 
 - **Atlas existing-config detection is a noted follow-up, not this ticket.** After `init` lands, Atlas should detect an existing `config.json` and not re-ask/clobber. The task-1 widening does not break Atlas (it strictly adds capability), so this is non-blocking. Cross-persona (Atlas skill files) — file as a follow-up per `.prism/rules/followup-scope.md` after this ships.
-  - → no promotion needed (tracked as follow-up, not a decision about this implementation).
+  - **Follow-up (for Nora to file / Sol to surface):** Atlas should detect an existing `.ai-skills/config.json` written by `init`, read its values as the starting point, and not re-prompt for or clobber fields already present. **Done-condition:** running Atlas in a repo where `init` already wrote `config.json` reuses those values without overwriting them, and only prompts for fields `init` does not collect (per-team rules, security guidance, anchors). **Traces to:** this Decision and the task-1 `ticketSystem.kind` widening (`scripts/ai-skills/lib/onboarding-config.ts`). **Owner:** Atlas skill (`prism-onboarding`).
+  - → no promotion needed (tracked as a scoped follow-up, not a decision about this implementation).
 
 ---
 
@@ -92,6 +95,7 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Briar self-review. Types clean; 371 tests green. One major: Eli's `install-layout.md` edit was not propagated to platform mirrors — `prism:check` fails. Fix: run `pnpm prism:build`. One minor: unsafe `as` cast on `flagTicketSystem` before validation in `init.ts:167`.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Clove fixed all three Briar review issues. Ran `pnpm prism:build` to sync platform mirrors; restructured `parseFlag`/validate/assign to eliminate `as` cast on `rawTicketSystem`; added `fieldName` param to `resolveRequired` so empty-answer errors read cleanly without prompt hint text. `prism:check` fully green: build sync, tsc clean, 371 tests pass, verify-manifest clean, crossref-lint clean.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Eli fixed Eric's Minor — stale "only linear supported" claim at lines 91 and 140 of `prism-onboarding/shared.md`. Both now reflect that `ticketSystem.kind` accepts `"linear"` or `"github-issues"`. Rebuilt mirrors; `prism:check` green at 371/371.
+- 2026-06-24 [hmcgrew/prism-250-init-command]: Winston closed the plan on the final PR branch (#251, review-clean). Promoted the github-issues write-path capability to `install-layout.md` § First-contact; rebuilt mirrors and confirmed `prism:check` green. Applied the Decision verdict gate (all entries carry verdicts), sharpened the Atlas existing-config follow-up with a done-condition + owner, and verified all 9 AC at-merge.
 
 ---
 
@@ -134,25 +138,28 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 
 ### Behavioral
 
-- [ ] Given a repo with no PRISM config file, When the consumer runs `npx @huntermcgrew/prism init` and answers the prompts, Then a config file is written and the run reports success (REQ-1)
-- [ ] Given the consumer chooses GitHub issues as their ticket system during init, When the config is written, Then the saved config records GitHub issues as the tracker and does not invent a Linear team (REQ-2)
-- [ ] Given init has already been run for a repo, When the consumer runs init again, Then it refuses and tells them to edit or remove the existing config rather than overwriting it (REQ-3)
-- [ ] Given init has been run, When the consumer runs `npx @huntermcgrew/prism adopt`, Then adopt succeeds and does not stop on a missing config (REQ-1)
-- [ ] Given init has NOT been run, When the consumer runs adopt, Then adopt stops with a message telling them to run init first (REQ-4)
-- [ ] Given a scripted/CI run with no interactive terminal, When the consumer runs init with the required values supplied as flags, Then the config is written without prompting; and When a required value is missing, Then init stops and names the missing flag (REQ-5)
+- [x] Given a repo with no PRISM config file, When the consumer runs `npx @huntermcgrew/prism init` and answers the prompts, Then a config file is written and the run reports success (REQ-1)
+- [x] Given the consumer chooses GitHub issues as their ticket system during init, When the config is written, Then the saved config records GitHub issues as the tracker and does not invent a Linear team (REQ-2)
+- [x] Given init has already been run for a repo, When the consumer runs init again, Then it refuses and tells them to edit or remove the existing config rather than overwriting it (REQ-3)
+- [x] Given init has been run, When the consumer runs `npx @huntermcgrew/prism adopt`, Then adopt succeeds and does not stop on a missing config (REQ-1)
+- [x] Given init has NOT been run, When the consumer runs adopt, Then adopt stops with a message telling them to run init first (REQ-4)
+- [x] Given a scripted/CI run with no interactive terminal, When the consumer runs init with the required values supplied as flags, Then the config is written without prompting; and When a required value is missing, Then init stops and names the missing flag (REQ-5)
 
 ### Non-behavioral
 
-- [ ] `prism init` reuses the existing `detectStack` logic rather than duplicating stack-detection (REQ-6)
-- [ ] `prism init` reuses the existing `writeOnboardingConfig` function (validation + atomic write) rather than writing the config file directly (REQ-6)
-- [ ] The CLI help text lists `init` with a description, ordered before `adopt` (REQ-1)
+- [x] `prism init` reuses the existing `detectStack` logic rather than duplicating stack-detection (REQ-6)
+- [x] `prism init` reuses the existing `writeOnboardingConfig` function (validation + atomic write) rather than writing the config file directly (REQ-6)
+- [x] The CLI help text lists `init` with a description, ordered before `adopt` (REQ-1)
 
 ### AC Adjustments
+
+- 2026-06-24 — All AC verified-at-merge via the test suite (`init.test.ts`, `adopt.test.ts`, `cli.test.ts`, `onboarding-config.test.ts`); full `prism:check` green at close. No AC deferred: every item is unit-verifiable against the `runInit`/`runAdopt` cores and the CLI dispatcher. An end-to-end `npx` smoke against the *published* npm artifact is out of AC grain — tracked separately under the npm-publish tail (issue #248), not a blocker for this close.
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
+| 2026-06-24 | Winston | AC verified-at-merge (all 9 checked); plan close | synced | N/A (GitHub issues) |
 
 ---
 
@@ -167,8 +174,8 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — `prism:check` fully green (build sync + tsc + 371 tests + verify-manifest + crossref-lint). Last run: 2026-06-23.
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Build passes — `prism:check` fully green (build sync + tsc + 371 tests + verify-manifest + crossref-lint). Last run: 2026-06-24 (post architect-doc mirror rebuild).
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context — github-issues write-path capability recorded in `install-layout.md` § First-contact
 
-**Last updated:** 2026-06-23 (Clove review-fix pass)
+**Last updated:** 2026-06-24 (Winston plan close)
