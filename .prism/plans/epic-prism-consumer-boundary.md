@@ -132,6 +132,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Folded in the Eric-Opus tiering fix and switched the tracking vehicle to a GitHub issue (Sol creates it at run start; team uses GitHub issues, not Linear). Run to be driven by Sol via `/prism-handoff`.
 - 2026-06-24 [hunter/consumer-boundary-plans]: Committed this plan and `readme-refresh.md` (both previously untracked on `main`) via a worktree agent. The README refresh is a sibling work item Sol also drives — an interactive Eli session, gated on the one-vs-two-README open question; see `.prism/plans/readme-refresh.md`.
+- 2026-06-24 [hunter/261-consumer-boundary-l4-token-scrub]: Tokenized personal info (`hmcgrew`, `Hunter` in shipped templates/skills, `thr-NNNN` branch convention) to `${GITHUB_OWNER}` / `${TICKET_PREFIX_LOWERCASE}` across canonical rules, skill sources, ADRs, and install seed. Note: runtime `thr-NNNN` regex in plan-lookup and Nora's startup is out-of-scope (tracked separately). `pnpm prism:build` and `pnpm prism:check` both pass clean.
 
 ---
 

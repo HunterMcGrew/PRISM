@@ -118,7 +118,7 @@ Mode when `.ai-skills/config.json` already exists. Atlas reads the prior config,
 
 ### dogfood-self
 
-Mode used when Atlas runs against PRISM's own repo. Behaviorally identical to first-install — the same survey, the same questions, the same generators, the same output. The mode flag exists so PR-2.5's smoke-test harness can invoke Atlas's orchestration entry point with a fixed answer map (no interactive prompts) and assert the expected files land. In practice, when Hunter runs Atlas against PRISM, this is the mode that fires.
+Mode used when Atlas runs against PRISM's own repo. Behaviorally identical to first-install — the same survey, the same questions, the same generators, the same output. The mode flag exists so PR-2.5's smoke-test harness can invoke Atlas's orchestration entry point with a fixed answer map (no interactive prompts) and assert the expected files land. In practice, when the repo owner runs Atlas against PRISM's own repo, this is the mode that fires.
 
 ### first-contact
 

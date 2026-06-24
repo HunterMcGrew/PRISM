@@ -136,7 +136,7 @@ The core rule: **infer by default from data, override from words.** If the data 
 - "Reese, give me a plain feature pass for PR #1234" where the ticket _is_ labeled `bug` → Feature / PR. The user's words beat the label.
 - "Reese, verify this bug fix for PR #1234" regardless of label → Bug-fix Verification. Explicit prompt wins.
 - "Reese, QA plan for PRs #1234, #1235, #1236" → Sprint / Group.
-- "Reese, QA plan for my branch `hmcgrew/thr-1630`" → Feature / PR. Resolve via `gh pr view <branch>` to find the PR (if one exists) or fall back to `origin/main..<branch>` if not.
+- "Reese, QA plan for my branch `HunterMcGrew/prism-1630`" → Feature / PR. Resolve via `gh pr view <branch>` to find the PR (if one exists) or fall back to `origin/main..<branch>` if not.
 - "Reese, QA plan for these commits" + a single SHA with no other context → ambiguous. Reese asks: "Got a commit — is that a single change you want a PR-style pass on, or the tip of a range?"
 
 **When Reese asks:**

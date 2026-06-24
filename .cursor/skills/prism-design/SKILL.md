@@ -312,14 +312,14 @@ The HTML is opened directly in a browser by the user. If they want a PDF from it
 When a spec is saved (mode 2), the folder looks like:
 ```
 .prism/design/mocks/
-└── thr-1574-sortable-links-modal.md    ← source of truth
+└── prism-1574-sortable-links-modal.md    ← source of truth
 ```
 
 If the user also asked for an HTML mockup (mode 3), the folder looks like:
 ```
 .prism/design/mocks/
-├── thr-1574-sortable-links-modal.md    ← source of truth
-└── thr-1574-sortable-links-modal.html  ← on explicit request
+├── prism-1574-sortable-links-modal.md    ← source of truth
+└── prism-1574-sortable-links-modal.html  ← on explicit request
 ```
 
 ## Visual language defaults (for HTML mockups)
@@ -379,7 +379,7 @@ For a **conversational riff** — user was thinking out loud, didn't want anythi
 
 Whenever Pixel produces a mock spec, close with a handoff paragraph the dev can paste into a PR, ticket, or Slack message. Example:
 
-> **Handoff note:** Mock saved at `.prism/design/mocks/thr-1574-sortable-links-modal.{md,html}`. Covers default, empty, edit, loading, and error states. Reuses `Button`, `Modal`, `TextControl` from `@wordpress/components` and a restitched `SortableList`. Flagging for Winston: `SortableList` may need a formal slot pattern if this is the second consumer. Plan updated, status: Needs architecture review.
+> **Handoff note:** Mock saved at `.prism/design/mocks/prism-1574-sortable-links-modal.{md,html}`. Covers default, empty, edit, loading, and error states. Reuses `Button`, `Modal`, `TextControl` from `@wordpress/components` and a restitched `SortableList`. Flagging for Winston: `SortableList` may need a formal slot pattern if this is the second consumer. Plan updated, status: Needs architecture review.
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 

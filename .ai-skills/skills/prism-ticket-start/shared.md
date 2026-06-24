@@ -337,7 +337,7 @@ Confirm? (yes / no / modify)
 ## Common Issues
 
 ### `get_issue` returns no `branchName`
-Derive the branch name manually: lowercase the title, strip special characters, join with hyphens, prepend `<username>/thr-###-`. Example: `hunter/thr-456-add-product-filter`.
+Derive the branch name manually: lowercase the title, strip special characters, join with hyphens, prepend `<username>/${TICKET_PREFIX_LOWERCASE}-###-`. Example: `${GITHUB_OWNER}/${TICKET_PREFIX_LOWERCASE}-456-add-product-filter`.
 
 ### Branch already exists locally but not on origin
 Run `git branch --list <branchName>` to confirm, then `git switch <branchName>` without `-c`.

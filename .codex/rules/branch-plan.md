@@ -96,7 +96,7 @@ Skip plan updates for trivial edits such as:
 
 When appending to `## History`, include the branch name for traceability:
 
-- `2026-03-19 [hmcgrew/feature-branch]: added mega menu keyboard navigation`
+- `2026-03-19 [HunterMcGrew/feature-branch]: added mega menu keyboard navigation`
 
 Each history entry must be at most 3 sentences. Longer entries indicate the change belongs in ## Decisions with sub-bullets, not in history narration.
 
@@ -296,7 +296,7 @@ Examples:
 - `isLinkObject` lives in `type-guards/link.ts`, not `interfaces/link.ts` — avoids circular dependency.
 - `setLinkTarget` with `undefined` deletes both `target` and `rel` — callers must use `setLinkRel` to set rel independently.
 - `ModalPhoneSource` is a separate type from `PhoneSource`, not an extension. Considered: extending `PhoneSource` with `"all"`. Rejected: schema files would also accept `"all"` as a stored value, which is wrong — `"all"` only exists as a runtime modal-display value, never on a CTA.
-- **OPEN — TBD, needs Hunter input.** Whether the audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` should also post a Slack summary on completion. **Default path (used until resolved):** report stays file-local; user manually shares if desired.
+- **OPEN — TBD, needs <owner> input.** Whether the audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` should also post a Slack summary on completion. **Default path (used until resolved):** report stays file-local; user manually shares if desired.
 
 ---
 
@@ -308,8 +308,8 @@ Append-only log. One line per meaningful change, oldest first. Include the branc
 
 Examples:
 
-- 2026-03-10 [hmcgrew/thr-1443-link-types]: Moved `isLinkObject` from interfaces to type-guards to resolve circular dep.
-- 2026-03-11 [hmcgrew/thr-1443-link-types]: Added `setLinkRel(link, undefined)` test — covers delete-rel branch.
+- 2026-03-10 [HunterMcGrew/prism-1443-link-types]: Moved `isLinkObject` from interfaces to type-guards to resolve circular dep.
+- 2026-03-11 [HunterMcGrew/prism-1443-link-types]: Added `setLinkRel(link, undefined)` test — covers delete-rel branch.
 
 ---
 
