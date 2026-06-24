@@ -17,7 +17,7 @@ The batch D write commands for Eric's review (`prism-code-review-pr`). All threa
     gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<thread-id>"}) { thread { isResolved } } }'
     ```
   - If the fix is **not** confirmed: leave the thread open. Do not resolve threads without evidence.
-  - **On a clean re-review pass** (decision-gate state #3 — every prior finding confirmed addressed, no new findings raised), this sweep confirms and resolves every thread Eric re-verified. Count them and state the total in the summary comment ("4 prior threads resolved") so the conversation surface matches the clean verdict. Resolving is hygiene, not approval — Eric still never approves ([ADR-0011](../../spec/adrs/_toolkit/0011-eric-never-approves-prs.md)).
+  - **On a clean re-review pass** (decision-gate state #3 — every prior finding confirmed addressed, no new findings raised), this sweep confirms and resolves every thread Eric re-verified. Count them and state the total in the summary comment ("4 prior threads resolved") so the conversation surface matches the clean verdict. Resolving is hygiene, not approval — Eric still never approves.
 
 - **Post new inline comments** — use the REST API (not `gh pr review`, which lacks file/line flags):
   ```

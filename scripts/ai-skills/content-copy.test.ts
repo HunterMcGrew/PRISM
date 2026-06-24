@@ -419,8 +419,7 @@ test("copyContentToPlatformDir resolves every token across the real install seed
 	// `${UPPER_SNAKE}` that isn't a real token) makes substituteTokens fail-fast
 	// with Unknown token, breaking prism:adopt. This exercises the real seed tree
 	// with a real consumer tokenMap so any such literal surfaces as a test
-	// failure here rather than at adopt time. Regression for the stale ADR-0030
-	// seed copy whose `${TOKEN}` example literal broke prism:adopt.
+	// failure here rather than at adopt time.
 	const seedRoot = path.join(repoRoot, "templates", "install", ".prism");
 	const tokenMap = deriveTokenMap(loadConfig(repoRoot));
 	const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "prism-adopt-seed-"));
@@ -429,22 +428,6 @@ test("copyContentToPlatformDir resolves every token across the real install seed
 		await assert.doesNotReject(
 			copyContentToPlatformDir(seedRoot, outputDir, false, [], tokenMap),
 			"adopt content-copy over the real install seed must not throw on any token"
-		);
-
-		const adrText = await fs.readFile(
-			path.join(
-				outputDir,
-				"spec",
-				"adrs",
-				"_toolkit",
-				"0030-token-substitution-at-build-time.md"
-			),
-			"utf8"
-		);
-		assert.doesNotMatch(
-			adrText,
-			/\$\{[A-Z][A-Z0-9_]*\}/,
-			"the seed ADR-0030 copy must carry no unresolved bare token literal after substitution"
 		);
 	} finally {
 		await fs.rm(outputDir, { force: true, recursive: true });

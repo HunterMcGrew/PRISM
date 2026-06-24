@@ -1039,18 +1039,19 @@ test("isInstallAdrAllowlisted: machinery files are allowlisted", () => {
 	}
 });
 
-test("isInstallAdrAllowlisted: non-machinery rule file is not allowlisted when not in pre-L5 set", () => {
-	// Use a made-up path not in either allowlist
+test("isInstallAdrAllowlisted: non-machinery rule file is not allowlisted", () => {
+	// Use a made-up path not in the machinery allowlist
 	assert.equal(
 		isInstallAdrAllowlisted("templates/install/.prism/rules/a-brand-new-rule.md"),
 		false
 	);
 });
 
-test("isInstallAdrAllowlisted: pre-L5 entry is allowlisted", () => {
+test("isInstallAdrAllowlisted: install rule files are not allowlisted after L5 distillation", () => {
+	// L5 distilled all ADR references out of rule files — they no longer need allowlisting
 	assert.equal(
 		isInstallAdrAllowlisted("templates/install/.prism/rules/branch-plan.md"),
-		true
+		false
 	);
 });
 
