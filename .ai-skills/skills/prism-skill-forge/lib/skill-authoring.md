@@ -1,20 +1,14 @@
----
-paths:
-  - ".ai-skills/skills/**"
-  - ".prism/references/**"
----
-
 # Skill Authoring — Content Disclosure
 
 ## Purpose
 
-PRISM skills are scaffolding. They define what a persona does and how it weighs everything else — and they point to references for the rest. This rule governs what stays in the skill body and what moves to a reference, so skills stay lean enough that their load-bearing rules actually get followed. It is the author-facing form of [ADR-0045](../spec/adrs/_toolkit/0045-skill-content-disclosure-model.md).
+PRISM skills are scaffolding. They define what a persona does and how it weighs everything else — and they point to references for the rest. This rule governs what stays in the skill body and what moves to a reference, so skills stay lean enough that their load-bearing rules actually get followed.
 
 **Why:** A skill's body is paid every time the skill triggers and stays in context for the rest of the conversation. References are free until the body tells the agent to read them. But the real cost of a bloated body isn't tokens — it's attention dilution. A 200-line skill with five sharp rules treats them as load-bearing because they're the whole document; a 700-line skill with the same five rules plus thirty nice-to-haves flattens the hierarchy, and the critical rules get followed less reliably. Going lean is not about line count for its own sake — it's about keeping the importance hierarchy sharp.
 
 ## The three loading levels
 
-Use "level" or "stage" here — never "tier." [ADR-0035](../spec/adrs/_toolkit/0035-rule-loading-tiers.md) owns "tier" for rule loading; colliding the vocabularies confuses both.
+Use "level" or "stage" here — never "tier." A separate ADR owns "tier" for rule loading; colliding the vocabularies confuses both.
 
 1. **Frontmatter** (`name` + `description`) — loaded every session, for every installed skill. Keep it tight; it's permanent cost.
 2. **Body** (`shared.md` + the platform file → generated `SKILL.md`) — loaded every trigger. This is where the cost and the dilution live.
@@ -70,13 +64,21 @@ Never externalize these, regardless of length:
 - The workflow router — startup batch + the at-a-glance phase/mode index.
 - The Definition of Done.
 
+## Persona name vs. slash-command ID
+
+The skill's slash-command ID is function-descriptive (`prism-design`, `prism-doc-walker`, `prism-surface-audit`, `prism-onboarding`, `prism-prd`, `prism-retro`, `prism-refactor-scout`). It describes what the skill does, so a user who doesn't know the persona name can still find and route to it. The persona keeps her human name and announces it on intro — that's how voice and continuity show up in conversation.
+
+Persona-name trigger phrases (`"invoke whenever the user mentions 'Pixel'"`) live in the frontmatter `description` field, not in the ID. The auto-routing layer reads `description` for the name match; the slash-command surface reads the ID for the function match. Both paths reach the same skill.
+
+**Why:** Function-descriptive IDs let a user who's never met the persona discover the skill by what it does; persona-name triggers let returning users invoke by name. Collapsing the two into one (ID = persona name) loses the discovery path; collapsing the other direction (no name triggers) loses the named-handoff pattern every persona's `## Next persona` section depends on.
+
 ## Utility skills
 
 Most skills are personas; some are actions. A utility skill (`type: "utility"` in `.ai-skills/definitions/roles.json`) packages a procedure every persona can run — it carries no persona, so it has no voice section, no "How X Thinks" lens, and no `You are X` opener. The body opens with the procedure itself; the active persona supplies the voice at runtime, because skills stack additively.
 
 The `description` field drops persona double-coverage: there's no name to route on, so the trigger line carries function keywords only. Everything else in this rule applies unchanged — the disclosure gate, the three loading levels, and the description-shape guidance all hold; only the persona-specific parts fall away.
 
-**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data — see [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md).
+**Why:** a persona nobody switches into is a permanent lie in the data model, and a hand-authored slash-command outside `.ai-skills/` fragments the canonical→multi-runtime pipeline. The `type` discriminator keeps action-shaped skills inside the pipeline with honest data.
 
 ## Externalization mechanics
 
@@ -88,7 +90,7 @@ Replace the moved section with its `## Heading`, a one-line `> _italic note_`, a
 - **Tripwire nuance.** When the trigger is detective/implicit ("you're about to overwrite X," "scope changed"), the *detection* stays inline; only the procedure body moves. You can't externalize a detection condition — the skill would never know to load the file.
 - **Atlas-anchor hard rule.** Anchor substitution (`scripts/ai-skills/lib/anchor-substitute.ts`) touches only skill-source files (`shared.md`/`claude.md`/`codex.md`/`cursor.md`); references are never scanned. **Never move a `<!-- atlas:* -->` anchor into a reference** — it would never get populated. If a section being externalized contains an anchor, split it: the anchor and its stub prose stay pinned; the rest moves.
 - **Reference home.** Skill-specific references → `.prism/references/<skill>/<topic>.md`; genuinely shared cross-skill references → `.prism/references/` top-level. Triggers in the body link `../../../.prism/references/<skill>/<topic>.md`. Internal links inside a sub-dir reference take an extra hop: `../../rules/`, `../../spec/`, `../../architect/`, `../../templates/`; a top-level shared ref is `../<file>.md`; a sibling is `./<file>.md`.
-- **Create references lazily.** Write the reference when there's content for it; never seed an empty file (per [`lazy-artifacts.md`](./lazy-artifacts.md)).
+- **Create references lazily.** Write the reference when there's content for it; never seed an empty file.
 
 ## Don't externalize a lens for line count
 
@@ -101,4 +103,4 @@ A lens that's present but not *placed* fires only when the run's reasoning path 
 ## Who runs this rule
 
 - **Skill authors** apply the gate when writing or editing any skill, on every section.
-- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) flag violations in review: a lens externalized to a reference (Major — it degrades adherence), a vague pointer with no deterministic trigger, an `atlas:*` anchor moved into a reference, or a CUT bundled silently into a relocation.
+- **Briar** (prism-code-review-self) and **Eric** (prism-code-review-pr) flag violations in review: a lens externalized to a reference (Major — it degrades adherence), a vague pointer with no deterministic trigger, an `atlas:*` anchor moved into a reference, or a CUT bundled silently into a relocation. Deletion candidates flagged for cut get read for incident-derived "why" before sign-off — line count alone never justifies a cut.

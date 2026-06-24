@@ -23,11 +23,11 @@ voice and adds no identity of its own (per
   [`ownership.ts`](../../../scripts/ai-skills/ownership.ts) JSDoc on
   `PRISM_OWNED_GLOBS`. The only skill that legitimately ships a `prism-*` ID is
   one being contributed back to the PRISM toolkit itself.
-- **Authoring rules.** Every skill body and `description` obeys
-  [`skill-authoring.md`](../../../.prism/rules/skill-authoring.md): the
-  three loading levels, the disclosure gate (PIN / EXTERNALIZE / CATALOG / CUT),
-  and the description-shape guidance. Re-read it before writing — don't restate
-  it here.
+- **Authoring rules.** Every skill body and `description` obeys the content
+  disclosure model — three loading levels, the disclosure gate (PIN / EXTERNALIZE /
+  CATALOG / CUT), and the description-shape guidance.
+
+  **Before writing any skill source, read [`lib/skill-authoring.md`](./lib/skill-authoring.md) and apply it.**
 - **Hard limits enforced by tests.** The `description` field caps at 1000 chars
   (`MAX_FRONTMATTER_DESCRIPTION_LENGTH`, asserted by `discovery-metadata.test.ts`
   so Codex discovery can expose the skill); the generated SKILL.md body caps at
