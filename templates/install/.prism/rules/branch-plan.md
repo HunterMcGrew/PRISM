@@ -5,7 +5,7 @@
 AI agents must maintain a **living plan** that preserves context, decisions, and constraints across the lifecycle of a ticket or epic.
 This prevents accidental regressions where previously necessary code changes are undone because their intent was forgotten.
 
-Plans are scoped to **tickets or epics**, not branches. Multiple branches and PRs can reference the same plan. Plans live on `main`, persist through the work, and remain after close as the durable record — plans are never deleted (see ADR-0047).
+Plans are scoped to **tickets or epics**, not branches. Multiple branches and PRs can reference the same plan. Plans live on `main`, persist through the work, and remain after close as the durable record — plans are never deleted.
 
 ---
 
@@ -128,7 +128,7 @@ The plan should remain easy to scan.
 
 The brevity default in step 5 is correct for routine entries. Verified fixes and non-trivial decisions are the exception — they use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance.
 
-**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. An early-Phase audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be. See [ADR-0024](../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
+**Why:** Conclusions look scannable, but downstream personas (Clove, Briar, Eric) lose the reasoning that makes the conclusion act-on-able. An early-Phase audit surfaced the cost: Clove picks between plausible interpretations, Briar self-reviews against the same gap, Eric PR-reviews against it. Documenting the _why_ alongside the _what_ turns the plan into the working memory it's already supposed to be.
 
 **How to apply:** When Winston records a verified fix or a non-trivial decision in `## Decisions`, write sub-bullets — not paragraph drift. Five tight bullets beat one long paragraph.
 
@@ -169,7 +169,7 @@ Run the close on the ticket's **final PR branch** — after implementation is do
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
 1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
-2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close.
 
 Decisions that should be promoted:
 
@@ -235,9 +235,9 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 ## Implementation Tasks
 
-Added by the architect skill (Winston). Tasks are grouped by persona — each group has a heading naming the skill that owns those tasks. The persona heading is the source of truth for ownership: a skill works within its named heading and treats other personas' headings as out-of-scope by default. See ADR-0018.
+Added by the architect skill (Winston). Tasks are grouped by persona — each group has a heading naming the skill that owns those tasks. The persona heading is the source of truth for ownership: a skill works within its named heading and treats other personas' headings as out-of-scope by default.
 
-Tasks must meet the detail bar in `.prism/rules/implementation-task-detail.md` — front-load every decision (file path, exact change, verification command, sequence), no judgment calls left to the implementer. See ADR-0033.
+Tasks must meet the detail bar in `.prism/rules/implementation-task-detail.md` — front-load every decision (file path, exact change, verification command, sequence), no judgment calls left to the implementer.
 
 When work needs to cross a lane, the skill has three options:
 
