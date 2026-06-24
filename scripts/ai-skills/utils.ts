@@ -342,8 +342,8 @@ export async function loadPathDefinitions(
  * Returns true when a consumer's parsed paths.json is structurally complete —
  * meaning it has every key that buildPlatformDirs and resolveConsumerSkillTargetRoots
  * will dereference. A file that parses but lacks generated.platformContentCopies
- * (pre-PR#2 schema) crashes the platform refresh; this predicate lets prism:adopt
- * repair it instead of crashing.
+ * crashes the platform refresh; this predicate lets prism:adopt repair it instead
+ * of crashing.
  */
 export function isPathDefinitionsComplete(value: unknown): value is PathDefinitions {
 	if (typeof value !== "object" || value === null) {
@@ -391,8 +391,8 @@ export function isPathDefinitionsComplete(value: unknown): value is PathDefiniti
  * Ensures the consumer has a structurally complete
  * `.ai-skills/definitions/paths.json` before prism:update reads it. Writes the
  * PRISM package's own paths.json when the consumer's is absent OR structurally
- * incomplete (pre-PR#2 schema missing platformContentCopies). A consumer file
- * that is already complete is left untouched — a customized-but-complete
+ * incomplete (a generated block that omits platformContentCopies). A consumer
+ * file that is already complete is left untouched — a customized-but-complete
  * paths.json is never clobbered. Full-replace, not merge-missing-keys: a file
  * missing platformContentCopies is broken, not customized, and the package copy
  * is the correct shape.

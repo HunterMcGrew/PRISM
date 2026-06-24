@@ -340,6 +340,7 @@ The fix lives at the adopt seam: `runAdopt` provisions a complete `.ai-skills/de
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Sasha confirmed root cause — two failure modes (A: absent paths.json → clear throw; B: stale pre-PR#2 paths.json missing `platformContentCopies` → crash at utils.ts:356). Both reproduced locally. Fix seam identified: adopt should provision/validate paths.json before calling runUpdate.
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Winston planned the fix — `ensureConsumerPathDefinitions` in utils.ts, called in `runAdopt` after the manifest-guard, full-replaces an absent/incomplete `paths.json` from the package copy; `roles.json`/`config.schema.json` confirmed package-read so provisioning scope is paths.json only. See Decisions; build-ready, no `prism:build` needed (script-only change).
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Clove implemented — `isPathDefinitionsComplete` + `ensureConsumerPathDefinitions` in utils.ts, wired into `runAdopt` after manifest-guard; `AdoptSummary.pathsProvisioned` field added; three regression tests (Mode A, Mode B, no-clobber) green; `prism:check` 374/374 pass.
+- 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Clove fixed four Eric Minors — stripped changelog-voice from fixture comment and two JSDoc entries (structural invariant rewrites), strengthened Mode B assertion to check all three platformContentCopies sub-keys as strings, added structural content check to Mode A test; `prism:check` 374/374 pass.
 
 ---
 
@@ -378,7 +379,39 @@ The fix lives at the adopt seam: `runAdopt` provisions a complete `.ai-skills/de
 
 ## Review Issues
 
-_None yet._
+_Briar self-review 2026-06-23 — clean pass._
+
+### Changelog-voice in fixture comment (adopt.test.ts:136-137)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/adopt.test.ts:136`
+- **Problem:** Comment referenced "Pre-PR#2 schema" and "Mirrors thrive's stale file" — changelog-voice describing history, not the structural property.
+- **Suggested fix:** Rewrite to describe the structural invariant: "a paths.json whose generated block omits platformContentCopies."
+
+### Changelog-voice in JSDoc (utils.ts:394)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/utils.ts:394`
+- **Problem:** JSDoc for `ensureConsumerPathDefinitions` used "pre-PR#2 schema missing platformContentCopies" — session-context leakage into a durable artifact.
+- **Suggested fix:** Rewrite as the structural invariant: "a generated block that omits platformContentCopies."
+
+### Mode B assertion too weak — only checks truthiness (adopt.test.ts:529-532)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/adopt.test.ts:529`
+- **Problem:** `assert.ok(repaired.generated.platformContentCopies)` only confirms the key is truthy, not that the repair produced a structurally complete file with all three required sub-keys as strings.
+- **Suggested fix:** Assert all three sub-keys (`claude`, `codex`, `cursor`) are `typeof === "string"`, matching what `isPathDefinitionsComplete` requires.
+
+### Mode A test asserts existence but not content (adopt.test.ts:499)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/adopt.test.ts:499`
+- **Problem:** The Mode A test confirms the file was provisioned but does not check that it is structurally valid — an empty or garbage file would pass.
+- **Suggested fix:** Parse the provisioned file and assert all three `platformContentCopies` sub-keys are present as strings.
 
 ---
 
@@ -386,15 +419,15 @@ _None yet._
 
 ### Behavioral
 
-- [ ] Given a cold consumer that has run `prism init` (config only, no path definitions), When `adopt` runs, Then adopt completes successfully and projects the skill roster, and no crash referencing `'claude'` appears (Debug-1, REQ-1).
-- [ ] Given a consumer whose `.ai-skills/definitions/paths.json` is missing, When `adopt` runs, Then adopt provisions the file and reports that it did so, then completes (Debug-1 Mode A).
-- [ ] Given a consumer whose `paths.json` exists but is from an older setup and lacks the platform-copy section, When `adopt` runs, Then adopt repairs the file and completes without an error (Debug-1 Mode B).
-- [ ] Given a consumer whose `paths.json` is already complete (including a hand-customized but valid one), When `adopt` runs, Then adopt leaves that file exactly as it was and still completes (REQ-2).
+- [x] Given a cold consumer that has run `prism init` (config only, no path definitions), When `adopt` runs, Then adopt completes successfully and projects the skill roster, and no crash referencing `'claude'` appears (Debug-1, REQ-1).
+- [x] Given a consumer whose `.ai-skills/definitions/paths.json` is missing, When `adopt` runs, Then adopt provisions the file and reports that it did so, then completes (Debug-1 Mode A).
+- [x] Given a consumer whose `paths.json` exists but is from an older setup and lacks the platform-copy section, When `adopt` runs, Then adopt repairs the file and completes without an error (Debug-1 Mode B).
+- [x] Given a consumer whose `paths.json` is already complete (including a hand-customized but valid one), When `adopt` runs, Then adopt leaves that file exactly as it was and still completes (REQ-2).
 
 ### Non-behavioral
 
-- [ ] A steady-state consumer (one that already has a sync baseline) still gets the existing "already has a PRISM baseline — run update" refusal; the provisioning step does not change that behavior (REQ-2).
-- [ ] Running `update` directly (not via adopt) on a consumer with a broken `paths.json` still fails fast with the existing clear error; only `adopt` self-heals (REQ-3).
+- [x] A steady-state consumer (one that already has a sync baseline) still gets the existing "already has a PRISM baseline — run update" refusal; the provisioning step does not change that behavior (REQ-2).
+- [x] Running `update` directly (not via adopt) on a consumer with a broken `paths.json` still fails fast with the existing clear error; only `adopt` self-heals (REQ-3).
 
 ### AC Adjustments
 
@@ -422,8 +455,8 @@ _None yet._
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`prism:check` 374/374)
+- [x] Build passes — last run: 2026-06-23 (`prism:check` 374/374; Eric review-fix confirmed)
 - [ ] PR description up to date
 - [x] Lasting decisions promoted to architect context (if applicable — no promotion needed per Decisions verdicts)
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Eric review-fix — four Minors fixed, `prism:check` 374/374)

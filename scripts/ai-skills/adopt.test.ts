@@ -133,8 +133,8 @@ const CONSUMER_CONFIG_JSON = {
 	ticketSystem: { kind: "github-issues" },
 };
 
-// Pre-PR#2 schema: generated block omits platformContentCopies, the shape that
-// crashes buildPlatformDirs at utils.ts. Mirrors thrive's stale file.
+// A paths.json whose generated block omits platformContentCopies — the structurally
+// incomplete shape that crashes buildPlatformDirs when it dereferences `.claude`.
 const STALE_CONSUMER_PATHS_JSON = {
 	canonical: {
 		skillsRoot: ".ai-skills/skills",
@@ -499,6 +499,24 @@ test("runAdopt provisions an absent paths.json and completes (Mode A)", async ()
 				await fileExists(consumerRepoRoot, ".ai-skills/definitions/paths.json"),
 				"paths.json provisioned"
 			);
+			const provisioned = JSON.parse(
+				await readFile(consumerRepoRoot, ".ai-skills/definitions/paths.json")
+			);
+			assert.equal(
+				typeof provisioned.generated?.platformContentCopies?.claude,
+				"string",
+				"provisioned paths.json is structurally complete (has generated.platformContentCopies.claude)"
+			);
+			assert.equal(
+				typeof provisioned.generated?.platformContentCopies?.codex,
+				"string",
+				"provisioned paths.json is structurally complete (has generated.platformContentCopies.codex)"
+			);
+			assert.equal(
+				typeof provisioned.generated?.platformContentCopies?.cursor,
+				"string",
+				"provisioned paths.json is structurally complete (has generated.platformContentCopies.cursor)"
+			);
 			assert.ok(
 				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
 				"adopt completed and wrote the baseline manifest"
@@ -512,8 +530,8 @@ test("runAdopt repairs an incomplete paths.json and completes (Mode B)", async (
 		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
 			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
-			// Mode B: overwrite with the pre-PR#2 stale shape that crashes the refresh
-			// because generated.platformContentCopies is absent.
+			// Mode B: overwrite with the structurally incomplete shape — generated block
+			// present but missing platformContentCopies, which crashes the platform refresh.
 			await writeFile(
 				consumerRepoRoot,
 				".ai-skills/definitions/paths.json",
@@ -526,9 +544,20 @@ test("runAdopt repairs an incomplete paths.json and completes (Mode B)", async (
 			const repaired = JSON.parse(
 				await readFile(consumerRepoRoot, ".ai-skills/definitions/paths.json")
 			);
-			assert.ok(
-				repaired.generated.platformContentCopies,
-				"repaired paths.json has platformContentCopies"
+			assert.equal(
+				typeof repaired.generated?.platformContentCopies?.claude,
+				"string",
+				"repaired paths.json is structurally complete (has generated.platformContentCopies.claude)"
+			);
+			assert.equal(
+				typeof repaired.generated?.platformContentCopies?.codex,
+				"string",
+				"repaired paths.json is structurally complete (has generated.platformContentCopies.codex)"
+			);
+			assert.equal(
+				typeof repaired.generated?.platformContentCopies?.cursor,
+				"string",
+				"repaired paths.json is structurally complete (has generated.platformContentCopies.cursor)"
 			);
 			assert.ok(
 				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
