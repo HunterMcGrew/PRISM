@@ -51,8 +51,8 @@ When an ADR is superseded: set Status to `superseded`, populate the `Superseded-
 
 ADRs are the canonical source for a decision's _rationale_. Other documents (AGENTS.md, skill files, architect context, rules) describe the _narrative_ — how the decision shows up in day-to-day work.
 
-- **Source docs link to ADRs.** `AGENTS.md § 0` has a one-line summary of "authors ship, reviewers review" plus a pointer to ADR-0003.
-- **ADRs do not link back to every source.** An ADR may cite a source doc for context (the Round 10 audit for ADR-0003), but it doesn't enumerate every skill file that applies it.
+- **Source docs link to ADRs.** A skill file or rule has a one-line summary of the decision plus a pointer to the relevant ADR (e.g. `See ADR-NNNN for...`).
+- **ADRs do not link back to every source.** An ADR may cite a source doc for context, but it doesn't enumerate every skill file that applies it.
 - **Updating a decision:** change the ADR first, then update the source docs to match. This keeps the ADR as the authoritative entry point.
 
 This direction matters: if source docs were canonical, a decision would live in multiple files and drift. ADRs collapse the reasoning to one place.

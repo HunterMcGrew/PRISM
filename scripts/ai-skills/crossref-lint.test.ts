@@ -1154,12 +1154,11 @@ test("runInstallAdrGate: clean install surface with no ADR refs passes the gate"
 	);
 });
 
-test("runInstallAdrGate: pre-L5 allowlisted file with ADR ref passes the gate", async () => {
+test("runInstallAdrGate: file in allowlistOverride with ADR ref passes the gate", async () => {
 	await withTempTree(
 		async (root) => {
-			// Plant a file at a known pre-L5 path that carries an ADR reference —
-			// simulates a rules file that cites ADRs and is temporarily exempt until
-			// L5 distills it.
+			// Plant a file that carries an ADR reference — simulates a rules file that
+			// cites ADRs and is explicitly exempted via the allowlistOverride parameter.
 			await fs.mkdir(
 				path.join(root, "templates", "install", ".prism", "rules"),
 				{ recursive: true }
@@ -1170,13 +1169,13 @@ test("runInstallAdrGate: pre-L5 allowlisted file with ADR ref passes the gate", 
 			);
 		},
 		async (root) => {
-			// Pass the pre-L5 path in the allowlist override — gate must pass despite the ADR ref
-			const preL5Path = "templates/install/.prism/rules/branch-plan.md";
-			const violations = await runInstallAdrGate(root, new Set([preL5Path]));
+			// Pass the path in the allowlist override — gate must pass despite the ADR ref
+			const allowlistedPath = "templates/install/.prism/rules/branch-plan.md";
+			const violations = await runInstallAdrGate(root, new Set([allowlistedPath]));
 			assert.equal(
 				violations.length,
 				0,
-				"pre-L5 allowlisted file must pass the gate even with an ADR reference"
+				"file in allowlistOverride must pass the gate even with an ADR reference"
 			);
 		}
 	);
