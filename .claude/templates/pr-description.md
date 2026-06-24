@@ -6,7 +6,7 @@ This template intentionally diverges from `.github/pull_request_template.md`, wh
 
 File-level change details live in the GitHub diff, and acceptance criteria live in Linear and the branch plan. The PR body should never duplicate either.
 
-**Keep this body current as scope evolves.** On squash-merge, this body becomes the merge commit description in `main` history — a stale body at merge time means a stale record forever. Agents auto-sync the agent-owned sections (Summary, What did you do?, Why did you do it?, How did you achieve it?) when the plan or branch drifts past the last body write; user-owned sections (any section the agent didn't originate) are preserved verbatim. See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) and [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md).
+**Keep this body current as scope evolves.** On squash-merge, this body becomes the merge commit description in `main` history — a stale body at merge time means a stale record forever. Agents auto-sync the agent-owned sections (Summary, What did you do?, Why did you do it?, How did you achieve it?) when the plan or branch drifts past the last body write; user-owned sections (any section the agent didn't originate) are preserved verbatim. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md).
 
 **The template body starts after the `---` divider below.** The text above is template metadata for whoever edits this file or reviews the sync logic — do not include it in the generated PR description.
 

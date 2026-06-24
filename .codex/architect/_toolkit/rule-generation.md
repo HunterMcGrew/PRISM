@@ -2,7 +2,7 @@
 
 The agent-facing reference for Atlas's per-team rule generators. Lives at `scripts/ai-skills/lib/rule-generators/` with the orchestrator at `scripts/ai-skills/lib/onboarding-run.ts`. Invoked from Atlas's interactive onboarding flow after stack detection and user prompts complete — the generators read `OnboardingConfig` (which carries the `DetectedStack` from PR-2.2) and emit one or more files into `.prism/rules/`.
 
-See [ADR-0029](../spec/adrs/_toolkit/0029-rules-self-declare-applicability.md) for the applicability-declaration convention every generated rule follows. See [ADR-0040](../spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md) for the persona-level rationale.
+Every generated rule opens with an applicability declaration — see § Applicability declaration below.
 
 ## Public surface
 
@@ -40,7 +40,7 @@ The `force: true` option propagates through `runRuleGenerators` to every generat
 
 ## Applicability declaration
 
-Every generated rule opens with an applicability declaration per ADR-0029. The shape is:
+Every generated rule opens with an applicability declaration. The shape is:
 
 ```markdown
 # <Subject> <Rule Type>

@@ -2,7 +2,7 @@
 
 The agent-facing reference for Atlas's stub-anchor population mechanism. Lives at `scripts/ai-skills/lib/anchor-substitute.ts` with the orchestrator entry point at `scripts/ai-skills/lib/onboarding-run.ts`. Invoked from Atlas's interactive onboarding flow after rule generation — the substitution walks canonical persona sources and replaces empty stub anchors with team-derived content drawn from `OnboardingConfig`.
 
-See [ADR-0032](../spec/adrs/_toolkit/0032-canonical-skill-content-is-generic.md) for the rationale — canonical sources stay generic, Atlas writes the team-specific specialization. See [ADR-0030](../spec/adrs/_toolkit/0030-token-substitution-at-build-time.md) for the sibling mechanism covering identifier substitution; this module is the content-shape counterpart.
+Canonical sources stay generic; Atlas writes the team-specific specialization. The sibling mechanism for identifier substitution (build-time `${...}` tokens) is covered in `.prism/architect/_toolkit/install-layout.md`; this module is the content-shape counterpart.
 
 ## Public surface
 
@@ -68,7 +68,7 @@ When the second step is skipped, the anchor exists in the canonical source but A
 
 ## Design choice — HTML comments over a templating language
 
-ADR-0030 picks build-time token substitution over a runtime templating engine for identifiers (`${PROJECT}`, `${TICKET_PREFIX}`). The same reasoning carries over to anchors: a templating language would require a parser, a renderer, escape rules, and a debugger every contributor needs to learn. HTML comments are zero-dependency, invisible in rendered markdown, and survive copy-paste into any markdown-aware editor.
+Build-time token substitution was chosen over a runtime templating engine for identifiers (`${PROJECT}`, `${TICKET_PREFIX}`). The same reasoning carries over to anchors: a templating language would require a parser, a renderer, escape rules, and a debugger every contributor needs to learn. HTML comments are zero-dependency, invisible in rendered markdown, and survive copy-paste into any markdown-aware editor.
 
 The cost: the parser has to know about its own markers and reject malformed pairs. The benefit: canonical sources stay plain markdown — an author writing one doesn't need to know the anchor mechanism exists until they reach for it.
 

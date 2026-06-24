@@ -150,6 +150,25 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** update all five copies to `${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`; build resolves token in platform mirrors.
 - **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
 
+
+### README Cross-Reference Pattern retains PRISM-specific ADR-0003 illustrative examples
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `templates/install/.prism/spec/adrs/_toolkit/README.md:54-55`
+- **Problem:** The L5 ADR sweep cleared the index table rows but left two lines in the Cross-Reference Pattern prose that cite PRISM-specific context: a pointer to `AGENTS.md § 0` (PRISM-internal structure) and a PRISM-specific example of `ADR-0003` plus a "Round 10 audit" reference — both are internal and meaningless to consumers.
+- **Suggested fix:** Replace line 54 with a generic skill-file example using `ADR-NNNN`; strip the "Round 10 audit for ADR-0003" parenthetical from line 55.
+- **Fixed in:** hunter/consumer-boundary-l5-adr-distill
+
+### Test description leaks L5 phase context into a durable test name
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/crossref-lint.test.ts:1157`
+- **Problem:** Test description "pre-L5 allowlisted file with ADR ref passes the gate" embeds a phase name that means nothing to a future reader, and the `preL5Path` variable and inline comments repeat the same framing — the constant the description referenced was also removed in this PR, so the language is doubly stale.
+- **Suggested fix:** Rename to describe the `allowlistOverride` contract: "file in allowlistOverride with ADR ref passes the gate"; update variable name to `allowlistedPath` and inline comments to match.
+- **Fixed in:** hunter/consumer-boundary-l5-adr-distill
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -162,7 +181,9 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Extended `crossref-lint.ts` with `runInstallAdrGate` — a second lint pass that detects `ADR-NNNN` references under `templates/install/` and fails unless the file is in the permanent machinery allowlist (README.md, triple-gated-adr-criterion.md) or the pre-L5 temporary allowlist covering all current violating files. `prism:check` stays green on current `main`; gate is live and gates L5.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed three Briar minors: removed phantom CLAUDE.md.tmpl from CROSSREF_SCAN_ROOTS (zero verifiable refs), wired `runInstallAdrGate` to delegate to `isInstallAdrAllowlisted` so the exported predicate is the single canonical check, corrected JSDoc ("call" → "function"), and added integration test for the pre-L5 allowlist path. 68 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed two Briar minors from second review: added `(?!\d)` lookahead to `ADR_REF_RE` (5-digit strings like ADR-12345 no longer match as ADR-1234) and updated JSDoc; added unit test for `isInstallAdrAllowlisted` pre-L5 branch. 391 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: L5 distillation — classified all ADR references in the install surface (load-bearing → inline Why; illustrative → genericized); removed 48 ADR files from templates/install/ and added to excluded[]; replaced install ADR README index table with blank shell; simplified isInstallAdrAllowlisted (pre-L5 allowlist constant removed); distilled ADR refs from canonical .prism/ rules, architect toolkit, references, and templates; fixed install-layout.md curated copy and stale tests. pnpm prism:check and install-adr-gate both green; 392 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed Briar minor: `INSTALL_ADR_PRE_L5_ALLOWLIST` JSDoc said to delete `isInstallAdrAllowlisted` when the set reaches zero, but that function is the canonical exported predicate used by `runInstallAdrGate`; corrected to say delete the constant and simplify the function to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
+- 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: Fixed two Briar minors: genericized PRISM-specific ADR-0003 illustrative examples in the install README Cross-Reference Pattern prose; renamed stale test description from phase-context language to describe the allowlistOverride contract. 392 tests pass.
 
 ---
 

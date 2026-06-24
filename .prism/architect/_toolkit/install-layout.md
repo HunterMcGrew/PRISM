@@ -1,6 +1,6 @@
 # Install Layout
 
-PRISM ships into a consumer repo as a multi-platform toolkit. This file is the agent-loaded reference for the bifurcated install layout. ADR-0031 records the decision; this doc is the everyday lookup for what lives where and why.
+PRISM ships into a consumer repo as a multi-platform toolkit. This file is the agent-loaded reference for the bifurcated install layout — the everyday lookup for what lives where and why.
 
 ## The bifurcation
 
@@ -83,7 +83,7 @@ A cold consumer — a repo that has never had PRISM — needs to run two command
 
 2. **`npx @huntermcgrew/prism adopt`** — seeds `.prism/` and projects the full persona roster. This is the first-contact install step described in the section below. If adopt detects that `config.json` is missing, it stops and tells the consumer to run `init` first. Adopt also self-heals the consumer's `.ai-skills/definitions/paths.json` — provisioning it from the PRISM package copy when it is absent or structurally incomplete (an older schema missing `generated.platformContentCopies`) — so the cold `init`→`adopt` path is robust against a `paths.json` that `init` never writes; a complete consumer file (even a customized one) is left untouched.
 
-3. **(Later, in-agent) Atlas** — handles the richer, conversational onboarding: generating per-team rules, writing stack-appropriate security guidance, and populating stub anchors with team context. ADR-0040 records why Atlas owns this layer (it requires judgment that a deterministic CLI step can't provide); ADR-0059 records why adopt is seed-and-sync rather than a merge engine.
+3. **(Later, in-agent) Atlas** — handles the richer, conversational onboarding: generating per-team rules, writing stack-appropriate security guidance, and populating stub anchors with team context. Atlas owns this layer because it requires judgment that a deterministic CLI step can't provide; adopt is seed-and-sync rather than a merge engine — `scripts/ai-skills/adopt.ts` implements this.
 
 The split is intentional: `init` is the repeatable, CI-safe bootstrap; Atlas is the AI-assisted configuration pass that runs once per team.
 
@@ -91,7 +91,7 @@ The split is intentional: `init` is the repeatable, CI-safe bootstrap; Atlas is 
 
 ---
 
-The seed surface above is what a consumer repo _receives_; `pnpm prism:adopt` is what _lays it down_ the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. ADR-0059 records the design; `scripts/ai-skills/adopt.ts` implements it.
+The seed surface above is what a consumer repo _receives_; `pnpm prism:adopt` is what _lays it down_ the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup. `scripts/ai-skills/adopt.ts` implements it.
 
 `runAdopt` runs two steps in sequence:
 
@@ -100,7 +100,7 @@ The seed surface above is what a consumer repo _receives_; `pnpm prism:adopt` is
 
 After this one run, `.prism/.sync-manifest.json` exists and the repo is in steady-state: `pnpm prism:update` handles all future syncs.
 
-**The manifest-exists refusal is the install-vs-steady-state guard.** `runAdopt` calls `assertConsumerIsEstablished` before seeding; if a `.sync-manifest.json` is already present, it throws `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` The guard lives inside `runAdopt`, not only in the CLI `main()`, so every caller of `runAdopt` inherits the invariant. This mirrors `update.ts`'s source==consumer refusal: each entry point refuses the other's job so the two flows' preconditions stay clean. There is no `--dry-run` preview — first-contact's safety is recover-after-`.bak` (the seed never overwrites; the sync no-ops byte-identical files and `.bak`-snapshots divergence), not see-before-write (ADR-0059).
+**The manifest-exists refusal is the install-vs-steady-state guard.** `runAdopt` calls `assertConsumerIsEstablished` before seeding; if a `.sync-manifest.json` is already present, it throws `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` The guard lives inside `runAdopt`, not only in the CLI `main()`, so every caller of `runAdopt` inherits the invariant. This mirrors `update.ts`'s source==consumer refusal: each entry point refuses the other's job so the two flows' preconditions stay clean. There is no `--dry-run` preview — first-contact's safety is recover-after-`.bak` (the seed never overwrites; the sync no-ops byte-identical files and `.bak`-snapshots divergence), not see-before-write.
 
 ## Steady-state persona-skill distribution
 
@@ -166,7 +166,7 @@ The convention does not apply to:
 
 Two exclusions:
 
-- Matches inside fenced code blocks pass — code blocks may legitimately quote prior layouts (e.g. ADR-0031's Context section).
+- Matches inside fenced code blocks pass — code blocks may legitimately quote prior layouts without triggering the guard.
 - Filename allowlist (two entries today: `spec/adrs/_toolkit/0031-bifurcated-install-layout.md` and `architect/_toolkit/install-layout.md` — the latter so this doc's own example block can name `.claude/rules/<file>.md` etc. without the guard tripping). New allowlist entries need a comment explaining why.
 
 When the guard fires, it prints `path-guard: <relative-path>:<line>: <text>` for each violation and exits non-zero.
@@ -193,8 +193,6 @@ A green crossref-lint run therefore means the repo-root-absolute class resolves 
 
 ## Where to look
 
-- ADR-0031 in `.prism/spec/adrs/` — the decision and the alternatives considered
 - `scripts/ai-skills/build.ts` — the copy and cleanup orchestration in `main()`
 - `scripts/ai-skills/path-guard.ts` — the standalone guard module
 - `.ai-skills/definitions/paths.json` — `canonical.contentRoot` and `generated.platformContentCopies` declare the source/target dirs
-- [ADR-0031](../spec/adrs/_toolkit/0031-bifurcated-install-layout.md) — the decision, alternatives considered, and full reasoning

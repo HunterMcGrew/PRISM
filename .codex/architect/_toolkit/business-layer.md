@@ -1,6 +1,6 @@
 # Business Layer
 
-The business layer is a suite of personas that wraps the existing engineering pipeline — connecting inbound at Parker's PRD and, in a future wave, outbound through a data/metrics persona back to strategy. This document is the contextual map Wave 2+ persona authors need: where the layer grounds, how it connects to the engineering pipeline, and what every new business persona must do. For *why* these decisions were made, see [ADR-0060](../spec/adrs/_toolkit/0060-business-layer-substrate.md).
+The business layer is a suite of personas that wraps the existing engineering pipeline — connecting inbound at Parker's PRD and, in a future wave, outbound through a data/metrics persona back to strategy. This document is the contextual map Wave 2+ persona authors need: where the layer grounds, how it connects to the engineering pipeline, and what every new business persona must do.
 
 ## The wrap-the-pipeline model
 
@@ -25,7 +25,7 @@ The layer's home is `.prism/business/`. The single durable artifact is `.prism/b
 
 **Lazy creation:** `.prism/business/` and `strategy.md` come into existence on Vera's first real write — never seeded at install time (per [`lazy-artifacts.md`](../../rules/lazy-artifacts.md)).
 
-**Section ownership:** Vera owns the full doc and writes freely. Later business personas append to their owned sections under the section-ownership model ([ADR-0014](../spec/adrs/_toolkit/0014-plan-section-ownership.md)), exactly as engineering personas write to plan subsections. The `## Decisions` log is shared, append-only working memory.
+**Section ownership:** Vera owns the full doc and writes freely. Later business personas append to their owned sections under the same section-ownership model engineering personas use for branch plan subsections. The `## Decisions` log is shared, append-only working memory.
 
 ## The anchor persona: Vera (prism-founder)
 
@@ -78,11 +78,11 @@ A single disclaimer section is bypassable — the persona's normal output path c
 
 ## Rules for adding a new business persona
 
-When authoring a Wave 2+ business persona, four rules apply. The ADR establishes all four; this section gives the author-facing guidance on applying them.
+When authoring a Wave 2+ business persona, four rules apply.
 
 ### 1. Ground in the strategy doc, not a new artifact
 
-Each business persona reads `.prism/business/strategy.md` at startup and appends to its owned section. It does not create its own state file — the strategy doc *is* the shared state (the artifact-IS-state model from [ADR-0043](../spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer). If the persona's content is large enough to warrant a dedicated section, add a section to the strategy doc; do not create a sibling file under `.prism/business/` without a strong contention-driven reason.
+Each business persona reads `.prism/business/strategy.md` at startup and appends to its owned section. It does not create its own state file — the strategy doc *is* the shared state. If the persona's content is large enough to warrant a dedicated section, add a section to the strategy doc; do not create a sibling file under `.prism/business/` without a strong contention-driven reason.
 
 ### 2. Orchestrate over host capabilities — never vendor them
 
@@ -100,7 +100,7 @@ When a business persona's work produces something worth building, it names Parke
 
 ### 4. Follow the persona type (not utility type)
 
-Every business persona is a persona under [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) — sustained identity, voice, "How X thinks" lens. That means: a `persona` field in `roles.json` (no `type: utility`), a Codex agent adapter, and the full frontmatter + shared.md authoring shape. Use Vera's spec as the structural model.
+Every business persona is a persona (not a utility skill) — sustained identity, voice, "How X thinks" lens. That means: a `persona` field in `roles.json` (no `type: utility`), a Codex agent adapter, and the full frontmatter + shared.md authoring shape. Use Vera's spec as the structural model.
 
 ## Manifest routing
 
@@ -108,11 +108,6 @@ Every business persona is a persona under [ADR-0046](../spec/adrs/_toolkit/0046-
 
 ## References
 
-- [ADR-0060](../spec/adrs/_toolkit/0060-business-layer-substrate.md) — the full rationale for every decision summarized here
 - `.prism/templates/business-strategy.md` — the strategy doc template and conventions
 - `.ai-skills/skills/prism-founder/shared.md` — Vera's spec; read `## Orchestrating over host capabilities` as the worked example
-- [ADR-0014](../spec/adrs/_toolkit/0014-plan-section-ownership.md) — section ownership (shared `## Decisions` log)
-- [ADR-0043](../spec/adrs/_toolkit/0043-parker-prd-persona.md) — artifact-IS-state model
-- [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) — persona vs. utility distinction
 - `.prism/rules/lazy-artifacts.md` — `.prism/business/` and `strategy.md` are created on first write
-- Epic #212 — Wave 2+ roster and planned personas

@@ -11,7 +11,7 @@ Doc format, location, and audience are per-team onboarding outputs — set by At
 - **`documentation.keepsDevDocs`** — whether the team maintains a separate dev doc tree alongside user-facing docs
 - **`documentation.format`** — the doc format (`flat-markdown-guides`, `nextra-blocks`, or a team-defined value)
 
-PRISM itself is a single-audience product (`audience: developer-user`, `keepsDevDocs: false`, `format: flat-markdown-guides`). Its docs live under `docs/` as flat markdown guides. Other teams may configure different values — the doc system adapts to what Atlas writes at onboarding, not the other way around. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
+PRISM itself is a single-audience product (`audience: developer-user`, `keepsDevDocs: false`, `format: flat-markdown-guides`). Its docs live under `docs/` as flat markdown guides. Other teams may configure different values — the doc system adapts to what Atlas writes at onboarding, not the other way around.
 
 ## Single-audience vs. split-audience teams
 
