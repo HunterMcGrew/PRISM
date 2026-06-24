@@ -782,8 +782,8 @@ export const INSTALL_ADR_MACHINERY_ALLOWLIST: ReadonlySet<string> = new Set([
  * (L5 cleans these). This allowlist keeps `prism:check` green on `main`
  * while the gate is in place. L5 removes entries as it distills each file.
  *
- * When this Set reaches zero, delete it and the `isInstallAdrAllowlisted`
- * function — the gate enforces strictly with only the machinery allowlist above.
+ * When this Set reaches zero, delete this constant and simplify
+ * `isInstallAdrAllowlisted` to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
  */
 export const INSTALL_ADR_PRE_L5_ALLOWLIST: ReadonlySet<string> = new Set([
 	// ── Rules / references / templates that cite ADRs (distilled in L5 task 4) ──
