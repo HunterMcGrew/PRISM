@@ -22,7 +22,7 @@ Key files:
 
 > This is the pre-persona step — no skill is active yet, and you're deciding which one to fire up based on what the user said. Signal in, persona out.
 
-When a user interacts with Claude Code without invoking a specific skill, detect what they're doing and proactively launch the matching skill. Waiting for the user to say a skill name adds friction — if the intent matches, invoke the skill immediately. See ADR-0002 for the full rationale.
+When a user interacts with Claude Code without invoking a specific skill, detect what they're doing and proactively launch the matching skill. Waiting for the user to say a skill name adds friction — if the intent matches, invoke the skill immediately.
 
 | User intent                            | Invoke                                | Signal phrases / behaviors                                                                                                                                                                                                                                                                                      |
 | -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ When a user interacts with Claude Code without invoking a specific skill, detect
 - The user explicitly says "don't use a skill" or "just do it"
 - The user is already inside a skill session (don't nest skills)
 
-**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See ADR-0003 for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
+**Authors ship, reviewers review.** Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up.
 
 ---
 
@@ -116,7 +116,7 @@ One exception: if the fix touches a public API, shared type, or shared utility, 
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — built through iterative testing and real project experience. They are the equivalent of a style guide or code standard: follow them as the default authority for project-specific decisions.
 
-**Framing:** see ADR-0015 (humane language over mandates) and ADR-0016 (explain the why). When editing spec content under `.claude/**`, `.prism/architect/_toolkit/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `.prism/architect/_toolkit/skills-ecosystem.md`.
+When editing spec content under `.claude/**`, `.prism/architect/_toolkit/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `.prism/architect/_toolkit/skills-ecosystem.md`.
 
 - Apply every applicable rule as written — these exist because the team learned the hard way what happens without them
 - If a specific situation genuinely requires deviation, flag the deviation and explain the reasoning rather than silently overriding
@@ -126,7 +126,7 @@ The `.prism/rules/` and `.prism/architect/` files represent the team's intention
 
 ## 8. Context Window Handoff Check
 
-Before recommending the next persona/skill at the end of a skill session, assess context load. See ADR-0006 for why this check exists.
+Before recommending the next persona/skill at the end of a skill session, assess context load.
 
 **Scope:** This check applies only to persona/skill handoffs — not to simple operations like committing, pushing, running git commands, answering questions, or any non-skill task.
 
@@ -207,7 +207,7 @@ The goal is to cut noise on routine confirmations, not hide useful information.
 
 ## 11. Cross-Agent Handoff Accountability
 
-When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding. See ADR-0007 for the originating incident and the tradeoff.
+When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding.
 
 - Confirm that the proposed solution logically addresses the root cause, not just that it changes something
 - If the math doesn't check out or the fix doesn't match the symptoms, flag it before applying
@@ -219,7 +219,7 @@ _Example: If a diagnostic agent prescribes specific pixel values for a layout fi
 
 ## 12. Pre-Compaction Checkpoint
 
-When context usage approaches compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction. See ADR-0008 for the decision and tradeoff.
+When context usage approaches compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction.
 
 The checkpoint should include:
 
