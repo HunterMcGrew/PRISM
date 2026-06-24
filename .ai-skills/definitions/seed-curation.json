@@ -18,7 +18,8 @@
     "spec/adrs/_toolkit/0053-conductor-integration-lane-type-marker.md",
     "spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md",
     "spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md",
-    "spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md"
+    "spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md",
+    "spec/adrs/_toolkit/0061-sol-merge-authority.md"
   ],
   "curated": [
     "rules/branch-plan.md",
