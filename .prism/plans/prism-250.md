@@ -89,6 +89,8 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Winston evaluated — Proceed with changes. Endorsed the init/Atlas split; resolved OPEN decision. Verified `detectStack` reuses cleanly; `writeOnboardingConfig` reuses after a bounded widening to honor `ticketSystem.kind` (see Decision). Wrote Implementation Tasks + AC.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Clove shipped tasks 1–8. Widened `onboarding-config.ts` type + `toOnDiskConfig` + `validateOnDiskConfig` for github-issues. Created `init.ts` (`runInit`/`runInitCli`) with `node:readline/promises` prompts and CI flag path. Wired `init` into `cli.ts` dispatcher with updated USAGE. Added adopt missing-config guard pointing at `prism init`. All 371 tests pass; `prism:check` gate green.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Eli documented cold-start flow. Added `prism init → adopt → Atlas` three-step section to `install-layout.md` § First-contact; added pre-adopt pointer to `docs/adopt-prism.md`. Commands and flags verified against `init.ts` and `cli.ts` source.
+- 2026-06-23 [hmcgrew/prism-250-init-command]: Briar self-review. Types clean; 371 tests green. One major: Eli's `install-layout.md` edit was not propagated to platform mirrors — `prism:check` fails. Fix: run `pnpm prism:build`. One minor: unsafe `as` cast on `flagTicketSystem` before validation in `init.ts:167`.
+- 2026-06-23 [hmcgrew/prism-250-init-command]: Clove fixed all three Briar review issues. Ran `pnpm prism:build` to sync platform mirrors; restructured `parseFlag`/validate/assign to eliminate `as` cast on `rawTicketSystem`; added `fieldName` param to `resolveRequired` so empty-answer errors read cleanly without prompt hint text. `prism:check` fully green: build sync, tsc clean, 371 tests pass, verify-manifest clean, crossref-lint clean.
 
 ---
 
@@ -97,6 +99,33 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 ---
 
 ## Review Issues
+
+### Build break: install-layout.md platform mirrors out of sync
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** `PRISM-250: Fix Briar review issues — mirrors, unsafe cast, error message` (review-fix commit)
+- **File:** `.prism/architect/_toolkit/install-layout.md`
+- **Problem:** Eli edited the canonical architect doc but `pnpm prism:build` was not re-run. The platform mirrors (`.claude/architect/_toolkit/install-layout.md`, `.codex/architect/_toolkit/install-layout.md`, `.cursor/architect/_toolkit/install-layout.md`) are 13 lines behind the canonical. `pnpm run prism:check` fails at the `build.ts --check` step with "These files are out of sync". The plan's History entry claims `prism:check` was green — it was not green after Eli's doc commit.
+- **Suggested fix:** Run `pnpm prism:build` from the repo root. This propagates the canonical change to all three platform mirrors. Then confirm `pnpm run prism:check` is fully green before opening the PR.
+
+### Minor: unsafe `as` cast on `flagTicketSystem`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `PRISM-250: Fix Briar review issues — mirrors, unsafe cast, error message` (review-fix commit)
+- **File:** `scripts/ai-skills/init.ts:167`
+- **Problem:** `parseFlag` returns `string | null`. The result is cast with `as "linear" | "github-issues" | null`, widening the raw string to a union of literals before it's validated. TypeScript treats the cast as authoritative — it will not warn if an arbitrary string passes through. The explicit three-branch guard below (lines 178–185) catches invalid values at runtime, so this is not a correctness bug, but the `as` cast bypasses compile-time safety that a narrowing pattern would preserve.
+- **Suggested fix:** Accept the `string | null` return, validate against the union, then assign the narrowed value. Example: `const raw = parseFlag(argv, "ticket-system"); if (raw !== null && raw !== "linear" && raw !== "github-issues") { throw ... }; const flagTicketSystem = raw as "linear" | "github-issues" | null;` — or restructure so the cast happens after the validation block has already narrowed the type. Low risk given the guard, but the pattern sets a precedent for init clones.
+
+### Cleaner-path: `resolveRequired` error leaks prompt hint text
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `PRISM-250: Fix Briar review issues — mirrors, unsafe cast, error message` (review-fix commit)
+- **File:** `scripts/ai-skills/init.ts:147`
+- **Problem:** When a TTY user enters an empty answer, `resolveRequired` throws `${prompt.trim()} is required`, surfacing the prompt's `(e.g. ...)` hint in the error — e.g. "Project name (e.g. ACME) is required". The hint is for guiding input, not for error messages.
+- **Suggested fix:** Added a `fieldName` optional parameter to `resolveRequired`. The empty-answer error now uses `fieldName ?? --${flagName}` so it reads cleanly (e.g. "Project name is required") without the `(e.g. ...)` hint.
 
 ---
 
@@ -132,13 +161,13 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 
 ## PR Readiness
 
-- [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] No critical or major issues — all fixed
+- [x] Types correct — no `any`, no unsafe `as` — `as` cast on `flagTicketSystem` removed; narrowing now follows validation
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`prism:check` all green: build + types + 371 tests + verify-manifest + crossref-lint)
+- [x] Build passes — `prism:check` fully green (build sync + tsc + 371 tests + verify-manifest + crossref-lint). Last run: 2026-06-23.
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Clove review-fix pass)

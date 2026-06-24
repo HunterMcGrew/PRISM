@@ -130,12 +130,16 @@ function parseFlag(argv: string[], flag: string): string | null {
  * Resolves a required field: returns the flag value when present; prompts via
  * readline when stdin is a TTY; throws naming the flag when non-interactive
  * and the value is missing.
+ *
+ * `fieldName` is the clean label used in error messages (e.g. "Project name"
+ * or "--project") so that non-TTY errors never expose the prompt hint text.
  */
 async function resolveRequired(
 	rl: readline.Interface | null,
 	flagValue: string | null,
 	flagName: string,
-	prompt: string
+	prompt: string,
+	fieldName?: string
 ): Promise<string> {
 	if (typeof flagValue === "string" && flagValue.length > 0) {
 		return flagValue;
@@ -144,7 +148,7 @@ async function resolveRequired(
 	if (rl !== null) {
 		const answer = (await rl.question(prompt)).trim();
 		if (answer.length === 0) {
-			throw new Error(`prism init: ${prompt.trim()} is required`);
+			throw new Error(`prism init: ${fieldName ?? `--${flagName}`} is required`);
 		}
 
 		return answer;
@@ -164,25 +168,25 @@ export async function runInitCli(): Promise<void> {
 	const flagProject = parseFlag(argv, "project");
 	const flagOrg = parseFlag(argv, "org");
 	const flagTicketPrefix = parseFlag(argv, "ticket-prefix");
-	const flagTicketSystem = parseFlag(argv, "ticket-system") as
-		| "linear"
-		| "github-issues"
-		| null;
 	const flagLinearTeam = parseFlag(argv, "linear-team");
 	const flagLinearWorkspace = parseFlag(argv, "linear-workspace");
 	const flagGithubOwner = parseFlag(argv, "github-owner");
 	const flagGithubRepo = parseFlag(argv, "github-repo");
 	const flagDefaultBranch = parseFlag(argv, "default-branch");
 
+	// Validate --ticket-system before using it so the narrowed type follows from
+	// the check rather than an `as` cast that bypasses compile-time safety.
+	const rawTicketSystem = parseFlag(argv, "ticket-system");
 	if (
-		flagTicketSystem !== null &&
-		flagTicketSystem !== "linear" &&
-		flagTicketSystem !== "github-issues"
+		rawTicketSystem !== null &&
+		rawTicketSystem !== "linear" &&
+		rawTicketSystem !== "github-issues"
 	) {
 		throw new Error(
-			`prism init: --ticket-system must be "linear" or "github-issues" (got ${JSON.stringify(flagTicketSystem)})`
+			`prism init: --ticket-system must be "linear" or "github-issues" (got ${JSON.stringify(rawTicketSystem)})`
 		);
 	}
+	const flagTicketSystem: "linear" | "github-issues" | null = rawTicketSystem;
 
 	const isInteractive = process.stdin.isTTY === true;
 	const rl = isInteractive
@@ -194,14 +198,16 @@ export async function runInitCli(): Promise<void> {
 			rl,
 			flagProject,
 			"project",
-			"Project name (e.g. ACME): "
+			"Project name (e.g. ACME): ",
+			"Project name"
 		);
 
 		const ticketPrefix = await resolveRequired(
 			rl,
 			flagTicketPrefix,
 			"ticket-prefix",
-			"Ticket prefix, uppercase (e.g. ACME): "
+			"Ticket prefix, uppercase (e.g. ACME): ",
+			"Ticket prefix"
 		);
 
 		let ticketSystemKind: "linear" | "github-issues";
@@ -232,7 +238,8 @@ export async function runInitCli(): Promise<void> {
 				rl,
 				flagLinearTeam,
 				"linear-team",
-				"Linear team key (e.g. ACME): "
+				"Linear team key (e.g. ACME): ",
+				"Linear team key"
 			);
 			linearWorkspace =
 				flagLinearWorkspace ??
@@ -246,14 +253,16 @@ export async function runInitCli(): Promise<void> {
 			rl,
 			flagGithubOwner,
 			"github-owner",
-			"GitHub owner (user or org, e.g. acmecorp): "
+			"GitHub owner (user or org, e.g. acmecorp): ",
+			"GitHub owner"
 		);
 
 		const githubRepo = await resolveRequired(
 			rl,
 			flagGithubRepo,
 			"github-repo",
-			"GitHub repo name (e.g. my-app): "
+			"GitHub repo name (e.g. my-app): ",
+			"GitHub repo name"
 		);
 
 		const answers: InitAnswers = {
