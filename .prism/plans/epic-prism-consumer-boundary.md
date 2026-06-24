@@ -49,11 +49,12 @@ The organizing principle: **the unit of ownership decides the delivery mechanism
 - **Rule delivery taxonomy for the canonical rule set.** Each rule lands in exactly one mode:
   - **SHIP (kernel, verbatim, tokenized where a value varies):** the repo-wide always-loaded rules (no `paths:` frontmatter) plus the cross-persona contextual ones — writing-voice, context-reuse, branch-plan, lazy-artifacts, code-comments, code-standards (universal core), core-principles, verification-before-done, demand-elegance, plan-before-building, self-improvement-loop, subagent-strategy, pre-compaction-checkpoint, context-window-handoff-check, cross-agent-handoff-accountability, autonomous-bug-fixing, bash-output-minimization, architect-doc-verification, implementation-task-detail, design-governance, accessibility.
   - **SHIP (build-time token substitution):** git-conventions, pr-description, followup-scope — their only per-team variation is a token Atlas already holds (`${TICKET_PREFIX}`). Substituted by the build, never Atlas-written.
-  - **TAILOR (single soft offer, skip-if-exists):** acceptance-criteria only — Gherkin default with a genuine editorial choice (checklist vs Gherkin) worth one skippable onboarding offer.
+  - **TAILOR (single soft offer, two distinct properties — see below):** acceptance-criteria only — checklist default with a genuine editorial choice (checklist vs Gherkin) worth one onboarding offer. The offer carries **two independent properties, both required**: (1) **skip-if-exists guard** — Atlas does not fire the offer when the AC format is already configured (so a reconfigure run does NOT re-prompt); and (2) **user-skippable** — when the offer *does* fire, the user may decline it and keep the default. These are not the same property: "skip-if-exists" is a guard on *whether the offer fires at all*; "skippable" is the user's freedom *within a firing offer*. Implementing only (2) — an unconditional offer the user can decline every reconfigure run — is wrong; the guard (1) is mandatory.
   - **GENERATE (Atlas, per-team):** verification-commands, code-standards-`<lang>`, security — content with no universal form.
   - **BAKE (into one skill):** skill-authoring → skill-forge's `lib/`.
   - **Root cause for the build-vs-tailor split:** an earlier "SHIP-DEFAULT+TAILOR" bucket conflated token-bearing files (no human choice — the build substitutes) with preference-bearing files (a real editorial choice). Collapsing them created pressure to add interview questions where the data is already collected, and a skip-if-exists/reconfigure conflict (a hand-written file silently no-ops a later prefix change).
   - **Implementation guidance:** the test for GENERATE is "does the content have a universal form?" If yes with only a token varying → SHIP token-sub. If it has a sensible default a team might restyle → TAILOR. Generate only when no universal default exists. Applicability (accessibility, design-governance) is handled by `paths:` load-gating plus a one-line Atlas applicability declaration — not by regenerating invariant content.
+  - **AC offer — the skip-if-exists guard is non-negotiable.** The original phrasing ("single soft offer, skip-if-exists" + "skippable onboarding offer") was misread as a single property and built as an unconditional offer that re-fires on reconfigure. It is two properties (see the TAILOR bullet). The correct shape: the AC offer lives in the rule-generator path, which is *already* skip-if-exists for every other generated file in step 10 — so the AC offer must inherit that same guard, not be appended as a guard-free instruction after it. Concretely: before offering, check whether `.prism/rules/acceptance-criteria.md` is already in its configured state (file exists and the team has previously chosen / declined). If so, skip silently and report the skip in the closing summary (same as every other skip-if-exists generator). Only fire the offer on the *first* install where the AC format has never been chosen. A reconfigure run that re-fires this offer is the failure mode this guard exists to prevent — identical in shape to the SHIP-DEFAULT skip-if-exists/reconfigure conflict called out in the build-vs-tailor root cause above.
   - → no promotion needed yet (candidate for a PRISM-internal ADR)
 
 - **The behavioral kernel ships — it currently reaches no consumer.**
@@ -119,7 +120,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 
 ### Atlas (onboarding)
 
-1. The single `acceptance-criteria` format offer (unconditional); the one-line applicability declaration for accessibility/design-governance during anchor substitution; filter `features.conductorMayMerge` from reconfigure's current-config display. No interview question for token-bearing files.
+1. The single `acceptance-criteria` format offer — **guarded by skip-if-exists, not unconditional.** The offer must fire only on first install when the AC format has never been chosen; a reconfigure run must NOT re-prompt. Implement it inside the rule-generator path so it inherits the same skip-if-exists guard every other step-10 generator already uses — do not append it as a guard-free instruction after the generators run. The offer is also user-skippable *when it fires* (the user may decline and keep the checklist default), but skippable-when-fired and skip-if-exists-on-reconfigure are two distinct properties and both are required (see the rule-delivery-taxonomy Decision § AC offer). The one-line applicability declaration for accessibility/design-governance during anchor substitution; filter `features.conductorMayMerge` from reconfigure's current-config display. No interview question for token-bearing files.
 
 ### Eli (documentation)
 
@@ -208,11 +209,11 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 ### AC format offer skip-if-exists check can never fire
 
 - **Severity:** minor
-- **Status:** fixed
+- **Status:** deferred
 - **File:** `.ai-skills/skills/prism-onboarding/shared.md:98` (all platform copies)
-- **Problem:** Step 10 gated the format offer on `acceptance-criteria.md` being absent — but `npx adopt` pre-deploys the file from the install seed before Atlas onboarding runs, so the condition is always true and the offer is always silently skipped.
+- **Problem:** Step 10 gated the format offer on `acceptance-criteria.md` being absent — but `npx adopt` pre-deploys the file from the install seed before Atlas onboarding runs, so the original condition was always true and the offer was always silently skipped.
 - **Suggested fix:** remove the skip-if-exists guard; the offer fires unconditionally and Atlas rewrites the file when the team opts in.
-- **Fixed in:** this commit on hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag
+- **Winston adjudication:** the "remove the guard" fix ships the wrong behavior — the guard is required (skip-if-exists on reconfigure is non-negotiable). The correct fix is to restate the guard in terms of "has the team already chosen a format in a prior run" rather than file-existence alone. The guard was restored with correct two-property framing in the Winston-adjudicated re-implementation. See the rule-delivery-taxonomy Decision § AC offer.
 
 ## History
 
@@ -239,6 +240,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed two Briar minors — corrected AC contract "Gherkin default" → "checklist default"; removed unreachable skip-if-exists guard from step 10 offer (adopt pre-deploys the file, gate never fires). `pnpm prism:build` + `pnpm prism:check` green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Briar minor — replaced "offer once" with unconditional wording in step 10 and output contract across all 5 platform copies; text now matches the Decision that the offer fires on every install and reconfigure run.
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Eric Major — removed surviving skip-if-exists semantics from canonical shared.md step 10 offer text and output contract line 231; adopt pre-deploys acceptance-criteria.md so the guard always fires. Rebuilt mirrors; 395 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Winston adjudicated AC-offer guard per Sol dispatch — restored skip-if-exists guard with correct two-property framing (guard vs user-skippable). Clarified rule-delivery-taxonomy Decision and Atlas task to make both properties unmistakable; updated shared.md + all 5 mirrors.
 
 ---
 
