@@ -739,13 +739,17 @@ export async function runCrossRefLint(
 
 /**
  * Pattern that matches a concrete ADR reference — `ADR-` followed by exactly
- * four digits. Matches bare text mentions (`ADR-0018`) and the ADR number
- * inside a hyperlink text or path (`[ADR-0018](./0018-foo.md)`).
+ * four digits with no additional digit immediately after. Matches bare text
+ * mentions (`ADR-0018`) and the ADR number inside a hyperlink text or path
+ * (`[ADR-0018](./0018-foo.md)`).
+ *
+ * The negative lookahead `(?!\d)` prevents a five-or-more-digit string such as
+ * `ADR-12345` from matching as `ADR-1234`.
  *
  * Does NOT match the placeholder form `ADR-NNNN` used in TEMPLATE.md and
  * illustrative prose — that form contains letters, not four digits.
  */
-const ADR_REF_RE = /ADR-\d{4}/g;
+const ADR_REF_RE = /ADR-\d{4}(?!\d)/g;
 
 /**
  * A violation produced by `scanFileForAdrRefs` / `runInstallAdrGate`.

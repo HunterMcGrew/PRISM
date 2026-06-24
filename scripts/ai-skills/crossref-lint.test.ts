@@ -1047,6 +1047,13 @@ test("isInstallAdrAllowlisted: non-machinery rule file is not allowlisted when n
 	);
 });
 
+test("isInstallAdrAllowlisted: pre-L5 entry is allowlisted", () => {
+	assert.equal(
+		isInstallAdrAllowlisted("templates/install/.prism/rules/branch-plan.md"),
+		true
+	);
+});
+
 // ---------------------------------------------------------------------------
 // runInstallAdrGate — integration: planted ADR link fails; allowlisted file passes
 // ---------------------------------------------------------------------------
