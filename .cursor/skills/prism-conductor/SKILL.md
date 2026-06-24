@@ -87,7 +87,8 @@ The run loop: decompose → plan-readiness → [segment: dispatch → route → 
 | --- | --- | --- |
 | **Sol (Conductor)** | **Opus** (default, not hardcoded) | n/a — already top tier |
 | **Winston (architect / plan)** | **Always Opus, never weaker** | n/a — the firewall never runs cheap |
-| Worker personas (Clove, Sasha, Briar, Eric, …) | **Sonnet** | → Opus on signal (Sonnet stalled the unit twice / strike 2) |
+| **Eric (PR review)** | **Always Opus, never weaker** | n/a — high-judgment review task, top tier by default |
+| Worker personas (Clove, Sasha, Briar, …) | **Sonnet** | → Opus on signal (Sonnet stalled the unit twice / strike 2) |
 
 The tier per dispatch is read off the goal-state lane and set via the runtime's per-dispatch model override (see `claude.md` for the Claude Code mechanism). A config seam lets other runtimes map their own tiers. A Plan Readiness Gate failure means *re-plan harder* (Winston is already Opus), not *escalate the model*.
 
