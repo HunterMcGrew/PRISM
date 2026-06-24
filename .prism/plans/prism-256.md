@@ -1,5 +1,7 @@
 # Plan: prism-256
 
+> Closed: 2026-06-24
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/256
@@ -80,6 +82,7 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 ## Decisions
 
 - **This follow-up is explicitly chartered.** The prism-250 Decision "Atlas existing-config detection is a noted follow-up" recorded this work for filing after #251 merged. The scope-fit gate confirms it as a new ticket: different surface (Atlas skill files vs. CLI scripts), different persona class (Atlas vs. Clove/Eli), non-trivial mode-detection logic change.
+  - **→ no promotion needed** (ticket-charter rationale; the scope-fit gate it cites lives in `.prism/rules/followup-scope.md`).
 
 - **Scoping context for Winston (from Sol's pre-dispatch investigation):**
 
@@ -106,12 +109,15 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 
   **Fields `init` does NOT collect** (Atlas must still collect these): product domain, existing standards, documentation setup; then generates per-team rules, security guidance, and populates anchors.
 
+  - **→ no promotion needed** (Sol's pre-dispatch scoping notes — the durable taxonomy that survives from this is captured in the resolution Decision below and promoted to `.prism/architect/onboarding.md`; these notes are working context for Winston, not durable system behavior).
+
 - **Mode-detection resolution: add `init-bootstrapped` as a distinct mode that routes into the first-install step set with config fields pre-seeded.**
   - **Root cause:** `init` (`scripts/ai-skills/init.ts:78-97`) writes a skeletal `config.json` (project, ticketPrefix, ticketSystem, github, linearTeam, `techStack`, `rules.universal`) but never runs the generators, anchors, or asset survey, and never writes an `onboarding-state.json` marker. The current two-file mode walk (`shared.md:67-73`) misroutes this state into `reconfigure`, which gates *off* exactly the first-install-only work the repo still needs (`shared.md:104` re-runs generators only on user-named field changes; the asset survey at `shared.md:144/167` is first-contact/first-install only).
   - **Alternatives considered:** (b) a sub-path inside `reconfigure` keyed on state-absent; (c) have `init` write a partial state marker so the resume path handles it.
   - **Chosen approach:** distinct `init-bootstrapped` mode. Beats (b) because `reconfigure`'s contract is "surface current values, change only named fields" — bending it to also run first-contact-style generators inverts its UX and risks regressing the AC's "reconfigure unchanged" guarantee (REQ-2). Beats (c) because it would expand scope into `init.ts` (a second file + the cold-bootstrap CLI lane), and the config-present/state-absent signal is already unambiguous without a marker — `init` is the *only* writer that produces config without state. The new mode reuses the **first-install flow machinery** (same generators, same anchor substitution, same documentation/standards questions) — it is an entry condition plus a "seed-from-config, skip-present-and-valid" overlay on first-install's question order, not parallel logic.
   - **Implementation guidance:** detection is content-only (the mode walk in `shared.md` is instruction-driven prose, no `detectMode()` function exists). The one code touch is widening the `OnboardingState["mode"]` union in `scripts/ai-skills/lib/onboarding-types.ts:79` to include `"init-bootstrapped"` so `initialState(mode)` (`onboarding-state.ts:122`) accepts it. Fields to skip when present-and-non-empty: `project`, `ticketPrefix`, `ticketSystem.kind` (+ `teamKey`/`workspace`), `github.owner`, `github.repo`. Fields init leaves empty that Atlas must still collect: `productDomain` (init writes `""`), `existingStandards` (init writes `[]`), `documentation` (absent), plus generators + anchors + (first-contact-only) asset survey.
-  - **→ promoted to .prism/architect/onboarding.md** (mode taxonomy is durable system behavior future Atlas work reads — promote at close if the file exists; create the entry if not).
+  - **→ promoted to .prism/architect/onboarding.md** — created at close (2026-06-24). The mode taxonomy (four modes + dogfood/first-contact, their detection fingerprints, the resume check that precedes the walk, and the init-bootstrapped seed-and-skip rule) is durable system behavior future Atlas work reads. The manifest's `.prism/architect/**` glob already routes the new file (`_toolkit/spec-editing.md`); no manifest entry needed.
+  - **Ticket-tactical sub-decisions stay local** (no promotion): the `OnboardingState["mode"]` union widening in `onboarding-types.ts:79`, the specific `shared.md` line edits and insertion points, and the "no `detectMode()` function — mode walk is prose" implementation fact are this-ticket execution detail. The durable form of the last one (mode detection is instruction-driven, only `OnboardingState["mode"]` is typed) is captured in the architect doc's Implementation note.
 
 ---
 
@@ -123,6 +129,7 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Clove fixed Briar minor — rewrote probe-2 opening sentence from false binary ("first-install vs reconfigure") to three-way routing ("Config existence narrows the mode… see Batch 2 step 7"). Mirrors regenerated; `pnpm prism:check` green.
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Briar confirmation pass (Sol dispatch) — verified fix is accurate, Batch 2 step 7 reference resolves to the three-way walk, all 4 mirrors in sync, `pnpm prism:check` green (377 tests, tsc clean, mirror-drift check passed). Zero findings; PR ready to open.
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Addressed Eric's three PR review minors — added `slackChannel` to init-bootstrapped seeded-fields list, added `techStack` re-detection note, and clarified Q5 Linear gate in question-order note. Mirrors regenerated; `pnpm prism:check` green (377 tests, 0 failures).
+- 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Plan closed (Winston, Sol dispatch, pre-merge on PR #257). Verdict gate applied to all Decisions; promoted the mode-taxonomy Decision to new `.prism/architect/onboarding.md` (manifest glob already routes it); ticket-tactical decisions kept local. Flagged that `pnpm prism:build` is now required before merge to mirror the new architect doc.
 
 ---
 
@@ -202,6 +209,6 @@ AC confirmed accurate against the diff and `init.ts` source. No adjustments requ
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-24 (`pnpm prism:check` green: mirror-drift check + tsc + 377 tests + verify-manifest + crossref-lint; Briar confirmed clean on same run)
 - [x] PR description up to date (no open review issues; Briar confirmation pass clean)
-- [ ] Lasting decisions promoted to architect context (promote the mode-taxonomy Decision to `.prism/architect/onboarding.md` at ticket close per the Decision verdict)
+- [x] Lasting decisions promoted to architect context (mode-taxonomy Decision promoted to `.prism/architect/onboarding.md` at close, 2026-06-24)
 
-**Last updated:** 2026-06-24 (Eric PR review minors addressed; `pnpm prism:check` green, 377 tests, 0 failures)
+**Last updated:** 2026-06-24 (plan closed; mode-taxonomy Decision promoted to architect context)
