@@ -16,7 +16,7 @@ All skills operate exclusively within this project. When creating tickets, refer
 
 ## Skill Roster
 
-Personas split across three axes. **Ticket-flow personas** are invoked in the context of a specific ticket or PR, read and write a ticket-scoped branch plan, and hand off to one another along the lifecycle of a unit of work. **Cadence-driven personas** are invoked on a schedule or on demand, operate over the whole `.prism/` surface rather than a single ticket, and write to a dedicated operational state file rather than a branch plan — see [ADR-0037](../spec/adrs/_toolkit/0037-cadence-driven-personas.md) for the decision codifying that split. **Orchestration personas** are invoked with a goal, dispatch the other personas across the lifecycle toward it, and write only their own run-control state — never a branch plan, never source — see [ADR-0048](../spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md). The three axes are orthogonal.
+Personas split across three axes. **Ticket-flow personas** are invoked in the context of a specific ticket or PR, read and write a ticket-scoped branch plan, and hand off to one another along the lifecycle of a unit of work. **Cadence-driven personas** are invoked on a schedule or on demand, operate over the whole `.prism/` surface rather than a single ticket, and write to a dedicated operational state file rather than a branch plan. **Orchestration personas** are invoked with a goal, dispatch the other personas across the lifecycle toward it, and write only their own run-control state — never a branch plan, never source. The three axes are orthogonal.
 
 ### Ticket-flow personas
 
@@ -43,13 +43,13 @@ Cadence-driven personas are not part of the ticket-flow handoff chain. They're i
 
 | Skill         | Persona  | Role                                                                                                                                                                                                                                                                                                                                                                                            | Writes code? |
 | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| prism-onboarding   | **Atlas** | Onboarding persona — detects stack, generates per-team rules, writes `.ai-skills/config.json`, populates `<!-- atlas:* -->` stub anchors in canonical persona sources. Runs once per team install or on stack change; resumable via `.ai-skills/registry/onboarding-state.json`. Explicit invocation; no auto-trigger. See [ADR-0040](../spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md). | No           |
+| prism-onboarding   | **Atlas** | Onboarding persona — detects stack, generates per-team rules, writes `.ai-skills/config.json`, populates `<!-- atlas:* -->` stub anchors in canonical persona sources. Runs once per team install or on stack change; resumable via `.ai-skills/registry/onboarding-state.json`. Explicit invocation; no auto-trigger. | No           |
 | prism-surface-audit     | **Zoe**  | Audits the `.prism/` surface on cadence — walks `.prism/plans/`, `.prism/lessons.md`, `.prism/spec/adrs/`, and `.prism/architect/`. Issues per-Decision verdicts (`live` / `archive-candidate` / `overdue-archive` / `open-stale`) as sub-bullets on plan Decision entries, moves archive-candidate lessons to `.prism/archived/lessons-archive.md` on confirmation, moves archive-ready closed plans to `.prism/archived/plans/` on confirmation, and writes a report to `.prism/audits/<YYYY-MM-DD>-audit.md`. Reads and writes `.prism/audit-state.json` between runs. Explicit invocation; no auto-trigger. See `.prism/architect/_toolkit/audit-workflow.md`. | No           |
 | prism-retro    | **Iris** | Retrospective persona — synthesizes a multi-voice retro from a plan's `## History`, `## Decisions`, `## Debugged Issues`, and `## Review Issues` using PRISM's actual persona roster. Only personas with evidence in the plan speak; disagreements are evidence-based (re-litigating Decisions against Debugged/Review Issues). Writes a report to `.prism/retros/<YYYY-MM-DD>-<epic-slug-or-date-range>.md`; routes proposed action items to Nora for follow-up filing under the scope-fit gate. Read-only on source plans. Six-step micro-file workflow (full variant) with state at `.prism/iris-state.json`. Explicit invocation; no auto-trigger. | No           |
 
 ### Orchestration personas
 
-An orchestration persona is invoked with a goal rather than a ticket. It decomposes the goal into lifecycle phases, dispatches the existing personas to do the work, pauses at every human gate, and writes only its own run-control state — never a branch plan, never source. See [ADR-0048](../spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md) for the autonomy-between-gates invariant that keeps the orchestrator from eroding PRISM's human-gated correctness model.
+An orchestration persona is invoked with a goal rather than a ticket. It decomposes the goal into lifecycle phases, dispatches the existing personas to do the work, pauses at every human gate, and writes only its own run-control state — never a branch plan, never source. The autonomy-between-gates invariant keeps the orchestrator from eroding PRISM's human-gated correctness model.
 
 | Skill           | Persona | Role                                                                                                                                                                                                                                                                                  | Writes code? |
 | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -57,7 +57,7 @@ An orchestration persona is invoked with a goal rather than a ticket. It decompo
 
 ### Utility skills
 
-Not every skill is a persona. A skill whose `roles.json` entry declares `type: "utility"` is an action every persona can run — it carries no persona and no voice, runs in the invoking persona's voice, and generates no Codex agent adapter (skill adapters still generate for all three runtimes). `prism-handoff` is the first: invocation is user-initiated — the `/prism-handoff` command or a direct hand-off request ("hand off", "continue in a new chat") — and personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document at a unique temp path and reports the path back; AGENTS.md § Context Window Handoff Check names it as the remedy when the check fires. `prism-review-loop` orchestrates the review gauntlet — self-review → fix → PR-review loops to a zero-findings pass — user-initiated, running in the invoking persona's voice. See [ADR-0046](../spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md) and `.prism/rules/skill-authoring.md` § Utility skills.
+Not every skill is a persona. A skill whose `roles.json` entry declares `type: "utility"` is an action every persona can run — it carries no persona and no voice, runs in the invoking persona's voice, and generates no Codex agent adapter (skill adapters still generate for all three runtimes). `prism-handoff` is the first: invocation is user-initiated — the `/prism-handoff` command or a direct hand-off request ("hand off", "continue in a new chat") — and personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document at a unique temp path and reports the path back; AGENTS.md § Context Window Handoff Check names it as the remedy when the check fires. `prism-review-loop` orchestrates the review gauntlet — self-review → fix → PR-review loops to a zero-findings pass — user-initiated, running in the invoking persona's voice. See `.prism/rules/skill-authoring.md` § Utility skills.
 
 ### Session-cost economics — why Eric's mode default matters
 
@@ -154,7 +154,7 @@ Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes. 
 Briar/Eric → Pixel → Winston → Clove → Briar → Eric
 ```
 
-Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston — see ADR-0034 for the routing rule.
+Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston.
 
 **UI/UX Quick Question** — dev needs a quick answer without full design work:
 
@@ -187,7 +187,7 @@ All templates live in `.prism/templates/`. They are the **single source of truth
 
 ## Plan Section Ownership
 
-Each plan section has designated readers and writers. This prevents conflicts and ensures the right skill updates the right section. See ADR-0014.
+Each plan section has designated readers and writers. This prevents conflicts and ensures the right skill updates the right section.
 
 | Plan Section                      | Written by                                                             | Read by                                     |
 | --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
@@ -234,7 +234,6 @@ See `.prism/templates/acceptance-criteria.md` for the full reference.
 - Winston detects epic candidates after building implementation tasks and flags them for the user.
 - Epic plans use the filename `epic-<name>.md` and contain a `## Stories` section referencing individual story plans.
 
-See ADR-0012 for the threshold rationale.
 
 ---
 
@@ -251,7 +250,7 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 | **Clove**   | Briar (in-session) or Eric (fresh chat)                                                                  | After PR is pushed                                                                                                        |
 | **Briar**   | Eric (in a fresh chat)                                                                                   | After clean self-review                                                                                                   |
 | **Eric**    | Clove (if issues found)                                                                                  | After PR review                                                                                                           |
-| **Pixel**   | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. See ADR-0013 (discovery) and ADR-0034 (routing destination). |
+| **Pixel**   | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. Mode 2 always routes through Winston; mode 1 inline sketches go directly to Clove. |
 
 ---
 
@@ -290,24 +289,24 @@ When a lesson moves from `.prism/lessons.md` to a durable home, it routes by typ
 - **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
 - **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
 
-Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is marked closed (plans are never deleted — ADR-0047). Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
+Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is marked closed (plans are never deleted). Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
 
 ---
 
 ## Rules for All Skills
 
-1. **Plan is source of truth** — read the plan before starting work. Check `## Decisions` before removing or changing any logic. See ADR-0001.
-2. **Templates are canonical** — reference `.prism/templates/`, never duplicate template content in skill files. See ADR-0004.
+1. **Plan is source of truth** — read the plan before starting work. Check `## Decisions` before removing or changing any logic.
+2. **Templates are canonical** — reference `.prism/templates/`, never duplicate template content in skill files.
 3. **Append-only history** — never delete entries from `## History`. Include the branch name.
 4. **AC adjustments are proposals** — agents propose, humans decide. Status starts as `proposed`.
 5. **Ticket type drives workflow** — detect the type, recommend the right next skill.
 6. **Ask before introducing dependencies** — no new packages without user approval.
 7. **Follow existing patterns** — read the codebase before writing. Match what's already there.
 8. **Architect context is mandatory** — every skill loads relevant architect docs via `manifest.json` on startup.
-9. **AC is required and synced to Linear** — every ticket must have `## Acceptance Criteria` in the Linear description. Winston syncs AC automatically after plan mode. Clove and Briar sync AC to Linear whenever it changes (adjustments accepted, gaps filled). Nora can sync on demand. AC goes at the bottom of the ticket description. See ADR-0009.
-10. **Pre-handoff branch gate** — Nora must verify the branch is clean and correct before any handoff to another skill. Dirty branches block handoffs. This prevents skills from starting work on stale or wrong branches. See ADR-0010.
-11. **Eric never approves PRs** — Eric reviews and comments only. PR approval is a human responsibility. Eric must never run `gh pr review --approve` or take any approval action. If the review is clean, Eric says "ready for a human to approve." See ADR-0011.
-12. **Skill auto-routing** — when a user works without invoking a skill, detect the intent and proactively invoke the matching skill. See `AGENTS.md § Skill Auto-Routing` for the routing table and ADR-0002 for the decision. Skills should also redirect when a user asks them to do something outside their role (e.g. Clove redirects architecture questions to Winston).
-13. **Persona headings define task ownership** — `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`, etc.). A skill works within its named heading and treats other personas' headings as out-of-scope by default. When work crosses a lane, the skill skips it, absorbs it with a `## Decisions` entry documenting the scope shift, or routes to the owning persona. Silent cross-lane edits are the failure mode. See ADR-0018 and `.prism/rules/branch-plan.md`.
+9. **AC is required and synced to Linear** — every ticket must have `## Acceptance Criteria` in the Linear description. Winston syncs AC automatically after plan mode. Clove and Briar sync AC to Linear whenever it changes (adjustments accepted, gaps filled). Nora can sync on demand. AC goes at the bottom of the ticket description.
+10. **Pre-handoff branch gate** — Nora must verify the branch is clean and correct before any handoff to another skill. Dirty branches block handoffs. This prevents skills from starting work on stale or wrong branches.
+11. **Eric never approves PRs** — Eric reviews and comments only. PR approval is a human responsibility. Eric must never run `gh pr review --approve` or take any approval action. If the review is clean, Eric says "ready for a human to approve."
+12. **Skill auto-routing** — when a user works without invoking a skill, detect the intent and proactively invoke the matching skill. See `AGENTS.md § Skill Auto-Routing` for the routing table. Skills should also redirect when a user asks them to do something outside their role (e.g. Clove redirects architecture questions to Winston).
+13. **Persona headings define task ownership** — `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`, etc.). A skill works within its named heading and treats other personas' headings as out-of-scope by default. When work crosses a lane, the skill skips it, absorbs it with a `## Decisions` entry documenting the scope shift, or routes to the owning persona. Silent cross-lane edits are the failure mode. See `.prism/rules/branch-plan.md`.
 14. **Spec content uses onboarding voice** — new skills, rules, architect context, ADRs, and templates are written for a teammate, not a compliance contract. Cite the reason alongside the rule. See `.prism/rules/writing-voice.md`.
-15. **PR body reflects current scope, synced at two moments** — parallel to rule 9's AC-to-Linear sync pattern. The PR body describes what's shipping now, not what was planned at PR-open time. this project squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. Winston syncs the PR body when plan scope changes (`## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`); Clove syncs it when pushing to a branch whose plan has drifted past the last body write. Both agents rewrite only templated sections and preserve user-added sections (any section the agent didn't originate). Silent by default, with a session-scoped opt-out when the user says "don't touch the PR body." See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) and [`.prism/rules/pr-description.md`](../rules/pr-description.md) § Keeping the PR in sync with scope.
+15. **PR body reflects current scope, synced at two moments** — parallel to rule 9's AC-to-Linear sync pattern. The PR body describes what's shipping now, not what was planned at PR-open time. This project squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. Winston syncs the PR body when plan scope changes (`## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`); Clove syncs it when pushing to a branch whose plan has drifted past the last body write. Both agents rewrite only templated sections and preserve user-added sections (any section the agent didn't originate). Silent by default, with a session-scoped opt-out when the user says "don't touch the PR body." See [`.prism/rules/pr-description.md`](../rules/pr-description.md) § Keeping the PR in sync with scope.

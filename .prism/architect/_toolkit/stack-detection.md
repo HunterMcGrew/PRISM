@@ -2,7 +2,7 @@
 
 The agent-facing reference for Atlas's stack detection subsystem. Lives at `scripts/ai-skills/lib/stack-detect.ts`. Invoked from Atlas's interactive onboarding flow before the first user question — surface what the codebase tells us before asking what we can't infer.
 
-See [ADR-0040](../spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md) for the persona-level rationale.
+See [`prism-onboarding/shared.md`](../../.ai-skills/skills/prism-onboarding/shared.md) for Atlas's overall onboarding workflow.
 
 ## Public surface
 

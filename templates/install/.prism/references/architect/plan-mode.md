@@ -9,7 +9,6 @@ Read this when the user asks to plan, build tasks, or decompose work — or when
 - If `Status: Ready for Winston` (Pixel flagged no architectural concerns) — skip the full evaluate ceremony. Run a quick architecture verification pass against her spec: one read, checking for architectural concerns Pixel might have waved through (new shared component candidates, server/client boundary issues, data-flow couplings). Then write `## Implementation Tasks` to the detail bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md). If you spot architecture Pixel missed, switch to evaluate mode, amend the design with her, or note the concern in `## Decisions`.
 - If `Status: Needs architecture review` — run full evaluate mode first, then roll into plan mode. The concern Pixel flagged is the trigger for the deeper pass.
 
-See [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md) for the routing invariant.
 
 When in plan mode, run the following after the standard startup (branch, plan lookup, architect context):
 
@@ -33,9 +32,9 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - Flag tasks that require an architectural decision before starting
    - Sequence to minimize blocked work — independent tasks first
    - **Publish in dependency order.** Order tasks so each task's prerequisites land before it. Pocock's `to-issues` names the rule; PRISM's task ordering implements it.
-   - **Apply the detail bar.** Each task must meet the bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md) — file path, specific change, verification command, sequence dependency inline. Front-load every decision; do not front-load every keystroke. See [ADR-0033](../../spec/adrs/_toolkit/0033-implementation-task-detail.md). Tag tasks `[HITL]` only when human input blocks execution — default is unmarked (`[AFK]`); see [implementation-task-detail.md § The bar (item 5 — [HITL] tag)](../../rules/implementation-task-detail.md).
+   - **Apply the detail bar.** Each task must meet the bar in [`implementation-task-detail.md`](../../rules/implementation-task-detail.md) — file path, specific change, verification command, sequence dependency inline. Front-load every decision; do not front-load every keystroke. Tag tasks `[HITL]` only when human input blocks execution — default is unmarked (`[AFK]`); see [implementation-task-detail.md § The bar (item 5 — [HITL] tag)](../../rules/implementation-task-detail.md).
    - **Docs impact check:** if the work changes user-facing behavior for a feature that has existing docs, include a task under `### Eli`: "Update the doc for [feature] at `${documentation.location}[path]` to reflect [what changed]." Check the naming convention in `.prism/architect/_toolkit/documentation.md` and the team's `documentation.location` config to find the matching doc path.
-   - **New architect file → paired dev doc (config-conditional):** if the plan introduces a *new* `.prism/architect/<name>.md` file (not an update to an existing one) AND `documentation.keepsDevDocs` is `true`, add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `${documentation.location}/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." When `keepsDevDocs` is `false` (e.g. PRISM's own config), skip this task — the architect doc is the single source. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
+   - **New architect file → paired dev doc (config-conditional):** if the plan introduces a *new* `.prism/architect/<name>.md` file (not an update to an existing one) AND `documentation.keepsDevDocs` is `true`, add a follow-up task under `### Eli`: "Write the paired human-readable dev doc at `${documentation.location}/architecture/<name>.md` — same topic, longer narrative, cross-link both ways." When `keepsDevDocs` is `false`, skip this task — the architect doc is the single source.
 5. **Decomposition check — one-line confirmation.** Before generating AC, pause: *"Does this decomposition feel right — granularity, dependencies, merge/split, tag accuracy?"* User accepts or pushes back. If pushback, reshape tasks before AC generation. Catches over-slicing / under-slicing before the AC sync amplifies the wrong shape. Source: Pocock's `decomposition-check` quiz gate.
 6. Generate `## Acceptance Criteria` from user stories, goal, and implementation tasks:
    - Use Gherkin `Given / When / Then` for behavioral criteria (user interactions, observable behavior)
@@ -45,7 +44,7 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - No file names, function names, or types — describe observable behavior only
 7. Populate or update the plan:
    - `## Goal` — one sentence if not already set
-   - `## Decisions` — architectural choices with one-line rationale. Verified fixes and non-trivial decisions use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance — see [`branch-plan.md` § Depth on Verified Fixes and Non-Trivial Decisions](../../rules/branch-plan.md) and [ADR-0024](../../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
+   - `## Decisions` — architectural choices with one-line rationale. Verified fixes and non-trivial decisions use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance — see [`branch-plan.md` § Depth on Verified Fixes and Non-Trivial Decisions](../../rules/branch-plan.md).
    - `## Implementation Tasks` — ordered task list
    - `## Acceptance Criteria` — generated from step 6
    - `## History` — append: `YYYY-MM-DD: Plan created — [goal summary]`
@@ -101,7 +100,7 @@ Slices ship in dependency order — earliest demoable slice first. Later slices 
    gh pr list --head <branch> --json number -q '.[0].number'
    ```
 
-   If a PR number comes back, rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../../rules/pr-description.md) and [ADR-0020](../../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the invariant and section-ownership boundary.
+   If a PR number comes back, rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../../rules/pr-description.md) for the section-ownership boundary.
 
    Use the GitHub REST API method documented in the PR description rule for the actual update (avoids the `gh pr edit --body` GraphQL deprecation error).
 
@@ -132,7 +131,7 @@ Promote to the relevant `.prism/architect/` file for patterns; promote to a new 
 
 - Append to `## History`: `YYYY-MM-DD [<branch>]: Promoted [decision summary] to architect/<file>.md`
 - If no relevant architect file exists: flag it for creation — "This decision should live in an architect context file, but there isn't one for [area]. Want me to create one?"
-- When creating a new architect file: after writing `.prism/architect/<name>.md` and updating `manifest.json`, check `documentation.keepsDevDocs`. When `true`, route the paired human-readable companion to Eli — the architect file is the short agent-facing spec; the paired doc at the team's configured location is the narrative version teammates read. When `false`, the architect doc is the single source; no paired doc is needed. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
+- When creating a new architect file: after writing `.prism/architect/<name>.md` and updating `manifest.json`, check `documentation.keepsDevDocs`. When `true`, route the paired human-readable companion to Eli — the architect file is the short agent-facing spec; the paired doc at the team's configured location is the narrative version teammates read. When `false`, the architect doc is the single source; no paired doc is needed.
 
 **Skip these — they stay local:**
 - Implementation tactics specific to this ticket (e.g. "use `useState` for the toggle")

@@ -777,96 +777,16 @@ export const INSTALL_ADR_MACHINERY_ALLOWLIST: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Pre-L5 temporary allowlist: install-surface files that carry `ADR-NNNN`
- * references today because PRISM's own ADR files have not yet been removed
- * (L5 cleans these). This allowlist keeps `prism:check` green on `main`
- * while the gate is in place. L5 removes entries as it distills each file.
- *
- * When this Set reaches zero, delete this constant and simplify
- * `isInstallAdrAllowlisted` to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
- */
-export const INSTALL_ADR_PRE_L5_ALLOWLIST: ReadonlySet<string> = new Set([
-	// ── Rules / references / templates that cite ADRs (distilled in L5 task 4) ──
-	"templates/install/.prism/rules/context-window-handoff-check.md",
-	"templates/install/.prism/rules/cross-agent-handoff-accountability.md",
-	"templates/install/.prism/rules/pre-compaction-checkpoint.md",
-	"templates/install/AGENTS.md.tmpl",
-	"templates/install/.prism/SPEC.md.tmpl",
-	"templates/install/.prism/architect/_toolkit/anchor-substitution.md",
-	"templates/install/.prism/architect/_toolkit/architecture-doc-shape.md",
-	"templates/install/.prism/architect/_toolkit/audit-workflow.md",
-	"templates/install/.prism/architect/_toolkit/business-layer.md",
-	"templates/install/.prism/architect/_toolkit/closing-messages.md",
-	"templates/install/.prism/architect/_toolkit/documentation.md",
-	"templates/install/.prism/architect/_toolkit/install-layout.md",
-	"templates/install/.prism/architect/_toolkit/onboarding.md",
-	"templates/install/.prism/architect/_toolkit/rule-generation.md",
-	"templates/install/.prism/architect/_toolkit/skills-ecosystem.md",
-	"templates/install/.prism/architect/_toolkit/spec-editing.md",
-	"templates/install/.prism/architect/_toolkit/stack-detection.md",
-	"templates/install/.prism/references/architect/plan-mode.md",
-	"templates/install/.prism/references/architect/replan-mode.md",
-	"templates/install/.prism/references/code-review-pr/github-writes.md",
-	"templates/install/.prism/references/session-close.md",
-	"templates/install/.prism/references/shipping-flow.md",
-	"templates/install/.prism/rules/architect-doc-verification.md",
-	"templates/install/.prism/rules/branch-plan.md",
-	"templates/install/.prism/rules/git-conventions.md",
-	"templates/install/.prism/rules/implementation-task-detail.md",
-	"templates/install/.prism/rules/pr-description.md",
-	"templates/install/.prism/rules/writing-voice.md",
-	"templates/install/.prism/templates/business-strategy.md",
-	"templates/install/.prism/templates/pr-description.md",
-	// ── PRISM ADR files removed wholesale in L5 (not distilled — just deleted) ──
-	"templates/install/.prism/spec/adrs/_toolkit/0001-plan-is-source-of-truth.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0002-skill-auto-routing.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0014-plan-section-ownership.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0015-humane-language-over-mandates.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0016-explain-the-why.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0018-persona-lane-ownership.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0023-architect-docs-source-verified-review.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0029-rules-self-declare-applicability.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0030-token-substitution-at-build-time.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0031-bifurcated-install-layout.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0032-canonical-skill-content-is-generic.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0033-implementation-task-detail.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0036-security-as-distributed-rule.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0037-cadence-driven-personas.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0038-paired-dev-doc-gates.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0039-ai-prefix-namespace.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0041-theo-architect-doc-walker.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0042-ren-refactor-scout.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0044-direct-write-tool-outputs.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0045-skill-content-disclosure-model.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0059-first-contact-adopts-via-seed-and-sync.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0060-business-layer-substrate.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0061-sol-merge-authority.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md",
-	"templates/install/.prism/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
-]);
-
-/**
- * Returns true when a repo-root-relative path is in either the permanent
- * machinery allowlist or the pre-L5 temporary allowlist.
+ * Returns true when a repo-root-relative path is in the permanent machinery
+ * allowlist. L5 (ADR distillation) removed all PRISM-specific ADR files from
+ * the install surface and distilled their references inline, so the pre-L5
+ * temporary allowlist is no longer needed.
  *
  * `relativePath` must be repo-root-relative (e.g.
- * `templates/install/.prism/rules/branch-plan.md`).
+ * `templates/install/.prism/spec/adrs/_toolkit/README.md`).
  */
 export function isInstallAdrAllowlisted(relativePath: string): boolean {
-	return (
-		INSTALL_ADR_MACHINERY_ALLOWLIST.has(relativePath) ||
-		INSTALL_ADR_PRE_L5_ALLOWLIST.has(relativePath)
-	);
+	return INSTALL_ADR_MACHINERY_ALLOWLIST.has(relativePath);
 }
 
 /**

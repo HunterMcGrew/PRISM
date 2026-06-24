@@ -4,7 +4,7 @@ The Zoe skill source is at `.ai-skills/skills/prism-surface-audit/`.
 
 This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs.
 
-Zoe is the first cadence-driven persona in PRISM. See [ADR-0037](../spec/adrs/_toolkit/0037-cadence-driven-personas.md) for the axis the persona class sits on, and the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
+Zoe is a cadence-driven persona — she operates over the whole `.prism/` surface on schedule rather than in the context of a single ticket. See the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
 
 ## Cadence
 
@@ -54,7 +54,7 @@ Archive-candidate lessons get moved to `.prism/archived/lessons-archive.md` on t
 
 ## Plan-archive lane
 
-Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, plans are never deleted — but they don't need to stay on the active surface forever. Zoe identifies archive-ready plans during each audit pass and flags them for user confirmation before moving anything.
+Closed plans accumulate in `.prism/plans/` after tickets ship. Plans are never deleted — but they don't need to stay on the active surface forever. Zoe identifies archive-ready plans during each audit pass and flags them for user confirmation before moving anything.
 
 **Archive candidate criteria** — a plan qualifies when all three hold:
 
@@ -154,7 +154,7 @@ Field semantics:
 - **`deferred`** — array of objects: `{ "item": "<plan-path>:<decision-index>", "reason": "<user-supplied string>", "deferred_at": "<ISO 8601>" }`. Items the user explicitly chose to defer during a run — Zoe re-prompts these on the next run after their deferral grace period elapses.
 - **`archived`** — object with two arrays:
   - **`lessons`** — entries that have been moved to `.prism/archived/lessons-archive.md`. Each entry: `{ "title": "<lesson title>", "archived_at": "<ISO 8601>" }`.
-  - **`plans`** — plans that have been closed after Zoe's audit confirmed all Decisions were promoted or archived (the plan files are preserved at close — ADR-0047). Each entry: `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
+  - **`plans`** — plans that have been closed after Zoe's audit confirmed all Decisions were promoted or archived (plan files are preserved at close — never deleted). Each entry: `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
 
 ### Migration
 

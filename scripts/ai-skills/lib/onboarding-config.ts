@@ -32,6 +32,10 @@ import type { OnboardingConfig } from "./onboarding-types";
  * authoritative output type for `.ai-skills/config.json`. The build's
  * substitution layer (`lib/tokens.ts`) reads from a structurally equivalent
  * shape — keep the two in sync when fields are added.
+ *
+ * The write path preserves any fields present in the existing file that are
+ * not in this type (e.g. `features.conductorMayMerge` set manually after
+ * install) — a reconfigure run never silently drops unknown fields.
  */
 export interface PrismOnDiskConfig {
 	org: string;
@@ -91,6 +95,25 @@ export interface WriteOnboardingConfigResult {
 	path: string;
 	schemaValidated: true;
 }
+
+/**
+ * Canonical ordered list of top-level keys in `.ai-skills/config.json`. Order
+ * here controls the serialization order in the output file. Both
+ * `serializeConfig` and `readUnknownFields` derive from this constant so the
+ * two functions always agree on which keys are "known."
+ */
+const ORDERED_TOP_LEVEL_KEYS: ReadonlyArray<keyof PrismOnDiskConfig> = [
+	"org",
+	"project",
+	"ticketPrefix",
+	"ticketSystem",
+	"github",
+	"defaultBranch",
+	"techStack",
+	"rules",
+	"slackChannel",
+	"documentation",
+];
 
 /**
  * Allowed values for `techStack` items — mirrors the enum in
@@ -279,6 +302,10 @@ export function validateOnDiskConfig(config: PrismOnDiskConfig): void {
  * emitted in a deterministic order via `JSON.stringify` with a fixed key
  * list), so a second invocation with the same `OnboardingConfig` produces a
  * byte-identical file. Idempotency is part of the contract; tests assert it.
+ *
+ * Unknown fields in the existing `config.json` (e.g. `features.conductorMayMerge`
+ * set manually after install) are read and re-emitted after the known fields,
+ * so a reconfigure run never silently drops them.
  */
 export async function writeOnboardingConfig(
 	repoRoot: string,
@@ -294,7 +321,8 @@ export async function writeOnboardingConfig(
 
 	await fs.mkdir(targetDir, { recursive: true });
 
-	const serialized = serializeConfig(onDisk);
+	const unknownFields = await readUnknownFields(targetPath);
+	const serialized = serializeConfig(onDisk, unknownFields);
 
 	await fs.writeFile(tmpPath, serialized, "utf8");
 
@@ -309,24 +337,59 @@ export async function writeOnboardingConfig(
 }
 
 /**
- * Serializes the on-disk config with stable key ordering and a trailing
- * newline. JSON.stringify replacer enforces the order so a second call with
- * the same input bytes returns the same output bytes regardless of object
- * key insertion order in the in-memory value.
+ * Reads the existing `config.json` (if any) and returns any top-level keys
+ * not present in `ORDERED_TOP_LEVEL_KEYS`. These are fields set manually after
+ * install (e.g. `features.conductorMayMerge`) that the write path should
+ * preserve across reconfigure runs.
+ *
+ * Returns an empty object when the file is absent, unreadable, or not valid JSON.
  */
-function serializeConfig(config: PrismOnDiskConfig): string {
-	const orderedTopLevel: Array<keyof PrismOnDiskConfig> = [
-		"org",
-		"project",
-		"ticketPrefix",
-		"ticketSystem",
-		"github",
-		"defaultBranch",
-		"techStack",
-		"rules",
-		"slackChannel",
-		"documentation",
-	];
+async function readUnknownFields(targetPath: string): Promise<Record<string, unknown>> {
+	let raw: string;
+
+	try {
+		raw = await fs.readFile(targetPath, "utf8");
+	} catch {
+		return {};
+	}
+
+	let parsed: unknown;
+
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return {};
+	}
+
+	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+		return {};
+	}
+
+	const knownKeys = new Set<string>(ORDERED_TOP_LEVEL_KEYS);
+
+	const unknown: Record<string, unknown> = {};
+
+	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+		if (!knownKeys.has(key)) {
+			unknown[key] = value;
+		}
+	}
+
+	return unknown;
+}
+
+/**
+ * Serializes the on-disk config with stable key ordering and a trailing
+ * newline. Known fields are written in `ORDERED_TOP_LEVEL_KEYS` insertion
+ * order, so a second call with the same input returns byte-identical output
+ * regardless of the in-memory object's own key order.
+ *
+ * Unknown fields (fields absent from `ORDERED_TOP_LEVEL_KEYS`) are appended
+ * after all known fields in sorted key order, so a reconfigure run preserves
+ * manually-set fields like `features.conductorMayMerge`.
+ */
+function serializeConfig(config: PrismOnDiskConfig, unknownFields: Record<string, unknown> = {}): string {
+	const orderedTopLevel = ORDERED_TOP_LEVEL_KEYS;
 
 	const orderedTicketSystem: Array<keyof PrismOnDiskConfig["ticketSystem"]> = [
 		"kind",
@@ -408,6 +471,10 @@ function serializeConfig(config: PrismOnDiskConfig): string {
 		}
 
 		renderedTopLevel[key] = value;
+	}
+
+	for (const key of Object.keys(unknownFields).sort()) {
+		renderedTopLevel[key] = unknownFields[key];
 	}
 
 	return `${JSON.stringify(renderedTopLevel, null, "\t")}\n`;

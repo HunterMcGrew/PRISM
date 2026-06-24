@@ -14,13 +14,13 @@ The strategy doc is a single file:
 
 `.prism/business/strategy.md`
 
-Single file with sections, not a per-domain subdirectory — the branch-plan precedent proves single-file-with-sections works across many personas, and a subdir fragments reads and writes before any contention justifies it. A split into per-domain subdocs is a deferred, second-adapter decision: earn it when contention is observed, not anticipated (see [ADR-0060](../spec/adrs/_toolkit/0060-business-layer-substrate.md)).
+Single file with sections, not a per-domain subdirectory — the branch-plan precedent proves single-file-with-sections works across many personas, and a subdir fragments reads and writes before any contention justifies it. A split into per-domain subdocs is a deferred, second-adapter decision: earn it when contention is observed, not anticipated.
 
 ---
 
 ## Section ownership
 
-Vera owns the doc and writes every section freely. Later business personas append to their owned sections under the section-ownership model ([ADR-0014](../spec/adrs/_toolkit/0014-plan-section-ownership.md)) — they read the whole doc but write only the sections they own. The `## Decisions` log is shared, append-only working memory the way the branch plan's is.
+Vera owns the doc and writes every section freely. Later business personas append to their owned sections under the same section-ownership model the branch plan uses — they read the whole doc but write only the sections they own. The `## Decisions` log is shared, append-only working memory the way the branch plan's is.
 
 ---
 

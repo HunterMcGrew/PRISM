@@ -300,6 +300,58 @@ test("toOnDiskConfig preserves the open-string format field verbatim", () => {
 	assert.equal(onDisk.documentation?.format, "my-custom-format");
 });
 
+test("writeOnboardingConfig preserves unknown fields from the existing config on reconfigure", async () => {
+	await withTempRepo(async (root) => {
+		await writeOnboardingConfig(root, SAMPLE_CONFIG);
+
+		const configPath = path.join(root, ".ai-skills", "config.json");
+		const initial = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
+
+		initial["features"] = { conductorMayMerge: true };
+		await fs.writeFile(configPath, JSON.stringify(initial, null, "\t") + "\n", "utf8");
+
+		await writeOnboardingConfig(root, SAMPLE_CONFIG);
+
+		const after = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
+		const features = after["features"] as { conductorMayMerge?: boolean } | undefined;
+		assert.equal(features?.conductorMayMerge, true, "features.conductorMayMerge must survive a reconfigure");
+
+		assert.equal(after["project"], "PRISM", "known fields are still present after reconfigure");
+	});
+});
+
+test("writeOnboardingConfig does not emit unknown fields when prior config is absent", async () => {
+	await withTempRepo(async (root) => {
+		const result = await writeOnboardingConfig(root, SAMPLE_CONFIG);
+		const parsed = JSON.parse(await fs.readFile(result.path, "utf8")) as Record<string, unknown>;
+
+		assert.equal("features" in parsed, false, "no unknown fields appear on a fresh write");
+	});
+});
+
+test("writeOnboardingConfig emits unknown fields in sorted order after known fields", async () => {
+	await withTempRepo(async (root) => {
+		await writeOnboardingConfig(root, SAMPLE_CONFIG);
+
+		const configPath = path.join(root, ".ai-skills", "config.json");
+		const initial = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
+
+		initial["zzz"] = "last";
+		initial["aaa"] = "first";
+		await fs.writeFile(configPath, JSON.stringify(initial, null, "\t") + "\n", "utf8");
+
+		await writeOnboardingConfig(root, SAMPLE_CONFIG);
+
+		const raw = await fs.readFile(configPath, "utf8");
+		const aaaPos = raw.indexOf('"aaa"');
+		const zzzPos = raw.indexOf('"zzz"');
+		assert.ok(aaaPos < zzzPos, "unknown fields appear in sorted key order");
+
+		const documentationPos = raw.indexOf('"documentation"');
+		assert.ok(documentationPos < aaaPos || documentationPos === -1, "unknown fields appear after all known fields");
+	});
+});
+
 test("documentation block round-trips: same input produces byte-identical output", async () => {
 	await withTempRepo(async (root) => {
 		const configWithDocs: OnboardingConfig = {

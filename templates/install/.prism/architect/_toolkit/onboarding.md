@@ -2,17 +2,17 @@
 
 The architect-level record of how Atlas onboards a consuming team into PRISM. This doc captures the lasting decisions from the Phase 2 epic so future contributors don't have to reconstruct them from the plan file.
 
-See [ADR-0040](../spec/adrs/_toolkit/0040-atlas-as-onboarding-persona.md) for the persona-level decision and [`prism-onboarding/shared.md`](../../.ai-skills/skills/prism-onboarding/shared.md) for the workflow.
+See [`prism-onboarding/shared.md`](../../.ai-skills/skills/prism-onboarding/shared.md) for the workflow.
 
 ## Atlas is a dedicated persona
 
 Atlas is its own skill, not a Winston sub-mode. Winston is reactive (he evaluates an approach the user brings him); onboarding is proactive (Atlas drives the conversation and asks the user questions). The cadence and invocation surface are fundamentally different.
 
-Atlas joins Zoe as the second cadence-driven persona per ADR-0037 — distinct from each other in cadence and surface (Atlas writes durable config; Zoe writes audit reports), but sharing the proactive shape that ticket-flow personas don't have.
+Atlas joins Zoe as a cadence-driven persona — distinct from Zoe in cadence and surface (Atlas writes durable config; Zoe writes audit reports), but sharing the proactive shape that ticket-flow personas don't have.
 
 ## Security guidance is Atlas-generated per stack
 
-Stack-specific security concerns (Django CSRF middleware, WordPress nonce verification, Rust `unsafe` discipline) don't compose into a single universal rule without becoming either too generic to act on or too long to load on every chat. PRISM ships no universal `security.md` — Atlas generates `.prism/rules/security.md` per detected stack during onboarding, with the applicability declaration each generated rule carries per ADR-0029. Multi-language repos get composite sections from a single generator run.
+Stack-specific security concerns (Django CSRF middleware, WordPress nonce verification, Rust `unsafe` discipline) don't compose into a single universal rule without becoming either too generic to act on or too long to load on every chat. PRISM ships no universal `security.md` — Atlas generates `.prism/rules/security.md` per detected stack during onboarding, with the applicability declaration each generated rule carries. Multi-language repos get composite sections from a single generator run.
 
 See [`rule-generation.md`](./rule-generation.md) for the generator matrix.
 

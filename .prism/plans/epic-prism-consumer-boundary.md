@@ -159,6 +159,42 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** remove `.prism/rules/skill-authoring.md` route from `manifest.stub.json` and all `manifest.base.json` files.
 - **Fixed in:** Eric Minor, addressed on hunter/consumer-boundary-l6-rule-bucket-moves; `pnpm prism:check` passes (392 tests).
 
+### knownKeys Set duplicates orderedTopLevel array in serializeConfig
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/lib/onboarding-config.ts` (readUnknownFields + serializeConfig)
+- **Problem:** Two hand-maintained copies of the same key list — if they drift, a known field silently reorders to the bottom of the output.
+- **Suggested fix:** extract to a shared module-level constant; derive both functions from it.
+- **Fixed in:** commit 46c28e2 on hunter/consumer-boundary-l7-sol-config-plumbing
+
+### serializeConfig JSDoc says "JSON.stringify replacer enforces the order"
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/lib/onboarding-config.ts:375`
+- **Problem:** The replacer param in the JSON.stringify call is null — order comes from building the object in insertion order, not a replacer.
+- **Suggested fix:** correct the docstring to describe the actual mechanism.
+- **Fixed in:** commit 46c28e2 on hunter/consumer-boundary-l7-sol-config-plumbing
+
+### README Cross-Reference Pattern retains PRISM-specific ADR-0003 illustrative examples
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `templates/install/.prism/spec/adrs/_toolkit/README.md:54-55`
+- **Problem:** The L5 ADR sweep cleared the index table rows but left two lines in the Cross-Reference Pattern prose that cite PRISM-specific context: a pointer to `AGENTS.md § 0` (PRISM-internal structure) and a PRISM-specific example of `ADR-0003` plus a "Round 10 audit" reference — both are internal and meaningless to consumers.
+- **Suggested fix:** Replace line 54 with a generic skill-file example using `ADR-NNNN`; strip the "Round 10 audit for ADR-0003" parenthetical from line 55.
+- **Fixed in:** hunter/consumer-boundary-l5-adr-distill
+
+### Test description leaks L5 phase context into a durable test name
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/crossref-lint.test.ts:1157`
+- **Problem:** Test description "pre-L5 allowlisted file with ADR ref passes the gate" embeds a phase name that means nothing to a future reader, and the `preL5Path` variable and inline comments repeat the same framing — the constant the description referenced was also removed in this PR, so the language is doubly stale.
+- **Suggested fix:** Rename to describe the `allowlistOverride` contract: "file in allowlistOverride with ADR ref passes the gate"; update variable name to `allowlistedPath` and inline comments to match.
+- **Fixed in:** hunter/consumer-boundary-l5-adr-distill
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -171,9 +207,14 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Extended `crossref-lint.ts` with `runInstallAdrGate` — a second lint pass that detects `ADR-NNNN` references under `templates/install/` and fails unless the file is in the permanent machinery allowlist (README.md, triple-gated-adr-criterion.md) or the pre-L5 temporary allowlist covering all current violating files. `prism:check` stays green on current `main`; gate is live and gates L5.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed three Briar minors: removed phantom CLAUDE.md.tmpl from CROSSREF_SCAN_ROOTS (zero verifiable refs), wired `runInstallAdrGate` to delegate to `isInstallAdrAllowlisted` so the exported predicate is the single canonical check, corrected JSDoc ("call" → "function"), and added integration test for the pre-L5 allowlist path. 68 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed two Briar minors from second review: added `(?!\d)` lookahead to `ADR_REF_RE` (5-digit strings like ADR-12345 no longer match as ADR-1234) and updated JSDoc; added unit test for `isInstallAdrAllowlisted` pre-L5 branch. 391 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: L5 distillation — classified all ADR references in the install surface (load-bearing → inline Why; illustrative → genericized); removed 48 ADR files from templates/install/ and added to excluded[]; replaced install ADR README index table with blank shell; simplified isInstallAdrAllowlisted (pre-L5 allowlist constant removed); distilled ADR refs from canonical .prism/ rules, architect toolkit, references, and templates; fixed install-layout.md curated copy and stale tests. pnpm prism:check and install-adr-gate both green; 392 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed Briar minor: `INSTALL_ADR_PRE_L5_ALLOWLIST` JSDoc said to delete `isInstallAdrAllowlisted` when the set reaches zero, but that function is the canonical exported predicate used by `runInstallAdrGate`; corrected to say delete the constant and simplify the function to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
+- 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: Fixed two Briar minors: genericized PRISM-specific ADR-0003 illustrative examples in the install README Cross-Reference Pattern prose; renamed stale test description from phase-context language to describe the allowlistOverride contract. 392 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: L6 rule bucket moves — un-excluded 11 behavioral-kernel rules from `seed-curation.json` (literal guard clean), baked `skill-authoring.md` into `prism-skill-forge/lib/` as first single-owner bake, stripped dead `spec/adrs/**` route from `manifest.stub.json`; 3 behavioral rules with ADR back-references added to pre-L5 crossref-lint allowlist pending L5 distillation. `pnpm prism:check` passes (392 tests green).
 - 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Fixed Eric Minor — removed dead `.prism/rules/skill-authoring.md` manifest route from `manifest.stub.json` and all five `manifest.base.json` files; `pnpm prism:check` passes (392 tests).
+- 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: L7 Sol config plumbing — added `features.conductorMayMerge` to `config.schema.json` (absent/false by default, Sol-read-only); made config write read-merge-preserve unknown fields to fix latent data-loss on reconfigure; gated Sol's merge path on the flag in `shared.md`; rewrote "Who merges" in canonical `git-conventions.md` to state the flag as the gate (propagated to all platform copies and install seed via `prism:build`). Three new tests for the preserve-unknown-fields contract. `pnpm prism:check` + `pnpm prism:build` both green; 395 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric minors — extracted `ORDERED_TOP_LEVEL_KEYS` as a module-level constant so `readUnknownFields` and `serializeConfig` derive from the same source of truth (no drift risk); corrected `serializeConfig` JSDoc to say insertion-order rather than JSON.stringify replacer. 395 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric Pass-2 minors — moved TECH_STACK_ENUM JSDoc to sit adjacent to its declaration (orphaned by Pass-1 ORDERED_TOP_LEVEL_KEYS insertion); added "by default" to the Who-merges opening sentence so the Sol flag-gate exception reconciles with the rule across all 6 platform copies. 395 tests pass.
 
 ---
 

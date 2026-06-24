@@ -18,7 +18,7 @@ Re-plan Mode fires when the ticket's scope has shifted *after* implementation ha
 3. **Walk the stale-artifact table** (below). For each artifact, decide whether the diff makes it stale, clean, or needs verification.
 4. **Output a propagation report.** Per-artifact verdict: `stale` / `clean` / `verify`. One line per artifact.
 5. **Route stale artifacts.** For each `stale`, offer routing to the owning persona — Mira (user stories), Parker (PRD), Nora (Linear ticket description), Clove (in-flight work coordination), Pixel (mock spec), Reese (AC checklist).
-6. **Auto-sync what Winston owns.** Linear AC sync (per the standard plan-mode flow at step 8 in [`plan-mode.md`](./plan-mode.md)) and PR body sync (per ADR-0020) run without prompt. Report what was synced in the closing message.
+6. **Auto-sync what Winston owns.** Linear AC sync (per the standard plan-mode flow at step 8 in [`plan-mode.md`](./plan-mode.md)) and PR body sync run without prompt. Report what was synced in the closing message.
 
 **Stale-artifact table:**
 
@@ -29,7 +29,7 @@ Re-plan Mode fires when the ticket's scope has shifted *after* implementation ha
 | `## User Stories` in plan | Mira | Scope shift adds/removes a user-facing capability |
 | `.prism/prds/<slug>.md` | Parker | PRD-grain change (rare mid-ticket; possible on epic re-plans) |
 | In-flight Clove work | Clove | Tasks Clove was executing got removed or restated |
-| PR body | Winston (auto-sync per ADR-0020) | Tasks/Decisions/AC change |
+| PR body | Winston (auto-sync) | Tasks/Decisions/AC change |
 | Pixel mock spec | Pixel | UI scope shifts |
 | AC already QA-planned | Reese | AC drift after Reese wrote a test plan |
 

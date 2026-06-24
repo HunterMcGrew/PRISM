@@ -24,17 +24,17 @@ The table below provides the default next persona and the conditional routes for
 | --- | --- | --- |
 | **Nora** | Type-dependent: Sasha (bug), Mira/Pixel/Winston (feature), Winston (improvement) | If user knows root cause → Clove direct |
 | **Mira** | Winston (architecture) — or Pixel first if UI/UX surface | If single-file scope → Clove direct |
-| **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Per [ADR-0034](../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md) routing rule |
+| **Pixel** | Winston (mode 2 specs always); back to Clove (mode 1 inline) | Mode 2 always routes through Winston — Pixel never hands mode 2 specs directly to Clove |
 | **Winston** | Clove (implementation) | If unknowns surface → Sasha; if plan needs revision → back to user |
 | **Clove** | Briar (self-review before PR) | After Briar clean → ship; after Briar issues → back to Clove |
 | **Briar** | Clove (if issues) or "ready to ship" (if clean) | Never routes to Eric directly — Eric runs after PR opens |
-| **Eric** | Clove (if PR issues) | Comments-only per [ADR-0011](../spec/adrs/_toolkit/0011-eric-never-approves-prs.md); never approves |
+| **Eric** | Clove (if PR issues) | Comments-only; never approves — PR approval is a human responsibility |
 | **Sasha** | Clove (implementation of fix) | Always — Sasha doesn't write fixes |
 | **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → Winston for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |
 | **Parker** | Mira (decompose to stories) or Nora (Linear initiative handoff) | At launch stakes with rubric findings → Winston |
-| **Theo** | Done (architect docs ship); Eli for paired dev doc when `keepsDevDocs: true` | Config-conditional per [ADR-0058](../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md) |
+| **Theo** | Done (architect docs ship); Eli for paired dev doc when `keepsDevDocs: true` | Paired dev doc is config-conditional on `documentation.keepsDevDocs` |
 | **Ren** | Winston (evaluate refactor plan) or Clove (execute) | Refactor plan needs Winston review before Clove |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |
 | **Iris** | Nora (for action-item filing) | Done — user declines the handoff if they don't want tickets filed; no other routing |
@@ -60,7 +60,7 @@ The "Handing off to..." wording is the gold standard for default routes. It's ph
 
 ## Skill auto-routing is separate
 
-This doc covers **post-completion handoffs** — the moment a persona finishes and offers the next persona. PRISM also has **skill auto-routing** at session start (per `AGENTS.md § Skill Auto-Routing` and [ADR-0002](../spec/adrs/_toolkit/0002-skill-auto-routing.md)) where mentioning a persona name in a user prompt triggers that skill. The two mechanisms don't conflict:
+This doc covers **post-completion handoffs** — the moment a persona finishes and offers the next persona. PRISM also has **skill auto-routing** at session start (per `AGENTS.md § Skill Auto-Routing`) where mentioning a persona name in a user prompt triggers that skill. The two mechanisms don't conflict:
 
 - Auto-routing fires at the **start** of a turn when the user's input matches a routing trigger.
 - Closing-message routing fires at the **end** of a turn as a suggestion — never auto-invokes; the user types the next persona's name (or doesn't).

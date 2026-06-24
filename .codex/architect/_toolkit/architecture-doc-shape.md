@@ -109,4 +109,4 @@ Beat 3 names the tool you picked as the _natural fit_ for the requirements you l
 - `.prism/rules/writing-voice.md` — onboarding voice over mandate voice; architecture docs follow the same voice rules as other spec content
 - `.prism/architect/_toolkit/documentation.md` — documentation conventions, Two-Reader Model, Doc-to-Doc Overlap tracking
 - `.prism/references/dev-doc-template.md` — dev doc template that architecture-category docs extend with this rule
-- [ADR-0016](../spec/adrs/_toolkit/0016-explain-the-why.md) — explain the why (the parent principle behind this rule's insistence on reasoning over inventory)
+- `.prism/rules/writing-voice.md` § Explain the why — the parent principle behind this rule's insistence on reasoning over inventory
