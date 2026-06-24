@@ -10,6 +10,19 @@ last_updated: "2026-06-23"
 
 `prism adopt` seeds `.prism/` and projects the full persona roster into your repo. `prism update` keeps it current. This guide covers the recommended path — running PRISM directly from npm — and the checkout-based alternatives for air-gapped environments, customization, and contributors.
 
+## Before you adopt: `prism init`
+
+`prism adopt` requires a config file — `.ai-skills/config.json` — to know which project it's seeding. If this is your first time bringing PRISM into this repo, run `init` first:
+
+```bash
+cd your-repo
+npx @huntermcgrew/prism init
+```
+
+`init` asks for your project name, ticket prefix, ticket system (`linear` or `github-issues`), and GitHub owner/repo, then writes the config. It detects your tech stack automatically. In CI or scripts, pass the same values as flags (`--project`, `--ticket-prefix`, etc.) instead of answering prompts.
+
+Once the config is written, run `adopt` below. After that, open Claude Code and run Atlas for the richer, AI-assisted onboarding (per-team rules, stack-specific guidance, anchor population).
+
 ## Recommended: npx
 
 Run PRISM directly from npm — no clone, no global install, no PATH setup.
