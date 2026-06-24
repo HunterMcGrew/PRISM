@@ -150,6 +150,24 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** update all five copies to `${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`; build resolves token in platform mirrors.
 - **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
 
+### knownKeys Set duplicates orderedTopLevel array in serializeConfig
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/lib/onboarding-config.ts` (readUnknownFields + serializeConfig)
+- **Problem:** Two hand-maintained copies of the same key list — if they drift, a known field silently reorders to the bottom of the output.
+- **Suggested fix:** extract to a shared module-level constant; derive both functions from it.
+- **Fixed in:** commit 46c28e2 on hunter/consumer-boundary-l7-sol-config-plumbing
+
+### serializeConfig JSDoc says "JSON.stringify replacer enforces the order"
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/lib/onboarding-config.ts:375`
+- **Problem:** The replacer param in the JSON.stringify call is null — order comes from building the object in insertion order, not a replacer.
+- **Suggested fix:** correct the docstring to describe the actual mechanism.
+- **Fixed in:** commit 46c28e2 on hunter/consumer-boundary-l7-sol-config-plumbing
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -164,6 +182,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed two Briar minors from second review: added `(?!\d)` lookahead to `ADR_REF_RE` (5-digit strings like ADR-12345 no longer match as ADR-1234) and updated JSDoc; added unit test for `isInstallAdrAllowlisted` pre-L5 branch. 391 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed Briar minor: `INSTALL_ADR_PRE_L5_ALLOWLIST` JSDoc said to delete `isInstallAdrAllowlisted` when the set reaches zero, but that function is the canonical exported predicate used by `runInstallAdrGate`; corrected to say delete the constant and simplify the function to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
 - 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: L7 Sol config plumbing — added `features.conductorMayMerge` to `config.schema.json` (absent/false by default, Sol-read-only); made config write read-merge-preserve unknown fields to fix latent data-loss on reconfigure; gated Sol's merge path on the flag in `shared.md`; rewrote "Who merges" in canonical `git-conventions.md` to state the flag as the gate (propagated to all platform copies and install seed via `prism:build`). Three new tests for the preserve-unknown-fields contract. `pnpm prism:check` + `pnpm prism:build` both green; 395 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric minors — extracted `ORDERED_TOP_LEVEL_KEYS` as a module-level constant so `readUnknownFields` and `serializeConfig` derive from the same source of truth (no drift risk); corrected `serializeConfig` JSDoc to say insertion-order rather than JSON.stringify replacer. 395 tests pass.
 
 ---
 
