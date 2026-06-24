@@ -93,8 +93,8 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 - `SLACK_CHANNEL` is an optional token — it has valid semantic meaning when absent (no Slack integration configured). The fix sets it unconditionally to an empty string rather than leaving it unmapped, which keeps `substituteTokens` from throwing while preserving the "no channel" state for downstream routing.
 - Lilac's empty-channel path routes to pasteable-block output (existing behavior) rather than auto-posting, making the empty string a first-class state rather than an error condition.
 - A guard test scanning all shipped skill content for `${TOKEN}` references against a minimal-config token map is the missing gate that let this bug (and the prior two cold-start bugs) ship. It belongs in `scripts/ai-skills/` alongside the token machinery it validates.
-- **Routing-seam path confirmed: `.prism/references/standup-summary/phases.md:181`, NOT `.ai-skills/skills/prism-standup-summary/`.** The standup skill externalized its phase bodies to a reference (per `shared.md:137`), so the post-vs-paste question Lilac asks lives in the reference, not the skill body. Sasha's line number (181) was correct; the path needed pinning down. References are copied verbatim by the build (`generate-skills.ts:353` `fs.cp`) and never token-substituted, so editing `phases.md` directly is correct and needs no rebuild — `${SLACK_CHANNEL}` there is a runtime literal Lilac resolves, not a build token.
-- **Guard-test scan surface = `shared.md` + platform body files (`claude.md`/`codex.md`/`cursor.md`) per skill; references excluded.** This mirrors exactly what `substituteTokens` processes at build time (`buildSkillMarkdown` assembles frontmatter + shared + platform body, then substitutes). Scanning `references/` would false-positive on shell-variable `${...}` usages that are not build tokens (e.g. `${GITHUB_OWNER}` inside bash blocks in `fetch.md`), and would not reflect the real substitution surface. Confirmed: the only `${SLACK_CHANNEL}` in any `shared.md` is `prism-standup-summary/shared.md:120`.
+- **Routing-seam path confirmed: `.prism/references/standup-summary/phases.md:181`, NOT `.ai-skills/skills/prism-standup-summary/`.** The standup skill externalized its phase bodies to a reference (per `shared.md:137`), so the post-vs-paste question Lilac asks lives in the reference, not the skill body. Sasha's line number (181) was correct; the path needed pinning down. At adopt-time, `syncOptionalSkillPayloads` copies skill `references/` payloads verbatim via `fs.cp` (no `substituteTokens` call) — `${SLACK_CHANNEL}` in `phases.md` is a runtime literal Lilac resolves, not a token the adopt-time build substitutes. The PRISM maintainer's own build (`build.ts` → `copyContentToPlatformDir`) does substitute `.prism/references/` when writing to platform dirs (`.claude/`, `.codex/`, `.cursor/`) — that is a separate pass against the dogfood config, not the consumer adopt-time path.
+- **Guard-test scan surface = `shared.md` + platform body files (`claude.md`/`codex.md`/`cursor.md`) per skill; skill `references/` payloads excluded.** This mirrors exactly what `substituteTokens` processes at adopt-time (`buildSkillMarkdown` assembles frontmatter + shared + platform body, then substitutes; `syncOptionalSkillPayloads` copies the `references/` payload via `fs.cp` with no substitution). Scanning skill references would false-positive on shell-variable `${...}` usages that are never build tokens (e.g. `${GITHUB_OWNER}` inside bash blocks in `fetch.md`) and would not reflect the crash-producing substitution surface. Confirmed: the only `${SLACK_CHANNEL}` in any `shared.md` is `prism-standup-summary/shared.md:120`.
 - **Version bump to 0.6.0 is a Clove task (committed `chore:` commit), not a Hunter-at-publish step.** The prior unit committed `0.5.1` as a standalone `chore:` commit (`a4a4e64`) rather than relying on `npm version` at publish; committing the bump to git prevents git↔npm version drift. Hunter still runs `npm publish` at release. Considered: leaving the bump to `npm version` at publish — rejected because it reopens the drift the handoff explicitly flagged.
 
 ---
@@ -105,6 +105,8 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Sasha confirmed root cause — `deriveTokenMap` conditionally omits `SLACK_CHANNEL` when `slackChannel` is absent from config; `init` never writes it; `adopt` throws at skill-assembly time on `substituteTokens`. `GITHUB_OWNER`/`GITHUB_REPO` are not at risk (`init` requires them). `LINEAR_*` tokens not referenced in any `shared.md`. Fix: unconditional `SLACK_CHANNEL` default of `""` in `deriveTokenMap`; guard test to cover the class.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Winston built five Clove tasks to the detail bar. Confirmed routing seam is `.prism/references/standup-summary/phases.md:181` (skill externalized phase bodies to the reference); scoped guard-test scan to `shared.md`+platform bodies (references excluded — verbatim copy, not substituted); version bump 0.6.0 set as a committed Clove `chore:` task per the prior unit's convention.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove implemented all five tasks. Canonical source for phases.md confirmed as `.prism/references/standup-summary/phases.md` (no `.ai-skills/` mirror). Guard test proved red without task 2's fix, green after. `pnpm run prism:check` passed; 377 tests, 0 failures.
+- 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Briar self-review complete. No critical/major issues. Three minors filed: plan Decision wording on reference substitution (inaccurate — build.ts does token-substitute references), missing AC citations (added), docs/parameterization.md staleness (SLACK_CHANNEL now always present in token map). Build and tests confirmed green.
+- 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove closed all three Briar minors. Definitively traced two substitution passes: build.ts substitutes `.prism/references/` when mirroring to platform dirs (dogfood config); adopt-time `syncOptionalSkillPayloads` copies skill `references/` payloads via `fs.cp` with no substitution. Guard test exclusion confirmed correct — it mirrors the adopt-time crash surface. Updated plan Decisions to accurately describe both passes; updated `docs/parameterization.md` to note `${SLACK_CHANNEL}` is always present in the token map.
 
 ---
 
@@ -141,7 +143,29 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 
 ## Review Issues
 
-_None yet._
+### Decision inaccuracy: "references are never token-substituted"
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-254.md` (Decisions section)
+- **Problem:** The Decision bullet said "References are copied verbatim by the build (`generate-skills.ts:353` `fs.cp`) and never token-substituted." In fact, `build.ts` lists `"references"` in `COPIED_CONTENT_AREAS` and calls `copyContentFileWithSubstitution` on every file in it (line 207) — so platform-copy references (`.claude/`, `.codex/`, `.cursor/`) do receive token substitution against the dogfood config.
+- **Fixed in:** Decision bullets updated to distinguish the two passes: at adopt-time `syncOptionalSkillPayloads` copies skill `references/` via `fs.cp` (no substitution — the crash-producing path); the PRISM maintainer's own build substitutes `.prism/references/` when mirroring to platform dirs (separate pass, different surface). The guard test exclusion is correct — it mirrors the adopt-time crash surface, not the maintainer build surface.
+
+### AC citations missing
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-254.md` (Acceptance Criteria section)
+- **Problem:** Per `acceptance-criteria.md`, every AC item must end with a `(US-N)`, `(Debug-N)`, or `(REQ-N)` citation. All 7 AC items lacked citations.
+- **Fixed in:** Citations added to all 7 AC items by Briar.
+
+### docs/parameterization.md staleness
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `docs/parameterization.md:74`
+- **Problem:** The `${SLACK_CHANNEL}` row in the "All tokens" table implied the token is conditionally present. After the fix, `SLACK_CHANNEL` is always emitted by `deriveTokenMap` (empty string default).
+- **Fixed in:** Row updated to state "Always present in the token map; defaults to `""` when `slackChannel` is absent from config."
 
 ---
 
@@ -149,22 +173,23 @@ _None yet._
 
 ### Behavioral
 
-- [ ] Given a consumer with no `slackChannel` in config, When `npx @huntermcgrew/prism init` is run and the Slack prompt is skipped (Enter), Then `adopt` completes with zero thrown errors and zero manual edits required.
-- [ ] Given `init` is run interactively, When the user presses Enter at the Slack channel prompt, Then `slackChannel` is omitted from `config.json` (not written as empty string).
-- [ ] Given `init` is run non-interactively, When `--slack-channel` flag is omitted, Then the same zero-error adoption path holds.
-- [ ] Given `SLACK_CHANNEL` resolves to empty string after substitution, When Lilac's standup skill runs, Then it returns a pasteable block and does NOT attempt to post to Slack.
+- [ ] Given a consumer with no `slackChannel` in config, When `npx @huntermcgrew/prism init` is run and the Slack prompt is skipped (Enter), Then `adopt` completes with zero thrown errors and zero manual edits required. (US-1)
+- [ ] Given `init` is run interactively, When the user presses Enter at the Slack channel prompt, Then `slackChannel` is omitted from `config.json` (not written as empty string). (US-1)
+- [ ] Given `init` is run non-interactively, When `--slack-channel` flag is omitted, Then the same zero-error adoption path holds. (US-2)
+- [ ] Given `SLACK_CHANNEL` resolves to empty string after substitution, When Lilac's standup skill runs, Then it returns a pasteable block and does NOT attempt to post to Slack. (Debug-1)
 
 ### Non-behavioral
 
-- [ ] Guard test exists in `scripts/ai-skills/` and passes: scans all shipped skill content for `${TOKEN}` patterns, asserts the token map built from a minimal valid `init` config (no slackChannel) covers every reference.
-- [ ] Guard test is structured to catch the class of bug: a new optional token added to skill content without a default in `deriveTokenMap` causes the test to fail.
-- [ ] Version bumped to 0.6.0.
+- [ ] Guard test exists in `scripts/ai-skills/` and passes: scans all shipped skill content for `${TOKEN}` patterns, asserts the token map built from a minimal valid `init` config (no slackChannel) covers every reference. (Debug-1)
+- [ ] Guard test is structured to catch the class of bug: a new optional token added to skill content without a default in `deriveTokenMap` causes the test to fail. (Debug-1)
+- [ ] Version bumped to 0.6.0. (REQ-1)
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-23 | Nora | Seeded AC from agreed four-part design | created | N/A (GitHub Issues) |
+| 2026-06-23 | Briar | Added citations to all 7 AC items per acceptance-criteria.md rule | updated | N/A (GitHub Issues) |
 
 ---
 
@@ -184,5 +209,6 @@ _None yet._
 - [x] Build passes — last run: 2026-06-23 (`pnpm run prism:check` passed, 377 tests, 0 failures)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] 3 minor review issues open (plan Decision wording, AC citations, docs staleness) — none block merge
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-23 (Briar self-review)
