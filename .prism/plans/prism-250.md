@@ -91,6 +91,7 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Eli documented cold-start flow. Added `prism init → adopt → Atlas` three-step section to `install-layout.md` § First-contact; added pre-adopt pointer to `docs/adopt-prism.md`. Commands and flags verified against `init.ts` and `cli.ts` source.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Briar self-review. Types clean; 371 tests green. One major: Eli's `install-layout.md` edit was not propagated to platform mirrors — `prism:check` fails. Fix: run `pnpm prism:build`. One minor: unsafe `as` cast on `flagTicketSystem` before validation in `init.ts:167`.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Clove fixed all three Briar review issues. Ran `pnpm prism:build` to sync platform mirrors; restructured `parseFlag`/validate/assign to eliminate `as` cast on `rawTicketSystem`; added `fieldName` param to `resolveRequired` so empty-answer errors read cleanly without prompt hint text. `prism:check` fully green: build sync, tsc clean, 371 tests pass, verify-manifest clean, crossref-lint clean.
+- 2026-06-23 [hmcgrew/prism-250-init-command]: Eli fixed Eric's Minor — stale "only linear supported" claim at lines 91 and 140 of `prism-onboarding/shared.md`. Both now reflect that `ticketSystem.kind` accepts `"linear"` or `"github-issues"`. Rebuilt mirrors; `prism:check` green at 371/371.
 
 ---
 
