@@ -787,6 +787,9 @@ export const INSTALL_ADR_MACHINERY_ALLOWLIST: ReadonlySet<string> = new Set([
  */
 export const INSTALL_ADR_PRE_L5_ALLOWLIST: ReadonlySet<string> = new Set([
 	// ── Rules / references / templates that cite ADRs (distilled in L5 task 4) ──
+	"templates/install/.prism/rules/context-window-handoff-check.md",
+	"templates/install/.prism/rules/cross-agent-handoff-accountability.md",
+	"templates/install/.prism/rules/pre-compaction-checkpoint.md",
 	"templates/install/AGENTS.md.tmpl",
 	"templates/install/.prism/SPEC.md.tmpl",
 	"templates/install/.prism/architect/_toolkit/anchor-substitution.md",
@@ -811,7 +814,6 @@ export const INSTALL_ADR_PRE_L5_ALLOWLIST: ReadonlySet<string> = new Set([
 	"templates/install/.prism/rules/git-conventions.md",
 	"templates/install/.prism/rules/implementation-task-detail.md",
 	"templates/install/.prism/rules/pr-description.md",
-	"templates/install/.prism/rules/skill-authoring.md",
 	"templates/install/.prism/rules/writing-voice.md",
 	"templates/install/.prism/templates/business-strategy.md",
 	"templates/install/.prism/templates/pr-description.md",
