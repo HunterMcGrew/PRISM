@@ -238,6 +238,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: L8 Atlas onboarding spec — added AC format offer (skip-if-exists, checklist vs Gherkin), one-line applicability declaration for accessibility/design-governance during anchor substitution, and explicit `features.conductorMayMerge` filter from reconfigure current-config display. `pnpm prism:build` + `pnpm prism:check` green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed two Briar minors — corrected AC contract "Gherkin default" → "checklist default"; removed unreachable skip-if-exists guard from step 10 offer (adopt pre-deploys the file, gate never fires). `pnpm prism:build` + `pnpm prism:check` green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Briar minor — replaced "offer once" with unconditional wording in step 10 and output contract across all 5 platform copies; text now matches the Decision that the offer fires on every install and reconfigure run.
+- 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Eric Major — removed surviving skip-if-exists semantics from canonical shared.md step 10 offer text and output contract line 231; adopt pre-deploys acceptance-criteria.md so the guard always fires. Rebuilt mirrors; 395 tests pass.
 
 ---
 
