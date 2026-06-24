@@ -52,7 +52,8 @@ Sol reads the tier off the goal-state lane and sets it per dispatch through the 
 | --- | --- | --- |
 | **Sol (Conductor)** | Opus (default, not hardcoded) | n/a — already top tier |
 | **Winston (architect / plan)** | Always Opus, never weaker | n/a — the firewall never runs cheap |
-| Worker personas (Clove, Sasha, Briar, Eric, …) | Sonnet | → Opus on signal (the worker stalled the unit twice) |
+| **Eric (PR review)** | Always Opus, never weaker | n/a — high-judgment review task, top tier by default |
+| Worker personas (Clove, Sasha, Briar, …) | Sonnet | → Opus on signal (the worker stalled the unit twice) |
 
 A plan-readiness failure means *re-plan harder* — Winston is already on the strong model — not *escalate the model*. A config seam lets other runtimes map their own tiers.
 
