@@ -237,6 +237,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Refreshed L6 onto current main (L3+L5+L7 merged); resolved 4 conflicts per the documented resolution rules; distilled ADR-0006/0007/0008 back-references from the 3 behavioral-kernel rules (citations were supplementary — Whys already self-sufficient inline). pnpm prism:build propagated to 15 files; pnpm prism:check and install-adr-gate both green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: L8 Atlas onboarding spec — added AC format offer (skip-if-exists, checklist vs Gherkin), one-line applicability declaration for accessibility/design-governance during anchor substitution, and explicit `features.conductorMayMerge` filter from reconfigure current-config display. `pnpm prism:build` + `pnpm prism:check` green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed two Briar minors — corrected AC contract "Gherkin default" → "checklist default"; removed unreachable skip-if-exists guard from step 10 offer (adopt pre-deploys the file, gate never fires). `pnpm prism:build` + `pnpm prism:check` green (395 tests).
+- 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Briar minor — replaced "offer once" with unconditional wording in step 10 and output contract across all 5 platform copies; text now matches the Decision that the offer fires on every install and reconfigure run.
 
 ---
 
