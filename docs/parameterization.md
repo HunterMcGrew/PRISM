@@ -121,7 +121,7 @@ When set to `true`, Sol (the Conductor) is permitted to merge PRs when the Briar
 
 **This flag is off by default.** Most teams should leave it off. It is appropriate for solo maintainers or automated pipelines where a human is on-the-loop rather than in-the-loop for each merge.
 
-**How to enable it** (in `.ai-skills/config.json`)**:**
+**How to enable it** (in `.ai-skills/config.json`):
 
 ```json
 {
