@@ -178,7 +178,9 @@ Watching out for mega menu issues
 
 ### 7.1 Decide the delivery path
 
-Ask: "Post to `${SLACK_CHANNEL}`, or would you rather paste it yourself?" (If no Slack MCP was found during detection, skip straight to the paste path and tell the user why.) If the user names a different channel ("post to #planning"), use that channel instead — default is `${SLACK_CHANNEL}`, never inferred. If the user switched channels, loop back to the channel-resolution step in [`./slack-mcp.md`](./slack-mcp.md) to resolve the new channel's ID.
+If `${SLACK_CHANNEL}` is empty (no channel configured at install) or no Slack MCP was found during detection, skip the post path entirely — go straight to the paste path (step 7.5) and tell the user once why ("no Slack channel is configured, so here's a pasteable standup"). Never auto-post and never ask the post-vs-paste question in this case.
+
+Otherwise, ask: "Post to `${SLACK_CHANNEL}`, or would you rather paste it yourself?" If the user names a different channel ("post to #planning"), use that channel instead — default is `${SLACK_CHANNEL}`, never inferred. If the user switched channels, loop back to the channel-resolution step in [`./slack-mcp.md`](./slack-mcp.md) to resolve the new channel's ID.
 
 ### 7.2 Render the full standup
 

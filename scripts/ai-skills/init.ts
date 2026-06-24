@@ -40,6 +40,7 @@ export interface InitAnswers {
 	githubOwner: string;
 	githubRepo: string;
 	defaultBranch?: string;
+	slackChannel?: string;
 }
 
 /**
@@ -91,6 +92,7 @@ export async function runInit(options: {
 		org: answers.org,
 		defaultBranch: answers.defaultBranch,
 		linearWorkspace: answers.linearWorkspace,
+		slackChannel: answers.slackChannel,
 	});
 }
 
@@ -173,6 +175,7 @@ export async function runInitCli(): Promise<void> {
 	const flagGithubOwner = parseFlag(argv, "github-owner");
 	const flagGithubRepo = parseFlag(argv, "github-repo");
 	const flagDefaultBranch = parseFlag(argv, "default-branch");
+	const flagSlackChannel = parseFlag(argv, "slack-channel");
 
 	// Validate --ticket-system before using it so the narrowed type follows from
 	// the check rather than an `as` cast that bypasses compile-time safety.
@@ -265,6 +268,13 @@ export async function runInitCli(): Promise<void> {
 			"GitHub repo name"
 		);
 
+		const slackChannel =
+			flagSlackChannel ??
+			(rl !== null
+				? ((await rl.question("Slack channel for standup summaries (optional, press Enter to skip): ")).trim() ||
+					undefined)
+				: undefined);
+
 		const answers: InitAnswers = {
 			project,
 			org: flagOrg ?? undefined,
@@ -275,6 +285,7 @@ export async function runInitCli(): Promise<void> {
 			githubOwner,
 			githubRepo,
 			defaultBranch: flagDefaultBranch ?? undefined,
+			slackChannel,
 		};
 
 		const result = await runInit({ consumerRepoRoot, answers });
