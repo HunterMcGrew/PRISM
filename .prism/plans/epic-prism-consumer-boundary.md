@@ -150,6 +150,15 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** update all five copies to `${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`; build resolves token in platform mirrors.
 - **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
 
+### Dead skill-authoring.md route left in manifests after L6 bake
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/manifest.stub.json:18`, all `manifest.base.json:26`
+- **Problem:** L6 baked `skill-authoring.md` into `prism-skill-forge/lib/` and removed the dead `spec/adrs/**` route from `manifest.stub.json`, but left the `skill-authoring.md` route in both `manifest.stub.json` and all five `manifest.base.json` files — inert (consumers lack the file) but inconsistent with the PR's own cleanup reasoning.
+- **Suggested fix:** remove `.prism/rules/skill-authoring.md` route from `manifest.stub.json` and all `manifest.base.json` files.
+- **Fixed in:** Eric Minor, addressed on hunter/consumer-boundary-l6-rule-bucket-moves; `pnpm prism:check` passes (392 tests).
+
 ### knownKeys Set duplicates orderedTopLevel array in serializeConfig
 
 - **Severity:** minor
@@ -201,9 +210,12 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: L5 distillation — classified all ADR references in the install surface (load-bearing → inline Why; illustrative → genericized); removed 48 ADR files from templates/install/ and added to excluded[]; replaced install ADR README index table with blank shell; simplified isInstallAdrAllowlisted (pre-L5 allowlist constant removed); distilled ADR refs from canonical .prism/ rules, architect toolkit, references, and templates; fixed install-layout.md curated copy and stale tests. pnpm prism:check and install-adr-gate both green; 392 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed Briar minor: `INSTALL_ADR_PRE_L5_ALLOWLIST` JSDoc said to delete `isInstallAdrAllowlisted` when the set reaches zero, but that function is the canonical exported predicate used by `runInstallAdrGate`; corrected to say delete the constant and simplify the function to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
 - 2026-06-24 [hunter/consumer-boundary-l5-adr-distill]: Fixed two Briar minors: genericized PRISM-specific ADR-0003 illustrative examples in the install README Cross-Reference Pattern prose; renamed stale test description from phase-context language to describe the allowlistOverride contract. 392 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: L6 rule bucket moves — un-excluded 11 behavioral-kernel rules from `seed-curation.json` (literal guard clean), baked `skill-authoring.md` into `prism-skill-forge/lib/` as first single-owner bake, stripped dead `spec/adrs/**` route from `manifest.stub.json`; 3 behavioral rules with ADR back-references added to pre-L5 crossref-lint allowlist pending L5 distillation. `pnpm prism:check` passes (392 tests green).
+- 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Fixed Eric Minor — removed dead `.prism/rules/skill-authoring.md` manifest route from `manifest.stub.json` and all five `manifest.base.json` files; `pnpm prism:check` passes (392 tests).
 - 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: L7 Sol config plumbing — added `features.conductorMayMerge` to `config.schema.json` (absent/false by default, Sol-read-only); made config write read-merge-preserve unknown fields to fix latent data-loss on reconfigure; gated Sol's merge path on the flag in `shared.md`; rewrote "Who merges" in canonical `git-conventions.md` to state the flag as the gate (propagated to all platform copies and install seed via `prism:build`). Three new tests for the preserve-unknown-fields contract. `pnpm prism:check` + `pnpm prism:build` both green; 395 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric minors — extracted `ORDERED_TOP_LEVEL_KEYS` as a module-level constant so `readUnknownFields` and `serializeConfig` derive from the same source of truth (no drift risk); corrected `serializeConfig` JSDoc to say insertion-order rather than JSON.stringify replacer. 395 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric Pass-2 minors — moved TECH_STACK_ENUM JSDoc to sit adjacent to its declaration (orphaned by Pass-1 ORDERED_TOP_LEVEL_KEYS insertion); added "by default" to the Who-merges opening sentence so the Sol flag-gate exception reconciles with the rule across all 6 platform copies. 395 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Refreshed L6 onto current main (L3+L5+L7 merged); resolved 4 conflicts per the documented resolution rules; distilled ADR-0006/0007/0008 back-references from the 3 behavioral-kernel rules (citations were supplementary — Whys already self-sufficient inline). pnpm prism:build propagated to 15 files; pnpm prism:check and install-adr-gate both green (395 tests).
 
 ---
 

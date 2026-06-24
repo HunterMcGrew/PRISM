@@ -854,7 +854,7 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 ## Purpose
 
-Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression. See [ADR-0006](../spec/adrs/_toolkit/0006-context-window-handoff-check.md) for why this check exists.
+Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression.
 
 **Why:** a persona recommendation that ignores context load hands the next persona a session already close to compaction, where load-bearing details get silently dropped. The check costs one evaluation at session close and protects the handoff at exactly the moment the context is most likely to be lost.
 
@@ -910,7 +910,7 @@ Two principles govern every change: keep it simple, and find the root cause.
 
 ## Purpose
 
-When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding. See [ADR-0007](../spec/adrs/_toolkit/0007-cross-agent-handoff-accountability.md) for the originating incident and the tradeoff.
+When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding.
 
 **Why:** a fix passed between agents carries the upstream agent's confidence but not its verification — and a confidently applied wrong fix is worse than a slower correct one, because it ships looking deliberate. Treating every handoff as trust-but-verify catches the mismatch between diagnosis and fix before it reaches the user, which is the only place it's cheap to catch.
 
@@ -1333,7 +1333,7 @@ Leave all UI-related items unchecked if there are no UI changes.
 
 ## Purpose
 
-When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction. See [ADR-0008](../spec/adrs/_toolkit/0008-pre-compaction-checkpoint.md) for the decision and tradeoff.
+When context usage approaches the compaction threshold, proactively create a summary checkpoint that captures the session's critical state. This protects against silent information loss during auto-compaction.
 
 **Why:** auto-compaction drops context without announcing what it dropped, and the worst losses are silent — a constraint everyone still believes is in effect, a root cause that gets re-investigated because the first finding vanished. A checkpoint written before the threshold preserves the load-bearing state on purpose, so compaction reshapes the narration without losing the facts.
 
