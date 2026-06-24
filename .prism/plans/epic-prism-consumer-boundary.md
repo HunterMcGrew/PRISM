@@ -119,7 +119,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 
 ### Atlas (onboarding)
 
-1. The single `acceptance-criteria` format offer (skip-if-exists); the one-line applicability declaration for accessibility/design-governance during anchor substitution; filter `features.conductorMayMerge` from reconfigure's current-config display. No interview question for token-bearing files.
+1. The single `acceptance-criteria` format offer (unconditional); the one-line applicability declaration for accessibility/design-governance during anchor substitution; filter `features.conductorMayMerge` from reconfigure's current-config display. No interview question for token-bearing files.
 
 ### Eli (documentation)
 
