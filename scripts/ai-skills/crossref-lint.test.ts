@@ -1047,8 +1047,8 @@ test("isInstallAdrAllowlisted: non-machinery rule file is not allowlisted", () =
 	);
 });
 
-test("isInstallAdrAllowlisted: install rule files are not allowlisted after L5 distillation", () => {
-	// L5 distilled all ADR references out of rule files — they no longer need allowlisting
+test("isInstallAdrAllowlisted: install rule files are not in the machinery allowlist", () => {
+	// Rule files are not machinery — only TEMPLATE.md and triple-gated-adr-criterion.md qualify
 	assert.equal(
 		isInstallAdrAllowlisted("templates/install/.prism/rules/branch-plan.md"),
 		false
