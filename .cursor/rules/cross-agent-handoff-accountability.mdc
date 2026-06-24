@@ -6,7 +6,7 @@ alwaysApply: true
 
 ## Purpose
 
-When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding. See [ADR-0007](../spec/adrs/_toolkit/0007-cross-agent-handoff-accountability.md) for the originating incident and the tradeoff.
+When applying a fix or acting on a diagnosis that originated from another agent, you are accountable for its correctness — not just its application. Verify the upstream work independently before proceeding.
 
 **Why:** a fix passed between agents carries the upstream agent's confidence but not its verification — and a confidently applied wrong fix is worse than a slower correct one, because it ships looking deliberate. Treating every handoff as trust-but-verify catches the mismatch between diagnosis and fix before it reaches the user, which is the only place it's cheap to catch.
 
