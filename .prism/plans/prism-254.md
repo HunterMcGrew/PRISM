@@ -1,5 +1,7 @@
 # Plan: PRISM-254
 
+> Closed: 2026-06-23
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/254
@@ -91,11 +93,17 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 ## Decisions
 
 - `SLACK_CHANNEL` is an optional token — it has valid semantic meaning when absent (no Slack integration configured). The fix sets it unconditionally to an empty string rather than leaving it unmapped, which keeps `substituteTokens` from throwing while preserving the "no channel" state for downstream routing.
+  - → promoted to .prism/architect/_toolkit/install-layout.md (§ Optional tokens must default in `deriveTokenMap` — generalizes to the whole optional-token class, not just `SLACK_CHANNEL`)
 - Lilac's empty-channel path routes to pasteable-block output (existing behavior) rather than auto-posting, making the empty string a first-class state rather than an error condition.
+  - → no promotion needed (Lilac-specific routing tactic; the empty-string-as-first-class-state principle is captured in the install-layout § above via the `SLACK_CHANNEL` example, and the routing itself lives in `phases.md` Phase 7.1)
 - A guard test scanning all shipped skill content for `${TOKEN}` references against a minimal-config token map is the missing gate that let this bug (and the prior two cold-start bugs) ship. It belongs in `scripts/ai-skills/` alongside the token machinery it validates.
+  - → promoted to .prism/architect/_toolkit/install-layout.md (§ Optional tokens must default — the guard test and its scan-surface rationale are documented as the class-level backstop)
 - **Routing-seam path confirmed: `.prism/references/standup-summary/phases.md:181`, NOT `.ai-skills/skills/prism-standup-summary/`.** The standup skill externalized its phase bodies to a reference (per `shared.md:137`), so the post-vs-paste question Lilac asks lives in the reference, not the skill body. Sasha's line number (181) was correct; the path needed pinning down. At adopt-time, `syncOptionalSkillPayloads` copies skill `references/` payloads verbatim via `fs.cp` (no `substituteTokens` call) — `${SLACK_CHANNEL}` in `phases.md` is a runtime literal Lilac resolves, not a token the adopt-time build substitutes. The PRISM maintainer's own build (`build.ts` → `copyContentToPlatformDir`) does substitute `.prism/references/` when writing to platform dirs (`.claude/`, `.codex/`, `.cursor/`) — that is a separate pass against the dogfood config, not the consumer adopt-time path.
+  - → promoted to .prism/architect/_toolkit/install-layout.md (§ Two substitution passes, two surfaces — the build-vs-adopt substitution asymmetry generalizes to all content; the standup-specific path stays ticket-local)
 - **Guard-test scan surface = `shared.md` + platform body files (`claude.md`/`codex.md`/`cursor.md`) per skill; skill `references/` payloads excluded.** This mirrors exactly what `substituteTokens` processes at adopt-time (`buildSkillMarkdown` assembles frontmatter + shared + platform body, then substitutes; `syncOptionalSkillPayloads` copies the `references/` payload via `fs.cp` with no substitution). Scanning skill references would false-positive on shell-variable `${...}` usages that are never build tokens (e.g. `${GITHUB_OWNER}` inside bash blocks in `fetch.md`) and would not reflect the crash-producing substitution surface. Confirmed: the only `${SLACK_CHANNEL}` in any `shared.md` is `prism-standup-summary/shared.md:120`.
+  - → promoted to .prism/architect/_toolkit/install-layout.md (§ Two substitution passes — the scan-surface rationale follows directly from the substitution-asymmetry fact now documented there)
 - **Version bump to 0.6.0 is a Clove task (committed `chore:` commit), not a Hunter-at-publish step.** The prior unit committed `0.5.1` as a standalone `chore:` commit (`a4a4e64`) rather than relying on `npm version` at publish; committing the bump to git prevents git↔npm version drift. Hunter still runs `npm publish` at release. Considered: leaving the bump to `npm version` at publish — rejected because it reopens the drift the handoff explicitly flagged.
+  - → no promotion needed (release tactic specific to this ticket; the commit-the-bump convention is established by the `a4a4e64` precedent and self-evident from git history)
 
 ---
 
@@ -108,6 +116,7 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Briar self-review complete. No critical/major issues. Three minors filed: plan Decision wording on reference substitution (inaccurate — build.ts does token-substitute references), missing AC citations (added), docs/parameterization.md staleness (SLACK_CHANNEL now always present in token map). Build and tests confirmed green.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove closed all three Briar minors. Definitively traced two substitution passes: build.ts substitutes `.prism/references/` when mirroring to platform dirs (dogfood config); adopt-time `syncOptionalSkillPayloads` copies skill `references/` payloads via `fs.cp` with no substitution. Guard test exclusion confirmed correct — it mirrors the adopt-time crash surface. Updated plan Decisions to accurately describe both passes; updated `docs/parameterization.md` to note `${SLACK_CHANNEL}` is always present in the token map.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove applied Eric's PR-review minor: guard-test JSDoc line 16 changed from "...the plan's AC requires" to "...this guard provides" — removes session-context leak per writing-voice.md.
+- 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Winston ran plan close on the final PR branch (PR #255, pre-merge). Promoted two decisions to `install-layout.md` (build-vs-adopt substitution asymmetry; optional-token-must-default invariant + guard test), source-verified against `build.ts:207`, `generate-skills.ts:348-353/130`, `tokens.ts:162`. Verdict gate applied to all six Decisions; plan marked closed.
 
 ---
 
@@ -218,6 +227,6 @@ _None yet._
 - [x] Build passes — last run: 2026-06-23 (`pnpm run prism:check` passed, 377 tests, 0 failures)
 - [x] All 3 minor review issues closed — confirmed by Briar follow-up pass (2026-06-23)
 - [x] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (if applicable) — `install-layout.md` § Two substitution passes + § Optional tokens must default
 
-**Last updated:** 2026-06-23 (PR `#255` opened as draft)
+**Last updated:** 2026-06-23 (plan closed on PR `#255` branch, pre-merge)
