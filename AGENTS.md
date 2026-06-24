@@ -1124,11 +1124,11 @@ Commit your own work before handing off — to another persona, another session,
 
 Format: `<username>/prism-NNNN-<slug>`
 
-- `<username>`: GitHub username or author shortname, lowercased (e.g. `HunterMcGrew`)
+- `<username>`: GitHub username or author shortname, lowercased (e.g. `huntermcgrew`)
 - `prism-NNNN`: ticket ID, lowercase
 - `<slug>`: short summary from the ticket title, lowercase, hyphenated
 
-Example: `HunterMcGrew/prism-1588-mega-menu-info-banner-image-is-squished`
+Example: `huntermcgrew/prism-1588-mega-menu-info-banner-image-is-squished`
 
 Always branch from `origin/main` — never from the current branch, which may carry unrelated commits.
 

@@ -73,11 +73,11 @@ Commit your own work before handing off — to another persona, another session,
 
 Format: `<username>/${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`
 
-- `<username>`: GitHub username or author shortname, lowercased (e.g. `${GITHUB_OWNER}`)
+- `<username>`: GitHub username or author shortname, lowercased (e.g. `${GITHUB_OWNER_LOWERCASE}`)
 - `${TICKET_PREFIX_LOWERCASE}-NNNN`: ticket ID, lowercase
 - `<slug>`: short summary from the ticket title, lowercase, hyphenated
 
-Example: `${GITHUB_OWNER}/${TICKET_PREFIX_LOWERCASE}-1588-mega-menu-info-banner-image-is-squished`
+Example: `${GITHUB_OWNER_LOWERCASE}/${TICKET_PREFIX_LOWERCASE}-1588-mega-menu-info-banner-image-is-squished`
 
 Always branch from `origin/main` — never from the current branch, which may carry unrelated commits.
 
