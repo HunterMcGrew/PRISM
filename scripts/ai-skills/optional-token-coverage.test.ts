@@ -13,7 +13,7 @@
  *
  * A new optional token added to skill content without a default in
  * `deriveTokenMap` causes this test to fail deterministically — which is the
- * class-level guarantee the plan's AC requires.
+ * class-level guarantee this guard provides.
  */
 import fs from "node:fs/promises";
 import path from "node:path";

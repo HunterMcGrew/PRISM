@@ -107,6 +107,7 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove implemented all five tasks. Canonical source for phases.md confirmed as `.prism/references/standup-summary/phases.md` (no `.ai-skills/` mirror). Guard test proved red without task 2's fix, green after. `pnpm run prism:check` passed; 377 tests, 0 failures.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Briar self-review complete. No critical/major issues. Three minors filed: plan Decision wording on reference substitution (inaccurate — build.ts does token-substitute references), missing AC citations (added), docs/parameterization.md staleness (SLACK_CHANNEL now always present in token map). Build and tests confirmed green.
 - 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove closed all three Briar minors. Definitively traced two substitution passes: build.ts substitutes `.prism/references/` when mirroring to platform dirs (dogfood config); adopt-time `syncOptionalSkillPayloads` copies skill `references/` payloads via `fs.cp` with no substitution. Guard test exclusion confirmed correct — it mirrors the adopt-time crash surface. Updated plan Decisions to accurately describe both passes; updated `docs/parameterization.md` to note `${SLACK_CHANNEL}` is always present in the token map.
+- 2026-06-23 [hunter/thr-254-optional-token-cold-start-fix]: Clove applied Eric's PR-review minor: guard-test JSDoc line 16 changed from "...the plan's AC requires" to "...this guard provides" — removes session-context leak per writing-voice.md.
 
 ---
 
@@ -167,6 +168,14 @@ Tasks are sequenced: task 2 is the core fix and unblocks the guard test (task 4)
 - **Problem:** The `${SLACK_CHANNEL}` row in the "All tokens" table implied the token is conditionally present. After the fix, `SLACK_CHANNEL` is always emitted by `deriveTokenMap` (empty string default).
 - **Fixed in:** Row updated to state "Always present in the token map; defaults to `""` when `slackChannel` is absent from config."
 
+### Guard-test JSDoc session-context leak
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/optional-token-coverage.test.ts:16`
+- **Problem:** File-level JSDoc ended with "...the class-level guarantee the plan's AC requires" — references the branch plan, meaningless to a cold reader (writing-voice.md § Anti-pattern: Session-context leakage).
+- **Fixed in:** Changed to "...the class-level guarantee this guard provides." — describes the guard's own contract.
+
 ---
 
 ## Acceptance Criteria
@@ -207,8 +216,8 @@ _None yet._
 - [x] Tests written for new logic and edge cases (2 in `init.test.ts`, 1 updated in `tokens.test.ts`, 1 guard test in `optional-token-coverage.test.ts`)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-23 (`pnpm run prism:check` passed, 377 tests, 0 failures)
-- [ ] PR description up to date
+- [x] All 3 minor review issues closed — confirmed by Briar follow-up pass (2026-06-23)
+- [x] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
-- [ ] 3 minor review issues open (plan Decision wording, AC citations, docs staleness) — none block merge
 
-**Last updated:** 2026-06-23 (Briar self-review)
+**Last updated:** 2026-06-23 (PR `#255` opened as draft)
