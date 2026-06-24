@@ -1145,7 +1145,7 @@ PRs are **squash-merged** on GitHub. This means:
 
 ## Who merges
 
-Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona. This is the merge-side complement of "Eric never approves PRs" ([ADR-0011](../spec/adrs/_toolkit/0011-eric-never-approves-prs.md)): the review-side rule binds the reviewer; this one binds every persona that touches a branch.
+Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona. This is the merge-side complement of "Eric never approves PRs": the review-side rule binds the reviewer; this one binds every persona that touches a branch.
 
 Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the handoff* — push the final commits, sync the PR body, report the PR ready to merge. They are never an instruction to run the merge.
 
@@ -1269,7 +1269,7 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 
 ## AC lives in Linear, not the PR body
 
-Acceptance criteria live in the Linear ticket and the branch plan (per ADR-0009). The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
+Acceptance criteria live in the Linear ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
 
 ## File changes live in the diff, not the PR body
 
@@ -1295,7 +1295,7 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens. See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the full decision.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
 
 **Two enforcement moments:**
 
@@ -1307,7 +1307,7 @@ The PR body describes current scope — what's shipping right now — not the sc
 - **Agent-owned** — the narrative sections generated from `.prism/templates/pr-description.md` (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, pre-submit checklist). Auto-sync rewrites these.
 - **User-owned** — `## Screenshots`, `## Notes`, and any section the agent didn't originate (reviewer callouts, deployment notes, ad-hoc context). The agent may seed initial content in Screenshots and Notes at first body creation, but never rewrites them on subsequent syncs — once the template places the heading, the content belongs to the user. Auto-sync preserves these verbatim. The screenshot-preservation bullet in Writing mechanics above is a specific case of this general rule.
 
-**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. Last-editor detection was explicitly rejected in [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md). "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without it.
+**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without that tracking.
 
 **Session-scoped opt-out:** if the user says "don't touch the PR body" during a session, honor it for the rest of that session. No per-push prompting — prompting every push is the friction this invariant is designed to avoid.
 
@@ -1419,7 +1419,7 @@ The principle is _durable_ communication — anything a future reader will load 
 
 Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE` — reads as a contract written for someone who needs to be controlled. Onboarding voice reads as guidance from a colleague who already trusts you to do the right thing once you understand it. The constraint is the same; the framing changes how the reader receives it.
 
-**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy. See [ADR-0015](../spec/adrs/_toolkit/0015-humane-language-over-mandates.md).
+**Why:** Absolute mandates trigger an alignment-override reflex that can invert or ignore the instruction. The team also reads better-framed prose more carefully, and rules that read like prose age better than rules that read like policy.
 
 **How to apply:**
 
@@ -1435,13 +1435,13 @@ Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE
 
 Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule is load-bearing or stale.
 
-**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't. See [ADR-0016](../spec/adrs/_toolkit/0016-explain-the-why.md).
+**Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't.
 
 **How to apply:**
 
 - Rules in `.prism/rules/` lead with the rule, then a `**Why:**` line (the reason — often a past incident or an observed cost) and a `**How to apply:**` line (when the rule kicks in). This rule's structure is the example.
 - ADRs use the `## Context` section for the same purpose. No decision is documented in isolation.
-- Skill files cite ADRs when they encode a cross-cutting decision (e.g. "see ADR-0011" for "Eric never approves PRs"). The skill carries the narrative; the ADR carries the reasoning.
+- Skill files cite ADRs when they encode a cross-cutting decision (e.g. "see ADR-NNNN" for a rule like "Eric never approves PRs"). The skill carries the narrative; the ADR carries the reasoning.
 - The exception is where the reason is obvious from context — "use TypeScript" in a TypeScript project doesn't need a citation. Non-obvious reasons do.
 - When you find yourself writing a directive without a reason, pause and add it. If you can't articulate the reason, the directive may not earn its place.
 

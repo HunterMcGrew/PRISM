@@ -2,7 +2,7 @@
 
 The agent-facing reference for Atlas's stub-anchor population mechanism. Lives at `scripts/ai-skills/lib/anchor-substitute.ts` with the orchestrator entry point at `scripts/ai-skills/lib/onboarding-run.ts`. Invoked from Atlas's interactive onboarding flow after rule generation — the substitution walks canonical persona sources and replaces empty stub anchors with team-derived content drawn from `OnboardingConfig`.
 
-Canonical sources stay generic; Atlas writes the team-specific specialization. The sibling mechanism for identifier substitution (`${TOKEN}` build-time tokens) is covered in `.prism/architect/_toolkit/install-layout.md`; this module is the content-shape counterpart.
+Canonical sources stay generic; Atlas writes the team-specific specialization. The sibling mechanism for identifier substitution (build-time `${...}` tokens) is covered in `.prism/architect/_toolkit/install-layout.md`; this module is the content-shape counterpart.
 
 ## Public surface
 
