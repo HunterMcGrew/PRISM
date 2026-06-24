@@ -195,6 +195,25 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** Rename to describe the `allowlistOverride` contract: "file in allowlistOverride with ADR ref passes the gate"; update variable name to `allowlistedPath` and inline comments to match.
 - **Fixed in:** hunter/consumer-boundary-l5-adr-distill
 
+
+### AC contract says "Gherkin default" but install template ships checklist
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md:231` (all platform copies)
+- **Problem:** Output contract entry said "Ships verbatim as Gherkin default" — contradicting the install template (checklist) and the step 10 offer text in the same file, which correctly names checklist as the default.
+- **Suggested fix:** correct "Gherkin default" → "checklist default" in the contract entry.
+- **Fixed in:** this commit on hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag
+
+### AC format offer skip-if-exists check can never fire
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md:98` (all platform copies)
+- **Problem:** Step 10 gated the format offer on `acceptance-criteria.md` being absent — but `npx adopt` pre-deploys the file from the install seed before Atlas onboarding runs, so the condition is always true and the offer is always silently skipped.
+- **Suggested fix:** remove the skip-if-exists guard; the offer fires unconditionally and Atlas rewrites the file when the team opts in.
+- **Fixed in:** this commit on hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -217,6 +236,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l7-sol-config-plumbing]: Fixed two Eric Pass-2 minors — moved TECH_STACK_ENUM JSDoc to sit adjacent to its declaration (orphaned by Pass-1 ORDERED_TOP_LEVEL_KEYS insertion); added "by default" to the Who-merges opening sentence so the Sol flag-gate exception reconciles with the rule across all 6 platform copies. 395 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Refreshed L6 onto current main (L3+L5+L7 merged); resolved 4 conflicts per the documented resolution rules; distilled ADR-0006/0007/0008 back-references from the 3 behavioral-kernel rules (citations were supplementary — Whys already self-sufficient inline). pnpm prism:build propagated to 15 files; pnpm prism:check and install-adr-gate both green (395 tests).
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: L8 Atlas onboarding spec — added AC format offer (skip-if-exists, checklist vs Gherkin), one-line applicability declaration for accessibility/design-governance during anchor substitution, and explicit `features.conductorMayMerge` filter from reconfigure current-config display. `pnpm prism:build` + `pnpm prism:check` green (395 tests).
+- 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed two Briar minors — corrected AC contract "Gherkin default" → "checklist default"; removed unreachable skip-if-exists guard from step 10 offer (adopt pre-deploys the file, gate never fires). `pnpm prism:build` + `pnpm prism:check` green (395 tests).
 
 ---
 
