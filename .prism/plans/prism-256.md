@@ -121,6 +121,8 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Winston settled the OPEN mode decision (`init-bootstrapped` distinct mode, first-install step set with config pre-seed) and wrote 8 implementation tasks under `### Clove`. Design stayed content-first; one typed code touch (widen `OnboardingState["mode"]` union). Verified no `switch (mode)` consumer exists in source — mode walk is instruction-driven prose.
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Clove implemented all 8 tasks — widened `OnboardingState["mode"]` union in `onboarding-types.ts`, added `init-bootstrapped` to the mode list, mode-determination walk, mode section, question-order note, Batch-1 probe note, and closing-summary line in `shared.md`. Regenerated platform mirrors via `pnpm prism:build`; `pnpm prism:check` green (377 tests, 0 failures, tsc clean, crossref-lint passed, mirror-drift check passed).
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Clove fixed Briar minor — rewrote probe-2 opening sentence from false binary ("first-install vs reconfigure") to three-way routing ("Config existence narrows the mode… see Batch 2 step 7"). Mirrors regenerated; `pnpm prism:check` green.
+- 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Briar confirmation pass (Sol dispatch) — verified fix is accurate, Batch 2 step 7 reference resolves to the three-way walk, all 4 mirrors in sync, `pnpm prism:check` green (377 tests, tsc clean, mirror-drift check passed). Zero findings; PR ready to open.
+- 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Addressed Eric's three PR review minors — added `slackChannel` to init-bootstrapped seeded-fields list, added `techStack` re-detection note, and clarified Q5 Linear gate in question-order note. Mirrors regenerated; `pnpm prism:check` green (377 tests, 0 failures).
 
 ---
 
@@ -138,6 +140,24 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 - **File:** `.ai-skills/skills/prism-onboarding/shared.md` (Batch 1, probe 2; mirrored identically in all generated platform files)
 - **Problem:** The Batch-1 "Existing config" probe opens with "Existence determines mode (first-install vs reconfigure)" — a two-way description that is now wrong. Config existence maps to three possible outcomes: `first-install` (no config), `init-bootstrapped` (config + no state), or `reconfigure` (config + state). An Atlas agent reading this sentence gets a false binary before the correction clause that immediately follows.
 - **Suggested fix:** Replace "Existence determines mode (first-install vs reconfigure)." with "Config existence narrows the mode (first-install when absent; otherwise `init-bootstrapped` or `reconfigure` depending on state file presence — see Batch 2 step 7)." The correction clause at the end of probe 2 can then be trimmed or removed since the opening sentence now correctly routes to Batch 2 step 7 for the full logic.
+
+### slackChannel missing from init-bootstrapped seeded-fields list (Eric minor)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.ai-skills/skills/prism-onboarding/shared.md` `### init-bootstrapped` section, item 1 — added `slackChannel` (when present and non-empty) to the seeded-fields enumeration. Also added a sentence stating `techStack` is NOT seeded from config but re-detected via Batch 1 probe 4 (`detectStack`). Platform mirrors regenerated; `pnpm prism:check` green (377 tests, 0 failures).
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md` (`### init-bootstrapped`, item 1)
+- **Problem:** `init.ts` writes `slackChannel` when provided, but the seeded-fields list in item 1 omitted it — Atlas would re-prompt question 10 even when `slackChannel` was already in config. `techStack` was also ambiguous: init writes it (via `detectStack`), but the section didn't clarify whether Atlas re-detects or carries the value.
+- **Suggested fix:** Add `slackChannel` to the seeded-fields list with skip-when-present-and-non-empty semantics; add a sentence stating `techStack` is always re-detected via Batch 1 probe 4.
+
+### Q5 Linear team key gate ambiguous in question-order note (Eric minor)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.ai-skills/skills/prism-onboarding/shared.md` `### Question order` intro sentence — added one sentence clarifying that question 5 still respects the ticket-system gate from question 4 (Linear-only; github-issues repos skip Q5 entirely, as in first-install). Platform mirrors regenerated; `pnpm prism:check` green (377 tests, 0 failures).
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md` (`### Question order`)
+- **Problem:** The question-order note said "questions 1–5 are pre-seeded" without clarifying that Q5 (Linear team key) only fires for Linear users. A github-issues user has an empty `linearTeam` and would incorrectly be prompted for a Linear team key they don't need.
+- **Suggested fix:** Add one sentence stating Q5 still respects the ticket-system gate from Q4.
 
 ---
 
@@ -181,7 +201,7 @@ AC confirmed accurate against the diff and `init.ts` source. No adjustments requ
 - [x] Tests written for new logic and edge cases (mode detection is instruction-driven prose, no code seam; type union verified by tsc; 377 tests pass unchanged)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-24 (`pnpm prism:check` green: mirror-drift check + tsc + 377 tests + verify-manifest + crossref-lint; Briar confirmed clean on same run)
-- [ ] PR description up to date (1 minor review issue open — see `## Review Issues`; ready to ship once fixed or waived)
+- [x] PR description up to date (no open review issues; Briar confirmation pass clean)
 - [ ] Lasting decisions promoted to architect context (promote the mode-taxonomy Decision to `.prism/architect/onboarding.md` at ticket close per the Decision verdict)
 
-**Last updated:** 2026-06-24 (Briar self-review)
+**Last updated:** 2026-06-24 (Eric PR review minors addressed; `pnpm prism:check` green, 377 tests, 0 failures)
