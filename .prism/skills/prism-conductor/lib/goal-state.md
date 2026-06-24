@@ -28,7 +28,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "currentPhase": "prd | stories | design | plan | plan-readiness | implement | self-review | pr-review | qa | docs | done",
       "phaseStatus": "running | awaiting-gate | parked | done",
       "status": "active | parked | blocked | done",
-      "models": { "winston": "opus", "clove": "sonnet" },
+      "models": { "winston": "opus", "eric": "opus", "clove": "sonnet" },
       "strikes": [ { "issueKey": "string", "count": 2, "history": ["ISO-8601"] } ],
       "failureCount": 0,
       "escalation": { "axis": "replan | model | human", "reason": "blast-radius | string", "raisedAt": "ISO-8601" },

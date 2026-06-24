@@ -52,7 +52,7 @@ Batching (dispatching cap-sized segments when ready lanes exceed the concurrency
 
 ### 4. The plan is the bus; goal-state is run-control
 
-Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a Sonnet fleet.
+Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a fleet of workers.
 
 ## When this skill is invoked
 
@@ -87,7 +87,8 @@ The run loop: decompose → plan-readiness → [segment: dispatch → route → 
 | --- | --- | --- |
 | **Sol (Conductor)** | **Opus** (default, not hardcoded) | n/a — already top tier |
 | **Winston (architect / plan)** | **Always Opus, never weaker** | n/a — the firewall never runs cheap |
-| Worker personas (Clove, Sasha, Briar, Eric, …) | **Sonnet** | → Opus on signal (Sonnet stalled the unit twice / strike 2) |
+| **Eric (PR review)** | **Always Opus, never weaker** | n/a — high-judgment review task, top tier by default |
+| Worker personas (Clove, Sasha, Briar, …) | **Sonnet** | → Opus on signal (Sonnet stalled the unit twice / strike 2) |
 
 The tier per dispatch is read off the goal-state lane and set via the runtime's per-dispatch model override (see `claude.md` for the Claude Code mechanism). A config seam lets other runtimes map their own tiers. A Plan Readiness Gate failure means *re-plan harder* (Winston is already Opus), not *escalate the model*.
 
@@ -145,6 +146,6 @@ On Claude Code, Sol dispatches through the **Workflow tool** — a deterministic
 
 **Between segments, Sol runs the reconcile step** (`step-09-reconcile.md`): dedup the registry, run the decision box per distinct target, apply the convergence governor, then either author the next segment's `pipeline()` over the recomputed lane set (via `resumeFromRunId`) or terminate to step-10 report. The `budget` parameter on each `agent()` call is the shared global dispatch budget — every dispatch counts against it, whether origin-lane phase, decision-box dispatch (Nora/Winston), or discovered-lane phase.
 
-The per-dispatch `model` override is how the tiering table is enforced on Claude Code: Sol sets `model: 'opus'` for Winston dispatches and on a worker's escalation, `model: 'sonnet'` for the default worker dispatch. The config seam for other runtimes is described in `shared.md` § Model tiering.
+The per-dispatch `model` override is how the tiering table is enforced on Claude Code: Sol sets `model: 'opus'` for Winston and Eric dispatches and on a worker's escalation, `model: 'sonnet'` for the default worker dispatch. The config seam for other runtimes is described in `shared.md` § Model tiering.
 
 (The generated `SKILL.md` concatenates `shared.md` + this file — keep this file to Claude-specific tool and dispatch detail, not a restatement of `shared.md`.)

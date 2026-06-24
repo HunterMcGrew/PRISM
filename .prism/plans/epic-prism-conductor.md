@@ -42,7 +42,7 @@ Personas "talk to each other" through the **branch plan**, exactly as they alrea
 - **The branch plan = the durable content bus.** Decisions, tasks, findings, history — the real conversation. On-disk, compact, survives compaction. Plans stay the source of truth (ADR-0001).
 - **The goal-state file = the ephemeral run-control channel.** Phase pointer, per-lane status, strike tables, failure counts, escalation flags, per-dispatch model tier. Holds pointers into plans, never work content.
 
-Sol's dispatch message stays minimal ("Clove — your turn, plan at `<path>`, tasks 3–5, report back"); the work content rides the plan; the run-state rides goal-state. No transcript-passing between personas — that is what keeps context tight enough for Sol-on-Opus to run a Sonnet fleet.
+Sol's dispatch message stays minimal ("Clove — your turn, plan at `<path>`, tasks 3–5, report back"); the work content rides the plan; the run-state rides goal-state. No transcript-passing between personas — that is what keeps context tight enough for Sol-on-Opus to run a fleet of workers.
 
 ### Dispatch engine — the Workflow tool, gate-segmented
 
