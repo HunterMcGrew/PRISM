@@ -150,6 +150,15 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** update all five copies to `${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`; build resolves token in platform mirrors.
 - **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
 
+### Dead skill-authoring.md route left in manifests after L6 bake
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/manifest.stub.json:18`, all `manifest.base.json:26`
+- **Problem:** L6 baked `skill-authoring.md` into `prism-skill-forge/lib/` and removed the dead `spec/adrs/**` route from `manifest.stub.json`, but left the `skill-authoring.md` route in both `manifest.stub.json` and all five `manifest.base.json` files — inert (consumers lack the file) but inconsistent with the PR's own cleanup reasoning.
+- **Suggested fix:** remove `.prism/rules/skill-authoring.md` route from `manifest.stub.json` and all `manifest.base.json` files.
+- **Fixed in:** Eric Minor, addressed on hunter/consumer-boundary-l6-rule-bucket-moves; `pnpm prism:check` passes (392 tests).
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -164,6 +173,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed two Briar minors from second review: added `(?!\d)` lookahead to `ADR_REF_RE` (5-digit strings like ADR-12345 no longer match as ADR-1234) and updated JSDoc; added unit test for `isInstallAdrAllowlisted` pre-L5 branch. 391 tests pass.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed Briar minor: `INSTALL_ADR_PRE_L5_ALLOWLIST` JSDoc said to delete `isInstallAdrAllowlisted` when the set reaches zero, but that function is the canonical exported predicate used by `runInstallAdrGate`; corrected to say delete the constant and simplify the function to delegate directly to `INSTALL_ADR_MACHINERY_ALLOWLIST`.
 - 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: L6 rule bucket moves — un-excluded 11 behavioral-kernel rules from `seed-curation.json` (literal guard clean), baked `skill-authoring.md` into `prism-skill-forge/lib/` as first single-owner bake, stripped dead `spec/adrs/**` route from `manifest.stub.json`; 3 behavioral rules with ADR back-references added to pre-L5 crossref-lint allowlist pending L5 distillation. `pnpm prism:check` passes (392 tests green).
+- 2026-06-24 [hunter/consumer-boundary-l6-rule-bucket-moves]: Fixed Eric Minor — removed dead `.prism/rules/skill-authoring.md` manifest route from `manifest.stub.json` and all five `manifest.base.json` files; `pnpm prism:check` passes (392 tests).
 
 ---
 
