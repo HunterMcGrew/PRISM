@@ -1,5 +1,7 @@
 # Plan: prism-252
 
+> Closed: 2026-06-24
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/252
@@ -310,7 +312,7 @@ The fix lives at the adopt seam: `runAdopt` provisions a complete `.ai-skills/de
   - **Alternatives considered:** (1) provision inside `seedConsumerContentRoot` — rejected, the seed walks `templates/install/.prism/` which has no `.ai-skills/` tree, so paths.json doesn't belong to that surface and bolting it in mixes two provisioning concerns. (2) Have `init` write `paths.json` — rejected, it fixes Mode A only; thrive's Mode B is a *stale* file from a pre-PR#2 Atlas session that `init` would never touch (init refuses when config exists, and wouldn't migrate an existing paths.json). (3) Loosen `runUpdate`'s `loadPathDefinitions` to self-heal — rejected, steady-state consumers should fail fast on a genuinely broken file; self-healing the shared update path hides real corruption.
   - **Chosen approach:** `runAdopt` provisions/repairs before `runUpdate` reads. Beats the alternatives because adopt is the one entry point that *should* self-heal (first contact), it closes both modes with one seam, and it leaves `runUpdate`'s strict guard intact for steady-state. Placed after `assertConsumerIsEstablished` so a steady-state repo is never touched.
   - **Implementation guidance:** new `ensureConsumerPathDefinitions` in utils.ts, called in `runAdopt` between the manifest-guard and the seed. See Implementation Tasks 1-2.
-  - → no promotion needed (the cold-start-provisioning pattern is shared with #250; if a third instance lands, promote a "cold-start provisioning happens at the adopt seam" note to `.prism/architect/_toolkit/install-layout.md`).
+  - → promoted to `.prism/architect/_toolkit/install-layout.md` (§First-contact adoption, step 2): a one-sentence note that adopt self-heals a missing/incomplete consumer `paths.json`, keeping the cold-start contract description truthful. The broader "cold-start provisioning happens at the adopt seam" *pattern* is still deferred — no promotion needed until a third instance lands (this fact is the specific cold-start contract, not the general pattern).
 
 - **Full replace, not merge-missing-keys, when the consumer file is incomplete.**
   - **Root cause:** a `paths.json` missing `generated.platformContentCopies` is broken, not customized — the key is structural, every install needs it, and its absence means the file predates PR#2's schema.
@@ -341,6 +343,7 @@ The fix lives at the adopt seam: `runAdopt` provisions a complete `.ai-skills/de
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Winston planned the fix — `ensureConsumerPathDefinitions` in utils.ts, called in `runAdopt` after the manifest-guard, full-replaces an absent/incomplete `paths.json` from the package copy; `roles.json`/`config.schema.json` confirmed package-read so provisioning scope is paths.json only. See Decisions; build-ready, no `prism:build` needed (script-only change).
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Clove implemented — `isPathDefinitionsComplete` + `ensureConsumerPathDefinitions` in utils.ts, wired into `runAdopt` after manifest-guard; `AdoptSummary.pathsProvisioned` field added; three regression tests (Mode A, Mode B, no-clobber) green; `prism:check` 374/374 pass.
 - 2026-06-23 [hmcgrew/prism-252-adopt-paths-provision]: Clove fixed four Eric Minors — stripped changelog-voice from fixture comment and two JSDoc entries (structural invariant rewrites), strengthened Mode B assertion to check all three platformContentCopies sub-keys as strings, added structural content check to Mode A test; `prism:check` 374/374 pass.
+- 2026-06-24 [hmcgrew/prism-252-adopt-paths-provision]: Winston closed the plan — promoted the adopt self-heal note to `.prism/architect/_toolkit/install-layout.md` §First-contact adoption, applied the Decision verdict gate, verified AC hold at merge; mirrors rebuilt and `prism:check` green.
 
 ---
 
@@ -455,8 +458,8 @@ _None yet._
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-23 (`prism:check` 374/374; Eric review-fix confirmed)
-- [ ] PR description up to date
-- [x] Lasting decisions promoted to architect context (if applicable — no promotion needed per Decisions verdicts)
+- [x] Build passes — last run: 2026-06-24 (`prism:check` green after self-heal note promotion + mirror rebuild)
+- [x] PR description up to date (Eric verified during PR review)
+- [x] Lasting decisions promoted to architect context (adopt self-heal note → install-layout.md §First-contact adoption; broader cold-start pattern deferred per Decisions verdict)
 
-**Last updated:** 2026-06-23 (Eric review-fix — four Minors fixed, `prism:check` 374/374)
+**Last updated:** 2026-06-24 (Winston plan close — self-heal note promoted, verdict gate applied)
