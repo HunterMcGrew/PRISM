@@ -100,6 +100,8 @@ Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the ha
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
 
+Sol may merge when `features.conductorMayMerge: true` is set in `.ai-skills/config.json`. The flag is the gate — Sol checks for it before any merge; absent or false means the human merges.
+
 ---
 
 ## Keeping a Branch Current

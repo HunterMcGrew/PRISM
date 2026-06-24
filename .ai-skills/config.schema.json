@@ -140,6 +140,16 @@
 					"examples": ["flat-markdown-guides", "nextra-blocks"]
 				}
 			}
+		},
+		"features": {
+			"type": "object",
+			"description": "Feature flags. Read by specific personas only; not surfaced during init or onboarding. Set manually after install.",
+			"properties": {
+				"conductorMayMerge": {
+					"type": "boolean",
+					"description": "When true, Sol (the Conductor) may merge PRISM's own self-development PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
+				}
+			}
 		}
 	}
 }
