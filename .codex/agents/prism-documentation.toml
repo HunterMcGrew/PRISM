@@ -166,7 +166,7 @@ Docs are written directly to `docs/` using topic-based naming per `documentation
 **Naming rules:**
 
 - Lowercase, kebab-case: `local-setup-mac.md`, `repository-service-pattern.md`
-- Match the topic, not the branch: a branch called `thr-1234-mega-menu-keyboard-nav` becomes `mega-menu.md` or updates an existing mega-menu doc
+- Match the topic, not the branch: a branch called `prism-1234-mega-menu-keyboard-nav` becomes `mega-menu.md` or updates an existing mega-menu doc
 - Block user docs follow the convention: `frontend/blocks/{name}/` → `docs/content/user/blocks/{name}.md`
 
 **Category placement:**

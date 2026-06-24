@@ -7,7 +7,7 @@ Date: 2026-06-05
 
 ## Context
 
-The original close procedure in `branch-plan.md` ended with deletion: promote lasting decisions, then delete the plan file — git history preserves it. Practice diverged immediately: every shipped epic plan (1.5c, 1.5d, 1.5e) was preserved as a roadmap reference, and `lessons.md` recorded the rule-vs-practice gap on 2026-05-23 with a reconciliation flag that never landed. The gap kept costing: each close re-raised the deletion question, and the wave-4.2 close manufactured a scope conflict (issue #77) that existed only because plan survival was undecided. Hunter settled it on 2026-06-05: plans are never deleted.
+The original close procedure in `branch-plan.md` ended with deletion: promote lasting decisions, then delete the plan file — git history preserves it. Practice diverged immediately: every shipped epic plan (1.5c, 1.5d, 1.5e) was preserved as a roadmap reference, and `lessons.md` recorded the rule-vs-practice gap on 2026-05-23 with a reconciliation flag that never landed. The gap kept costing: each close re-raised the deletion question, and the wave-4.2 close manufactured a scope conflict (issue #77) that existed only because plan survival was undecided. The repo owner settled it on 2026-06-05: plans are never deleted.
 
 "Git history preserves it" undercounts what deletion costs. A deleted plan's Decisions survive only through promotion; everything else — the History timeline, refuted hypotheses, review-issue narratives, AC verification notes — becomes reachable only by knowing which commit to excavate. The consumers who walk plans (Zoe's cadence audits, Iris's retros, next-wave triage, follow-up filing) all read the live tree, not git archaeology.
 

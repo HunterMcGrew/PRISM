@@ -168,7 +168,7 @@ Never modify or summarize the PR title — emit it exactly as GitHub has it.
 
 ## Worked example
 
-Assume today is Monday. Friday's window rolls in the Monday default. The standup owner is Hunter. Over Friday and the weekend:
+Assume today is Monday. Friday's window rolls in the Monday default. The standup owner is HunterMcGrew. Over Friday and the weekend:
 
 - Merged their own PR #1794 (PRISM-1614), with no commits before Friday — new work
 - Merged their own PR #1798 (PRISM-1616), with commits going back to Thursday — merged, so reports as Merged

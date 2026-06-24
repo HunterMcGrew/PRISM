@@ -127,11 +127,36 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 
 ---
 
+
+---
+
+## Review Issues
+
+### Branch naming illustrative token contradicts lowercased instruction
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/rules/git-conventions.md:76` (all platform copies + install seed)
+- **Problem:** Branch Naming section used `${GITHUB_OWNER}` as the illustrative username token, contradicting the "lowercased" qualifier — `GITHUB_OWNER` resolves as-is (e.g. `HunterMcGrew` PascalCase) for consumers with mixed-case GitHub owners.
+- **Suggested fix:** replace illustrative token with `${GITHUB_OWNER_LOWERCASE}`; already a registered token with a test.
+- **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
+
+### ADR-0010 Decision body retained hard-coded thr-NNNN convention
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `templates/install/.prism/spec/adrs/_toolkit/0010-pre-handoff-branch-gate.md:19` (and all copies)
+- **Problem:** ADR-0010 ships to consumers (not in excluded list) and contained the Thrive-specific `thr-NNNN` convention in its Decision body — the L4 scrub updated git-conventions and branch-plan but missed this ADR.
+- **Suggested fix:** update all five copies to `${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`; build resolves token in platform mirrors.
+- **Fixed in:** commit ac287e0 on hunter/261-consumer-boundary-l4-token-scrub
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Folded in the Eric-Opus tiering fix and switched the tracking vehicle to a GitHub issue (Sol creates it at run start; team uses GitHub issues, not Linear). Run to be driven by Sol via `/prism-handoff`.
 - 2026-06-24 [hunter/consumer-boundary-plans]: Committed this plan and `readme-refresh.md` (both previously untracked on `main`) via a worktree agent. The README refresh is a sibling work item Sol also drives — an interactive Eli session, gated on the one-vs-two-README open question; see `.prism/plans/readme-refresh.md`.
+- 2026-06-24 [hunter/261-consumer-boundary-l4-token-scrub]: Tokenized personal info (`hmcgrew`, `Hunter` in shipped templates/skills, `thr-NNNN` branch convention) to `${GITHUB_OWNER}` / `${TICKET_PREFIX_LOWERCASE}` across canonical rules, skill sources, ADRs, and install seed. Note: runtime `thr-NNNN` regex in plan-lookup and Nora's startup is out-of-scope (tracked separately). `pnpm prism:build` and `pnpm prism:check` both pass clean.
+- 2026-06-24 [hunter/261-consumer-boundary-l4-token-scrub]: Fixed two Briar majors: replaced `${GITHUB_OWNER}` with `${GITHUB_OWNER_LOWERCASE}` in the Branch Naming example (git-conventions + all mirrors + install seed), and updated ADR-0010 Decision body from hard-coded `thr-NNNN` to `${TICKET_PREFIX_LOWERCASE}-NNNN` across all five copies. Also genericized `hunter@example.com` to `owner@example.com` in phases.md. `pnpm prism:check` passes clean.
 - 2026-06-24 [hunter/263-consumer-boundary-l1-strip-sol-merge-carveout]: L1 live-bug fix — removed the Sol-merge carve-out paragraph from canonical `git-conventions.md` (propagated to all platform copies and the install seed via `pnpm prism:build`); git-rm'd `templates/install/.prism/spec/adrs/_toolkit/0061-sol-merge-authority.md` and added it to `excluded[]` in `seed-curation.json`; removed dangling 0061 row from the curated install README. `pnpm prism:check` passes (377 tests, no drift).
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Extended `crossref-lint.ts` with `runInstallAdrGate` — a second lint pass that detects `ADR-NNNN` references under `templates/install/` and fails unless the file is in the permanent machinery allowlist (README.md, triple-gated-adr-criterion.md) or the pre-L5 temporary allowlist covering all current violating files. `prism:check` stays green on current `main`; gate is live and gates L5.
 - 2026-06-24 [hunter/264-consumer-boundary-l3-crossref-lint-adr-gate]: Fixed three Briar minors: removed phantom CLAUDE.md.tmpl from CROSSREF_SCAN_ROOTS (zero verifiable refs), wired `runInstallAdrGate` to delegate to `isInstallAdrAllowlisted` so the exported predicate is the single canonical check, corrected JSDoc ("call" → "function"), and added integration test for the pre-L5 allowlist path. 68 tests pass.

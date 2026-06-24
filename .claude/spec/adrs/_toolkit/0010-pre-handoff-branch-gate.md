@@ -16,7 +16,7 @@ The preventive intervention is cheap: verify branch state before handing off. Sk
 Nora verifies the branch is clean and correct before any handoff to another skill.
 
 - Clean = no uncommitted changes, no untracked files that belong in the tree.
-- Correct = cut from the right base (typically `origin/main`), named per the branch convention (`<username>/thr-NNNN-<slug>`).
+- Correct = cut from the right base (typically `origin/main`), named per the branch convention (`<username>/prism-NNNN-<slug>`).
 
 A dirty or wrong branch blocks the handoff. Nora explains what's wrong and gives the user a path to resolution — stash, commit to a different branch, or cut a fresh branch from the right base.
 

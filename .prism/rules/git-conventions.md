@@ -71,13 +71,13 @@ Commit your own work before handing off — to another persona, another session,
 
 ## Branch Naming
 
-Format: `<username>/thr-NNNN-<slug>`
+Format: `<username>/${TICKET_PREFIX_LOWERCASE}-NNNN-<slug>`
 
-- `<username>`: GitHub username or author shortname, lowercased (e.g. `hmcgrew`)
-- `thr-NNNN`: ticket ID, lowercase
+- `<username>`: GitHub username or author shortname, lowercased (e.g. `${GITHUB_OWNER_LOWERCASE}`)
+- `${TICKET_PREFIX_LOWERCASE}-NNNN`: ticket ID, lowercase
 - `<slug>`: short summary from the ticket title, lowercase, hyphenated
 
-Example: `hmcgrew/thr-1588-mega-menu-info-banner-image-is-squished`
+Example: `${GITHUB_OWNER_LOWERCASE}/${TICKET_PREFIX_LOWERCASE}-1588-mega-menu-info-banner-image-is-squished`
 
 Always branch from `origin/main` — never from the current branch, which may carry unrelated commits.
 
