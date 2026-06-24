@@ -34,7 +34,7 @@ Batching (dispatching cap-sized segments when ready lanes exceed the concurrency
 
 ### 4. The plan is the bus; goal-state is run-control
 
-Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a Sonnet fleet.
+Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a fleet of workers.
 
 ## When this skill is invoked
 
