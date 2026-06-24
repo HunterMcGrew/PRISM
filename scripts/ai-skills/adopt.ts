@@ -26,7 +26,7 @@ import {
 	runUpdate,
 	type UpdateSummary,
 } from "./update";
-import { ensureDirectory, pathExists } from "./utils";
+import { ensureConsumerPathDefinitions, ensureDirectory, pathExists } from "./utils";
 
 export interface SeedSummary {
 	written: string[];
@@ -34,6 +34,7 @@ export interface SeedSummary {
 }
 
 export interface AdoptSummary {
+	pathsProvisioned: "written" | "ok";
 	seed: SeedSummary;
 	update: UpdateSummary;
 }
@@ -141,6 +142,11 @@ export async function runAdopt(options: {
 
 	await assertConsumerIsEstablished(consumerContentRoot);
 
+	const pathsProvisioned = await ensureConsumerPathDefinitions(
+		prismSourceRoot,
+		consumerRepoRoot
+	);
+
 	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
 	const update = await runUpdate({
 		prismRepoRoot: prismSourceRoot,
@@ -149,7 +155,7 @@ export async function runAdopt(options: {
 		consumerContentRoot,
 	});
 
-	return { seed, update };
+	return { pathsProvisioned, seed, update };
 }
 
 export async function runAdoptCli(): Promise<void> {
@@ -177,7 +183,13 @@ export async function runAdoptCli(): Promise<void> {
 }
 
 function reportSummary(summary: AdoptSummary): void {
-	const { seed, update } = summary;
+	const { pathsProvisioned, seed, update } = summary;
+
+	if (pathsProvisioned === "written") {
+		console.log(
+			"prism:adopt provisioned .ai-skills/definitions/paths.json (was absent or incomplete)."
+		);
+	}
 
 	if (seed.written.length > 0) {
 		console.log(`prism:adopt seeded ${seed.written.length} file(s) from install surface.`);
