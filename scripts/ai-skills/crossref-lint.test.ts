@@ -26,6 +26,10 @@ import {
 	refResolves,
 	resolveGitignored,
 	scanLines,
+	scanFileForAdrRefs,
+	runInstallAdrGate,
+	isInstallAdrAllowlisted,
+	INSTALL_ADR_MACHINERY_ALLOWLIST,
 } from "./crossref-lint";
 
 // ---------------------------------------------------------------------------
@@ -951,6 +955,227 @@ test("resolveGitignored: glob pattern in .gitignore matches candidate", async ()
 			assert.ok(
 				result.has("foo.1.json"),
 				"glob-matched gitignored path must be in the returned Set"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// scanFileForAdrRefs — ADR gate unit tests
+// ---------------------------------------------------------------------------
+
+test("scanFileForAdrRefs: detects bare ADR-NNNN reference", () => {
+	const lines = ["See ADR-0018 for context."];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 1);
+	assert.equal(violations[0].match, "ADR-0018");
+	assert.equal(violations[0].line, 1);
+});
+
+test("scanFileForAdrRefs: detects ADR reference inside a markdown hyperlink", () => {
+	const lines = ["Read [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md)."];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 1);
+	assert.equal(violations[0].match, "ADR-0047");
+});
+
+test("scanFileForAdrRefs: detects multiple ADR references on one line", () => {
+	const lines = ["ADR-0015 and ADR-0016 govern this rule."];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 2);
+	assert.equal(violations[0].match, "ADR-0015");
+	assert.equal(violations[1].match, "ADR-0016");
+});
+
+test("scanFileForAdrRefs: does NOT flag placeholder form ADR-NNNN (letters, not digits)", () => {
+	const lines = ["File an ADR per ADR-NNNN naming."];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/spec/adrs/_toolkit/TEMPLATE.md");
+	assert.equal(violations.length, 0, "ADR-NNNN placeholder must not be flagged");
+});
+
+test("scanFileForAdrRefs: skips fenced code block content", () => {
+	const lines = [
+		"Normal prose.",
+		"```",
+		"See ADR-0018 inside fence.",
+		"```",
+		"End.",
+	];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 0, "ADR ref inside fenced code block must not be flagged");
+});
+
+test("scanFileForAdrRefs: detects ADR reference outside fence, not inside", () => {
+	const lines = [
+		"ADR-0001 in prose.",
+		"```",
+		"ADR-0002 in fence.",
+		"```",
+		"ADR-0003 in prose again.",
+	];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 2, "only prose ADR refs must be flagged");
+	assert.equal(violations[0].match, "ADR-0001");
+	assert.equal(violations[1].match, "ADR-0003");
+});
+
+test("scanFileForAdrRefs: returns empty array when no ADR refs present", () => {
+	const lines = ["This doc has no ADR citations.", "Just plain prose."];
+	const violations = scanFileForAdrRefs(lines, "templates/install/.prism/rules/doc.md");
+	assert.equal(violations.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// isInstallAdrAllowlisted — allowlist predicate
+// ---------------------------------------------------------------------------
+
+test("isInstallAdrAllowlisted: machinery files are allowlisted", () => {
+	for (const path_ of INSTALL_ADR_MACHINERY_ALLOWLIST) {
+		assert.equal(
+			isInstallAdrAllowlisted(path_),
+			true,
+			`${path_} must be allowlisted as machinery`
+		);
+	}
+});
+
+test("isInstallAdrAllowlisted: non-machinery rule file is not allowlisted when not in pre-L5 set", () => {
+	// Use a made-up path not in either allowlist
+	assert.equal(
+		isInstallAdrAllowlisted("templates/install/.prism/rules/a-brand-new-rule.md"),
+		false
+	);
+});
+
+test("isInstallAdrAllowlisted: pre-L5 entry is allowlisted", () => {
+	assert.equal(
+		isInstallAdrAllowlisted("templates/install/.prism/rules/branch-plan.md"),
+		true
+	);
+});
+
+// ---------------------------------------------------------------------------
+// runInstallAdrGate — integration: planted ADR link fails; allowlisted file passes
+// ---------------------------------------------------------------------------
+
+test("runInstallAdrGate: planted ADR reference under templates/install/ fails the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			// Create a minimal install surface with a rule that mentions ADR-0018
+			await fs.mkdir(
+				path.join(root, "templates", "install", ".prism", "rules"),
+				{ recursive: true }
+			);
+			await fs.writeFile(
+				path.join(root, "templates", "install", ".prism", "rules", "planted.md"),
+				"See ADR-0018 for the rationale behind this rule.\n"
+			);
+		},
+		async (root) => {
+			// Empty allowlist so nothing is exempted
+			const violations = await runInstallAdrGate(root, new Set());
+			assert.equal(
+				violations.length,
+				1,
+				"planted ADR ref under templates/install/ must fail the gate"
+			);
+			assert.equal(violations[0].match, "ADR-0018");
+			assert.equal(
+				violations[0].relativePath,
+				"templates/install/.prism/rules/planted.md"
+			);
+		}
+	);
+});
+
+test("runInstallAdrGate: allowlisted file with ADR reference passes the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			// Place the file at the machinery allowlist path
+			const machineryPath = path.join(
+				root,
+				"templates",
+				"install",
+				".prism",
+				"spec",
+				"adrs",
+				"_toolkit"
+			);
+			await fs.mkdir(machineryPath, { recursive: true });
+			await fs.writeFile(
+				path.join(machineryPath, "README.md"),
+				"| ADR-0001 | Plan is source of truth | accepted |\n"
+			);
+		},
+		async (root) => {
+			// Only the machinery allowlist — no pre-L5 allowlist entries
+			const violations = await runInstallAdrGate(
+				root,
+				new Set(["templates/install/.prism/spec/adrs/_toolkit/README.md"])
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"allowlisted machinery file must pass the gate even with ADR refs"
+			);
+		}
+	);
+});
+
+test("runInstallAdrGate: returns empty array when templates/install/ does not exist", async () => {
+	await withTempTree(
+		async (_root) => {
+			// No templates/install directory
+		},
+		async (root) => {
+			const violations = await runInstallAdrGate(root, new Set());
+			assert.equal(violations.length, 0, "missing install root must return empty violations");
+		}
+	);
+});
+
+test("runInstallAdrGate: clean install surface with no ADR refs passes the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(
+				path.join(root, "templates", "install", ".prism", "rules"),
+				{ recursive: true }
+			);
+			await fs.writeFile(
+				path.join(root, "templates", "install", ".prism", "rules", "clean.md"),
+				"# Clean Rule\n\nThis rule has no ADR citations.\n"
+			);
+		},
+		async (root) => {
+			const violations = await runInstallAdrGate(root, new Set());
+			assert.equal(violations.length, 0, "clean install surface must pass the gate");
+		}
+	);
+});
+
+test("runInstallAdrGate: pre-L5 allowlisted file with ADR ref passes the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			// Plant a file at a known pre-L5 path that carries an ADR reference —
+			// simulates a rules file that cites ADRs and is temporarily exempt until
+			// L5 distills it.
+			await fs.mkdir(
+				path.join(root, "templates", "install", ".prism", "rules"),
+				{ recursive: true }
+			);
+			await fs.writeFile(
+				path.join(root, "templates", "install", ".prism", "rules", "branch-plan.md"),
+				"See ADR-0001 for the plan-is-source-of-truth decision.\n"
+			);
+		},
+		async (root) => {
+			// Pass the pre-L5 path in the allowlist override — gate must pass despite the ADR ref
+			const preL5Path = "templates/install/.prism/rules/branch-plan.md";
+			const violations = await runInstallAdrGate(root, new Set([preL5Path]));
+			assert.equal(
+				violations.length,
+				0,
+				"pre-L5 allowlisted file must pass the gate even with an ADR reference"
 			);
 		}
 	);

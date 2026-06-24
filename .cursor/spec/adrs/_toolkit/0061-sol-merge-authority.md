@@ -11,7 +11,7 @@ Date: 2026-06-18
 
 PRISM also develops *itself*. This repo is PRISM's own dogfood install: the personas build the persona system, Sol (the conductor) orchestrates lifecycle runs, and the Briar→Eric review loop runs on PRISM's own PRs before they merge to `main`. In that setting the unconditional human-merge gate creates real friction — every self-development PR that has already passed a clean review loop still stalls waiting for the repo owner to perform a mechanical merge that the review already justified.
 
-On 2026-06-18, Hunter — PRISM's architect and the repo owner — granted Sol standing authority to merge PRISM's own self-development PRs on his behalf, under named conditions. This grant is what the ADR records. It was first exercised across Epic #212, where Sol merged PRs #217, #221, #224, #227, and #228, each after an in-session human authorization.
+On 2026-06-18, PRISM's architect and repo owner granted Sol standing authority to merge PRISM's own self-development PRs on their behalf, under named conditions. This grant is what the ADR records. It was first exercised across Epic #212, where Sol merged PRs #217, #221, #224, #227, and #228, each after an in-session human authorization.
 
 The grant is narrow on purpose. It does not touch ADR-0011 as it applies to PRISM's consumers, and it does not remove the human from the loop — it relocates where the human authorizes, from "human performs every merge" to "the repo owner stands behind a conditional grant, and each session still gets an explicit yes."
 

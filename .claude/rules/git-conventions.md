@@ -71,13 +71,13 @@ Commit your own work before handing off — to another persona, another session,
 
 ## Branch Naming
 
-Format: `<username>/thr-NNNN-<slug>`
+Format: `<username>/prism-NNNN-<slug>`
 
-- `<username>`: GitHub username or author shortname, lowercased (e.g. `hmcgrew`)
-- `thr-NNNN`: ticket ID, lowercase
+- `<username>`: GitHub username or author shortname, lowercased (e.g. `huntermcgrew`)
+- `prism-NNNN`: ticket ID, lowercase
 - `<slug>`: short summary from the ticket title, lowercase, hyphenated
 
-Example: `hmcgrew/thr-1588-mega-menu-info-banner-image-is-squished`
+Example: `huntermcgrew/prism-1588-mega-menu-info-banner-image-is-squished`
 
 Always branch from `origin/main` — never from the current branch, which may carry unrelated commits.
 
@@ -99,8 +99,6 @@ Merging and approving PRs is a human responsibility — on every tool (GitHub UI
 Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the handoff* — push the final commits, sync the PR body, report the PR ready to merge. They are never an instruction to run the merge.
 
 **Why:** the human clicking merge is the last gate where a wrong change can still be stopped. Approval excitement reads like authorization but isn't — an agent that merges on an enthusiastic cue removes that gate at exactly the moment scrutiny is lowest.
-
-**One narrow exception, this repo only:** PRISM's own self-development PRs. The repo owner granted Sol standing authority to merge them when the Briar→Eric loop is clean and there's no `review:has-minors` label ([ADR-0061](../spec/adrs/_toolkit/0061-sol-merge-authority.md)). This does not change the rule above for teams that install PRISM — their merge stays an unconditional human responsibility — and even here the auto-mode classifier ignores agent-written authority, so each session still needs an explicit in-session authorization.
 
 ---
 
