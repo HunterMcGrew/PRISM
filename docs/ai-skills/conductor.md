@@ -3,7 +3,7 @@ title: "Sol — the Conductor"
 description: "How Sol drives a goal across the lifecycle by dispatching the existing personas, pausing at every human gate, and routing each report-back verdict."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-14"
+last_updated: "2026-06-24"
 ---
 
 ## What Sol does
@@ -12,7 +12,7 @@ Sol takes a stated goal — "build this content type from our SPECs," "ship thes
 
 Sol is a persona on a **third axis — orchestration** — orthogonal to the ticket-flow personas (Winston, Clove, …) and the cadence-driven personas (Zoe, Iris). It is **additive, not a replacement**: PRISM works exactly as it does today when Sol isn't invoked. You keep invoking personas by hand whenever you want to; Sol is the option for when you'd rather hand the whole lifecycle to one orchestrator.
 
-**Sol has no authoritative write path.** It writes only its own run-control state at `.prism/conductor-state.json`. It never writes code (Clove's lane), never writes Linear (Nora's lane), never merges (the human's). Its job is to dispatch and route — it never does or interprets another persona's work.
+**Sol has no authoritative write path.** It writes only its own run-control state at `.prism/conductor-state.json`. It never writes code (Clove's lane), never writes Linear (Nora's lane). Merge is a human responsibility by default; Sol may merge only when `features.conductorMayMerge: true` is set in `.ai-skills/config.json` (see [Configuration — Feature flags](../parameterization.md#feature-flags)). Its job is to dispatch and route — it never does or interprets another persona's work.
 
 ## When to invoke Sol
 
@@ -61,7 +61,7 @@ A plan-readiness failure means *re-plan harder* — Winston is already on the st
 
 The invariant that keeps Sol from eroding PRISM's human-gated correctness model: **Sol drives autonomously between gates and stops at them, but never clears a gate itself.** Each gate is owned by a persona — Winston for plan / A-P-C, Nora for the Definition of Ready — that judges its own gate against a human-set autonomy policy (`launch` / `internal` / `hobby`) and returns one of three dispositions: `auto-cleared`, `needs-human`, or `blocked`. Sol routes the disposition; it never judges one.
 
-The rule is one-directional — a persona can always escalate up (`needs-human` under any policy) but never auto-clear below the policy ceiling the human set. Every `auto-cleared` gate records the owner's stakes reasoning in the plan and surfaces in the end-of-run report, so autonomy moves you from in-the-loop to on-the-loop without going dark. Merge is the one unconditional gate, enforced by branch protection — even a maximally-autonomous Sol parks every lane there for the human. The full decision, with the alternatives weighed, is in [ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md).
+The rule is one-directional — a persona can always escalate up (`needs-human` under any policy) but never auto-clear below the policy ceiling the human set. Every `auto-cleared` gate records the owner's stakes reasoning in the plan and surfaces in the end-of-run report, so autonomy moves you from in-the-loop to on-the-loop without going dark. Merge is a human gate by default — Sol parks every lane there unless `features.conductorMayMerge: true` is set in `.ai-skills/config.json` (see [Configuration — Feature flags](../parameterization.md#feature-flags)). The full decision, with the alternatives weighed, is in [ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md).
 
 ## Composition with the personas Sol dispatches
 

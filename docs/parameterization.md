@@ -111,6 +111,35 @@ Some things look tokenizable but aren't:
 
 If you're tempted to tokenize one of these, write an ADR first. The fewer tokens, the easier the substitution layer is to reason about.
 
+## Feature flags
+
+The `features` object in `.ai-skills/config.json` holds capability flags that are off by default. They are not surfaced during `npx @huntermcgrew/prism adopt` or onboarding — you set them manually after install when you want to enable the capability.
+
+### `features.conductorMayMerge`
+
+When set to `true`, Sol (the Conductor) is permitted to merge PRs when the Briar→Eric review loop is clean. When absent or `false`, merge is always a human responsibility — Sol parks every lane at the merge gate.
+
+**This flag is off by default.** Most teams should leave it off. It is appropriate for solo maintainers or automated pipelines where a human is on-the-loop rather than in-the-loop for each merge.
+
+**How to enable it** (in `.ai-skills/config.json`):
+
+```json
+{
+  "features": {
+    "conductorMayMerge": true
+  }
+}
+```
+
+Set it once; it survives reconfiguration runs (the reconfigure flow preserves unknown and feature-flag fields without re-prompting for them).
+
+**What Sol checks before merging:** even when this flag is `true`, Sol still verifies that the Briar→Eric gauntlet passed cleanly. A lane with open review issues or an unresolved human gate does not merge — the flag gates the _capability_, not Sol's judgment about readiness.
+
+> [!NOTE]
+> Sol never mentions this flag during init, onboarding, or normal operation. If you ask Sol directly whether it can merge, it will describe the flag. Otherwise it stays invisible.
+
+---
+
 ## Future: ticket-system providers
 
 `ticketSystem.kind` is `"linear"` only today. The substitution and runtime layers branch on this value, so adding a new provider means:

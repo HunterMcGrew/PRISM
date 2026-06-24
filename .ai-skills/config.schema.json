@@ -147,7 +147,7 @@
 			"properties": {
 				"conductorMayMerge": {
 					"type": "boolean",
-					"description": "When true, Sol (the Conductor) may merge PRISM's own self-development PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
+					"description": "When true, Sol (the Conductor) may merge PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
 				}
 			}
 		}

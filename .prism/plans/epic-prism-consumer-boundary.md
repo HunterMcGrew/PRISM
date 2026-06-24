@@ -242,6 +242,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Briar minor — replaced "offer once" with unconditional wording in step 10 and output contract across all 5 platform copies; text now matches the Decision that the offer fires on every install and reconfigure run.
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Fixed Eric Major — removed surviving skip-if-exists semantics from canonical shared.md step 10 offer text and output contract line 231; adopt pre-deploys acceptance-criteria.md so the guard always fires. Rebuilt mirrors; 395 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l8-atlas-ac-offer-applicability-merge-flag]: Winston adjudicated AC-offer guard per Sol dispatch — restored skip-if-exists guard with correct two-property framing (guard vs user-skippable). Clarified rule-delivery-taxonomy Decision and Atlas task to make both properties unmistakable; updated shared.md + all 5 mirrors.
+- 2026-06-24 [hunter/consumer-boundary-l9-conductor-docs]: L9 docs — documented `features.conductorMayMerge` in `docs/parameterization.md` § Feature flags (what it is, how to enable, what Sol checks before merging); fixed stale "never merges (the human's)" sentence in `docs/ai-skills/conductor.md:15` to reflect the flag-gated reality. pnpm prism:check green (395 tests).
 
 ---
 
