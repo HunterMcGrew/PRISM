@@ -140,7 +140,7 @@ test("derived-token cascades resolve regardless of map iteration order", () => {
 	);
 });
 
-test("omits optional tokens from the map when the config field is absent", () => {
+test("omits truly-optional tokens and defaults SLACK_CHANNEL to empty string when config field is absent", () => {
 	const minimalConfig: PrismConfig = {
 		org: "ACME",
 		project: "WIDGET",
@@ -152,7 +152,7 @@ test("omits optional tokens from the map when the config field is absent", () =>
 	assert.equal(tokenMap.has("LINEAR_WORKSPACE"), false);
 	assert.equal(tokenMap.has("GITHUB_OWNER"), false);
 	assert.equal(tokenMap.has("GITHUB_REPO"), false);
-	assert.equal(tokenMap.has("SLACK_CHANNEL"), false);
+	assert.equal(tokenMap.get("SLACK_CHANNEL"), "");
 	assert.equal(tokenMap.get("DEFAULT_BRANCH"), "main");
 });
 

@@ -159,9 +159,7 @@ export function deriveTokenMap(config: PrismConfig): Map<string, string> {
 
 	tokenMap.set("DEFAULT_BRANCH", config.defaultBranch ?? "main");
 
-	if (typeof config.slackChannel === "string") {
-		tokenMap.set("SLACK_CHANNEL", config.slackChannel);
-	}
+	tokenMap.set("SLACK_CHANNEL", config.slackChannel ?? "");
 
 	return tokenMap;
 }

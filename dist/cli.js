@@ -185,9 +185,7 @@ function deriveTokenMap(config) {
     tokenMap.set("GITHUB_REPO", config.github.repo);
   }
   tokenMap.set("DEFAULT_BRANCH", config.defaultBranch ?? "main");
-  if (typeof config.slackChannel === "string") {
-    tokenMap.set("SLACK_CHANNEL", config.slackChannel);
-  }
+  tokenMap.set("SLACK_CHANNEL", config.slackChannel ?? "");
   return tokenMap;
 }
 var TOKEN_LITERAL_PATTERN = /\$\{([A-Z][A-Z0-9_]*)\}/g;
@@ -531,6 +529,67 @@ async function loadPathDefinitions(repoRoot3) {
       `Invalid path definitions JSON at ${pathDefinitionsPath}: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+function isPathDefinitionsComplete(value) {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const generated = value.generated;
+  if (typeof generated !== "object" || generated === null) {
+    return false;
+  }
+  const g = generated;
+  const requiredStringKeys = [
+    "claudeSkillsRoot",
+    "claudeAgentsRoot",
+    "codexSkillsRoot",
+    "codexAgentsRoot",
+    "codexConfigFile",
+    "cursorSkillsRoot"
+  ];
+  for (const key of requiredStringKeys) {
+    if (typeof g[key] !== "string") {
+      return false;
+    }
+  }
+  const copies = g.platformContentCopies;
+  if (typeof copies !== "object" || copies === null) {
+    return false;
+  }
+  const c = copies;
+  return typeof c.claude === "string" && typeof c.codex === "string" && typeof c.cursor === "string";
+}
+async function ensureConsumerPathDefinitions(prismSourceRoot, consumerRepoRoot) {
+  const consumerPathsFile = path5.join(
+    consumerRepoRoot,
+    ".ai-skills",
+    "definitions",
+    "paths.json"
+  );
+  const existing = await readFileIfExists(consumerPathsFile);
+  if (existing !== null) {
+    try {
+      if (isPathDefinitionsComplete(JSON.parse(existing))) {
+        return "ok";
+      }
+    } catch {
+    }
+  }
+  const packagePathsFile = path5.join(
+    prismSourceRoot,
+    ".ai-skills",
+    "definitions",
+    "paths.json"
+  );
+  const packageRaw = await readFileIfExists(packagePathsFile);
+  if (packageRaw === null) {
+    throw new Error(
+      `prism:adopt: PRISM source has no paths.json at ${packagePathsFile} \u2014 cannot provision consumer path definitions.`
+    );
+  }
+  await ensureDirectory(path5.dirname(consumerPathsFile));
+  await fs3.writeFile(consumerPathsFile, packageRaw, "utf8");
+  return "written";
 }
 function buildPlatformDirs(repoRoot3, pathDefinitions) {
   const platformCopies = pathDefinitions.generated.platformContentCopies;
@@ -2434,7 +2493,24 @@ async function runAdopt(options) {
   const installSeedRoot = path13.join(prismSourceRoot, "templates", "install", ".prism");
   const consumerContentRoot = path13.join(consumerRepoRoot, ".prism");
   const prismContentRoot = path13.join(prismSourceRoot, ".prism");
+  const configPath = path13.join(consumerRepoRoot, ".ai-skills", "config.json");
+  let configExists;
+  try {
+    await fs11.access(configPath);
+    configExists = true;
+  } catch {
+    configExists = false;
+  }
+  if (!configExists) {
+    throw new Error(
+      "prism adopt: no .ai-skills/config.json found. Run 'npx @huntermcgrew/prism init' first to create it, then re-run adopt."
+    );
+  }
   await assertConsumerIsEstablished(consumerContentRoot);
+  const pathsProvisioned = await ensureConsumerPathDefinitions(
+    prismSourceRoot,
+    consumerRepoRoot
+  );
   const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
   const update = await runUpdate({
     prismRepoRoot: prismSourceRoot,
@@ -2442,7 +2518,7 @@ async function runAdopt(options) {
     prismContentRoot,
     consumerContentRoot
   });
-  return { seed, update };
+  return { pathsProvisioned, seed, update };
 }
 async function runAdoptCli() {
   const argv = process.argv.slice(2);
@@ -2461,7 +2537,12 @@ async function runAdoptCli() {
   reportSummary2(summary);
 }
 function reportSummary2(summary) {
-  const { seed, update } = summary;
+  const { pathsProvisioned, seed, update } = summary;
+  if (pathsProvisioned === "written") {
+    console.log(
+      "prism:adopt provisioned .ai-skills/definitions/paths.json (was absent or incomplete)."
+    );
+  }
   if (seed.written.length > 0) {
     console.log(`prism:adopt seeded ${seed.written.length} file(s) from install surface.`);
   }
@@ -2496,10 +2577,824 @@ if (isMain2) {
   });
 }
 
+// scripts/ai-skills/init.ts
+import readline from "node:readline/promises";
+import process2 from "node:process";
+import fs14 from "node:fs/promises";
+import path16 from "node:path";
+
+// scripts/ai-skills/lib/stack-detect.ts
+import fs12 from "node:fs/promises";
+import path14 from "node:path";
+var CONFIDENCE_RANK = {
+  high: 0,
+  medium: 1,
+  low: 2
+};
+async function detectStack(repoRoot3) {
+  const probes = [
+    probeFile(repoRoot3, "package.json", inspectPackageJson),
+    probeFile(repoRoot3, "composer.json", inspectComposerJson),
+    safeInspect(() => inspectPython(repoRoot3)),
+    probeFile(repoRoot3, "go.mod", inspectGoMod),
+    probeFile(repoRoot3, "Cargo.toml", inspectCargoToml),
+    probeFile(repoRoot3, "Gemfile", inspectGemfile),
+    probeFile(repoRoot3, "mix.exs", inspectMixExs),
+    safeInspect(() => inspectPomXmlGradle(repoRoot3))
+  ];
+  const results = await Promise.all(probes);
+  const merged = mergeResults(results);
+  if (merged.languages.length === 0 && merged.frameworks.length === 0) {
+    return {
+      languages: [{ name: "unknown", confidence: "high", evidence: [] }],
+      frameworks: []
+    };
+  }
+  return {
+    languages: merged.languages,
+    frameworks: merged.frameworks
+  };
+}
+async function probeFile(repoRoot3, relativePath, inspector) {
+  const filePath = path14.join(repoRoot3, relativePath);
+  try {
+    await fs12.access(filePath);
+  } catch {
+    return emptyResult();
+  }
+  return safeInspect(() => inspector(filePath));
+}
+async function safeInspect(fn) {
+  try {
+    return await fn();
+  } catch {
+    return emptyResult();
+  }
+}
+function emptyResult() {
+  return { languages: [], frameworks: [] };
+}
+function mergeResults(results) {
+  const languageMap = /* @__PURE__ */ new Map();
+  const frameworkMap = /* @__PURE__ */ new Map();
+  for (const result of results) {
+    for (const lang of result.languages) {
+      const existing = languageMap.get(lang.name);
+      if (!existing) {
+        languageMap.set(lang.name, {
+          name: lang.name,
+          confidence: lang.confidence,
+          evidence: [...lang.evidence]
+        });
+        continue;
+      }
+      existing.confidence = mergeConfidence(
+        existing.confidence,
+        lang.confidence
+      );
+      for (const path17 of lang.evidence) {
+        if (!existing.evidence.includes(path17)) {
+          existing.evidence.push(path17);
+        }
+      }
+    }
+    for (const fw of result.frameworks) {
+      const existing = frameworkMap.get(fw.name);
+      if (!existing) {
+        frameworkMap.set(fw.name, {
+          name: fw.name,
+          confidence: fw.confidence,
+          evidence: [...fw.evidence]
+        });
+        continue;
+      }
+      existing.confidence = mergeConfidence(
+        existing.confidence,
+        fw.confidence
+      );
+      for (const path17 of fw.evidence) {
+        if (!existing.evidence.includes(path17)) {
+          existing.evidence.push(path17);
+        }
+      }
+    }
+  }
+  const languages = Array.from(languageMap.values()).sort(byConfidence);
+  const frameworks = Array.from(frameworkMap.values()).sort(byConfidence);
+  return { languages, frameworks };
+}
+function mergeConfidence(a, b) {
+  return CONFIDENCE_RANK[a] <= CONFIDENCE_RANK[b] ? a : b;
+}
+function byConfidence(a, b) {
+  return CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence];
+}
+var JS_FRAMEWORK_MAP = {
+  react: "react",
+  next: "next",
+  vue: "vue",
+  nuxt: "nuxt",
+  svelte: "svelte",
+  "@sveltejs/kit": "sveltekit",
+  express: "express",
+  fastify: "fastify",
+  "@nestjs/core": "nestjs"
+};
+async function inspectPackageJson(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  const pkg = JSON.parse(raw);
+  const deps = collectDependencyNames(pkg);
+  const tsconfigPath = path14.join(path14.dirname(filePath), "tsconfig.json");
+  let hasTsconfig = false;
+  try {
+    await fs12.access(tsconfigPath);
+    hasTsconfig = true;
+  } catch {
+    hasTsconfig = false;
+  }
+  const hasTypescriptDep = deps.has("typescript");
+  const languages = [];
+  if (hasTypescriptDep || hasTsconfig) {
+    const evidence = [filePath];
+    if (hasTsconfig) {
+      evidence.push(tsconfigPath);
+    }
+    languages.push({
+      name: "typescript",
+      confidence: "high",
+      evidence
+    });
+  } else {
+    languages.push({
+      name: "javascript",
+      confidence: "high",
+      evidence: [filePath]
+    });
+  }
+  const frameworks = [];
+  for (const [depName, frameworkName] of Object.entries(JS_FRAMEWORK_MAP)) {
+    if (deps.has(depName)) {
+      frameworks.push({
+        name: frameworkName,
+        confidence: "high",
+        evidence: [filePath]
+      });
+    }
+  }
+  return { languages, frameworks };
+}
+function collectDependencyNames(pkg) {
+  const names = /* @__PURE__ */ new Set();
+  for (const map of [pkg.dependencies, pkg.devDependencies, pkg.peerDependencies]) {
+    if (!map) continue;
+    for (const name of Object.keys(map)) {
+      names.add(name);
+    }
+  }
+  return names;
+}
+var PHP_FRAMEWORK_MAP = {
+  "johnpbloch/wordpress-core": "wordpress",
+  "roots/wordpress": "wordpress",
+  "laravel/framework": "laravel",
+  "symfony/symfony": "symfony",
+  "symfony/framework-bundle": "symfony"
+};
+async function inspectComposerJson(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  const composer = JSON.parse(raw);
+  const requires = /* @__PURE__ */ new Set();
+  for (const map of [composer.require, composer["require-dev"]]) {
+    if (!map) continue;
+    for (const name of Object.keys(map)) {
+      requires.add(name);
+    }
+  }
+  const languages = [
+    { name: "php", confidence: "high", evidence: [filePath] }
+  ];
+  const frameworks = [];
+  const recordedFrameworks = /* @__PURE__ */ new Set();
+  for (const [pkgName, frameworkName] of Object.entries(PHP_FRAMEWORK_MAP)) {
+    if (requires.has(pkgName) && !recordedFrameworks.has(frameworkName)) {
+      frameworks.push({
+        name: frameworkName,
+        confidence: "high",
+        evidence: [filePath]
+      });
+      recordedFrameworks.add(frameworkName);
+    }
+  }
+  return { languages, frameworks };
+}
+var PYTHON_FRAMEWORKS = [
+  { pattern: /^django(\b|[<>=!~])/i, name: "django" },
+  { pattern: /^flask(\b|[<>=!~])/i, name: "flask" },
+  { pattern: /^fastapi(\b|[<>=!~])/i, name: "fastapi" }
+];
+async function inspectPython(repoRoot3) {
+  const candidates = ["pyproject.toml", "Pipfile", "requirements.txt"];
+  let foundPath = null;
+  let contents = null;
+  for (const candidate of candidates) {
+    const candidatePath = path14.join(repoRoot3, candidate);
+    try {
+      contents = await fs12.readFile(candidatePath, "utf8");
+      foundPath = candidatePath;
+      break;
+    } catch {
+      continue;
+    }
+  }
+  if (!foundPath || contents === null) {
+    return emptyResult();
+  }
+  const languages = [
+    { name: "python", confidence: "high", evidence: [foundPath] }
+  ];
+  const frameworks = [];
+  const recorded = /* @__PURE__ */ new Set();
+  for (const line of contents.split(/\r?\n/)) {
+    const token = extractPythonDependencyToken(line);
+    if (!token) continue;
+    for (const { pattern, name } of PYTHON_FRAMEWORKS) {
+      if (pattern.test(token) && !recorded.has(name)) {
+        frameworks.push({
+          name,
+          confidence: "high",
+          evidence: [foundPath]
+        });
+        recorded.add(name);
+      }
+    }
+  }
+  return { languages, frameworks };
+}
+function extractPythonDependencyToken(line) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) {
+    return null;
+  }
+  const quoted = trimmed.match(/^["']([^"']+)["']/);
+  if (quoted) {
+    return quoted[1].trim();
+  }
+  const keyAssign = trimmed.match(/^([A-Za-z0-9_.\-]+)\s*=/);
+  if (keyAssign) {
+    return keyAssign[1].trim();
+  }
+  const bareToken = trimmed.match(/^([A-Za-z0-9_.\-]+)/);
+  if (bareToken) {
+    return bareToken[1].trim();
+  }
+  return null;
+}
+async function inspectGoMod(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  if (!/^module\s+/m.test(raw)) {
+    return emptyResult();
+  }
+  return {
+    languages: [{ name: "go", confidence: "high", evidence: [filePath] }],
+    frameworks: []
+  };
+}
+var RUST_FRAMEWORK_MAP = {
+  "actix-web": "actix-web",
+  axum: "axum",
+  rocket: "rocket",
+  warp: "warp"
+};
+async function inspectCargoToml(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  const languages = [
+    { name: "rust", confidence: "high", evidence: [filePath] }
+  ];
+  const frameworks = [];
+  const recorded = /* @__PURE__ */ new Set();
+  for (const line of raw.split(/\r?\n/)) {
+    const token = extractCargoDependencyToken(line);
+    if (!token) continue;
+    const frameworkName = RUST_FRAMEWORK_MAP[token];
+    if (frameworkName && !recorded.has(frameworkName)) {
+      frameworks.push({
+        name: frameworkName,
+        confidence: "high",
+        evidence: [filePath]
+      });
+      recorded.add(frameworkName);
+    }
+  }
+  return { languages, frameworks };
+}
+function extractCargoDependencyToken(line) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("[")) {
+    return null;
+  }
+  const match = trimmed.match(/^([A-Za-z0-9_\-]+)\s*=/);
+  return match ? match[1] : null;
+}
+var RUBY_FRAMEWORK_MAP = {
+  rails: "rails",
+  sinatra: "sinatra"
+};
+async function inspectGemfile(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  const languages = [
+    { name: "ruby", confidence: "high", evidence: [filePath] }
+  ];
+  const frameworks = [];
+  const recorded = /* @__PURE__ */ new Set();
+  const gemPattern = /^\s*gem\s+["']([^"']+)["']/gm;
+  let match;
+  while ((match = gemPattern.exec(raw)) !== null) {
+    const gemName = match[1];
+    const frameworkName = RUBY_FRAMEWORK_MAP[gemName];
+    if (frameworkName && !recorded.has(frameworkName)) {
+      frameworks.push({
+        name: frameworkName,
+        confidence: "high",
+        evidence: [filePath]
+      });
+      recorded.add(frameworkName);
+    }
+  }
+  return { languages, frameworks };
+}
+async function inspectMixExs(filePath) {
+  const raw = await fs12.readFile(filePath, "utf8");
+  const languages = [
+    { name: "elixir", confidence: "high", evidence: [filePath] }
+  ];
+  const frameworks = [];
+  if (/\{:phoenix\b/.test(raw)) {
+    frameworks.push({
+      name: "phoenix",
+      confidence: "high",
+      evidence: [filePath]
+    });
+  }
+  return { languages, frameworks };
+}
+async function inspectPomXmlGradle(repoRoot3) {
+  const candidates = ["pom.xml", "build.gradle", "build.gradle.kts"];
+  const foundPaths = [];
+  const sources = [];
+  for (const candidate of candidates) {
+    const candidatePath = path14.join(repoRoot3, candidate);
+    try {
+      const contents = await fs12.readFile(candidatePath, "utf8");
+      foundPaths.push(candidatePath);
+      sources.push({ path: candidatePath, contents });
+    } catch {
+      continue;
+    }
+  }
+  if (foundPaths.length === 0) {
+    return emptyResult();
+  }
+  const languages = [
+    { name: "java", confidence: "high", evidence: foundPaths }
+  ];
+  const frameworks = [];
+  const springEvidence = [];
+  for (const { path: sourcePath, contents } of sources) {
+    if (contents.includes("spring-boot-starter") || contents.includes("org.springframework.boot")) {
+      springEvidence.push(sourcePath);
+    }
+  }
+  if (springEvidence.length > 0) {
+    frameworks.push({
+      name: "spring",
+      confidence: "high",
+      evidence: springEvidence
+    });
+  }
+  return { languages, frameworks };
+}
+
+// scripts/ai-skills/lib/onboarding-config.ts
+import fs13 from "node:fs/promises";
+import path15 from "node:path";
+var TECH_STACK_ENUM = /* @__PURE__ */ new Set([
+  "typescript",
+  "javascript",
+  "react",
+  "nextjs",
+  "vue",
+  "nuxt",
+  "angular",
+  "svelte",
+  "node",
+  "php",
+  "python",
+  "ruby",
+  "go",
+  "rust",
+  "java",
+  "kotlin",
+  "swift",
+  "wordpress",
+  "gutenberg",
+  "tailwind",
+  "graphql",
+  "apollo",
+  "rest",
+  "prisma"
+]);
+var TICKET_PREFIX_PATTERN = /^[A-Z][A-Z0-9]+$/;
+var OnboardingConfigValidationError = class extends Error {
+  constructor(field, message) {
+    super(`${field}: ${message}`);
+    this.field = field;
+    this.name = "OnboardingConfigValidationError";
+  }
+  field;
+};
+function toOnDiskConfig(config, options = {}) {
+  const techStackValues = /* @__PURE__ */ new Set();
+  for (const lang of config.techStack.languages) {
+    if (lang.name !== "unknown") {
+      techStackValues.add(lang.name);
+    }
+  }
+  for (const framework of config.techStack.frameworks) {
+    techStackValues.add(framework.name);
+  }
+  const ticketSystem = typeof config.linearTeam === "string" && config.linearTeam.length > 0 ? { kind: "linear", teamKey: config.linearTeam } : { kind: "github-issues" };
+  const onDisk = {
+    org: options.org ?? config.project,
+    project: config.project,
+    ticketPrefix: config.ticketPrefix,
+    ticketSystem,
+    github: {
+      owner: config.githubOwner,
+      repo: config.githubRepo
+    },
+    defaultBranch: options.defaultBranch ?? "main",
+    techStack: Array.from(techStackValues).sort(),
+    rules: { universal: "all" }
+  };
+  if (typeof options.linearWorkspace === "string" && options.linearWorkspace.length > 0) {
+    onDisk.ticketSystem.workspace = options.linearWorkspace;
+  }
+  if (typeof options.slackChannel === "string" && options.slackChannel.length > 0) {
+    onDisk.slackChannel = options.slackChannel;
+  }
+  if (config.documentation !== void 0) {
+    onDisk.documentation = {
+      location: config.documentation.location,
+      audience: config.documentation.audience,
+      keepsDevDocs: config.documentation.keepsDevDocs,
+      format: config.documentation.format
+    };
+  }
+  return onDisk;
+}
+function validateOnDiskConfig(config) {
+  for (const key of ["project", "org", "ticketPrefix"]) {
+    const value = config[key];
+    if (typeof value !== "string" || value.length === 0) {
+      throw new OnboardingConfigValidationError(
+        key,
+        `required field is missing or empty (got ${describeType2(value)})`
+      );
+    }
+  }
+  if (!TICKET_PREFIX_PATTERN.test(config.ticketPrefix)) {
+    throw new OnboardingConfigValidationError(
+      "ticketPrefix",
+      `value ${JSON.stringify(config.ticketPrefix)} must match /^[A-Z][A-Z0-9]+$/`
+    );
+  }
+  if (config.ticketSystem === null || typeof config.ticketSystem !== "object") {
+    throw new OnboardingConfigValidationError(
+      "ticketSystem",
+      "required object is missing"
+    );
+  }
+  if (config.ticketSystem.kind !== "linear" && config.ticketSystem.kind !== "github-issues") {
+    throw new OnboardingConfigValidationError(
+      "ticketSystem.kind",
+      `must be "linear" or "github-issues" (got ${JSON.stringify(config.ticketSystem.kind)})`
+    );
+  }
+  if (Array.isArray(config.techStack)) {
+    for (const item of config.techStack) {
+      if (typeof item !== "string" || !TECH_STACK_ENUM.has(item)) {
+        throw new OnboardingConfigValidationError(
+          "techStack",
+          `value ${JSON.stringify(item)} is not a recognized stack flag`
+        );
+      }
+    }
+    const seen = /* @__PURE__ */ new Set();
+    for (const item of config.techStack) {
+      if (seen.has(item)) {
+        throw new OnboardingConfigValidationError(
+          "techStack",
+          `value ${JSON.stringify(item)} appears more than once`
+        );
+      }
+      seen.add(item);
+    }
+  }
+}
+async function writeOnboardingConfig(repoRoot3, config, options = {}) {
+  const onDisk = toOnDiskConfig(config, options);
+  validateOnDiskConfig(onDisk);
+  const targetDir = path15.join(repoRoot3, ".ai-skills");
+  const targetPath = path15.join(targetDir, "config.json");
+  const tmpPath = path15.join(targetDir, "config.json.tmp");
+  await fs13.mkdir(targetDir, { recursive: true });
+  const serialized = serializeConfig(onDisk);
+  await fs13.writeFile(tmpPath, serialized, "utf8");
+  try {
+    await fs13.rename(tmpPath, targetPath);
+  } catch (error) {
+    await fs13.rm(tmpPath, { force: true });
+    throw error;
+  }
+  return { path: targetPath, schemaValidated: true };
+}
+function serializeConfig(config) {
+  const orderedTopLevel = [
+    "org",
+    "project",
+    "ticketPrefix",
+    "ticketSystem",
+    "github",
+    "defaultBranch",
+    "techStack",
+    "rules",
+    "slackChannel",
+    "documentation"
+  ];
+  const orderedTicketSystem = [
+    "kind",
+    "workspace",
+    "projectId",
+    "teamKey"
+  ];
+  const orderedGithub = [
+    "owner",
+    "repo"
+  ];
+  const orderedRules = [
+    "universal",
+    "optIn"
+  ];
+  const orderedDocumentation = [
+    "location",
+    "audience",
+    "keepsDevDocs",
+    "format"
+  ];
+  const renderedTopLevel = {};
+  for (const key of orderedTopLevel) {
+    const value = config[key];
+    if (value === void 0) {
+      continue;
+    }
+    if (key === "ticketSystem") {
+      const ts = {};
+      for (const tsKey of orderedTicketSystem) {
+        const tsValue = config.ticketSystem[tsKey];
+        if (tsValue !== void 0) {
+          ts[tsKey] = tsValue;
+        }
+      }
+      renderedTopLevel[key] = ts;
+      continue;
+    }
+    if (key === "github" && config.github) {
+      const gh = {};
+      for (const ghKey of orderedGithub) {
+        const ghValue = config.github[ghKey];
+        if (ghValue !== void 0) {
+          gh[ghKey] = ghValue;
+        }
+      }
+      renderedTopLevel[key] = gh;
+      continue;
+    }
+    if (key === "rules" && config.rules) {
+      const r = {};
+      for (const rKey of orderedRules) {
+        const rValue = config.rules[rKey];
+        if (rValue !== void 0) {
+          r[rKey] = rValue;
+        }
+      }
+      renderedTopLevel[key] = r;
+      continue;
+    }
+    if (key === "documentation" && config.documentation) {
+      const doc = {};
+      for (const docKey of orderedDocumentation) {
+        const docValue = config.documentation[docKey];
+        if (docValue !== void 0) {
+          doc[docKey] = docValue;
+        }
+      }
+      renderedTopLevel[key] = doc;
+      continue;
+    }
+    renderedTopLevel[key] = value;
+  }
+  return `${JSON.stringify(renderedTopLevel, null, "	")}
+`;
+}
+function describeType2(value) {
+  if (value === null) {
+    return "null";
+  }
+  if (Array.isArray(value)) {
+    return "array";
+  }
+  return typeof value;
+}
+
+// scripts/ai-skills/init.ts
+async function runInit(options) {
+  const { consumerRepoRoot, answers } = options;
+  const configPath = path16.join(consumerRepoRoot, ".ai-skills", "config.json");
+  let configExists;
+  try {
+    await fs14.access(configPath);
+    configExists = true;
+  } catch {
+    configExists = false;
+  }
+  if (configExists) {
+    throw new Error(
+      "prism init: .ai-skills/config.json already exists \u2014 edit it directly or remove it to re-init."
+    );
+  }
+  const detectedStack = await detectStack(consumerRepoRoot);
+  const config = {
+    project: answers.project,
+    ticketPrefix: answers.ticketPrefix,
+    githubOwner: answers.githubOwner,
+    githubRepo: answers.githubRepo,
+    // An empty string signals github-issues to toOnDiskConfig; a non-empty
+    // string causes toOnDiskConfig to emit a linear config with the team key.
+    linearTeam: answers.linearTeam ?? "",
+    productDomain: "",
+    existingStandards: [],
+    techStack: detectedStack
+  };
+  return writeOnboardingConfig(consumerRepoRoot, config, {
+    org: answers.org,
+    defaultBranch: answers.defaultBranch,
+    linearWorkspace: answers.linearWorkspace,
+    slackChannel: answers.slackChannel
+  });
+}
+function parseFlag(argv, flag) {
+  const flagIndex = argv.indexOf(`--${flag}`);
+  if (flagIndex !== -1) {
+    const value = argv[flagIndex + 1];
+    if (!value || value.startsWith("--")) {
+      throw new Error(
+        `prism init: --${flag} requires a value`
+      );
+    }
+    return value;
+  }
+  const inlinePrefix = `--${flag}=`;
+  const inlineArg = argv.find((arg) => arg.startsWith(inlinePrefix));
+  if (inlineArg) {
+    const value = inlineArg.slice(inlinePrefix.length);
+    if (!value) {
+      throw new Error(`prism init: --${flag} requires a value`);
+    }
+    return value;
+  }
+  return null;
+}
+async function resolveRequired(rl, flagValue, flagName, prompt, fieldName) {
+  if (typeof flagValue === "string" && flagValue.length > 0) {
+    return flagValue;
+  }
+  if (rl !== null) {
+    const answer = (await rl.question(prompt)).trim();
+    if (answer.length === 0) {
+      throw new Error(`prism init: ${fieldName ?? `--${flagName}`} is required`);
+    }
+    return answer;
+  }
+  throw new Error(`prism init: --${flagName} is required in non-interactive mode`);
+}
+async function runInitCli() {
+  const argv = process2.argv.slice(2);
+  const consumerRepoRoot = resolveConsumerRoot({
+    explicitConsumer: parseConsumerFlag(argv),
+    cwd: process2.cwd(),
+    selfPrismRoot: resolveSelfPrismSource()
+  });
+  const flagProject = parseFlag(argv, "project");
+  const flagOrg = parseFlag(argv, "org");
+  const flagTicketPrefix = parseFlag(argv, "ticket-prefix");
+  const flagLinearTeam = parseFlag(argv, "linear-team");
+  const flagLinearWorkspace = parseFlag(argv, "linear-workspace");
+  const flagGithubOwner = parseFlag(argv, "github-owner");
+  const flagGithubRepo = parseFlag(argv, "github-repo");
+  const flagDefaultBranch = parseFlag(argv, "default-branch");
+  const flagSlackChannel = parseFlag(argv, "slack-channel");
+  const rawTicketSystem = parseFlag(argv, "ticket-system");
+  if (rawTicketSystem !== null && rawTicketSystem !== "linear" && rawTicketSystem !== "github-issues") {
+    throw new Error(
+      `prism init: --ticket-system must be "linear" or "github-issues" (got ${JSON.stringify(rawTicketSystem)})`
+    );
+  }
+  const flagTicketSystem = rawTicketSystem;
+  const isInteractive = process2.stdin.isTTY === true;
+  const rl = isInteractive ? readline.createInterface({ input: process2.stdin, output: process2.stdout }) : null;
+  try {
+    const project = await resolveRequired(
+      rl,
+      flagProject,
+      "project",
+      "Project name (e.g. ACME): ",
+      "Project name"
+    );
+    const ticketPrefix = await resolveRequired(
+      rl,
+      flagTicketPrefix,
+      "ticket-prefix",
+      "Ticket prefix, uppercase (e.g. ACME): ",
+      "Ticket prefix"
+    );
+    let ticketSystemKind;
+    if (flagTicketSystem !== null) {
+      ticketSystemKind = flagTicketSystem;
+    } else if (rl !== null) {
+      const answer = (await rl.question('Ticket system \u2014 "linear" or "github-issues" [github-issues]: ')).trim();
+      const normalized = answer.length === 0 ? "github-issues" : answer;
+      if (normalized !== "linear" && normalized !== "github-issues") {
+        throw new Error(
+          `prism init: ticket system must be "linear" or "github-issues" (got ${JSON.stringify(normalized)})`
+        );
+      }
+      ticketSystemKind = normalized;
+    } else {
+      throw new Error(
+        'prism init: --ticket-system is required in non-interactive mode (pass "linear" or "github-issues")'
+      );
+    }
+    let linearTeam;
+    let linearWorkspace;
+    if (ticketSystemKind === "linear") {
+      linearTeam = await resolveRequired(
+        rl,
+        flagLinearTeam,
+        "linear-team",
+        "Linear team key (e.g. ACME): ",
+        "Linear team key"
+      );
+      linearWorkspace = flagLinearWorkspace ?? (rl !== null ? (await rl.question("Linear workspace slug (optional, press Enter to skip): ")).trim() || void 0 : void 0);
+    }
+    const githubOwner = await resolveRequired(
+      rl,
+      flagGithubOwner,
+      "github-owner",
+      "GitHub owner (user or org, e.g. acmecorp): ",
+      "GitHub owner"
+    );
+    const githubRepo = await resolveRequired(
+      rl,
+      flagGithubRepo,
+      "github-repo",
+      "GitHub repo name (e.g. my-app): ",
+      "GitHub repo name"
+    );
+    const slackChannel = flagSlackChannel ?? (rl !== null ? (await rl.question("Slack channel for standup summaries (optional, press Enter to skip): ")).trim() || void 0 : void 0);
+    const answers = {
+      project,
+      org: flagOrg ?? void 0,
+      ticketPrefix,
+      ticketSystemKind,
+      linearTeam,
+      linearWorkspace,
+      githubOwner,
+      githubRepo,
+      defaultBranch: flagDefaultBranch ?? void 0,
+      slackChannel
+    };
+    const result = await runInit({ consumerRepoRoot, answers });
+    console.log(`prism init: wrote ${result.path}`);
+  } finally {
+    rl?.close();
+  }
+}
+
 // scripts/ai-skills/cli.ts
 var USAGE = `prism \u2014 PRISM consumer CLI
 
 Usage:
+  prism init     Write .ai-skills/config.json so this repo can adopt PRISM (run before adopt)
   prism adopt    Seed .prism/ and project the persona roster into this repo (first run)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
 
@@ -2512,6 +3407,9 @@ contains PRISM).`;
 async function main3() {
   const subcommand = process.argv[2];
   switch (subcommand) {
+    case "init":
+      await runInitCli();
+      break;
     case "adopt":
       await runAdoptCli();
       break;

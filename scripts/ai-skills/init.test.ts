@@ -96,6 +96,40 @@ test("runInit writes a github-issues config when ticketSystemKind is github-issu
 	});
 });
 
+test("runInit omits slackChannel from config when answers.slackChannel is absent", async () => {
+	await withTempConsumerRepo(async (root) => {
+		const result = await runInit({ consumerRepoRoot: root, answers: GITHUB_ISSUES_ANSWERS });
+
+		const written = await fs.readFile(result.path, "utf8");
+		const parsed = JSON.parse(written) as Record<string, unknown>;
+
+		assert.equal(
+			"slackChannel" in parsed,
+			false,
+			"config must not include slackChannel when the field is absent from answers"
+		);
+	});
+});
+
+test("runInit writes slackChannel to config when answers.slackChannel is provided", async () => {
+	await withTempConsumerRepo(async (root) => {
+		const answersWithSlack: InitAnswers = {
+			...GITHUB_ISSUES_ANSWERS,
+			slackChannel: "#standups",
+		};
+		const result = await runInit({ consumerRepoRoot: root, answers: answersWithSlack });
+
+		const written = await fs.readFile(result.path, "utf8");
+		const parsed = JSON.parse(written) as Record<string, unknown>;
+
+		assert.equal(
+			parsed.slackChannel,
+			"#standups",
+			"config must carry slackChannel when provided in answers"
+		);
+	});
+});
+
 test("runInit throws the guard error when config.json already exists", async () => {
 	await withTempConsumerRepo(async (root) => {
 		const aiSkillsDir = path.join(root, ".ai-skills");

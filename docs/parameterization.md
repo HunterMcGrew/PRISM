@@ -57,21 +57,21 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 
 ## All tokens
 
-| Token | Source | Example |
-|---|---|---|
-| `${ORG}` | `org` | `Acme` |
-| `${PROJECT}` | `project` | `KTC` |
-| `${PROJECT_LOWERCASE}` | derived from `project` | `ktc` |
-| `${TICKET_PREFIX}` | `ticketPrefix` | `KTC` |
-| `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix` | `ktc` |
-| `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `acme` |
-| `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` |
-| `${TICKET_TRACKER}` | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` |
-| `${GITHUB_OWNER}` | `github.owner` | `acme` |
-| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `acme` |
-| `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` |
-| `${DEFAULT_BRANCH}` | `defaultBranch` | `main` |
-| `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` |
+| Token | Source | Example | Notes |
+|---|---|---|---|
+| `${ORG}` | `org` | `Acme` | |
+| `${PROJECT}` | `project` | `KTC` | |
+| `${PROJECT_LOWERCASE}` | derived from `project` | `ktc` | |
+| `${TICKET_PREFIX}` | `ticketPrefix` | `KTC` | |
+| `${TICKET_PREFIX_LOWERCASE}` | derived from `ticketPrefix` | `ktc` | |
+| `${LINEAR_WORKSPACE}` | `ticketSystem.workspace` | `acme` | |
+| `${LINEAR_TEAM_KEY}` | `ticketSystem.teamKey` | `KTC` | |
+| `${TICKET_TRACKER}` | derived from `ticketSystem.kind` | `**Linear team:** KTC (prefix: KTC-####)` / `**Ticket tracker:** GitHub issues` | |
+| `${GITHUB_OWNER}` | `github.owner` | `acme` | |
+| `${GITHUB_OWNER_LOWERCASE}` | derived from `github.owner` | `acme` | |
+| `${GITHUB_REPO}` | `github.repo` | `ktc-frontend` | |
+| `${DEFAULT_BRANCH}` | `defaultBranch` | `main` | |
+| `${SLACK_CHANNEL}` | `slackChannel` | `#ktc-dev` | Always present in the token map; defaults to `""` when `slackChannel` is absent from config. |
 
 Tokens use `${UPPER_SNAKE_CASE}`. The substitution layer (implemented in Phase 1.5d, lives in `scripts/ai-skills/lib/tokens.ts`) reads `config.json`, derives lowercase forms, and replaces token literals at build time — canonical files on disk stay tokenized, platform outputs receive substituted content.
 
