@@ -97,11 +97,6 @@ export interface WriteOnboardingConfigResult {
 }
 
 /**
- * Allowed values for `techStack` items — mirrors the enum in
- * `.ai-skills/config.schema.json`. When the schema's enum grows, this list
- * needs to grow alongside it.
- */
-/**
  * Canonical ordered list of top-level keys in `.ai-skills/config.json`. Order
  * here controls the serialization order in the output file. Both
  * `serializeConfig` and `readUnknownFields` derive from this constant so the
@@ -120,6 +115,11 @@ const ORDERED_TOP_LEVEL_KEYS: ReadonlyArray<keyof PrismOnDiskConfig> = [
 	"documentation",
 ];
 
+/**
+ * Allowed values for `techStack` items — mirrors the enum in
+ * `.ai-skills/config.schema.json`. When the schema's enum grows, this list
+ * needs to grow alongside it.
+ */
 const TECH_STACK_ENUM: ReadonlySet<string> = new Set([
 	"typescript",
 	"javascript",
