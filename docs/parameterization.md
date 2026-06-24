@@ -113,7 +113,7 @@ If you're tempted to tokenize one of these, write an ADR first. The fewer tokens
 
 ## Feature flags
 
-The `features` object in `.ai-skills/config.json` holds capability flags that are off by default. They are not surfaced during `npx adopt` or onboarding — you set them manually after install when you want to enable the capability.
+The `features` object in `.ai-skills/config.json` holds capability flags that are off by default. They are not surfaced during `npx @huntermcgrew/prism adopt` or onboarding — you set them manually after install when you want to enable the capability.
 
 ### `features.conductorMayMerge`
 
