@@ -94,7 +94,7 @@ PRs are **squash-merged** on GitHub. This means:
 
 ## Who merges
 
-Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona by default. This is the merge-side complement of "Eric never approves PRs" ([ADR-0011](../spec/adrs/_toolkit/0011-eric-never-approves-prs.md)): the review-side rule binds the reviewer; this one binds every persona that touches a branch.
+Merging and approving PRs is a human responsibility — on every tool (GitHub UI, `gh pr merge`, any future automation), for every persona by default. This is the merge-side complement of "Eric never approves PRs": the review-side rule binds the reviewer; this one binds every persona that touches a branch.
 
 Cues like "it's approved", "QA passed", or "let's get it in" mean *finish the handoff* — push the final commits, sync the PR body, report the PR ready to merge. They are never an instruction to run the merge.
 
