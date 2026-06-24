@@ -88,6 +88,7 @@ Sequence: task 1 (config-layer widening) blocks task 3 (init reuses the widened 
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Plan created; issue #250 opened. Cold-adopt repro confirmed: `tokens.ts:61` throws on missing `config.json` before any skills are projected. Branch created from `origin/main` at `ed221f9`.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Winston evaluated — Proceed with changes. Endorsed the init/Atlas split; resolved OPEN decision. Verified `detectStack` reuses cleanly; `writeOnboardingConfig` reuses after a bounded widening to honor `ticketSystem.kind` (see Decision). Wrote Implementation Tasks + AC.
 - 2026-06-23 [hmcgrew/prism-250-init-command]: Clove shipped tasks 1–8. Widened `onboarding-config.ts` type + `toOnDiskConfig` + `validateOnDiskConfig` for github-issues. Created `init.ts` (`runInit`/`runInitCli`) with `node:readline/promises` prompts and CI flag path. Wired `init` into `cli.ts` dispatcher with updated USAGE. Added adopt missing-config guard pointing at `prism init`. All 371 tests pass; `prism:check` gate green.
+- 2026-06-23 [hmcgrew/prism-250-init-command]: Eli documented cold-start flow. Added `prism init → adopt → Atlas` three-step section to `install-layout.md` § First-contact; added pre-adopt pointer to `docs/adopt-prism.md`. Commands and flags verified against `init.ts` and `cli.ts` source.
 
 ---
 
