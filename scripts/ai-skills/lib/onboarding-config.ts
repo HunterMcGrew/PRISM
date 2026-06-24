@@ -101,6 +101,25 @@ export interface WriteOnboardingConfigResult {
  * `.ai-skills/config.schema.json`. When the schema's enum grows, this list
  * needs to grow alongside it.
  */
+/**
+ * Canonical ordered list of top-level keys in `.ai-skills/config.json`. Order
+ * here controls the serialization order in the output file. Both
+ * `serializeConfig` and `readUnknownFields` derive from this constant so the
+ * two functions always agree on which keys are "known."
+ */
+const ORDERED_TOP_LEVEL_KEYS: ReadonlyArray<keyof PrismOnDiskConfig> = [
+	"org",
+	"project",
+	"ticketPrefix",
+	"ticketSystem",
+	"github",
+	"defaultBranch",
+	"techStack",
+	"rules",
+	"slackChannel",
+	"documentation",
+];
+
 const TECH_STACK_ENUM: ReadonlySet<string> = new Set([
 	"typescript",
 	"javascript",
@@ -319,7 +338,7 @@ export async function writeOnboardingConfig(
 
 /**
  * Reads the existing `config.json` (if any) and returns any top-level keys
- * not present in `orderedTopLevel`. These are fields set manually after
+ * not present in `ORDERED_TOP_LEVEL_KEYS`. These are fields set manually after
  * install (e.g. `features.conductorMayMerge`) that the write path should
  * preserve across reconfigure runs.
  *
@@ -346,18 +365,7 @@ async function readUnknownFields(targetPath: string): Promise<Record<string, unk
 		return {};
 	}
 
-	const knownKeys = new Set<string>([
-		"org",
-		"project",
-		"ticketPrefix",
-		"ticketSystem",
-		"github",
-		"defaultBranch",
-		"techStack",
-		"rules",
-		"slackChannel",
-		"documentation",
-	]);
+	const knownKeys = new Set<string>(ORDERED_TOP_LEVEL_KEYS);
 
 	const unknown: Record<string, unknown> = {};
 
@@ -372,27 +380,16 @@ async function readUnknownFields(targetPath: string): Promise<Record<string, unk
 
 /**
  * Serializes the on-disk config with stable key ordering and a trailing
- * newline. JSON.stringify replacer enforces the order so a second call with
- * the same input bytes returns the same output bytes regardless of object
- * key insertion order in the in-memory value.
+ * newline. Known fields are written in `ORDERED_TOP_LEVEL_KEYS` insertion
+ * order, so a second call with the same input returns byte-identical output
+ * regardless of the in-memory object's own key order.
  *
- * Unknown fields (fields not in `orderedTopLevel`) are appended after all
- * known fields in sorted key order, so the output remains deterministic and
- * a reconfigure run preserves manually-set fields like `features.conductorMayMerge`.
+ * Unknown fields (fields absent from `ORDERED_TOP_LEVEL_KEYS`) are appended
+ * after all known fields in sorted key order, so a reconfigure run preserves
+ * manually-set fields like `features.conductorMayMerge`.
  */
 function serializeConfig(config: PrismOnDiskConfig, unknownFields: Record<string, unknown> = {}): string {
-	const orderedTopLevel: Array<keyof PrismOnDiskConfig> = [
-		"org",
-		"project",
-		"ticketPrefix",
-		"ticketSystem",
-		"github",
-		"defaultBranch",
-		"techStack",
-		"rules",
-		"slackChannel",
-		"documentation",
-	];
+	const orderedTopLevel = ORDERED_TOP_LEVEL_KEYS;
 
 	const orderedTicketSystem: Array<keyof PrismOnDiskConfig["ticketSystem"]> = [
 		"kind",
