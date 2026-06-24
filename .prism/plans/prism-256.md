@@ -120,6 +120,7 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Plan created; issue #256 opened. Follow-up chartered from prism-250 Decision; scope-fit gate confirmed new ticket. Branch created from `origin/main` at `66889b0`.
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Winston settled the OPEN mode decision (`init-bootstrapped` distinct mode, first-install step set with config pre-seed) and wrote 8 implementation tasks under `### Clove`. Design stayed content-first; one typed code touch (widen `OnboardingState["mode"]` union). Verified no `switch (mode)` consumer exists in source — mode walk is instruction-driven prose.
 - 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Clove implemented all 8 tasks — widened `OnboardingState["mode"]` union in `onboarding-types.ts`, added `init-bootstrapped` to the mode list, mode-determination walk, mode section, question-order note, Batch-1 probe note, and closing-summary line in `shared.md`. Regenerated platform mirrors via `pnpm prism:build`; `pnpm prism:check` green (377 tests, 0 failures, tsc clean, crossref-lint passed, mirror-drift check passed).
+- 2026-06-24 [hunter/prism-256-atlas-detects-init-config]: Clove fixed Briar minor — rewrote probe-2 opening sentence from false binary ("first-install vs reconfigure") to three-way routing ("Config existence narrows the mode… see Batch 2 step 7"). Mirrors regenerated; `pnpm prism:check` green.
 
 ---
 
@@ -128,6 +129,15 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 ---
 
 ## Review Issues
+
+### Probe-2 sentence contradicts the new mode taxonomy
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `.ai-skills/skills/prism-onboarding/shared.md` probe 2 opening sentence — replaced false binary with "Config existence narrows the mode (first-install when absent; otherwise `init-bootstrapped` or `reconfigure` depending on state file presence — see Batch 2 step 7 for the full three-way routing)." Platform mirrors regenerated via `pnpm prism:build`; `pnpm prism:check` green (377 tests, 0 failures).
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md` (Batch 1, probe 2; mirrored identically in all generated platform files)
+- **Problem:** The Batch-1 "Existing config" probe opens with "Existence determines mode (first-install vs reconfigure)" — a two-way description that is now wrong. Config existence maps to three possible outcomes: `first-install` (no config), `init-bootstrapped` (config + no state), or `reconfigure` (config + state). An Atlas agent reading this sentence gets a false binary before the correction clause that immediately follows.
+- **Suggested fix:** Replace "Existence determines mode (first-install vs reconfigure)." with "Config existence narrows the mode (first-install when absent; otherwise `init-bootstrapped` or `reconfigure` depending on state file presence — see Batch 2 step 7)." The correction clause at the end of probe 2 can then be trimmed or removed since the opening sentence now correctly routes to Batch 2 step 7 for the full logic.
 
 ---
 
@@ -148,11 +158,14 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 
 ### AC Adjustments
 
+AC confirmed accurate against the diff and `init.ts` source. No adjustments required.
+
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Linear |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-06-24 | Nora | Initial AC from ticket requirements and done-condition | synced | N/A (GitHub issues) |
+| 2026-06-24 | Briar | Validated AC against implementation diff and init.ts source — no adjustments needed | validated | N/A |
 
 ---
 
@@ -167,8 +180,8 @@ Atlas (`prism-onboarding`) detects a `config.json` written by `prism init` and c
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (mode detection is instruction-driven prose, no code seam; type union verified by tsc; 377 tests pass unchanged)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-06-24 (`pnpm prism:check` green: mirror-drift check + tsc + 377 tests + verify-manifest + crossref-lint)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable — promote the mode-taxonomy Decision to `.prism/architect/onboarding.md` at ticket close per the Decision verdict)
+- [x] Build passes — last run: 2026-06-24 (`pnpm prism:check` green: mirror-drift check + tsc + 377 tests + verify-manifest + crossref-lint; Briar confirmed clean on same run)
+- [ ] PR description up to date (1 minor review issue open — see `## Review Issues`; ready to ship once fixed or waived)
+- [ ] Lasting decisions promoted to architect context (promote the mode-taxonomy Decision to `.prism/architect/onboarding.md` at ticket close per the Decision verdict)
 
-**Last updated:** 2026-06-24 (Clove implementation)
+**Last updated:** 2026-06-24 (Briar self-review)
