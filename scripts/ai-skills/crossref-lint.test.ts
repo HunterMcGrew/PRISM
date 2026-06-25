@@ -30,6 +30,10 @@ import {
 	runInstallAdrGate,
 	isInstallAdrAllowlisted,
 	INSTALL_ADR_MACHINERY_ALLOWLIST,
+	scanFileForRelativeLinks,
+	runInstallRelativeLinkGate,
+	isInstallRelativeLinkAllowlisted,
+	INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS,
 } from "./crossref-lint";
 
 // ---------------------------------------------------------------------------
@@ -1109,7 +1113,7 @@ test("runInstallAdrGate: allowlisted file with ADR reference passes the gate", a
 			);
 		},
 		async (root) => {
-			// Only the machinery allowlist — no pre-L5 allowlist entries
+			// Only the machinery allowlist path — no pre-existing tracked-violations entries
 			const violations = await runInstallAdrGate(
 				root,
 				new Set(["templates/install/.prism/spec/adrs/_toolkit/README.md"])
@@ -1176,6 +1180,454 @@ test("runInstallAdrGate: file in allowlistOverride with ADR ref passes the gate"
 				violations.length,
 				0,
 				"file in allowlistOverride must pass the gate even with an ADR reference"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// scanFileForRelativeLinks — relative-link gate unit tests
+// ---------------------------------------------------------------------------
+
+test("scanFileForRelativeLinks: valid relative link that resolves passes clean", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "target.md"),
+				"# Target\n"
+			);
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [the target](./target.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(violations.length, 0, "valid relative link must pass clean");
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: dangling relative link fails the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			// source.md exists but its target does NOT
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [the ghost](./ghost.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(violations.length, 1, "dangling relative link must be flagged");
+			assert.equal(violations[0].ref, "./ghost.md");
+			assert.equal(violations[0].line, 1);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: relative link with parent traversal resolves correctly", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.mkdir(path.join(root, ".prism", "references"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "target.md"),
+				"# Target\n"
+			);
+			await fs.writeFile(
+				path.join(root, ".prism", "references", "source.md"),
+				"See [rules](../rules/target.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "references", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/references/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"valid ../ relative link must resolve and pass clean"
+			);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: anchor-only ref yields zero violations", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [§ section](#section-heading) for more.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(violations.length, 0, "anchor-only ref must not be flagged");
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: relative link with anchor resolves the file path", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "target.md"),
+				"# Target\n\n## Section\n"
+			);
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [§ section](./target.md#section) for more.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"relative link with anchor must strip anchor and check the file"
+			);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: dangling relative link with anchor fails the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [§ missing](./ghost.md#section) for more.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				1,
+				"dangling relative link with anchor must be flagged"
+			);
+			assert.equal(violations[0].ref, "./ghost.md#section");
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: relative link inside fenced code block is not flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"```\nSee [the ghost](./ghost.md).\n```\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"relative link inside fenced code block must not be flagged"
+			);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: token path yields zero violations", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [ADR](./spec/adrs/${SLUG}.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"token path must not be flagged"
+			);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: directory ref (trailing slash) yields zero violations", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [the adrs](./spec/adrs/) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				() => false
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"directory ref must not be flagged"
+			);
+		}
+	);
+});
+
+test("scanFileForRelativeLinks: allowlisted pair is exempt from the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(path.join(root, ".prism", "rules"), { recursive: true });
+			// ghost.md does NOT exist
+			await fs.writeFile(
+				path.join(root, ".prism", "rules", "source.md"),
+				"See [the ghost](./ghost.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const sourceAbs = path.join(root, ".prism", "rules", "source.md");
+			const lines = (await fs.readFile(sourceAbs, "utf8")).split(/\r?\n/);
+			const violations = await scanFileForRelativeLinks(
+				lines,
+				".prism/rules/source.md",
+				sourceAbs,
+				root,
+				// allowlist override: exempt this exact (file, ref) pair
+				(rel, ref) => rel === ".prism/rules/source.md" && ref === "./ghost.md"
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"allowlisted (file, ref) pair must pass the gate"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// isInstallRelativeLinkAllowlisted — allowlist predicate
+// ---------------------------------------------------------------------------
+
+test("isInstallRelativeLinkAllowlisted: tracked dangling entry is recognized as allowlisted", () => {
+	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
+	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
+	const [relPath, rawRef] = firstEntry.split("::");
+	assert.equal(
+		isInstallRelativeLinkAllowlisted(relPath, rawRef),
+		true,
+		"tracked dangling entry must be recognized as allowlisted"
+	);
+});
+
+test("isInstallRelativeLinkAllowlisted: non-allowlisted pair returns false", () => {
+	assert.equal(
+		isInstallRelativeLinkAllowlisted(
+			"templates/install/.prism/rules/branch-plan.md",
+			"./some-ghost.md"
+		),
+		false
+	);
+});
+test("isInstallRelativeLinkAllowlisted: rawRef with anchor fragment matches allowlist entry", () => {
+	// Fragment-stripping branch: `rawRef#heading` must match the same allowlist
+	// entry as bare `rawRef`, because the key is built from the path-part only.
+	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
+	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
+	const [relPath, rawRef] = firstEntry.split("::");
+	assert.equal(
+		isInstallRelativeLinkAllowlisted(relPath, `${rawRef}#heading`),
+		true,
+		"rawRef with anchor fragment must still match the allowlist entry"
+	);
+});
+
+// ---------------------------------------------------------------------------
+// runInstallRelativeLinkGate — integration tests
+// ---------------------------------------------------------------------------
+
+test("runInstallRelativeLinkGate: planted dangling relative link fails the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			await fs.mkdir(
+				path.join(root, "templates", "install", ".prism", "rules"),
+				{ recursive: true }
+			);
+			// ghost.md is NOT created — this is the dangling target
+			await fs.writeFile(
+				path.join(root, "templates", "install", ".prism", "rules", "planted.md"),
+				"See [the ghost](./ghost.md) for details.\n"
+			);
+		},
+		async (root) => {
+			// Empty allowlist override — nothing is exempted
+			const violations = await runInstallRelativeLinkGate(root, () => false);
+			assert.equal(
+				violations.length,
+				1,
+				"planted dangling relative link must fail the gate"
+			);
+			assert.equal(violations[0].ref, "./ghost.md");
+			assert.equal(
+				violations[0].relativePath,
+				"templates/install/.prism/rules/planted.md"
+			);
+		}
+	);
+});
+
+test("runInstallRelativeLinkGate: valid relative link passes the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			const rulesDir = path.join(root, "templates", "install", ".prism", "rules");
+			await fs.mkdir(rulesDir, { recursive: true });
+			await fs.writeFile(
+				path.join(rulesDir, "target.md"),
+				"# Target\n"
+			);
+			await fs.writeFile(
+				path.join(rulesDir, "source.md"),
+				"See [the target](./target.md) for details.\n"
+			);
+		},
+		async (root) => {
+			const violations = await runInstallRelativeLinkGate(root, () => false);
+			assert.equal(violations.length, 0, "valid relative link must pass the gate");
+		}
+	);
+});
+
+test("runInstallRelativeLinkGate: anchor-only section ref is not flagged", async () => {
+	await withTempTree(
+		async (root) => {
+			const rulesDir = path.join(root, "templates", "install", ".prism", "rules");
+			await fs.mkdir(rulesDir, { recursive: true });
+			await fs.writeFile(
+				path.join(rulesDir, "source.md"),
+				"Jump to [§ section](#heading) within the same file.\n"
+			);
+		},
+		async (root) => {
+			const violations = await runInstallRelativeLinkGate(root, () => false);
+			assert.equal(
+				violations.length,
+				0,
+				"anchor-only ref must not be flagged by the relative-link gate"
+			);
+		}
+	);
+});
+
+test("runInstallRelativeLinkGate: allowlisted dangling link passes the gate", async () => {
+	await withTempTree(
+		async (root) => {
+			const rulesDir = path.join(root, "templates", "install", ".prism", "rules");
+			await fs.mkdir(rulesDir, { recursive: true });
+			// ghost.md is NOT created — normally would be a violation
+			await fs.writeFile(
+				path.join(rulesDir, "source.md"),
+				"See [the ghost](./ghost.md) for details.\n"
+			);
+		},
+		async (root) => {
+			// Override: exempt this specific (file, ref) pair
+			const violations = await runInstallRelativeLinkGate(
+				root,
+				(rel, ref) =>
+					rel === "templates/install/.prism/rules/source.md" &&
+					ref === "./ghost.md"
+			);
+			assert.equal(
+				violations.length,
+				0,
+				"allowlisted dangling link must pass the gate"
+			);
+		}
+	);
+});
+
+test("runInstallRelativeLinkGate: returns empty array when templates/install/ does not exist", async () => {
+	await withTempTree(
+		async (_root) => {
+			// No templates/install directory
+		},
+		async (root) => {
+			const violations = await runInstallRelativeLinkGate(root, () => false);
+			assert.equal(
+				violations.length,
+				0,
+				"missing install root must return empty violations"
 			);
 		}
 	);

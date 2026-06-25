@@ -912,6 +912,263 @@ async function listInstallCarrierFiles(dirPath: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Install-surface relative-link gate
+// ---------------------------------------------------------------------------
+
+/**
+ * A violation produced by `scanFileForRelativeLinks` / `runInstallRelativeLinkGate`.
+ */
+export interface InstallRelativeLinkViolation {
+	relativePath: string;
+	line: number;
+	ref: string;
+	resolved: string;
+}
+
+/**
+ * Dangling relative links under `templates/install/` that are tracked pending a fix.
+ * All 27 unique `(file, ref)` pairs are genuine broken links — two root-cause
+ * categories:
+ *
+ * 1. `../skills/<name>/SKILL.md` (19 unique entries, 6 files) — rules in
+ *    `.prism/rules/` and `.prism/references/` cite skill files via `../skills/`
+ *    but skills are installed at `.claude/skills/` / `.cursor/skills/` /
+ *    `.codex/skills/`, not at `.prism/skills/`. Fix: update the ownership
+ *    attribution links to the correct tool-namespace path, or drop them.
+ *
+ * 2. Miscellaneous (8 entries) — wrong relative depth (AGENTS.md, SPEC.md),
+ *    `.ai-skills/` docs not shipped in the install template, one
+ *    skills-ecosystem wrong-level ref, and a historical plan reference.
+ *
+ * Remove entries from this set as the root causes are fixed. When the set
+ * reaches zero, delete the constant and simplify `isInstallRelativeLinkAllowlisted`
+ * to delegate only to `INSTALL_RELATIVE_LINK_ALLOWLIST`.
+ *
+ * Key: `relativePath::rawRef` (same convention as `CROSSREF_FILE_ALLOWLIST`).
+ */
+export const INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS: ReadonlySet<string> =
+	new Set([
+		// --- Category 1: ../skills/ refs — rules pointing at .prism/skills/ which
+		//     does not exist; skills install at .claude/skills/ etc. ---
+		"templates/install/.prism/references/worktree-mode.md::../skills/prism-code-review-pr/SKILL.md",
+		"templates/install/.prism/references/worktree-mode.md::../skills/prism-conductor/SKILL.md",
+		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-architect/SKILL.md",
+		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-code-review-pr/SKILL.md",
+		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-code-review-self/SKILL.md",
+		"templates/install/.prism/rules/design-governance.md::../skills/prism-architect/SKILL.md",
+		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-dev/SKILL.md",
+		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-review-pr/SKILL.md",
+		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-review-self/SKILL.md",
+		"templates/install/.prism/rules/design-governance.md::../skills/prism-design/SKILL.md",
+		"templates/install/.prism/rules/followup-scope.md::../skills/prism-architect/SKILL.md",
+		"templates/install/.prism/rules/followup-scope.md::../skills/prism-code-review-pr/SKILL.md",
+		"templates/install/.prism/rules/followup-scope.md::../skills/prism-code-review-self/SKILL.md",
+		"templates/install/.prism/rules/followup-scope.md::../skills/prism-debugger/SKILL.md",
+		"templates/install/.prism/rules/followup-scope.md::../skills/prism-ticket-start/SKILL.md",
+		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-architect/SKILL.md",
+		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-code-review-pr/SKILL.md",
+		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-code-review-self/SKILL.md",
+		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-design/SKILL.md",
+		// --- Category 2: miscellaneous wrong paths ---
+		// CLAUDE.md.tmpl is in .claude/; AGENTS.md.tmpl is at the install root, not .claude/
+		"templates/install/.claude/CLAUDE.md.tmpl::./AGENTS.md",
+		// closing-messages.md is at depth .prism/architect/_toolkit/; AGENTS.md is at install root
+		"templates/install/.prism/architect/_toolkit/closing-messages.md::../../AGENTS.md",
+		// install-layout.md references .ai-skills/docs/ which is not part of the install template
+		"templates/install/.prism/architect/_toolkit/install-layout.md::../../.ai-skills/docs/compatibility.md",
+		// onboarding.md and stack-detection.md reference .ai-skills/skills/ not in install template
+		"templates/install/.prism/architect/_toolkit/onboarding.md::../../.ai-skills/skills/prism-onboarding/shared.md",
+		// skills-ecosystem.md uses wrong relative depth for pr-description.md (one level too shallow)
+		"templates/install/.prism/architect/_toolkit/skills-ecosystem.md::../rules/pr-description.md",
+		"templates/install/.prism/architect/_toolkit/stack-detection.md::../../.ai-skills/skills/prism-onboarding/shared.md",
+		// shipping-flow.md references a historical plan file that does not exist in the install template
+		"templates/install/.prism/references/shipping-flow.md::../plans/4.7-skill-audit-strategy.md",
+		// ADR README uses wrong relative depth for SPEC.md (one level too deep)
+		"templates/install/.prism/spec/adrs/_toolkit/README.md::../../SPEC.md",
+	]);
+
+/**
+ * Permanent allowlist for relative links under `templates/install/` that are
+ * intentionally unresolvable in the raw template tree but correct by design
+ * in the consumer's installed tree. Currently empty — all pre-existing
+ * violations are tracked in `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` above.
+ *
+ * Key: `relativePath::rawRef`.
+ */
+export const INSTALL_RELATIVE_LINK_ALLOWLIST: ReadonlySet<string> = new Set();
+
+/**
+ * Returns true when a `(relativePath, rawRef)` pair is exempt from the
+ * relative-link gate — either because it is in the permanent allowlist or
+ * in the tracked-violations set.
+ *
+ * `relativePath` is repo-root-relative.
+ * `rawRef` is the raw link target as it appears in source — anchor fragments
+ * (e.g. `#section`) are stripped before the lookup so that
+ * `../rules/foo.md#heading` matches the same allowlist entry as
+ * `../rules/foo.md`. Anchor-only refs (no path part) are handled by the
+ * scanner's pure-anchor guard before this function is called.
+ */
+export function isInstallRelativeLinkAllowlisted(
+	relativePath: string,
+	rawRef: string
+): boolean {
+	// Strip the anchor fragment — allowlist keys use the bare path
+	const pathPart = rawRef.split("#")[0];
+	const key = `${relativePath}::${pathPart}`;
+	return (
+		INSTALL_RELATIVE_LINK_ALLOWLIST.has(key) ||
+		INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS.has(key)
+	);
+}
+
+/** Matches relative markdown link targets starting with `./` or `../`. */
+const RELATIVE_LINK_RE = /\[[^\]]*\]\((\.\.?\/[^)]*)\)/g;
+
+/**
+ * Scans a file's lines for dangling relative markdown links.
+ *
+ * Validates links whose targets start with `./` or `../` by resolving them
+ * against the referencing file's directory and checking for existence on disk.
+ *
+ * Skips:
+ * - Fenced code blocks (same toggle logic as `scanLines`)
+ * - Targets filtered by `isExternalOrToken` (tokens, placeholders, globs)
+ * - Pure anchor refs (no file path after stripping `#fragment`)
+ * - Directory refs (target ends in `/`)
+ * - Allowlisted `(relativePath, rawRef)` pairs
+ *
+ * `referencingFileAbsPath` must be the absolute path of the file being
+ * scanned. `repoRootPath` is used for computing `resolved` in the returned
+ * violation records (not for resolution — relative links always resolve
+ * against the referencing file's own directory).
+ *
+ * Pass `allowlistOverrideFn` in tests to control exemptions without touching
+ * the module-level constants.
+ */
+export async function scanFileForRelativeLinks(
+	lines: string[],
+	relativePath: string,
+	referencingFileAbsPath: string,
+	repoRootPath: string,
+	allowlistOverrideFn?: (rel: string, ref: string) => boolean
+): Promise<InstallRelativeLinkViolation[]> {
+	const violations: InstallRelativeLinkViolation[] = [];
+	const isAllowlisted = allowlistOverrideFn ?? isInstallRelativeLinkAllowlisted;
+	let inFence = false;
+
+	for (let index = 0; index < lines.length; index += 1) {
+		const line = lines[index];
+
+		if (/^\s{0,3}```/.test(line)) {
+			inFence = !inFence;
+			continue;
+		}
+
+		if (inFence) {
+			continue;
+		}
+
+		RELATIVE_LINK_RE.lastIndex = 0;
+		let match: RegExpExecArray | null;
+
+		while ((match = RELATIVE_LINK_RE.exec(line)) !== null) {
+			const rawRef = match[1];
+
+			// Skip tokens, placeholders, globs, and section references
+			if (isExternalOrToken(rawRef)) {
+				continue;
+			}
+
+			// Strip anchor to get the file path
+			const pathPart = rawRef.split("#")[0];
+
+			// Skip pure anchor-only refs (no file path before #)
+			if (!pathPart) {
+				continue;
+			}
+
+			// Skip directory refs — not a file we can existence-check
+			if (pathPart.endsWith("/")) {
+				continue;
+			}
+
+			// Check the allowlist before resolving
+			if (isAllowlisted(relativePath, rawRef)) {
+				continue;
+			}
+
+			// Resolve relative to the referencing file's directory
+			const resolvedAbs = path.resolve(
+				path.dirname(referencingFileAbsPath),
+				pathPart
+			);
+
+			if (!(await refResolves(resolvedAbs))) {
+				violations.push({
+					relativePath,
+					line: index + 1,
+					ref: rawRef,
+					resolved: path
+						.relative(repoRootPath, resolvedAbs)
+						.split(path.sep)
+						.join("/"),
+				});
+			}
+		}
+	}
+
+	return violations;
+}
+
+/**
+ * Walks all prose carrier files under `templates/install/` and collects
+ * dangling relative-link violations, excluding allowlisted entries.
+ *
+ * This is the third pass in `main()`, complementing the broken-link check in
+ * `runCrossRefLint` (pass 1) and the ADR-reference gate in `runInstallAdrGate`
+ * (pass 2). It enforces that relative markdown links inside the install
+ * surface resolve to real files, catching broken cross-references that a
+ * consumer would encounter when reading installed rules and skills.
+ *
+ * Pass `allowlistOverrideFn` in tests to control exemptions without touching
+ * the module-level constants.
+ */
+export async function runInstallRelativeLinkGate(
+	repoRootPath: string,
+	allowlistOverrideFn?: (rel: string, ref: string) => boolean
+): Promise<InstallRelativeLinkViolation[]> {
+	const installRoot = path.join(repoRootPath, "templates", "install");
+
+	if (!(await pathExists(installRoot))) {
+		return [];
+	}
+
+	const allFiles = await listInstallCarrierFiles(installRoot);
+	const violations: InstallRelativeLinkViolation[] = [];
+
+	for (const absPath of allFiles) {
+		const relativePath = path
+			.relative(repoRootPath, absPath)
+			.split(path.sep)
+			.join("/");
+
+		const lines = (await fs.readFile(absPath, "utf8")).split(/\r?\n/);
+		violations.push(
+			...(await scanFileForRelativeLinks(
+				lines,
+				relativePath,
+				absPath,
+				repoRootPath,
+				allowlistOverrideFn
+			))
+		);
+	}
+
+	return violations;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
@@ -951,6 +1208,25 @@ async function main(): Promise<void> {
 	} else {
 		console.log(
 			"install-adr-gate passed. No forbidden ADR references on the install surface."
+		);
+	}
+
+	// Pass 3: dangling relative links on the install surface
+	const relativeLinkViolations = await runInstallRelativeLinkGate(repoRoot);
+
+	if (relativeLinkViolations.length > 0) {
+		for (const v of relativeLinkViolations) {
+			console.error(
+				`install-relative-link-gate: ${v.relativePath}:${v.line}: [${v.ref}] → ${v.resolved} (does not exist)`
+			);
+		}
+		console.error(
+			`\ninstall-relative-link-gate failed. ${relativeLinkViolations.length} dangling relative link${relativeLinkViolations.length === 1 ? "" : "s"} found under templates/install/.`
+		);
+		exitCode = 1;
+	} else {
+		console.log(
+			"install-relative-link-gate passed. All relative links on the install surface resolve."
 		);
 	}
 
