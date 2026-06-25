@@ -57,7 +57,10 @@
     "spec/adrs/_toolkit/0060-business-layer-substrate.md",
     "spec/adrs/_toolkit/0061-sol-merge-authority.md",
     "spec/adrs/_toolkit/0062-consumer-skill-distribution-via-prism-update.md",
-    "spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md"
+    "spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
+    "spec/adrs/_toolkit/0064-consumer-internal-boundary.md",
+    "spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
+    "spec/adrs/_toolkit/0066-sol-merge-hidden-config-capability.md"
   ],
   "curated": [
     "rules/branch-plan.md",

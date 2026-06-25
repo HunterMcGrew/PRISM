@@ -1,5 +1,7 @@
 # Plan: epic-prism-consumer-boundary
 
+> Closed: 2026-06-24
+
 ## Ticket
 
 GitHub issue, to be created by Sol at the start of the run — this team tracks work in GitHub issues, not Linear. Successor to the closed `epic-prism-tokenization` (Phase 1.5d). Until the issue exists, this epic carries the work under a descriptive name.
@@ -30,7 +32,7 @@ The organizing principle: **the unit of ownership decides the delivery mechanism
   - **Alternatives considered:** (a) ship only the cited ADRs behind an `audience` flag — rejected: still ships PRISM's deliberation log and leaves a hand-maintained allowlist that drifts (0061/0063 already slipped in while the conductor block was correctly withheld). (b) rewrite citations to public GitHub URLs — rejected: fragile (renumber/move → 404) and forces consumers to depend on PRISM's repo structure.
   - **Chosen approach:** ship no PRISM ADR files. Distill each cited ADR's operative kernel into the rule/skill/reference that cites it; ship the ADR machinery (`TEMPLATE.md`, the triple-gated criterion, an empty `adrs/`) so a greenfield consumer writes fresh and a brownfield consumer has Theo generate from their codebase. Their `spec/adrs/` is theirs alone — no PRISM numbering to collide with.
   - **Implementation guidance:** a consumer rule must be self-sufficient (carry its own `**Why:**`). When a why is too large to inline without bloating the rule, it moves to a shipping reference file (`.prism/references/`), not the rule. The deletion test from the consumer side is the audit: delete every PRISM ADR — if a skill stops working, that skill was leaning on an ADR as a crutch; distill that bit in.
-  - → no promotion needed yet (candidate for a PRISM-internal ADR — see Internal-ADR candidates below)
+  - → promoted to ADR-0064 (consumer/internal boundary — the spine of this epic; born `excluded[]` so it never ships)
 
 - **ADR references in shipped content split into two lanes, classified before any distillation.**
   - **Root cause:** not every `ADR-NNNN` in a rule is load-bearing. Some back a `**Why:**` (the ADR carries the reasoning); others are illustrative examples of the citation *form* (the number is a sample, not a link to follow). A uniform sweep mis-classifies the illustrative ones as structural threats and risks "fixing" guidance that is actually correct for consumers.
@@ -38,7 +40,7 @@ The organizing principle: **the unit of ownership decides the delivery mechanism
     - **Load-bearing citation** (`See ADR-NNNN` backing a Why) → confirm the why is self-sufficient inline (usually already is), drop the link.
     - **Illustrative example** (ADR number is a sample of the form) → genericize the PRISM-specific number/topic, keep the instruction. Mechanical; no distillation.
   - **Implementation guidance:** `writing-voice.md` is the canonical example of both lanes in one file — lines 13/29 (`ADR-0015`/`ADR-0016`) are load-bearing citations behind its own Why; line 35 (`e.g. "see ADR-0011" for "Eric never approves PRs"`) is illustrative. The instruction on line 35 survives untouched — authoring and citing your own ADRs is the intended consumer workflow — only the concrete PRISM example needs genericizing, because a consumer's ADR-0011 is about something else and the specific example misleads (the rule's own session-context-leakage anti-pattern, appearing inside the rule).
-  - → no promotion needed (folds into the boundary ADR)
+  - → promoted to ADR-0064 (the two-lane classification folded in as a section of the boundary ADR, not a standalone record)
 
 - **The crossref-lint relative-link gap is the prerequisite — extend the lint before any ADR leaves the surface.**
   - **Root cause:** the lint only validates references under verifiable root prefixes; every rule/skill cites ADRs via *relative* paths (`../spec/adrs/...`), which the lint skips. Removing ADRs would create dangling consumer links that pass `prism:check` green — the build machinery would confirm "all references resolve" while consumer rules point at files that aren't there.
@@ -55,20 +57,20 @@ The organizing principle: **the unit of ownership decides the delivery mechanism
   - **Root cause for the build-vs-tailor split:** an earlier "SHIP-DEFAULT+TAILOR" bucket conflated token-bearing files (no human choice — the build substitutes) with preference-bearing files (a real editorial choice). Collapsing them created pressure to add interview questions where the data is already collected, and a skip-if-exists/reconfigure conflict (a hand-written file silently no-ops a later prefix change).
   - **Implementation guidance:** the test for GENERATE is "does the content have a universal form?" If yes with only a token varying → SHIP token-sub. If it has a sensible default a team might restyle → TAILOR. Generate only when no universal default exists. Applicability (accessibility, design-governance) is handled by `paths:` load-gating plus a one-line Atlas applicability declaration — not by regenerating invariant content.
   - **AC offer — the skip-if-exists guard is non-negotiable.** The original phrasing ("single soft offer, skip-if-exists" + "skippable onboarding offer") was misread as a single property and built as an unconditional offer that re-fires on reconfigure. It is two properties (see the TAILOR bullet). The correct shape: the AC offer lives in the rule-generator path, which is *already* skip-if-exists for every other generated file in step 10 — so the AC offer must inherit that same guard, not be appended as a guard-free instruction after it. Concretely: before offering, check whether `.prism/rules/acceptance-criteria.md` is already in its configured state (file exists and the team has previously chosen / declined). If so, skip silently and report the skip in the closing summary (same as every other skip-if-exists generator). Only fire the offer on the *first* install where the AC format has never been chosen. A reconfigure run that re-fires this offer is the failure mode this guard exists to prevent — identical in shape to the SHIP-DEFAULT skip-if-exists/reconfigure conflict called out in the build-vs-tailor root cause above.
-  - → no promotion needed yet (candidate for a PRISM-internal ADR)
+  - → promoted to ADR-0065 (rule delivery taxonomy — the five-mode split and ownership-unit test; born `excluded[]`)
 
 - **The behavioral kernel ships — it currently reaches no consumer.**
   - **Root cause:** the always-loaded behavioral rules (core-principles, verification-before-done, demand-elegance, plan-before-building, self-improvement-loop, subagent-strategy, pre-compaction-checkpoint, context-window-handoff-check, cross-agent-handoff-accountability, autonomous-bug-fixing, bash-output-minimization) are neither in the install rule surface nor in `AGENTS.md.tmpl`. A consumer's agents run without them — a curation accident, not a decision.
   - **Chosen approach:** promote them into the shipped kernel.
   - **Implementation guidance:** run the literal-Thrive guard on each as it enters the seed — they have never been scanned, so they may carry `THR`/Thrive context the seed scan hasn't been checking.
-  - → no promotion needed (corrects an omission)
+  - → promoted to ADR-0065 (the kernel ships under the SHIP-kernel mode; the omission-correction is recorded in 0065's Context and Consequences)
 
 - **Sol's merge authority becomes a hidden, default-off config capability.**
   - **Root cause:** ADR-0061 grants Sol authority to merge PRISM's *own* self-development PRs. That carve-out and the ADR both ship to consumers today, where "the repo owner granted Sol authority, this repo only" reads as nonsense — and it ships a behavior on by exception rather than off by default.
   - **Alternatives considered:** a git config variable (rejected — invisible to the schema, easy to lose); leaving it as prose in git-conventions (rejected — it's the current bug).
   - **Chosen approach:** a `config.json` field `features.conductorMayMerge`, absent/false by default, read only by Sol. Documented only in the docs; never surfaced during init or onboarding; Sol mentions it only if asked. ADR-0061 stays an internal record. The shipped git-conventions prose becomes "Sol may merge when `features.conductorMayMerge: true`" — the flag is the gate, with no restated conditions to drift against it.
   - **Implementation guidance:** the config write must read-merge-preserve unknown fields, or a reconfigure run silently drops the flag (a latent data-loss bug for any field added after the write logic). Reconfigure's "current config" display must filter `features.conductorMayMerge` so the hidden flag stays hidden. Removing the carve-out paragraph + moving ADR-0061 to `excluded` in `seed-curation.json` is the immediate live-bug fix and can land before the rest of the epic.
-  - → no promotion needed yet (candidate for a PRISM-internal ADR)
+  - → promoted to ADR-0066 (Sol-merge as a hidden default-off config capability; supersedes ADR-0061's shipping posture; born `excluded[]`)
 
 - **Residue scrub runs through the build-time token layer, not as a one-off find-replace.**
   - **Chosen approach:** personal info (`hmcgrew`, `Hunter`/`McGrew`, the email) and the live `thr-NNNN` branch convention tokenize to `${GITHUB_OWNER}` / `${TICKET_PREFIX_LOWERCASE}`; `@huntermcgrew/prism` stays a literal npm package name on the allowlist; frozen incident citations (`THR-1775` etc. in lessons/ADR prose) stay literal. The git commit author identity in public history is metadata, not content — left as-is.
@@ -80,12 +82,12 @@ The organizing principle: **the unit of ownership decides the delivery mechanism
   - **Chosen approach:** move Eric out of the Sonnet worker row into the Opus default tier. Update `prism-conductor/claude.md` so Sol sets `model: 'opus'` for Winston **and Eric** dispatches (and still on any worker's escalation); the other-runtime config seam follows the same table.
   - **Open consideration:** Briar (self-review) is the same review-judgment class. Whether Briar also moves to Opus is left to the run owner — out of scope unless requested, to avoid widening a targeted fix.
   - **Implementation guidance:** the per-dispatch tier is read off the goal-state lane; seed Eric lanes at the Opus tier rather than Sonnet-with-escalation. Verify `shared.md` § Model tiering, `claude.md`, and any goal-state lane-seeding default all agree.
-  - → no promotion needed yet (Sol-internal dispatch policy; candidate note for the conductor architecture doc)
+  - → no promotion needed (a single tier reassignment, already codified in its operative surface — `prism-conductor/shared.md` § Model tiering + `claude.md`; no conductor architect doc exists, and one tier tweak doesn't clear the ADR bar)
 
 - **All skills ship; skill-forge ships as a consumer utility.**
   - **Chosen approach:** no skill is PRISM-only. skill-forge ships carrying the knowledge of how to build and sync a skill across claude/codex/cursor (the Sol-lib pattern), so a consumer can author their own skills. The `skill-authoring` rule folds into skill-forge's bundle as its first single-owner bake.
   - **Note:** lowering the skills' floor for weaker (non-frontier) models is a real, large, separate initiative — a per-skill rewrite, explicitly out of scope here. The in-scope minimum is baking the build/sync mechanics into skill-forge so the capability exists.
-  - → no promotion needed (tactical)
+  - → promoted to ADR-0065 (skill-forge's `skill-authoring` bake is the first single-owner BAKE in the taxonomy; "all skills ship" is a corollary of the ADR-0064 boundary model)
 
 ---
 
@@ -233,6 +235,28 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Suggested fix:** Rename to describe the allowlist contract: "tracked dangling entry is recognized as allowlisted".
 - **Fixed in:** this commit on hunter/consumer-boundary-l10-crossref-relative-links
 
+## Discovered Follow-ups
+
+Surfaced during the run, not yet filed. Sol files these as GitHub issues; each is scoped per `.prism/rules/followup-scope.md` (one concern, a done condition, traceable to the lane that surfaced it).
+
+1. **Fix the 27 genuinely-dangling relative links in the install surface.**
+   - **Source:** L10's relative-link gate (`runInstallRelativeLinkGate`, crossref-lint Pass 3) tracks these in `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` but does not fix them — it scopes the pre-existing violations so the gate can go green while the new-violation guard stays armed.
+   - **Scope:** 27 dangling relative links under `templates/install/`, 19 of which are `../skills/` links at the wrong depth (one root cause); the remaining 8 are miscellaneous wrong paths. Consumer-facing broken links — a real cleanup, not cosmetic.
+   - **Done condition:** every entry removed from `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` because its target now resolves; `pnpm prism:check` green with the tracked-violations set empty (or near-empty with any genuine exceptions documented).
+   - **Persona:** Clove (implementation).
+
+2. **Reconcile the frozen tiering table in the closed `epic-prism-conductor.md` plan.**
+   - **Source:** L2 (Eric-Opus tiering) cosmetic minor — the L2 PR edited a CLOSED plan (`.prism/plans/epic-prism-conductor.md:45`), leaving its frozen tiering table at line 79 inconsistent with the edit.
+   - **Scope:** one closed-plan consistency fix. Either revert the line-45 edit (closed plans are frozen records) or update the line-79 table to match — a judgment call for whoever picks it up.
+   - **Done condition:** the closed `epic-prism-conductor.md` is internally consistent — line 45 and the line-79 tiering table agree, or the stray edit is reverted.
+   - **Persona:** Clove (implementation), or Zoe if treated as an archive-hygiene fix on a closed plan.
+
+3. **Genericize the lone illustrative `hunter` handle in `phases.md`.**
+   - **Source:** L4 (token scrub) — one illustrative `hunter` GitHub handle survived at `.prism/references/standup-summary/phases.md:80`.
+   - **Scope:** a single illustrative-token genericization (to `${GITHUB_OWNER_LOWERCASE}` or a neutral placeholder, matching the L4 scrub pattern). Confirm it's not a frozen incident citation before changing.
+   - **Done condition:** no personal handle residue at `phases.md:80`; `pnpm prism:check` green.
+   - **Persona:** Clove (implementation).
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -267,6 +291,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-2 minor — reverted formatting-only tab→space reformat from crossref-lint.test.ts; re-added anchor-fragment test in tab style; 413 tests pass, diff now additive-only vs main.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-3 minor — renamed test description from "pre-L10 entry is recognized as allowlisted" to "tracked dangling entry is recognized as allowlisted"; 413 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Renamed `INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST` to `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` (phase-marker in a durable export name); fixed assert messages and inline comment that also embedded the phase marker; general relative-link validation is now active — a planted dangling relative link under templates/install/ fails the lint.
+- 2026-06-24 [hunter/consumer-boundary-close-out]: Closed the epic — all 11 lanes merged, `prism:check` green. Promoted the three durable boundary decisions to internal ADR-0064 (consumer/internal boundary, two-lane ADR-ref classification folded in), ADR-0065 (rule delivery taxonomy), and ADR-0066 (Sol-merge hidden config, supersedes 0061's shipping posture), all born `excluded[]` so none reach `templates/install/`; install-adr-gate stays green. Added verdict sub-bullets to all 9 Decisions, recorded three discovered follow-ups for Sol to file, and marked the plan Closed.
 
 ---
 
