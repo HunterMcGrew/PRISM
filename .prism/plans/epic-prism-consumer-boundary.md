@@ -224,6 +224,15 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - **Problem:** The anchor-fragment commit (673c5a8) reformatted the entire test file from tabs to spaces, mixing a formatting-only change into the functional diff — against code-standards.md § Do not introduce formatting-only changes. The implementation file `crossref-lint.ts` stays tab-indented.
 - **Fixed in:** Reverted the file to first-commit state (7630fcc), then added the anchor-fragment test in tab style as a fresh insertion; 413 tests pass, 0 deletions of existing lines.
 
+### Test description leaks L10 phase-marker into a durable test name
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/crossref-lint.test.ts:1483`
+- **Problem:** Test description "isInstallRelativeLinkAllowlisted: pre-L10 entry is recognized as allowlisted" embedded a phase marker identical in pattern to the L5 issue previously caught — means nothing to a future reader.
+- **Suggested fix:** Rename to describe the allowlist contract: "tracked dangling entry is recognized as allowlisted".
+- **Fixed in:** this commit on hunter/consumer-boundary-l10-crossref-relative-links
+
 ## History
 
 - 2026-06-24 [hunter/thr-254-optional-token-cold-start-fix]: Created the epic from the architect evaluation + Nora/Clove/Briar/Atlas design consult. Captured the boundary model, the two-lane ADR-reference classification (corrects an over-broad earlier reading of the `writing-voice.md` citation guidance), the rule delivery taxonomy, the crossref-lint relative-link prerequisite, the live ADR-0061 leak, and the Sol-merge hidden-config design.
@@ -254,6 +263,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: L10 relative-link gate — added `runInstallRelativeLinkGate` as Pass 3 in `crossref-lint.ts`; resolves `./` and `../` markdown links under `templates/install/` against actual files, fails on dangling targets; 27 pre-existing violations (two root-cause categories: wrong `../skills/` depth, misc wrong paths) scoped into `INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST` with documented causes; 17 new tests covering valid link, dangling, anchor-only, anchor+link, fenced code, tokens, directory refs, and allowlist exemption; 412 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar minor — added `isInstallRelativeLinkAllowlisted` test for rawRef with `#heading` suffix, exercising the fragment-stripping branch (`rawRef.split("#")[0]`); 413 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-2 minor — reverted formatting-only tab→space reformat from crossref-lint.test.ts; re-added anchor-fragment test in tab style; 413 tests pass, diff now additive-only vs main.
+- 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-3 minor — renamed test description from "pre-L10 entry is recognized as allowlisted" to "tracked dangling entry is recognized as allowlisted"; 413 tests pass.
 
 ---
 

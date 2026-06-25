@@ -1480,7 +1480,7 @@ test("scanFileForRelativeLinks: allowlisted pair is exempt from the gate", async
 // isInstallRelativeLinkAllowlisted — allowlist predicate
 // ---------------------------------------------------------------------------
 
-test("isInstallRelativeLinkAllowlisted: pre-L10 entry is recognized as allowlisted", () => {
+test("isInstallRelativeLinkAllowlisted: tracked dangling entry is recognized as allowlisted", () => {
 	const [firstEntry] = INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST;
 	assert.ok(firstEntry, "pre-L10 allowlist must have at least one entry");
 	const [relPath, rawRef] = firstEntry.split("::");
