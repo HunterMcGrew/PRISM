@@ -235,6 +235,30 @@
 		{
 			"path": ".cursor/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
 			"reason": "platform-copy mirror of ADR-0063"
+		},
+		{
+			"path": ".claude/spec/adrs/_toolkit/0064-consumer-internal-boundary.md",
+			"reason": "ADR cites PRISM's extraction from Thrive as the originating context for the consumer/internal boundary"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/0064-consumer-internal-boundary.md",
+			"reason": "platform-copy mirror of ADR-0064"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/0064-consumer-internal-boundary.md",
+			"reason": "platform-copy mirror of ADR-0064"
+		},
+		{
+			"path": ".claude/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
+			"reason": "ADR names the Thrive-literal guard the behavioral kernel runs as it enters the seed"
+		},
+		{
+			"path": ".codex/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
+			"reason": "platform-copy mirror of ADR-0065"
+		},
+		{
+			"path": ".cursor/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
+			"reason": "platform-copy mirror of ADR-0065"
 		}
 	]
 }
