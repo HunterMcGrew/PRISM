@@ -22,7 +22,7 @@ Use `Given / When / Then` for any criterion that describes a user interaction or
 - Each criterion is independently testable
 - Written for non-technical testers — no file names, function names, or types
 - Start with an action verb when the Given clause is implicit (e.g. "Navigate to...", "Verify that...")
-- Include where to find relevant WordPress settings when not obvious
+- Include where to find the relevant setting in the admin or configuration surface when not obvious
 
 ### Pre-requisites Background
 

@@ -657,9 +657,9 @@ const initialUiState = { [indexName]: { sortBy: sortBy.defaultValue } };
 Use `// --- Label ---` to visually separate logical regions in files over ~150 lines.
 
 ```ts
-// --- Block editor cleanup ---
-wp.domReady(() => {
-  wp.blocks.unregisterBlockStyle("core/quote", ["default", "plain", "large"]);
+// --- Event listener setup ---
+document.addEventListener("DOMContentLoaded", () => {
+  registerTooltips(".js-tooltip");
 });
 ```
 

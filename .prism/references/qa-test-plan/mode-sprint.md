@@ -45,7 +45,7 @@ Build the document using this skeleton:
 **Change set:** <list PRs with links, or the commit range>
 **Scope:** Manual scenarios for UI-facing work across this sprint / PR group. Non-UI PRs are listed under **Out of scope** below.
 
-**Who this is for:** Testers using the site like real visitors, plus structured passes in the **WordPress block editor** where noted.
+**Who this is for:** Testers using the site like real visitors, plus structured passes in the **content or block editor** where noted.
 
 **How to use:** Take sections in order or split by person. For each item, record **Pass / Fail**, **browser**, **URL**, short **notes**, and a **screenshot** on failure.
 

@@ -39,7 +39,7 @@ Or, for a branch with no PR, use the `origin/main..<branch>` range. Then run `gi
 **Ticket:** PRISM-NNNN (inline; link to Linear)
 **Scope:** Manual scenarios for the user-visible change in this PR, plus targeted regression on surfaces the diff touches.
 
-**Who this is for:** Testers using the site like real visitors, plus the **WordPress block editor** when the change involves editor UI.
+**Who this is for:** Testers using the site like real visitors, plus the **content or block editor** when the change involves editor UI.
 
 **How to use:** Each item records **Pass / Fail**, **browser**, **URL**, short **notes**, and a **screenshot** on failure.
 

@@ -60,7 +60,7 @@ From `recaptcha-setup.md` — credential source:
 From `tailwind-snippets.md` — a tool that helps:
 ```markdown
 > [!TIP]
-> Use [Tailwind Play](https://play.tailwindcss.com/) to preview and edit snippets before pasting them into WordPress.
+> Use [Tailwind Play](https://play.tailwindcss.com/) to preview and edit snippets before pasting them into your project.
 ```
 
 From `scrolling-images-embed.md` — tuning advice:

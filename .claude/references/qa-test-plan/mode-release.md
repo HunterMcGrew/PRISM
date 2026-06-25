@@ -47,7 +47,7 @@ Default audience is manual UI testers — visitors and block editor users, not e
 - Agent / dev-only: commits whose subject indicates **AI skills**, **branch plans**, **agents.md**, **lesson md**, **AGENTS**, **.claude** housekeeping — unless the user explicitly says to include them
 - **Tests-only / types-only** PRs: no new user-facing UI — optionally one **regression** bullet under a spot-check section and a footnote in the ticket table
 
-**Include:** anything that plausibly touches visitor UI, wp-admin / block editor, 404 / error pages, forms, search, header, or bundles that change when scripts load.
+**Include:** anything that plausibly touches visitor UI, admin surfaces / block or content editors, 404 / error pages, forms, search, header, or bundles that change when scripts load.
 
 If unsure whether a PR is UI-facing, run `git show <hash> --stat` and decide from file paths (`edit.tsx`, `blocks/`, `components/`, `app/not-found`, etc.).
 
@@ -75,7 +75,7 @@ Then use `$REPO_URL/compare/<base>...<head>` wherever a compare link is needed.
 **Release reference:** [<base> → <head>]($REPO_URL/compare/<base>...<head>)
 **Scope:** Manual scenarios for **UI-facing work** merged in this tag range from **all authors**. Internal-only PRs are listed under **Out of scope** below.
 
-**Who this is for:** Testers using the site like real visitors, plus structured passes in the **WordPress block editor** where noted.
+**Who this is for:** Testers using the site like real visitors, plus structured passes in the **content or block editor** where noted.
 
 **How to use:** Take sections in order or split by person. For each item, record **Pass / Fail**, **browser**, **URL**, short **notes**, and a **screenshot** on failure.
 
