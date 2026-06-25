@@ -33,7 +33,7 @@ import {
 	scanFileForRelativeLinks,
 	runInstallRelativeLinkGate,
 	isInstallRelativeLinkAllowlisted,
-	INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST,
+	INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS,
 } from "./crossref-lint";
 
 // ---------------------------------------------------------------------------
@@ -1113,7 +1113,7 @@ test("runInstallAdrGate: allowlisted file with ADR reference passes the gate", a
 			);
 		},
 		async (root) => {
-			// Only the machinery allowlist — no pre-L5 allowlist entries
+			// Only the machinery allowlist path — no pre-existing tracked-violations entries
 			const violations = await runInstallAdrGate(
 				root,
 				new Set(["templates/install/.prism/spec/adrs/_toolkit/README.md"])
@@ -1481,13 +1481,13 @@ test("scanFileForRelativeLinks: allowlisted pair is exempt from the gate", async
 // ---------------------------------------------------------------------------
 
 test("isInstallRelativeLinkAllowlisted: tracked dangling entry is recognized as allowlisted", () => {
-	const [firstEntry] = INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST;
-	assert.ok(firstEntry, "pre-L10 allowlist must have at least one entry");
+	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
+	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
 	const [relPath, rawRef] = firstEntry.split("::");
 	assert.equal(
 		isInstallRelativeLinkAllowlisted(relPath, rawRef),
 		true,
-		"pre-L10 allowlist entry must be recognized as allowlisted"
+		"tracked dangling entry must be recognized as allowlisted"
 	);
 });
 
@@ -1503,8 +1503,8 @@ test("isInstallRelativeLinkAllowlisted: non-allowlisted pair returns false", () 
 test("isInstallRelativeLinkAllowlisted: rawRef with anchor fragment matches allowlist entry", () => {
 	// Fragment-stripping branch: `rawRef#heading` must match the same allowlist
 	// entry as bare `rawRef`, because the key is built from the path-part only.
-	const [firstEntry] = INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST;
-	assert.ok(firstEntry, "pre-L10 allowlist must have at least one entry");
+	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
+	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
 	const [relPath, rawRef] = firstEntry.split("::");
 	assert.equal(
 		isInstallRelativeLinkAllowlisted(relPath, `${rawRef}#heading`),

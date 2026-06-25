@@ -264,6 +264,7 @@ Grouped by owning persona. Ordered by the build sequence — the lint extension 
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar minor — added `isInstallRelativeLinkAllowlisted` test for rawRef with `#heading` suffix, exercising the fragment-stripping branch (`rawRef.split("#")[0]`); 413 tests pass.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-2 minor — reverted formatting-only tab→space reformat from crossref-lint.test.ts; re-added anchor-fragment test in tab style; 413 tests pass, diff now additive-only vs main.
 - 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Fixed Briar pass-3 minor — renamed test description from "pre-L10 entry is recognized as allowlisted" to "tracked dangling entry is recognized as allowlisted"; 413 tests pass.
+- 2026-06-24 [hunter/consumer-boundary-l10-crossref-relative-links]: Renamed `INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST` to `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` (phase-marker in a durable export name); fixed assert messages and inline comment that also embedded the phase marker; general relative-link validation is now active — a planted dangling relative link under templates/install/ fails the lint.
 
 ---
 

@@ -926,7 +926,7 @@ export interface InstallRelativeLinkViolation {
 }
 
 /**
- * Pre-existing dangling relative links surfaced when L10 added this gate.
+ * Dangling relative links under `templates/install/` that are tracked pending a fix.
  * All 27 unique `(file, ref)` pairs are genuine broken links — two root-cause
  * categories:
  *
@@ -946,7 +946,7 @@ export interface InstallRelativeLinkViolation {
  *
  * Key: `relativePath::rawRef` (same convention as `CROSSREF_FILE_ALLOWLIST`).
  */
-export const INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST: ReadonlySet<string> =
+export const INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS: ReadonlySet<string> =
 	new Set([
 		// --- Category 1: ../skills/ refs — rules pointing at .prism/skills/ which
 		//     does not exist; skills install at .claude/skills/ etc. ---
@@ -991,7 +991,7 @@ export const INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST: ReadonlySet<string> =
  * Permanent allowlist for relative links under `templates/install/` that are
  * intentionally unresolvable in the raw template tree but correct by design
  * in the consumer's installed tree. Currently empty — all pre-existing
- * violations are tracked in `INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST` above.
+ * violations are tracked in `INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS` above.
  *
  * Key: `relativePath::rawRef`.
  */
@@ -1000,7 +1000,7 @@ export const INSTALL_RELATIVE_LINK_ALLOWLIST: ReadonlySet<string> = new Set();
 /**
  * Returns true when a `(relativePath, rawRef)` pair is exempt from the
  * relative-link gate — either because it is in the permanent allowlist or
- * in the pre-L10 tracked-violations set.
+ * in the tracked-violations set.
  *
  * `relativePath` is repo-root-relative.
  * `rawRef` is the raw link target as it appears in source — anchor fragments
@@ -1018,7 +1018,7 @@ export function isInstallRelativeLinkAllowlisted(
 	const key = `${relativePath}::${pathPart}`;
 	return (
 		INSTALL_RELATIVE_LINK_ALLOWLIST.has(key) ||
-		INSTALL_RELATIVE_LINK_PRE_L10_ALLOWLIST.has(key)
+		INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS.has(key)
 	);
 }
 
