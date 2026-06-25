@@ -20,7 +20,7 @@ Write an ADR when the decision:
 - **Ticket-tactical decisions.** Those belong in the ticket's plan file under `## Decisions`. Plans decay; ADRs are durable.
 - **Implementation choices with no cross-cutting impact.** "We used `useMemo` here because profiling showed a 40ms cost" is a code comment, not an ADR.
 - **Minor wording tweaks.** Rewording a rule for clarity doesn't need an ADR. Changing what the rule enforces does.
-- **Obvious decisions.** "We use TypeScript" doesn't need an ADR. "We mirror WP types instead of importing them from `@wordpress/*` because the frontend doesn't depend on WP npm packages" does.
+- **Obvious decisions.** "We use TypeScript" doesn't need an ADR. "We maintain a local type mirror instead of importing directly from the vendor package because we don't want a compile-time dependency on the vendor" does.
 
 ---
 
