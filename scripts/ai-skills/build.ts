@@ -718,6 +718,60 @@ export async function writeSeedMirror(
 	}
 }
 
+/**
+ * Emits the canonical enforcement-runtime hooks from `.ai-skills/hooks/` into the
+ * runtime (`.claude/hooks/`) and the install seed (`templates/install/.claude/hooks/`).
+ *
+ * The hooks are runtime `.mjs` and JSON — not skill prose. They are copied raw (no token
+ * substitution, no dialect transformation) via writeFileIfChanged, so `prism:check` reports
+ * drift and a clean build is idempotent. The whole `.ai-skills/hooks/**` tree is emitted
+ * (the `.mjs` hooks, `lib/`, `gates.json`, and the `__smoke__/` harness — a consumer who
+ * edits hooks benefits from the same smoke coverage).
+ *
+ * Scope is `.claude/` + the install seed only. `.codex/` is gated behind confirmed Codex
+ * hook parity (Open Question default path) and is not emitted here. `.claude/settings.json`
+ * stays a hand-maintained runtime file — it wires platform-specific hook paths and is not
+ * part of the canonical hooks tree.
+ *
+ * The emitted runtime is denylist-protected against gated-persona tool writes
+ * (ownership-guard.mjs PROTECTED_WRITE_PATHS): canonical → build → runtime is the only
+ * lawful path to change hooks once this emission is live.
+ */
+export async function emitHooks(
+	repoRootArg: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
+): Promise<void> {
+	const canonicalHooksRoot = path.join(repoRootArg, ".ai-skills", "hooks");
+	if (!(await pathExists(canonicalHooksRoot))) {
+		return;
+	}
+
+	const targetRoots = [
+		path.join(repoRootArg, ".claude", "hooks"),
+		path.join(repoRootArg, "templates", "install", ".claude", "hooks"),
+	];
+
+	const entries = await listRelativeDirectoryEntries(canonicalHooksRoot);
+	for (const entry of entries) {
+		if (entry.kind !== "file") {
+			continue;
+		}
+		const raw = await fs.readFile(
+			path.join(canonicalHooksRoot, entry.relativePath),
+			"utf8"
+		);
+		for (const targetRoot of targetRoots) {
+			await writeFileIfChanged(
+				path.join(targetRoot, entry.relativePath),
+				raw,
+				checkModeArg,
+				changedPathsArg
+			);
+		}
+	}
+}
+
 const execFileAsync = promisify(execFile);
 
 /**
@@ -910,6 +964,11 @@ async function main(): Promise<void> {
 			unclassifiedMirrored
 		);
 	}
+
+	// Emit the enforcement-runtime hooks from canonical source into .claude/hooks/ and
+	// the install seed. Runs in both build and check mode — writeFileIfChanged reports
+	// drift in check mode so prism:check catches a runtime that diverged from canonical.
+	await emitHooks(repoRoot, checkMode, changedPaths);
 
 	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
