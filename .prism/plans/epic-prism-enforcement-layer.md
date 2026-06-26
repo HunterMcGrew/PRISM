@@ -40,19 +40,19 @@ Held by Hunter as design outputs on his Desktop, not yet in repo. They are refer
 
 ## Decisions
 
-- **The inversion principle (the one ADR — ADR-0062).** Correctness verdicts are computed from evidence by the runtime, not self-reported by the model; the model *proposes* a verdict, the gate *ratifies or overrides* it, and this holds regardless of who invoked the persona.
+- **The inversion principle (the one ADR — ADR-0067).** Correctness verdicts are computed from evidence by the runtime, not self-reported by the model; the model *proposes* a verdict, the gate *ratifies or overrides* it, and this holds regardless of who invoked the persona.
   - **Root cause it addresses:** every load-bearing claim in PRISM currently rides on model compliance; off the strongest models, and even on them under orchestration, an unverified `done` propagates as truth.
   - **Alternatives considered:** (a) stricter prose DoD checklists — rejected, still prose the model claims it followed; (b) a verification persona that re-checks every other persona — rejected, adds a dispatch and still self-reports.
   - **Chosen approach:** runtime hooks compute the verdict from real exit codes / structural checks. Beats the alternatives because an exit code cannot be argued past.
   - **Why an ADR:** durable, cross-cutting, reshapes every skill's DoD section; future contributors need the *why*. Triple-gate passes (hard to reverse, surprising without context, genuine trade-off vs. the simpler prose-only path).
-  - → promoted to ADR-0062 (to be written in Phase 0).
+  - → promoted to ADR-0067 (to be written in Phase 0).
 
 - **Channel-hardening, not a competing verdict channel.** The hook does **not** create a `ratified-verdict.json` that Sol must learn to prefer. It *hardens the channel that already exists* — the model's own report/return.
   - **Root cause of the prototype's complexity:** the prototype wrote a separate ratified file and posed "does Sol read the file or the model's claim?" as an open contract — which looked ADR-worthy and introduced cross-worktree file-read problems.
   - **Chosen approach:** the `Stop`/`SubagentStop` hook refuses to let the model stop on a verdict the gates contradict (exit 2 → forced continue). On strike-cap, it re-injects "emit your report as `needs-stronger-model` and stop," so the model's *returned* verdict is always gate-consistent before Sol (or a human) ever reads it. `ratified-verdict.json` is retained only as an **audit artifact** (what ran, exit codes, strike count), never a routing input.
   - **Consequence:** Sol reads the model's structured return exactly as today; no Sol-side contract changes. This is what makes the layer Sol-independent and what makes the Sol seam a one-line `lib/` instruction, **not** an ADR.
   - **Implementation guidance:** make `report.json` (the gate's input) and the model's structured return to Sol the *same* contract, so there is one verdict, gated once. Whether Sol reads the return or reads `report.json` is a reference-file choice settled in Phase 2.
-  - → promoted to ADR-0062 (same principle) + Sol `lib/` reference edit (no separate ADR).
+  - → promoted to ADR-0067 (same principle) + Sol `lib/` reference edit (no separate ADR).
 
 - **Persona identity resolves payload-first; the `active-persona` file survives only for the solo path.**
   - **Root cause:** the prototype's `echo "clove" > .prism/active-persona` is shared mutable state that races under fleet/worktree concurrency.
@@ -90,12 +90,12 @@ Held by Hunter as design outputs on his Desktop, not yet in repo. They are refer
   - **Coherence:** `next_route` must be consistent with the verdict (`done` → normal next persona; `needs-replan` → Winston/user; `blocked` → human; `needs-fix` → implementer) — same check shape as Briar's `needs-fix ⇒ real blocker`. An incoherent handoff misleads a human reader as much as it misroutes Sol.
   - **Hard boundary:** enforcement never *auto-invokes* the next persona — that would break the human gate and every skill's never-auto-invoke rule. It guarantees the handoff is present and true before stop; acting on it (Sol auto-routes / human reads and dispatches) stays downstream and identical in both modes.
   - **Implementation guidance:** add `next_route` to the report contract (Phase 0 task 3) and the verdict↔route coherence check to `validateShape` (Phase 1 task 4). The valid-route table per persona derives from each skill's existing `## Next persona` section.
-  - → promoted to ADR-0062 + the taxonomy architect doc.
+  - → promoted to ADR-0067 + the taxonomy architect doc.
 
 - **Factual-grounding bar — every procedure maps to a real action, with a calibrated reasoning budget.** The ceiling pass (Phase 6) and the taxonomy doc hold instructions to this bar: a procedure must name a concrete action the agent genuinely needs to take (a command to run, a file to read, an artifact to write, a decision to make), with a precise trigger and a typed escape. The escape is the anti-loop mechanism — it gives the model a sanctioned exit instead of spinning. The precise trigger is the anti-over/under-reasoning mechanism — it tells the model how much to think and when to stop.
   - **Why:** vague instruction is the root cause of looping, over-reasoning, and under-reasoning — with no concrete target the model either spins or guesses at depth. The `prism-code-dev-senior.md` artifact is the worked example (Risk-first sequencing → escape `needs-replan`; Chesterton's Fence → escape `needs-human`).
   - **Implementation guidance:** during Phase 6, the test for each rewritten line is "does this correspond to a real action the agent must do?" If not, it's aspiration — cut it or ground it. Aspiration dressed as procedure is worse than honest prose because it invites the model to perform compliance with a step that has no real referent.
-  - → promoted to ADR-0062 + the taxonomy architect doc.
+  - → promoted to ADR-0067 + the taxonomy architect doc.
 
 - **Phase the epic on the solo-proves-primitive / orchestration-wires-it fault line.** Prove the floor end-to-end on Clove solo (strongest gates) and smoke-test before touching Sol or rewriting any other skill. Land as sub-issues, never one PR (six subsystems: hooks, settings+seed, build pipeline+guards, every skill body, conductor read, config schema + Atlas).
 
@@ -108,7 +108,7 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 ### Phase 0 — Contract & schema foundations (no behavior change)
 
 **Winston**
-1. Write **ADR-0062** (`.prism/spec/adrs/_toolkit/0062-runtime-ratifies-verdicts.md`) — the inversion principle, channel-hardening, and the Briar ceiling caveat. Cite `report-back.md` and ADR-0011 (merge boundary).
+1. Write **ADR-0067** (`.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md`) — the inversion principle, channel-hardening, and the Briar ceiling caveat. Cite `report-back.md` and ADR-0011 (merge boundary).
 2. Write the **gate-strength taxonomy** architect doc (`.prism/architect/_toolkit/enforcement-floor.md`) — the three classes, the universal contract+ownership primitives, what floor each class gets. Add a `manifest.json` route so personas load it.
 
 **Clove**
@@ -213,6 +213,7 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 
 ## History
 
-- 2026-06-25 [main]: Plan created — PRISM enforcement layer epic. Evaluate pass recommended Proceed-with-changes; redesigned the prototype's three weakest mechanisms (active-persona file → payload-first resolve; session_id → agent_id keying; ratified-file routing → channel-hardening). Scoped 7 phases; gate-strength taxonomy classifies all 28 personas A/B/C. See Decisions for the inversion principle (ADR-0062) and the Sol-independence reframe.
+- 2026-06-25 [main]: Plan created — PRISM enforcement layer epic. Evaluate pass recommended Proceed-with-changes; redesigned the prototype's three weakest mechanisms (active-persona file → payload-first resolve; session_id → agent_id keying; ratified-file routing → channel-hardening). Scoped 7 phases; gate-strength taxonomy classifies all 28 personas A/B/C. See Decisions for the inversion principle (ADR-0067) and the Sol-independence reframe.
 - 2026-06-25 [main]: Elevated the ceiling to co-equal with the floor per Hunter — the instructions themselves must make the model stronger (anti-loop, calibrated reasoning), grounded in real factual actions. Added the factual-grounding bar to Decisions and the Goal/Context framing.
 - 2026-06-25 [main]: Added handoff enforcement per Hunter — required `next_route` field + verdict↔route coherence check, enforced identically with/without Sol; ownership already forces handoff negatively. Never auto-invokes the next persona (human gate preserved). Updated contract (Phase 0), gate (Phase 1), and AC.
+- 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Phase 0 tasks 1–2 — Winston authored the inversion-principle ADR (inversion, channel-hardening, handoff enforcement, factual-grounding bar, Briar caveat) and the gate-strength taxonomy doc `.prism/architect/_toolkit/enforcement-floor.md`; routed it into the skill-body manifest globs. The plan reserved ADR-0062, but 0062–0066 already landed on main (consumer-boundary epic), so the ADR is **0067** (next free); all plan/doc references updated. Both new files excluded from the consumer seed (PRISM ships zero ADRs per ADR-0064; the taxonomy doc is internal enforcement-architecture guidance). Clove continues Phase 0 (tasks 3–4: report-contract + gates.json schemas) on this branch.
