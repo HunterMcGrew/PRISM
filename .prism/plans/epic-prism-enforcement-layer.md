@@ -172,6 +172,145 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 
 ---
 
+## Phase 1 Smoke Test
+
+**This section is the Phase 1 exit gate (task 8).** It defines the acceptance bar Clove's hooks (tasks 1–7) must satisfy before Phase 1 is done. It goes first so the build targets a fixed bar — plan-before-building: the verification path is specified before the implementation.
+
+### Two execution forms per scenario — which is the gate
+
+Each scenario below is specified in two forms because these hooks fire on real Claude Code events, and a live session cannot deterministically reproduce "the model decides to lie about `done`":
+
+- **(unit) Direct-invocation form — THIS IS THE AUTOMATABLE EXIT GATE.** Pipe a hand-built mock payload (JSON on stdin, matching the confirmed Claude Code payload field shapes below) to the `.mjs` script, then assert the **exit code** and a **stderr substring**. Headless, deterministic, reproducible across runs and models, CI-runnable. This is what "Phase 1 passes" means.
+- **(manual) End-to-end form — HUMAN CONFIRMATION, NOT THE GATE.** What Hunter runs in a live Claude Code session to confirm the hook is actually *wired* on the real event (the unit form proves the script's logic; the manual form proves `settings.json` fires it). Pass/fail is observed by the human; it is not part of the automated gate.
+
+The unit form is load-bearing because it is the only form that reproduces deterministically. The manual form catches wiring mistakes the unit form cannot (wrong event name in `settings.json`, wrong path, timeout too short).
+
+### Confirmed payload field shapes (use these exact field names in mock payloads)
+
+Verified against the Claude Code hook docs (`code.claude.com/docs/en/hooks`) on 2026-06-26, consistent with the plan's `## Decisions`:
+
+- **PreToolUse / PostToolUse / Stop / SubagentStop** all carry top-level `session_id`, `cwd`, `hook_event_name`, and — when the hook fires inside a subagent or under `--agent` — `agent_id` and `agent_type`.
+- **PreToolUse** carries top-level `tool_name` and `tool_input` (e.g. `tool_input.command` for Bash, `tool_input.file_path` for Edit/Write). Not nested under any wrapper.
+- **PostToolUse** payload: the ledger reads top-level `exit_code` and `tool_output` (per Decisions — the prototype's `tool_response.exit_code` guess recorded `0` for everything). **Clove must confirm this exact shape against a live PostToolUse payload before trusting it** — see "Field-shape items Clove must confirm" below.
+- **Exit-code-2 semantics (confirmed):** exit 2 on `Stop`/`SubagentStop` prevents the stop and feeds the hook's **stderr** back to the model as the continue reason; exit 2 on `PreToolUse` blocks the tool call before execution and surfaces stderr.
+- `${CLAUDE_PROJECT_DIR}` is exported into the hook process environment; hook scripts resolve repo-relative paths from it.
+
+### Scenario (a) — False `done` blocked, real failure re-injected
+
+**Goal:** a persona emits `verdict: done` while a required check is failing; the `Stop` gate refuses the stop and surfaces the real failure.
+
+**(unit) Direct-invocation form — automatable gate:**
+
+1. **Setup — failing evidence.** In a scratch run dir, create `.prism/evidence/smoke-a/report.json` claiming success:
+   ```json
+   { "reasoning": "implemented the feature", "persona": "clove", "checklist": { "types": true, "tests": true, "lint": true }, "verdict": "done", "verdict_reason": "all checks pass", "next_route": "briar" }
+   ```
+   Configure `clove`'s `tests` gate (in the `gates.json` used by the harness) so its check command is one that exits non-zero — e.g. a `fresh` gate whose command is `node -e "process.exit(1)"`, or point it at a deliberately failing test file. The point: the claimed-true `tests` checklist item maps to a gate whose command exits 1.
+2. **Trigger.** Pipe a `Stop` mock payload to the gate on stdin:
+   ```bash
+   echo '{"session_id":"smoke","cwd":"<scratch-run-dir>","hook_event_name":"Stop","agent_id":"smoke-a"}' \
+     | CLAUDE_PROJECT_DIR=<scratch-run-dir> node .claude/hooks/run-gates.mjs ; echo "exit=$?"
+   ```
+   (`runKey` resolves to `agent_id` = `smoke-a`, so the gate reads `.prism/evidence/smoke-a/report.json`.)
+3. **Assertion (PASS iff all hold):**
+   - Exit code is **2** (force-continue).
+   - **stderr names the failing gate** — contains the `tests` gate id and the real non-zero exit code / failing command output, not a generic message.
+   - stderr does **not** ratify `done` — the override to `needs-fix` (per the `done-override` `on_fail`) is reflected in the message.
+   - A strike was recorded: `.prism/evidence/smoke-a/` strike counter incremented to 1.
+
+**(manual) End-to-end form — human confirmation:**
+
+In a live Clove session on a branch with a genuinely failing test, instruct Clove to emit `verdict: done` and attempt to stop. Confirm: the session is **not** allowed to stop, and the injected continue message names the failing test with its real output. (This proves `settings.json` wires `run-gates.mjs` on `Stop` and the `Stop` timeout covers the fresh gate.)
+
+### Scenario (b) — Out-of-lane write denied before execution
+
+**Goal:** Clove attempts an `Edit`/`Write` to a path outside `clove`'s `may_write` globs; `ownership-guard.mjs` denies it on `PreToolUse` before the write happens.
+
+**(unit) Direct-invocation form — automatable gate:**
+
+1. **Setup.** Use the `clove` ownership matrix from `gates.json#clove` (`may_write: src/**, **/*.test.*, .prism/plans/**, .prism/evidence/**`). Pick a target path that matches **none** of those globs — e.g. `.github/workflows/ci.yml`.
+2. **Trigger.** Pipe a `PreToolUse` mock payload for an `Edit` outside the lane:
+   ```bash
+   echo '{"session_id":"smoke","cwd":"<repo-root>","hook_event_name":"PreToolUse","agent_id":"smoke-b","tool_name":"Edit","tool_input":{"file_path":".github/workflows/ci.yml"}}' \
+     | CLAUDE_PROJECT_DIR=<repo-root> node .claude/hooks/ownership-guard.mjs ; echo "exit=$?"
+   ```
+3. **Assertion (PASS iff all hold):**
+   - Exit code is **2** (tool call blocked pre-execution).
+   - **stderr names the allowed paths** — lists `clove`'s `may_write` globs so the model knows where it *may* write.
+   - The file `.github/workflows/ci.yml` is **unchanged on disk** (the guard fired before the write — verify mtime/contents unchanged).
+4. **Negative control (PASS iff it allows):** repeat with an in-lane target (`tool_input.file_path: "src/index.ts"`) → exit code **0**, no denial. This proves the guard denies selectively, not universally.
+5. **`may_not_run` companion check:** pipe a `PreToolUse` Bash payload with a forbidden command:
+   ```bash
+   echo '{"session_id":"smoke","cwd":"<repo-root>","hook_event_name":"PreToolUse","agent_id":"smoke-b","tool_name":"Bash","tool_input":{"command":"gh pr merge 123"}}' \
+     | CLAUDE_PROJECT_DIR=<repo-root> node .claude/hooks/ownership-guard.mjs ; echo "exit=$?"
+   ```
+   Assertion: exit **2**, stderr names the merge prohibition. (Clove can't merge — ADR-0011 / ownership-forced handoff.)
+
+**(manual) End-to-end form — human confirmation:**
+
+In a live Clove session, instruct Clove to edit a file outside its lane (e.g. a CI workflow). Confirm the write is refused before it happens and the message names the allowed paths. (Proves `settings.json` wires `ownership-guard.mjs` on `PreToolUse` for `Edit|Write|MultiEdit|Bash`.)
+
+### Scenario (c) — Clean run ratifies and allows stop
+
+**Goal:** all gates pass, the report is shape-valid with a coherent `next_route`; the `Stop` gate ratifies, allows the stop, and writes `ratified-verdict.json` as audit only.
+
+**(unit) Direct-invocation form — automatable gate:**
+
+1. **Setup — passing evidence.** Create `.prism/evidence/smoke-c/report.json` with `verdict: done`, `next_route: briar`, and a checklist whose every claimed-true item maps to a gate that passes. For `ledger`-source gates (tests), pre-seed `.prism/evidence/smoke-c/ledger.jsonl` with a matching entry recording exit code `0`:
+   ```
+   {"ts":"2026-06-26T00:00:00Z","cmd":"<resolved test command>","exit_code":0,"runKey":"smoke-c"}
+   ```
+   For `fresh` gates (types/lint), point the harness `gates.json` at commands that exit 0 (e.g. `node -e "process.exit(0)"`).
+2. **Trigger.** Pipe the `Stop` mock payload (`agent_id: smoke-c`) to `run-gates.mjs` as in (a).
+3. **Assertion (PASS iff all hold):**
+   - Exit code is **0** (stop allowed).
+   - No continue/override message on stderr.
+   - `.prism/evidence/smoke-c/ratified-verdict.json` **exists** and records what ran (gate ids, exit codes, strike count) — an **audit artifact**.
+   - **Channel-hardening check:** `ratified-verdict.json` is written but is **not** consumed as a routing input — the model's `report.json` `verdict`/`next_route` are unchanged by the ratification (the gate hardens the existing channel; it does not author a competing one). Verify the gate's only mutation of routing state is the strike counter and the audit file, never a rewrite of `report.json`'s verdict on the pass path.
+   - `next_route: briar` passed the coherence check (`done` → normal next persona, in `clove`'s `allowed_routes`).
+
+**(manual) End-to-end form — human confirmation:**
+
+In a live Clove session where the work genuinely passes all checks, let Clove emit `done` with `next_route: briar` and stop. Confirm: the session stops normally, and `.prism/evidence/<runKey>/ratified-verdict.json` is present as an audit record. Confirm Sol/the human reads the model's returned verdict — not the audit file — to route to Briar.
+
+### Scenario (d) — Strike cap forces `needs-stronger-model` re-emit
+
+**Goal:** after 3 failed stop attempts, the gate stops looping and forces the model to re-emit its report as `needs-stronger-model`. The park-path *routing* is validated end-to-end in Phase 2; the **strike-count-to-3 logic is Phase 1 code** and gets a unit assertion here.
+
+**(unit) Direct-invocation form — automatable gate:**
+
+1. **Setup.** Same failing-gate setup as scenario (a), under a fresh `agent_id` (`smoke-d`).
+2. **Trigger.** Invoke the `Stop` gate **three times** in sequence with the same payload (each invocation reads the persisted strike counter from `.prism/evidence/smoke-d/`):
+   ```bash
+   for i in 1 2 3; do
+     echo '{"session_id":"smoke","cwd":"<scratch-run-dir>","hook_event_name":"Stop","agent_id":"smoke-d"}' \
+       | CLAUDE_PROJECT_DIR=<scratch-run-dir> node .claude/hooks/run-gates.mjs ; echo "attempt=$i exit=$?"
+   done
+   ```
+3. **Assertion (PASS iff all hold):**
+   - Attempts 1 and 2: exit **2**, stderr re-injects the real failure (force-continue), strike counter increments to 1 then 2.
+   - Attempt 3 (cap reached): the gate **re-injects the `needs-stronger-model` re-emit instruction** on stderr — the message tells the model to emit its report as `needs-stronger-model` and stop. Strike counter reads 3.
+   - The gate, not the model, owns this verdict: per the report contract, a persona cannot emit `needs-stronger-model` directly (`isCoherent` returns `false`); confirm the cap-path instruction sets `next_route` to the same persona key (`clove`), per the report-contract coherence table.
+   - **`stop_hook_active` backstop ordering:** the 3-strike counter is the *primary* ceiling; `stop_hook_active` is the runtime-loop backstop. Confirm the cap fires on the strike counter independently of `stop_hook_active`, so the ceiling holds even if the backstop field shape is wrong.
+
+**(manual) End-to-end form — deferred to Phase 2.** The full park path (re-emit → model's structured return carries `needs-stronger-model` → Sol routes to `escalation.axis: model`) is a Phase 2 orchestration validation (Phase 2 task 2). Phase 1's manual confirmation is limited to: in a live session with a persistently failing gate, confirm the session is forced to re-emit as `needs-stronger-model` after the third stop attempt rather than looping indefinitely.
+
+### Harness notes
+
+- **Where the unit harness lives:** the four scenarios are runnable as a shell script or a small Node test file Clove places alongside the hooks (e.g. `.claude/hooks/__smoke__/` or a `*.test.mjs` per hook). The exact location is Clove's call; the requirement is that each scenario's unit form runs headless and asserts exit code + stderr substring. The negative controls (b.4) and the audit-only check (c) are part of the gate, not optional.
+- **Scratch isolation:** each scenario keys by a distinct `agent_id` (`smoke-a`/`-b`/`-c`/`-d`) so strike counters and ledgers never collide — this also exercises the `runKey = agent_id ?? session_id` keying that Phase 2 stress-tests under real fleet concurrency.
+- **Harness `gates.json`:** scenarios (a), (c), (d) need gate commands wired to deterministic pass/fail (`node -e "process.exit(N)"`). Use a harness-local `gates.json` (or a test override) so the smoke test does not depend on the real test suite's current state — the gate logic is what's under test, not the repo's tests.
+
+### Field-shape items Clove must confirm against the live runtime (do not guess)
+
+These are recorded as confirmed in `## Decisions` but were not independently re-verifiable from the public hook docs page on 2026-06-26. Confirm against an actual payload before relying on them; if any contradicts the Decisions, flag it (do not silently work around it):
+
+1. **PostToolUse top-level `exit_code` / `tool_output`** — highest priority. If the real field is nested (e.g. under `tool_response`), the ledger records `0` for every command and scenario (a)/(d) silently pass when they should fail. Confirm by logging a real PostToolUse payload from a Bash call.
+2. **`stop_hook_active` field name and presence on `Stop`/`SubagentStop`** — used as the loop backstop. The 3-strike counter is the primary ceiling (scenario d asserts this), so a wrong field name degrades the backstop but does not break the gate — still confirm the exact name.
+3. **`agent_id` / `agent_type` presence on `Stop`/`SubagentStop`** (vs. only on tool-use events) — the docs say these appear inside subagent context; confirm they ride the `Stop`/`SubagentStop` payload specifically, since `runKey` resolution on the stop event depends on it. (The solo path falls back to `.prism/active-persona`, so a missing `agent_id` on solo `Stop` is expected and handled.)
+
+---
+
 ## Acceptance Criteria
 
 ### Behavioral
@@ -281,6 +420,7 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Briar self-review — 1 Major (install-seed crossref-lint failure: report-contract.md carries forbidden ADR-0067 refs + 6 dangling links in templates/install/), 2 Minor (needs-stronger-model injection next_route undocumented; enforcement-floor.md count claim). Verdict: needs-fix → Clove.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Clove fixed Briar's 3 review findings — excluded enforcement reference files from consumer seed (seed-curation.json + git rm); documented gate-injected next_route for needs-stronger-model in report-contract.md coherence table; replaced count claim in enforcement-floor.md with role-based description. All mirrors rebuilt; pnpm prism:crossref-lint passes clean.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Clove fixed Eric's 3 PR-review minors — corrected gates.json CheckSpec.schema example to a .json path; added minItems:1 to may_not_run; added Phase 5 population note to isCoherent for done→human gap. All mirrors rebuilt via build; pnpm prism:crossref-lint passes clean.
+- 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Phase 1 task 8 — Winston authored the `## Phase 1 Smoke Test` section (the Phase 1 exit gate), four scenarios (false-`done` blocked, out-of-lane write denied, clean ratify, strike-cap re-emit) each in a deterministic direct-invocation unit form (the automatable gate) plus a manual end-to-end form (human wiring confirmation). Verified exit-2 semantics and `agent_id`/`agent_type`/`$CLAUDE_PROJECT_DIR` against the live hook docs; flagged three field-shape items (top-level PostToolUse `exit_code`/`tool_output`, `stop_hook_active`, `agent_id` on Stop) for Clove to confirm against the runtime before trusting. Branch carries Phase 1; Clove implements tasks 1–7 here and the phase PRs together.
 
 ---
 
