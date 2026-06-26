@@ -204,6 +204,37 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 
 ---
 
+## Review Issues
+
+### report-contract.md install seed carries forbidden ADR references and dangling links
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** Added `references/enforcement/report-contract.md` and `references/enforcement/gates.json` to `seed-curation.json` `excluded[]`; removed both files from `templates/install/.prism/references/enforcement/` via `git rm`; confirmed `pnpm prism:crossref-lint` passes clean.
+- **File:** `templates/install/.prism/references/enforcement/report-contract.md:5,206,212`
+- **Problem:** `pnpm prism:crossref-lint` fails on this branch: 3 forbidden ADR references (`ADR-0067` cited at lines 5, 206, 212) and 6 dangling relative links (to `0067-runtime-ratifies-verdicts.md`, `enforcement-floor.md`, and `report-back.md` — none of which exist in `templates/install/`). Per ADR-0064, PRISM's install surface ships zero ADR references; the lessons.md "Adding a canonical .prism/ artifact" entry (2026-05-26) documents this exact pattern.
+- **Suggested fix:** Two options — (a) exclude `report-contract.md` and `gates.json` from `templates/install/` (add to `seed-curation.json` `excluded[]`) if consumers don't need them at install time and will receive them later via `prism:update`; (b) strip/genericize the ADR-0067 inline references (per ADR-0064's "inline the operative kernel, drop the link" pattern) and resolve or remove the relative links to files that don't exist on the consumer install surface. Option (a) is cleaner for Phase 0 since the enforcement runtime doesn't exist yet; populate the seed in Phase 4 alongside the hooks.
+
+### needs-stronger-model gate-injection next_route not specified in reference validator
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Updated the `needs-stronger-model` row in the coherence table in `.prism/references/enforcement/report-contract.md` to document that the gate sets `next_route` to the same persona key on the 3-strike cap; propagated via build to `.claude/`, `.codex/`, and `.cursor/` mirrors.
+- **File:** `.prism/references/enforcement/report-contract.md:150-156`
+- **Problem:** The JS reference snippet marks `needs-stronger-model` as `gateInjected: true` and returns `false` from `isCoherent`, correctly preventing the persona from emitting this verdict. But when the gate *itself* injects `needs-stronger-model` on the 3-strike cap (per ADR-0067 § channel-hardening), it also must inject a `next_route` value — and neither the reference validator nor the cross-reference table documents what that injected `next_route` should be. Phase 1 implementers will need to pick a value without guidance.
+- **Suggested fix:** Add a note in the `needs-stronger-model` row of the coherence table: "The gate injects this verdict and sets `next_route` to `[value]` on strike cap — the persona cannot emit this verdict directly." The routing table in `report-back.md` routes `needs-stronger-model` to `escalation.axis: model` (bump to opus) but doesn't name a `next_route` string for the contract. Clove should define the injection value in Phase 1 and document it here.
+
+### enforcement-floor.md contains a count claim that will drift
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Replaced "This is the largest class" with "Class B is the intermediate class — between Class A's hard evidence gates and Class C's ownership-only floor" in `.prism/architect/_toolkit/enforcement-floor.md`; propagated via build to `.claude/`, `.codex/`, and `.cursor/` mirrors.
+- **File:** `.prism/architect/_toolkit/enforcement-floor.md:48`
+- **Problem:** "This is the largest class" describes Class B by size relative to the other classes. Per `writing-voice.md § Count rules, not numbers`, count-relative claims drift the moment the taxonomy changes.
+- **Suggested fix:** Replace with a rule-based description: "Class B is the intermediate class — between Class A (claims provable by exit code) and Class C (claims provable only structurally)." Applies to all mirrors of this file.
+
+---
+
 ## Open Questions
 
 - **OPEN — TBD, needs Hunter input.** Whether Phase 4 emits hooks into `.codex/` now or defers until Codex hook parity is confirmed. **Default path (used until resolved):** emit to `.claude/` + `templates/install/` only; gate `.codex/` emission behind a confirmed-parity check, since leg 1 portability is explicitly not a near-term driver.
@@ -218,3 +249,22 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 - 2026-06-25 [main]: Added handoff enforcement per Hunter — required `next_route` field + verdict↔route coherence check, enforced identically with/without Sol; ownership already forces handoff negatively. Never auto-invokes the next persona (human gate preserved). Updated contract (Phase 0), gate (Phase 1), and AC.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Phase 0 tasks 1–2 — Winston authored the inversion-principle ADR (inversion, channel-hardening, handoff enforcement, factual-grounding bar, Briar caveat) and the gate-strength taxonomy doc `.prism/architect/_toolkit/enforcement-floor.md`; routed it into the skill-body manifest globs. The plan reserved ADR-0062, but 0062–0066 already landed on main (consumer-boundary epic), so the ADR is **0067** (next free); all plan/doc references updated. Both new files excluded from the consumer seed (PRISM ships zero ADRs per ADR-0064; the taxonomy doc is internal enforcement-architecture guidance). Clove continues Phase 0 (tasks 3–4: report-contract + gates.json schemas) on this branch.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Phase 0 tasks 3–4 — Clove authored the report contract schema (`.prism/references/enforcement/report-contract.md`) and the gates.json structural schema (`.prism/references/enforcement/gates.json`). Report contract defines all seven fields, the verdict enum (citing `report-back.md` as authoritative), `next_route` derivation/validation rule with Clove as the worked example, and a JS reference validator including the verdict↔route coherence check. Gates.json schema defines the per-persona entry shape (`writes_report_to`, `preconditions[]`, `gates[]`, `unverifiable_boxes[]`, `ownership`, `allowed_routes[]`) with `CheckSpec` and `OwnershipMatrix` as nested definitions; documents the `{{commands.*}}` token convention. Phase 0 now fully built; handoff to Briar for self-review.
+- 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Briar self-review — 1 Major (install-seed crossref-lint failure: report-contract.md carries forbidden ADR-0067 refs + 6 dangling links in templates/install/), 2 Minor (needs-stronger-model injection next_route undocumented; enforcement-floor.md count claim). Verdict: needs-fix → Clove.
+- 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Clove fixed Briar's 3 review findings — excluded enforcement reference files from consumer seed (seed-curation.json + git rm); documented gate-injected next_route for needs-stronger-model in report-contract.md coherence table; replaced count claim in enforcement-floor.md with role-based description. All mirrors rebuilt; pnpm prism:crossref-lint passes clean.
+
+---
+
+## PR Readiness
+
+Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 0 self-review.
+
+- [ ] No critical or major issues — **BLOCKED: 1 Major open (install-seed crossref-lint failure)**
+- [x] Types correct — no `any`, no unsafe `as` (schema files; no TypeScript source in Phase 0)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (Phase 0 is schema/docs only; no runtime logic to test)
+- [x] All debugged issues resolved (no `open` debugged entries)
+- [ ] Build passes — `pnpm prism:crossref-lint` fails: 3 forbidden ADR refs + 6 dangling links in `templates/install/`. `pnpm prism:check` (build sync) passes. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch).
+- [ ] PR description up to date
+- [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 0; decisions promote at epic close
+
+**Last updated:** 2026-06-25

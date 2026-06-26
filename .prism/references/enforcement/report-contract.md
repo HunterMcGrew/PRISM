@@ -107,7 +107,7 @@ The gate enforces that `next_route` is consistent with `verdict`. An incoherent 
 | `needs-fix` | The implementer persona for this lane (e.g. `clove` when Briar or Eric finds fixable issues). |
 | `needs-replan` | `winston` — replan routes to the architect, or `human` when the question needs stakeholder input. |
 | `blocked` | `human` — a blocked lane parks for human resolution. |
-| `needs-stronger-model` | The gate injects this verdict and `next_route` on strike cap; the persona does not emit this verdict directly. |
+| `needs-stronger-model` | The gate injects this verdict and sets `next_route` to the same persona key (e.g. `clove` for Clove) on the 3-strike cap, signaling Sol to retry the same persona at a stronger model. The persona cannot emit this verdict directly — `isCoherent` returns `false` and the gate overrides any attempt. |
 | `needs-human` | `human` — an open question or explicit escalation always lands with a human. |
 
 The coherence rule is a consistency check, not a closed lookup table. A `done` that routes to `winston` fails it; a `needs-human` that routes to `briar` fails it. The gate's implementation runs `isCoherent(verdict, next_route) -> boolean` and rejects the stop on `false`.

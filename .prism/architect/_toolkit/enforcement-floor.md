@@ -45,7 +45,7 @@ A persona is Class B when its **act is provable but its quality is not**. The ga
 
 Membership rule: a persona is Class B when the runtime can prove "the procedure ran and the report is coherent" but cannot prove "the output is correct."
 
-This is the largest class — every analysis, review, planning, and documentation persona that isn't Class A and isn't a business persona:
+Class B is the intermediate class — between Class A's hard evidence gates and Class C's ownership-only floor. It covers every analysis, review, planning, and documentation persona that isn't Class A and isn't a business persona:
 `prism-architect`, `prism-code-review-self`, `prism-code-review-pr`, `prism-debugger`, `prism-ticket-start`, `prism-user-stories`, `prism-qa-test-plan`, `prism-documentation`, `prism-doc-walker`, `prism-surface-audit`, `prism-design`, `prism-prd`, `prism-refactor-scout`, `prism-retro`, `prism-standup-summary`.
 
 **Floor:** universal primitives + procedural / structural preconditions and coherence checks. The canonical shape is **Briar's gate**: it proves she *worked* (the check-gates fired) and is *coherent* (a `needs-fix` verdict is shape-validated against a real critical/major finding), never that she is *right*. A review-quality gate cannot exist — see [ADR-0067](../../spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) § the Briar caveat. Do not build one in any later phase.

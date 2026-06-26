@@ -62,7 +62,9 @@
     "spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
     "spec/adrs/_toolkit/0066-sol-merge-hidden-config-capability.md",
     "spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md",
-    "architect/_toolkit/enforcement-floor.md"
+    "architect/_toolkit/enforcement-floor.md",
+    "references/enforcement/report-contract.md",
+    "references/enforcement/gates.json"
   ],
   "curated": [
     "rules/branch-plan.md",
