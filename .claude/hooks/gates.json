@@ -1,0 +1,74 @@
+{
+  "clove": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "types",
+        "description": "TypeScript types pass",
+        "checklist_key": "types",
+        "source": "fresh",
+        "check": {
+          "kind": "command",
+          "command": "pnpm run prism:check-types"
+        },
+        "on_fail": "done-override"
+      },
+      {
+        "id": "lint",
+        "description": "Crossref lint passes (prose cross-references, ADR refs, install surface links)",
+        "checklist_key": "lint",
+        "source": "fresh",
+        "check": {
+          "kind": "command",
+          "command": "pnpm run prism:crossref-lint"
+        },
+        "on_fail": "done-override"
+      },
+      {
+        "id": "tests",
+        "description": "Test suite passes",
+        "checklist_key": "tests",
+        "source": "ledger",
+        "check": {
+          "kind": "command",
+          "command": "pnpm run prism:test"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "code quality — whether Clove's implementation is correct, not just that types and tests pass",
+      "design soundness — whether the approach matches the plan's intent"
+    ],
+    "allowed_routes": ["briar", "human", "clove", "winston"],
+    "ownership": {
+      "may_write": [
+        "src/**",
+        "**/*.test.*",
+        ".prism/plans/**",
+        ".prism/evidence/**",
+        ".ai-skills/skills/prism-code-dev/**",
+        ".claude/hooks/**",
+        ".claude/settings.json",
+        ".gitignore"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force"
+      ]
+    }
+  }
+}
