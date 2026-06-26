@@ -326,6 +326,48 @@ These are recorded as confirmed in `## Decisions` but were not independently re-
 
 ---
 
+## Phase 2 Validation
+
+Evidence-backed results for Phase 2 tasks 1–3 (branch `hmcgrew/issue-292-orchestration-subagentstop-sol`).
+
+### Task 1 — SubagentStop fires under real Sol dispatch
+
+**Result: confirmed.** The `.prism/evidence/` directory on disk contains multiple runs keyed by `agent_id` values (`a72a40e9a7e9044a4`, `a6b84d8ba5acbf1ea`, `a9a881a7f0abc5497`), distinct from the current session's UUID-format `agent_id` (`46e195fa-82c0-4b51-95c1-58e1b9ebff2a`). Each `ratified-verdict.json` records `persona: "clove"` and its `runKey` matches the `agent_id` — not the `session_id`.
+
+Specifically, `a9a881a7f0abc5497/ratified-verdict.json` records the Phase 1 final clean ratification (verdict `done`, next_route `briar`, strike_count 0), confirming `SubagentStop` fired `run-gates.mjs`, the resolver picked `clove` via `agent_type: "prism-code-dev"` → `SKILL_ID_TO_PERSONA`, and the runKey derived from `agent_id`. The Phase 2 dispatch itself produced a ledger entry at `46e195fa-82c0-4b51-95c1-58e1b9ebff2a/ledger.jsonl`, confirming this dispatch's `agent_id` is UUID-format and is independent of all prior hex-format runKeys.
+
+**`settings.json` wiring confirmed:** `SubagentStop` is wired alongside `Stop` — both events fire `run-gates.mjs` with a 120-second timeout. No silent bypass is possible under Sol dispatch.
+
+### Task 2 — Park path consumes into Sol routing (no Sol code change required)
+
+**Result: confirmed — existing table consumes `needs-stronger-model` cleanly, no Sol code change needed.**
+
+Trace of the park path:
+
+1. **Strike cap reached** (3 strikes) → `run-gates.mjs` `injectNeedsStrongerModel()` fires: re-injects instruction on stderr telling the model to emit `verdict: "needs-stronger-model", next_route: "<persona>"`, then exits 2 (stop refused).
+2. **Model re-emits report** with `needs-stronger-model` as verdict. On next stop attempt, `isCoherent()` returns `false` for `needs-stronger-model` (it is `gateInjected: true`) — the gate passes through because the model is reporting the gate-forced verdict, not a self-claimed one. The model's structured return to Sol carries `verdict: "needs-stronger-model"`.
+3. **Sol's routing table** (`report-back.md` § Routing table): `primary needs-stronger-model` → `bump models.<persona> to opus (escalation.axis: model)`. The table entry is present and unconditional — no additional sol-side wiring is required.
+4. **`step-06-escalate.md`** defines the model axis: "bump `models.<persona>` to `opus` for that persona's next dispatch. Triggered when Sonnet stalled the unit twice (strike 2)." The strike cap fires at 3 in the Phase 1 implementation; step-06 describes the axis shape — the exact strike threshold is the hook's concern, not Sol's.
+5. **`goal-state.md` schema**: `escalation: { axis: "model", reason, raisedAt }` — the model axis is a first-class field in the lane record.
+
+The channel-hardening Decision is confirmed: Sol reads the model's structured return (never `ratified-verdict.json`). The model's return after cap is gate-consistent because `run-gates.mjs` forced it. Sol's routing table is the final consumer and requires no modification.
+
+**One nuance noted**: `step-06-escalate.md` describes the model-axis trigger as "Sonnet stalled the unit twice (strike 2)" while the hook fires at strike 3. This is a prose description in the Sol conductor skill — the hook's strike cap is authoritative; step-06's "twice" is illustrative. No code change needed; the distinction is documented here for Phase 6 ceiling-prose accuracy review.
+
+### Task 3 — Fleet keying prevents cross-lane collision
+
+**Result: confirmed via deterministic smoke assertion** (`fleet-keying.mjs`).
+
+Three scenarios added to `.claude/hooks/__smoke__/fleet-keying.mjs`:
+
+- **E1** (primary): Two lanes share `session_id: "shared-session"` but carry distinct `agent_id: "lane-alpha"` / `"lane-beta"`. After one stop attempt each, each lane has exactly 1 strike in its own evidence dir. Neither lane's dir contains the other's artifacts.
+- **E2** (solo-path): No `agent_id` → runKey falls back to `session_id`. Strike appears under `session_id`-keyed dir. Solo path unbroken.
+- **E3** (negative control): Two stop attempts with identical `agent_id` → both strikes accumulate in the same dir (2 total). Confirms isolation in E1 comes from distinct ids, not another mechanism.
+
+All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (3 scenarios) = 9/9 pass.
+
+---
+
 ## Acceptance Criteria
 
 ### Behavioral
@@ -522,6 +564,7 @@ These are recorded as confirmed in `## Decisions` but were not independently re-
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Briar's 3 self-review findings — added `.prism/evidence/` to `.gitignore` (expanded `may_write` to include `.gitignore` first, documented as cross-lane absorption in Decisions); hardened strike-corruption catch to fail safe at cap instead of silently resetting to 0; added Scenario B.5 `may_not_run` smoke coverage (4 sub-tests: `gh pr merge`, `git merge`, `git push --force`, + negative control). All 5 smoke scenarios pass.
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Corrected `gates.json#clove` lint command — `prism:lint` does not exist as a script; replaced with `prism:crossref-lint` (the correct lint analog for this repo). Discovered when the gate fired on stop and correctly blocked a false `done` claim.
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Eric's PR #298 review findings — Major: removed unconditional `break` in `extractEffectiveCommand` so all non-heredoc lines are scanned for `may_not_run` matches (multi-line bypass closed); added Scenario B.6 smoke coverage (4 sub-tests). Minor 1: precondition failures no longer burn strike cap. Minor 2: Scenario A assertion corrected from `'done-override'` (never in stderr) to `'types'` (gate ID). Minor 3: non-blocking warning added when a gate fails unclaimed. Minor 4: ledger match uses `.trim()`. Minor 5 (SKILL_ID_TO_PERSONA drift): deferred to Phase 5 — documented in Cleanup Items. All 6 smoke scenarios pass; crossref-lint clean.
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 tasks 1–3 — Clove validated SubagentStop fires under real Sol dispatch (agent_id-keyed runKeys confirmed in .prism/evidence/), confirmed Sol's routing table consumes `needs-stronger-model` without code change (report-back.md + step-05 + step-06 trace), and proved fleet keying prevents cross-lane collision via fleet-keying.mjs (3 new scenarios, 9/9 total). Full harness clean; crossref-lint clean. Winston continues Phase 2 task 4 on this branch.
 
 ---
 
@@ -541,6 +584,7 @@ Living checklist — updated by `code-review-self` (Briar). Reflects state after
 - [x] Channel-hardening verified — `ratified-verdict.json` written as audit artifact only; never read back as routing input (confirmed in code + smoke scenario C)
 - [x] Precondition failures no longer burn strike cap — protocol misses re-prompt without striking
 - [x] `SKILL_ID_TO_PERSONA` drift deferred to Phase 5 — documented in Cleanup Items
-- [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1; decisions promote at epic close
+- [x] Phase 2 validation complete — SubagentStop wiring confirmed, Sol routing table consumes `needs-stronger-model` without code change, fleet keying proven via fleet-keying.mjs (9/9 scenarios pass)
+- [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1–2; decisions promote at epic close
 
 **Last updated:** 2026-06-26
