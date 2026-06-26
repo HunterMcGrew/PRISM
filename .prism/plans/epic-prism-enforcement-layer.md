@@ -252,6 +252,11 @@ D. **Schema-doc description** — already applied by Winston to `.prism/referenc
 1. Author `gates.json` ownership matrices for **every** persona (universal) + class-appropriate gates: Class A full evidence gates; Class B procedural/structural preconditions + coherence checks; Class C ownership + contract only.
 2. Per persona, verify the ownership globs against the actual skill body (the accuracy check) — `may_write` must match what the skill genuinely writes; `may_not_run` must encode real boundaries (e.g. Eric/Sol never `gh pr merge`; reviewers `may_write` plan-only).
 3. Add the startup persona-resolve line + DoD-pointer rewrite to each persona skill body (the floor half; the prose half is Phase 6).
+4. **(From Phase 2 review — Cleanup Items § Phase 5 follow-ons, item 2)** Harden `may_not_run` for Bash redirect-write patterns targeting protected paths (`"> .claude/hooks"`, `"tee .claude/hooks"`, etc.) or add a path-prefix scan in `extractEffectiveCommand` before permitting Bash calls to protected paths.
+5. **(From Phase 2 review — Cleanup Items § Phase 5 follow-ons, item 3)** Add `"rm -f .prism/evidence"`, `"rm -fr .prism/evidence"`, and `"rm --force .prism/evidence"` to `gates.json` `may_not_run` for each persona that owns evidence writes. Must go through canonical-source split (Phase 4 prerequisite).
+
+**Winston** (Phase 5 architectural scoping)
+6. **(From Phase 2 review — Cleanup Items § Phase 5 follow-ons, item 1)** Scope the `active-persona` write fix: either (a) a SessionStart hook that writes the file only when `agent_type` is absent from the payload (solo-only write), or (b) remove the write from Clove's DoD startup procedure entirely and confirm the payload-first resolver handles all dispatch modes without it. A skill-prose conditional is not acceptable (fails the factual-grounding bar). Verify the resolver Decision ("file path stays single-writer by construction; do not use it in the orchestrated path") is faithfully implemented after the fix.
 
 ### Phase 6 — Ceiling-prose pass: procedural & accurate, persona by persona
 
@@ -637,12 +642,61 @@ All three pass. Two separate harness entry points: `node .claude/hooks/__smoke__
 - **Problem:** The aggregate "9/9 total" read as a single invocation. A reader reproducing the result would run one script, see 6/6, and wonder where the other 3 are.
 - **Suggested fix:** Name both harness entry points with their individual counts.
 
+### Bash redirect-write bypasses protected-paths denylist (Briar Phase 2 gate-self-protection review)
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **Deferred to:** Phase 5 (`may_not_run` accuracy rollout + security hook hardening). The plan already scopes this as a "softer edge defended in depth, not absolutely." See Phase 5 follow-on in `## Cleanup Items`.
+- **File:** `.claude/hooks/ownership-guard.mjs:94-108`
+- **Problem:** The `PROTECTED_WRITE_PATHS` denylist is only checked in the `writeTools.has(toolName)` branch (Edit/Write/MultiEdit). A Bash tool call that writes to a protected path via shell redirection (e.g. `echo '' > .claude/hooks/run-gates.mjs`, `tee .claude/hooks/gates.json`, `cp`, `mv`, `sed -i`) takes the Bash branch (lines 94-108), which checks only `may_not_run` and then exits 0. These commands are not in Clove's `may_not_run` list, so the denylist is bypassed. This is a narrower version of the same class of gap the PR's multi-line Bash fix addressed: the tool path matters for which guard runs.
+- **Suggested fix:** Three options in increasing strength: (a) Add redirect-write patterns to Clove's `may_not_run` (e.g. `"> .claude/hooks"`, `"tee .claude/hooks"`, `"cp .ai-skills/hooks"`) — brittle, pattern-matching surface is wide. (b) After the `may_not_run` check passes, additionally scan the effective command string for any token matching a PROTECTED_WRITE_PATH basename or path prefix before permitting the Bash call — more robust, still substring-based. (c) Defer to Phase 4/5 as a known-softer-edge per the plan's own wording: "obfuscated shell deletion of evidence is defended in depth (the `may_not_run` substring + the security hook backstop), not absolutely; the lawful write/edit path is airtight." The plan already names this limitation explicitly — option (c) is a legitimate call if the judgment is that tool-path writes are the airtight guarantee and Bash-path shell writes are the accepted softer edge. Recommend recording the exact bypass commands not yet covered rather than leaving this implicit.
+- **Fix-now vs. defer call (followup-scope):** The plan already explicitly scoped this as a "softer edge defended in depth, not absolutely" — this finding confirms and names the specific bypass surface but doesn't change the design's known boundary. Classify as Minor, defer to Phase 5 (ownership accuracy rollout) where `may_not_run` is populated for all personas. The tool-path (Edit/Write/MultiEdit) guarantee is airtight; the Bash-path writes are the named softer edge.
+
+### `rm -f` variant bypasses `may_not_run` evidence-deletion guard (Briar Phase 2 gate-self-protection review)
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **Deferred to:** Phase 5 (`may_not_run` accuracy rollout). `gates.json` is denylist-protected on this branch; edit must wait for Phase 4's canonical-source split. See Phase 5 follow-on in `## Cleanup Items`.
+- **File:** `.claude/hooks/gates.json:67-74` (Clove `may_not_run`)
+- **Problem:** Clove's `may_not_run` protects against `"rm .prism/evidence"` and `"rm -rf .prism/evidence"` via substring matching. But `rm -f .prism/evidence/smoke/strikes.json` does not contain either substring — `-f` appears between `rm` and the path, so neither guard fires. Variant flags (`rm -f`, `rm --force`, `rm -fr`) all bypass the current guard. Scenario E8 only passes because it tests the no-flag form `rm .prism/evidence/...`, which happens to contain the substring.
+- **Suggested fix:** Add `"rm -f .prism/evidence"` and `"rm -fr .prism/evidence"` to `may_not_run`, OR replace the two specific entries with a more general approach: guard the evidence path itself (e.g. `"rm -" is too broad; a prefix match on the path segment `.prism/evidence` in `rm` commands with any flags would require a small parsing pass in `extractEffectiveCommand`). Minimum fix: add the two missing flag variants to `may_not_run`. This is a narrow gap in the Bash-path softness the plan already accepts; it's worth closing explicitly.
+- **Fix-now vs. defer call (followup-scope):** Trivial fix — add two strings to `may_not_run` in `gates.json`. The file is denylist-protected (ironically), so it must wait for Phase 4's canonical-source split before Clove can edit it in a gated dispatch. It's a legitimate Phase 5 item: the Phase 5 accuracy audit already covers `may_not_run` correctness. Record here; defer to Phase 5.
+
+### `.prism/active-persona` not gitignored (Sol finding — Briar Phase 2 assessment)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added `.prism/active-persona` to `.gitignore` with a comment citing the solo-path single-writer constraint and the `.prism/evidence/` precedent. Verified via `git check-ignore -v .prism/active-persona` → exit 0 (line 47). `pnpm prism:crossref-lint` passes clean.
+- **File:** `.gitignore`
+- **Problem:** `.prism/active-persona` is untracked (confirmed: `git status` shows `?? .prism/active-persona`, and `git check-ignore -v .prism/active-persona` returns exit 1 — not ignored). The file currently contains `sol` (written by the live gate dispatch). Runtime state that changes per-session should not be committable. The pattern is established: `.prism/evidence/` is already gitignored for exactly this reason.
+- **Fix-now vs. defer call (followup-scope):** Trivial one-line fix. Same class as the `.prism/evidence/` gitignore from Phase 1 — it prevents a real mistake (accidental commit of stale runtime state) and is a legitimate Minor that should land in this PR. Recommend fix-now per followup-scope: trivial, prevents a real mistake, same-scope as `.prism/evidence/` which was fixed in Phase 1 on this same branch. **No new ticket needed.**
+
+### `.prism/active-persona` unconditional write on subagent startup corrupts solo-path resolver (Sol finding — Briar Phase 2 assessment)
+
+- **Severity:** `major`
+- **Status:** `deferred`
+- **Deferred to:** Phase 5 (architectural fix — Winston scopes the mechanism). A skill-prose conditional fails the factual-grounding bar; the correct fix requires a SessionStart hook or resolver refinement. See Phase 5 follow-on in `## Cleanup Items`.
+- **File:** `.ai-skills/skills/prism-code-dev/shared.md:170`
+- **Problem:** Clove's Phase 1 DoD startup procedure unconditionally writes `echo "clove" > <repo-root>/.prism/active-persona` on every dispatch startup. The plan's own resolver Decision states: "the file path stays single-writer by construction; do not use it in the orchestrated path." When Clove runs as a subagent (orchestrated path), the resolver correctly uses `agent_type` from the payload and does not consult the file — so the write is unnecessary. But the write corrupts the file's semantics for any concurrent or subsequent solo dispatch: if Sol's own session reads `.prism/active-persona` for its solo resolver, it now sees `clove` instead of the correct active persona. The live evidence: `.prism/active-persona` currently contains `sol` — but Clove's startup would overwrite this to `clove`, and the next time Sol runs solo (or reads the file for any purpose), the resolver sees the wrong value. Under fleet dispatch, two concurrent Clove subagents also race to write the same file, which the Decision document explicitly calls out as the race condition the payload-first resolver was designed to prevent.
+- **Assessment — is a skill-prose fix now appropriate?** The Decision documents the correct behavior: "the file path stays single-writer by construction; do not use it in the orchestrated path." A skill-prose fix could attempt to add a conditional: "skip the write if `agent_type` is present in the hook payload" — but the skill prose runs before any hook fires, and the model cannot reliably detect whether it's running as a subagent from skill prose alone. A SessionStart hook (not currently wired) could handle this, or a resolver refinement that makes the write conditional on the absence of a live `agent_type` signal. This is architectural — a skill-prose fix that says "check if you're a subagent before writing" is exactly the kind of vague aspiration the factual-grounding bar forbids. The correct fix requires a mechanism the skill prose can't provide.
+- **Recommended route:** Winston / Phase 5. The resolver rollout phase (Phase 5) is where the `active-persona` file mechanics are verified across all personas. The fix is architectural — either (a) a SessionStart hook writes the file only on solo startup (not currently wired), or (b) the startup instruction is removed from the Clove DoD and replaced with a resolver-correct pattern that doesn't rely on the model detecting its own dispatch mode. Record as open Major; route to Winston for Phase 5 scoping. Do not attempt a half-baked skill-prose fix now.
+
 ---
 
 ## Cleanup Items
 
 - `.claude/hooks/lib/resolve-persona.mjs:85` — `SKILL_ID_TO_PERSONA` is a second source of truth for the skill-ID-to-persona-key mapping. Phase 5 accuracy audit: add `agentType` field to `gates.json` entries and resolve by scanning `gatesData` instead of a static map; add a `prism:check` drift assertion. (Eric PR #298, Minor 5, deferred.)
 - `.prism/skills/prism-conductor/step-06-escalate.md` — "strike 2" prose should align with the hook's strike-3 cap (Phase 6 ceiling-prose pass). (Phase 2 Task 2 nuance, Eric PR #299 Minor.)
+
+### Phase 5 follow-ons (deferred from Briar Phase 2 gate-self-protection review)
+
+Three items deferred from Phase 2 review; record here so Phase 5 picks them up.
+
+1. **(Major, architectural — Winston/Phase 5) `.prism/active-persona` unconditional startup write in Clove DoD.** `shared.md:170` unconditionally writes `echo "clove" > .prism/active-persona` on every dispatch startup. Under fleet dispatch, this races with concurrent Clove subagents and corrupts the solo-path resolver for other sessions. The resolver Decision says "do not use [the file] in the orchestrated path" — but the write still fires. Correct fix: a SessionStart hook that writes the file only on solo startup (when `agent_type` is absent), or a startup-instruction change that removes the write and relies solely on the payload-first resolver for orchestrated paths. A skill-prose conditional fails the factual-grounding bar (the skill runs before any hook fires; the model cannot reliably detect dispatch mode from prose). Winston scopes the mechanism in Phase 5.
+
+2. **(Minor) Bash redirect/`tee`/`cp`/`mv`/`sed -i` bypasses `PROTECTED_WRITE_PATHS` denylist.** The denylist in `ownership-guard.mjs` only covers the `writeTools` branch (Edit/Write/MultiEdit). A Bash call that writes to a protected path via shell redirection (e.g. `echo '' > .claude/hooks/run-gates.mjs`) takes the Bash branch (lines 94-108), which checks only `may_not_run` and exits 0. The plan already scopes this as a "softer edge defended in depth, not absolutely" (security hook is the current backstop). Phase 5 `may_not_run` hardening should explicitly enumerate the most dangerous redirect patterns for protected paths (e.g. `"> .claude/hooks"`, `"tee .claude/hooks"`) or add a path-prefix scan in `extractEffectiveCommand` before permitting Bash calls.
+
+3. **(Minor) `rm -f`/`rm -fr`/`rm --force .prism/evidence` escape the `rm .prism/evidence` substring guard.** `gates.json#clove` `may_not_run` blocks `rm .prism/evidence` and `rm -rf .prism/evidence` by substring, but `rm -f .prism/evidence/smoke/strikes.json` contains neither — the `-f` flag appears between `rm` and the path. Add `"rm -f .prism/evidence"` and `"rm -fr .prism/evidence"` (and `"rm --force .prism/evidence"`) to `may_not_run`. Blocked on Phase 4's canonical-source split (gates.json is denylist-protected on this branch — edits must go through the canonical source after the split lands).
 
 ---
 
@@ -674,21 +728,24 @@ All three pass. Two separate harness entry points: `node .claude/hooks/__smoke__
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Fixed Eric PR #299 minors — M1: `fleet-keying.mjs` `readStrikeCount` now returns `STRIKE_CAP` on corruption (matches `run-gates.mjs` fail-safe, prevents false PASS on corrupt fixture); M2: added `## Cleanup Items` entry for step-06 "strike 2" prose → Phase 6 ceiling-prose pass; M3: clarified Task 3 aggregate to name both harness entry points (`run-all.mjs` 6/6, `fleet-keying.mjs` 3/3). All smoke scenarios pass; crossref-lint clean.
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Winston designed the gate-self-protection fix for the non-circumventability hole dogfooding exposed (a gated persona could rewrite its own gate / reset its strike counter because `may_write` granted `.claude/hooks/**` + `.prism/evidence/**`). Amended ADR-0067 (part 5 + non-circumvent Consequence), added the third universal primitive to `enforcement-floor.md`, amended the `gates.json` schema `may_write` description, and recorded two Decisions (global protected-paths denylist over `may_write`-removal; hook source/runtime split + the load-bearing this-branch edit-order) plus the Clove spec (Phase 2 Tasks A–D). See Decisions. Clove implements next; PR not advanced.
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 gate self-protection (Tasks A–D) — Clove implemented in the required order: (A) narrowed `gates.json#clove` `may_write` from `.prism/evidence/**` to `.prism/evidence/**/report.json`, added `.ai-skills/hooks/**`, added `rm .prism/evidence` variants to `may_not_run`; (B) added Scenario E (9 sub-tests) to smoke harness before denylist was live; (C) added `PROTECTED_WRITE_PATHS` denylist const to `ownership-guard.mjs` as the final hook write, using the `lib/` prefix form; (D) confirmed `gates.json` schema-doc description already matched shipped behavior. Full smoke: `run-all.mjs` 7/7, `fleet-keying.mjs` 3/3; crossref-lint clean.
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Briar expanded Phase 2 gate-self-protection review — denylist ordering verified correct (runs before may_write, early-exit confirmed). Found 1 Major: `.prism/active-persona` unconditional startup write in Clove DoD corrupts solo-path resolver under fleet dispatch (architectural fix; routed to Winston/Phase 5). Found 3 Minor: Bash redirect-write bypasses denylist (Bash branch only checks may_not_run, not PROTECTED_WRITE_PATHS); `rm -f` variant bypasses may_not_run evidence guard; `.prism/active-persona` untracked and not gitignored. Sol's two findings assessed: active-persona unconditional write → Major, architectural, Winston/Phase 5; active-persona gitignore → Minor, fix-now.
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Added `.prism/active-persona` to `.gitignore` (Minor fix-now from Briar Phase 2 review); deferred the three remaining review issues to Phase 5 — Bash redirect-write denylist gap, `rm -f` variant bypass, and unconditional `active-persona` startup write. Phase 5 task bullets added for all three; Phase 5 follow-ons recorded in `## Cleanup Items`.
 
 ---
 
 ## PR Readiness
 
-Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 2 Briar self-review (clean pass).
+Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 2 expanded gate-self-protection review.
 
-- [x] No critical or major issues — all Eric findings fixed (1 major, 4 minors fixed, 1 minor deferred to Phase 5); Phase 2 Briar self-review clean (no new findings)
+- [x] No critical or major issues — all open issues from Briar Phase 2 review resolved or deferred: `.prism/active-persona` gitignore fixed; 1 Major (unconditional startup write) + 2 Minor (Bash redirect-write bypass, `rm -f` variant bypass) deferred to Phase 5 with recorded follow-ons in `## Cleanup Items`
 - [x] Types correct — hooks are `.mjs` (not TypeScript); no `any`, no unsafe `as` in build scripts
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — 9 smoke scenarios (A, B, B.5, B.6, C, D + E1/E2/E3 fleet-keying) pass across two harnesses: `run-all.mjs` (6/6) + `fleet-keying.mjs` (3/3)
+- [x] Tests written for new logic and edge cases — 10 smoke scenarios (A, B, B.5, B.6, C, D, E + E1/E2/E3 fleet-keying) pass across two harnesses: `run-all.mjs` (7/7) + `fleet-keying.mjs` (3/3)
 - [x] All debugged issues resolved (no `open` debugged entries)
 - [x] Build passes — `pnpm prism:crossref-lint` passes clean (confirmed 2026-06-26). `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch). Literal-allowlist updated to exempt `.claude/hooks` from leftover-token guard.
 - [ ] PR description up to date
 - [x] `.gitignore` now excludes `.prism/evidence/` — major finding resolved; `git check-ignore` confirms all evidence files excluded
+- [x] `.prism/active-persona` now gitignored — Minor finding resolved; `git check-ignore` confirms exit 0
 - [x] `stop_hook_active` confirmed absent from Stop payload; 3-strike counter is sole ceiling — documented in Decisions, no implementation gap
 - [x] Channel-hardening verified — `ratified-verdict.json` written as audit artifact only; never read back as routing input (confirmed in code + smoke scenario C)
 - [x] Precondition failures no longer burn strike cap — protocol misses re-prompt without striking
@@ -699,4 +756,4 @@ Living checklist — updated by `code-review-self` (Briar). Reflects state after
 - [x] Phase 2 gate self-protection (Tasks A–D) complete — `PROTECTED_WRITE_PATHS` denylist live in `ownership-guard.mjs`; `gates.json#clove` `may_write` narrowed to `report.json`; `rm .prism/evidence` added to `may_not_run`; 10 new smoke assertions (Scenario E, 9 sub-tests) all pass; `lib/` prefix form chosen; `gates.json` schema-doc description already matched shipped behavior (no Task D edit needed)
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1–2; decisions promote at epic close
 
-**Last updated:** 2026-06-26 (after Phase 2 gate self-protection Tasks A–D)
+**Last updated:** 2026-06-26 (Clove Phase 2 close-out — active-persona gitignore fixed; 3 review issues deferred to Phase 5 with recorded follow-ons)
