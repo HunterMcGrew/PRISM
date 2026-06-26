@@ -822,6 +822,14 @@ function assert(scenarioName, condition, message) {
 //   I.f: echo x > src/foo.ts                         → exit 0 (negative — not protected)
 //   I.g: rm src/foo.ts                               → exit 0 (negative — not evidence)
 //
+//   Fused-redirect / bare-directory closures (Briar Issue #300 re-review — C1, C2):
+//   I.l: echo x>.claude/hooks/gates.json            → exit 2 (fused redirect, no space — C1)
+//   I.m: echo x>>.claude/hooks/run-gates.mjs        → exit 2 (fused append redirect — C1)
+//   I.n: echo x>/tmp/safe.txt                        → exit 0 (fused redirect to safe path — C1 negative)
+//   I.o: rm -rf .prism/evidence                      → exit 2 (bare-dir delete, no slash — C2)
+//   I.p: rm -rf ./.prism/evidence                    → exit 2 (dotslash bare-dir delete — C2)
+//   I.q: echo x 2>&1                                 → exit 0 (fd-dup, not a file write — C1 skip-fd lock)
+//
 //   Read-only negative controls (must PERMIT — protected path is a read source/arg only):
 //   I.h: git diff main -- .claude/hooks/gates.json 2>&1  → exit 0 (stderr fd-dup, pure read)
 //   I.i: cat .claude/hooks/run-gates.mjs > /tmp/out.txt  → exit 0 (hook is read source; safe target)
@@ -898,7 +906,29 @@ function assert(scenarioName, condition, message) {
     const rK = runGuardBash('grep rm .prism/evidence/smoke/ledger.jsonl');
     const okK = assert(name, rK.code === 0, `I.k: expected exit 0 (grep reads ledger; 'rm' is the search string, not the command), got ${rK.code}. stderr: ${rK.stderr.substring(0, 200)}`);
 
-    if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK) console.log(`${PASS} ${name}`);
+    // Fused-redirect closures (C1) — the redirect operator glued to the preceding word with
+    // no space still redirects to the protected path; the guard must collect it as a write target.
+    const rL = runGuardBash('echo x>.claude/hooks/gates.json');
+    const okL = assert(name, rL.code === 2, `I.l: expected exit 2 (fused redirect to gates.json, no space), got ${rL.code}. stderr: ${rL.stderr.substring(0, 200)}`);
+
+    const rM = runGuardBash('echo x>>.claude/hooks/run-gates.mjs');
+    const okM = assert(name, rM.code === 2, `I.m: expected exit 2 (fused append redirect to run-gates.mjs), got ${rM.code}. stderr: ${rM.stderr.substring(0, 200)}`);
+
+    const rN = runGuardBash('echo x>/tmp/safe.txt');
+    const okN = assert(name, rN.code === 0, `I.n: expected exit 0 (fused redirect to non-protected /tmp path), got ${rN.code}. stderr: ${rN.stderr.substring(0, 200)}`);
+
+    const rQ = runGuardBash('echo x 2>&1');
+    const okQ = assert(name, rQ.code === 0, `I.q: expected exit 0 (2>&1 is fd-dup, not a file write), got ${rQ.code}. stderr: ${rQ.stderr.substring(0, 200)}`);
+
+    // Bare-directory evidence-delete closures (C2) — the bare dir (no trailing slash) is the
+    // most destructive form, wiping the entire evidence tree; the dotslash form is equivalent.
+    const rO = runGuardBash('rm -rf .prism/evidence');
+    const okO = assert(name, rO.code === 2, `I.o: expected exit 2 (bare-dir evidence delete, no trailing slash), got ${rO.code}. stderr: ${rO.stderr.substring(0, 200)}`);
+
+    const rP = runGuardBash('rm -rf ./.prism/evidence');
+    const okP = assert(name, rP.code === 2, `I.p: expected exit 2 (dotslash bare-dir evidence delete), got ${rP.code}. stderr: ${rP.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK && okL && okM && okN && okO && okP && okQ) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }

@@ -390,24 +390,34 @@ function collectWriteTargets(effectiveCmd) {
 }
 
 /**
- * Returns the redirect target file at token index i, or null if tokens[i] is not a
- * file-writing redirect.
+ * Returns the redirect target file at token index i, or null if tokens[i] does not
+ * contain a file-writing redirect.
  *
- * Handles three forms:
- *   `>` / `>>` as a standalone token  → target is tokens[i+1]
- *   `>file` / `2>file` / `>>file`     → target is the suffix after the operator
- * Fd-duplications (`>&1`, `2>&1`, `&>`) write no file and return null.
+ * Handles four forms — the operator may sit anywhere in the token, not just at its start,
+ * so a redirect fused to the preceding word (`x>file`, `echo`'d with no space) is caught:
+ *   `>` / `>>` as a standalone token   → target is tokens[i+1]
+ *   `>file` / `2>file` / `>>file`      → target is the suffix after the operator
+ *   `x>file` / `x>>file` (word-fused)  → target is the suffix after the operator
+ * Fd-duplications (`>&1`, `2>&1`, `x>&1`) redirect a descriptor, not a file, and return null.
+ *
+ * The match scans for the first `>`/`>>` not immediately preceded by `<` (so `<>` and read
+ * redirects don't false-match) and not immediately followed by `&` (fd-dup). The suffix after
+ * the operator is the destination; an empty suffix means the operator is standalone and the
+ * destination is the next token.
  */
 function redirectTargetFor(tokens, i) {
   const tok = tokens[i];
-  const m = tok.match(/^\d*(>>?)(.*)$/);
+  // Find an embedded `>`/`>>` operator anywhere in the token. The preceding char (if any)
+  // may be a word char or an fd digit — both fuse a redirect to a destination.
+  const m = tok.match(/(>>?)([^>&].*|$)/);
   if (!m) return null;
 
-  const rest = m[2];
-  // Fd-duplication (`>&1`, `2>&1`) — redirects a descriptor, not a file.
-  if (rest.startsWith('&')) return null;
+  // Fd-duplication: the char right after the operator is `&` (e.g. `2>&1`, `x>&1`).
+  const opEnd = m.index + m[1].length;
+  if (tok[opEnd] === '&') return null;
 
-  if (rest.length > 0) return rest; // fused form: `>file`
+  const rest = tok.slice(opEnd);
+  if (rest.length > 0) return rest; // fused or word-fused form: `>file`, `x>file`
   // Standalone operator: the file is the next token (skip an fd-dup like `&1`).
   const next = tokens[i + 1];
   if (next === undefined || next.startsWith('&')) return null;
@@ -455,9 +465,25 @@ function commandDeletesEvidence(effectiveCmd) {
   for (const segment of splitCommandSegments(effectiveCmd)) {
     const tokens = tokenize(segment);
     if (commandHead(tokens) !== 'rm') continue;
-    if (tokens.some(t => t.includes('.prism/evidence/'))) return true;
+    if (tokens.some(t => targetsEvidence(t))) return true;
   }
   return false;
+}
+
+/**
+ * Returns true if a token targets the .prism/evidence tree — the bare directory itself
+ * (`.prism/evidence`, the most destructive form, wipes all runs' gate state) OR any path
+ * beneath it (`.prism/evidence/<runKey>/strikes.json`). The `./`-prefixed forms are matched
+ * too. A trailing-slash-only match (`.includes('.prism/evidence/')`) would miss the bare
+ * directory — the original C2 hole.
+ */
+function targetsEvidence(token) {
+  return (
+    token === '.prism/evidence' ||
+    token === './.prism/evidence' ||
+    token.startsWith('.prism/evidence/') ||
+    token.startsWith('./.prism/evidence/')
+  );
 }
 
 /**
