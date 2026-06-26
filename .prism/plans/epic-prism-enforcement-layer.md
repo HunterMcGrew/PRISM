@@ -372,7 +372,7 @@ Three scenarios added to `.claude/hooks/__smoke__/fleet-keying.mjs`:
 - **E2** (solo-path): No `agent_id` → runKey falls back to `session_id`. Strike appears under `session_id`-keyed dir. Solo path unbroken.
 - **E3** (negative control): Two stop attempts with identical `agent_id` → both strikes accumulate in the same dir (2 total). Confirms isolation in E1 comes from distinct ids, not another mechanism.
 
-All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (3 scenarios) = 9/9 pass.
+All three pass. Two separate harness entry points: `node .claude/hooks/__smoke__/run-all.mjs` (6/6) and `node .claude/hooks/__smoke__/fleet-keying.mjs` (3/3). There is no single invocation that produces a combined result — run both scripts independently to reproduce.
 
 ---
 
@@ -541,11 +541,39 @@ All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (
 - **Problem:** `SKILL_ID_TO_PERSONA` is a hardcoded mapping in `resolve-persona.mjs` that duplicates the skill-ID-to-persona-key relationship that `gates.json` already partially encodes. A roster change (new persona or renamed skill ID) must be updated in two places.
 - **Suggested fix (Phase 5):** Add an `agentType` field to each `PersonaGateEntry` in `gates.json`; resolve by scanning `gatesData` entries for a matching `agentType` instead of a static map. Add a `prism:check` drift assertion to confirm `SKILL_ID_TO_PERSONA` (or its replacement) stays in sync with `gates.json`. Phase 5 owns persona accuracy verification — this belongs there.
 
+### smoke readStrikeCount swallows corruption (Eric PR #299, M1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added `STRIKE_CAP = 3` constant to `fleet-keying.mjs`; changed `catch` from `return 0` to emit a warning + `return STRIKE_CAP`, matching `run-gates.mjs` fail-safe direction.
+- **File:** `.claude/hooks/__smoke__/fleet-keying.mjs:125`
+- **Problem:** `readStrikeCount` returned `0` on parse error while production `run-gates.mjs` returns `STRIKE_CAP` on corruption. A corrupt-file fixture would pass with the wrong strike count, producing a false PASS.
+- **Suggested fix:** Return `STRIKE_CAP` on corruption with a warning, matching production fail-safe direction.
+
+### step-06 "strike 2" prose nuance not in discoverable location (Eric PR #299, M2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added a `## Cleanup Items` entry: `.prism/skills/prism-conductor/step-06-escalate.md — "strike 2" prose should align with the hook's strike-3 cap (Phase 6 ceiling-prose pass).`
+- **File:** `.prism/plans/epic-prism-enforcement-layer.md` (Cleanup Items section)
+- **Problem:** The step-06 prose nuance was documented only in the Phase 2 Validation narrative. A Phase 6 assignee would need to read the full validation section to find it.
+- **Suggested fix:** Add a `## Cleanup Items` entry pointing directly at `step-06-escalate.md` with the Phase 6 ceiling-prose label.
+
+### "9/9 total" wording implies a unified harness (Eric PR #299, M3)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Replaced "Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (3 scenarios) = 9/9 pass" with a two-sentence clarification naming both scripts and their independent exit codes, and instructing a reproducer to run both independently.
+- **File:** `.prism/plans/epic-prism-enforcement-layer.md` (Phase 2 Validation, Task 3)
+- **Problem:** The aggregate "9/9 total" read as a single invocation. A reader reproducing the result would run one script, see 6/6, and wonder where the other 3 are.
+- **Suggested fix:** Name both harness entry points with their individual counts.
+
 ---
 
 ## Cleanup Items
 
 - `.claude/hooks/lib/resolve-persona.mjs:85` — `SKILL_ID_TO_PERSONA` is a second source of truth for the skill-ID-to-persona-key mapping. Phase 5 accuracy audit: add `agentType` field to `gates.json` entries and resolve by scanning `gatesData` instead of a static map; add a `prism:check` drift assertion. (Eric PR #298, Minor 5, deferred.)
+- `.prism/skills/prism-conductor/step-06-escalate.md` — "strike 2" prose should align with the hook's strike-3 cap (Phase 6 ceiling-prose pass). (Phase 2 Task 2 nuance, Eric PR #299 Minor.)
 
 ---
 
@@ -573,19 +601,21 @@ All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Eric's PR #298 review findings — Major: removed unconditional `break` in `extractEffectiveCommand` so all non-heredoc lines are scanned for `may_not_run` matches (multi-line bypass closed); added Scenario B.6 smoke coverage (4 sub-tests). Minor 1: precondition failures no longer burn strike cap. Minor 2: Scenario A assertion corrected from `'done-override'` (never in stderr) to `'types'` (gate ID). Minor 3: non-blocking warning added when a gate fails unclaimed. Minor 4: ledger match uses `.trim()`. Minor 5 (SKILL_ID_TO_PERSONA drift): deferred to Phase 5 — documented in Cleanup Items. All 6 smoke scenarios pass; crossref-lint clean.
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 tasks 1–3 — Clove validated SubagentStop fires under real Sol dispatch (agent_id-keyed runKeys confirmed in .prism/evidence/), confirmed Sol's routing table consumes `needs-stronger-model` without code change (report-back.md + step-05 + step-06 trace), and proved fleet keying prevents cross-lane collision via fleet-keying.mjs (3 new scenarios, 9/9 total). Full harness clean; crossref-lint clean. Winston continues Phase 2 task 4 on this branch.
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 task 4 — Winston settled the single-contract wiring: added the gate-ratified-before-return invariant to `report-back.md` (one contract, Sol reads the return, `ratified-verdict.json` is audit-only, cites ADR-0067), closed the second Open Question by promoting it to a resolved Decision, and confirmed no ADR needed (ADR-0067 already carries the principle). Landed two dogfooding lessons (PowerShell BOM breaks JSON.parse; gated persona's own Stop gate disrupts report-back). Phase 2 fully built (Clove tasks 1–3 + Winston task 4).
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Briar Phase 2 self-review — clean pass. Validated: fleet-keying.mjs E1/E2/E3 pass and correctly exercise agent_id keying (not bypass); Task 2 park-path trace accurate (step-06 "strike 2" prose nuance correctly classified as Phase 6 item, not a routing bug); Sol lib/ line matches ADR-0067 channel-hardening exactly; OPEN→Decision resolution correct; two lessons well-formed. 9/9 smoke scenarios pass; crossref-lint clean. Verdict: done → Eric.
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Fixed Eric PR #299 minors — M1: `fleet-keying.mjs` `readStrikeCount` now returns `STRIKE_CAP` on corruption (matches `run-gates.mjs` fail-safe, prevents false PASS on corrupt fixture); M2: added `## Cleanup Items` entry for step-06 "strike 2" prose → Phase 6 ceiling-prose pass; M3: clarified Task 3 aggregate to name both harness entry points (`run-all.mjs` 6/6, `fleet-keying.mjs` 3/3). All smoke scenarios pass; crossref-lint clean.
 
 ---
 
 ## PR Readiness
 
-Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 2 fully built (Clove tasks 1–3 + Winston task 4).
+Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 2 Briar self-review (clean pass).
 
-- [x] No critical or major issues — all Eric findings fixed (1 major, 4 minors fixed, 1 minor deferred to Phase 5)
+- [x] No critical or major issues — all Eric findings fixed (1 major, 4 minors fixed, 1 minor deferred to Phase 5); Phase 2 Briar self-review clean (no new findings)
 - [x] Types correct — hooks are `.mjs` (not TypeScript); no `any`, no unsafe `as` in build scripts
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — 6 smoke scenarios (A, B, B.5, B.6, C, D) including multi-line `may_not_run` bypass coverage
+- [x] Tests written for new logic and edge cases — 9 smoke scenarios (A, B, B.5, B.6, C, D + E1/E2/E3 fleet-keying) pass across two harnesses: `run-all.mjs` (6/6) + `fleet-keying.mjs` (3/3)
 - [x] All debugged issues resolved (no `open` debugged entries)
-- [x] Build passes — `pnpm prism:crossref-lint` passes clean. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch). Literal-allowlist updated to exempt `.claude/hooks` from leftover-token guard.
+- [x] Build passes — `pnpm prism:crossref-lint` passes clean (confirmed 2026-06-26). `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch). Literal-allowlist updated to exempt `.claude/hooks` from leftover-token guard.
 - [ ] PR description up to date
 - [x] `.gitignore` now excludes `.prism/evidence/` — major finding resolved; `git check-ignore` confirms all evidence files excluded
 - [x] `stop_hook_active` confirmed absent from Stop payload; 3-strike counter is sole ceiling — documented in Decisions, no implementation gap
@@ -594,6 +624,7 @@ Living checklist — updated by `code-review-self` (Briar). Reflects state after
 - [x] `SKILL_ID_TO_PERSONA` drift deferred to Phase 5 — documented in Cleanup Items
 - [x] Phase 2 validation complete — SubagentStop wiring confirmed, Sol routing table consumes `needs-stronger-model` without code change, fleet keying proven via fleet-keying.mjs (9/9 scenarios pass)
 - [x] Phase 2 task 4 complete — single-contract wiring settled in `report-back.md` (gate-ratified-before-return invariant, cites ADR-0067); second Open Question resolved to a Decision; no ADR needed (confirmed)
+- [x] Task 2 park-path prose nuance confirmed correctly classified — step-06 "strike 2" vs hook "strike 3" is illustrative description, not a routing bug; hook cap is authoritative; Phase 6 ceiling-prose item
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1–2; decisions promote at epic close
 
-**Last updated:** 2026-06-26
+**Last updated:** 2026-06-26 (after Eric PR #299 minors fixed)

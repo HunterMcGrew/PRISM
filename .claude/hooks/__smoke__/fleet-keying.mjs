@@ -50,6 +50,9 @@ function cleanup(tmpDir) {
   try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
 }
 
+// Must match run-gates.mjs STRIKE_CAP so corruption-path assertions agree with production.
+const STRIKE_CAP = 3;
+
 const PASS = '\x1b[32mPASS\x1b[0m';
 const FAIL = '\x1b[31mFAIL\x1b[0m';
 
@@ -122,8 +125,13 @@ function readStrikeCount(evidenceDir) {
   try {
     const raw = JSON.parse(readFileSync(strikePath, 'utf8'));
     return raw.count ?? 0;
-  } catch {
-    return 0;
+  } catch (e) {
+    // Mirrors run-gates.mjs corruption behavior: fail safe to cap rather than resetting
+    // to 0. Returning 0 would let a corrupt-file fixture false-PASS a strike-count assertion.
+    process.stderr.write(
+      `[fleet-keying] strikes.json corrupted (${e.message}) — returning STRIKE_CAP (${STRIKE_CAP}) to match production fail-safe.\n`
+    );
+    return STRIKE_CAP;
   }
 }
 
