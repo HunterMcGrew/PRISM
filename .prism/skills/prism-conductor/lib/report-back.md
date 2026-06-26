@@ -4,6 +4,8 @@ Reference doc for what a dispatched persona returns to Sol and how Sol routes it
 
 Every dispatched persona does two things when it finishes: it writes its work to the branch plan (the durable content bus — Briar to `## Review Issues`, Sasha to `## Debugged Issues`, Winston to `## Implementation Tasks` / `## Decisions`), **and** it returns a structured report-back to Sol. The report-back is the run-control channel; it carries no work content, only the verdict and signals Sol routes on. Sol's routing is deterministic — it applies the table and never interprets the work behind a verdict.
 
+**The verdict Sol routes on is gate-ratified before the persona returns.** Sol trusts the returned verdict and reads nothing else to route — `report.json` (the gate's input) and the model's structured return are one contract, gated once, so by the time Sol sees a verdict the runtime has already ratified or overridden it against real evidence (per [ADR-0067](../../../spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md)). The `ratified-verdict.json` the gate writes is an audit artifact — what ran, exit codes, strike count — never a routing input; Sol never reads it. This is the channel-hardening invariant that keeps Sol's determinism safe without any Sol-side contract change.
+
 ## Primary verdict
 
 Exactly one per dispatch. It routes the lane.

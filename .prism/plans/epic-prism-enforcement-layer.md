@@ -54,6 +54,12 @@ Held by Hunter as design outputs on his Desktop, not yet in repo. They are refer
   - **Implementation guidance:** make `report.json` (the gate's input) and the model's structured return to Sol the *same* contract, so there is one verdict, gated once. Whether Sol reads the return or reads `report.json` is a reference-file choice settled in Phase 2.
   - → promoted to ADR-0067 (same principle) + Sol `lib/` reference edit (no separate ADR).
 
+- **Single-contract wiring settled: one contract, Sol reads the return (was the second Open Question; resolved in Phase 2 validation).** `report.json` and the model's structured return are the *same* contract, gated once; Sol reads the returned verdict and nothing else to route.
+  - **Root cause it resolves:** the channel-hardening Decision left open whether `report.json` *is* the return Sol reads, or whether Sol reads its own schema return with the hook only guaranteeing the two agree — posed as the second Open Question with "one contract, Sol reads the return" as the default path.
+  - **Why settled on the default path:** Phase 2 task 2 validation confirmed Sol's routing table consumes the returned verdict (including the gate-forced `needs-stronger-model`) with no Sol code change. The return is gate-ratified before Sol sees it; `ratified-verdict.json` is audit-only and never a routing input. A second contract or a separate routing file would have reintroduced the cross-worktree file-read problem channel-hardening exists to avoid.
+  - **Confirm no ADR needed:** correct — the Sol seam is a one-to-two-line `lib/` reference edit (now in `report-back.md`), not a durable cross-cutting decision of its own. ADR-0067 already carries the channel-hardening principle this resolution rests on; a second ADR would duplicate it.
+  - → promoted to Sol `lib/` reference edit in `report-back.md` (no separate ADR — ADR-0067 already carries the principle).
+
 - **Persona identity resolves payload-first; the `active-persona` file survives only for the solo path.**
   - **Root cause:** the prototype's `echo "clove" > .prism/active-persona` is shared mutable state that races under fleet/worktree concurrency.
   - **Chosen approach:** a shared `resolve-persona` helper. Order: (1) `payload.agent_type` maps to a `gates.json` key → use it (orchestrated path, race-free, no file); (2) `agent_type` present but not a gates key (e.g. `Explore`, `general-purpose`) → exit 0, not a gated dispatch; (3) no `agent_type` (solo main-loop) → read `.prism/active-persona`, which the skill writes on startup — safe because solo = single persona owns the session.
@@ -546,7 +552,6 @@ All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (
 ## Open Questions
 
 - **OPEN — TBD, needs Hunter input.** Whether Phase 4 emits hooks into `.codex/` now or defers until Codex hook parity is confirmed. **Default path (used until resolved):** emit to `.claude/` + `templates/install/` only; gate `.codex/` emission behind a confirmed-parity check, since leg 1 portability is explicitly not a near-term driver.
-- **OPEN — TBD, needs Hunter input.** Whether `report.json` *is* the structured return Sol reads, or Sol reads its own schema return and the hook only guarantees they agree. **Default path:** make them one contract (Phase 2 task) and have Sol read the return; revisit only if a divergence surfaces in Phase 2 validation.
 
 ---
 
@@ -567,12 +572,13 @@ All three pass. Full harness: `run-all.mjs` (6 scenarios) + `fleet-keying.mjs` (
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Corrected `gates.json#clove` lint command — `prism:lint` does not exist as a script; replaced with `prism:crossref-lint` (the correct lint analog for this repo). Discovered when the gate fired on stop and correctly blocked a false `done` claim.
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Eric's PR #298 review findings — Major: removed unconditional `break` in `extractEffectiveCommand` so all non-heredoc lines are scanned for `may_not_run` matches (multi-line bypass closed); added Scenario B.6 smoke coverage (4 sub-tests). Minor 1: precondition failures no longer burn strike cap. Minor 2: Scenario A assertion corrected from `'done-override'` (never in stderr) to `'types'` (gate ID). Minor 3: non-blocking warning added when a gate fails unclaimed. Minor 4: ledger match uses `.trim()`. Minor 5 (SKILL_ID_TO_PERSONA drift): deferred to Phase 5 — documented in Cleanup Items. All 6 smoke scenarios pass; crossref-lint clean.
 - 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 tasks 1–3 — Clove validated SubagentStop fires under real Sol dispatch (agent_id-keyed runKeys confirmed in .prism/evidence/), confirmed Sol's routing table consumes `needs-stronger-model` without code change (report-back.md + step-05 + step-06 trace), and proved fleet keying prevents cross-lane collision via fleet-keying.mjs (3 new scenarios, 9/9 total). Full harness clean; crossref-lint clean. Winston continues Phase 2 task 4 on this branch.
+- 2026-06-26 [hmcgrew/issue-292-orchestration-subagentstop-sol]: Phase 2 task 4 — Winston settled the single-contract wiring: added the gate-ratified-before-return invariant to `report-back.md` (one contract, Sol reads the return, `ratified-verdict.json` is audit-only, cites ADR-0067), closed the second Open Question by promoting it to a resolved Decision, and confirmed no ADR needed (ADR-0067 already carries the principle). Landed two dogfooding lessons (PowerShell BOM breaks JSON.parse; gated persona's own Stop gate disrupts report-back). Phase 2 fully built (Clove tasks 1–3 + Winston task 4).
 
 ---
 
 ## PR Readiness
 
-Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 1 self-review.
+Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 2 fully built (Clove tasks 1–3 + Winston task 4).
 
 - [x] No critical or major issues — all Eric findings fixed (1 major, 4 minors fixed, 1 minor deferred to Phase 5)
 - [x] Types correct — hooks are `.mjs` (not TypeScript); no `any`, no unsafe `as` in build scripts
@@ -587,6 +593,7 @@ Living checklist — updated by `code-review-self` (Briar). Reflects state after
 - [x] Precondition failures no longer burn strike cap — protocol misses re-prompt without striking
 - [x] `SKILL_ID_TO_PERSONA` drift deferred to Phase 5 — documented in Cleanup Items
 - [x] Phase 2 validation complete — SubagentStop wiring confirmed, Sol routing table consumes `needs-stronger-model` without code change, fleet keying proven via fleet-keying.mjs (9/9 scenarios pass)
+- [x] Phase 2 task 4 complete — single-contract wiring settled in `report-back.md` (gate-ratified-before-return invariant, cites ADR-0067); second Open Question resolved to a Decision; no ADR needed (confirmed)
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1–2; decisions promote at epic close
 
 **Last updated:** 2026-06-26

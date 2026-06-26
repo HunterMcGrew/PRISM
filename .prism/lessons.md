@@ -234,6 +234,18 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **How to apply:** Treat the repo-root checkout as untrusted after any worktree-isolated segment. Recover deterministically after each merge — `git fetch origin && git checkout main && git reset --hard origin/main` — instead of relying on `--ff-only`. Before resetting, capture any uncommitted plan/source WIP in the root to /tmp (it's a leak, but may hold a freshly-authored artifact). Don't pass `--delete-branch` to `gh pr merge` when a worktree may hold the branch — it aborts the cleanup mid-switch and is what knocks the root onto the branch.
 
+## Windows PowerShell `Set-Content` / `Out-File -Encoding utf8` emits a UTF-8 BOM that breaks `JSON.parse`
+
+**Why:** 2026-06-26 (Phase 2 enforcement dogfooding) — a `report.json` written via PowerShell `Set-Content` carried a UTF-8 BOM, and the live Stop gate's `JSON.parse` rejected it ("not valid JSON"), recording a strike against the dispatch. PowerShell 5.1's `utf8` encoding is BOM-prefixed by design; the BOM is invisible in most editors but fatal to a strict JSON parser.
+
+**How to apply:** For any gate-consumed or machine-parsed JSON (`report.json`, evidence artifacts, conductor-state), write BOM-free — use Node `fs.writeFileSync(path, JSON.stringify(...), 'utf8')` or the Write tool (both BOM-free). Never write such files with PowerShell `Set-Content` / `Out-File -Encoding utf8`. If a parser rejects a file that looks valid, suspect a leading BOM first.
+
+## A live Stop gate fires on the gated persona's own dispatch — verify lane state from the durable bus, not the chat report
+
+**Why:** 2026-06-26 (Phase 2 enforcement dogfooding) — the enforcement floor's Stop/SubagentStop gate fires on the completion of any persona with a `gates.json` key, including the implementer building the floor on its own dispatch. The gated persona spends its final turns satisfying its own gate (writing `report.json`, clearing strikes) rather than cleanly reporting back, so the chat report-back can be disrupted or incomplete even when the work landed.
+
+**How to apply:** When a dispatch is itself gate-enforced (the persona has a `gates.json` key), read lane state from the durable content bus — the plan's `## History` / validation sections, `.prism/evidence/<runKey>/`, the branch diff — rather than trusting the chat report. The gate and the report-back compete for the persona's final turns; the durable artifacts are authoritative. This only affects gated personas (those with a `gates.json` entry); ungated dispatches report back normally.
+
 ## A worker and its self-reviewer can confidently misread the same spec — verify a reviewer's plan-claim against the source text before applying the fix it proposes
 
 **Why:** 2026-06-24 (epic-prism-consumer-boundary, L8) — Atlas built the acceptance-criteria offer as *unconditional*, asserting "the plan says unconditional"; Briar then "confirmed" it and proposed aligning the prose to unconditional. The plan said **skip-if-exists** in two places and "unconditional" in none — both agents collapsed two distinct properties (a skip-if-exists guard vs a user-skippable offer) into one. Applying the reviewer's proposed fix would have shipped behavior the plan explicitly rejects (the offer re-firing on every reconfigure). Caught by grepping the plan for the literal claim; root cause was partly an ambiguous plan line that compressed two properties into one bullet.
