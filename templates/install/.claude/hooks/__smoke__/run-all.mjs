@@ -484,6 +484,7 @@ function assert(scenarioName, condition, message) {
 //   E3: Clove attempts Write to .prism/evidence/smoke/strikes.json → exit 2 (denylist)
 //   E4: Clove attempts Write to .prism/evidence/smoke/ledger.jsonl → exit 2 (denylist)
 //   E5: Clove attempts Write to .prism/evidence/smoke/ratified-verdict.json → exit 2 (denylist)
+//   E5b: Clove attempts Write to .prism/evidence/smoke/baseline.json → exit 2 (denylist — Bug 2 gate state)
 //   E6: Clove attempts Write to .prism/evidence/smoke/report.json → exit 0 (carve-out)
 //   E7: Clove attempts Write to .claude/hooks/__smoke__/anything.mjs → exit 0 (smoke not protected)
 //   E8: Clove attempts Bash rm .prism/evidence/smoke/strikes.json → exit 2 (may_not_run)
@@ -546,6 +547,12 @@ function assert(scenarioName, condition, message) {
   const okE5 = assert(name, rE5.code === 2,
     `E5: expected exit 2 for Write to ratified-verdict.json (gate-state-protected), got ${rE5.code}. stderr: ${rE5.stderr.substring(0, 200)}`);
 
+  // E5b: gate state — baseline.json (Bug 2's per-runKey fresh-gate baseline). A forged
+  // failed-baseline routes a real regression into the "pre-existing" branch → false done.
+  const rE5b = runGuardWrite('.prism/evidence/smoke/baseline.json');
+  const okE5b = assert(name, rE5b.code === 2,
+    `E5b: expected exit 2 for Write to baseline.json (gate-state-protected — Bug 2 baseline), got ${rE5b.code}. stderr: ${rE5b.stderr.substring(0, 200)}`);
+
   // E6: carve-out — report.json IS the persona's lawful write channel → must permit
   const rE6 = runGuardWrite('.prism/evidence/smoke/report.json');
   const okE6 = assert(name, rE6.code === 0,
@@ -566,7 +573,7 @@ function assert(scenarioName, condition, message) {
   const okE9 = assert(name, rE9.code === 0,
     `E9: expected exit 0 for Write to src/index.ts (denylist is selective, not universal), got ${rE9.code}. stderr: ${rE9.stderr.substring(0, 200)}`);
 
-  if (okE1 && okE2 && okE3 && okE4 && okE5 && okE6 && okE7 && okE8 && okE9) {
+  if (okE1 && okE2 && okE3 && okE4 && okE5 && okE5b && okE6 && okE7 && okE8 && okE9) {
     console.log(`${PASS} ${name}`);
   }
 }
@@ -846,6 +853,10 @@ function assert(scenarioName, condition, message) {
 //   I.x: echo hi & rm -rf .prism/evidence                 → exit 2 (background &)
 //   I.y: echo hi\nrm src/foo.ts                           → exit 0 (NEWLINE negative — no over-block)
 //   I.z: cat <<'EOF'\nrm -rf .prism/evidence\nEOF         → exit 0 (heredoc body excluded under \n join)
+//
+//   baseline.json gate-state protection (Bug 2 — the forge vector Eric reproduced):
+//   I.aa: echo '{"types":1}' > .prism/evidence/r/baseline.json → exit 2 (redirect forge of baseline DENY)
+//   I.ab: echo '{}' > .prism/evidence/r/report.json            → exit 0 (Bash-path carve-out NOT over-extended)
 // ============================================================
 {
   const name = 'I: Bash-path protected-write + rm-variant denial (findings 5–6)';
@@ -969,8 +980,18 @@ function assert(scenarioName, condition, message) {
     const rZ = runGuardBash("cat <<'EOF'\nrm -rf .prism/evidence\nEOF");
     const okZ = assert(name, rZ.code === 0, `I.z: expected exit 0 (rm lives in heredoc data, not an executable segment — #298 heredoc break preserved under \\n join), got ${rZ.code}. stderr: ${rZ.stderr.substring(0, 200)}`);
 
+    // baseline.json forge vector (Bug 2) — a redirect-write of a forged failed baseline routes a
+    // real types/lint regression into the "pre-existing, not my regression" branch → false done.
+    // The const fix lights up both paths; I.aa pins the Bash-path arm Eric reproduced as PERMIT.
+    const rAA = runGuardBash(`echo '{"types":1,"lint":1}' > .prism/evidence/smoke/baseline.json`);
+    const okAA = assert(name, rAA.code === 2, `I.aa: expected exit 2 (redirect forge of baseline.json — gate-state-protected), got ${rAA.code}. stderr: ${rAA.stderr.substring(0, 200)}`);
+
+    // Carve-out is not over-extended to report.json on the Bash path either — the lawful channel holds.
+    const rAB = runGuardBash(`echo '{}' > .prism/evidence/smoke/report.json`);
+    const okAB = assert(name, rAB.code === 0, `I.ab: expected exit 0 (report.json redirect is the lawful channel — protection must not over-extend), got ${rAB.code}. stderr: ${rAB.stderr.substring(0, 200)}`);
+
     if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK && okL && okM && okN && okO && okP && okQ &&
-        okR && okS && okT && okU && okV && okW && okX && okY && okZ) console.log(`${PASS} ${name}`);
+        okR && okS && okT && okU && okV && okW && okX && okY && okZ && okAA && okAB) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }

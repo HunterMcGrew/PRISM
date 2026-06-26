@@ -46,7 +46,7 @@ const PROTECTED_WRITE_PATHS = [
   '.claude/settings.json',
 ];
 const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
-const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json'];
+const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json', 'baseline.json'];
 
 // The complete, closed set of POSIX control operators that start a NEW command head:
 // sequence (;), background (&), and/or (&&, ||), pipe (|), and NEWLINE. This is fixed by
@@ -147,7 +147,7 @@ if (toolName === 'Bash' && toolInput.command) {
   if (commandDeletesEvidence(effectiveCmd)) {
     process.stderr.write(
       `[ownership-guard] Denied: this Bash command deletes a .prism/evidence/ path.\n` +
-      `Gate state (strikes.json, ledger.jsonl, ratified-verdict.json) is hook-managed;\n` +
+      `Gate state (strikes.json, ledger.jsonl, ratified-verdict.json, baseline.json) is hook-managed;\n` +
       `${persona} may not delete evidence regardless of rm flag form. This is a lane boundary.\n`
     );
     process.exit(2);
@@ -212,7 +212,7 @@ if (writeTools.has(toolName)) {
     if (PROTECTED_EVIDENCE_BASENAMES.includes(basename)) {
       process.stderr.write(
         `[ownership-guard] Denied: '${normalizedPath}' is gate-state-protected.\n` +
-        `Gate state files (strikes.json, ledger.jsonl, ratified-verdict.json) are written\n` +
+        `Gate state files (strikes.json, ledger.jsonl, ratified-verdict.json, baseline.json) are written\n` +
         `only by the hook runtime — not by persona tool calls. The persona's only writable\n` +
         `evidence file is its own report.json (e.g. .prism/evidence/<runKey>/report.json).\n`
       );
