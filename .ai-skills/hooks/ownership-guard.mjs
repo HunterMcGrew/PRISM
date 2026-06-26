@@ -95,7 +95,16 @@ const toolInput = payload.tool_input ?? {};
 if (toolName === 'Bash' && toolInput.command) {
   const cmd = toolInput.command;
   const effectiveCmd = extractEffectiveCommand(cmd);
-  const forbidden = may_not_run.find(sub => effectiveCmd.includes(sub));
+  // Evidence-rm prohibitions (e.g. "rm .prism/evidence", "rm -rf .prism/evidence") are the
+  // declarative floor for evidence deletion, but a pure substring match over-blocks reads
+  // that merely mention the pattern (grep rm .prism/evidence/...). Defer those entries to the
+  // structural commandDeletesEvidence scan, which fires only when rm is the operating command;
+  // every other may_not_run entry stays a strict substring lane boundary.
+  const forbidden = may_not_run.find(sub => {
+    if (!effectiveCmd.includes(sub)) return false;
+    if (/^rm\b.*\.prism\/evidence/.test(sub)) return commandDeletesEvidence(effectiveCmd);
+    return true;
+  });
   if (forbidden) {
     process.stderr.write(
       `[ownership-guard] Denied: '${effectiveCmd.trim()}' contains '${forbidden}', which ${persona} may not run.\n` +
@@ -288,34 +297,34 @@ function extractEffectiveCommand(cmd) {
 }
 
 /**
- * Returns the first protected path a Bash command would write, or null if none.
+ * Returns the first protected path a Bash command would WRITE, or null if none.
  *
- * A command "writes" a protected path when it pairs a mutation operator (redirect,
- * tee, cp, mv, sed -i, dd) with a protected path string. Conservative by design: a
- * benign command that merely mentions a protected path next to a redirect is denied,
- * which is acceptable because hooks are authored in canonical source, never via Bash
- * redirect to the runtime (finding 5).
+ * A command writes a protected path only when that path is the destination of a mutation
+ * operator — not when it merely co-occurs with one. The write targets are computed by
+ * collectWriteTargets (redirect right-hand side, tee args, cp/mv destination, sed -i / dd
+ * file arg); a protected path appearing only as a read source (`cat X >`, `node X <`,
+ * `git diff -- X`, `grep X`) or behind a non-protected redirect target never trips it.
+ *
+ * Conservative bias survives on genuine ambiguity (a redirect whose target we can't
+ * confidently parse still matches by substring within that target token), but unambiguous
+ * reads of a protected path are permitted (finding 5; Briar Issue #300 self-review).
  */
 function commandWritesProtectedPath(effectiveCmd) {
-  const hasMutationOperator =
-    effectiveCmd.includes('>') ||
-    /\btee\b/.test(effectiveCmd) ||
-    /\bcp\s/.test(effectiveCmd) ||
-    /\bmv\s/.test(effectiveCmd) ||
-    /\bsed\s+-i/.test(effectiveCmd) ||
-    /\bdd\s/.test(effectiveCmd);
+  const targets = collectWriteTargets(effectiveCmd);
+  if (targets.length === 0) return null;
 
-  if (!hasMutationOperator) return null;
+  for (const target of targets) {
+    for (const protectedPath of PROTECTED_WRITE_PATHS) {
+      if (target.includes(protectedPath)) return protectedPath;
+    }
+    if (target.includes(PROTECTED_LIB_PREFIX)) return PROTECTED_LIB_PREFIX;
 
-  for (const protectedPath of PROTECTED_WRITE_PATHS) {
-    if (effectiveCmd.includes(protectedPath)) return protectedPath;
-  }
-  if (effectiveCmd.includes(PROTECTED_LIB_PREFIX)) return PROTECTED_LIB_PREFIX;
-
-  // Protected gate-state files under .prism/evidence/ (by basename, anywhere in the path).
-  if (effectiveCmd.includes('.prism/evidence/')) {
-    for (const basename of PROTECTED_EVIDENCE_BASENAMES) {
-      if (effectiveCmd.includes(basename)) return `.prism/evidence/.../${basename}`;
+    // Protected gate-state files under .prism/evidence/ — match only when the write
+    // target itself names both the evidence dir and a protected basename.
+    if (target.includes('.prism/evidence/')) {
+      for (const basename of PROTECTED_EVIDENCE_BASENAMES) {
+        if (target.includes(basename)) return `.prism/evidence/.../${basename}`;
+      }
     }
   }
 
@@ -323,14 +332,132 @@ function commandWritesProtectedPath(effectiveCmd) {
 }
 
 /**
- * Returns true if a Bash command deletes a .prism/evidence/ path with any rm flag form.
+ * Collects the file tokens a Bash command would actually write to.
  *
- * Closes the variant-flag gap (rm -f / rm -fr / rm --force) that the may_not_run
- * substrings miss because the flag sits between 'rm' and the path (finding 6). The
- * declarative may_not_run strings remain the floor; this is the structural backstop.
+ * Associates each mutation operator with its target rather than scanning the whole command:
+ *   - redirect (`>`, `>>`): the token immediately after the operator. `2>&1` and other
+ *     fd-duplications (`>&N`) are skipped — they redirect a descriptor, not a file.
+ *   - `tee`: every non-flag argument to tee (tee writes its file args).
+ *   - `cp` / `mv`: the destination — the last positional (non-flag) argument.
+ *   - `sed -i` / `dd`: the operated-on file argument(s) (sed -i: positionals after the
+ *     script; dd: the `of=` operand).
+ *
+ * Splitting on command separators (`;`, `&&`, `||`, `|`, `&`) keeps each segment's operator
+ * bound to its own arguments, so a read segment piped into a write segment doesn't leak.
+ */
+function collectWriteTargets(effectiveCmd) {
+  const targets = [];
+
+  for (const segment of splitCommandSegments(effectiveCmd)) {
+    const tokens = tokenize(segment);
+
+    // Redirects: scan for `>`/`>>` operators (possibly fused with an fd, e.g. `2>file`).
+    for (let i = 0; i < tokens.length; i++) {
+      const redirectTarget = redirectTargetFor(tokens, i);
+      if (redirectTarget !== null) targets.push(redirectTarget);
+    }
+
+    const head = commandHead(tokens);
+
+    if (head === 'tee') {
+      // tee writes every file argument (flags like -a are skipped).
+      for (const arg of tokens.slice(tokens.indexOf('tee') + 1)) {
+        if (!arg.startsWith('-') && !isRedirectToken(arg)) targets.push(arg);
+      }
+    }
+
+    if (head === 'cp' || head === 'mv') {
+      // Destination is the last positional argument.
+      const positionals = tokens.slice(tokens.indexOf(head) + 1).filter(t => !t.startsWith('-') && !isRedirectToken(t));
+      if (positionals.length >= 1) targets.push(positionals[positionals.length - 1]);
+    }
+
+    if (head === 'sed' && /(^|\s)-i/.test(segment)) {
+      // sed -i edits its file args in place: positionals after the script expression.
+      // Take every non-flag positional except the first (the script), conservatively.
+      const after = tokens.slice(tokens.indexOf('sed') + 1).filter(t => !t.startsWith('-') && !isRedirectToken(t));
+      for (const f of after.slice(1)) targets.push(f);
+    }
+
+    if (head === 'dd') {
+      for (const t of tokens) {
+        if (t.startsWith('of=')) targets.push(t.slice(3));
+      }
+    }
+  }
+
+  return targets;
+}
+
+/**
+ * Returns the redirect target file at token index i, or null if tokens[i] is not a
+ * file-writing redirect.
+ *
+ * Handles three forms:
+ *   `>` / `>>` as a standalone token  → target is tokens[i+1]
+ *   `>file` / `2>file` / `>>file`     → target is the suffix after the operator
+ * Fd-duplications (`>&1`, `2>&1`, `&>`) write no file and return null.
+ */
+function redirectTargetFor(tokens, i) {
+  const tok = tokens[i];
+  const m = tok.match(/^\d*(>>?)(.*)$/);
+  if (!m) return null;
+
+  const rest = m[2];
+  // Fd-duplication (`>&1`, `2>&1`) — redirects a descriptor, not a file.
+  if (rest.startsWith('&')) return null;
+
+  if (rest.length > 0) return rest; // fused form: `>file`
+  // Standalone operator: the file is the next token (skip an fd-dup like `&1`).
+  const next = tokens[i + 1];
+  if (next === undefined || next.startsWith('&')) return null;
+  return next;
+}
+
+function isRedirectToken(tok) {
+  return /^\d*>>?/.test(tok) || /^<+/.test(tok);
+}
+
+/** Splits a command string on shell separators so each segment carries its own operators. */
+function splitCommandSegments(cmd) {
+  return cmd.split(/(?:&&|\|\||[;|&])/).map(s => s.trim()).filter(Boolean);
+}
+
+/** Whitespace tokenization — sufficient for the redirect/command-head analysis here. */
+function tokenize(segment) {
+  return segment.split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Returns the effective command name of a segment — the first token that isn't an
+ * environment-variable assignment (`FOO=bar`) or a redirect token.
+ */
+function commandHead(tokens) {
+  for (const tok of tokens) {
+    if (isRedirectToken(tok)) continue;
+    if (/^\w+=/.test(tok)) continue; // leading env assignment
+    return tok;
+  }
+  return '';
+}
+
+/**
+ * Returns true if a Bash command deletes a .prism/evidence/ path with `rm` as the
+ * operating command (any flag form).
+ *
+ * Anchors `rm` as a command head per segment — so `grep rm .prism/evidence/...` (rm as a
+ * search string) and `echo "rm .prism/evidence/"` (rm as data) are permitted, while
+ * `rm -f .prism/evidence/...` / `rm --force ...` (rm actually deleting) deny. Closes the
+ * variant-flag gap the may_not_run substrings miss (finding 6); the declarative
+ * may_not_run strings remain the floor, this is the structural backstop.
  */
 function commandDeletesEvidence(effectiveCmd) {
-  return /\brm\b[^\n]*\.prism\/evidence\//.test(effectiveCmd);
+  for (const segment of splitCommandSegments(effectiveCmd)) {
+    const tokens = tokenize(segment);
+    if (commandHead(tokens) !== 'rm') continue;
+    if (tokens.some(t => t.includes('.prism/evidence/'))) return true;
+  }
+  return false;
 }
 
 /**

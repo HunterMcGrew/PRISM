@@ -807,6 +807,13 @@ function assert(scenarioName, condition, message) {
 // ============================================================
 // Scenario I: Bash-path protected-write + rm-variant denial (Issue #300 findings 5–6)
 //
+// Proves both arms: real writes/redirects/deletes that TARGET a protected path DENY
+// (exit 2); reads that merely MENTION a protected path PERMIT (exit 0). The read-only
+// negative controls (I.h–I.k) are the Briar Issue #300 Major repros — they regress the
+// co-occurrence over-block where the protected path was matched anywhere in the command
+// rather than as the mutation's actual destination.
+//
+//   Positive (must DENY — protected path is the mutation target):
 //   I.a: echo x > .claude/hooks/run-gates.mjs      → exit 2 (redirect to protected path)
 //   I.b: tee .claude/hooks/gates.json               → exit 2 (tee to protected path)
 //   I.c: sed -i ... .claude/hooks/ownership-guard.mjs → exit 2 (sed -i to protected path)
@@ -814,6 +821,12 @@ function assert(scenarioName, condition, message) {
 //   I.e: rm --force .prism/evidence/smoke/ledger.jsonl → exit 2 (rm --force variant)
 //   I.f: echo x > src/foo.ts                         → exit 0 (negative — not protected)
 //   I.g: rm src/foo.ts                               → exit 0 (negative — not evidence)
+//
+//   Read-only negative controls (must PERMIT — protected path is a read source/arg only):
+//   I.h: git diff main -- .claude/hooks/gates.json 2>&1  → exit 0 (stderr fd-dup, pure read)
+//   I.i: cat .claude/hooks/run-gates.mjs > /tmp/out.txt  → exit 0 (hook is read source; safe target)
+//   I.j: node .claude/hooks/run-gates.mjs < x > /tmp/y   → exit 0 (hook run, output to safe path)
+//   I.k: grep rm .prism/evidence/smoke/ledger.jsonl      → exit 0 (rm is search string, not the command)
 // ============================================================
 {
   const name = 'I: Bash-path protected-write + rm-variant denial (findings 5–6)';
@@ -871,7 +884,21 @@ function assert(scenarioName, condition, message) {
     const rG = runGuardBash('rm src/foo.ts');
     const okG = assert(name, rG.code === 0, `I.g: expected exit 0 (rm of non-evidence path), got ${rG.code}. stderr: ${rG.stderr.substring(0, 200)}`);
 
-    if (okA && okB && okC && okD && okE && okF && okG) console.log(`${PASS} ${name}`);
+    // Read-only negative controls — the Briar Issue #300 Major repros. A protected path that
+    // is only a read source/arg (never the mutation's destination) must PERMIT.
+    const rH = runGuardBash('git diff main -- .claude/hooks/gates.json 2>&1');
+    const okH = assert(name, rH.code === 0, `I.h: expected exit 0 (git diff of gates.json; 2>&1 is fd-dup, pure read), got ${rH.code}. stderr: ${rH.stderr.substring(0, 200)}`);
+
+    const rI = runGuardBash('cat .claude/hooks/run-gates.mjs > /tmp/out.txt');
+    const okI = assert(name, rI.code === 0, `I.i: expected exit 0 (hook is read source, redirect target is safe /tmp), got ${rI.code}. stderr: ${rI.stderr.substring(0, 200)}`);
+
+    const rJ = runGuardBash('node .claude/hooks/run-gates.mjs < payload.json > /tmp/result.json');
+    const okJ = assert(name, rJ.code === 0, `I.j: expected exit 0 (running the hook in a test, output to safe path), got ${rJ.code}. stderr: ${rJ.stderr.substring(0, 200)}`);
+
+    const rK = runGuardBash('grep rm .prism/evidence/smoke/ledger.jsonl');
+    const okK = assert(name, rK.code === 0, `I.k: expected exit 0 (grep reads ledger; 'rm' is the search string, not the command), got ${rK.code}. stderr: ${rK.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }
