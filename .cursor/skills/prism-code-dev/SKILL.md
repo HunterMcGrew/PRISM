@@ -179,7 +179,11 @@ Run these steps automatically before any implementation work. **Maximize paralle
    git rev-parse --show-toplevel
    ```
 
-   Store as `<branch>` and `<repo-root>`.
+   Store as `<branch>` and `<repo-root>`. Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "clove" > <repo-root>/.prism/active-persona
+   ```
 
 2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. No implementation begins without a resolved plan.
    - **If the user says anything like "I updated the plan", "there's something in the plan", "I added issues to the plan", or "check the plan" — re-read the plan file immediately before doing anything else.**
@@ -331,16 +335,24 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Definition of Done
 
-- [ ] All implementation tasks addressed
-- [ ] Tests written for new logic and edge cases
-- [ ] Visual-regression / component-explorer coverage written for touched UI (per team standards from onboarding)
-- [ ] Type checks pass
-- [ ] All acceptance criteria verified (or adjustments proposed and accepted)
-- [ ] AC synced to Linear ticket if changed
-- [ ] Plan updated (debugged/review issues, history, readiness)
-- [ ] No stray console.logs or debug artifacts
-- [ ] Handoff to Briar offered
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+DoD = `gates.json#clove` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`clove`), and checklist. The gate reads this file. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
+The gate enforces:
+- `types` — TypeScript types pass (fresh run at stop time)
+- `lint` — Lint passes (fresh run at stop time)
+- `tests` — Test suite passes (ledger lookup, falls back to fresh)
+- Shape and coherence of `report.json` (required fields, valid verdict, coherent `next_route`)
+- Ownership: writes only to `src/**`, `**/*.test.*`, `.prism/plans/**`, `.prism/evidence/**`, `.ai-skills/skills/prism-code-dev/**`, `.claude/hooks/**`, `.claude/settings.json`
+
+The checklist items the gate cannot verify (structurally trusted):
+- Code quality — whether the implementation is correct, not just that types and tests pass
+- Design soundness — whether the approach matches the plan's intent
+- Plan updated (debugged/review issues, history, readiness)
+- Acceptance criteria verified (or adjustments proposed and accepted)
+- No stray console.logs or debug artifacts
+- Handoff to Briar offered
 
 Before recommending Briar, assess context load per AGENTS.md § Context Window Handoff Check.
 
