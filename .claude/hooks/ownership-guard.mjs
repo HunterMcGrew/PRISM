@@ -24,6 +24,29 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { resolvePersona } from './lib/resolve-persona.mjs';
 
+// Paths no persona may write via tools, regardless of its may_write lane.
+// The enforcement runtime and gate state — a gated party editing or resetting
+// the runtime that gates it would void the floor's guarantee (ADR-0067 §
+// gate non-circumventability). The evidence carve-out permits the one file the
+// persona legitimately writes: its own report.json.
+//
+// These are checked BEFORE may_write so a may_write entry can never grant write
+// access to the enforcement surface. No per-persona exception path exists — this
+// is a global invariant by design.
+//
+// lib/ coverage: .claude/hooks/lib/ is entirely enforcement code (resolve-persona.mjs
+// and any future helpers). The prefix match protects all current and future lib/ files
+// without requiring individual path entries per module.
+const PROTECTED_WRITE_PATHS = [
+  '.claude/hooks/run-gates.mjs',
+  '.claude/hooks/ownership-guard.mjs',
+  '.claude/hooks/evidence-ledger.mjs',
+  '.claude/hooks/gates.json',
+  '.claude/settings.json',
+];
+const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
+const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json'];
+
 const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 
 const raw = readFileSync(0, 'utf8');
@@ -98,6 +121,38 @@ if (writeTools.has(toolName)) {
   const relativePath = path.relative(projectDir, path.resolve(payload.cwd ?? projectDir, filePath));
   // Normalize to forward slashes for glob matching on all platforms.
   const normalizedPath = relativePath.replace(/\\/g, '/');
+
+  // Global protected-paths check — runs BEFORE may_write for every persona.
+  // No per-persona override path exists: a may_write entry cannot grant write
+  // access to the enforcement runtime or gate state (ADR-0067 § gate non-circumventability).
+  if (PROTECTED_WRITE_PATHS.includes(normalizedPath) || normalizedPath.startsWith(PROTECTED_LIB_PREFIX)) {
+    process.stderr.write(
+      `[ownership-guard] Denied: '${normalizedPath}' is enforcement-runtime-protected.\n` +
+      `The enforcement runtime (hook scripts, lib/, gates.json, settings.json) cannot be\n` +
+      `written by any persona during a gated dispatch — the gate's guarantee depends on it\n` +
+      `(ADR-0067 § gate non-circumventability).\n` +
+      `To author hook changes, use the canonical source at .ai-skills/hooks/ — the build\n` +
+      `pipeline emits the runtime here. Never write the live runtime directly.\n`
+    );
+    process.exit(2);
+  }
+
+  // Gate-state protection — deny writes to evidence files except report.json.
+  // Hook scripts (run-gates.mjs, evidence-ledger.mjs) write gate state via Node fs,
+  // never via tool calls. The persona's only lawful evidence write is its own report.json.
+  const evidencePrefix = '.prism/evidence/';
+  if (normalizedPath.startsWith(evidencePrefix)) {
+    const basename = path.basename(normalizedPath);
+    if (PROTECTED_EVIDENCE_BASENAMES.includes(basename)) {
+      process.stderr.write(
+        `[ownership-guard] Denied: '${normalizedPath}' is gate-state-protected.\n` +
+        `Gate state files (strikes.json, ledger.jsonl, ratified-verdict.json) are written\n` +
+        `only by the hook runtime — not by persona tool calls. The persona's only writable\n` +
+        `evidence file is its own report.json (e.g. .prism/evidence/<runKey>/report.json).\n`
+      );
+      process.exit(2);
+    }
+  }
 
   const allowed = may_write.some(pattern => matchGlob(pattern, normalizedPath));
   if (!allowed) {

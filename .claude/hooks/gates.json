@@ -57,8 +57,9 @@
         "src/**",
         "**/*.test.*",
         ".prism/plans/**",
-        ".prism/evidence/**",
+        ".prism/evidence/**/report.json",
         ".ai-skills/skills/prism-code-dev/**",
+        ".ai-skills/hooks/**",
         ".claude/hooks/**",
         ".claude/settings.json",
         ".gitignore"
@@ -67,7 +68,9 @@
         "gh pr merge",
         "git merge",
         "git push -f",
-        "git push --force"
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence"
       ]
     }
   }

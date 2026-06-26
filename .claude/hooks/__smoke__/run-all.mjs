@@ -454,6 +454,148 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario E: Protected-paths denylist (gate self-protection — Phase 2 Task C)
+//
+// These assertions verify the global PROTECTED_WRITE_PATHS denylist in
+// ownership-guard.mjs (Phase 2 Task C). They will FAIL until Task C lands —
+// that is expected. Run them after Task C as the verification gate for it.
+//
+// Each sub-test uses the real gates.json (not a synthetic fixture) because the
+// denylist is a module-level const in the guard, not a config value — it applies
+// regardless of the synthetic gate data in scope.
+//
+// Sub-tests:
+//   E1: Clove attempts Write to .claude/hooks/run-gates.mjs    → exit 2 (denylist)
+//   E2: Clove attempts Write to .claude/hooks/gates.json        → exit 2 (denylist)
+//   E3: Clove attempts Write to .prism/evidence/smoke/strikes.json → exit 2 (denylist)
+//   E4: Clove attempts Write to .prism/evidence/smoke/ledger.jsonl → exit 2 (denylist)
+//   E5: Clove attempts Write to .prism/evidence/smoke/ratified-verdict.json → exit 2 (denylist)
+//   E6: Clove attempts Write to .prism/evidence/smoke/report.json → exit 0 (carve-out)
+//   E7: Clove attempts Write to .claude/hooks/__smoke__/anything.mjs → exit 0 (smoke not protected)
+//   E8: Clove attempts Bash rm .prism/evidence/smoke/strikes.json → exit 2 (may_not_run)
+//   E9: Clove attempts Write to src/index.ts → exit 0 (negative control — denylist selective)
+// ============================================================
+{
+  const name = 'E: protected-paths denylist';
+
+  // Use real repo root for these tests — the denylist checks paths relative to CLAUDE_PROJECT_DIR.
+  const env = { CLAUDE_PROJECT_DIR: REPO_ROOT };
+  const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+  // Synthetic gates for these scenarios: Clove persona, broad may_write so we can
+  // confirm the denylist fires BEFORE may_write, not as a may_write miss.
+  const gatesWithBroadWrite = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        // Intentionally broad — includes .claude/hooks/** so any denial is from the denylist, not may_write
+        may_write: [
+          'src/**',
+          '.prism/evidence/**',
+          '.claude/hooks/**',
+          '.prism/plans/**',
+        ],
+        may_not_run: ['rm .prism/evidence'],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-e-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gatesWithBroadWrite, null, 2), 'utf8');
+
+    // Override CLAUDE_PROJECT_DIR for gates.json lookup while using REPO_ROOT paths
+    // for the file path normalization. We need a gates.json the guard can find, but
+    // the denylist is hardcoded to the real enforcement file paths.
+    // Solution: use tmpDir as CLAUDE_PROJECT_DIR (so guard finds the synthetic gates.json),
+    // and use an absolute path for file_path that, when made relative to tmpDir, still
+    // resolves to the canonical denylist paths relative to REPO_ROOT.
+    //
+    // Simpler approach: use REPO_ROOT as CLAUDE_PROJECT_DIR so path normalization
+    // maps to the real relative paths — the real gates.json is at REPO_ROOT too.
+    const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT };
+
+    function runGuardWrite(filePath) {
+      return runHook(guardScript, {
+        session_id: 'smoke-e',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: { file_path: filePath },
+        cwd: REPO_ROOT,
+      }, envReal);
+    }
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-e',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: REPO_ROOT,
+      }, envReal);
+    }
+
+    // E1: enforcement runtime — run-gates.mjs
+    const rE1 = runGuardWrite('.claude/hooks/run-gates.mjs');
+    const okE1 = assert(name, rE1.code === 2,
+      `E1: expected exit 2 for Write to run-gates.mjs (enforcement-runtime-protected), got ${rE1.code}. stderr: ${rE1.stderr.substring(0, 200)}`);
+
+    // E2: gates.json — the ownership data the guard reads
+    const rE2 = runGuardWrite('.claude/hooks/gates.json');
+    const okE2 = assert(name, rE2.code === 2,
+      `E2: expected exit 2 for Write to gates.json (denylist), got ${rE2.code}. stderr: ${rE2.stderr.substring(0, 200)}`);
+
+    // E3: gate state — strikes.json
+    const rE3 = runGuardWrite('.prism/evidence/smoke/strikes.json');
+    const okE3 = assert(name, rE3.code === 2,
+      `E3: expected exit 2 for Write to strikes.json (gate-state-protected), got ${rE3.code}. stderr: ${rE3.stderr.substring(0, 200)}`);
+
+    // E4: gate state — ledger.jsonl
+    const rE4 = runGuardWrite('.prism/evidence/smoke/ledger.jsonl');
+    const okE4 = assert(name, rE4.code === 2,
+      `E4: expected exit 2 for Write to ledger.jsonl (gate-state-protected), got ${rE4.code}. stderr: ${rE4.stderr.substring(0, 200)}`);
+
+    // E5: gate state — ratified-verdict.json
+    const rE5 = runGuardWrite('.prism/evidence/smoke/ratified-verdict.json');
+    const okE5 = assert(name, rE5.code === 2,
+      `E5: expected exit 2 for Write to ratified-verdict.json (gate-state-protected), got ${rE5.code}. stderr: ${rE5.stderr.substring(0, 200)}`);
+
+    // E6: carve-out — report.json IS the persona's lawful write channel → must permit
+    const rE6 = runGuardWrite('.prism/evidence/smoke/report.json');
+    const okE6 = assert(name, rE6.code === 0,
+      `E6: expected exit 0 for Write to report.json (carve-out — persona's lawful report channel), got ${rE6.code}. stderr: ${rE6.stderr.substring(0, 200)}`);
+
+    // E7: smoke tests themselves are NOT protected → must permit
+    const rE7 = runGuardWrite('.claude/hooks/__smoke__/anything.mjs');
+    const okE7 = assert(name, rE7.code === 0,
+      `E7: expected exit 0 for Write to __smoke__/anything.mjs (smoke dir not protected), got ${rE7.code}. stderr: ${rE7.stderr.substring(0, 200)}`);
+
+    // E8: rm via Bash — may_not_run substring match closes shell-deletion vector
+    const rE8 = runGuardBash('rm .prism/evidence/smoke/strikes.json');
+    const okE8 = assert(name, rE8.code === 2,
+      `E8: expected exit 2 for Bash rm .prism/evidence/... (may_not_run substring match), got ${rE8.code}. stderr: ${rE8.stderr.substring(0, 200)}`);
+
+    // E9: negative control — src/index.ts is in may_write and not in denylist → permit
+    const rE9 = runGuardWrite('src/index.ts');
+    const okE9 = assert(name, rE9.code === 0,
+      `E9: expected exit 0 for Write to src/index.ts (denylist is selective, not universal), got ${rE9.code}. stderr: ${rE9.stderr.substring(0, 200)}`);
+
+    if (okE1 && okE2 && okE3 && okE4 && okE5 && okE6 && okE7 && okE8 && okE9) {
+      console.log(`${PASS} ${name}`);
+    }
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {
