@@ -142,26 +142,22 @@ for (const pre of (entry.preconditions ?? [])) {
 }
 
 if (preconditionFailures.length > 0) {
-  // A precondition failure signals the environment was wrong, not the work.
-  // Inject needs-replan or blocked rather than failing the gate.
+  // A precondition failure is a protocol miss — the environment was wrong (e.g. report.json
+  // not found), not a substantive gate failure (work did not hold up). Protocol misses get
+  // a re-prompt without consuming a gate strike, so a missing report file cannot burn the
+  // sole loop ceiling (the 3-strike cap) on what is essentially a setup error.
   const failure = preconditionFailures[0];
   const onFail = failure.pre.on_fail ?? 'needs-replan';
   const message = (
     `[run-gates] Precondition '${failure.pre.id}' failed (→ ${onFail}):\n` +
     `${failure.pre.description}\n` +
     `Check result: ${failure.result.output ?? failure.result.error ?? 'non-zero exit'}\n` +
-    `Resolve the precondition before stopping.\n`
+    `Resolve the precondition before stopping. (This re-prompt does not consume a gate strike.)\n`
   );
 
-  const newStrike = strikeCount + 1;
-  writeStrikeFile(strikeFile, newStrike, runKey);
-
-  if (newStrike >= STRIKE_CAP) {
-    injectNeedsStrongerModel(runKey, persona, evidenceDir, [message]);
-  } else {
-    process.stderr.write(message);
-    process.exit(2);
-  }
+  // No strike increment — precondition misses do not count toward the 3-strike ceiling.
+  process.stderr.write(message);
+  process.exit(2);
 }
 
 // --- Evidence gates ---
@@ -181,6 +177,16 @@ for (const gate of (entry.gates ?? [])) {
   if (claimed && !result.passed) {
     // Persona claimed this checklist item was satisfied — the gate says otherwise.
     gateFailures.push({ gate, result });
+  } else if (!claimed && !result.passed && gate.checklist_key) {
+    // Gate ran, failed, and the persona did not claim it. Non-blocking visibility note:
+    // checklist: {} passes all gates because nothing is claimed, so a failing gate
+    // that goes unclaimed would be silently ignored without this warning. This does not
+    // block the stop — it surfaces the gap so Phase 5 can address unclaimed gates properly.
+    process.stderr.write(
+      `[run-gates] Warning: gate '${gate.id}' failed but '${gate.checklist_key}' was not claimed in the checklist.\n` +
+      `The gate did not block (unclaimed), but the underlying check is failing. ` +
+      `Consider claiming the checklist key or investigating the failure.\n`
+    );
   }
 }
 
@@ -335,7 +341,7 @@ function runGateCheck(gate, runKey, evidenceDir, projectDir) {
       for (let i = lines.length - 1; i >= 0; i--) {
         try {
           const entry = JSON.parse(lines[i]);
-          if (entry.cmd === resolvedCmd && entry.exit_code !== null) {
+          if (entry.cmd?.trim() === resolvedCmd.trim() && entry.exit_code !== null) {
             const expectedExit = gate.check.exit_code ?? 0;
             return { passed: entry.exit_code === expectedExit, exitCode: entry.exit_code, source: 'ledger' };
           }

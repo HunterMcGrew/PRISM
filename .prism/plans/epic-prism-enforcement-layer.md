@@ -443,6 +443,60 @@ These are recorded as confirmed in `## Decisions` but were not independently re-
 - **Problem:** The plan's Phase 1 Smoke Test spec (scenario B.5) requires a `may_not_run` companion check: pipe a `PreToolUse Bash` payload with a forbidden command (`gh pr merge 123`) and assert exit 2 + prohibition message. The harness omits this scenario — all four smoke gate setups use `may_not_run: []`, so the `ownership-guard.mjs` `may_not_run` code path is never exercised. The ownership-guard code looks correct on inspection (`may_not_run.find(sub => effectiveCmd.includes(sub))`), but the gate itself has no test for the actual prohibitions in `gates.json#clove` (`gh pr merge`, `git merge`, `git push -f`, `git push --force`).
 - **Suggested fix:** Add a scenario B.5 sub-test to the harness using a `may_not_run` list with at least `gh pr merge`, assert exit 2 when the Bash payload contains that string, and assert exit 0 for an allowed command (negative control). Smoke harness is in Clove's lane — straightforward addition.
 
+### may_not_run multi-line bypass (Eric PR #298, Major)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** Removed the unconditional `break` after `parts.push(trimmed)` in `extractEffectiveCommand` (`ownership-guard.mjs`). All non-heredoc lines are now scanned for `may_not_run` matches. Heredoc-stop logic preserved — the `break` inside the heredoc-delimiter branch stays. Added Scenario B.6 (4 sub-tests: forbidden on line 2 caught ×2, both-lines-allowed exit 0, heredoc body excluded). All 6 scenarios pass.
+- **File:** `.claude/hooks/ownership-guard.mjs:143`
+- **Problem:** `extractEffectiveCommand` stopped scanning after the first non-empty, non-comment line. A forbidden command on line 2 of a multi-line Bash call was never checked — a realistic bypass since Claude Code regularly produces multi-line Bash calls.
+
+### precondition strikes burn gate ceiling (Eric PR #298, Minor 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Removed `writeStrikeFile` and the `injectNeedsStrongerModel` branch from the precondition failure path. Precondition failures re-prompt with exit 2 but do not increment `strikeCount`. Message updated to note 'This re-prompt does not consume a gate strike.'
+- **File:** `.claude/hooks/run-gates.mjs:157`
+- **Problem:** A precondition failure (e.g. `report.json` not found) was incrementing the strike counter and could trigger `injectNeedsStrongerModel` after 3 misses. A missing report file is a protocol error, not a substantive gate failure — burning the strike cap on setup errors weakened the sole loop ceiling.
+
+### dead smoke assertion for Scenario A (Eric PR #298, Minor 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Changed `r.stderr.includes('done-override') || r.stderr.includes('types')` to `r.stderr.includes('types')`. Updated the scenario comment to document why the old left arm was permanently false.
+- **File:** `.claude/hooks/__smoke__/run-all.mjs:143`
+- **Problem:** `run-gates.mjs` writes the gate ID and real exit code to stderr on a claimed-true failure — not the `on_fail` fixture string `'done-override'`. The dead left arm meant a breaking change to the stderr format (dropping the gate ID) would still look like a passing assertion.
+
+### unclaimed-but-failing gates produce no feedback (Eric PR #298, Minor 3)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added an `else if (!claimed && !result.passed && gate.checklist_key)` branch that emits a non-blocking `process.stderr.write` warning naming the gate and unclaimed key. Does not block the stop.
+- **File:** `.claude/hooks/run-gates.mjs:181`
+- **Problem:** `checklist: {}` passes all gates regardless of how every command exits — nothing is claimed, so nothing fails. An unclaimed-but-failing gate was silently invisible.
+
+### ledger exact-match defeated by trailing whitespace (Eric PR #298, Minor 4)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Changed `entry.cmd === resolvedCmd` to `entry.cmd?.trim() === resolvedCmd.trim()`.
+- **File:** `.claude/hooks/run-gates.mjs:338`
+- **Problem:** Exact string equality would silently fall through to a fresh run if the Bash tool appended a trailing newline to the recorded command — defeating the ledger cost optimization.
+
+### SKILL_ID_TO_PERSONA second source of truth (Eric PR #298, Minor 5)
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `.claude/hooks/lib/resolve-persona.mjs:85`
+- **Problem:** `SKILL_ID_TO_PERSONA` is a hardcoded mapping in `resolve-persona.mjs` that duplicates the skill-ID-to-persona-key relationship that `gates.json` already partially encodes. A roster change (new persona or renamed skill ID) must be updated in two places.
+- **Suggested fix (Phase 5):** Add an `agentType` field to each `PersonaGateEntry` in `gates.json`; resolve by scanning `gatesData` entries for a matching `agentType` instead of a static map. Add a `prism:check` drift assertion to confirm `SKILL_ID_TO_PERSONA` (or its replacement) stays in sync with `gates.json`. Phase 5 owns persona accuracy verification — this belongs there.
+
+---
+
+## Cleanup Items
+
+- `.claude/hooks/lib/resolve-persona.mjs:85` — `SKILL_ID_TO_PERSONA` is a second source of truth for the skill-ID-to-persona-key mapping. Phase 5 accuracy audit: add `agentType` field to `gates.json` entries and resolve by scanning `gatesData` instead of a static map; add a `prism:check` drift assertion. (Eric PR #298, Minor 5, deferred.)
+
 ---
 
 ## Open Questions
@@ -467,6 +521,7 @@ These are recorded as confirmed in `## Decisions` but were not independently re-
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Briar Phase 1 self-review — 1 Major (.gitignore missing `.prism/evidence/` — runtime state must not be committed), 2 Minor (strike counter corruption silently resets loop ceiling; smoke harness omits `may_not_run` companion check). Gate logic, channel-hardening, and 3-strike ceiling verified correct. Verdict: needs-fix → Clove.
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Briar's 3 self-review findings — added `.prism/evidence/` to `.gitignore` (expanded `may_write` to include `.gitignore` first, documented as cross-lane absorption in Decisions); hardened strike-corruption catch to fail safe at cap instead of silently resetting to 0; added Scenario B.5 `may_not_run` smoke coverage (4 sub-tests: `gh pr merge`, `git merge`, `git push --force`, + negative control). All 5 smoke scenarios pass.
 - 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Corrected `gates.json#clove` lint command — `prism:lint` does not exist as a script; replaced with `prism:crossref-lint` (the correct lint analog for this repo). Discovered when the gate fired on stop and correctly blocked a false `done` claim.
+- 2026-06-26 [hmcgrew/issue-291-floor-primitive-clove-solo]: Fixed Eric's PR #298 review findings — Major: removed unconditional `break` in `extractEffectiveCommand` so all non-heredoc lines are scanned for `may_not_run` matches (multi-line bypass closed); added Scenario B.6 smoke coverage (4 sub-tests). Minor 1: precondition failures no longer burn strike cap. Minor 2: Scenario A assertion corrected from `'done-override'` (never in stderr) to `'types'` (gate ID). Minor 3: non-blocking warning added when a gate fails unclaimed. Minor 4: ledger match uses `.trim()`. Minor 5 (SKILL_ID_TO_PERSONA drift): deferred to Phase 5 — documented in Cleanup Items. All 6 smoke scenarios pass; crossref-lint clean.
 
 ---
 
@@ -474,16 +529,18 @@ These are recorded as confirmed in `## Decisions` but were not independently re-
 
 Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 1 self-review.
 
-- [x] No critical or major issues — all 3 Briar findings fixed (1 major, 2 minor)
+- [x] No critical or major issues — all Eric findings fixed (1 major, 4 minors fixed, 1 minor deferred to Phase 5)
 - [x] Types correct — hooks are `.mjs` (not TypeScript); no `any`, no unsafe `as` in build scripts
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — 5 smoke scenarios (A, B, B.5, C, D) cover all Phase 1 gate paths including `may_not_run` prohibitions
+- [x] Tests written for new logic and edge cases — 6 smoke scenarios (A, B, B.5, B.6, C, D) including multi-line `may_not_run` bypass coverage
 - [x] All debugged issues resolved (no `open` debugged entries)
 - [x] Build passes — `pnpm prism:crossref-lint` passes clean. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch). Literal-allowlist updated to exempt `.claude/hooks` from leftover-token guard.
 - [ ] PR description up to date
 - [x] `.gitignore` now excludes `.prism/evidence/` — major finding resolved; `git check-ignore` confirms all evidence files excluded
 - [x] `stop_hook_active` confirmed absent from Stop payload; 3-strike counter is sole ceiling — documented in Decisions, no implementation gap
 - [x] Channel-hardening verified — `ratified-verdict.json` written as audit artifact only; never read back as routing input (confirmed in code + smoke scenario C)
+- [x] Precondition failures no longer burn strike cap — protocol misses re-prompt without striking
+- [x] `SKILL_ID_TO_PERSONA` drift deferred to Phase 5 — documented in Cleanup Items
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 1; decisions promote at epic close
 
 **Last updated:** 2026-06-26

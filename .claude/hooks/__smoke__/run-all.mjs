@@ -96,8 +96,10 @@ function assert(scenarioName, condition, message) {
 // ============================================================
 // Scenario A: false-done blocked
 // The model claims "done" AND claims the 'types' checklist item passed,
-// but the gate command exits 1. The hook must override to done-override.
-// Expected: run-gates exits 2 (block the stop), stderr contains "done-override" or "types".
+// but the gate command exits 1. The hook must block the stop and name the failing gate.
+// Expected: run-gates exits 2, stderr contains the gate id ("types") and the real exit
+// code from the failing command — NOT the on_fail fixture string "done-override", which
+// is gate metadata never written to stderr.
 // ============================================================
 {
   const name = 'A: false-done blocked';
@@ -139,8 +141,11 @@ function assert(scenarioName, condition, message) {
     const env = { CLAUDE_PROJECT_DIR: tmpDir };
     const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, env);
 
+    // run-gates.mjs writes the gate id ("types") and the real exit code to stderr when
+    // a claimed-true gate fails. The on_fail value "done-override" is gate metadata only —
+    // it is never written to stderr, so asserting for it produces a permanently-false arm.
     const ok = assert(name, r.code === 2, `expected exit 2, got ${r.code}`) &&
-                assert(name, r.stderr.includes('done-override') || r.stderr.includes('types'), `expected 'done-override' or 'types' in stderr. Got: ${r.stderr.substring(0, 200)}`);
+                assert(name, r.stderr.includes('types'), `expected gate id 'types' in stderr (run-gates names the failing gate). Got: ${r.stderr.substring(0, 200)}`);
     if (ok) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
@@ -256,6 +261,77 @@ function assert(scenarioName, condition, message) {
     // B.5d: allowed command — negative control
     const rD = runGuardBash('git status');
     const okD = assert(name, rD.code === 0, `B.5d: expected exit 0 for allowed command 'git status', got ${rD.code}. stderr: ${rD.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario B.6: multi-line Bash — forbidden command on line 2 is caught
+// Regression coverage for the extractEffectiveCommand multi-line bypass hole (Eric Major).
+// A two-line Bash payload puts an allowed command on line 1 and a forbidden command on
+// line 2. The guard must deny the call — stopping at line 1 would silently miss line 2.
+//
+// Sub-tests:
+//   B.6a: "git status\ngh pr merge 123"     → exit 2 (forbidden on line 2)
+//   B.6b: "git status\ngit merge main"       → exit 2 (forbidden on line 2)
+//   B.6c: "git status\ngit fetch origin"     → exit 0 (both lines allowed)
+//   B.6d: heredoc body is excluded — "cat <<'EOF'\ngh pr merge 123\nEOF" → exit 0
+// ============================================================
+{
+  const name = 'B.6: multi-line Bash — forbidden command on line 2 caught';
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**'],
+        may_not_run: ['gh pr merge', 'git merge'],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const env = { CLAUDE_PROJECT_DIR: tmpDir };
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // B.6a: allowed on line 1, forbidden on line 2 → must be denied
+    const rA = runGuardBash('git status\ngh pr merge 123');
+    const okA = assert(name, rA.code === 2, `B.6a: expected exit 2 (forbidden 'gh pr merge' on line 2), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`) &&
+                assert(name, rA.stderr.length > 0, `B.6a: expected prohibition message in stderr. Got: ${rA.stderr.substring(0, 200)}`);
+
+    // B.6b: allowed on line 1, forbidden on line 2 → must be denied
+    const rB = runGuardBash('git status\ngit merge main');
+    const okB = assert(name, rB.code === 2, `B.6b: expected exit 2 (forbidden 'git merge' on line 2), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`) &&
+                assert(name, rB.stderr.length > 0, `B.6b: expected prohibition message in stderr. Got: ${rB.stderr.substring(0, 200)}`);
+
+    // B.6c: both lines allowed → must permit
+    const rC = runGuardBash('git status\ngit fetch origin');
+    const okC = assert(name, rC.code === 0, `B.6c: expected exit 0 (both lines allowed), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    // B.6d: forbidden string appears in heredoc body only → must permit (heredoc-stop preserved)
+    const rD = runGuardBash("cat <<'EOF'\ngh pr merge 123\nEOF");
+    const okD = assert(name, rD.code === 0, `B.6d: expected exit 0 (forbidden string is heredoc data, not a command), got ${rD.code}. stderr: ${rD.stderr.substring(0, 200)}`);
 
     if (okA && okB && okC && okD) console.log(`${PASS} ${name}`);
   } finally {

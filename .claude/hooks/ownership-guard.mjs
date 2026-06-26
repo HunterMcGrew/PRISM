@@ -7,8 +7,9 @@
  *   - may_write: glob patterns the persona may write to. A write to any other path
  *     is denied before the tool executes.
  *   - may_not_run: command substrings the persona may never run via Bash. A match
- *     on the effective command (first line of the command string, before any heredoc
- *     content) is denied before execution.
+ *     on any non-heredoc command line is denied before execution. All non-heredoc
+ *     lines are checked so multi-line commands cannot bypass the guard by placing a
+ *     forbidden command after line 1.
  *
  * Exit 2 blocks the tool call; stderr becomes Claude's feedback (naming allowed paths
  * or the prohibition that fired). This is the negative half of handoff enforcement:
@@ -63,11 +64,10 @@ const toolInput = payload.tool_input ?? {};
 // The prohibition invariant: these commands represent lane boundaries the persona
 // must never cross (e.g. Clove cannot merge — must hand to human, per ADR-0011).
 //
-// Matching applies to the effective command only — the first non-comment, non-empty
-// line of the command string before any heredoc delimiter. This prevents false positives
-// where prohibited strings appear in heredoc content or quoted strings rather than as
-// actual shell invocations. A heredoc starts with '<<' after the command; content after
-// the delimiter is data, not executable commands.
+// All non-heredoc command lines are checked. Heredoc body content is excluded to prevent
+// false positives where prohibited strings appear as data (e.g. a JSON payload that
+// contains "gh pr merge" as a value). A heredoc delimiter ('<<') marks where executable
+// commands end and inline data begins.
 if (toolName === 'Bash' && toolInput.command) {
   const cmd = toolInput.command;
   const effectiveCmd = extractEffectiveCommand(cmd);
@@ -115,13 +115,16 @@ if (writeTools.has(toolName)) {
 process.exit(0);
 
 /**
- * Extracts the effective shell command — the first non-empty, non-comment line of the
- * command string, stopping at the first heredoc delimiter ('<<' or '<<-').
+ * Extracts all non-heredoc shell command lines from a multi-line Bash command string.
  *
- * A heredoc delimiter marks the start of inline data, not executable commands. Matching
- * may_not_run against heredoc content would produce false positives when prohibited strings
- * appear as data (e.g. a JSON file being written that contains "gh pr merge" as a value).
- * The invariant we enforce: the actual shell command being invoked, not the data it writes.
+ * Returns the joined text of every non-empty, non-comment line up to (but not including)
+ * the first heredoc delimiter. Heredoc body content is excluded because it is inline data,
+ * not executable commands — matching may_not_run against heredoc bodies would produce false
+ * positives (e.g. a JSON file being written that contains "gh pr merge" as a value).
+ *
+ * Why all lines, not just the first: Claude Code regularly produces multi-line Bash calls
+ * (git status on line 1, gh pr merge on line 2). Stopping at the first line would let a
+ * forbidden command on any subsequent line bypass the guard entirely.
  */
 function extractEffectiveCommand(cmd) {
   const lines = cmd.split('\n');
@@ -129,18 +132,15 @@ function extractEffectiveCommand(cmd) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
-    // Stop at heredoc delimiter — content after is data, not commands.
+    // Stop at heredoc delimiter — everything from here is inline data, not commands.
     if (/<<-?\s*['"`]?\w/.test(trimmed)) {
-      // Include everything before the << on this line.
+      // Include everything before the << on this line (the command that opens the heredoc).
       const beforeHeredoc = trimmed.split(/<<-?\s*['"`]?\w/)[0];
       if (beforeHeredoc.trim()) parts.push(beforeHeredoc);
       break;
     }
+    // Collect every non-heredoc command line — do not stop after the first.
     parts.push(trimmed);
-    // Stop after the first logical command (ignoring continuation characters).
-    // A ';' ends a command on the same line; '&&' and '||' separate commands.
-    // For simplicity, treat the first full line as the effective command.
-    break;
   }
   return parts.join(' ');
 }
