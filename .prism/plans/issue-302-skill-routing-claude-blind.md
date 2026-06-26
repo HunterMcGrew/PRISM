@@ -192,6 +192,7 @@ Run from repo root, in order:
 - 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Winston ruled on two ownership questions. Q1 (routing-fix write grant): added Task 0 — Hunter grants three per-file paths (`.prism/rules/skill-routing.md`, `AGENTS.md`, the seed twin) to the runtime `gates.json` `may_write`, ticket-scoped, Clove's hands off gates.json. Q2 (canonical gates.json back-door): confirmed REAL — gated Clove can edit canonical `.ai-skills/hooks/gates.json` + run build to propagate a weakened gate; recorded as a critical deferred Review Issue routed to the enforcement epic, kept out of #302.
 - 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Clove implemented Tasks 1-3 (created `.prism/rules/skill-routing.md`, gutted AGENTS.md §0 to a thin pointer with heading preserved, registered the curated seed twin), then ran `pnpm prism:build`. Build synced the rule to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` and reverted the gates.json grant as expected, but failed `prism:test`'s literal-guard on the `THR-123` example in the Nora routing row — a Thrive literal safe in AGENTS.md but flagged once synced to platform rule dirs. See Decision: literal-guard divergence.
 - 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Tasks 1-5 complete. After human re-grant, Clove tokenized `THR-123` → `${TICKET_PREFIX}-NNNN` on line 17 of canonical and seed twin, re-ran `pnpm prism:build` (literal-guard + leftover-token guard pass; 6 files updated; gates.json diff vs origin/main empty). `crossref-lint`, `install-adr-gate`, and `install-relative-link-gate` all pass. `.claude/rules/skill-routing.md` confirmed present; 4 pre-existing Windows path-norm test failures confirmed not regressions.
+- 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Briar self-review complete. Content fidelity confirmed (all §0 sub-parts present), all 4 surfaces verified, all 8 citations resolve, tokenization clean. One minor finding added (link display text vs. href cosmetic in platform copies — non-blocking). PR Readiness updated; routing to Eric.
 
 ---
 
@@ -224,6 +225,16 @@ Run from repo root, in order:
 
 ## Review Issues
 
+### Link display text vs. href mismatch in platform copies (cosmetic)
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.claude/rules/skill-routing.md:29`, `.codex/rules/skill-routing.md:29`, `.cursor/rules/skill-routing.mdc:33`, `templates/install/.prism/rules/skill-routing.md:29`
+- **Problem:** The `How to route` link text reads `.prism/architect/_toolkit/skills-ecosystem.md` but the href is `../architect/_toolkit/skills-ecosystem.md` — which resolves correctly per platform (`../architect/` from `.claude/rules/` → `.claude/architect/`), but the display text implies a `.prism/` path. A developer reading raw markdown in `.claude/rules/` sees a misleading path in the link label. The href is functionally correct and install-relative-link-gate passes; this is cosmetic only.
+- **Suggested fix:** Non-blocking. Either (a) change display text to match href context (e.g. `skills-ecosystem.md` with no path prefix), or (b) leave as-is since crossref-lint passes. The mismatch won't cause breakage — the link target is valid. This is a build-time display artifact from a single canonical source serving multiple platform directories with different roots.
+
+---
+
 ### Canonical gates.json back-door bypasses the runtime enforcement floor
 
 - **Severity:** `critical`
@@ -240,12 +251,18 @@ Run from repo root, in order:
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues (one pre-existing deferred critical; one new minor — non-blocking)
 - [x] No stray console.logs or debug artifacts
 - [x] Build passes — `pnpm prism:build` green (6 files updated; literal-guard and leftover-token guard pass; gates.json diff empty); `crossref-lint`, `install-adr-gate`, `install-relative-link-gate` all pass
+- [x] Content fidelity confirmed — all §0 sub-parts present in the new rule (routing table, announce-then-invoke, built-in overrides, Atlas routing, utility skills, Sol-is-a-persona, skip heuristics, authors-ship/reviewers-review)
+- [x] Rule reaches all surfaces — `.claude/rules/skill-routing.md` (Claude), `.codex/rules/skill-routing.md` (Codex), `.cursor/rules/skill-routing.mdc` (Cursor), AGENTS.md generated block (line 1331)
+- [x] Citations resolve — all 8 named citers verified; `## 0. Skill Auto-Routing` heading preserved; no dangling refs
+- [x] Tokenization clean — `${TICKET_PREFIX}-NNNN` in canonical + seed twin; `PRISM-NNNN` in platform copies; zero `THR-` literals in any synced output
+- [x] No `paths:` frontmatter in canonical rule (Tier-1 / always-on confirmed)
+- [x] No bare `ADR-NNNN` in rule or seed twin
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (Tasks complete; no decisions generalize beyond this ticket)
+- [ ] Lasting decisions promoted to architect context (no decisions generalize beyond this ticket)
 
-**Task status:** All tasks complete (Tasks 1-5). `.claude/rules/skill-routing.md` confirmed present. Routing governance now reaches Claude. Routing to Briar for self-review.
+**Task status:** Briar self-review complete. All tasks verified. One minor finding (link display text cosmetic — non-blocking). Ready for Eric.
 
 **Last updated:** 2026-06-26
