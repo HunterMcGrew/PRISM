@@ -60,7 +60,8 @@
         ".prism/evidence/**",
         ".ai-skills/skills/prism-code-dev/**",
         ".claude/hooks/**",
-        ".claude/settings.json"
+        ".claude/settings.json",
+        ".gitignore"
       ],
       "may_not_run": [
         "gh pr merge",

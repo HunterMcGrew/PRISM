@@ -89,10 +89,23 @@ mkdirSync(evidenceDir, { recursive: true });
 const strikeFile = path.join(evidenceDir, 'strikes.json');
 let strikeCount = 0;
 try {
-  const strikes = JSON.parse(readFileSync(strikeFile, 'utf8'));
+  const strikeRaw = readFileSync(strikeFile, 'utf8');
+  const strikes = JSON.parse(strikeRaw);
   strikeCount = strikes.count ?? 0;
-} catch {
-  // No strike file yet — this is the first stop attempt.
+} catch (e) {
+  if (e.code === 'ENOENT') {
+    // No strike file yet — first stop attempt, strike count starts at 0.
+  } else {
+    // File exists but is corrupted (parse error or other I/O failure).
+    // Fail safe: treat as at-cap rather than silently resetting to 0.
+    // A corrupted ceiling must escalate, not disappear — the 3-strike counter is the
+    // sole loop ceiling (stop_hook_active confirmed absent from Stop payload).
+    process.stderr.write(
+      `run-gates: strikes.json is corrupted (${e.message}) — treating as at strike cap to fail safe.\n` +
+      `Delete .prism/evidence/${runKey}/strikes.json to reset.\n`
+    );
+    strikeCount = STRIKE_CAP;
+  }
 }
 
 // --- Shape validation ---

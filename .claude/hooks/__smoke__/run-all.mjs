@@ -193,6 +193,77 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario B.5: may_not_run prohibition enforced
+// Clove's gates.json lists forbidden commands. The ownership guard must deny a
+// Bash payload containing a prohibited string and allow a permitted one.
+//
+// Sub-tests:
+//   B.5a: Bash payload with "gh pr merge 123"  → exit 2, prohibition in stderr
+//   B.5b: Bash payload with "git merge main"   → exit 2, prohibition in stderr
+//   B.5c: Bash payload with "git push --force" → exit 2, prohibition in stderr
+//   B.5d: Bash payload with "git status"       → exit 0 (negative control — allowed)
+// ============================================================
+{
+  const name = 'B.5: may_not_run prohibition enforced';
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**'],
+        may_not_run: ['gh pr merge', 'git merge', 'git push -f', 'git push --force'],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const env = { CLAUDE_PROJECT_DIR: tmpDir };
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // B.5a: gh pr merge
+    const rA = runGuardBash('gh pr merge 123');
+    const okA = assert(name, rA.code === 2, `B.5a: expected exit 2 for 'gh pr merge 123', got ${rA.code}`) &&
+                assert(name, rA.stderr.length > 0, `B.5a: expected prohibition message in stderr. Got: ${rA.stderr.substring(0, 200)}`);
+
+    // B.5b: git merge
+    const rB = runGuardBash('git merge main');
+    const okB = assert(name, rB.code === 2, `B.5b: expected exit 2 for 'git merge main', got ${rB.code}`) &&
+                assert(name, rB.stderr.length > 0, `B.5b: expected prohibition message in stderr. Got: ${rB.stderr.substring(0, 200)}`);
+
+    // B.5c: git push --force
+    const rC = runGuardBash('git push --force origin main');
+    const okC = assert(name, rC.code === 2, `B.5c: expected exit 2 for 'git push --force', got ${rC.code}`) &&
+                assert(name, rC.stderr.length > 0, `B.5c: expected prohibition message in stderr. Got: ${rC.stderr.substring(0, 200)}`);
+
+    // B.5d: allowed command — negative control
+    const rD = runGuardBash('git status');
+    const okD = assert(name, rD.code === 0, `B.5d: expected exit 0 for allowed command 'git status', got ${rD.code}. stderr: ${rD.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
 // Scenario C: clean ratify
 // All gates pass (node exits 0), valid report.
 // Expected: run-gates exits 0 (allow stop), ratified-verdict.json written.
@@ -310,7 +381,7 @@ function assert(scenarioName, condition, message) {
 // Final result
 // ============================================================
 if (allPassed) {
-  console.log('\nAll 4 smoke scenarios passed.');
+  console.log('\nAll smoke scenarios passed.');
   process.exit(0);
 } else {
   console.error('\nOne or more smoke scenarios FAILED.');
