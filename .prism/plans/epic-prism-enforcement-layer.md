@@ -449,6 +449,7 @@ Living checklist — updated by `code-review-self` (Briar). Reflects state after
 - [x] Build passes — `pnpm prism:build` (tsx scripts/ai-skills/build.ts) passes. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch). Literal-allowlist updated to exempt `.claude/hooks` from leftover-token guard.
 - [ ] PR description up to date
 - [ ] `stop_hook_active` escalation flagged to Sol — field absent from Stop payload (see Decisions); 3-strike cap is the sole ceiling
+- [ ] `.gitignore` needs `.prism/evidence/` added (out of Clove's lane; for Winston or human)
 
 **Last updated:** 2026-06-26
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 0; decisions promote at epic close
