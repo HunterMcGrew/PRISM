@@ -181,8 +181,8 @@ Run from repo root, in order:
   - **Root cause:** AGENTS.md §0's Nora routing row carries the example ticket ID `"start THR-123"`. `THR-123` is a Thrive-flavored literal. In AGENTS.md it was never checked — AGENTS.md is a single hand-authored surface, not a platform-synced rule. Once §0 becomes `.prism/rules/skill-routing.md` (Tier-1, no `paths:`), the build copies it to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/`, and `prism:test`'s literal-guard scans those platform outputs and fails on `THR-123` (3 hits, one per platform dialect).
   - **Alternatives considered:** (a) add the three platform paths to `literal-allowlist.json`; (b) tokenize the literal as `${TICKET_PREFIX}-NNNN` so build-time substitution resolves it per-team and the seed gets a generic example.
   - **Chosen approach:** (b) tokenize. The established pattern (epic-phase-1-foundation.md:422) replaces illustrative `THR-NNNN` examples with `${TICKET_PREFIX}-NNNN` placeholders substituted at sync time. (a) rejected: allowlisting ships a Thrive-ism into the consumer seed, contradicting the rule's whole purpose of being generic always-on content. The exact edit: in both `.prism/rules/skill-routing.md:17` and `templates/install/.prism/rules/skill-routing.md:17`, change `"start THR-123"` to `"start ${TICKET_PREFIX}-123"` (or `-NNNN` per the cited convention).
-  - **Implementation guidance / BLOCKER:** both files are in the Task-0 grant set, and `pnpm prism:build` (which `emitHooks` runs) already reverted the grant out of `clove.may_write`. So the gated Clove cannot apply this two-line tokenization without the grant being re-applied. Per the dispatch ordering rule, Clove does NOT hand-edit gates.json and does NOT bypass the guard. Re-grant the three Task-0 paths, then a re-dispatched Clove tokenizes line 17 in both files and re-runs the build (the build will then substitute `${TICKET_PREFIX}` and pass the literal-guard).
-  - → promoted to no promotion needed (ticket-tactical; the fix is the tokenization edit above, captured here for the re-dispatch).
+  - **Fix applied:** after human re-grant of the three Task-0 paths, Clove tokenized line 17 in both files (`${TICKET_PREFIX}-NNNN`), ran `pnpm prism:build`, and confirmed literal-guard and leftover-token guard both passed. The build substituted `${TICKET_PREFIX}` → `PRISM` in the platform outputs; the seed twin retains the token for consumer-side substitution at their team's config.
+  - → promoted to no promotion needed (ticket-tactical; fix complete).
 
 ---
 
@@ -190,7 +190,8 @@ Run from repo root, in order:
 
 - 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Winston designed the fix — extract AGENTS.md §0 Skill Auto-Routing into always-on Tier-1 rule `.prism/rules/skill-routing.md` (no `paths:` → syncs to `.claude/rules/` for Claude, AGENTS.md inlined block for Codex, `.cursor/`/`.codex/` for the rest); §9 Ownership & Handoff and the skills-ecosystem.md handoff phrases stay put. Scope call: handoff phrases are post-skill in-persona content and do NOT need externalizing — the pre-skill agent needs the routing table (which moves), not the handoff phrases. Reference sweep: all canonical §0 citations are name- or number-based and resolve against the preserved `## 0. Skill Auto-Routing` heading; zero dangling refs expected.
 - 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Winston ruled on two ownership questions. Q1 (routing-fix write grant): added Task 0 — Hunter grants three per-file paths (`.prism/rules/skill-routing.md`, `AGENTS.md`, the seed twin) to the runtime `gates.json` `may_write`, ticket-scoped, Clove's hands off gates.json. Q2 (canonical gates.json back-door): confirmed REAL — gated Clove can edit canonical `.ai-skills/hooks/gates.json` + run build to propagate a weakened gate; recorded as a critical deferred Review Issue routed to the enforcement epic, kept out of #302.
-- 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Clove implemented Tasks 1-3 (created `.prism/rules/skill-routing.md`, gutted AGENTS.md §0 to a thin pointer with heading preserved, registered the curated seed twin), then ran `pnpm prism:build`. Build synced the rule to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` and reverted the gates.json grant as expected, but failed `prism:test`'s literal-guard on the `THR-123` example in the Nora routing row — a Thrive literal that was safe in AGENTS.md (not literal-guarded) but is flagged once synced to platform rule dirs. See Decision: literal-guard divergence (Tier-1 rule sync subjects §0 content to the Thrive-literal guard).
+- 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Clove implemented Tasks 1-3 (created `.prism/rules/skill-routing.md`, gutted AGENTS.md §0 to a thin pointer with heading preserved, registered the curated seed twin), then ran `pnpm prism:build`. Build synced the rule to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` and reverted the gates.json grant as expected, but failed `prism:test`'s literal-guard on the `THR-123` example in the Nora routing row — a Thrive literal safe in AGENTS.md but flagged once synced to platform rule dirs. See Decision: literal-guard divergence.
+- 2026-06-26 [hmcgrew/issue-302-skill-routing-claude-blind]: Tasks 1-5 complete. After human re-grant, Clove tokenized `THR-123` → `${TICKET_PREFIX}-NNNN` on line 17 of canonical and seed twin, re-ran `pnpm prism:build` (literal-guard + leftover-token guard pass; 6 files updated; gates.json diff vs origin/main empty). `crossref-lint`, `install-adr-gate`, and `install-relative-link-gate` all pass. `.claude/rules/skill-routing.md` confirmed present; 4 pre-existing Windows path-norm test failures confirmed not regressions.
 
 ---
 
@@ -239,12 +240,12 @@ Run from repo root, in order:
 
 ## PR Readiness
 
-- [x] No critical or major issues (one tactical blocker: literal-guard tokenization pending re-grant — see Decisions)
+- [x] No critical or major issues
 - [x] No stray console.logs or debug artifacts
-- [ ] Build passes — `pnpm prism:build` BLOCKED on literal-guard (`THR-123` in `skill-routing.md:17`); fix needs the reverted Task-0 grant re-applied
+- [x] Build passes — `pnpm prism:build` green (6 files updated; literal-guard and leftover-token guard pass; gates.json diff empty); `crossref-lint`, `install-adr-gate`, `install-relative-link-gate` all pass
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (Tasks complete; no decisions generalize beyond this ticket)
 
-**Task status:** Tasks 1-3 done (rule created, AGENTS.md §0 gutted, seed twin + curation registered). Task 4 reference sweep done — zero dangling refs. Task 5 build BLOCKED on the literal-guard divergence; needs human re-grant of the three Task-0 paths so the two-line `${TICKET_PREFIX}` tokenization can be applied.
+**Task status:** All tasks complete (Tasks 1-5). `.claude/rules/skill-routing.md` confirmed present. Routing governance now reaches Claude. Routing to Briar for self-review.
 
 **Last updated:** 2026-06-26
