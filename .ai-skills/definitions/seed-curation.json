@@ -68,6 +68,7 @@
   ],
   "curated": [
     "rules/branch-plan.md",
+    "rules/skill-routing.md",
     "rules/verification-commands.md",
     "rules/implementation-task-detail.md",
     "rules/architect-doc-verification.md",
