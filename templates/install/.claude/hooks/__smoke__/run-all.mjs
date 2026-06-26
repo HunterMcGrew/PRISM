@@ -998,6 +998,122 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario J: canonical-source protection (Issue #305)
+//
+// The #301 denylist (Scenario E) protects only the runtime .claude/hooks/*. The canonical
+// sources under .ai-skills/hooks/** are the build's INPUT and were left unprotected, while
+// that same tree sat in clove.may_write. A gated persona could edit canonical gates.json or
+// a canonical *.mjs, run `pnpm prism:build`, and the weakened runtime would go live — the
+// same in-place-tamper class E closed, reopened on the input end of the build pipe. J pins
+// the fix: the whole canonical hooks tree is protected EXCEPT __smoke__/ (gates nothing) and
+// .ai-skills/skills/prism-code-dev/** (Clove's own skill source, a separate tree).
+//
+// Uses the real enforcement file paths against REPO_ROOT — same rationale as E (the
+// PROTECTED_CANONICAL_HOOKS_PREFIX is a module-level const in the guard, not config).
+//
+// Sub-tests:
+//   J1: Write to .ai-skills/hooks/gates.json              → exit 2 (canonical gate data — primary hole)
+//   J2: Write to .ai-skills/hooks/run-gates.mjs           → exit 2 (canonical enforcement runtime source)
+//   J3: Write to .ai-skills/hooks/ownership-guard.mjs     → exit 2 (the guard's own canonical source)
+//   J4: Write to .ai-skills/hooks/evidence-ledger.mjs     → exit 2 (canonical enforcement source)
+//   J5: Write to .ai-skills/hooks/lib/resolve-persona.mjs → exit 2 (prefix-covered lib/ — forward coverage)
+//   J6: Write to .ai-skills/hooks/__smoke__/x.mjs         → exit 0 (carve-out — smoke gates nothing)
+//   J7: Write to .ai-skills/skills/prism-code-dev/x.md    → exit 0 (carve-out — Clove's own skill source)
+//   J8: Bash echo '{}' > .ai-skills/hooks/gates.json      → exit 2 (Bash redirect arm — mirror of I.aa)
+//   J9: Bash sed -i s/a/b/ .ai-skills/hooks/run-gates.mjs → exit 2 (Bash sed -i arm — mirror of I.c)
+//   J10: Bash echo hi > .ai-skills/hooks/__smoke__/note.txt → exit 0 (Bash-path carve-out — selective, not whole-tree)
+// ============================================================
+{
+  const name = 'J: canonical-source protection (#305)';
+
+  const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+  // REPO_ROOT as CLAUDE_PROJECT_DIR so path normalization maps to the real relative paths —
+  // the real gates.json is at REPO_ROOT too, and the canonical prefix is hardcoded relative
+  // to it. .ai-skills/skills/prism-code-dev/** is in clove.may_write, so J7 permits via the
+  // lane; .ai-skills/hooks/__smoke__/** is in clove.may_write (post-Task-2) AND carved out of
+  // the canonical prefix, so J6 permits.
+  const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT };
+
+  function runGuardWrite(filePath) {
+    return runHook(guardScript, {
+      session_id: 'smoke-j',
+      agent_type: 'prism-code-dev',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Write',
+      tool_input: { file_path: filePath },
+      cwd: REPO_ROOT,
+    }, envReal);
+  }
+
+  function runGuardBash(command) {
+    return runHook(guardScript, {
+      session_id: 'smoke-j',
+      agent_type: 'prism-code-dev',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command },
+      cwd: REPO_ROOT,
+    }, envReal);
+  }
+
+  // J1: canonical gate data — the primary hole
+  const rJ1 = runGuardWrite('.ai-skills/hooks/gates.json');
+  const okJ1 = assert(name, rJ1.code === 2,
+    `J1: expected exit 2 for Write to canonical gates.json (canonical-source-protected), got ${rJ1.code}. stderr: ${rJ1.stderr.substring(0, 200)}`) &&
+    assert(name, /canonical/.test(rJ1.stderr), `J1: expected stderr to name canonical-source protection. Got: ${rJ1.stderr.substring(0, 200)}`);
+
+  // J2: canonical enforcement runtime source
+  const rJ2 = runGuardWrite('.ai-skills/hooks/run-gates.mjs');
+  const okJ2 = assert(name, rJ2.code === 2,
+    `J2: expected exit 2 for Write to canonical run-gates.mjs, got ${rJ2.code}. stderr: ${rJ2.stderr.substring(0, 200)}`);
+
+  // J3: the guard's own canonical source
+  const rJ3 = runGuardWrite('.ai-skills/hooks/ownership-guard.mjs');
+  const okJ3 = assert(name, rJ3.code === 2,
+    `J3: expected exit 2 for Write to canonical ownership-guard.mjs, got ${rJ3.code}. stderr: ${rJ3.stderr.substring(0, 200)}`);
+
+  // J4: another canonical enforcement source
+  const rJ4 = runGuardWrite('.ai-skills/hooks/evidence-ledger.mjs');
+  const okJ4 = assert(name, rJ4.code === 2,
+    `J4: expected exit 2 for Write to canonical evidence-ledger.mjs, got ${rJ4.code}. stderr: ${rJ4.stderr.substring(0, 200)}`);
+
+  // J5: prefix-covered lib/ — pins forward coverage of future helpers
+  const rJ5 = runGuardWrite('.ai-skills/hooks/lib/resolve-persona.mjs');
+  const okJ5 = assert(name, rJ5.code === 2,
+    `J5: expected exit 2 for Write to canonical lib/resolve-persona.mjs (prefix covers lib/), got ${rJ5.code}. stderr: ${rJ5.stderr.substring(0, 200)}`);
+
+  // J6: carve-out — smoke tests gate nothing → must permit
+  const rJ6 = runGuardWrite('.ai-skills/hooks/__smoke__/x.mjs');
+  const okJ6 = assert(name, rJ6.code === 0,
+    `J6: expected exit 0 for Write to canonical __smoke__/x.mjs (carve-out — smoke gates nothing), got ${rJ6.code}. stderr: ${rJ6.stderr.substring(0, 200)}`);
+
+  // J7: carve-out — Clove's own skill source is a separate tree → must permit
+  const rJ7 = runGuardWrite('.ai-skills/skills/prism-code-dev/x.md');
+  const okJ7 = assert(name, rJ7.code === 0,
+    `J7: expected exit 0 for Write to prism-code-dev/x.md (separate tree, in may_write), got ${rJ7.code}. stderr: ${rJ7.stderr.substring(0, 200)}`);
+
+  // J8: Bash redirect arm — covers canonical too (mirror of I.aa)
+  const rJ8 = runGuardBash(`echo '{}' > .ai-skills/hooks/gates.json`);
+  const okJ8 = assert(name, rJ8.code === 2,
+    `J8: expected exit 2 for Bash redirect to canonical gates.json, got ${rJ8.code}. stderr: ${rJ8.stderr.substring(0, 200)}`);
+
+  // J9: Bash sed -i arm — mirror of I.c
+  const rJ9 = runGuardBash('sed -i s/a/b/ .ai-skills/hooks/run-gates.mjs');
+  const okJ9 = assert(name, rJ9.code === 2,
+    `J9: expected exit 2 for Bash sed -i of canonical run-gates.mjs, got ${rJ9.code}. stderr: ${rJ9.stderr.substring(0, 200)}`);
+
+  // J10: Bash-path carve-out for smoke — protection is selective, not a whole-tree block
+  const rJ10 = runGuardBash('echo hi > .ai-skills/hooks/__smoke__/note.txt');
+  const okJ10 = assert(name, rJ10.code === 0,
+    `J10: expected exit 0 for Bash redirect to canonical __smoke__/note.txt (carve-out), got ${rJ10.code}. stderr: ${rJ10.stderr.substring(0, 200)}`);
+
+  if (okJ1 && okJ2 && okJ3 && okJ4 && okJ5 && okJ6 && okJ7 && okJ8 && okJ9 && okJ10) {
+    console.log(`${PASS} ${name}`);
+  }
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {

@@ -48,6 +48,17 @@ const PROTECTED_WRITE_PATHS = [
 const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
 const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json', 'baseline.json'];
 
+// Canonical enforcement source — the build emits these to the runtime, so protecting
+// only the runtime (PROTECTED_WRITE_PATHS) left a back door: a gated persona could edit
+// canonical .ai-skills/hooks/gates.json (drop its tests gate / widen may_write) or a
+// canonical *.mjs, run `pnpm prism:build`, and the weakened runtime would go live. The
+// whole canonical hooks tree is protected EXCEPT __smoke__/ (which gates nothing — same
+// carve-out as the runtime .claude/hooks/__smoke__/ exemption). prism-code-dev/** is a
+// SEPARATE tree (.ai-skills/skills/), not under this prefix, so Clove's own skill source
+// stays writable. See issue #305.
+const PROTECTED_CANONICAL_HOOKS_PREFIX = '.ai-skills/hooks/';
+const CANONICAL_HOOKS_SMOKE_CARVEOUT = '.ai-skills/hooks/__smoke__/';
+
 // The complete, closed set of POSIX control operators that start a NEW command head:
 // sequence (;), background (&), and/or (&&, ||), pipe (|), and NEWLINE. This is fixed by
 // the shell grammar, not an open list of "forms we've seen" — see the Decision's
@@ -134,9 +145,10 @@ if (toolName === 'Bash' && toolInput.command) {
   if (protectedWrite) {
     process.stderr.write(
       `[ownership-guard] Denied: this Bash command writes '${protectedWrite}', which is\n` +
-      `enforcement-runtime-protected (ADR-0067 § gate non-circumventability). A shell\n` +
-      `redirect/copy/sed cannot be used to write the live runtime or gate state.\n` +
-      `To author hook changes, edit canonical source at .ai-skills/hooks/ — the build emits here.\n`
+      `enforcement-source-protected (ADR-0067 § gate non-circumventability, #305). A shell\n` +
+      `redirect/copy/sed cannot write the runtime, the canonical source (.ai-skills/hooks/),\n` +
+      `or gate state. Changing a hook lawfully goes through the human-granted, build-reverted\n` +
+      `path (ADR-0067 § the lawful hook-authoring path). The __smoke__/ trees stay writable.\n`
     );
     process.exit(2);
   }
@@ -191,14 +203,19 @@ if (writeTools.has(toolName)) {
   // Global protected-paths check — runs BEFORE may_write for every persona.
   // No per-persona override path exists: a may_write entry cannot grant write
   // access to the enforcement runtime or gate state (ADR-0067 § gate non-circumventability).
-  if (PROTECTED_WRITE_PATHS.includes(normalizedPath) || normalizedPath.startsWith(PROTECTED_LIB_PREFIX)) {
+  if (
+    PROTECTED_WRITE_PATHS.includes(normalizedPath) ||
+    normalizedPath.startsWith(PROTECTED_LIB_PREFIX) ||
+    isProtectedCanonicalHookPath(normalizedPath)
+  ) {
     process.stderr.write(
-      `[ownership-guard] Denied: '${normalizedPath}' is enforcement-runtime-protected.\n` +
-      `The enforcement runtime (hook scripts, lib/, gates.json, settings.json) cannot be\n` +
-      `written by any persona during a gated dispatch — the gate's guarantee depends on it\n` +
-      `(ADR-0067 § gate non-circumventability).\n` +
-      `To author hook changes, use the canonical source at .ai-skills/hooks/ — the build\n` +
-      `pipeline emits the runtime here. Never write the live runtime directly.\n`
+      `[ownership-guard] Denied: '${normalizedPath}' is enforcement-source-protected.\n` +
+      `Both the runtime (.claude/hooks/) and its canonical source (.ai-skills/hooks/) are\n` +
+      `protected — the build emits canonical → runtime, so editing canonical then rebuilding\n` +
+      `would weaken the live gate just the same (ADR-0067 § gate non-circumventability, #305).\n` +
+      `No persona may write either end during a gated dispatch. To change a hook lawfully, a\n` +
+      `human grants a scoped runtime widening for the task and the build reverts it (ADR-0067\n` +
+      `§ the lawful hook-authoring path). The __smoke__/ trees stay writable.\n`
     );
     process.exit(2);
   }
@@ -314,6 +331,21 @@ function extractEffectiveCommand(cmd) {
 }
 
 /**
+ * Returns true if a normalized path is a protected canonical enforcement source.
+ *
+ * The canonical hooks tree (.ai-skills/hooks/) is the build's input; the runtime
+ * (.claude/hooks/) is its output. Protecting only the output left the canonical back door
+ * (issue #305). Everything under the canonical hooks prefix is protected EXCEPT __smoke__/
+ * — smoke tests gate nothing, so a gated persona may still adjust coverage there.
+ */
+function isProtectedCanonicalHookPath(normalizedPath) {
+  return (
+    normalizedPath.startsWith(PROTECTED_CANONICAL_HOOKS_PREFIX) &&
+    !normalizedPath.startsWith(CANONICAL_HOOKS_SMOKE_CARVEOUT)
+  );
+}
+
+/**
  * Returns the first protected path a Bash command would WRITE, or null if none.
  *
  * A command writes a protected path only when that path is the destination of a mutation
@@ -335,6 +367,7 @@ function commandWritesProtectedPath(effectiveCmd) {
       if (target.includes(protectedPath)) return protectedPath;
     }
     if (target.includes(PROTECTED_LIB_PREFIX)) return PROTECTED_LIB_PREFIX;
+    if (isProtectedCanonicalHookPath(target)) return target;
 
     // Protected gate-state files under .prism/evidence/ — match only when the write
     // target itself names both the evidence dir and a protected basename.
