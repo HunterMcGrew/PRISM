@@ -336,6 +336,8 @@ Evidence-backed results for Phase 2 tasks 1–3 (branch `hmcgrew/issue-292-orche
 
 Specifically, `a9a881a7f0abc5497/ratified-verdict.json` records the Phase 1 final clean ratification (verdict `done`, next_route `briar`, strike_count 0), confirming `SubagentStop` fired `run-gates.mjs`, the resolver picked `clove` via `agent_type: "prism-code-dev"` → `SKILL_ID_TO_PERSONA`, and the runKey derived from `agent_id`. The Phase 2 dispatch itself produced a ledger entry at `46e195fa-82c0-4b51-95c1-58e1b9ebff2a/ledger.jsonl`, confirming this dispatch's `agent_id` is UUID-format and is independent of all prior hex-format runKeys.
 
+**Live dogfooding of this dispatch:** this Phase 2 Clove dispatch itself fired `SubagentStop` twice during completion — once before `report.json` existed (shape validation failed, strike 1: "report.json not found"), and once with a BOM-corrupted JSON file written by PowerShell `Set-Content` (strike 2: "report.json is not valid JSON"). Both failures were correctly surfaced by the gate with precise error messages naming the file path and parse error. The report was rewritten via Node `fs.writeFileSync` (BOM-free UTF-8), and the gate ratified cleanly on the third attempt. The dispatch's `agent_id` is `af2d13a4137cf9dfe` — distinct from all prior hex-format runKeys, confirming fleet isolation in practice.
+
 **`settings.json` wiring confirmed:** `SubagentStop` is wired alongside `Stop` — both events fire `run-gates.mjs` with a 120-second timeout. No silent bypass is possible under Sol dispatch.
 
 ### Task 2 — Park path consumes into Sol routing (no Sol code change required)
