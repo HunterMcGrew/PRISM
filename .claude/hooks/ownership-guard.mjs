@@ -48,6 +48,18 @@ const PROTECTED_WRITE_PATHS = [
 const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
 const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json'];
 
+// The complete, closed set of POSIX control operators that start a NEW command head:
+// sequence (;), background (&), and/or (&&, ||), pipe (|), and NEWLINE. This is fixed by
+// the shell grammar, not an open list of "forms we've seen" — see the Decision's
+// completeness argument. Every Bash scan arm derives its segmentation from this one
+// constant so the three arms cannot drift against each other (the defect behind the
+// newline leak: extractEffectiveCommand and splitCommandSegments disagreed on separators).
+//
+// Declared here in the module-const block, not beside splitCommandSegments, because the
+// Bash branch calls splitCommandSegments during the synchronous module body — a const
+// declared lower would be in the temporal dead zone at that call.
+const SEGMENT_SEPARATORS = /(?:&&|\|\||[;\n|&])/;
+
 const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 
 const raw = readFileSync(0, 'utf8');
@@ -293,7 +305,12 @@ function extractEffectiveCommand(cmd) {
     // Collect every non-heredoc command line — do not stop after the first.
     parts.push(trimmed);
   }
-  return parts.join(' ');
+  // Join with a newline, not a space: the newline is a control operator in
+  // SEGMENT_SEPARATORS, so a multi-line command surfaces each line as its own segment with
+  // a real command head. A space-join would erase the boundary before splitCommandSegments
+  // runs, collapsing `echo hi\nrm ...` into one `echo`-headed segment the rm-anchored scans
+  // never see. Heredoc bodies are already excluded above (the break), so they never reach here.
+  return parts.join('\n');
 }
 
 /**
@@ -428,9 +445,13 @@ function isRedirectToken(tok) {
   return /^\d*>>?/.test(tok) || /^<+/.test(tok);
 }
 
-/** Splits a command string on shell separators so each segment carries its own operators. */
+/**
+ * Splits a command string on shell separators so each segment carries its own operators.
+ * Uses SEGMENT_SEPARATORS — the single source of truth for command-segment boundaries, so
+ * every Bash scan arm derives its segmentation from one constant and the arms cannot drift.
+ */
 function splitCommandSegments(cmd) {
-  return cmd.split(/(?:&&|\|\||[;|&])/).map(s => s.trim()).filter(Boolean);
+  return cmd.split(SEGMENT_SEPARATORS).map(s => s.trim()).filter(Boolean);
 }
 
 /** Whitespace tokenization — sufficient for the redirect/command-head analysis here. */

@@ -835,6 +835,17 @@ function assert(scenarioName, condition, message) {
 //   I.i: cat .claude/hooks/run-gates.mjs > /tmp/out.txt  → exit 0 (hook is read source; safe target)
 //   I.j: node .claude/hooks/run-gates.mjs < x > /tmp/y   → exit 0 (hook run, output to safe path)
 //   I.k: grep rm .prism/evidence/smoke/ledger.jsonl      → exit 0 (rm is search string, not the command)
+//
+//   Segmentation grammar (task 6.5 — one case per SEGMENT_SEPARATORS member + heredoc control):
+//   I.r: echo hi\nrm -rf .prism/evidence                 → exit 2 (NEWLINE — the iter-3 leak)
+//   I.s: echo hi\necho x > .claude/hooks/gates.json       → exit 2 (NEWLINE, redirect arm)
+//   I.t: echo hi; rm -rf .prism/evidence                  → exit 2 (semicolon)
+//   I.u: echo hi && rm -rf .prism/evidence                → exit 2 (&&)
+//   I.v: false || rm -rf .prism/evidence                  → exit 2 (||)
+//   I.w: echo hi | tee .claude/hooks/gates.json           → exit 2 (pipe — tee head)
+//   I.x: echo hi & rm -rf .prism/evidence                 → exit 2 (background &)
+//   I.y: echo hi\nrm src/foo.ts                           → exit 0 (NEWLINE negative — no over-block)
+//   I.z: cat <<'EOF'\nrm -rf .prism/evidence\nEOF         → exit 0 (heredoc body excluded under \n join)
 // ============================================================
 {
   const name = 'I: Bash-path protected-write + rm-variant denial (findings 5–6)';
@@ -928,7 +939,38 @@ function assert(scenarioName, condition, message) {
     const rP = runGuardBash('rm -rf ./.prism/evidence');
     const okP = assert(name, rP.code === 2, `I.p: expected exit 2 (dotslash bare-dir evidence delete), got ${rP.code}. stderr: ${rP.stderr.substring(0, 200)}`);
 
-    if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK && okL && okM && okN && okO && okP && okQ) console.log(`${PASS} ${name}`);
+    // Segmentation grammar (task 6.5) — one case per separator in SEGMENT_SEPARATORS plus the
+    // heredoc-newline control. Each pins one member of the closed control-operator set so a
+    // future editor who breaks the grammar fails a named test. NEWLINE is the iter-3 leak.
+    const rR = runGuardBash('echo hi\nrm -rf .prism/evidence');
+    const okR = assert(name, rR.code === 2, `I.r: expected exit 2 (NEWLINE separator — rm on line 2 is a segment head), got ${rR.code}. stderr: ${rR.stderr.substring(0, 200)}`);
+
+    const rS = runGuardBash('echo hi\necho x > .claude/hooks/gates.json');
+    const okS = assert(name, rS.code === 2, `I.s: expected exit 2 (NEWLINE separator — redirect to protected path on line 2), got ${rS.code}. stderr: ${rS.stderr.substring(0, 200)}`);
+
+    const rT = runGuardBash('echo hi; rm -rf .prism/evidence');
+    const okT = assert(name, rT.code === 2, `I.t: expected exit 2 (semicolon separator), got ${rT.code}. stderr: ${rT.stderr.substring(0, 200)}`);
+
+    const rU = runGuardBash('echo hi && rm -rf .prism/evidence');
+    const okU = assert(name, rU.code === 2, `I.u: expected exit 2 (&& separator), got ${rU.code}. stderr: ${rU.stderr.substring(0, 200)}`);
+
+    const rV = runGuardBash('false || rm -rf .prism/evidence');
+    const okV = assert(name, rV.code === 2, `I.v: expected exit 2 (|| separator), got ${rV.code}. stderr: ${rV.stderr.substring(0, 200)}`);
+
+    const rW = runGuardBash('echo hi | tee .claude/hooks/gates.json');
+    const okW = assert(name, rW.code === 2, `I.w: expected exit 2 (pipe separator — tee is a segment head), got ${rW.code}. stderr: ${rW.stderr.substring(0, 200)}`);
+
+    const rX = runGuardBash('echo hi & rm -rf .prism/evidence');
+    const okX = assert(name, rX.code === 2, `I.x: expected exit 2 (background & separator), got ${rX.code}. stderr: ${rX.stderr.substring(0, 200)}`);
+
+    const rY = runGuardBash('echo hi\nrm src/foo.ts');
+    const okY = assert(name, rY.code === 0, `I.y: expected exit 0 (NEWLINE negative — benign rm of non-evidence path must still PERMIT), got ${rY.code}. stderr: ${rY.stderr.substring(0, 200)}`);
+
+    const rZ = runGuardBash("cat <<'EOF'\nrm -rf .prism/evidence\nEOF");
+    const okZ = assert(name, rZ.code === 0, `I.z: expected exit 0 (rm lives in heredoc data, not an executable segment — #298 heredoc break preserved under \\n join), got ${rZ.code}. stderr: ${rZ.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD && okE && okF && okG && okH && okI && okJ && okK && okL && okM && okN && okO && okP && okQ &&
+        okR && okS && okT && okU && okV && okW && okX && okY && okZ) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }
