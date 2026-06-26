@@ -26,12 +26,12 @@
       },
       {
         "id": "lint",
-        "description": "Lint passes",
+        "description": "Crossref lint passes (prose cross-references, ADR refs, install surface links)",
         "checklist_key": "lint",
         "source": "fresh",
         "check": {
           "kind": "command",
-          "command": "pnpm run prism:lint"
+          "command": "pnpm run prism:crossref-lint"
         },
         "on_fail": "done-override"
       },
