@@ -155,7 +155,16 @@ function isCoherent(verdict, nextRoute, allowedRoutes) {
   const constraint = VERDICT_ROUTE_CONSTRAINTS[verdict];
   if (constraint?.gateInjected) return false;
   if (constraint?.allowed) return constraint.allowed.includes(nextRoute);
-  // 'done' and 'needs-fix': validate against the persona's allowed_routes from gates.json
+  // 'done' and 'needs-fix': validate against the persona's allowed_routes from gates.json.
+  // Phase 5 population note: 'done'→'human' is legitimate only for personas whose natural
+  // forward handoff is a human action (e.g. Eric, whose done path is the merge gate). For
+  // all other personas, Phase 5 MUST NOT include 'human' in allowed_routes for the done
+  // path — even though every persona will have 'human' in allowed_routes for blocked/
+  // needs-human cases. The schema check alone cannot enforce this distinction; it is a
+  // Phase 5 population responsibility. A persona like Clove or Winston emitting done→human
+  // would pass this validator if 'human' appears in their allowed_routes — correctness
+  // depends on Phase 5 restricting 'human' from the done-eligible route set where it
+  // does not apply. See report-contract.md § Verdict-to-route coherence for the prose rule.
   return allowedRoutes.includes(nextRoute);
 }
 

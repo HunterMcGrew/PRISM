@@ -235,6 +235,35 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 
 ---
 
+### gates.json schema example points to a .md file (Eric PR #297, Minor 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Updated `CheckSpec.schema` example from `.prism/references/enforcement/report-contract.md` to `.prism/references/enforcement/gates.json`; extended field description to note that the target must be JSON-parseable. Propagated via build to all mirrors.
+- **File:** `.prism/references/enforcement/gates.json:150`
+- **Problem:** The `schema` field says "Path to a JSON Schema file" but the example pointed to a `.md` file. A JSON Schema validator cannot parse Markdown; a Phase 1 implementer following the example would get a runtime parse error.
+- **Suggested fix:** Point example at a `.json` path.
+
+### may_not_run allows empty array (Eric PR #297, Minor 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added `"minItems": 1` to `may_not_run` in `OwnershipMatrix`, matching the existing `minItems: 1` on `may_write`. Propagated via build to all mirrors.
+- **File:** `.prism/references/enforcement/gates.json:179`
+- **Problem:** `may_write` had `minItems: 1` but `may_not_run` did not. An empty `may_not_run: []` would pass schema validation while silently allowing forbidden commands — a silent failure mode before Phase 5 populates per-persona data.
+- **Suggested fix:** Add `minItems: 1` to match `may_write`.
+
+### done→human coherence gap (Eric PR #297, Minor 3)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added a prose comment block in the `isCoherent` function body in `.prism/references/enforcement/report-contract.md`, naming the Phase 5 population responsibility explicitly. Propagated via build to all mirrors.
+- **File:** `.prism/references/enforcement/report-contract.md:159`
+- **Problem:** The prose coherence table says `done`→`human` is invalid unless the persona's natural next step is a human action, but the JS `isCoherent` for `done` falls through to `allowedRoutes.includes(nextRoute)` — and every persona will have `human` in `allowed_routes` for `blocked`/`needs-human` cases, so the check is silently toothless for this case.
+- **Suggested fix:** Document the gap as a named Phase 5 responsibility at the code site.
+
+---
+
 ## Open Questions
 
 - **OPEN — TBD, needs Hunter input.** Whether Phase 4 emits hooks into `.codex/` now or defers until Codex hook parity is confirmed. **Default path (used until resolved):** emit to `.claude/` + `templates/install/` only; gate `.codex/` emission behind a confirmed-parity check, since leg 1 portability is explicitly not a near-term driver.
@@ -251,6 +280,7 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Phase 0 tasks 3–4 — Clove authored the report contract schema (`.prism/references/enforcement/report-contract.md`) and the gates.json structural schema (`.prism/references/enforcement/gates.json`). Report contract defines all seven fields, the verdict enum (citing `report-back.md` as authoritative), `next_route` derivation/validation rule with Clove as the worked example, and a JS reference validator including the verdict↔route coherence check. Gates.json schema defines the per-persona entry shape (`writes_report_to`, `preconditions[]`, `gates[]`, `unverifiable_boxes[]`, `ownership`, `allowed_routes[]`) with `CheckSpec` and `OwnershipMatrix` as nested definitions; documents the `{{commands.*}}` token convention. Phase 0 now fully built; handoff to Briar for self-review.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Briar self-review — 1 Major (install-seed crossref-lint failure: report-contract.md carries forbidden ADR-0067 refs + 6 dangling links in templates/install/), 2 Minor (needs-stronger-model injection next_route undocumented; enforcement-floor.md count claim). Verdict: needs-fix → Clove.
 - 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Clove fixed Briar's 3 review findings — excluded enforcement reference files from consumer seed (seed-curation.json + git rm); documented gate-injected next_route for needs-stronger-model in report-contract.md coherence table; replaced count claim in enforcement-floor.md with role-based description. All mirrors rebuilt; pnpm prism:crossref-lint passes clean.
+- 2026-06-25 [hmcgrew/issue-290-contract-schema-foundations]: Clove fixed Eric's 3 PR-review minors — corrected gates.json CheckSpec.schema example to a .json path; added minItems:1 to may_not_run; added Phase 5 population note to isCoherent for done→human gap. All mirrors rebuilt via build; pnpm prism:crossref-lint passes clean.
 
 ---
 
@@ -258,12 +288,12 @@ Grouped by phase; persona ownership labeled per task. Phases 0–4 are largely s
 
 Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 0 self-review.
 
-- [ ] No critical or major issues — **BLOCKED: 1 Major open (install-seed crossref-lint failure)**
+- [x] No critical or major issues — all 3 review findings fixed (Clove commit 639e365)
 - [x] Types correct — no `any`, no unsafe `as` (schema files; no TypeScript source in Phase 0)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (Phase 0 is schema/docs only; no runtime logic to test)
 - [x] All debugged issues resolved (no `open` debugged entries)
-- [ ] Build passes — `pnpm prism:crossref-lint` fails: 3 forbidden ADR refs + 6 dangling links in `templates/install/`. `pnpm prism:check` (build sync) passes. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch).
+- [x] Build passes — `pnpm prism:crossref-lint` passes all 3 gates (crossref, install-adr, install-relative-link). `pnpm prism:check` (build sync) passes. `pnpm prism:check-types` fails on pre-existing `bundle.ts` esbuild error (Windows, pre-dates this branch — not attributed to this PR).
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable) — not applicable for Phase 0; decisions promote at epic close
 

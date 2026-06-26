@@ -146,8 +146,8 @@
         },
         "schema": {
           "type": "string",
-          "description": "Optional when kind is 'file-validates'. Path to a JSON Schema file to validate the target against, relative to the repo root. When absent, 'file-validates' only checks that the file parses as valid JSON.",
-          "examples": [".prism/references/enforcement/report-contract.md"]
+          "description": "Optional when kind is 'file-validates'. Path to a JSON Schema file to validate the target against, relative to the repo root. When absent, 'file-validates' only checks that the file parses as valid JSON. The target path itself must also be a JSON-parseable file (not Markdown); to validate report.json against the report contract, a .json mirror of the contract schema is required.",
+          "examples": [".prism/references/enforcement/gates.json"]
         },
         "exit_code": {
           "type": "integer",
@@ -178,11 +178,12 @@
         },
         "may_not_run": {
           "type": "array",
-          "description": "Command substrings this persona may never run as a Bash command. The ownership guard substring-matches every Bash tool call against these values before allowing the command. A match is denied before execution. Encodes real boundaries: merge commands for implementers (Clove can't merge — must hand to human); merge commands for every reviewer (Eric never merges — ADR-0011); all merge and code-write commands for Sol.",
+          "description": "Command substrings this persona may never run as a Bash command. The ownership guard substring-matches every Bash tool call against these values before allowing the command. A match is denied before execution. Encodes real boundaries: merge commands for implementers (Clove can't merge — must hand to human); merge commands for every reviewer (Eric never merges — ADR-0011); all merge and code-write commands for Sol. Every persona must declare at least one prohibited command — merge-class prohibitions are universal per the gate-strength taxonomy.",
           "items": {
             "type": "string",
             "minLength": 1
           },
+          "minItems": 1,
           "examples": [
             ["gh pr merge", "git merge", "git push -f"],
             ["gh pr merge", "git merge", "git push -f", "git push --force"]
