@@ -210,11 +210,24 @@ export async function resolveGitignored(
 	}
 
 	return new Promise((resolve) => {
+		let settled = false;
+
+		const failOpen = () => {
+			if (!settled) {
+				settled = true;
+				resolve(new Set());
+			}
+		};
+
 		const child = execFile(
 			"git",
 			["check-ignore", "--stdin"],
 			{ cwd: repoRootPath },
 			(error, stdout, stderr) => {
+				if (settled) return;
+
+				settled = true;
+
 				// exit 0 — some paths matched
 				if (!error) {
 					const ignored = stdout
@@ -238,6 +251,17 @@ export async function resolveGitignored(
 				resolve(new Set());
 			}
 		);
+
+		// Spawn failure (e.g. git binary absent) fires here before the execFile
+		// callback, so the promise always resolves fail-open in that case.
+		child.on("error", failOpen);
+
+		// Swallow EPIPE on stdin so Node does not promote it to an uncaughtException.
+		// When git exits 128 (not a git repo) it closes its stdin early; the write
+		// below then hits a closed pipe and emits an async 'error' event on the
+		// stream. The execFile callback handles the process-side error; this handler
+		// prevents the stream-side error from escaping the Promise.
+		child.stdin?.on("error", () => {});
 
 		child.stdin?.write(candidates.join("\n"));
 		child.stdin?.end();
