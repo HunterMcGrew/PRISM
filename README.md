@@ -104,9 +104,11 @@ PRISM/
 │   │   ├── templates/            # PR description, AC, bug report templates
 │   │   └── SPEC.md.tmpl          # tier hierarchy template
 │   ├── .claude/                  # seeded into consumer's .claude/ by adopt
-│   │   └── CLAUDE.md.tmpl        # Claude-specific instructions template
-│   ├── .codex/                   # stub (adopt populates at runtime)
-│   ├── .cursor/                  # stub (adopt populates at runtime)
+│   │   ├── CLAUDE.md.tmpl        # Claude-specific instructions template
+│   │   ├── hooks/                # gate runners + ownership guard (build-mirrored)
+│   │   └── settings.json         # hook wiring
+│   ├── .codex/                   # empty stub — platform projection runs on update, gated behind confirmed Codex/Cursor
+│   ├── .cursor/                  # empty stub — platform projection runs on update, gated behind confirmed Codex/Cursor
 │   └── AGENTS.md.tmpl            # cross-platform constitution template
 │
 ├── scripts/ai-skills/            # generator + tooling (TypeScript via tsx)
