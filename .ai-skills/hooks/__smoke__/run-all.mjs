@@ -1766,7 +1766,80 @@ function assert(scenarioName, condition, message) {
     const okNq = assert(name, rNq.code === 2,
       `N.q: fused Tier1 source checkout + git status — expected exit 2, got ${rNq.code}. stderr: ${rNq.stderr.substring(0, 300)}`);
 
-    const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq];
+    // --- CRITICAL-1: embedded/prefixed/assignment command-substitution probes ---
+    // These forms embed a git mutation in a $(...) or backtick wrapper that is NOT a
+    // whole-segment substitution, so the prior whole-segment peel missed them. The guard
+    // now extracts all substitution bodies and scans them independently (CRITICAL-1 fix).
+
+    // N.r: echo $(git checkout -- .ai-skills/hooks/gates.json) → DENY
+    const rNr = runGuardBash('echo $(git checkout -- .ai-skills/hooks/gates.json)');
+    const okNr = assert(name, rNr.code === 2,
+      `N.r: echo $(git checkout -- gates.json) — expected exit 2 (embedded subst, CRITICAL-1), got ${rNr.code}. stderr: ${rNr.stderr.substring(0, 300)}`);
+
+    // N.s: x=$(git reset --hard HEAD) — assignment-captured substitution → DENY
+    const rNs = runGuardBash('x=$(git reset --hard HEAD)');
+    const okNs = assert(name, rNs.code === 2,
+      `N.s: x=$(git reset --hard) — expected exit 2 (assignment-captured subst, CRITICAL-1), got ${rNs.code}. stderr: ${rNs.stderr.substring(0, 300)}`);
+
+    // N.t: result=`git checkout -- .ai-skills/hooks/gates.json` — backtick form → DENY
+    const rNt = runGuardBash('result=`git checkout -- .ai-skills/hooks/gates.json`');
+    const okNt = assert(name, rNt.code === 2,
+      `N.t: backtick result=\`git checkout\` — expected exit 2 (backtick assignment, CRITICAL-1), got ${rNt.code}. stderr: ${rNt.stderr.substring(0, 300)}`);
+
+    // N.u: echo `git reset --hard` — mid-line backtick → DENY
+    const rNu = runGuardBash('echo `git reset --hard`');
+    const okNu = assert(name, rNu.code === 2,
+      `N.u: echo \`git reset --hard\` — expected exit 2 (mid-line backtick, CRITICAL-1), got ${rNu.code}. stderr: ${rNu.stderr.substring(0, 300)}`);
+
+    // N.v: $(echo $(git reset --hard)) — nested substitution (inner runs) → DENY
+    const rNv = runGuardBash('$(echo $(git reset --hard))');
+    const okNv = assert(name, rNv.code === 2,
+      `N.v: $(echo $(git reset --hard)) — expected exit 2 (nested subst, CRITICAL-1), got ${rNv.code}. stderr: ${rNv.stderr.substring(0, 300)}`);
+
+    // N.w: echo "$(git reset --hard)" — double-quoted substitution → DENY
+    const rNw = runGuardBash('echo "$(git reset --hard)"');
+    const okNw = assert(name, rNw.code === 2,
+      `N.w: echo "$(git reset --hard)" — expected exit 2 (double-quoted subst, CRITICAL-1), got ${rNw.code}. stderr: ${rNw.stderr.substring(0, 300)}`);
+
+    // N.x: foo=$(git reset --hard) bar — assignment-prefixed with trailing token → DENY
+    const rNx = runGuardBash('foo=$(git reset --hard) bar');
+    const okNx = assert(name, rNx.code === 2,
+      `N.x: foo=$(git reset --hard) bar — expected exit 2 (assignment+trailing, CRITICAL-1), got ${rNx.code}. stderr: ${rNx.stderr.substring(0, 300)}`);
+
+    // --- CRITICAL-2: directory pathspec and :(top) magic probes ---
+    // These pathspecs name the .ai-skills/hooks DIRECTORY, which git restores as a tree;
+    // the prior check required a trailing slash so bare-dir and magic forms bypassed.
+
+    // N.y: git checkout -- .ai-skills/hooks/ — dir pathspec with trailing slash → DENY
+    const rNy = runGuardBash('git checkout -- .ai-skills/hooks/');
+    const okNy = assert(name, rNy.code === 2,
+      `N.y: git checkout -- .ai-skills/hooks/ — expected exit 2 (dir pathspec trailing slash, CRITICAL-2), got ${rNy.code}. stderr: ${rNy.stderr.substring(0, 300)}`);
+
+    // N.z: git checkout -- .ai-skills/hooks — dir pathspec no slash → DENY
+    const rNz = runGuardBash('git checkout -- .ai-skills/hooks');
+    const okNz = assert(name, rNz.code === 2,
+      `N.z: git checkout -- .ai-skills/hooks — expected exit 2 (dir pathspec no slash, CRITICAL-2), got ${rNz.code}. stderr: ${rNz.stderr.substring(0, 300)}`);
+
+    // N.aa: git checkout -- ":(top).ai-skills/hooks/gates.json" — pathspec magic → DENY
+    const rNaa = runGuardBash('git checkout -- ":(top).ai-skills/hooks/gates.json"');
+    const okNaa = assert(name, rNaa.code === 2,
+      `N.aa: git checkout -- ":(top)..." — expected exit 2 (pathspec magic, CRITICAL-2), got ${rNaa.code}. stderr: ${rNaa.stderr.substring(0, 300)}`);
+
+    // --- Negative controls: must still PERMIT (no over-block) ---
+    // Eric's 34 negative controls cover git status/diff/add/commit/log/fetch and
+    // non-protected src/ paths. These spot-checks confirm the new probes don't widen the
+    // denial surface beyond protected paths.
+
+    // N.ab: git checkout -- src/app.ts — non-protected source path → PERMIT (existing N.j cover)
+    // Already covered by N.j above; this comment documents the negative-control intent.
+
+    // N.ac: gitfoo checkout — non-git head → PERMIT
+    const rNac = runGuardBash('gitfoo checkout -- .ai-skills/hooks/gates.json');
+    const okNac = assert(name, rNac.code === 0,
+      `N.ac: gitfoo checkout (non-git head) — expected exit 0 (not a git command), got ${rNac.code}. stderr: ${rNac.stderr.substring(0, 300)}`);
+
+    const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq,
+                  okNr, okNs, okNt, okNu, okNv, okNw, okNx, okNy, okNz, okNaa, okNac];
     if (allN.every(Boolean)) {
       console.log(`${PASS} ${name}`);
     } else {

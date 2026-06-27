@@ -718,6 +718,64 @@ function targetsEvidence(token) {
 }
 
 /**
+ * Strips git pathspec magic prefixes before path normalization.
+ *
+ * Git supports magic signatures like `:(top)`, `:/`, `:(glob)`, `:(literal)`,
+ * `:(icase)`, and `:(exclude)` (short form `!`) prepended to a pathspec. These prefixes
+ * are git's own syntax — not file-system paths — and they survive normalizeWriteTarget
+ * verbatim because path.resolve treats them as filename characters. Stripping them before
+ * normalization lets the prefix checks see the bare path and closes the `:(top)` bypass
+ * vector (CRITICAL-2 / Eric PR #351).
+ *
+ * Shell quoting (single or double quotes wrapping the whole token) is stripped first,
+ * because the hook receives the literal command string with quote characters intact.
+ */
+function stripPathspecMagic(raw) {
+  // Strip surrounding shell quotes — the hook receives the literal command text, so
+  // `":(top)path"` has literal double-quote chars that must be removed before magic detection.
+  if ((raw.startsWith('"') && raw.endsWith('"')) ||
+      (raw.startsWith("'") && raw.endsWith("'"))) {
+    raw = raw.slice(1, -1);
+  }
+  // Long-form magic: :(word) or :(word,word,...) at the start of the token
+  const longForm = raw.match(/^:\([^)]*\)(.*)/);
+  if (longForm) return longForm[1];
+  // Short-form exclude magic: ! prefix
+  if (raw.startsWith('!')) return raw.slice(1);
+  return raw;
+}
+
+/**
+ * Returns true when a normalized pathspec targets a protected directory or any file
+ * beneath one, treating a directory pathspec as covering all children.
+ *
+ * A pathspec of `.ai-skills/hooks` (no trailing slash) normalizes without the slash but
+ * is equivalent to `.ai-skills/hooks/` from git's perspective — it restores every tracked
+ * file under that tree. The standard startsWith(prefix) check requires the trailing slash
+ * so it misses the bare-directory form. This predicate matches when the target equals the
+ * directory prefix (with or without trailing slash) or starts with it — without
+ * over-blocking non-protected directories like `src/` (CRITICAL-2 / Eric PR #351).
+ */
+function pathspecCoversProtectedDirectory(normalizedTarget) {
+  const protectedDirs = [
+    PROTECTED_CANONICAL_HOOKS_PREFIX,   // '.ai-skills/hooks/'
+    '.claude/hooks/',                   // runtime hooks dir — individual files are in PROTECTED_WRITE_PATHS
+    PROTECTED_LIB_PREFIX,               // '.claude/hooks/lib/'
+  ];
+  for (const dir of protectedDirs) {
+    const dirWithoutSlash = dir.slice(0, -1);
+    if (
+      normalizedTarget === dir ||
+      normalizedTarget === dirWithoutSlash ||
+      normalizedTarget.startsWith(dir)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Returns a git mutation descriptor when a command contains a git subcommand that would
  * write a protected enforcement path, or null when no protected git mutation is found.
  *
@@ -732,9 +790,37 @@ function targetsEvidence(token) {
  *   strategy is denial by subcommand. Returns { tier: 2, subcommand }.
  *
  * Returns null when no git segment is found or when the git op is read-only (status, diff, log).
+ *
+ * Scans both outer segments AND command-substitution bodies so that embedded or prefixed
+ * forms like `echo $(git reset --hard)` and `x=$(git checkout -- .ai-skills/hooks/gates.json)`
+ * are caught — bash executes the substitution body regardless of what wraps it (CRITICAL-1 /
+ * Eric PR #351). Pathspec magic prefixes (`:(top)`, `:/`, `!`) are stripped before
+ * normalization (CRITICAL-2 / Eric PR #351). Directory pathspecs (`.ai-skills/hooks`,
+ * `.ai-skills/hooks/`) are treated as covering all children under that tree (CRITICAL-2).
  */
 function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
-  for (const segment of splitCommandSegments(effectiveCmd)) {
+  // Collect segments from the outer command and from ALL substitution bodies, including
+  // nested ones. A substitution body executes as its own shell command — its git mutation
+  // is real regardless of whether it appears as a whole token, a prefix, a suffix, an
+  // assignment RHS, inside double-quotes, or nested inside another substitution.
+  // Collecting bodies iteratively (BFS) ensures that $(echo $(git reset --hard)) surfaces
+  // the inner git command even though the outer body starts with "echo" not "git".
+  const allBodies = [];
+  const pending = [effectiveCmd];
+  while (pending.length > 0) {
+    const next = pending.shift();
+    const bodies = extractSubstitutionBodies(next);
+    for (const b of bodies) {
+      allBodies.push(b);
+      pending.push(b); // recurse into nested substitutions
+    }
+  }
+  const allSegments = [
+    ...splitCommandSegments(effectiveCmd),
+    ...allBodies.flatMap(body => splitCommandSegments(body)),
+  ];
+
+  for (const segment of allSegments) {
     const tokens = tokenize(segment);
     if (commandHead(tokens) !== 'git') continue;
 
@@ -748,11 +834,13 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
         return { tier: 2, subcommand };
       }
       for (const raw of pathspecs) {
-        const target = normalizeWriteTarget(raw, cwdBase);
-        if (isEnforcementSourceProtected(target)) {
+        // Strip pathspec magic before normalization so :(top), :/, ! prefixes do not hide the path.
+        const stripped = stripPathspecMagic(raw);
+        const target = normalizeWriteTarget(stripped, cwdBase);
+        if (isEnforcementSourceProtected(target) || pathspecCoversProtectedDirectory(target)) {
           return { tier: 1, path: target, subcommand };
         }
-        if (target.startsWith('.prism/evidence/')) {
+        if (target.startsWith('.prism/evidence/') || target === '.prism/evidence') {
           for (const basename of PROTECTED_EVIDENCE_BASENAMES) {
             if (target.includes(basename)) {
               return { tier: 1, path: target, subcommand };
@@ -770,6 +858,63 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
   }
 
   return null;
+}
+
+/**
+ * Extracts the content of every command substitution body in a shell string.
+ *
+ * Bash executes a substitution body wherever it appears — whole-token, prefixed
+ * (`echo $(cmd)`), suffixed, assignment-captured (`x=$(cmd)`), inside double-quotes
+ * (`"$(cmd)"`), or nested (`$(echo $(cmd))`). The content of each body is a real
+ * shell command that runs unconditionally, so it must be scanned for git mutations
+ * regardless of the outer wrapping. This closes the embedded/prefixed substitution bypass
+ * that `commandMutatesProtectedViaGit` previously missed (CRITICAL-1 / Eric PR #351).
+ *
+ * Returns an array of body strings. Callers pass each body through splitCommandSegments so
+ * nested substitutions surface on the next recursive call to commandMutatesProtectedViaGit.
+ *
+ * Two forms are handled:
+ *   $(...) — POSIX dollar-paren, depth-tracked parenthesis scan.
+ *   `...`  — backtick form, matched as content between paired backticks (flat form; nested
+ *            backticks are not standard POSIX sh and are not handled recursively here).
+ */
+function extractSubstitutionBodies(cmd) {
+  const bodies = [];
+
+  // --- $(...) form: depth-tracked parenthesis scan ---
+  let i = 0;
+  while (i < cmd.length) {
+    if (cmd[i] === '$' && cmd[i + 1] === '(') {
+      const start = i + 2; // content starts after '$('
+      let depth = 1;
+      let j = start;
+      while (j < cmd.length && depth > 0) {
+        if (cmd[j] === '(') depth++;
+        else if (cmd[j] === ')') depth--;
+        j++;
+      }
+      // j now points one past the closing ')' (or past end if unclosed)
+      if (depth === 0) {
+        bodies.push(cmd.slice(start, j - 1));
+        i = j; // resume after the closing ')'
+      } else {
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+
+  // --- Backtick form: find content between paired backticks ---
+  let btStart = cmd.indexOf('`');
+  while (btStart !== -1) {
+    const btEnd = cmd.indexOf('`', btStart + 1);
+    if (btEnd === -1) break;
+    bodies.push(cmd.slice(btStart + 1, btEnd));
+    btStart = cmd.indexOf('`', btEnd + 1);
+  }
+
+  return bodies;
 }
 
 /**

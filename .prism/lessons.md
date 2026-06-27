@@ -266,7 +266,6 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 ---
 
-
 ## The report contract, not the dispatch prose, is the authority on `next_route`
 
 **What:** 2026-06-26 (Issue #300 / PR #301) — A Sol dispatch prompt said "next_route: eric (re-review)." I wrote `next_route: eric` into `report.json` with `verdict: done`. The Stop gate rejected it (strike 1/3): `next_route 'eric' is incoherent with verdict 'done'`. The report contract (`report-contract.md` § Verdict-to-route coherence) is explicit — a Clove `done` routes to `briar` (self-review), the normal forward persona; `eric` is in Clove's allowed-routes set but is not coherent with `done`.

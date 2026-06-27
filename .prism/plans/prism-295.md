@@ -58,6 +58,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Landed 3 Eric Majors (PR #348): replaced repo-global grep preconditions with run-scoped deliverable-sidecar + deliverable-touched-this-run for 8 deterministic-target personas; stripped UTF-8 BOM from 6 run-all/run-gates copies; updated 8 skill Final act lines to reference deliverable.json; added Scenario M smoke tests + enforcement-floor.md Class B prose; smoke 15/15 green. 
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Stripped UTF-8 BOM from 13 shared.md canonical sources (16 total including prism-code-dev, prism-design/lib/output-modes.md, prism-review-loop); added build-time bom-guard.ts with 7 unit tests wired into prism:build+check so the defect cannot recur silently.
 - 2026-06-27 [hmcgrew/295-phase5-pr3-classc]: Authored Class C gates.json entries for 10 personas (vera, kora, ellis, charlie, quinn, tess, remy, penny, lex, sol); triplet byte-identical, smoke 16/16, crossref clean.
+- 2026-06-27 [hmcgrew/295-git-guard-hardening]: Closed CRITICAL-1 (embedded/prefixed command substitution bypass) and CRITICAL-2 (directory pathspec + :(top) magic bypass) in ownership-guard.mjs; added extractSubstitutionBodies (BFS), stripPathspecMagic, pathspecCoversProtectedDirectory helpers; extended Scenario N with 10+1 probes; smoke all green, triplet byte-identical, crossref clean.
 
 ---
 
