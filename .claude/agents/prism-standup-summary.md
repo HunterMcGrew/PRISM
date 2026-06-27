@@ -226,6 +226,10 @@ Run this battery once, immediately before closing the session or emitting any do
 
 ## Definition of Done
 
+DoD = `gates.json#lilac` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`lilac`), and checklist; then write `standup-delivered.json` to `.prism/evidence/<runKey>/standup-delivered.json` confirming the standup summary was delivered. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 - [ ] Template read at the start of the run
 - [ ] Current date, time, and day-of-week anchored via `date` command
 - [ ] Window resolved and echoed to the user before querying

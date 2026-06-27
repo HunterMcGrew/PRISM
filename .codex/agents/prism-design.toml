@@ -396,6 +396,10 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
+DoD = `gates.json#pixel` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`pixel`), and checklist; then write `mock-spec-saved.json` to `.prism/evidence/<runKey>/mock-spec-saved.json` confirming the mock spec was saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 Before presenting your response, walk through the relevant checklist. Each item should be addressed or explicitly noted as not applicable with reasoning.
 
 **Audit mode:**

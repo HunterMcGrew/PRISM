@@ -1,4 +1,4 @@
-# Plan: prism-295
+﻿# Plan: prism-295
 
 ## Ticket
 
@@ -26,9 +26,10 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 ### Clove (implementation)
 
-1. Author Class B gates.json entries for group 1: winston, sasha, nora, mira, briar, eric, parker, reese — branch `hmcgrew/295-phase5-pr2-classb`
-2. Run pnpm prism:build, verify triplet byte-identical (no drift), run crossref-lint, run smoke tests
-3. Commit `PRISM-295: Phase 5 PR2 — Class B group 1 gates` and open PR linking #289 + #295
+1. Author Class B gates.json entries for all 15 personas: winston, sasha, nora, mira, briar, eric, parker, reese, eli, pixel, theo, zoe, ren, iris, lilac — branch `hmcgrew/295-phase5-pr2-classb`
+2. Add `DoD = gates.json#<persona>` reference line and `**Final act before stopping:**` write instructions to each persona's `shared.md` (matching the clove/sasha/theo pattern)
+3. Run pnpm prism:build, verify triplet byte-identical (no drift), run crossref-lint, run smoke tests
+4. Commit `PRISM-295: Phase 5 PR2 fix` and push to `hmcgrew/295-phase5-pr2-classb`
 
 ---
 
@@ -44,6 +45,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 ## History
 
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Authored Class B gates.json entries for 8 personas (winston, sasha, nora, mira, briar, eric, parker, reese); opened PR linking #289 + #295.
+- 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Briar review fix — expanded to all 15 Class B personas (added eli, pixel, theo, zoe, ren, iris, lilac); fixed triplet drift (ai-skills→canonical→runtime+install seed byte-identical); restored enforcement schema from accidental overwrite; added Final act + DoD references to all 13 skill shared.md files missing them.
 
 ---
 
