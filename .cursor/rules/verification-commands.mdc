@@ -3,122 +3,84 @@ globs:
   - "**/*.ts"
   - "**/*.tsx"
   - "**/*.js"
-  - "**/*.jsx"
-  - "**/*.php"
-  - "**/*.py"
-  - "**/*.go"
+  - "**/*.mjs"
 ---
 
 # Verification Commands
 
-Canonical commands for building, testing, formatting, and linting. All agents that verify code should reference this file — do not embed commands in individual skill files.
+Canonical commands for building, testing, formatting, and linting. Commands live in `.ai-skills/config.json#commands` and are referenced in `gates.json` as `{{commands.*}}` tokens — this file is the human-readable rendering of that data. Do not embed command strings in individual skill files; update config.json instead.
 
 ---
 
-## TypeScript Type-Check
+## Command map (`.ai-skills/config.json#commands`)
+
+| Slot | Token | Command |
+| --- | --- | --- |
+| typecheck | `{{commands.typecheck}}` | `pnpm run prism:check-types` |
+| test | `{{commands.test}}` | `pnpm run prism:test` |
+| lint | `{{commands.lint}}` | `pnpm run prism:crossref-lint` |
+| format | `{{commands.format}}` | _(none — PRISM has no standalone formatter step)_ |
+| build | `{{commands.build}}` | `pnpm run prism:build` |
+
+**When Atlas onboards a new team**, it populates these slots from the detected tech stack and regenerates this file. The token column is the stable reference gate runners and skill prose use; the command column is what executes at runtime.
+
+---
+
+## Type-Check
 
 ```bash
-# Backend plugin
-cd <repo-root>/backend/plugins/gravity-platform-core && pnpm run check-types
-
-# Frontend
-cd <repo-root>/frontend && pnpm run check-types
-
-# All packages (from repo root)
-cd <repo-root> && pnpm run check-types
+pnpm run prism:check-types
 ```
 
-**Gotcha:** `pnpm run check-types` at the repo root runs `tsc` in all workspace packages. The `--filter` flag is a **pnpm** argument, not a tsc argument — use `pnpm --filter=gravity-platform-core run check-types` from the repo root, or `cd` into the package and run `pnpm run check-types` directly. `--filter` must come before the `run` command — placing it after the script name passes it to `tsc`, not pnpm.
+Runs `tsc --noEmit` against `scripts/ai-skills/tsconfig.json`. Covers the build scripts only — the `.prism/` markdown surface has no TypeScript.
 
 ---
 
 ## Tests
 
-### Frontend (Jest)
-
 ```bash
-cd <repo-root>/frontend && npx jest --testPathPatterns="<pattern>" --no-coverage
+pnpm run prism:test
 ```
 
-- `--testPathPatterns` (plural) — `--testPathPattern` (singular) is deprecated and will error
-- Pattern matches against file paths: `"mega-menu-info-banner"`, `"resolver.test"`, `"MegaMenuInfoBanner"`
-- Run all frontend tests: `cd <repo-root>/frontend && pnpm run test`
+Runs `tsx --test scripts/ai-skills/*.test.ts`. Covers build-pipeline unit tests (token substitution, seed-mirror, drift detection, manifest coverage).
 
-### PHP (Pest)
+Run a single test file directly when iterating:
 
 ```bash
-cd <repo-root>/backend/plugins/gravity-platform-core
-
-# Unit tests only (no WordPress)
-composer test:unit
-
-# Integration tests (requires WP test DB)
-composer test:integration
-
-# All tests
-composer test
+node --test scripts/ai-skills/build.test.ts
 ```
 
 ---
 
-## Formatting (Prettier)
+## Lint
 
 ```bash
-cd <repo-root>/frontend && npx prettier --write <files>
+pnpm run prism:crossref-lint
 ```
 
-**Gotcha:** Prettier plugins (`@ianvs/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`) are installed in the `frontend` package, not at the repo root. Running `npx prettier` from the repo root will miss plugin configuration and produce wrong output. Always run from `frontend/`.
-
-- Use `--write` directly — skip `--check` when you know which files you changed
-- Use `--check` in review contexts (Briar, Eric) where you're verifying someone else's work
-
-For backend TypeScript files (editor blocks), prettier still runs from `frontend/` using relative paths:
-
-```bash
-cd <repo-root>/frontend && npx prettier --write ../backend/plugins/gravity-platform-core/src/blocks/<block-name>/<file>
-```
+Prose cross-reference linter — checks ADR refs, install surface links, and skill cross-references. Exit 0 means all references resolve.
 
 ---
 
-## Linting (ESLint)
+## Format
 
-```bash
-cd <repo-root>/frontend && npx eslint --fix <files>
-```
-
-Same directory requirement as Prettier — run from `frontend/`.
-
-For backend TypeScript files (editor blocks), ESLint also runs from `frontend/` using relative paths:
-
-```bash
-cd <repo-root>/frontend && npx eslint --fix ../backend/plugins/gravity-platform-core/src/blocks/<block-name>/<file>
-```
+No standalone formatter step for PRISM. The TypeScript build scripts follow the repo's editor config; Prettier is not installed as a project dependency. If a team adds a formatter, Atlas will populate `commands.format` during onboarding and this section updates.
 
 ---
 
-## Storybook
+## Build
 
 ```bash
-# Build static Storybook — catches broken stories, missing imports, bad props
-cd <repo-root>/frontend && pnpm run build-storybook
-
-# Run interaction and a11y tests against the built output (serves, tests, tears down)
-cd <repo-root>/frontend && pnpm run test-storybook:ci
+pnpm run prism:build
 ```
 
-- `build-storybook` must run before `test-storybook:ci` — the CI script serves from `storybook-static/`
-- `test-storybook:ci` handles the dev server lifecycle automatically — no second terminal needed
-- Visual review is a human task — agents verify stories compile and pass automated checks, not visual correctness
+Runs `build.ts` (emits hooks, syncs seed mirror, validates manifest) then the test suite. Use for final verification before PR. Equivalent to `pnpm run prism:check` minus the explicit type-check and crossref-lint (those run as part of `prism:check`).
 
----
-
-## Full Build
+For full validation (all gates in sequence):
 
 ```bash
-cd <repo-root> && pnpm run build
+pnpm run prism:check
 ```
-
-Runs the build across all workspace packages. Use for final verification before PR.
 
 ---
 
@@ -126,18 +88,11 @@ Runs the build across all workspace packages. Use for final verification before 
 
 When verifying a complete change set:
 
-1. **Format** — `prettier --write` (auto-fixes, so run first)
-2. **Lint** — `eslint --fix` (may catch issues prettier doesn't)
-3. **Type-check** — `tsc` (catches type errors after formatting is stable)
-4. **Test** — `jest` / `composer test` (catches behavioral regressions)
-5. **Build** — full build (catches anything the above missed)
+1. **Type-check** — `{{commands.typecheck}}` (catches type errors first)
+2. **Lint** — `{{commands.lint}}` (catches prose reference errors)
+3. **Test** — `{{commands.test}}` (catches behavioral regressions)
+4. **Build** — `{{commands.build}}` (catches anything the above missed)
 
-Steps 1-2 can run in sequence. Steps 3-4 can run in parallel (independent). Step 5 runs last.
+Steps 1–3 can run in parallel (independent). Step 4 runs last.
 
-Step 5 is owned by Briar (self-review) and runs conditionally based on the diff — see [thrive-code-review-self/SKILL.md § Build step](../skills/thrive-code-review-self/SKILL.md). Clove and other authoring personas do not run the full build during implementation; they stop at step 4. CI runs the build on PR open as the enforcement layer.
-
----
-
-## See also
-
-- For environment gotchas (ESLint plugin resolution, PHP tests + `composer install`, Prettier from `frontend/`, Turbopack cache, etc.) see `.prism/references/operational-gotchas.md`.
+Step 4 is owned by Briar (self-review) and runs conditionally based on the diff. Clove and other authoring personas stop at step 3 during implementation; CI runs the build on PR open.

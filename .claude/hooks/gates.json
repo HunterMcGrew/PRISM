@@ -20,7 +20,7 @@
         "source": "fresh",
         "check": {
           "kind": "command",
-          "command": "pnpm run prism:check-types"
+          "command": "{{commands.typecheck}}"
         },
         "on_fail": "done-override"
       },
@@ -31,7 +31,7 @@
         "source": "fresh",
         "check": {
           "kind": "command",
-          "command": "pnpm run prism:crossref-lint"
+          "command": "{{commands.lint}}"
         },
         "on_fail": "done-override"
       },
@@ -42,7 +42,7 @@
         "source": "ledger",
         "check": {
           "kind": "command",
-          "command": "pnpm run prism:test"
+          "command": "{{commands.test}}"
         },
         "on_fail": "done-override"
       }
