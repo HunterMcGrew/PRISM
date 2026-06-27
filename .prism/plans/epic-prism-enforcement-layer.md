@@ -449,7 +449,7 @@ Grounded by the 2026-06-27 A/B series (see Decisions "Phase 6 ceiling gains a br
 6. Restore the four hook wirings in `.claude/settings.json` from the parent of commit `ec1f8fc` (PreToolUse→`ownership-guard.mjs`; PostToolUse→`evidence-ledger.mjs`; Stop→`run-gates.mjs` timeout 120; SubagentStop→`run-gates.mjs` timeout 120). The enforcement code is correct and on `main`; only the wiring is off. This is the epic's final behavioral step.
 
    **Re-enable checklist (Winston, Phase 4.5 task 1 deliverable):**
-   - [ ] Maintenance mode landed and green (Phase 4.5 task 2) — `CLAUDE_PRISM_MAINTENANCE` unset in normal operation; smoke Scenario J passes.
+   - [x] Maintenance mode landed and green (Phase 4.5 task 2) — `CLAUDE_PRISM_MAINTENANCE` unset in normal operation; smoke Scenario K passes (14/14).
    - [ ] `settings.json` restored to the four wirings above (the edit itself is enforcement-source-protected — do it with the floor still off, or as the human, or under `CLAUDE_PRISM_MAINTENANCE=1`).
    - [ ] `node .claude/hooks/__smoke__/run-all.mjs` + `fleet-keying.mjs` green against the live runtime.
    - [ ] Fleet integrity test (task 5) passes — a false `done` is forced-continue/parked and the lane contained.
@@ -1145,6 +1145,33 @@ All three pass. Two separate harness entry points: `node .claude/hooks/__smoke__
 - **Suggested fix:** Add `"rm -f .prism/evidence"` and `"rm -fr .prism/evidence"` to `may_not_run`, OR replace the two specific entries with a more general approach: guard the evidence path itself (e.g. `"rm -" is too broad; a prefix match on the path segment `.prism/evidence` in `rm` commands with any flags would require a small parsing pass in `extractEffectiveCommand`). Minimum fix: add the two missing flag variants to `may_not_run`. This is a narrow gap in the Bash-path softness the plan already accepts; it's worth closing explicitly.
 - **Fix-now vs. defer call (followup-scope):** Trivial fix — add two strings to `may_not_run` in `gates.json`. The file is denylist-protected (ironically), so it must wait for Phase 4's canonical-source split before Clove can edit it in a gated dispatch. It's a legitimate Phase 5 item: the Phase 5 accuracy audit already covers `may_not_run` correctness. Record here; defer to Phase 5.
 
+### Fused command breaches non-self-escape invariant under maintenance mode (Eric PR #346, Major)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **Fixed in:** Added a `commandDeletesEvidence(effectiveCmd)` check inside the maintenance unlock block in canonical `.ai-skills/hooks/ownership-guard.mjs`, before the `process.exit(0)`. A fused Bash command (`echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence`) now denies at exit 2 even under maintenance — the evidence-delete arm fires on the full command before the source-write early-exit can execute. Each protection evaluates independently per its own target, matching the segmentation model the #300 gate-fix block established. Smoke Scenario K gained sub-test K6 (`maintenance ON + fused source-write && rm evidence → exit 2`). All three mirrors byte-identical; `run-all.mjs` 13/13 (K now 6 sub-tests), `fleet-keying.mjs` 3/3, `prism:crossref-lint` clean, `build.ts --check` no drift.
+- **File:** `.ai-skills/hooks/ownership-guard.mjs` (maintenance unlock block in Bash branch), also `.claude/hooks/` and `templates/install/.claude/hooks/` mirrors
+- **Problem:** The Bash-path maintenance unlock calls `appendMaintenanceLedger` then `process.exit(0)` immediately. `commandDeletesEvidence` runs only AFTER this early-exit, so a fused command pairing a protected-source-write with an evidence-delete (`echo x > gates.json && rm -rf .prism/evidence`) exits 0 under maintenance — the evidence-delete arm never fires. This breaches the non-self-escape invariant: maintenance suspends enforcement-SOURCE writes only; gate state (evidence) deletion must never be suspended.
+- **Suggested fix:** Gate the maintenance `process.exit(0)` behind a prior `commandDeletesEvidence` check — if the full fused command also deletes evidence, deny at exit 2 before the source-write unlock can fire.
+
+### `appendMaintenanceLedger` re-reads and re-parses gates.json to re-resolve persona (Eric PR #346, Minor 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Updated `appendMaintenanceLedger` signature to `(payload, normalizedPath, resolvedPersona, projectDir)`, removing the IIFE that re-read and re-parsed `gates.json`. Updated both call sites (Bash-path and tool-path Edit/Write arm) to pass the already-resolved `persona` value from the module-level `const { persona } = resolved`. Eliminates a redundant file read on every maintenance-permitted call.
+- **File:** `.ai-skills/hooks/ownership-guard.mjs` (`appendMaintenanceLedger` function and both call sites), also `.claude/hooks/` and `templates/install/.claude/hooks/` mirrors
+- **Problem:** `appendMaintenanceLedger` re-resolves persona via an IIFE that reads and parses `gates.json` from disk, even though the module body already resolved persona into `const { persona } = resolved`. The re-read is redundant and adds file I/O on every permitted maintenance call.
+- **Suggested fix:** Add `resolvedPersona` as an explicit parameter; pass `persona` from the already-resolved module-level constant at both call sites.
+
+### Smoke K6 sub-test missing — fused source-write + evidence-delete not pinned (Eric PR #346, Minor 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** Added K6 sub-test to Scenario K in canonical `.ai-skills/hooks/__smoke__/run-all.mjs`: `maintenance ON + echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence → exit 2`. The Scenario K pass condition now requires `okK1 && okK2 && okK3 && okK4 && okK5 && okK6`. Emitted to runtime + install seed; mirrors byte-identical.
+- **File:** `.ai-skills/hooks/__smoke__/run-all.mjs` (Scenario K), also `.claude/hooks/` and `templates/install/.claude/hooks/` mirrors
+- **Problem:** Scenario K (maintenance mode) has 5 sub-tests (K1–K5) but none pins the specific fused-command shape that the Major identified as broken. Without K6, a future regression that re-opens the early-exit hole would not be caught by the smoke suite.
+- **Suggested fix:** Add K6: `maintenance ON + fused source-write && evidence-delete command → exit 2` (the exact shape Eric reproduced).
+
 ### `.prism/active-persona` not gitignored (Sol finding — Briar Phase 2 assessment)
 
 - **Severity:** `minor`
@@ -1228,12 +1255,15 @@ All three items were resolved by Issue #300 (gate-fix + canonical-source split p
 - 2026-06-27 [hmcgrew/289-escape-typing]: Clove re-typed SRP escape #4 (`needs-human` → `needs-replan`) in `shared.md` with architectural routing to Winston, propagated via `pnpm prism:build` to all 5 generated prism-code-dev targets; reconciled `blocked` → human to `blocked` → Winston in the "Handoff is enforced" Decision; carries Winston's uncommitted escape-typing audit record. PR #313.
 - 2026-06-27 [hmcgrew/289-plan-history-consolidation]: Consolidated six-PR merge train — #312 fixed the EPIPE / `resolveGitignored` uncaughtException that was failing `prism:check` on every PR (async stream-error guard + settled/failOpen); #311 committed Winston's uncommitted strategic re-plan to `main`; #307 delivered Phase 3 floor (command-tokenization seam: config.json commands map, gates.json tokens, verification-commands render, Clove tasks 1–3 complete); #310/#309/#308 delivered the Phase 6 ceiling pilots for `prism-code-dev`, `prism-debugger`, and `prism-handoff` (vague guidance → named procedures + typed escapes). Per-lane History appends were dropped during merge-conflict resolution (each merge used `main`'s authoritative plan); this entry backfills the record.
 - 2026-06-27 [hmcgrew/294-phase4-build-pipeline]: Phase 4 plan reconciliation — updated the #300 build-emit scoping Decision to supersede the Stage 1 "hand-maintained runtime file" stance (the shipped `{"hooks": {}}` disabled stub is platform-agnostic, so Codex parity was not required for canonicalization; live wiring still deferred to floor re-enable); added a companion Decision "Phase 4 settings.json canonicalization" recording the precondition relaxation; documented that Task 2's seed-curation.json classification is satisfied structurally via `emitHooks` dual-write (not a literal `seed-curation.json` entry); Phase 4 tasks 1–3 marked done.
+- 2026-06-27 [hmcgrew/294-phase45-maintenance-mode]: Phase 4.5 task 2 — maintenance mode shipped.
+- 2026-06-27 [hmcgrew/294-phase45-maintenance-mode]: Fixed Eric PR #346 doc-drift Minor — Scenario K docstring updated to list K6 arm ("one per protection arm" header added); plan History count corrected from 5 to 6; all three run-all.mjs mirrors regenerated byte-identical via build.ts.
+- 2026-06-27 [hmcgrew/294-phase45-maintenance-mode]: Fixed Eric PR #346 Major + 2 Minors — non-self-escape invariant breached by fused maintenance unlock; `commandDeletesEvidence` now runs before early-exit; `appendMaintenanceLedger` accepts already-resolved persona (no re-read); K6 smoke sub-test pins the fused shape. All mirrors byte-identical; smoke 13/13, fleet-keying 3/3, drift clean. Added `isMaintenanceMode()`, `isEnforcementSourceProtected()` (single predicate covering both deny and unlock sites), `appendMaintenanceLedger()`, and `'maintenance-ledger.jsonl'` to `PROTECTED_EVIDENCE_BASENAMES` in canonical `ownership-guard.mjs`; run-gates banner on maintenance ON; smoke Scenario K (6 sub-tests: OFF→DENY, ON→PERMIT+ledger, gate-state STILL DENY, may_not_run STILL DENY, ledger tamper-proof DENY, fused source-write+evidence-delete DENY) all pass; emitted to runtime + install seed, `build.ts --check` no drift, crossref-lint clean, fleet-keying 3/3.
 
 ---
 
 ## PR Readiness
 
-Living checklist — updated by `code-review-self` (Briar). Reflects state after Issue #300 Stage 1–2 (gate-fix + canonical-source split).
+Living checklist — updated by `code-review-self` (Briar). Reflects state after Phase 4.5 task 2 (maintenance mode).
 
 - [x] No critical or major issues — the third-re-review Critical (newline-separated commands bypass both structural scans) is now closed by Winston's robust single-constant segmentation (task 6.5): `SEGMENT_SEPARATORS` (incl. `\n`) is the sole separator source for all three Bash scan arms, and `extractEffectiveCommand` joins with `\n`. This also closes the earlier C1 (fused-redirect write) and C2 (bare-dir evidence delete) regressions. All arms hold simultaneously — read-only negatives (I.h–I.k, I.y) PERMIT; protected-write/delete positives across every separator (I.a–I.x) DENY. Verified against the emitted runtime. Awaiting Briar re-review.
 - [x] Types correct — hooks are `.mjs` (not TypeScript); `build.ts` `emitHooks` addition type-checks (the only `prism:check-types` error is the pre-existing `bundle.ts` esbuild module-missing failure, untouched by this block)

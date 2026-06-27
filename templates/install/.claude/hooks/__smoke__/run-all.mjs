@@ -1164,6 +1164,135 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario K: Maintenance mode (Phase 4.5)
+//
+// CLAUDE_PRISM_MAINTENANCE=1 unlocks enforcement-SOURCE writes (canonical hooks tree +
+// runtime hooks) so a human can service the floor. Gate STATE (evidence/* basenames) and
+// lane boundaries (may_not_run) are never suspended — maintenance is not god mode.
+//
+// Sub-tests (one per protection arm):
+//   K1: maintenance OFF → Write to .ai-skills/hooks/gates.json DENY (exit 2) — current behavior unchanged
+//   K2: maintenance ON  → same Write PERMIT (exit 0) + maintenance-ledger.jsonl line written
+//   K3: maintenance ON  → Write to .prism/evidence/<run>/strikes.json STILL DENY (gate state never unlocked)
+//   K4: maintenance ON  → Bash 'gh pr merge 123' STILL DENY (may_not_run never unlocked)
+//   K5: maintenance ON  → persona tool-Write to maintenance-ledger.jsonl DENY (audit trail tamper-proof)
+//   K6: maintenance ON  → fused source-write && evidence-delete DENY (evidence-delete arm fires despite source-write unlock)
+// ============================================================
+{
+  const name = 'K: maintenance mode';
+
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**', '.prism/evidence/**/report.json'],
+        may_not_run: ['gh pr merge'],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-k-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardWrite(relPath, extraEnv = {}) {
+      return runHook(guardScript, {
+        session_id: 'smoke-k',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: { file_path: relPath },
+        cwd: tmpDir,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+    }
+
+    function runGuardBash(command, extraEnv = {}) {
+      return runHook(guardScript, {
+        session_id: 'smoke-k',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+    }
+
+    // K1: maintenance OFF → canonical gates.json write is denied
+    const rK1 = runGuardWrite('.ai-skills/hooks/gates.json');
+    const okK1 = assert(name, rK1.code === 2,
+      `K1: maintenance OFF — expected exit 2 for Write to canonical gates.json, got ${rK1.code}. stderr: ${rK1.stderr.substring(0, 200)}`);
+
+    // K2: maintenance ON → same write is permitted and ledger line is written
+    const maintenanceEnv = { CLAUDE_PRISM_MAINTENANCE: '1' };
+    const rK2 = runGuardWrite('.ai-skills/hooks/gates.json', maintenanceEnv);
+    const okK2write = assert(name, rK2.code === 0,
+      `K2: maintenance ON — expected exit 0 for Write to canonical gates.json, got ${rK2.code}. stderr: ${rK2.stderr.substring(0, 200)}`);
+    // Confirm a maintenance-ledger.jsonl line was written
+    const ledgerPath = path.join(tmpDir, '.prism', 'evidence', 'maintenance-ledger.jsonl');
+    const ledgerExists = existsSync(ledgerPath);
+    const okK2ledger = assert(name, ledgerExists,
+      `K2: maintenance ON — expected maintenance-ledger.jsonl to be written at ${ledgerPath}`);
+    let okK2entry = true;
+    if (ledgerExists) {
+      const lines = readFileSync(ledgerPath, 'utf8').trim().split('\n').filter(Boolean);
+      okK2entry = assert(name, lines.length >= 1,
+        `K2: expected at least 1 line in maintenance-ledger.jsonl, got ${lines.length}`);
+      if (okK2entry) {
+        try {
+          const entry = JSON.parse(lines[lines.length - 1]);
+          okK2entry = assert(name, typeof entry.ts === 'number' && entry.path && entry.runKey,
+            `K2: ledger entry missing expected fields (ts, path, runKey). Got: ${lines[lines.length - 1]}`);
+        } catch (e) {
+          assert(name, false, `K2: ledger entry is not valid JSON: ${e.message}`);
+          okK2entry = false;
+        }
+      }
+    }
+    const okK2 = okK2write && okK2ledger && okK2entry;
+
+    // K3: maintenance ON → write to strikes.json (gate state) is still denied
+    const evidenceDir = path.join(tmpDir, '.prism', 'evidence', 'smoke-k');
+    mkdirSync(evidenceDir, { recursive: true });
+    const rK3 = runGuardWrite('.prism/evidence/smoke-k/strikes.json', maintenanceEnv);
+    const okK3 = assert(name, rK3.code === 2,
+      `K3: maintenance ON — expected exit 2 for Write to strikes.json (gate state never unlocked), got ${rK3.code}. stderr: ${rK3.stderr.substring(0, 200)}`);
+
+    // K4: maintenance ON → gh pr merge still denied (may_not_run never suspended)
+    const rK4 = runGuardBash('gh pr merge 123', maintenanceEnv);
+    const okK4 = assert(name, rK4.code === 2,
+      `K4: maintenance ON — expected exit 2 for 'gh pr merge 123' (may_not_run never unlocked), got ${rK4.code}. stderr: ${rK4.stderr.substring(0, 200)}`);
+
+    // K5: maintenance ON → persona tool-Write to maintenance-ledger.jsonl is denied (audit trail tamper-proof)
+    const rK5 = runGuardWrite('.prism/evidence/maintenance-ledger.jsonl', maintenanceEnv);
+    const okK5 = assert(name, rK5.code === 2,
+      `K5: maintenance ON — expected exit 2 for Write to maintenance-ledger.jsonl (audit trail tamper-proof), got ${rK5.code}. stderr: ${rK5.stderr.substring(0, 200)}`);
+
+    // K6: maintenance ON + fused source-write && evidence-delete → DENY
+    // The Major Eric named: echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence
+    // exits 0 without this fix because the maintenance unlock fires early on the source-write
+    // segment, skipping the evidence-delete structural backstop. With the fix, commandDeletesEvidence
+    // runs on the full command before the early exit — the evidence arm fires and denies.
+    const rK6 = runGuardBash(
+      'echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence',
+      maintenanceEnv
+    );
+    const okK6 = assert(name, rK6.code === 2,
+      `K6: maintenance ON + fused source-write && evidence-delete — expected exit 2 (evidence-delete arm fires despite source-write being unlocked), got ${rK6.code}. stderr: ${rK6.stderr.substring(0, 200)}`);
+
+    if (okK1 && okK2 && okK3 && okK4 && okK5 && okK6) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {
