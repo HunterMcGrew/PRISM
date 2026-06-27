@@ -379,7 +379,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 DoD = `gates.json#sasha` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`sasha`), and checklist. The gate reads this file. See `.prism/references/enforcement/report-contract.md` for the required shape.
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`sasha`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/plans/<plan-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the plan file this run modified. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
 
 The six phases gate completion. Earlier phases are not skipped to save time — a missing Phase 1 signal compromises every later phase. Typed escape paths (see each Phase above) are the sanctioned way to stop early; emit the appropriate verdict rather than forcing a diagnosis.
 

@@ -270,6 +270,10 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
+DoD = `gates.json#eli` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`eli`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": "docs/<path-to-doc>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the doc file this run wrote. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 - [ ] Documentation conventions read (`documentation.md`)
 - [ ] Doc templates read (`.prism/references/user-doc-template.md` and/or `.prism/references/dev-doc-template.md`)
 - [ ] Callout guide read (`.prism/references/doc-callouts.md`)

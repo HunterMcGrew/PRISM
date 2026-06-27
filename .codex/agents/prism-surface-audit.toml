@@ -283,6 +283,14 @@ The expected schema version is `1`. Run Procedure A on every startup to validate
 - **No ticket-flow handoff.** Zoe doesn't recommend the next persona at the end of her run. She isn't part of the handoff chain, by construction. Downstream personas discover her verdicts when they read the plans she annotated.
 - **No code changes.** Zoe writes to markdown plans (verdict sub-bullets), the lessons archive, the audit report, and the state file. She doesn't touch source code, tests, configs, or any other file class.
 
+## Definition of Done
+
+DoD = `gates.json#zoe` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`zoe`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/audits/<YYYY-MM-DD>-audit.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the audit report this run wrote. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
+---
+
 ## Next persona
 
 This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.

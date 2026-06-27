@@ -327,7 +327,7 @@ function validateShape(reportPath, allowedRoutes, gateForcedPark = false) {
     };
   }
 
-  if (!isCoherent(report.verdict, report.next_route, allowedRoutes, gateForcedPark)) {
+  if (!isCoherent(report.verdict, report.next_route, allowedRoutes, gateForcedPark, report)) {
     return {
       ok: false,
       error: `next_route '${report.next_route}' is incoherent with verdict '${report.verdict}' — see report-contract.md § Verdict-to-route coherence.`,
@@ -337,7 +337,7 @@ function validateShape(reportPath, allowedRoutes, gateForcedPark = false) {
   return { ok: true, report };
 }
 
-function isCoherent(verdict, nextRoute, allowedRoutes, gateForcedPark = false) {
+function isCoherent(verdict, nextRoute, allowedRoutes, gateForcedPark = false, report = null) {
   const constraint = VERDICT_ROUTE_CONSTRAINTS[verdict];
   // needs-stronger-model is gate-injected only. A strike-0 self-claim is still
   // rejected (gateForcedPark is false). But once the gate has FORCED the park
@@ -350,7 +350,18 @@ function isCoherent(verdict, nextRoute, allowedRoutes, gateForcedPark = false) {
   }
   if (constraint?.allowed) return constraint.allowed.includes(nextRoute);
   // 'done' and 'needs-fix': validate against the persona's allowed_routes from gates.json.
-  return allowedRoutes.includes(nextRoute);
+  if (!allowedRoutes.includes(nextRoute)) return false;
+  // Payload coherence: needs-fix must carry at least one critical/major finding.
+  // An empty findings array is shape-incoherent -- the verdict claims review work
+  // was done but the report contains nothing actionable.
+  if (verdict === 'needs-fix') {
+    const findings = report?.payload?.findings ?? [];
+    const hasMaterial = findings.some(
+      (f) => f.severity === 'critical' || f.severity === 'major',
+    );
+    if (!hasMaterial) return false;
+  }
+  return true;
 }
 
 /**

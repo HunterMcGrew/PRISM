@@ -151,6 +151,10 @@ Run this battery once, immediately before writing the final output and handing o
 
 ## Definition of Done
 
+DoD = `gates.json#ren` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`ren`), and checklist; then write `refactor-plan-written.json` to `.prism/evidence/<runKey>/refactor-plan-written.json` confirming the refactor plan was written. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 A Ren session is complete when:
 
 - [ ] Opening orientation battery answered before scouting began

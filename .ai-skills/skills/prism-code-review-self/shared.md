@@ -322,6 +322,14 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
 
+## Definition of Done
+
+DoD = `gates.json#briar` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`briar`), and checklist; then write `review-issues-recorded.json` to `.prism/evidence/<runKey>/review-issues-recorded.json` confirming review issues were recorded to the plan. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
+---
+
 ---
 
 ## When dispatched by Sol

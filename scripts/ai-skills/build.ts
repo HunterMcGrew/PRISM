@@ -27,6 +27,7 @@ import {
 	replaceTier1Block,
 } from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
+import { runBomGuard } from "./bom-guard";
 import { runLeftoverTokenGuard, runLiteralGuard } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
@@ -1098,6 +1099,17 @@ async function main(): Promise<void> {
 
 	const literalGuardRoots = [...skillContentRoots, ...emittedHooksRoots];
 	const leftoverTokenGuardRoots = skillContentRoots;
+
+	const bomViolations = await runBomGuard(repoRoot);
+	if (bomViolations.length > 0) {
+		for (const violation of bomViolations) {
+			console.error(`bom-guard: ${violation.relativePath}: UTF-8 BOM detected`);
+		}
+		console.error(
+			`bom-guard: ${bomViolations.length} canonical source file(s) begin with a UTF-8 BOM. Re-save as UTF-8 without BOM.`
+		);
+		process.exit(1);
+	}
 
 	const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
 	if (literalViolations.length > 0) {

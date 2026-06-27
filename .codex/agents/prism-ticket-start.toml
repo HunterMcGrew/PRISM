@@ -451,6 +451,10 @@ Run this battery once, immediately before emitting any `done`-class verdict or h
 
 ## Definition of Done
 
+DoD = `gates.json#nora` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`nora`), and checklist; then write `branch-ready.json` to `.prism/evidence/<runKey>/branch-ready.json` confirming the branch and ticket are ready. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 - [ ] Ticket data fetched and summarized (or manual info collected)
 - [ ] Ticket type detected and labeled
 - [ ] Severity classified with S1-S4 scale and rationale (bugs)

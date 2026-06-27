@@ -263,3 +263,22 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-26 (Issue #302) — extracting AGENTS.md §0 verbatim into `.prism/rules/skill-routing.md` (a no-`paths:` Tier-1 rule) carried over the example ticket ID `THR-123` in the Nora routing row. `THR-123` was never checked while it lived in AGENTS.md (a single hand-authored surface, not platform-synced), but the moment the rule syncs to `.claude/rules/`, `.codex/rules/`, `.cursor/rules/`, `prism:test`'s literal-guard scans those outputs and fails the build. A verbatim move is not literal-safe across the AGENTS.md → Tier-1-rule boundary.
 
 **How to apply:** Before moving any hand-authored content into a Tier-1 rule (or any file that syncs to platform dirs), scan it for Thrive literals (`THR-NNNN`, `Thrive`, `tractru`) and tokenize them — illustrative ticket IDs become `${TICKET_PREFIX}-NNNN` (substituted at sync time per epic-phase-1-foundation.md:422). Allowlisting the platform paths is the wrong fix for generic seed content — it ships a Thrive-ism into the consumer install. Winston: when planning a verbatim-move task, flag in-table literals as a tokenization sub-step so the implementer doesn't discover it at build time.
+
+---
+
+
+## The report contract, not the dispatch prose, is the authority on `next_route`
+
+**What:** 2026-06-26 (Issue #300 / PR #301) — A Sol dispatch prompt said "next_route: eric (re-review)." I wrote `next_route: eric` into `report.json` with `verdict: done`. The Stop gate rejected it (strike 1/3): `next_route 'eric' is incoherent with verdict 'done'`. The report contract (`report-contract.md` § Verdict-to-route coherence) is explicit — a Clove `done` routes to `briar` (self-review), the normal forward persona; `eric` is in Clove's allowed-routes set but is not coherent with `done`.
+
+**Why:** Dispatch prose describes intent ("get this re-reviewed"), but the gate enforces the typed contract. "Eric re-reviews next" is the *human/Sol* routing intent; the *contract-coherent* handoff from a `done` Clove report is `briar`, because self-review precedes PR review. Taking the prose literally put an incoherent value in a gated field.
+
+**How to apply:** When the dispatch names a next_route that conflicts with the verdict's coherence rule, the contract wins — set the coherent route and let Sol/human route onward from there. For a `done` verdict, use the persona's *normal next persona* (Clove→briar, Winston→clove, Eric→human), never a downstream persona named only in the dispatch's intent. Check `report-contract.md` § Verdict-to-route coherence before writing `next_route`, not the prompt prose.
+
+---
+
+## UTF-8 BOM on canonical `.ai-skills/` sources is a recurring defect — guard it at build time
+
+**Why:** 2026-06-27 (PR #348, third Eric catch) — some editors save `.md`/`.mjs`/`.json` files as "UTF-8 with BOM" by default. On `main` the canonical sources start clean, but whenever a BOM-bearing editor touches them, the BOM silently persists through the Git delta and into the next commit. On PRISM, BOMs break `<!-- atlas:specializes-in -->` anchor substitution in consumer repos and corrupt hook shebangs on Unix. The defect was caught manually three times; `bom-guard.ts` converts it to a build-time exit-1 failure.
+
+**How to apply:** The guard is wired into `build.ts` and runs on every `pnpm prism:build` / `pnpm prism:check`. If it fires, strip the BOM with `tail -c +4 <file> > <tmp>; mv <tmp> <file>` on each affected file, then rebuild. Never suppress the guard — a BOM that "just passes" on Node (which strips it) still breaks Unix shebang execution and consumer anchor substitution.

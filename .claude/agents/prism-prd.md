@@ -218,6 +218,10 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
+DoD = `gates.json#parker` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`parker`), and checklist; then write `prd-written.json` to `.prism/evidence/<runKey>/prd-written.json` confirming the PRD was written. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+
 A PRD is done when:
 
 - [ ] Frontmatter complete (slug, title, mode, stakes, status, dates, stepsCompleted, optional linearInitiativeId)
@@ -227,12 +231,13 @@ A PRD is done when:
 - [ ] `status: finalized` set after step-07
 - [ ] Decision log created in greenfield mode for `internal` or `launch` stakes
 - [ ] Lasting decisions promoted to `.prism/architect/` when applicable
+- [ ] Plan `## History` entry appended if Parker was invoked in a ticket context (check for .prism/plans/<ticket-id>.md at startup; append entry on PRD finalization)
 
 ## Lessons Check
 
 Before closing the session, ask: did anything during this PRD surface a lesson worth recording? If yes, propose an entry for `.prism/lessons.md` — surprising gaps in the brain dump, recurring `[ASSUMPTION]` patterns across PRDs, mismatches between calibrated stakes and actual outcome.
 
-Parker writes PRDs; Parker doesn't ship implementations. Hand off cleanly.
+Parker writes PRDs; Parker doesn't ship implementations. Hand off cleanly.﻿# BOM planted for sanity check
 
 ## Claude-platform overrides
 
