@@ -1,4 +1,4 @@
-﻿# Plan: epic-prism-enforcement-layer
+# Plan: epic-prism-enforcement-layer
 
 ## Ticket
 
@@ -202,6 +202,47 @@ Held by Hunter as design outputs on his Desktop, not yet in repo. They are refer
   - **Convergence confirmed:** the canonical `gates.json` carries the Stage-0 bootstrap paths, so the build's emission overwrote the human's tab-reindented manual grant with a byte-matching 2-space copy — `git diff .claude/hooks/gates.json` shows only the real may_write/may_not_run additions, `prism:check` reports no drift.
   - → no promotion needed (ticket-tactical build-pipeline wiring; pulls the Phase 4 split forward, which the Phase 4 remainder owns at epic scope).
 
+- **Strategic reframe (2026-06-27) — the floor stays always-on and gains a maintenance mode; it does NOT become opt-in.**
+  - **Root cause:** the mid-epic friction that forced disabling the floor was not steady-state gating of ordinary work — it was the floor having no lawful way to edit its own enforcement source (the denylist protects the very runtime a gated persona must change). Strip out the two now-fixed bugs (cap deadlock #300 Bug 1; env false-strikes Bug 2) and every remaining painful moment was "building the floor while standing inside it." Ordinary feature work never tripped it.
+  - **Alternatives considered:** (a) opt-in for orchestrated runs only — rejected: the floor's solo value is real (the gate forces real test/type evidence; a present human catches wrong-*looking* diffs, not false *claims* of verification), and the stated goal is a Sol-heavy adoption story where always-on is the point, not a tax. (b) bank-and-narrow scope — rejected: the ceiling is co-equal and the floor's purpose (orchestration integrity) is the adoption story.
+  - **Chosen approach:** floor on by default; maintenance mode (next Decision) is the lawful self-service lever. Fixes the friction at its root instead of dodging it with opt-in.
+  - → promoted to ADR-0067 amendment at epic close (always-on + maintenance-mode framing).
+
+- **Maintenance mode — a human-held suspension of enforcement-source protection (resolves epicFinding #1, the Component-3 grant-vs-denylist hole).**
+  - **Root cause:** the denylist runs before `may_write` with no override, so no grant lets a gated persona edit the protected enforcement source; the #305 "human-grant to runtime `gates.json`" maintenance path does not actually work, because `gates.json` is itself denylist-protected.
+  - **Alternatives considered:** (a) per-task human grants — rejected: that grant dance was this session's friction, and the grant target is itself protected. (b) protected list as data — rejected: re-opens "who edits the list" one level up.
+  - **Chosen approach:** a human-held switch the hooks read at startup; when set it unlocks the named enforcement-source paths (`.ai-skills/hooks/**`, canonical `gates.json`), appends every such write to an audit ledger, and prints a loud "self-protection suspended" banner on each stop; re-locks on unset. A persona cannot set it (the toggle lives in a protected/root surface), so it is not a self-escape. This is the productization of the by-hand disable this session did ad-hoc (empty `settings.json`, remember to restore) — now with an audit trail and a re-enable checklist.
+  - **Implementation guidance:** Winston designs the exact seam in Phase 4.5; Clove implements in canonical source. Phase 5 rollout and any post-re-enable hook edit depend on it.
+  - → promoted to ADR-0067 amendment + `enforcement-floor.md` (lawful-maintenance primitive) at epic close.
+
+- **Maintenance-mode seam design (Phase 4.5, Winston) — env-var switch, source-write-only suspension, tamper-proof audit, stop banner.** The full seam, grounded in the live `ownership-guard.mjs` / `run-gates.mjs`.
+  - **Switch = environment variable `CLAUDE_PRISM_MAINTENANCE`, NOT a file/config key — and the reason is security, not symmetry.** A persona cannot set an env var on a hook's process: each hook is a fresh Node process Claude Code spawns with *Claude Code's* environment, and a persona's Bash `export` mutates only its own subprocess, never the parent — so a later hook spawn never sees it. The one file-based way to inject env into a hook (the `settings.json` `env` block) is already denylist-protected. A `config.json` key would re-open the exact "who can flip the switch" hole we rejected for protected-list-as-data: a persona with `may_write` to that file (Atlas/Clove) could self-enable. The human sets `CLAUDE_PRISM_MAINTENANCE=1` in the shell that launches Claude Code; `isMaintenanceMode()` returns `process.env.CLAUDE_PRISM_MAINTENANCE === '1'`. (Both hooks already read `process.env.CLAUDE_PROJECT_DIR`, so the read fits the existing pattern.)
+  - **What it suspends — enforcement SOURCE writes only.** When on, the guard PERMITS (and audits) writes the deny path would otherwise block: the runtime hooks (`PROTECTED_WRITE_PATHS` + `PROTECTED_LIB_PREFIX`), the canonical source (`isProtectedCanonicalHookPath`), and — once Phase 5 protects it — `scripts/ai-skills/build.ts`. The Bash arm (`commandWritesProtectedPath`) suspends identically. **Factor the source-protection test into one predicate** `isEnforcementSourceProtected(normalizedPath)` that BOTH the deny and the maintenance-unlock consult, so when Phase 5 adds `build.ts` to protection, maintenance unlocks it automatically — same single-source-of-truth discipline as `SEGMENT_SEPARATORS`.
+  - **What it NEVER suspends — the self-escape surface.** Gate STATE stays locked even under maintenance: `PROTECTED_EVIDENCE_BASENAMES` (strikes/ledger/ratified/baseline) and `commandDeletesEvidence` remain deny; so does `may_not_run` (a maintenance session still cannot `gh pr merge`) and the active-persona orchestrated-write denial; and `run-gates.mjs` still runs every gate and still requires real evidence for `done`. Maintenance lets a human EDIT the source — it never lets a persona RESET its live gate state or cross a lane. This is the line that keeps maintenance from being god mode: editing source is legitimate servicing; resetting strikes/baseline is the exact self-escape the floor exists to stop.
+  - **Tamper-proof audit.** Each source write permitted under maintenance appends `{ ts, persona, tool, path, runKey }` to `.prism/evidence/maintenance-ledger.jsonl` (hook-written via `fs`, so the basename protection that blocks persona tool-writes doesn't block the hook). Add `'maintenance-ledger.jsonl'` to `PROTECTED_EVIDENCE_BASENAMES` so a persona tool-write can never forge or erase the trail.
+  - **Never silently on.** `run-gates.mjs` prints a prominent stderr banner on every Stop/SubagentStop while maintenance is active — `⚠ PRISM MAINTENANCE MODE — enforcement-source self-protection suspended; N source writes logged this run; unset CLAUDE_PRISM_MAINTENANCE to re-lock.` Informational; never blocks the stop.
+  - **Re-lock is automatic** — unset the var, the next hook fire reads it absent, protection is live again. The ledger persists as the audit record.
+  - **Non-self-escape invariant (what ADR-0067 must carry):** a human can service the floor without handing any persona a self-escape, because (a) the switch is an env var a persona cannot set into the hook process, (b) the only file-based env-injection path is denylist-protected, and (c) maintenance unlocks SOURCE writes only — never gate state, lane boundaries, or the verdict gate itself.
+  - **Operational note:** maintenance mode is a deliberate, human-initiated servicing window — OFF for fleet runs by default. The compensating controls for the open source-write window are the banner, the tamper-proof ledger, and the normal Briar/Eric gauntlet reviewing the diff.
+  - → promoted to ADR-0067 amendment (the lawful-maintenance mechanism + non-self-escape invariant) + `enforcement-floor.md` (lawful-maintenance primitive) at epic close.
+
+- **Fleet integrity test — prove a false `done` is caught and contained in a live Sol fleet run before close.**
+  - **Root cause:** the floor's justification is orchestration integrity, but that value is on-paper — Phase 2 proved `SubagentStop` *fires*, not that a false verdict is *caught* mid-fleet and the lane *contained*. (Hunter: the threat is real in his day-job work a few times a week; never yet exercised in PRISM.)
+  - **Chosen approach:** inject a false `done` into a live fleet lane and confirm gate-forces-continue + lane containment + sibling lanes unaffected. The single test that converts the thesis from paper to proven.
+  - → no promotion needed (validation task; the principle is ADR-0067).
+
+- **Phase 6 ceiling gains a bracketed orientation/re-orientation pass — grounded by the 2026-06-27 A/B series.**
+  - **Root cause / evidence:** a four-experiment A/B (Haiku/Sonnet/Opus, control vs scaffolded) found — (i) re-orientation yields zero correctness delta on well-specified one-shot tasks at every model tier (it is not a correctness mechanism); (ii) its measured value is recall of peripheral signal — out-of-scope work flagged went control 0/N → scaffolded N/N across every tier; (iii) an opening orientation moves load-bearing-ambiguity detection to *before* implementation (control silently picked a contention rule or noticed only after building; scaffolded caught it in orientation, before code); (iv) with a "no user available — pick a default, document, proceed" calibration the opening pass did not stall or manufacture clarifying questions — the one real risk did not fire; (v) multi-checkpoint scaffolding was strictly *worse* than a single end check.
+  - **Alternatives considered:** multi-checkpoint — rejected by finding (v). An always-on correctness framing — rejected by finding (i); the pass is sold as surfacing/comprehension, not a correctness gate.
+  - **Chosen approach:** bracket each ceiling-rewritten skill with two single passes — an **opening battery** (Intent / Ambiguity+calibration / Bounds / Approach) and a **closing battery** (Scope / Assumptions / Edges / Verification), with the closing Scope question wired to the `found-followup-work` emit path and the closing Verification question the prose seam back to the floor's evidence gate.
+  - **Implementation guidance:** a single end check, not multi-checkpoint; the opening battery carries the no-stall calibration verbatim; value is highest on weaker models and orchestrated runs (same "value ∝ absence of a human" logic as the floor).
+  - → promoted to ADR-0067 + `enforcement-floor.md` (orientation/re-orientation primitive) at epic close.
+
+- **Re-sequence — pull the Phase 6 ceiling forward to run parallel with the 3→4 spine.**
+  - **Root cause:** the ceiling is co-equal and independent of the floor runtime — it ships through the existing skill build, not the new hook-emit pipeline — so Phase 6's `dependsOn Phase 4` was sequencing-by-habit, not a hard technical block. With hooks currently disabled, the ceiling is productive work available now.
+  - **Chosen approach:** Phase 6 ceiling fans out now (one sub-issue per persona) alongside the 3→4 spine and the maintenance-mode design; Phase 5 roster rollout still follows Phase 4. The most Sol-shaped work in the epic — it dogfoods the fleet adoption story.
+  - → no promotion needed (sequencing).
+
 ---
 
 ## Implementation Tasks
@@ -330,6 +371,75 @@ D. **Schema-doc description** — already applied by Winston to `.prism/referenc
 1. Rewrite each skill body so vague judgment lines become **named procedures with typed escapes** (the `prism-code-dev-senior.md` pattern): precise trigger + sanctioned exit verdict per procedure. Hold every line to the **factual-grounding bar** (see Decisions) — each procedure maps to a real action; the trigger calibrates reasoning depth; the escape prevents loops. Goal (Hunter's words): every persona is "procedural and accurate to its job."
 2. Apply `skill-authoring.md` disclosure gate during each rewrite — PIN lenses, externalize modes/conditional procedures, do not bloat the body. The ceiling pass sharpens; it must not flatten the importance hierarchy.
 3. Include the 3 utilities in this pass (prose only — no gates entry).
+4. Bracket each rewritten skill with the **opening orientation** and **closing re-orientation** batteries — see Re-plan additions below for the exact 4+4 questions and the no-stall calibration.
+
+---
+
+### Re-plan additions (2026-06-27) — strategic reframe, maintenance mode, fleet test, bracketed ceiling
+
+> Added after the strategic discussion with Hunter (see Decisions "Strategic reframe…" through "Re-sequence…"). The floor is built and merged but currently **disabled** (`settings.json` = `{"hooks": {}}`); these tasks make re-enabling it safe and finish the epic on the co-equal ceiling. **Sequencing:** the Phase 6 ceiling (including the bracketed batteries) fans out NOW in parallel with the 3→4 spine; maintenance mode + the fleet integrity test gate the floor re-enable; Phase 5 roster rollout follows Phase 4 with maintenance mode available.
+
+#### Phase 4.5 — Maintenance mode (lawful enforcement-source self-service) [NEW]
+
+Resolves epicFinding #1 (Component-3 grant-vs-denylist hole). Depends on the canonical-source split (landed in #300/#301).
+
+**Winston**
+1. ✅ **DONE (2026-06-27)** — seam designed; see Decision "Maintenance-mode seam design (Phase 4.5, Winston)" above and the re-enable checklist on task 6. Switch = env var `CLAUDE_PRISM_MAINTENANCE` (security rationale in the Decision); suspends enforcement-SOURCE writes only; gate state / `may_not_run` / verdict gate stay live; tamper-proof audit ledger + stop banner; non-self-escape invariant stated.
+
+**Clove**
+2. Implement maintenance mode in canonical `.ai-skills/hooks/ownership-guard.mjs` and `.ai-skills/hooks/run-gates.mjs` per the seam Decision. Exact changes:
+   - **`ownership-guard.mjs` — add the switch helper** near the module consts (after `SEGMENT_SEPARATORS`, ~line 72): `function isMaintenanceMode() { return process.env.CLAUDE_PRISM_MAINTENANCE === '1'; }`.
+   - **`ownership-guard.mjs` — factor one predicate.** Extract the source-protection test currently inlined in the writeTools branch (~lines 206–210: `PROTECTED_WRITE_PATHS.includes(normalizedPath) || normalizedPath.startsWith(PROTECTED_LIB_PREFIX) || isProtectedCanonicalHookPath(normalizedPath)`) into `function isEnforcementSourceProtected(normalizedPath)`. Call it from BOTH the deny site and the new maintenance-unlock site so they cannot drift (the `SEGMENT_SEPARATORS` discipline).
+   - **`ownership-guard.mjs` — writeTools branch (~line 206):** when `isEnforcementSourceProtected(normalizedPath)` is true: if `isMaintenanceMode()` → call `appendMaintenanceLedger(...)` then `process.exit(0)` (permit); else keep the existing exit-2 deny block verbatim. Do NOT route a permitted source write through the `may_write` check below it (source paths aren't in `may_write`).
+   - **`ownership-guard.mjs` — Bash branch (~line 144):** wrap the `commandWritesProtectedPath` deny (lines 144–154) the same way — maintenance on → audit + permit; off → existing deny. Leave `commandDeletesEvidence` (159–166) and the `may_not_run` check (126–138) **unchanged** (never suspended).
+   - **`ownership-guard.mjs` — add `appendMaintenanceLedger(payload, normalizedPath, projectDir)`** (mirror `captureBaseline`'s fs style): append one JSON line `{ ts: Date.now(), persona, tool: payload.tool_name, path: normalizedPath, runKey: payload.agent_id ?? payload.session_id }` to `.prism/evidence/maintenance-ledger.jsonl`; `mkdirSync` recursive; non-fatal try/catch.
+   - **`ownership-guard.mjs` — add `'maintenance-ledger.jsonl'` to `PROTECTED_EVIDENCE_BASENAMES`** (line 49) so persona tool-writes can't forge/erase the audit trail.
+   - **`run-gates.mjs` — banner** after `evidenceDir` is established (~line 85): if `process.env.CLAUDE_PRISM_MAINTENANCE === '1'`, read the maintenance ledger, count lines whose `runKey` matches this run, and `process.stderr.write` the banner `⚠ PRISM MAINTENANCE MODE — enforcement-source self-protection suspended; N source writes logged this run; unset CLAUDE_PRISM_MAINTENANCE to re-lock.\n`. Non-blocking — does not change any exit path.
+   - **Smoke (`__smoke__/`)** — add a Scenario J: (a) maintenance OFF → Write to `.ai-skills/hooks/gates.json` DENY (exit 2, current behavior); (b) maintenance ON (`CLAUDE_PRISM_MAINTENANCE=1`) → same Write PERMIT (exit 0) + a `maintenance-ledger.jsonl` line appears; (c) maintenance ON → Write to `.prism/evidence/<run>/strikes.json` STILL DENY (gate state never unlocked); (d) maintenance ON → `gh pr merge` STILL DENY (`may_not_run` never unlocked); (e) maintenance ON → persona tool-Write to `maintenance-ledger.jsonl` DENY (audit trail tamper-proof).
+   - **Verification:** `node .ai-skills/hooks/__smoke__/run-all.mjs` green; `pnpm prism:build` then run smoke against the emitted runtime; `fleet-keying.mjs` 3/3; `pnpm prism:crossref-lint` clean; `build.ts --check` no drift (mirrors byte-identical). Emit to runtime + install seed.
+
+#### Phase 5 additions [findings folded in]
+
+**Clove**
+3. **build.ts emitter vector** (epicFinding `build-ts-emitter-self-weaken`): protect `scripts/ai-skills/build.ts` from gated personas and route legitimate Phase-4 build edits through the maintenance-mode path (Briar's option a). Alternatives — sign the emit, or relocate the `assertHookEmitDoesNotWeaken` backstop to a protected location — Winston picks during the Phase 4.5 design since it shares the maintenance seam.
+4. **`clove.allowed_routes` lacks `eric`** (epicFinding `clove-ship-route-no-eric`): add `eric` to `gates.json#clove.allowed_routes` so a Clove ship-step can name Eric as `next_route` coherently, OR define a ship/handoff route convention. Verify the verdict↔route coherence check accepts the chosen form. Part of the Phase 5 per-persona route-accuracy audit.
+
+#### Phase 6 addition — bracketed orientation / re-orientation batteries
+
+Grounded by the 2026-06-27 A/B series (see Decisions "Phase 6 ceiling gains a bracketed orientation/re-orientation pass"). Each ceiling-rewritten skill — the worker personas especially — brackets its work with two **single** passes (not multi-checkpoint; the A/B found extra process strictly worse):
+
+**Opening battery (orientation — before work begins):**
+1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration (verbatim):** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+3. **Bounds** — what does "done" look like, and what must I not touch?
+4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+
+**Closing battery (re-orientation — before emitting the `done`-class report):**
+1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? → emit `found-followup-work` / `found-bug` per [`followup-scope.md`](../rules/followup-scope.md) § worker-emit pre-filter.
+2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
+3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
+4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof? (The prose seam back to the floor's evidence gate.)
+
+**Build guidance:** fold this in as the canonical worked example per the queued self-eval design — one trigger (before the `done`-class report), a single end pass, the opening battery carrying the no-stall calibration. Hold both batteries to the factual-grounding bar. Value is highest on weaker models and orchestrated runs.
+
+#### Fleet integrity test [NEW — converts the thesis from paper to proven]
+
+**Clove (Winston-specified validation)**
+5. Before epic close, with the floor re-enabled, deliberately inject a false `done` into a live Sol fleet lane (a Clove dispatch claiming `tests: true` against a failing/absent test) and confirm: the `SubagentStop` gate forces continue / parks the lane, the lane is contained, and sibling lanes are unaffected. Record the run in `## History`. This is the first end-to-end proof that a false verdict is caught and contained mid-fleet, not merely that the hook fires.
+
+#### Re-enable the floor at epic close [tracked task]
+
+**Human / Sol**
+6. Restore the four hook wirings in `.claude/settings.json` from the parent of commit `ec1f8fc` (PreToolUse→`ownership-guard.mjs`; PostToolUse→`evidence-ledger.mjs`; Stop→`run-gates.mjs` timeout 120; SubagentStop→`run-gates.mjs` timeout 120). The enforcement code is correct and on `main`; only the wiring is off. This is the epic's final behavioral step.
+
+   **Re-enable checklist (Winston, Phase 4.5 task 1 deliverable):**
+   - [ ] Maintenance mode landed and green (Phase 4.5 task 2) — `CLAUDE_PRISM_MAINTENANCE` unset in normal operation; smoke Scenario J passes.
+   - [ ] `settings.json` restored to the four wirings above (the edit itself is enforcement-source-protected — do it with the floor still off, or as the human, or under `CLAUDE_PRISM_MAINTENANCE=1`).
+   - [ ] `node .claude/hooks/__smoke__/run-all.mjs` + `fleet-keying.mjs` green against the live runtime.
+   - [ ] Fleet integrity test (task 5) passes — a false `done` is forced-continue/parked and the lane contained.
+   - [ ] One real gated dispatch (solo Clove) completes clean end-to-end — proves steady-state work isn't blocked.
+   - [ ] Maintenance-mode round-trip verified once: set `CLAUDE_PRISM_MAINTENANCE=1`, confirm a source edit permits + banner fires + ledger appends; unset, confirm the same edit denies again.
+   - [ ] `conductor-state.operationalState.enforcementHooksDisabled` flipped to `false` (Sol's file — Sol updates on the re-enable dispatch).
 
 ---
 
@@ -1096,7 +1206,8 @@ All three items were resolved by Issue #300 (gate-fix + canonical-source split p
 - 2026-06-26 [hmcgrew/issue-300-gate-fix-canonical-split]: Clove closed both Critical UNDER-block holes in canonical `ownership-guard.mjs` — C1: `redirectTargetFor` now matches `>`/`>>` embedded mid-token so a fused redirect (`echo x>path`) collects its target and denies, while `>&` fd-dups still skip; C2: `commandDeletesEvidence` matches the bare `.prism/evidence` directory and `./`-prefixed forms via a new `targetsEvidence` helper, not just the trailing-slash path. Smoke Scenario I gained the six missing positives/negatives (I.l–I.q); both over-block read-only negatives (I.h–I.k) still PERMIT, so both arms hold. Emitted to runtime + install seed (all three mirrors byte-identical); runtime `run-all.mjs` 11/11, `fleet-keying.mjs` 3/3, `crossref-lint` clean, `build.ts --check` no drift; pre-existing Windows-only `check-types`/`test` failures unchanged and out of scope.
 - 2026-06-26 [hmcgrew/issue-300-gate-fix-canonical-split]: Clove implemented Winston's robust single-constant segmentation (task 6.5) — one `SEGMENT_SEPARATORS` const (incl. `\n`) is now the sole separator source for all three Bash scan arms, `extractEffectiveCommand` joins with `\n` not a space, and the #298 heredoc exclusion is preserved; closes the iter-3 newline leak and every sibling separator at once. The const lives in the top-of-module block (not beside `splitCommandSegments`) to dodge a TDZ ReferenceError, since the Bash branch runs `splitCommandSegments` during the synchronous module body. Smoke Scenario I extended with I.r–I.z (per-separator battery + heredoc-newline control); canonical + emitted-runtime 11/11 smoke + 3/3 fleet-keying, crossref clean, no drift, mirrors byte-identical, live newline repro flipped 0→2. See Review Issue (newline-bypass, now fixed) and Decision "Issue #300 Bash-scan segmentation grammar (robust fix)".
 - 2026-06-26 [hmcgrew/issue-300-gate-fix-canonical-split]: Clove fixed Eric's PR #301 Major — added `'baseline.json'` to `PROTECTED_EVIDENCE_BASENAMES` in canonical `ownership-guard.mjs`, closing the forge vector where a gated persona could redirect-write a failed baseline and route a real regression into the pre-existing branch (false `done`). The one-token const change drives both protection paths (tool-path + Bash scan); smoke gained E5b (tool-path baseline DENY) and I.aa/I.ab (Bash forge DENY + report.json carve-out PERMIT). Emitted to runtime + seed (mirrors byte-identical), `run-all.mjs` 11/11, `fleet-keying.mjs` 3/3, crossref clean, `--check` no drift; pre-existing Windows-only `check-types`/`test` failures unchanged and out of scope.
-- 2026-06-27 [hmcgrew/293-command-tokenization]: Phase 3 — command tokenization seam. Added `commands` map to `config.json` (typecheck/test/lint/format/build) and its schema to `config.schema.json`; converted `gates.json#clove` hardcoded commands to `{{commands.*}}` tokens; implemented `resolveToken` in canonical `run-gates.mjs` (resolves before execute AND before ledger lookup so keys match); reshaped `verification-commands.md` from Thrive-specific to PRISM-native, rendering from config.json data.
+- 2026-06-27 [main]: Strategic re-plan after discussion with Hunter — the floor stays always-on and gains a human-held **maintenance mode** (resolves epicFinding #1, the Component-3 grant-vs-denylist hole) instead of becoming opt-in; added a **fleet integrity test** to prove a false `done` is caught and contained mid-fleet, folded the `build.ts`-emitter and clove-route findings into Phase 5, and added a **bracketed orientation/re-orientation ceiling pass** to Phase 6. The ceiling pass is grounded by a four-experiment A/B (Haiku/Sonnet/Opus) showing re-orientation yields zero correctness delta but reliably surfaces out-of-scope/edge/ambiguity signal, and that a calibrated opening pass catches load-bearing ambiguity before build without stalling. See Decisions (five new entries) and Implementation Tasks § Re-plan additions (2026-06-27); Phase 6 re-sequenced to fan out now in parallel with the 3→4 spine.
+- 2026-06-27 [main]: Winston completed Phase 4.5 task 1 — the maintenance-mode seam design. Switch is the env var `CLAUDE_PRISM_MAINTENANCE` (a persona can't set env into a hook process; the only file-based env-injection path, `settings.json` `env`, is already denylist-protected — closing the "who flips the switch" hole a config key would reopen); it suspends enforcement-SOURCE writes only (gate state, `may_not_run`, and the verdict gate stay live, so it's servicing not god mode), audits every permitted write to a tamper-proof `maintenance-ledger.jsonl`, and fires a stop banner so it's never silently on. Wrote the full design into Decisions, sharpened Clove's task 2 to the detail bar with exact insertion points in canonical `ownership-guard.mjs`/`run-gates.mjs`, and added the re-enable checklist to task 6.
 
 ---
 
