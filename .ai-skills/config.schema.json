@@ -95,6 +95,41 @@
 			"uniqueItems": true,
 			"examples": [["nextjs", "react", "typescript", "tailwind"]]
 		},
+		"commands": {
+			"type": "object",
+			"description": "Canonical verification commands for this team. Atlas populates this map during onboarding from the detected tech stack; gates.json references these values as {{commands.*}} tokens so command strings live in one place. Each value is the full shell command to run from the repo root.",
+			"properties": {
+				"typecheck": {
+					"type": "string",
+					"description": "Command that runs the TypeScript type-checker (or equivalent for the team's language). Exit 0 means types pass.",
+					"examples": ["pnpm run prism:check-types", "pnpm --filter=frontend run check-types"]
+				},
+				"test": {
+					"type": "string",
+					"description": "Command that runs the full test suite. Exit 0 means tests pass.",
+					"examples": ["pnpm run prism:test", "pnpm run test"]
+				},
+				"lint": {
+					"type": "string",
+					"description": "Command that runs the linter (ESLint, crossref-lint, or equivalent). Exit 0 means lint passes.",
+					"examples": ["pnpm run prism:crossref-lint", "pnpm run lint"]
+				},
+				"format": {
+					"type": "string",
+					"description": "Command that runs the formatter in check mode (Prettier --check, or equivalent). Empty string when the team has no standalone formatter step.",
+					"examples": ["pnpm run format:check", "npx prettier --check ."]
+				},
+				"build": {
+					"type": "string",
+					"description": "Command that runs the full build. Exit 0 means the build passes.",
+					"examples": ["pnpm run prism:build", "pnpm run build"]
+				}
+			},
+			"additionalProperties": {
+				"type": "string",
+				"description": "Additional team-specific command slots (e.g. 'e2e', 'storybook'). Atlas may add these during onboarding."
+			}
+		},
 		"rules": {
 			"type": "object",
 			"description": "Rule selection. `universal` is the always-included set (the universal rule set ships with PRISM). Language- and framework-specific rules are generated per-codebase during onboarding (Phase 2), not opted into via this field. `optIn` is reserved for future non-language opt-in rules.",

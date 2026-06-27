@@ -14,6 +14,13 @@
 		"conductorMayMerge": true
 	},
 	"techStack": ["typescript", "node"],
+	"commands": {
+		"typecheck": "pnpm run prism:check-types",
+		"test": "pnpm run prism:test",
+		"lint": "pnpm run prism:crossref-lint",
+		"format": "",
+		"build": "pnpm run prism:build"
+	},
 	"rules": {
 		"universal": "all"
 	},
