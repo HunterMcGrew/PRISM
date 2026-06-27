@@ -87,7 +87,7 @@ Named procedures prevent the vague "halt and ask" or "use judgment" paths from s
 **Procedure C — Open-since date cannot be determined.** When classifying an `OPEN — TBD` Decision variant, you need an open-since date to compute the 30-day threshold.
 
 1. Look for an explicit `**Open since:** YYYY-MM-DD` line in the Decision entry.
-2. If absent, run `git log --follow -1 --format="%ai" -- <plan-file>` and inspect the first commit that introduced the `OPEN` text. Use that commit date as open-since.
+2. If absent, run `git log --follow --diff-filter=A -S "OPEN — TBD" --format="%ai" -- <plan-file> | tail -1` to find the commit that first added the `OPEN` text. Use that commit date as open-since. If the command returns empty (file predates git tracking or the `OPEN` text uses a different format), fall through to the escape below.
 
 **Trigger:** you are computing open-staleness for an `OPEN` Decision. **Escape:** if neither the explicit date nor the git log produces a date (file has no commit history, git is unavailable), emit `needs-human` — name the plan file, the Decision entry title, and that the open-since date cannot be determined. Do not default to `open-stale` without a verifiable date.
 
