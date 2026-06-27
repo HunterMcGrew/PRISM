@@ -77,6 +77,22 @@ const CANONICAL_HOOKS_SMOKE_CARVEOUT = '.ai-skills/hooks/__smoke__/';
 // declared lower would be in the temporal dead zone at that call.
 const SEGMENT_SEPARATORS = /(?:&&|\|\||[;\n|&])/;
 
+// Git subcommands that mutate the working tree by pathspec — both accept a path list that
+// names exactly which files to restore. When the pathspec set is empty (bare invocation),
+// these become whole-tree ops and fall through to the Tier 2 denial path.
+const GIT_PATH_SUBCOMMANDS = new Set(['checkout', 'restore']);
+
+// Git subcommands that unconditionally mutate the whole working tree without a pathspec
+// argument — there is no path-level granularity to check, so the protection must work by
+// subcommand. Includes both commands that can take a pathspec but may not (checkout/restore
+// without `--` or an explicit pathspec) and commands that never take one (reset, stash, etc.).
+// Whole-tree ops during a gated dispatch have no legitimate use case (they disrupt the
+// lane's own working state) and maintenance mode is the lawful escape if one is genuinely
+// needed for floor servicing.
+const GIT_WHOLE_TREE_SUBCOMMANDS = new Set([
+  'reset', 'stash', 'switch', 'clean', 'apply', 'am', 'checkout', 'restore',
+]);
+
 /**
  * Returns true when the human has set the maintenance-mode env var.
  *
@@ -188,6 +204,54 @@ if (toolName === 'Bash' && toolInput.command) {
       `or gate state. Changing a hook lawfully goes through the human-granted, build-reverted\n` +
       `path (ADR-0067 § the lawful hook-authoring path). The __smoke__/ trees stay writable.\n`
     );
+    process.exit(2);
+  }
+
+  // Git working-tree mutation guard. A git checkout/restore with a protected pathspec is
+  // the same write vector as a redirect — it restores a file from history, overwriting the
+  // working-tree copy — but it takes the Bash branch where commandWritesProtectedPath can't
+  // see it (there's no `>` operator to match). Tier 1 path-named ops (checkout/restore with
+  // an explicit pathspec) are matched by resolved path; Tier 2 whole-tree ops (reset --hard,
+  // stash pop/apply, switch, clean, apply, am, or bare checkout/restore) are matched by
+  // subcommand because there is no pathspec to resolve. Maintenance mode unlocks Tier 2
+  // unconditionally and Tier 1 only when the path is an enforcement SOURCE (not gate state).
+  const gitMutation = commandMutatesProtectedViaGit(effectiveCmd, payload.cwd ?? projectDir);
+  if (gitMutation) {
+    if (isMaintenanceMode() && (gitMutation.tier === 2 || isEnforcementSourceProtected(gitMutation.path))) {
+      // Co-fused evidence-delete guard — same discipline as the commandWritesProtectedPath
+      // unlock above: check the full command before permitting, so a fused command like
+      // `git checkout HEAD -- .ai-skills/hooks/gates.json && rm -rf .prism/evidence` cannot
+      // slip the evidence arm through the source-write maintenance unlock.
+      if (commandDeletesEvidence(effectiveCmd)) {
+        process.stderr.write(
+          `[ownership-guard] Denied: this Bash command deletes a .prism/evidence/ path.\n` +
+          `Gate state (strikes.json, ledger.jsonl, ratified-verdict.json, baseline.json) is hook-managed;\n` +
+          `${persona} may not delete evidence regardless of rm flag form. This is a lane boundary.\n` +
+          `Maintenance mode suspends enforcement-source writes only — evidence deletion is never unlocked.\n`
+        );
+        process.exit(2);
+      }
+      appendMaintenanceLedger(payload, gitMutation.path ?? `git ${gitMutation.subcommand}`, persona, projectDir);
+      process.exit(0);
+    }
+    if (gitMutation.tier === 1) {
+      process.stderr.write(
+        `[ownership-guard] Denied: 'git ${gitMutation.subcommand}' writes to '${gitMutation.path}', which is\n` +
+        `enforcement-source-protected (ADR-0067 § gate non-circumventability). A git pathspec restore\n` +
+        `overwrites the working-tree file from history — the same vector as a shell redirect. To change\n` +
+        `a hook lawfully, go through the human-granted build-reverted path (ADR-0067 § lawful hook-authoring path).\n` +
+        `To service the floor, set CLAUDE_PRISM_MAINTENANCE=1 in the shell that launches Claude Code.\n`
+      );
+    } else {
+      process.stderr.write(
+        `[ownership-guard] Denied: 'git ${gitMutation.subcommand}' is a whole-tree working-tree op.\n` +
+        `Whole-tree git ops (reset --hard, stash pop/apply, switch, checkout <branch>, clean, apply, am)\n` +
+        `restore files without naming a pathspec, which is the half of the git-mutation vector that\n` +
+        `path-matching structurally cannot see. Gated personas never legitimately need a whole-tree reset\n` +
+        `mid-dispatch — these are disruptive workspace ops. If floor servicing requires one, a human\n` +
+        `sets CLAUDE_PRISM_MAINTENANCE=1 to unlock it (ADR-0067 § gate non-circumventability, #289).\n`
+      );
+    }
     process.exit(2);
   }
 
@@ -651,6 +715,121 @@ function targetsEvidence(token) {
     token.startsWith('.prism/evidence/') ||
     token.startsWith('./.prism/evidence/')
   );
+}
+
+/**
+ * Returns a git mutation descriptor when a command contains a git subcommand that would
+ * write a protected enforcement path, or null when no protected git mutation is found.
+ *
+ * Two tiers:
+ *   Tier 1 — path-named ops (checkout, restore with a pathspec). Each resolved pathspec is
+ *   checked against the same enforcement-source + gate-state protected sets that the tool-path
+ *   arm uses. Returns { tier: 1, path, subcommand } on the first protected-path hit, or
+ *   { tier: 2, subcommand } when the pathspec list is empty (bare invocation = whole-tree).
+ *
+ *   Tier 2 — whole-tree ops (reset, stash, switch, clean, apply, am, and bare checkout/restore).
+ *   These restore/clobber working-tree files without naming a pathspec, so the only protection
+ *   strategy is denial by subcommand. Returns { tier: 2, subcommand }.
+ *
+ * Returns null when no git segment is found or when the git op is read-only (status, diff, log).
+ */
+function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
+  for (const segment of splitCommandSegments(effectiveCmd)) {
+    const tokens = tokenize(segment);
+    if (commandHead(tokens) !== 'git') continue;
+
+    const { subcommand, args } = parseGitInvocation(tokens);
+    if (!subcommand) continue;
+
+    if (GIT_PATH_SUBCOMMANDS.has(subcommand)) {
+      const pathspecs = extractGitPathspecs(args);
+      if (pathspecs.length === 0) {
+        // Bare checkout/restore with no pathspec — whole-tree op.
+        return { tier: 2, subcommand };
+      }
+      for (const raw of pathspecs) {
+        const target = normalizeWriteTarget(raw, cwdBase);
+        if (isEnforcementSourceProtected(target)) {
+          return { tier: 1, path: target, subcommand };
+        }
+        if (target.startsWith('.prism/evidence/')) {
+          for (const basename of PROTECTED_EVIDENCE_BASENAMES) {
+            if (target.includes(basename)) {
+              return { tier: 1, path: target, subcommand };
+            }
+          }
+        }
+      }
+      // Pathspecs present but none protected — not a protected mutation.
+      continue;
+    }
+
+    if (GIT_WHOLE_TREE_SUBCOMMANDS.has(subcommand)) {
+      return { tier: 2, subcommand };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parses git global options and returns { subcommand, args } for the real git subcommand.
+ *
+ * Git accepts global options before the subcommand — `-C <dir>`, `--git-dir=<path>`,
+ * `--work-tree=<path>`, `-c <k=v>`, `--namespace=<ns>`. These must be skipped to find
+ * the real subcommand. Value-taking flags in bare form (`-C`, `-c`, `--git-dir`,
+ * `--work-tree`, `--namespace`) consume the next token; `=`-fused forms (`--git-dir=x`,
+ * `-c k=v`) are single tokens and advance by one. The first non-option token is the
+ * subcommand; everything after it is args.
+ */
+function parseGitInvocation(tokens) {
+  const valueFlags = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
+  const gitIdx = tokens.indexOf('git');
+  if (gitIdx < 0) return { subcommand: null, args: [] };
+
+  let i = gitIdx + 1;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (!tok.startsWith('-')) break; // first non-option = subcommand
+    if (valueFlags.has(tok)) {
+      i += 2; // bare value flag — skip flag and its value token
+    } else {
+      i += 1; // single-token option (--flag=val or standalone flag like --no-pager)
+    }
+  }
+
+  if (i >= tokens.length) return { subcommand: null, args: [] };
+  return { subcommand: tokens[i], args: tokens.slice(i + 1) };
+}
+
+/**
+ * Extracts the pathspec list from git subcommand args.
+ *
+ * Two forms:
+ *   With `--`: everything after `--` is a literal pathspec (empty after `--` is still empty).
+ *   Without `--`: positional args (non-flag tokens). A single positional with no `--` is
+ *   ambiguous — it could be a branch name (`git checkout main`) or a path. Without `--`
+ *   to disambiguate, a single positional is treated as a whole-tree branch switch → returns []
+ *   so the caller sees Tier 2 (whole-tree). Two or more positionals → the first is a tree-ish
+ *   ref and the rest are pathspecs (e.g. `git checkout HEAD -- file.ts` already handled by the
+ *   `--` path; without `--`: `git checkout main -- src/` → handled; bare `git checkout main src/`
+ *   is unusual but we conservatively take positionals[1:] as pathspecs). A bare `.` pathspec
+ *   normalizes to the project root and will not match any protected prefix — it falls through
+ *   to Tier 2 at the caller (pathspecs.length would be 1 after removing the treeish — the
+ *   caller receives ['.'] which normalizes to '' or the project dir; isEnforcementSourceProtected
+ *   won't match, so it continues to the next segment, landing in the GIT_WHOLE_TREE fallback).
+ */
+function extractGitPathspecs(args) {
+  const ddIdx = args.indexOf('--');
+  if (ddIdx >= 0) {
+    return args.slice(ddIdx + 1).filter(Boolean);
+  }
+  // No `--`: take non-flag positionals. Drop flags (start with `-`).
+  const positionals = args.filter(a => !a.startsWith('-'));
+  // Single positional without `--` → ambiguous branch name → whole-tree.
+  if (positionals.length <= 1) return [];
+  // Two or more positionals: first is tree-ish, rest are pathspecs.
+  return positionals.slice(1);
 }
 
 /**

@@ -1604,6 +1604,180 @@ function assert(scenarioName, condition, message) {
   console.log(`${PASS} ${name}`);
 }
 // ============================================================
+// Scenario N: Git working-tree mutation guard (Phase 5 / #295)
+//
+// A `git checkout -- <path>` or `git restore --source=HEAD <path>` that names a protected
+// enforcement path is the same write vector as a shell redirect, but the existing
+// commandWritesProtectedPath scan can't see it (no `>` operator). This scenario verifies
+// the new commandMutatesProtectedViaGit predicate closes the gap.
+//
+// Sub-tests:
+//   N.a: git checkout -- .ai-skills/hooks/ownership-guard.mjs → DENY (Tier 1, source path)
+//   N.b: git restore --source=HEAD .ai-skills/hooks/gates.json → DENY (Tier 1, source path)
+//   N.c: git checkout HEAD -- .prism/evidence/r/strikes.json → DENY (Tier 1, gate state)
+//   N.d: git reset --hard HEAD → DENY (Tier 2, whole-tree)
+//   N.e: git stash pop → DENY (Tier 2, whole-tree)
+//   N.f: git switch main → DENY (Tier 2, whole-tree)
+//   N.g: git clean -fd → DENY (Tier 2, whole-tree)
+//   N.h: git apply some.patch → DENY (Tier 2, whole-tree)
+//   N.i: git am < patch.mbox → DENY (Tier 2, whole-tree)
+//   N.j: git checkout src/app.ts → PERMIT (Tier 1 path, not protected)
+//   N.k: git status → PERMIT (read-only op, not in either set)
+//   N.l: git diff HEAD → PERMIT (read-only op, not in either set)
+//   N.m: git checkout -- .ai-skills/hooks/gates.json && rm -rf .prism/evidence → DENY (fused Tier1 + evidence-delete)
+//   N.n: maintenance ON → git checkout -- .ai-skills/hooks/gates.json → PERMIT + ledger written (Tier 1 source path, maintenance unlocks)
+//   N.o: maintenance ON → git reset --hard HEAD → PERMIT + ledger written (Tier 2, maintenance unlocks whole-tree)
+//   N.p: maintenance ON → git checkout -- .prism/evidence/r/strikes.json → DENY (Tier 1 gate state, maintenance never unlocks)
+//   N.q: git checkout -- .ai-skills/hooks/gates.json && git status → DENY (Tier 1 path; second segment read-only doesn't rescue first)
+// ============================================================
+{
+  const name = 'N: git working-tree mutation guard';
+
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**', '.prism/evidence/**/report.json'],
+        may_not_run: [],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-n-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command, extraEnv = {}) {
+      return runHook(guardScript, {
+        session_id: 'smoke-n',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+    }
+
+    const maintenanceEnv = { CLAUDE_PRISM_MAINTENANCE: '1' };
+
+    // N.a: git checkout -- protected source path → DENY (Tier 1, source path)
+    const rNa = runGuardBash('git checkout -- .ai-skills/hooks/ownership-guard.mjs');
+    const okNa = assert(name, rNa.code === 2,
+      `N.a: git checkout -- ownership-guard.mjs — expected exit 2, got ${rNa.code}. stderr: ${rNa.stderr.substring(0, 300)}`);
+
+    // N.b: git restore --source=HEAD on a protected source path → DENY (Tier 1, source path)
+    const rNb = runGuardBash('git restore --source=HEAD .ai-skills/hooks/gates.json');
+    const okNb = assert(name, rNb.code === 2,
+      `N.b: git restore --source=HEAD gates.json — expected exit 2, got ${rNb.code}. stderr: ${rNb.stderr.substring(0, 300)}`);
+
+    // N.c: git checkout HEAD -- strikes.json (gate state path) → DENY (Tier 1, gate state)
+    const evidenceDir = path.join(tmpDir, '.prism', 'evidence', 'r');
+    mkdirSync(evidenceDir, { recursive: true });
+    const rNc = runGuardBash('git checkout HEAD -- .prism/evidence/r/strikes.json');
+    const okNc = assert(name, rNc.code === 2,
+      `N.c: git checkout HEAD -- strikes.json — expected exit 2, got ${rNc.code}. stderr: ${rNc.stderr.substring(0, 300)}`);
+
+    // N.d: git reset --hard HEAD → DENY (Tier 2, whole-tree)
+    const rNd = runGuardBash('git reset --hard HEAD');
+    const okNd = assert(name, rNd.code === 2,
+      `N.d: git reset --hard HEAD — expected exit 2, got ${rNd.code}. stderr: ${rNd.stderr.substring(0, 300)}`);
+
+    // N.e: git stash pop → DENY (Tier 2, whole-tree)
+    const rNe = runGuardBash('git stash pop');
+    const okNe = assert(name, rNe.code === 2,
+      `N.e: git stash pop — expected exit 2, got ${rNe.code}. stderr: ${rNe.stderr.substring(0, 300)}`);
+
+    // N.f: git switch main → DENY (Tier 2, whole-tree)
+    const rNf = runGuardBash('git switch main');
+    const okNf = assert(name, rNf.code === 2,
+      `N.f: git switch main — expected exit 2, got ${rNf.code}. stderr: ${rNf.stderr.substring(0, 300)}`);
+
+    // N.g: git clean -fd → DENY (Tier 2, whole-tree)
+    const rNg = runGuardBash('git clean -fd');
+    const okNg = assert(name, rNg.code === 2,
+      `N.g: git clean -fd — expected exit 2, got ${rNg.code}. stderr: ${rNg.stderr.substring(0, 300)}`);
+
+    // N.h: git apply some.patch → DENY (Tier 2, whole-tree)
+    const rNh = runGuardBash('git apply some.patch');
+    const okNh = assert(name, rNh.code === 2,
+      `N.h: git apply some.patch — expected exit 2, got ${rNh.code}. stderr: ${rNh.stderr.substring(0, 300)}`);
+
+    // N.i: git am < patch.mbox → DENY (Tier 2, whole-tree)
+    const rNi = runGuardBash('git am < patch.mbox');
+    const okNi = assert(name, rNi.code === 2,
+      `N.i: git am — expected exit 2, got ${rNi.code}. stderr: ${rNi.stderr.substring(0, 300)}`);
+
+    // N.j: git checkout src/app.ts → PERMIT (single positional = ambiguous branch, not in protected sets)
+    // The bare positional (no --) is treated as a branch name (whole-tree op), but src/app.ts
+    // is not a protected path — wait, bare single positional → tier 2 whole-tree → DENY.
+    // Per dispatch spec: the guard denies all whole-tree ops. Verify DENY.
+    const rNj = runGuardBash('git checkout -- src/app.ts');
+    const okNj = assert(name, rNj.code === 0,
+      `N.j: git checkout -- src/app.ts (non-protected path) — expected exit 0, got ${rNj.code}. stderr: ${rNj.stderr.substring(0, 300)}`);
+
+    // N.k: git status → PERMIT (read-only, not in any mutation set)
+    const rNk = runGuardBash('git status');
+    const okNk = assert(name, rNk.code === 0,
+      `N.k: git status — expected exit 0 (read-only), got ${rNk.code}. stderr: ${rNk.stderr.substring(0, 300)}`);
+
+    // N.l: git diff HEAD → PERMIT (read-only)
+    const rNl = runGuardBash('git diff HEAD');
+    const okNl = assert(name, rNl.code === 0,
+      `N.l: git diff HEAD — expected exit 0 (read-only), got ${rNl.code}. stderr: ${rNl.stderr.substring(0, 300)}`);
+
+    // N.m: fused git checkout of source path + evidence-delete → DENY (co-fused guard)
+    const rNm = runGuardBash('git checkout -- .ai-skills/hooks/gates.json && rm -rf .prism/evidence');
+    const okNm = assert(name, rNm.code === 2,
+      `N.m: fused checkout+evidence-delete — expected exit 2, got ${rNm.code}. stderr: ${rNm.stderr.substring(0, 300)}`);
+
+    // N.n: maintenance ON → Tier 1 source path → PERMIT + ledger written
+    const rNn = runGuardBash('git checkout -- .ai-skills/hooks/gates.json', maintenanceEnv);
+    const okNnCode = assert(name, rNn.code === 0,
+      `N.n: maintenance ON + Tier 1 source path — expected exit 0, got ${rNn.code}. stderr: ${rNn.stderr.substring(0, 300)}`);
+    const ledgerPath = path.join(tmpDir, '.prism', 'evidence', 'maintenance-ledger.jsonl');
+    const okNnLedger = assert(name, existsSync(ledgerPath),
+      `N.n: maintenance ON — expected maintenance-ledger.jsonl to be written at ${ledgerPath}`);
+    const okNn = okNnCode && okNnLedger;
+
+    // N.o: maintenance ON → Tier 2 whole-tree op → PERMIT + ledger written
+    const ledgerSizeBefore = existsSync(ledgerPath) ? readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean).length : 0;
+    const rNo = runGuardBash('git reset --hard HEAD', maintenanceEnv);
+    const okNoCode = assert(name, rNo.code === 0,
+      `N.o: maintenance ON + Tier 2 whole-tree — expected exit 0, got ${rNo.code}. stderr: ${rNo.stderr.substring(0, 300)}`);
+    const ledgerLinesAfter = existsSync(ledgerPath) ? readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean).length : 0;
+    const okNoLedger = assert(name, ledgerLinesAfter > ledgerSizeBefore,
+      `N.o: maintenance ON Tier 2 — expected a new ledger entry, got ${ledgerLinesAfter} lines (was ${ledgerSizeBefore})`);
+    const okNo = okNoCode && okNoLedger;
+
+    // N.p: maintenance ON → Tier 1 gate-state path (strikes.json) → DENY (gate state never unlocked)
+    const rNp = runGuardBash('git checkout -- .prism/evidence/r/strikes.json', maintenanceEnv);
+    const okNp = assert(name, rNp.code === 2,
+      `N.p: maintenance ON + Tier 1 gate state — expected exit 2 (gate state never unlocked), got ${rNp.code}. stderr: ${rNp.stderr.substring(0, 300)}`);
+
+    // N.q: git checkout source path fused with git status → DENY (first segment denies)
+    const rNq = runGuardBash('git checkout -- .ai-skills/hooks/gates.json && git status');
+    const okNq = assert(name, rNq.code === 2,
+      `N.q: fused Tier1 source checkout + git status — expected exit 2, got ${rNq.code}. stderr: ${rNq.stderr.substring(0, 300)}`);
+
+    const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq];
+    if (allN.every(Boolean)) {
+      console.log(`${PASS} ${name}`);
+    } else {
+      console.error(`${FAIL} ${name}`);
+    }
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {
