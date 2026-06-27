@@ -6,6 +6,10 @@
  * enforcement-tree grant (either spelling) throws, invalid gates JSON throws, and a guard
  * source missing the canonical-protection marker throws; the real post-fix canonical
  * gates.json passes.
+ *
+ * Also covers settings.json twin emission: asserts that after a build, the runtime
+ * .claude/settings.json and the install seed templates/install/.claude/settings.json
+ * byte-match the canonical .ai-skills/hooks/settings.json.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -69,5 +73,37 @@ test("throws when canonical gates.json is not valid JSON", () => {
 	assert.throws(
 		() => assertHookEmitDoesNotWeaken("{ not json", realCanonicalGuard),
 		/#305.*not valid JSON/s
+	);
+});
+
+test("settings.json runtime twin byte-matches the canonical source", () => {
+	const canonical = fs.readFileSync(
+		path.join(REPO_ROOT, ".ai-skills", "hooks", "settings.json"),
+		"utf8"
+	);
+	const runtime = fs.readFileSync(
+		path.join(REPO_ROOT, ".claude", "settings.json"),
+		"utf8"
+	);
+	assert.equal(
+		runtime,
+		canonical,
+		".claude/settings.json must byte-match .ai-skills/hooks/settings.json"
+	);
+});
+
+test("settings.json install-seed twin byte-matches the canonical source", () => {
+	const canonical = fs.readFileSync(
+		path.join(REPO_ROOT, ".ai-skills", "hooks", "settings.json"),
+		"utf8"
+	);
+	const seed = fs.readFileSync(
+		path.join(REPO_ROOT, "templates", "install", ".claude", "settings.json"),
+		"utf8"
+	);
+	assert.equal(
+		seed,
+		canonical,
+		"templates/install/.claude/settings.json must byte-match .ai-skills/hooks/settings.json"
 	);
 });

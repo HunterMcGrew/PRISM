@@ -788,8 +788,11 @@ export function assertHookEmitDoesNotWeaken(
  *
  * Scope is `.claude/` + the install seed only. `.codex/` is gated behind confirmed Codex
  * hook parity (Open Question default path) and is not emitted here. `.claude/settings.json`
- * stays a hand-maintained runtime file — it wires platform-specific hook paths and is not
- * part of the canonical hooks tree.
+ * is emitted from canonical `.ai-skills/hooks/settings.json` to the `.claude/` root and the
+ * install seed — it travels a separate pass (not the hooks-tree loop) because its destination
+ * is `.claude/settings.json`, not `.claude/hooks/settings.json`. The live-wiring content
+ * (which hook events to fire) is owned by the floor re-enable (epic task `#5`); the disabled
+ * state `{"hooks":{}}` is what the canonical source carries here.
  *
  * The emitted runtime is denylist-protected against gated-persona tool writes
  * (ownership-guard.mjs PROTECTED_WRITE_PATHS): canonical → build → runtime is the only
@@ -829,6 +832,13 @@ export async function emitHooks(
 		if (entry.kind !== "file") {
 			continue;
 		}
+
+		// settings.json is not a hook — it targets .claude/ root, not .claude/hooks/.
+		// It travels a separate pass below so it lands in the right directory.
+		if (entry.relativePath === "settings.json") {
+			continue;
+		}
+
 		const raw = await fs.readFile(
 			path.join(canonicalHooksRoot, entry.relativePath),
 			"utf8"
@@ -841,6 +851,20 @@ export async function emitHooks(
 				changedPathsArg
 			);
 		}
+	}
+
+	// settings.json targets the .claude/ root (not .claude/hooks/), so it gets its
+	// own pass rather than riding the hooks-tree loop above.
+	const settingsRaw = await fs.readFile(
+		path.join(canonicalHooksRoot, "settings.json"),
+		"utf8"
+	);
+	const settingsTargets = [
+		path.join(repoRootArg, ".claude", "settings.json"),
+		path.join(repoRootArg, "templates", "install", ".claude", "settings.json"),
+	];
+	for (const settingsTarget of settingsTargets) {
+		await writeFileIfChanged(settingsTarget, settingsRaw, checkModeArg, changedPathsArg);
 	}
 }
 
