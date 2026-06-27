@@ -52,9 +52,9 @@ const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-
 // only the runtime (PROTECTED_WRITE_PATHS) left a back door: a gated persona could edit
 // canonical .ai-skills/hooks/gates.json (drop its tests gate / widen may_write) or a
 // canonical *.mjs, run `pnpm prism:build`, and the weakened runtime would go live. The
-// whole canonical hooks tree is protected EXCEPT __smoke__/ (which gates nothing — same
+// whole canonical hooks tree is protected except __smoke__/ (which gates nothing — same
 // carve-out as the runtime .claude/hooks/__smoke__/ exemption). prism-code-dev/** is a
-// SEPARATE tree (.ai-skills/skills/), not under this prefix, so Clove's own skill source
+// separate tree (.ai-skills/skills/), not under this prefix, so Clove's own skill source
 // stays writable. See issue #305.
 const PROTECTED_CANONICAL_HOOKS_PREFIX = '.ai-skills/hooks/';
 const CANONICAL_HOOKS_SMOKE_CARVEOUT = '.ai-skills/hooks/__smoke__/';
@@ -141,7 +141,7 @@ if (toolName === 'Bash' && toolInput.command) {
   // writes a protected enforcement path takes this Bash branch, which the may_not_run
   // check alone would let through. Deny structurally so the redirect bypass cannot reach
   // the runtime — hooks are authored in canonical .ai-skills/hooks/, never via Bash here.
-  const protectedWrite = commandWritesProtectedPath(effectiveCmd);
+  const protectedWrite = commandWritesProtectedPath(effectiveCmd, payload.cwd ?? projectDir);
   if (protectedWrite) {
     process.stderr.write(
       `[ownership-guard] Denied: this Bash command writes '${protectedWrite}', which is\n` +
@@ -335,7 +335,7 @@ function extractEffectiveCommand(cmd) {
  *
  * The canonical hooks tree (.ai-skills/hooks/) is the build's input; the runtime
  * (.claude/hooks/) is its output. Protecting only the output left the canonical back door
- * (issue #305). Everything under the canonical hooks prefix is protected EXCEPT __smoke__/
+ * (issue #305). Everything under the canonical hooks prefix is protected except __smoke__/
  * — smoke tests gate nothing, so a gated persona may still adjust coverage there.
  */
 function isProtectedCanonicalHookPath(normalizedPath) {
@@ -354,15 +354,24 @@ function isProtectedCanonicalHookPath(normalizedPath) {
  * file arg); a protected path appearing only as a read source (`cat X >`, `node X <`,
  * `git diff -- X`, `grep X`) or behind a non-protected redirect target never trips it.
  *
+ * Each target is normalized the same way the tool-path normalizes filePath (line ~183) —
+ * path.relative(projectDir, path.resolve(cwdBase, target)) with backslashes forwarded —
+ * BEFORE the protected checks. This collapses `./`, `..`, and absolute spellings to the same
+ * canonical relative path the prefix checks expect, so a redirect to `./.ai-skills/hooks/
+ * gates.json` or an absolute spelling denies just as the bare form does (issue #305). Without
+ * it, isProtectedCanonicalHookPath's startsWith check was defeated by a leading `./`.
+ *
  * Conservative bias survives on genuine ambiguity (a redirect whose target we can't
  * confidently parse still matches by substring within that target token), but unambiguous
  * reads of a protected path are permitted (finding 5; Briar Issue #300 self-review).
  */
-function commandWritesProtectedPath(effectiveCmd) {
+function commandWritesProtectedPath(effectiveCmd, cwdBase) {
   const targets = collectWriteTargets(effectiveCmd);
   if (targets.length === 0) return null;
 
-  for (const target of targets) {
+  for (const rawTarget of targets) {
+    const target = normalizeWriteTarget(rawTarget, cwdBase);
+
     for (const protectedPath of PROTECTED_WRITE_PATHS) {
       if (target.includes(protectedPath)) return protectedPath;
     }
@@ -379,6 +388,24 @@ function commandWritesProtectedPath(effectiveCmd) {
   }
 
   return null;
+}
+
+/**
+ * Normalizes a Bash write-target token to a project-relative, forward-slash path.
+ *
+ * Mirrors the tool-path normalization (path.relative(projectDir, path.resolve(cwdBase, ...)))
+ * so the Bash arm and the tool-path arm collapse `./`, `..`, and absolute spellings to the
+ * same canonical form before the protected-path checks — the two arms cannot drift on path
+ * spelling (issue #305 Bash-arm bypass). cwdBase matches the tool-path base (payload.cwd ??
+ * projectDir). Falls back to the raw token if resolution throws (a malformed token still hits
+ * the substring checks conservatively).
+ */
+function normalizeWriteTarget(rawTarget, cwdBase) {
+  try {
+    return path.relative(projectDir, path.resolve(cwdBase, rawTarget)).replace(/\\/g, '/');
+  } catch {
+    return rawTarget;
+  }
 }
 
 /**

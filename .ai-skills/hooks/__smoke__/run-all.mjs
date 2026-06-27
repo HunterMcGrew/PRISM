@@ -1001,7 +1001,7 @@ function assert(scenarioName, condition, message) {
 // Scenario J: canonical-source protection (Issue #305)
 //
 // The #301 denylist (Scenario E) protects only the runtime .claude/hooks/*. The canonical
-// sources under .ai-skills/hooks/** are the build's INPUT and were left unprotected, while
+// sources under .ai-skills/hooks/** are the build's input and were left unprotected, while
 // that same tree sat in clove.may_write. A gated persona could edit canonical gates.json or
 // a canonical *.mjs, run `pnpm prism:build`, and the weakened runtime would go live — the
 // same in-place-tamper class E closed, reopened on the input end of the build pipe. J pins
@@ -1022,6 +1022,20 @@ function assert(scenarioName, condition, message) {
 //   J8: Bash echo '{}' > .ai-skills/hooks/gates.json      → exit 2 (Bash redirect arm — mirror of I.aa)
 //   J9: Bash sed -i s/a/b/ .ai-skills/hooks/run-gates.mjs → exit 2 (Bash sed -i arm — mirror of I.c)
 //   J10: Bash echo hi > .ai-skills/hooks/__smoke__/note.txt → exit 0 (Bash-path carve-out — selective, not whole-tree)
+//   J11: Bash echo x > ./.ai-skills/hooks/gates.json       → exit 2 (./-prefix spelling — normalization closes it)
+//   J12: Bash echo x > .ai-skills/hooks/../hooks/gates.json → exit 2 (..-traversal spelling — normalization closes it)
+//   J13: Bash sed -i ... ./.ai-skills/hooks/run-gates.mjs   → exit 2 (./-prefix sed -i — normalization closes it)
+//   J14: Bash cat .ai-skills/hooks/gates.json (read)        → exit 0 (read mentioning a canonical path still permits)
+//   J15: Bash echo x > <abs>/.ai-skills/hooks/gates.json    → exit 2 (absolute spelling — runs only when REPO_ROOT is space-free)
+//
+// J11–J13 + J15 are the regression pins for the Bash-arm ./-prefix / ..-traversal / absolute
+// bypass: before the fix, isProtectedCanonicalHookPath's startsWith check let any non-bare
+// spelling through; the target is now normalized (path.relative ∘ path.resolve) before the
+// prefix check, the same way the tool-path normalizes filePath. J14 confirms the fix did not
+// over-block reads. J15 uses a true absolute path and so runs only when REPO_ROOT has no space
+// — the whitespace tokenizer splits a spaced absolute token (an orthogonal, pre-existing
+// Bash-arm limitation shared by every I-series check), which would test the tokenizer, not the
+// normalization. On CI (Ubuntu, space-free path) J15 runs and pins the real absolute spelling.
 // ============================================================
 {
   const name = 'J: canonical-source protection (#305)';
@@ -1108,7 +1122,43 @@ function assert(scenarioName, condition, message) {
   const okJ10 = assert(name, rJ10.code === 0,
     `J10: expected exit 0 for Bash redirect to canonical __smoke__/note.txt (carve-out), got ${rJ10.code}. stderr: ${rJ10.stderr.substring(0, 200)}`);
 
-  if (okJ1 && okJ2 && okJ3 && okJ4 && okJ5 && okJ6 && okJ7 && okJ8 && okJ9 && okJ10) {
+  // J11: ./-prefix redirect — normalization collapses it to the bare prefix → deny
+  const rJ11 = runGuardBash('echo x > ./.ai-skills/hooks/gates.json');
+  const okJ11 = assert(name, rJ11.code === 2,
+    `J11: expected exit 2 for Bash redirect to ./.ai-skills/hooks/gates.json (./-prefix), got ${rJ11.code}. stderr: ${rJ11.stderr.substring(0, 200)}`);
+
+  // J12: ..-traversal redirect — normalization collapses the traversal to the bare prefix → deny.
+  // Space-immune (single token regardless of REPO_ROOT spaces), so it pins the traversal spelling
+  // on every platform; J15 covers the true-absolute spelling where the path allows.
+  const rJ12 = runGuardBash('echo x > .ai-skills/hooks/../hooks/gates.json');
+  const okJ12 = assert(name, rJ12.code === 2,
+    `J12: expected exit 2 for Bash redirect to ..-traversal canonical gates.json, got ${rJ12.code}. stderr: ${rJ12.stderr.substring(0, 200)}`);
+
+  // J13: ./-prefix sed -i — normalization collapses the in-place target → deny
+  const rJ13 = runGuardBash('sed -i s/a/b/ ./.ai-skills/hooks/run-gates.mjs');
+  const okJ13 = assert(name, rJ13.code === 2,
+    `J13: expected exit 2 for Bash sed -i of ./.ai-skills/hooks/run-gates.mjs (./-prefix), got ${rJ13.code}. stderr: ${rJ13.stderr.substring(0, 200)}`);
+
+  // J14: read mentioning a canonical path — only writes deny, reads still permit
+  const rJ14 = runGuardBash('cat .ai-skills/hooks/gates.json');
+  const okJ14 = assert(name, rJ14.code === 0,
+    `J14: expected exit 0 for Bash read of canonical gates.json (read, not write), got ${rJ14.code}. stderr: ${rJ14.stderr.substring(0, 200)}`);
+
+  // J15: true absolute-path redirect → deny. Runs only when REPO_ROOT is space-free: a spaced
+  // absolute path splits in the whitespace tokenizer (orthogonal pre-existing Bash-arm limit),
+  // which would test the tokenizer, not the normalization. CI (Ubuntu) is space-free, so the
+  // real absolute spelling is pinned there; a spaced dev path skips it without a false failure.
+  let okJ15 = true;
+  if (!/\s/.test(REPO_ROOT)) {
+    const absGates = path.join(REPO_ROOT, '.ai-skills/hooks/gates.json');
+    const rJ15 = runGuardBash(`echo x > ${absGates}`);
+    okJ15 = assert(name, rJ15.code === 2,
+      `J15: expected exit 2 for Bash redirect to absolute canonical gates.json, got ${rJ15.code}. stderr: ${rJ15.stderr.substring(0, 200)}`);
+  } else {
+    console.log(`  J15: skipped — REPO_ROOT contains a space (spaced absolute tokens split in the whitespace tokenizer, orthogonal to the normalization under test).`);
+  }
+
+  if (okJ1 && okJ2 && okJ3 && okJ4 && okJ5 && okJ6 && okJ7 && okJ8 && okJ9 && okJ10 && okJ11 && okJ12 && okJ13 && okJ14 && okJ15) {
     console.log(`${PASS} ${name}`);
   }
 }

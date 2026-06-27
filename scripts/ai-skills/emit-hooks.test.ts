@@ -2,9 +2,10 @@
  * Regression suite for assertHookEmitDoesNotWeaken — the build-side backstop that refuses
  * to emit a gates.json or guard which re-opens the canonical/runtime back door (issue #305).
  *
- * Pins three verdicts: a gates.json carrying a wholesale enforcement-tree grant throws; the
- * real post-fix canonical gates.json passes; a guard source missing the canonical-protection
- * marker throws.
+ * Covers both throw classes and the pass class: a gates.json carrying a wholesale
+ * enforcement-tree grant (either spelling) throws, invalid gates JSON throws, and a guard
+ * source missing the canonical-protection marker throws; the real post-fix canonical
+ * gates.json passes.
  */
 import test from "node:test";
 import assert from "node:assert/strict";

@@ -112,6 +112,11 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
+// Wholesale enforcement-tree grants that constitute the #305 hole: either entry in
+// clove.may_write would let a gated persona write the whole canonical or runtime hooks
+// tree. assertHookEmitDoesNotWeaken refuses to emit a gates.json carrying either.
+const WHOLESALE_GRANTS = [".ai-skills/hooks/**", ".claude/hooks/**"];
+
 /**
  * Copies all managed content areas from `contentRoot` into `platformDir`,
  * applying token substitution and dialect transformation per file.
@@ -729,7 +734,7 @@ export async function writeSeedMirror(
  * is two structural checks per build with no maintained baseline file:
  *
  *   1. clove.ownership.may_write contains neither `.ai-skills/hooks/**` nor `.claude/hooks/**`
- *      — the wholesale enforcement-tree grants that ARE the hole.
+ *      — the wholesale enforcement-tree grants that are the hole.
  *   2. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
  *      protection is present in what's about to go live.
  *
@@ -739,8 +744,6 @@ export function assertHookEmitDoesNotWeaken(
 	canonicalGatesRaw: string,
 	canonicalGuardRaw: string
 ): void {
-	const WHOLESALE_GRANTS = [".ai-skills/hooks/**", ".claude/hooks/**"];
-
 	let gates: unknown;
 	try {
 		gates = JSON.parse(canonicalGatesRaw);

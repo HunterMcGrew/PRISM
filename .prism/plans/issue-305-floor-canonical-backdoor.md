@@ -179,10 +179,19 @@ Verification (run end-to-end after Task 4):
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Winston designed the fix — three coupled components (canonical-source denylist prefix + may_write narrowing; emitHooks non-weakening backstop; human-grant-to-runtime hook-authoring path for Phases 3–4) plus the load-bearing edit-order. No Task 0 grant needed — canonical hooks are still in Clove's may_write today. Ready for Clove.
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Clove implemented Tasks 1–4 in the load-bearing order — Scenario J smoke (canonical protection), narrowed `clove.may_write` (both `.ai-skills/hooks/**` and `.claude/hooks/**` → their `__smoke__/` lanes, since the Task-4 backstop forbids both wholesale grants), `PROTECTED_CANONICAL_HOOKS_PREFIX` + shared `isProtectedCanonicalHookPath` wired into both guard branches, and `assertHookEmitDoesNotWeaken` backstop in `emitHooks`. `pnpm prism:build` cut the protection over to runtime + install seed with zero drift; canonical/runtime/install smoke all green (A–J), fleet-keying 3/3, emit-hooks unit test 5/5, crossref-lint clean. types/tests fail pre-existing (esbuild missing, Windows path-norm `D:\D:\…%20…`) — neither in this diff.
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Briar self-review — both guard arms verified (tool-path + Bash-path deny canonical `gates.json`/`*.mjs`/`lib/**`; carve-outs `__smoke__/` and `prism-code-dev/**` permit; Scenario J 10/10 on canonical+runtime). Adversarial `..`-traversal / `./`-prefix / trailing-slash probes all denied (path.relative collapses traversal before the prefix check). `pnpm prism:build` permits (not a protected write-target token; subprocess fs emit not guard-intercepted). emit-hooks unit test 5/5. Verdict: clean → Eric. Recorded one deferred `minor` (build.ts residual self-weakening vector) as a documented known-limitation/follow-up — not a #305 must-fix.
+- 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Clove fixed Eric's Major (Bash-arm `./`/absolute canonical bypass) by normalizing each Bash write-target the same way the tool-path normalizes filePath, before the protected checks; see Review Issue "Bash-path canonical protection bypassable…". Added Scenario J11–J15 (`./`/`..`-traversal/absolute/`sed -i` writes deny, read permits) and mopped three cosmetic minors. Live-probed the emitted runtime guard — every write spelling exits 2, reads/carve-outs/lookalike all correct; zero drift, all smoke + fleet-keying + emit-hooks green.
 
 ---
 
 ## Review Issues
+
+### Bash-path canonical protection bypassable via `./`-prefix and absolute-path target spellings
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/hooks/ownership-guard.mjs` (`commandWritesProtectedPath`); emitted to runtime + install seed.
+- **Problem:** The Bash arm passed the raw redirect/`sed -i` target token to `isProtectedCanonicalHookPath`, which uses `startsWith('.ai-skills/hooks/')` — so `./`-prefix and absolute spellings slipped past while the bare spelling denied, reopening the #305 canonical vector on the Bash arm. The tool-path arm was solid because it normalizes filePath via `path.relative`/`path.resolve` before the prefix check; the Bash arm skipped that.
+- **Fixed in:** `commandWritesProtectedPath` now normalizes each write-target via new `normalizeWriteTarget(rawTarget, cwdBase)` = `path.relative(projectDir, path.resolve(payload.cwd ?? projectDir, target)).replace(/\\/g,'/')` before all protected checks, mirroring the tool-path arm so the two cannot drift on path spelling. Scenario J11–J15 pin the `./`/`..`-traversal/absolute/`sed -i` spellings → deny plus a read-permits control; J15 (true absolute) runs only on space-free `REPO_ROOT` (a spaced absolute token splits in the whitespace tokenizer — an orthogonal pre-existing limit). Live-probed the emitted runtime guard: every write spelling exits 2; reads, `__smoke__/`/`prism-code-dev/**` carve-outs, and the `__smoke__evil.mjs` lookalike-injection all correct.
 
 ### build.ts is in clove.may_write and contains the backstop — residual self-weakening vector
 
@@ -221,15 +230,15 @@ Verification (run end-to-end after Task 4):
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues — Eric's Bash-arm `./`/absolute Major fixed (normalize-before-check); J11–J15 pin the regression
 - [x] Types correct in changed files — `build.ts` additions type-check; the only `prism:check-types` error is pre-existing `bundle.ts` missing `esbuild` (not in this diff)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic — Scenario J (J1–J10) smoke + `emit-hooks.test.ts` (5 cases) for the backstop
+- [x] Tests written for new logic — Scenario J (J1–J15) smoke + `emit-hooks.test.ts` (5 cases) for the backstop
 - [x] No open debugged issues
-- [x] Build passes — `pnpm prism:build` green; `prism:check --check` reports zero canonical↔runtime drift; runtime + install seed cut over
+- [x] Build passes — `tsx build.ts` + `--check` green, zero canonical↔runtime↔install drift; runtime + install seed cut over (the `pnpm prism:build` test step trips only the pre-existing Windows path-norm test fixtures, see Note)
 - [ ] PR description up to date — set at PR-open (later ship step)
 - [ ] Lasting decisions promoted to architect context — at ticket close (ADR-0067 amendment + enforcement-floor.md, per Component 1/3 verdicts)
 
-**Note:** `prism:check-types` and `prism:test` report pre-existing failures unrelated to this diff — `esbuild` absent from `node_modules` (`bundle.ts`) and a Windows path-normalization defect in the test harness (`D:\D:\…%20…` double-drive + URL-encoded space in `generate-skills`/`crossref-lint` path resolution). Neither file is in this change set.
+**Note:** `prism:check-types` and `prism:test` report pre-existing failures unrelated to this diff — `esbuild` absent from `node_modules` (`bundle.ts`) and a Windows path-normalization defect in the test harness (`crossref-lint.test.ts` expects POSIX `/repo/…`; `generate-skills.test.ts` hits `D:\D:\…%20…` double-drive + URL-encoded space). Neither file is in this change set; the `prism:crossref-lint` linter itself (vs. its test fixture) passes clean, and CI is green on Ubuntu.
 
 **Last updated:** 2026-06-26
