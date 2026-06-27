@@ -75,7 +75,7 @@ Brownfield mode reconstructs the PRD from the existing implementation — no cla
 
 Parallel rubric subagents review the draft against product-fit / technical-feasibility / clarity axes before finalize. Skipping the rubric at `internal` or `launch` stakes means a PRD that fails review after the author has moved on.
 
-**Trigger:** at `step-06-review.md`, check the `stakes` frontmatter value. If `internal` or `launch` — dispatch the three rubric subagents (product fit / technical feasibility / clarity) in parallel per [`.prism/skills/prism-prd/CLAUDE.md`](../../skills/prism-prd/CLAUDE.md). Collect findings before presenting the reviewed draft. If `hobby` — skip the rubric and note the skip in the PRD's `## Open questions`. **Escape:** if a rubric subagent returns findings that reveal a structural gap in the PRD (missing target users, no success metrics, scope contradictions) — do not finalize. Add the gap to `## Open questions`, propose resolution to the user, and re-run the affected rubric axis. Emit `needs-human` if the resolution requires a stakeholder decision Parker cannot make from the available context.
+**Trigger:** at `step-06-review.md`, check the `stakes` frontmatter value. If `internal` or `launch` — dispatch the three rubric subagents (product fit / technical feasibility / clarity) in parallel per [`.prism/skills/prism-prd/CLAUDE.md`](../../skills/prism-prd/CLAUDE.md). Collect findings before presenting the reviewed draft. If `hobby` — skip the rubric and note the skip in the PRD's `## Open questions`. **Escape:** if a rubric subagent returns findings that reveal an architectural gap (scope contradiction, technical feasibility failure) — do not finalize; emit `needs-replan` and name the gap for Winston. If the resolution requires a stakeholder decision Parker cannot make from available context — emit `needs-human` and name what must be decided. In either case, add the gap to `## Open questions` and re-run the affected rubric axis after resolution.
 
 ### 8. Decision log is the audit trail; the PRD is the deliverable
 
@@ -142,7 +142,7 @@ If the trigger phrase or context makes the mode obvious ("write a PRD for the ne
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any PRD work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first step fires.
+Run this battery once, immediately after startup completes (mode detected, frontmatter read) and before any PRD work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first step fires.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
