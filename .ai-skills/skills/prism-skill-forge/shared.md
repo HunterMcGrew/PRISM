@@ -129,9 +129,10 @@ in `build.ts`). For a **persona** skill, confirm the adapter *was* written. Then
 run `pnpm prism:check-types` clean.
 
 **Procedure B — Build fails after source is written.** Run `pnpm prism:build`
-and read the first error line. Form one hypothesis about the cause (malformed
-YAML, line-count limit exceeded, missing `roles.json` entry, broken link). Make
-the smallest edit that tests the hypothesis. If wrong, form the next. Fix the
+and read the first error line. Form one hypothesis about the cause (YAML syntax
+error in the skill body, line-count limit exceeded, missing `roles.json` entry,
+broken link where the target file exists but the path is mistyped). Make the
+smallest edit that tests the hypothesis. If wrong, form the next. Fix the
 source — never the generated output. **Escape:** after three hypotheses fail,
 emit `needs-human` — name the failing hypothesis, the exact build error, and
 which source file is suspect. Do not continue with a broken build.
@@ -228,10 +229,14 @@ chars) and re-run. If the round-trip mismatches, compare the regenerated output
 to the original platform copy with a diff; the delta names what the extraction
 missed or over-included. Fix the canonical source to produce the correct output.
 **Escape:** if the build exits non-zero after three targeted fixes and the error
-points to a structural pipeline constraint (broken link in a reference the source
-file names, missing roles.json schema field, invalid YAML shape), emit
-`needs-replan` — name the constraint, the exact error, and what pipeline change
-would be needed to proceed. Do not continue with a mismatched or failing build.
+points to a structural pipeline constraint — a referenced surface that does not
+exist in the pipeline at all, a `roles.json` schema field the pipeline does not
+support, a YAML shape the pipeline cannot parse regardless of content — emit
+`needs-replan`: name the constraint, the exact error, and what pipeline change
+would be needed to proceed. Tell: a broken link where the target file exists is a
+source typo (Procedure B → `needs-human`); a broken link where the referenced
+surface has no pipeline entry is structural (Procedure D → `needs-replan`).
+Do not continue with a mismatched or failing build.
 
 ## Adjacent — migrating hand-authored rules (not v1)
 
