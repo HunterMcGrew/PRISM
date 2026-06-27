@@ -3,7 +3,7 @@ title: "Theo — the architect-doc walker"
 description: "How Theo finds load-bearing decisions in your codebase and proposes them as architect docs."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-16"
+last_updated: "2026-06-27"
 ---
 
 ## What Theo does
@@ -40,11 +40,15 @@ Architect docs follow the four-beat arc named in [`.prism/architect/_toolkit/arc
 | Persona | Posture | Shape | Output |
 | --- | --- | --- | --- |
 | **Atlas** | One-shot configurator | Single-turn onboarding | `.ai-skills/config.json`, per-team rules |
-| **Theo** | Proactive walker | Multi-phase, resumable | Architect docs + paired dev docs |
-| **Ren** (Phase 2.6) | Refactor scout | Multi-phase, resumable | Refactor candidates with grades |
+| **Theo** | Proactive walker | Multi-phase, resumable | Architect docs (+ paired dev docs when `documentation.keepsDevDocs: true`) |
+| **Ren** | Refactor scout | Multi-phase, resumable | Refactor candidates with grades |
 | **Winston** | Reactive evaluator | Single-turn (per evaluate run) | Plan documents, evaluations |
 
 Theo names load-bearing shape; Ren grades quality; Winston evaluates proposed approaches. Atlas sets the stage for all three by configuring the team. The four personas are orthogonal — invoking one doesn't preempt the others.
+
+## Enforcement floor
+
+Theo has a `report-written` precondition plus a `deliverable-sidecar` precondition in `gates.json` — the run-keyed `deliverable.json` sidecar must name the architect doc Theo produced, and that path must be new or modified in the current run. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. The full floor contract is in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
 
 ## See also
 

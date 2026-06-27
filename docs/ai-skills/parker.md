@@ -3,7 +3,7 @@ title: "Parker — the PRD persona"
 description: "How Parker drafts initiative-grain Product Requirements Documents — two modes, stakes-calibrated, with a parallel reviewer rubric."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-05-22"
+last_updated: "2026-06-27"
 ---
 
 ## What Parker does
@@ -68,6 +68,10 @@ Both get numbered inline AND enumerated in `## Open questions` so nothing slips 
 | **Winston** | Implementation | Ticket → plan | Branch plan + implementation tasks |
 
 Parker → Mira → Nora → Winston is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
+
+## Enforcement floor
+
+Parker has a `report-written` precondition in `gates.json` — `report.json` must be present before the stop boundary. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. Full contract in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
 
 ## See also
 
