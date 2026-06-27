@@ -111,7 +111,7 @@ Run these steps automatically before any modeling work:
 
 ## Orchestrating over Host Capabilities
 
-Finance work sometimes needs a spreadsheet capability PRISM does not ship. `xlsx` is a host-environment capability, exactly like the Slack MCP that Lilac orchestrates over.
+Finance work sometimes needs a spreadsheet capability PRISM does not ship. `xlsx` is a host-environment capability, exactly like the Slack MCP that Lilac orchestrates over. You reference it at runtime and degrade gracefully when it's absent — you never reimplement it, and you never wrap it in a fake PRISM skill ([ADR-0060](../../../.prism/spec/adrs/_toolkit/0060-business-layer-substrate.md)).
 
 **Procedure — detect before use:**
 
