@@ -410,10 +410,56 @@ function resolvePath(p, runKey, projectDir) {
   return path.join(projectDir, p.replace(/\$\{runKey\}/g, runKey));
 }
 
+/**
+ * Resolves {{commands.*}} tokens in a command string against config.json#commands.
+ *
+ * Called before every gate command executes AND before every ledger lookup so the
+ * resolved string is consistent in both places — the ledger records the resolved
+ * command, and the lookup matches against the same resolved form. A token that
+ * references a missing key is left as-is (the gate will fail with a clear error
+ * rather than silently substituting an empty string).
+ */
 function resolveToken(command, projectDir) {
-  // Phase 1: tokens like {{commands.typecheck}} are not yet wired to config.json.
-  // Return the command string as-is; Phase 3 implements token resolution.
-  return command;
+  if (!command.includes('{{')) {
+    return command;
+  }
+
+  const configCommands = loadConfigCommands(projectDir);
+
+  return command.replace(/\{\{commands\.([^}]+)\}\}/g, (match, key) => {
+    const resolved = configCommands[key];
+    if (resolved === undefined || resolved === null) {
+      process.stderr.write(
+        `[run-gates] Warning: token '${match}' has no value in config.json#commands.${key} — command will fail\n`
+      );
+      return match;
+    }
+    return resolved;
+  });
+}
+
+// Cache: config.json commands loaded once per hook invocation (fresh Node process per fire).
+let _configCommands = null;
+
+/**
+ * Loads the commands map from config.json. Returns an empty object when the file
+ * is absent or the commands key is missing — gates using tokens will then fail
+ * informatively when the token is left unresolved.
+ */
+function loadConfigCommands(projectDir) {
+  if (_configCommands !== null) {
+    return _configCommands;
+  }
+
+  try {
+    const configPath = path.join(projectDir, '.ai-skills', 'config.json');
+    const config = JSON.parse(readFileSync(configPath, 'utf8'));
+    _configCommands = config.commands ?? {};
+  } catch {
+    _configCommands = {};
+  }
+
+  return _configCommands;
 }
 
 function formatCheckResult(result) {
