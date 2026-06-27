@@ -1,4 +1,4 @@
-﻿# PRISM
+# PRISM
 
 A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
