@@ -637,5 +637,385 @@
         "rm --force .prism/evidence"
       ]
     }
+  },
+  "eli": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "doc-file-written",
+        "description": "Documentation file written to docs/ (Eli writes this sidecar after the doc is saved and the plan History entry appended)",
+        "checklist_key": "doc-file-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/doc-file-written.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "audience accuracy — whether the doc is pitched at the right reader depth",
+      "control inventory completeness — whether every UI control in source was included"
+    ],
+    "allowed_routes": [
+      "human",
+      "winston"
+    ],
+    "ownership": {
+      "may_write": [
+        "docs/**",
+        "public/images/**",
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/doc-file-written.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "pixel": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "mock-spec-saved",
+        "description": "Mode-2 mock spec saved to .prism/design/mocks/ and plan ## Design section updated (Pixel writes this sidecar after mode-2 save; mode-1 inline runs skip this gate and write done-override directly)",
+        "checklist_key": "mock-spec-saved",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/mock-spec-saved.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "principle accuracy — whether cited cognitive-science principles correctly explain the proposed layout",
+      "state coverage completeness — whether all five states (empty, loading, error, partial, success) were addressed"
+    ],
+    "allowed_routes": [
+      "winston",
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/design/mocks/**",
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/mock-spec-saved.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "theo": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "architect-doc-committed",
+        "description": "At least one architect doc committed to .prism/architect/ and state file updated to idle (Theo writes this sidecar when step-07-commit completes a write decision)",
+        "checklist_key": "architect-doc-committed",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/architect-doc-committed.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "deletion-test accuracy — whether the candidate truly carried load-bearing complexity vs being a convenient boundary",
+      "shape description fidelity — whether the architect doc accurately describes the decision the code encodes"
+    ],
+    "allowed_routes": [
+      "winston",
+      "eli",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/architect/**",
+        ".prism/theo-state.json",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/architect-doc-committed.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "zoe": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "audit-report-written",
+        "description": "Audit report written to .prism/audits/<YYYY-MM-DD>-audit.md and audit-state.json updated (Zoe writes this sidecar after the report file is saved)",
+        "checklist_key": "audit-report-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/audit-report-written.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "verdict accuracy — whether live vs archive-candidate classifications correctly reflect current load-bearing status",
+      "reference-follow completeness — whether every cited reference in every Decision entry was actually resolved"
+    ],
+    "allowed_routes": [
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/audits/**",
+        ".prism/audit-state.json",
+        ".prism/archived/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/audit-report-written.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "ren": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "refactor-plan-written",
+        "description": "Refactor plan written to .prism/plans/refactor-<slug>.md and state file updated to idle (Ren writes this sidecar when step-07-plan completes)",
+        "checklist_key": "refactor-plan-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/refactor-plan-written.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "heuristic accuracy — whether the friction signal identified is a real structural weakness vs an intentional design constraint",
+      "grill-pass completeness — whether all five grill passes produced accurate before/after sketches"
+    ],
+    "allowed_routes": [
+      "winston",
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/refactor-*.md",
+        ".prism/ren-state.json",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/refactor-plan-written.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "iris": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "retro-report-saved",
+        "description": "Retro report saved to .prism/retros/<YYYY-MM-DD>-<slug>.md and state file updated to complete (Iris writes this sidecar when step-06-save-report completes)",
+        "checklist_key": "retro-report-saved",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/retro-report-saved.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "evidence completeness — whether all relevant plan sections were scanned before staging voices",
+      "divergence accuracy — whether staged disagreements reflect genuine Decision-vs-outcome conflicts vs adjacent issues"
+    ],
+    "allowed_routes": [
+      "nora",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/retros/**",
+        ".prism/iris-state.json",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/retro-report-saved.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "lilac": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "standup-delivered",
+        "description": "Standup assembled and delivered — either posted to Slack or paste-fallback provided (Lilac writes this sidecar after Phase 7 delivery completes)",
+        "checklist_key": "standup-delivered",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/standup-delivered.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "PR categorization accuracy — whether each PR landed in the correct Merged/In Review/Continued/Reviewed subsection",
+      "window accuracy — whether the resolved time window matched the user intent"
+    ],
+    "allowed_routes": [
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/standup-delivered.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
   }
 }
