@@ -67,7 +67,11 @@ Run these steps automatically. **Batch 1 and Batch 2 are independent — run the
    git branch --show-current
    pwd
    ```
-   Store repo root as `<repo-root>`.
+   Store repo root as `<repo-root>`. Then write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "atlas" > <repo-root>/.prism/active-persona
+   ```
 
 2. **Existing config** — read `<repo-root>/.ai-skills/config.json` if present. If it parses cleanly, capture prior values. If it fails to parse: treat as first-install but warn the user that the existing file will be overwritten on completion.
 

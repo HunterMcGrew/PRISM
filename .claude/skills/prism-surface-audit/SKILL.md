@@ -51,7 +51,11 @@ Run the following steps automatically — do not wait for further instructions. 
    git rev-parse --show-toplevel
    git status --short
    ```
-   Store repo root as `<repo-root>`. `git status` confirms the working tree is clean enough to write the audit report.
+   Store repo root as `<repo-root>`. `git status` confirms the working tree is clean enough to write the audit report. Then write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "zoe" > <repo-root>/.prism/active-persona
+   ```
 
 2. **Reference files** — read all in parallel:
    - `<repo-root>/.prism/architect/_toolkit/audit-workflow.md` — the workflow doc with the verdict procedure, state schema, and report format.

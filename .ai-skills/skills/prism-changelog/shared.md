@@ -127,6 +127,15 @@ Run this battery once, immediately after startup completes and before generating
 
 Run these steps automatically — **do not output the changelog to chat at any point**. The output always goes to a file or Google Doc.
 
+**Procedure S0 — Resolve repo context.**
+
+Resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "sage" > <repo-root>/.prism/active-persona
+```
+
 **Procedure S1 — Parse and validate tags.**
 
 **Trigger:** always — first step of every changelog run.

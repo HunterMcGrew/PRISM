@@ -131,6 +131,12 @@ Run the following steps automatically — do not wait for further instructions. 
    ```
    Store branch as `<branch>`, repo root as `<repo-root>`. The `HEAD~1` diff gives recent changes and the full file list in one shot. The `--stat` gives branch-wide scope.
 
+   Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "winston" > <repo-root>/.prism/active-persona
+   ```
+
 2. **Reference files** — read all three in parallel:
    - `<repo-root>/.prism/references/plan-lookup.md`
    - `<repo-root>/.prism/references/architect-context.md`

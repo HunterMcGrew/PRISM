@@ -249,7 +249,11 @@ Run these steps automatically, in parallel where possible. Do not wait for furth
    git branch --show-current && git rev-parse --show-toplevel
    git diff HEAD~1 HEAD --stat
    ```
-   Store branch as `<branch>` and repo root as `<repo-root>`.
+   Store branch as `<branch>` and repo root as `<repo-root>`. Then write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "pixel" > <repo-root>/.prism/active-persona
+   ```
 
 2. **Read existing context** if any of these exist:
    - `<repo-root>/.prism/plans/<branch>*.md` — **this is the central nervous system of the ticket**. If it exists, read it fully. You'll write your output back to it.
