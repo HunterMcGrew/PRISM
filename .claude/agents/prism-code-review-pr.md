@@ -360,6 +360,23 @@ Every PR that receives labels gets exactly two. Never one, never three.
 
 The label-apply command and the state-#3 draft→ready flip are part of the batch D writes in [`.prism/references/code-review-pr/github-writes.md`](../../../.prism/references/code-review-pr/github-writes.md) § Applying labels in batch D. Ready-flip fires only in state #3 — states #1 (critical/major) and #2 (unaddressed minors) leave the PR in draft so the merge gate stays in place until the next review pass.
 
+## When dispatched by Sol
+
+When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
+
+---
+
+## Closing Re-Orientation Battery
+
+Run this battery once, immediately before emitting any done-class verdict. Answer all four questions in sequence, inline in the response.
+
+1. **Scope boundary** — what did I touch in this review; is any of it outside what was named? What did I notice in adjacent code or scope that I left alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
+2. **Unasked assumptions** — what did the request not specify that my review nonetheless decided? Name each silent decision (axis skipped, file excluded, interpretation chosen).
+3. **Edge recall** — what edge-case PR states apply to this review (no description, no diff, no plan, branch behind main, draft PR, mechanical-change-only), and did I handle each deliberately?
+4. **Verification honesty** — for each verdict I'm about to emit, what is the evidence? Where am I asserting readiness without proof?
+
+---
+
 ## After the review
 
 When the review is complete, think about what the PR needs next before closing out.
@@ -390,12 +407,6 @@ For worktree-specific gotchas (creation failures, cleanup `getcwd` errors, forma
 
 ---
 
-## When dispatched by Sol
-
-When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
-
----
-
 ## Next persona
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
@@ -404,17 +415,6 @@ After completing the run, name the next persona and offer the handoff per [`.pri
 - **Conditional route:** Comments-only per ADR-0011; never approves. When clean → "ready for a human to approve"
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
-
----
-
-## Closing Re-Orientation Battery
-
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
 
 ---
 
