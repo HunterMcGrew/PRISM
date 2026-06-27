@@ -132,3 +132,37 @@ test("allowlist exempts a file from both guards", async () => {
 		assert.equal(tokenViolations.length, 0);
 	});
 });
+
+test("literal guard flags a Thrive literal planted in an emitted hooks file", async () => {
+	await withTempRoot(async (repoRoot) => {
+		const hooksRoot = path.join(repoRoot, ".claude", "hooks");
+		await fs.mkdir(hooksRoot, { recursive: true });
+		await fs.writeFile(
+			path.join(hooksRoot, "ownership-guard.mjs"),
+			"// see Thrive docs\n",
+			"utf8"
+		);
+
+		const violations = await runLiteralGuard(repoRoot, [hooksRoot]);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "Thrive");
+	});
+});
+
+test("leftover-token guard flags an unresolved token planted in the install-seed hooks", async () => {
+	await withTempRoot(async (repoRoot) => {
+		const hooksRoot = path.join(repoRoot, "templates", "install", ".claude", "hooks");
+		await fs.mkdir(hooksRoot, { recursive: true });
+		await fs.writeFile(
+			path.join(hooksRoot, "run-gates.mjs"),
+			"const cmd = '${GATE_COMMAND}';\n",
+			"utf8"
+		);
+
+		const violations = await runLeftoverTokenGuard(repoRoot, [hooksRoot]);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "${GATE_COMMAND}");
+	});
+});

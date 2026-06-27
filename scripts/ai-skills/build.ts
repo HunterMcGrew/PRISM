@@ -1068,7 +1068,8 @@ async function main(): Promise<void> {
 
 	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
-	const literalGuardRoots = [
+	// Skill-content roots: shared base for both Thrive-literal and leftover-token scanning.
+	const skillContentRoots = [
 		targetRoots.claude,
 		targetRoots.claudeAgents,
 		targetRoots.codex,
@@ -1078,6 +1079,26 @@ async function main(): Promise<void> {
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
 	];
+
+	// The emitted hooks tree (.mjs files, lib/, gates.json, __smoke__/) is added to the
+	// Thrive-literal scan but not the leftover-token scan. The .mjs files use UPPER_SNAKE_CASE
+	// JS template literals (${STRIKE_CAP}, ${PASS}, ${FAIL}) that are genuine JavaScript
+	// expressions — they match the leftover-token pattern but are not unresolved PRISM tokens,
+	// so including hooks in leftover-token scanning produces persistent false positives.
+	// path-guard is also excluded: the hooks legitimately reference .claude/hooks/ paths
+	// (PROTECTED_WRITE_PATHS), and path-guard would false-positive on every such reference
+	// inside ownership-guard.mjs.
+	// settings.json ({"hooks":{}}) carries no prose and no token risk in its disabled state
+	// — neither guard is extended to it; the re-enable (epic task `#5`) should revisit if
+	// interpolated paths are introduced.
+	const emittedHooksRoots = [
+		path.join(repoRoot, ".claude", "hooks"),
+		path.join(repoRoot, "templates", "install", ".claude", "hooks"),
+	];
+
+	const literalGuardRoots = [...skillContentRoots, ...emittedHooksRoots];
+	const leftoverTokenGuardRoots = skillContentRoots;
+
 	const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
 	if (literalViolations.length > 0) {
 		for (const violation of literalViolations) {
@@ -1093,7 +1114,7 @@ async function main(): Promise<void> {
 
 	const leftoverTokenViolations = await runLeftoverTokenGuard(
 		repoRoot,
-		literalGuardRoots
+		leftoverTokenGuardRoots
 	);
 	if (leftoverTokenViolations.length > 0) {
 		for (const violation of leftoverTokenViolations) {
