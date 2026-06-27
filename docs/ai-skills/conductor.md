@@ -3,7 +3,7 @@ title: "Sol — the Conductor"
 description: "How Sol drives a goal across the lifecycle by dispatching the existing personas, pausing at every human gate, and routing each report-back verdict."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-24"
+last_updated: "2026-06-27"
 ---
 
 ## What Sol does
@@ -12,7 +12,7 @@ Sol takes a stated goal — "build this content type from our SPECs," "ship thes
 
 Sol is a persona on a **third axis — orchestration** — orthogonal to the ticket-flow personas (Winston, Clove, …) and the cadence-driven personas (Zoe, Iris). It is **additive, not a replacement**: PRISM works exactly as it does today when Sol isn't invoked. You keep invoking personas by hand whenever you want to; Sol is the option for when you'd rather hand the whole lifecycle to one orchestrator.
 
-**Sol has no authoritative write path.** It writes only its own run-control state at `.prism/conductor-state.json`. It never writes code (Clove's lane), never writes Linear (Nora's lane). Merge is a human responsibility by default; Sol may merge only when `features.conductorMayMerge: true` is set in `.ai-skills/config.json` (see [Configuration — Feature flags](../parameterization.md#feature-flags)). Its job is to dispatch and route — it never does or interprets another persona's work.
+**Sol has no authoritative write path.** It writes its own run-control state at `.prism/conductor-state.json` and its run-keyed `report.json` before stopping — nothing else. It never writes code (Clove's lane), never writes Linear (Nora's lane). The enforcement floor's `may_not_run` list in `gates.json` blocks Sol from running merge, PR-create, or issue-create commands at the Stop boundary. Merge is a human responsibility by default; Sol may merge only when `features.conductorMayMerge: true` is set in `.ai-skills/config.json` (see [Configuration — Feature flags](../parameterization.md#feature-flags)). Its job is to dispatch and route — it never does or interprets another persona's work.
 
 ## When to invoke Sol
 
@@ -349,6 +349,10 @@ The report structure is in [`step-10-report.md`](https://github.com/HunterMcGrew
 Phase D supports runs at ~100 lanes. Runs trending past that size are expected to hit the dispatch budget (default 100) or the breadth gate (12 per reconcile) before growing further — the ceiling is a governance expectation enforced by existing brakes, not a new hard limit. Batching and partitioning raise the practical run size Sol handles efficiently; the governor brakes remain the enforcement ceiling.
 
 ---
+
+## Enforcement floor
+
+Sol has a `report-written` precondition in `gates.json` and a `may_not_run` list that blocks merge, PR-create, and issue-create commands — enforced at the Stop boundary. Sol is Class C (ownership and contract only): the floor proves Sol wrote to its declared paths and didn't run forbidden commands; it does not verify routing accuracy. Full contract in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
 
 ## See also
 

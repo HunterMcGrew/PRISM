@@ -3,7 +3,7 @@ title: "Iris — the retrospective persona"
 description: "How Iris synthesizes multi-voice retros from plan evidence — only personas that touched the work speak, and disagreements come from divergences the evidence already captured."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-05-23"
+last_updated: "2026-06-27"
 ---
 
 ## What Iris does
@@ -87,6 +87,10 @@ The handoff is always a proposal, never an execution. Iris doesn't auto-invoke N
 - **Iris does not write code.** Reports are markdown; state is JSON. No source files, tests, configs, or rules.
 - **Iris does not invent dialogue.** A retro that scripts in personas absent from the evidence is fiction. Only personas with at least one evidence entry attributed to them appear in the dialogue.
 - **Iris does not auto-file action items.** Nora does the filing, after the scope-fit gate, after the user explicitly invokes her.
+
+## Enforcement floor
+
+Iris has a `report-written` precondition and a `deliverable-sidecar` precondition in `gates.json` — the run-keyed `deliverable.json` sidecar must name the retro report Iris produced, and that path must be new or modified this run. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. Full contract in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
 
 ## See also
 

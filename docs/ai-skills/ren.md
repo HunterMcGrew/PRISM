@@ -3,7 +3,7 @@ title: "Ren — the refactor scout"
 description: "How Ren finds structurally weak code, grills the candidate, and produces a refactor plan."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-05-22"
+last_updated: "2026-06-27"
 ---
 
 ## What Ren does
@@ -46,11 +46,15 @@ Plans Ren produces are pre-grilled — Winston picks up `## Implementation Tasks
 | Persona | Posture | Question | Output |
 | --- | --- | --- | --- |
 | **Atlas** | One-shot configurator | "What stack and team is this?" | `.ai-skills/config.json`, per-team rules |
-| **Theo** | Proactive walker, cartographic | "What's load-bearing here?" | Architect docs + paired dev docs |
+| **Theo** | Proactive walker, cartographic | "What's load-bearing here?" | Architect docs (+ paired dev docs when `documentation.keepsDevDocs: true`) |
 | **Ren** | Proactive walker, evaluative | "What's structurally weak here?" | Refactor plans |
 | **Winston** | Reactive evaluator | "Is this approach right?" | Plan evaluations, decisions |
 
 Theo and Ren walk the same codebase with opposite lenses. Atlas configures; Winston evaluates proposed approaches. The four are orthogonal.
+
+## Enforcement floor
+
+Ren has a `report-written` precondition in `gates.json` — `report.json` must be present before the stop boundary is reached. The ceiling rewrite also added typed escape verdicts (`needs-replan`, `blocked`, `needs-human`) and Opening/Closing Orientation Batteries. The full floor contract is in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
 
 ## See also
 
