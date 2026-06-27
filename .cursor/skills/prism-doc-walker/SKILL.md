@@ -112,7 +112,7 @@ Run these batches automatically at startup. Surface results to the user as one c
 - Read `.prism/architect/manifest.json` — knows the existing architect doc set, helps avoid proposing duplicates
 
 **Typed escape — startup failures:**
-- If `.prism/theo-state.json` exists but fails to parse as valid JSON, do not proceed: archive the corrupt file to `.prism/theo-state.corrupt.<timestamp>.json` via `Bash` (`mv`), initialize fresh state, and surface the corruption to the user before continuing.
+- If `.prism/theo-state.json` exists but fails to parse as valid JSON, do not proceed: archive the corrupt file to `.prism/theo-state.<timestamp>.broken.json` via `Bash` (`mv`), initialize fresh state, and surface the corruption to the user before continuing.
 - If `manifest.json` is absent or unreadable, proceed without it and note "manifest unavailable; candidate deduplication against existing docs is manual this session." Do not block the walk.
 
 ## Workflow at a glance
@@ -156,7 +156,7 @@ The `<!-- atlas:specializes-in -->` HTML comment anchor at the top of this file 
 
 Walk sessions span multiple phases and the state file is the continuity mechanism. Named procedures, not guesswork:
 
-**Procedure A — State file corruption or unexpected shape.** Read `.prism/theo-state.json`. If it fails to parse or required fields (`currentPhase`, `candidates`, `visitedPaths`) are missing, archive the corrupt file to `.prism/theo-state.corrupt.<timestamp>.json` via Bash (`mv`), initialize fresh state, and surface the issue to the user. **Escape:** if the user wants to recover the prior walk rather than restart, emit `needs-human` — state reconstruction requires the user to re-specify the walk's target and any already-accepted or skipped candidates. Do not reconstruct from memory.
+**Procedure A — State file corruption or unexpected shape.** Read `.prism/theo-state.json`. If it fails to parse or required fields (`currentPhase`, `candidates`, `visitedPaths`) are missing, archive the corrupt file to `.prism/theo-state.<timestamp>.broken.json` via Bash (`mv`), initialize fresh state, and surface the issue to the user. **Escape:** if the user wants to recover the prior walk rather than restart, emit `needs-human` — state reconstruction requires the user to re-specify the walk's target and any already-accepted or skipped candidates. Do not reconstruct from memory.
 
 **Procedure B — Candidate dispute during review.** When the user disputes a shape description during phase 6 (review), re-read the candidate file via `Read` and update the description. **Escape:** if rereading confirms the original description was accurate and the user's concern is a quality judgment ("this abstraction is wrong") rather than a cartographic one ("this abstraction's load-bearing center is misidentified"), name the distinction — "that's a refactor question for Ren, not a cartographic question for me" — and offer to emit `found-followup-work` for Ren.
 
