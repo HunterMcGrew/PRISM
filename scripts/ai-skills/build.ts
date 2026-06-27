@@ -112,6 +112,11 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
+// Wholesale enforcement-tree grants that constitute the #305 hole: either entry in
+// clove.may_write would let a gated persona write the whole canonical or runtime hooks
+// tree. assertHookEmitDoesNotWeaken refuses to emit a gates.json carrying either.
+const WHOLESALE_GRANTS = [".ai-skills/hooks/**", ".claude/hooks/**"];
+
 /**
  * Copies all managed content areas from `contentRoot` into `platformDir`,
  * applying token substitution and dialect transformation per file.
@@ -719,6 +724,59 @@ export async function writeSeedMirror(
 }
 
 /**
+ * Build-side backstop: refuses to emit a gates.json or guard that weakens the floor.
+ *
+ * A second line behind ownership-guard.mjs's canonical denylist (issue #305), not the
+ * primary guarantee. If Component 1 were ever bypassed or regressed — a future edit drops
+ * the canonical prefix, or a consumer re-widens may_write back to the whole enforcement
+ * tree — the canonical → runtime emit is the trusted channel that would silently propagate
+ * the weakened gate. This asserts on the canonical text the build already reads, so the cost
+ * is two structural checks per build with no maintained baseline file:
+ *
+ *   1. clove.ownership.may_write contains neither `.ai-skills/hooks/**` nor `.claude/hooks/**`
+ *      — the wholesale enforcement-tree grants that are the hole.
+ *   2. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
+ *      protection is present in what's about to go live.
+ *
+ * Throws on violation, naming issue #305 and the offending detail.
+ */
+export function assertHookEmitDoesNotWeaken(
+	canonicalGatesRaw: string,
+	canonicalGuardRaw: string
+): void {
+	let gates: unknown;
+	try {
+		gates = JSON.parse(canonicalGatesRaw);
+	} catch (error) {
+		throw new Error(
+			`emitHooks (#305): canonical gates.json is not valid JSON — refusing to emit. ${String(error)}`
+		);
+	}
+
+	const mayWrite = (gates as Record<string, { ownership?: { may_write?: unknown } }>)
+		?.clove?.ownership?.may_write;
+	if (Array.isArray(mayWrite)) {
+		for (const grant of WHOLESALE_GRANTS) {
+			if (mayWrite.includes(grant)) {
+				throw new Error(
+					`emitHooks (#305): clove.may_write contains '${grant}', a wholesale ` +
+						`enforcement-tree grant that re-opens the canonical/runtime back door. ` +
+						`Narrow it to the '__smoke__/' lane before emitting.`
+				);
+			}
+		}
+	}
+
+	if (!canonicalGuardRaw.includes("PROTECTED_CANONICAL_HOOKS_PREFIX")) {
+		throw new Error(
+			`emitHooks (#305): canonical ownership-guard.mjs is missing the ` +
+				`PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical-source protection was ` +
+				`dropped. Refusing to emit a guard that re-opens the back door.`
+		);
+	}
+}
+
+/**
  * Emits the canonical enforcement-runtime hooks from `.ai-skills/hooks/` into the
  * runtime (`.claude/hooks/`) and the install seed (`templates/install/.claude/hooks/`).
  *
@@ -736,6 +794,10 @@ export async function writeSeedMirror(
  * The emitted runtime is denylist-protected against gated-persona tool writes
  * (ownership-guard.mjs PROTECTED_WRITE_PATHS): canonical → build → runtime is the only
  * lawful path to change hooks once this emission is live.
+ *
+ * Before emitting, assertHookEmitDoesNotWeaken backstops the floor: it refuses to emit a
+ * gates.json that re-opens the canonical or runtime back door, or a guard that dropped the
+ * canonical protection (issue #305).
  */
 export async function emitHooks(
 	repoRootArg: string,
@@ -746,6 +808,16 @@ export async function emitHooks(
 	if (!(await pathExists(canonicalHooksRoot))) {
 		return;
 	}
+
+	const canonicalGatesRaw = await fs.readFile(
+		path.join(canonicalHooksRoot, "gates.json"),
+		"utf8"
+	);
+	const canonicalGuardRaw = await fs.readFile(
+		path.join(canonicalHooksRoot, "ownership-guard.mjs"),
+		"utf8"
+	);
+	assertHookEmitDoesNotWeaken(canonicalGatesRaw, canonicalGuardRaw);
 
 	const targetRoots = [
 		path.join(repoRootArg, ".claude", "hooks"),
