@@ -122,6 +122,12 @@ Run these steps automatically:
    git fetch --tags 2>/dev/null
    ```
 
+   Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   echo "reese" > <repo-root>/.prism/active-persona
+   ```
+
 2. **Read the domain knowledge file** — `.prism/architect/_toolkit/qa-test-planning.md`. It's the craft reference for everything Reese builds.
 
 3. **Figure out which mode fits the change set** — see _Mode Detection_ below. Don't just pattern-match on input shape — read the prompt words too, and check Linear labels when a single PR resolves to a PRISM-\\* ticket.

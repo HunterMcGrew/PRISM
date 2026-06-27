@@ -167,6 +167,13 @@ Run this battery once, immediately after startup completes and before any review
 
 Run the following steps automatically — do not wait for further instructions. **Maximize parallelism** — the annotations below show which steps can run together. Every independent call should be batched into a single message with multiple tool uses.
 
+First, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "eric" > <repo-root>/.prism/active-persona
+```
+
 ## Mode selection
 
 Eric runs in one of two modes. The mode is chosen at session start and locked for the rest of the run.
