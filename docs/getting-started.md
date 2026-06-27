@@ -3,7 +3,7 @@ title: "Getting Started"
 description: "How to install PRISM into a new or existing repository."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-06-16"
+last_updated: "2026-06-27"
 ---
 
 # Getting Started
@@ -12,25 +12,29 @@ This guide takes you from zero to a working PRISM install in your repository. By
 
 ## Prerequisites
 
-- [pnpm](https://pnpm.io/) installed (`npm install -g pnpm`)
-- Access to the PRISM repository
+- Node.js 20+ and [pnpm](https://pnpm.io/) installed (`npm install -g pnpm`)
 - A target codebase to install into
 
-## Step 1 — Clone and build PRISM
+## Step 1 — Initialize config
 
-PRISM lives as a sibling repo next to your codebase, not inside it.
+From inside your target repo, run:
 
 ```bash
-# From the parent directory of your codebase
-git clone https://github.com/HunterMcGrew/PRISM.git prism
-cd prism
-pnpm install
-pnpm prism:build
+cd your-repo
+npx @huntermcgrew/prism init
 ```
 
-`pnpm prism:build` generates platform-specific outputs (`.claude/`, `.codex/`, `.cursor/`) from the canonical sources in `.ai-skills/`. You only need to run this once per PRISM update.
+`prism init` asks for your project name, ticket prefix, ticket system (`linear` or `github-issues`), and GitHub owner/repo, then writes `.ai-skills/config.json`. It detects your tech stack automatically. In CI or scripts, pass values as flags (`--project`, `--ticket-prefix`, etc.) instead of answering prompts.
 
-## Step 2 — Run Atlas in your target repo
+## Step 2 — Adopt PRISM
+
+```bash
+npx @huntermcgrew/prism adopt
+```
+
+`prism adopt` seeds `.prism/` from the PRISM install surface and projects the persona roster into `.claude/`, `.codex/`, and `.cursor/`. It's a first-contact command — it refuses to run a second time once `.prism/` already has a sync record; use `npx @huntermcgrew/prism update` from that point on.
+
+## Step 3 — Run Atlas for AI-assisted onboarding
 
 Open Claude Code (or Codex/Cursor) from inside your target codebase and invoke Atlas:
 
@@ -41,21 +45,10 @@ Atlas will:
 1. Detect your tech stack from your project files
 2. Ask a few questions about your team's setup (org name, ticket prefix, GitHub repo, docs location, etc.)
 3. Generate per-team engineering rules from patterns in your actual code
-4. Write `.ai-skills/config.json` with your team's values
+4. Fill in the stub anchors that `adopt` put in place
 5. Track its progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume
 
 If you already have engineering standards (ESLint configs, style guides, existing conventions), tell Atlas — it reads them and decides where each belongs in the tier system.
-
-## Step 3 — Verify the install
-
-After Atlas finishes, confirm the platform output landed correctly:
-
-```bash
-# Check that generated outputs are in sync with canonical sources
-pnpm prism:check
-```
-
-Exit 0 means everything is in sync. If you see drift errors, run `pnpm prism:build` to regenerate.
 
 ## Step 4 — Start using personas
 
@@ -70,24 +63,19 @@ See [workflow.md](./workflow.md) for the full ticket-to-ship flow, and [personas
 
 ## Keeping PRISM up to date
 
-Pull the latest PRISM changes and rebuild:
-
 ```bash
-cd /path/to/prism
-git pull
-pnpm install
-pnpm prism:build
+npx @huntermcgrew/prism update
 ```
 
-Then re-run `pnpm prism:check` in your target repo to verify the install is still in sync.
+`prism update` pulls PRISM's latest canonical content into your already-adopted repo. It's idempotent — running it twice in a row produces the same result. PRISM-owned files are overwritten when you haven't diverged from the last-known base; files you've edited are preserved as `.bak` snapshots.
 
 ## Config reference
 
-Your install is parameterized by `.ai-skills/config.json`. Atlas writes this during onboarding; you can edit it manually too. See [parameterization.md](./parameterization.md) for the full field reference and all available tokens.
+Your install is parameterized by `.ai-skills/config.json`. `prism init` writes a baseline during first install; Atlas fills in per-team rules and stack-specific guidance during AI-assisted onboarding. You can edit the file manually at any time. See [parameterization.md](./parameterization.md) for the full field reference and all available tokens.
 
-## Adopting PRISM into a consumer repo
+## Alternative install methods
 
-Once PRISM is cloned, run `pnpm prism:adopt` from inside the PRISM directory to seed `.prism/` and project the persona roster into the enclosing consumer repo — no global install or PATH setup needed. See [adopt-prism.md](./adopt-prism.md) for the full workflow and the alternative global `prism` command.
+The `npx` path is the recommended starting point. For air-gapped environments, contributor setups, or teams that want to pin to a specific PRISM commit, see [adopt-prism.md](./adopt-prism.md) — it covers vendoring PRISM inside your repo, setting up a global `prism` command, and the `--consumer` flag for targeting a specific directory.
 
 ## Going deeper
 
