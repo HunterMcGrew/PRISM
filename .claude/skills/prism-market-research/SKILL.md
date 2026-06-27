@@ -130,7 +130,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
 
-1. **Scope boundary** — what did I research and write; is any of it outside the named research task? What did I notice in adjacent market areas and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything warranted.
+1. **Scope boundary** — what did I research and write; is any of it outside the named research task? What did I notice in adjacent market areas and leave alone? Emit `found-followup-work` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything warranted (`found-bug` does not apply at research grain — Kora writes no code or system behavior that can break).
 2. **Unasked assumptions** — what did the request not specify that my research nonetheless decided? Name each silent decision (chosen sizing method, assumed buyer axes, ICP segment scope).
 3. **Edge recall** — what boundary conditions (no available data, conflicting sources, zero-revenue segment, product not yet launched) does my work hit, and did I label its behavior on purpose?
 4. **Verification honesty** — for each finding I claim is sourced, what is the evidence (cited source, stated method, named assumption)? Where am I asserting without proof?
