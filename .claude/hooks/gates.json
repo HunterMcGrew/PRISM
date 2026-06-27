@@ -195,5 +195,447 @@
         "git push --force"
       ]
     }
+  },
+  "winston": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "plan-updated",
+        "description": "Plan file updated with implementation tasks or evaluation findings (Winston writes this sidecar when plan mode or evaluate mode completes a durable write to the plan)",
+        "checklist_key": "plan-updated",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/plan-updated.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "evaluation soundness — whether the architectural recommendation is correct for the codebase",
+      "task completeness — whether implementation tasks cover all needed work"
+    ],
+    "allowed_routes": [
+      "clove",
+      "sasha",
+      "nora",
+      "mira",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/architect/**",
+        "docs/**",
+        ".prism/spec/adrs/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/plan-updated.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "sasha": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "debugged-issue-recorded",
+        "description": "Phase 6 closeout completed — debugged issue entry recorded in plan and case file cleaned up (Sasha writes this sidecar when Phase 6 finishes)",
+        "checklist_key": "debugged-issue-recorded",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/case-closed.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "diagnosis accuracy — whether the identified root cause is the real cause",
+      "fix completeness — whether the recommended fix fully resolves the root cause"
+    ],
+    "allowed_routes": [
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/sasha-state.json",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/case-closed.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "nora": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "branch-ready",
+        "description": "Branch setup completed and pre-handoff branch gate passed (Nora writes this sidecar after step 10 confirms the branch is clean and correct)",
+        "checklist_key": "branch-ready",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/branch-ready.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "requirements completeness — whether the Definition of Ready checklist caught all real gaps",
+      "priority accuracy — whether the impact-based priority recommendation matches actual business priority"
+    ],
+    "allowed_routes": [
+      "sasha",
+      "winston",
+      "mira",
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/branch-ready.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git push -f",
+        "git push --force",
+        "git reset --hard",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "mira": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "stories-written",
+        "description": "User stories saved to plan's ## User Stories section (Mira writes this sidecar after appending stories to the plan)",
+        "checklist_key": "stories-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/stories-written.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "story quality — whether stories reflect genuine user needs rather than solution-first framing",
+      "edge case coverage — whether the what-if sweep caught all relevant boundary cases"
+    ],
+    "allowed_routes": [
+      "winston",
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/stories-written.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "briar": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "review-issues-recorded",
+        "description": "## Review Issues section updated in plan and ## PR Readiness written (Briar writes this sidecar after completing the plan write in Phase 5 step 7)",
+        "checklist_key": "review-issues-recorded",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/review-issues-recorded.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "review thoroughness — whether all logic paths in the diff were actually evaluated",
+      "severity calibration accuracy — whether Critical/Major/Minor classifications match real blast radius"
+    ],
+    "allowed_routes": [
+      "clove",
+      "eric",
+      "eli",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/review-issues-recorded.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "gh pr review --approve",
+        "git push -f",
+        "git push --force",
+        "gh pr comment",
+        "gh api repos",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "eric": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "summary-comment-posted",
+        "description": "Summary comment posted to GitHub PR (Eric writes this sidecar after batch D GitHub writes complete)",
+        "checklist_key": "summary-comment-posted",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/summary-posted.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "review thoroughness — whether the two-axis split caught all relevant standards and spec gaps",
+      "severity accuracy — whether Critical/Major/Minor ratings reflect the real blast radius across callers not in the diff"
+    ],
+    "allowed_routes": [
+      "clove",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/summary-posted.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "gh pr review --approve",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "parker": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "prd-written",
+        "description": "PRD file written to .prism/prds/ with status set past draft (Parker writes this sidecar after step-07-finalize or step-04-draft saves the PRD file)",
+        "checklist_key": "prd-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/prd-written.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "PRD completeness — whether open questions and assumptions reflect all real unknowns",
+      "stakes calibration accuracy — whether the selected stakes level matches actual initiative risk"
+    ],
+    "allowed_routes": [
+      "mira",
+      "nora",
+      "winston",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/prds/**",
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/prd-written.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "reese": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "plan-file-saved",
+        "description": "Test plan file saved to the mode-appropriate path under .claude/docs/qa/ (Reese writes this sidecar after save/deliver in shared-mechanics completes)",
+        "checklist_key": "plan-file-saved",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/plan-file-saved.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "scenario completeness — whether the what-if sweep captured all real edge cases",
+      "risk allocation accuracy — whether high/medium/low risk assignments match actual failure likelihood"
+    ],
+    "allowed_routes": [
+      "nora",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".claude/docs/qa/**",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/plan-file-saved.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
   }
 }
