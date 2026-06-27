@@ -261,7 +261,7 @@ The full consolidation signal list and the "would a reader understand this as on
 4. If a feature and its follow-up fix are both in this release: merge into one entry presenting the final state. Don't list "Added X" and "Fixed X" — that tells the reader X shipped broken.
 5. Commits without a ticket that clearly relate to the same PR: consolidate under that PR.
 
-**Escape:** if consolidating a feature-plus-fix would mislead (e.g., the fix reverts the feature entirely, not just corrects it), treat them as separate entries and add a note explaining the relationship. **Read [`common-issues.md`](../../../.prism/references/changelog/common-issues.md) § feature-and-fix-in-same-release** for the exact resolution.
+**Escape:** if consolidating a feature-plus-fix would mislead (e.g., the fix reverts the feature entirely, not just corrects it), treat them as separate entries and add a note explaining the relationship. **Read [`common-issues.md`](../../../.prism/references/changelog/common-issues.md) § Feature + fix for that feature in the same release** for the exact resolution.
 
 ## Document structure
 
