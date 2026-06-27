@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { resolvePersona } from './lib/resolve-persona.mjs';
 
@@ -46,7 +46,7 @@ const PROTECTED_WRITE_PATHS = [
   '.claude/settings.json',
 ];
 const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
-const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json', 'baseline.json'];
+const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json', 'baseline.json', 'maintenance-ledger.jsonl'];
 
 // Canonical enforcement source — the build emits these to the runtime, so protecting
 // only the runtime (PROTECTED_WRITE_PATHS) left a back door: a gated persona could edit
@@ -70,6 +70,19 @@ const CANONICAL_HOOKS_SMOKE_CARVEOUT = '.ai-skills/hooks/__smoke__/';
 // Bash branch calls splitCommandSegments during the synchronous module body — a const
 // declared lower would be in the temporal dead zone at that call.
 const SEGMENT_SEPARATORS = /(?:&&|\|\||[;\n|&])/;
+
+/**
+ * Returns true when the human has set the maintenance-mode env var.
+ *
+ * The switch is an env var rather than a file or config key — a persona cannot set an
+ * env var on a hook's process (each hook is a fresh Node process spawned with Claude
+ * Code's environment, not the persona's shell), and the one file-based injection path
+ * (settings.json env block) is denylist-protected. See Decision "Maintenance-mode seam
+ * design (Phase 4.5, Winston)".
+ */
+function isMaintenanceMode() {
+  return process.env.CLAUDE_PRISM_MAINTENANCE === '1';
+}
 
 const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 
@@ -141,8 +154,13 @@ if (toolName === 'Bash' && toolInput.command) {
   // writes a protected enforcement path takes this Bash branch, which the may_not_run
   // check alone would let through. Deny structurally so the redirect bypass cannot reach
   // the runtime — hooks are authored in canonical .ai-skills/hooks/, never via Bash here.
+  // Under maintenance mode, source-protection writes are permitted and audited instead.
   const protectedWrite = commandWritesProtectedPath(effectiveCmd, payload.cwd ?? projectDir);
   if (protectedWrite) {
+    if (isMaintenanceMode() && isEnforcementSourceProtected(protectedWrite)) {
+      appendMaintenanceLedger(payload, protectedWrite, projectDir);
+      process.exit(0);
+    }
     process.stderr.write(
       `[ownership-guard] Denied: this Bash command writes '${protectedWrite}', which is\n` +
       `enforcement-source-protected (ADR-0067 § gate non-circumventability, #305). A shell\n` +
@@ -203,11 +221,13 @@ if (writeTools.has(toolName)) {
   // Global protected-paths check — runs BEFORE may_write for every persona.
   // No per-persona override path exists: a may_write entry cannot grant write
   // access to the enforcement runtime or gate state (ADR-0067 § gate non-circumventability).
-  if (
-    PROTECTED_WRITE_PATHS.includes(normalizedPath) ||
-    normalizedPath.startsWith(PROTECTED_LIB_PREFIX) ||
-    isProtectedCanonicalHookPath(normalizedPath)
-  ) {
+  // Under maintenance mode, enforcement-SOURCE writes are permitted and audited — gate state
+  // (PROTECTED_EVIDENCE_BASENAMES) and the Bash-deletion/may_not_run paths are never suspended.
+  if (isEnforcementSourceProtected(normalizedPath)) {
+    if (isMaintenanceMode()) {
+      appendMaintenanceLedger(payload, normalizedPath, projectDir);
+      process.exit(0);
+    }
     process.stderr.write(
       `[ownership-guard] Denied: '${normalizedPath}' is enforcement-source-protected.\n` +
       `Both the runtime (.claude/hooks/) and its canonical source (.ai-skills/hooks/) are\n` +
@@ -328,6 +348,58 @@ function extractEffectiveCommand(cmd) {
   // runs, collapsing `echo hi\nrm ...` into one `echo`-headed segment the rm-anchored scans
   // never see. Heredoc bodies are already excluded above (the break), so they never reach here.
   return parts.join('\n');
+}
+
+/**
+ * Returns true if a normalized path is enforcement-source-protected.
+ *
+ * Combines the three sources of source protection into one predicate so the deny site
+ * and the maintenance-unlock site always consult the same test — when Phase 5 adds
+ * build.ts to protection, it updates one function and both sites pick it up automatically
+ * (the SEGMENT_SEPARATORS single-source-of-truth discipline applied to path protection).
+ *
+ * Gate STATE (strikes/ledger/ratified/baseline/maintenance-ledger under .prism/evidence/)
+ * is NOT covered here — those are handled by the PROTECTED_EVIDENCE_BASENAMES check and
+ * are never unlocked by maintenance mode.
+ */
+function isEnforcementSourceProtected(normalizedPath) {
+  return (
+    PROTECTED_WRITE_PATHS.includes(normalizedPath) ||
+    normalizedPath.startsWith(PROTECTED_LIB_PREFIX) ||
+    isProtectedCanonicalHookPath(normalizedPath)
+  );
+}
+
+/**
+ * Appends one JSON audit line to the maintenance ledger for each source write permitted
+ * under maintenance mode.
+ *
+ * The ledger is hook-written via Node fs, so the PROTECTED_EVIDENCE_BASENAMES check that
+ * blocks persona tool-writes to 'maintenance-ledger.jsonl' does not block this function.
+ * The append is non-fatal — a write failure does not block the permitted tool call.
+ */
+function appendMaintenanceLedger(payload, normalizedPath, projectDir) {
+  try {
+    const ledgerDir = path.join(projectDir, '.prism', 'evidence');
+    mkdirSync(ledgerDir, { recursive: true });
+    const ledgerPath = path.join(ledgerDir, 'maintenance-ledger.jsonl');
+    const persona = resolvePersona(payload, (() => {
+      try {
+        const gatesPath = path.join(projectDir, '.claude', 'hooks', 'gates.json');
+        return JSON.parse(readFileSync(gatesPath, 'utf8'));
+      } catch { return {}; }
+    })(), projectDir)?.persona ?? 'unknown';
+    const entry = JSON.stringify({
+      ts: Date.now(),
+      persona,
+      tool: payload.tool_name,
+      path: normalizedPath,
+      runKey: payload.agent_id ?? payload.session_id,
+    });
+    appendFileSync(ledgerPath, entry + '\n', 'utf8');
+  } catch {
+    // Non-fatal — a write failure does not block the permitted tool call.
+  }
 }
 
 /**

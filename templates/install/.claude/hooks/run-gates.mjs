@@ -84,6 +84,30 @@ if (!runKey) {
 const evidenceDir = path.join(projectDir, '.prism', 'evidence', runKey);
 mkdirSync(evidenceDir, { recursive: true });
 
+// Maintenance mode banner — informational only, never blocks the stop.
+// Runs on every Stop/SubagentStop while the env var is set so the operator knows
+// enforcement-source self-protection is suspended for this session.
+if (process.env.CLAUDE_PRISM_MAINTENANCE === '1') {
+  let sourceWriteCount = 0;
+  try {
+    const ledgerPath = path.join(projectDir, '.prism', 'evidence', 'maintenance-ledger.jsonl');
+    if (existsSync(ledgerPath)) {
+      const lines = readFileSync(ledgerPath, 'utf8').trim().split('\n').filter(Boolean);
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          if (entry.runKey === runKey) sourceWriteCount++;
+        } catch { /* skip malformed */ }
+      }
+    }
+  } catch { /* non-fatal */ }
+  process.stderr.write(
+    `⚠ PRISM MAINTENANCE MODE — enforcement-source self-protection suspended; ` +
+    `${sourceWriteCount} source write${sourceWriteCount === 1 ? '' : 's'} logged this run; ` +
+    `unset CLAUDE_PRISM_MAINTENANCE to re-lock.\n`
+  );
+}
+
 // --- Strike counter ---
 
 const strikeFile = path.join(evidenceDir, 'strikes.json');
