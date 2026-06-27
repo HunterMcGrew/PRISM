@@ -1170,12 +1170,13 @@ function assert(scenarioName, condition, message) {
 // runtime hooks) so a human can service the floor. Gate STATE (evidence/* basenames) and
 // lane boundaries (may_not_run) are never suspended — maintenance is not god mode.
 //
-// Sub-tests:
+// Sub-tests (one per protection arm):
 //   K1: maintenance OFF → Write to .ai-skills/hooks/gates.json DENY (exit 2) — current behavior unchanged
 //   K2: maintenance ON  → same Write PERMIT (exit 0) + maintenance-ledger.jsonl line written
 //   K3: maintenance ON  → Write to .prism/evidence/<run>/strikes.json STILL DENY (gate state never unlocked)
 //   K4: maintenance ON  → Bash 'gh pr merge 123' STILL DENY (may_not_run never unlocked)
 //   K5: maintenance ON  → persona tool-Write to maintenance-ledger.jsonl DENY (audit trail tamper-proof)
+//   K6: maintenance ON  → fused source-write && evidence-delete DENY (evidence-delete arm fires despite source-write unlock)
 // ============================================================
 {
   const name = 'K: maintenance mode';
