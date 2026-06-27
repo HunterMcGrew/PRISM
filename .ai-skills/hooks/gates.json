@@ -209,19 +209,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "plan-updated",
-        "description": "Plan file updated with implementation tasks or evaluation findings (Winston writes this sidecar when plan mode or evaluate mode completes a durable write to the plan)",
-        "checklist_key": "plan-updated",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/plan-updated.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "evaluation soundness — whether the architectural recommendation is correct for the codebase",
       "task completeness — whether implementation tasks cover all needed work"
@@ -239,8 +227,7 @@
         ".prism/architect/**",
         "docs/**",
         ".prism/spec/adrs/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/plan-updated.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -266,21 +253,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
         "id": "debugged-issue-recorded",
-        "description": "Phase 6 closeout completed — debugged issue entry recorded in plan and case file cleaned up (Sasha writes this sidecar when Phase 6 finishes)",
-        "checklist_key": "debugged-issue-recorded",
-        "source": "fresh",
+        "description": "A ## Debugged Issues entry exists in at least one plan file — Sasha real deliverable is the plan write, not a sidecar",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/case-closed.json"
+          "kind": "command",
+          "command": "grep -rl \"## Debugged Issues\" .prism/plans/ --include=\"*.md\" | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "diagnosis accuracy — whether the identified root cause is the real cause",
       "fix completeness — whether the recommended fix fully resolves the root cause"
@@ -293,8 +277,7 @@
       "may_write": [
         ".prism/plans/**",
         ".prism/sasha-state.json",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/case-closed.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -322,19 +305,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "branch-ready",
-        "description": "Branch setup completed and pre-handoff branch gate passed (Nora writes this sidecar after step 10 confirms the branch is clean and correct)",
-        "checklist_key": "branch-ready",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/branch-ready.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "requirements completeness — whether the Definition of Ready checklist caught all real gaps",
       "priority accuracy — whether the impact-based priority recommendation matches actual business priority"
@@ -349,8 +320,7 @@
     "ownership": {
       "may_write": [
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/branch-ready.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -376,21 +346,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "stories-written",
-        "description": "User stories saved to plan's ## User Stories section (Mira writes this sidecar after appending stories to the plan)",
-        "checklist_key": "stories-written",
-        "source": "fresh",
+        "id": "user-stories-recorded",
+        "description": "A ## User Stories section with at least one story exists in at least one plan file — Mira deliverable is the plan write",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/stories-written.json"
+          "kind": "command",
+          "command": "grep -rl \"## User Stories\" .prism/plans/ --include=\"*.md\" | xargs grep -l \"As a \" 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "story quality — whether stories reflect genuine user needs rather than solution-first framing",
       "edge case coverage — whether the what-if sweep caught all relevant boundary cases"
@@ -403,8 +370,7 @@
     "ownership": {
       "may_write": [
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/stories-written.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -432,19 +398,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "review-issues-recorded",
-        "description": "## Review Issues section updated in plan and ## PR Readiness written (Briar writes this sidecar after completing the plan write in Phase 5 step 7)",
-        "checklist_key": "review-issues-recorded",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/review-issues-recorded.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "review thoroughness — whether all logic paths in the diff were actually evaluated",
       "severity calibration accuracy — whether Critical/Major/Minor classifications match real blast radius"
@@ -458,8 +412,7 @@
     "ownership": {
       "may_write": [
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/review-issues-recorded.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -489,19 +442,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "summary-comment-posted",
-        "description": "Summary comment posted to GitHub PR (Eric writes this sidecar after batch D GitHub writes complete)",
-        "checklist_key": "summary-comment-posted",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/summary-posted.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "review thoroughness — whether the two-axis split caught all relevant standards and spec gaps",
       "severity accuracy — whether Critical/Major/Minor ratings reflect the real blast radius across callers not in the diff"
@@ -513,8 +454,7 @@
     "ownership": {
       "may_write": [
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/summary-posted.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -542,19 +482,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "prd-written",
-        "description": "PRD file written to .prism/prds/ with status set past draft (Parker writes this sidecar after step-07-finalize or step-04-draft saves the PRD file)",
-        "checklist_key": "prd-written",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/prd-written.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "PRD completeness — whether open questions and assumptions reflect all real unknowns",
       "stakes calibration accuracy — whether the selected stakes level matches actual initiative risk"
@@ -569,8 +497,7 @@
       "may_write": [
         ".prism/prds/**",
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/prd-written.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -596,21 +523,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "plan-file-saved",
-        "description": "Test plan file saved to the mode-appropriate path under .claude/docs/qa/ (Reese writes this sidecar after save/deliver in shared-mechanics completes)",
-        "checklist_key": "plan-file-saved",
-        "source": "fresh",
+        "id": "qa-plan-file-saved",
+        "description": "QA plan file exists under .claude/docs/qa/ — Reese deliverable is the saved plan file",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/plan-file-saved.json"
+          "kind": "command",
+          "command": "ls .claude/docs/qa/*.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "scenario completeness — whether the what-if sweep captured all real edge cases",
       "risk allocation accuracy — whether high/medium/low risk assignments match actual failure likelihood"
@@ -622,8 +546,7 @@
     "ownership": {
       "may_write": [
         ".claude/docs/qa/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/plan-file-saved.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -649,21 +572,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "doc-file-written",
-        "description": "Documentation file written to docs/ (Eli writes this sidecar after the doc is saved and the plan History entry appended)",
-        "checklist_key": "doc-file-written",
-        "source": "fresh",
+        "id": "doc-file-exists",
+        "description": "At least one markdown file exists under docs/ — Eli deliverable is the written doc",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/doc-file-written.json"
+          "kind": "command",
+          "command": "ls docs/**/*.md docs/*.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "audience accuracy — whether the doc is pitched at the right reader depth",
       "control inventory completeness — whether every UI control in source was included"
@@ -677,8 +597,7 @@
         "docs/**",
         "public/images/**",
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/doc-file-written.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -704,21 +623,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "mock-spec-saved",
-        "description": "Mode-2 mock spec saved to .prism/design/mocks/ and plan ## Design section updated (Pixel writes this sidecar after mode-2 save; mode-1 inline runs skip this gate and write done-override directly)",
-        "checklist_key": "mock-spec-saved",
-        "source": "fresh",
+        "id": "mock-spec-exists",
+        "description": "At least one mode-2 mock spec file exists under .prism/design/mocks/ — Pixel deliverable is the saved spec; mode-1 inline runs complete without this precondition satisfied by design",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/mock-spec-saved.json"
+          "kind": "command",
+          "command": "ls .prism/design/mocks/*.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "principle accuracy — whether cited cognitive-science principles correctly explain the proposed layout",
       "state coverage completeness — whether all five states (empty, loading, error, partial, success) were addressed"
@@ -732,8 +648,7 @@
       "may_write": [
         ".prism/design/mocks/**",
         ".prism/plans/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/mock-spec-saved.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -759,21 +674,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "architect-doc-committed",
-        "description": "At least one architect doc committed to .prism/architect/ and state file updated to idle (Theo writes this sidecar when step-07-commit completes a write decision)",
-        "checklist_key": "architect-doc-committed",
-        "source": "fresh",
+        "id": "architect-doc-exists",
+        "description": "At least one architect doc exists under .prism/architect/ — Theo deliverable is the committed doc, not a sidecar",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/architect-doc-committed.json"
+          "kind": "command",
+          "command": "ls .prism/architect/*.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "deletion-test accuracy — whether the candidate truly carried load-bearing complexity vs being a convenient boundary",
       "shape description fidelity — whether the architect doc accurately describes the decision the code encodes"
@@ -787,8 +699,7 @@
       "may_write": [
         ".prism/architect/**",
         ".prism/theo-state.json",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/architect-doc-committed.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -814,21 +725,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "audit-report-written",
-        "description": "Audit report written to .prism/audits/<YYYY-MM-DD>-audit.md and audit-state.json updated (Zoe writes this sidecar after the report file is saved)",
-        "checklist_key": "audit-report-written",
-        "source": "fresh",
+        "id": "audit-report-exists",
+        "description": "At least one audit report file exists under .prism/audits/ — Zoe deliverable is the written report",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/audit-report-written.json"
+          "kind": "command",
+          "command": "ls .prism/audits/*-audit.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "verdict accuracy — whether live vs archive-candidate classifications correctly reflect current load-bearing status",
       "reference-follow completeness — whether every cited reference in every Decision entry was actually resolved"
@@ -842,8 +750,7 @@
         ".prism/audits/**",
         ".prism/audit-state.json",
         ".prism/archived/**",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/audit-report-written.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -871,19 +778,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "refactor-plan-written",
-        "description": "Refactor plan written to .prism/plans/refactor-<slug>.md and state file updated to idle (Ren writes this sidecar when step-07-plan completes)",
-        "checklist_key": "refactor-plan-written",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/refactor-plan-written.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "heuristic accuracy — whether the friction signal identified is a real structural weakness vs an intentional design constraint",
       "grill-pass completeness — whether all five grill passes produced accurate before/after sketches"
@@ -897,8 +792,7 @@
       "may_write": [
         ".prism/plans/refactor-*.md",
         ".prism/ren-state.json",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/refactor-plan-written.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -924,21 +818,18 @@
           "path": ".prism/evidence/${runKey}/report.json"
         },
         "on_fail": "needs-replan"
-      }
-    ],
-    "gates": [
+      },
       {
-        "id": "retro-report-saved",
-        "description": "Retro report saved to .prism/retros/<YYYY-MM-DD>-<slug>.md and state file updated to complete (Iris writes this sidecar when step-06-save-report completes)",
-        "checklist_key": "retro-report-saved",
-        "source": "fresh",
+        "id": "retro-report-exists",
+        "description": "At least one retro report file exists under .prism/retros/ — Iris deliverable is the saved report",
         "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/retro-report-saved.json"
+          "kind": "command",
+          "command": "ls .prism/retros/*.md 2>/dev/null | head -1 | grep -q ."
         },
-        "on_fail": "done-override"
+        "on_fail": "needs-replan"
       }
     ],
+    "gates": [],
     "unverifiable_boxes": [
       "evidence completeness — whether all relevant plan sections were scanned before staging voices",
       "divergence accuracy — whether staged disagreements reflect genuine Decision-vs-outcome conflicts vs adjacent issues"
@@ -951,8 +842,7 @@
       "may_write": [
         ".prism/retros/**",
         ".prism/iris-state.json",
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/retro-report-saved.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -980,19 +870,7 @@
         "on_fail": "needs-replan"
       }
     ],
-    "gates": [
-      {
-        "id": "standup-delivered",
-        "description": "Standup assembled and delivered — either posted to Slack or paste-fallback provided (Lilac writes this sidecar after Phase 7 delivery completes)",
-        "checklist_key": "standup-delivered",
-        "source": "fresh",
-        "check": {
-          "kind": "file-exists",
-          "path": ".prism/evidence/${runKey}/standup-delivered.json"
-        },
-        "on_fail": "done-override"
-      }
-    ],
+    "gates": [],
     "unverifiable_boxes": [
       "PR categorization accuracy — whether each PR landed in the correct Merged/In Review/Continued/Reviewed subsection",
       "window accuracy — whether the resolved time window matched the user intent"
@@ -1002,8 +880,7 @@
     ],
     "ownership": {
       "may_write": [
-        ".prism/evidence/**/report.json",
-        ".prism/evidence/**/standup-delivered.json"
+        ".prism/evidence/**/report.json"
       ],
       "may_not_run": [
         "gh pr merge",

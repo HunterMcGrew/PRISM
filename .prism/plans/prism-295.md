@@ -1,4 +1,4 @@
-﻿# Plan: prism-295
+# Plan: prism-295
 
 ## Ticket
 
@@ -35,16 +35,23 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 ## Decisions
 
-- Class B gates use file-exists checks on evidence sidecars (e.g., `plan-updated.json`, `case-closed.json`) rather than command execution — sidecars are written by the persona at phase completion, giving a real failure condition without hard command evidence (Class A territory).
+- Class B gate mechanism (Winston design, Phase 5 PR2): all 15 Class B personas use `gates: []` (empty) — the COHERENCE check is the floor. No sidecar file-exists gates; those are retired. The 8 deterministic-target personas (sasha, mira, eli, pixel, theo, zoe, iris, reese) receive a 2nd precondition (`kind: "command"`, `on_fail: "needs-replan"`) proving the act by checking for their real deliverable. The 7 coherence-only personas (winston, briar, eric, nora, parker, ren, lilac) get only the universal `report-written` precondition.
+  - → no promotion needed (mechanism described in enforcement-floor.md Class B section; gates.json is the authoritative data)
 - Reviewer personas (briar, eric) have `may_write` limited to `.prism/plans/**` plus evidence — task brief constraint; GitHub comment APIs are not filesystem writes.
+  - → no promotion needed (reviewer write-lane constraint already in architect context)
 - `may_not_run` for all personas includes evidence-deletion patterns — no persona may delete its own evidence; the stop gate reads it.
+  - → no promotion needed (enforcement invariant; readable from gates.json directly)
 - `allowed_routes` derived from each skill's closing persona recommendation in shared.md — not assumed.
+  - → no promotion needed (implementation tactic, self-evident from gates.json entries)
+- `isCoherent` extended with 5th `report` parameter: a `needs-fix` verdict with empty `payload.findings` (no critical/major entry) is shape-incoherent — an empty findings array claims review work was done but contains nothing actionable.
+  - → no promotion needed (coherence invariant already described in enforcement-floor.md Class B section)
 
 ---
 
 ## History
 
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Authored Class B gates.json entries for 8 personas (winston, sasha, nora, mira, briar, eric, parker, reese); opened PR linking #289 + #295.
+- 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Rewrote all 15 Class B gates.json entries to Winston mechanism (gates:[], content-preconditions for 8 deterministic-target personas); extended isCoherent for needs-fix payload coherence; added smoke scenario L (6 sub-tests); build triplet in sync, crossref clean.
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Briar review fix — expanded to all 15 Class B personas (added eli, pixel, theo, zoe, ren, iris, lilac); fixed triplet drift (ai-skills→canonical→runtime+install seed byte-identical); restored enforcement schema from accidental overwrite; added Final act + DoD references to all 13 skill shared.md files missing them.
 
 ---
@@ -87,9 +94,9 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`
 - [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
+- [x] Tests written for new logic and edge cases
 - [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: pending
+- [x] Build passes — last run: 2026-06-27
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 

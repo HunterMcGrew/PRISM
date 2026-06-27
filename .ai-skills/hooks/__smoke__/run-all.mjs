@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Smoke Test harness — Phase 1 scenarios (A, B, B.5, B.6, C, D), Phase 2 gate
  * self-protection (E), and Issue #300 gate-fix scenarios (F, G, H, I).
@@ -1315,6 +1315,188 @@ function assert(scenarioName, condition, message) {
   }
 }
 
+
+// ============================================================
+// Scenario L: Class B coherence gate mechanism
+//
+// Uses Sasha as the representative Class B persona — she has both the universal
+// report-written precondition and a content-precondition (debugged-issue-recorded).
+//
+// Sub-tests:
+//   L.a: FAIL coherence — missing required field (persona) → exit 2
+//   L.b: PASS coherence — coherent done report with valid route → exit 0
+//   L.c: FAIL content-precondition — no Debugged Issues plan entry → exit 2
+//         AND strike NOT incremented (discriminator: precondition miss is protocol, not gate)
+//   L.d: PASS — artifact present + coherent report → exit 0
+//   L.e: FAIL needs-fix + empty findings → exit 2, stderr cites payload-coherence
+//   L.f: PASS — needs-fix with >= 1 critical/major finding → exit 0
+//
+// Negative control: existing Clove scenarios (A/C) remain unchanged.
+// ============================================================
+{
+  const name = 'L: Class B coherence gate';
+
+  // Shared Sasha gates fixture — gates:[] (Class B), one universal precondition,
+  // one content-precondition using a command that exits 0 iff a plan file has ## Debugged Issues.
+  function makeSashaGates(preconditions) {
+    return {
+      sasha: {
+        writes_report_to: '.prism/evidence/${runKey}/report.json',
+        preconditions,
+        gates: [],
+        allowed_routes: ['clove', 'human'],
+        ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+      },
+    };
+  }
+
+  const reportWrittenPrecon = {
+    id: 'report-written',
+    description: 'report.json written before stop',
+    check: { kind: 'file-exists', path: '.prism/evidence/${runKey}/report.json' },
+    on_fail: 'needs-replan',
+  };
+
+  // Content-precondition: command that always exits 1 (simulates no plan entry found)
+  const noEntryPrecon = {
+    id: 'debugged-issue-recorded',
+    description: 'A ## Debugged Issues entry exists in at least one plan file',
+    check: { kind: 'command', command: 'node -e "process.exit(1)"' },
+    on_fail: 'needs-replan',
+  };
+
+  // Content-precondition: command that always exits 0 (simulates plan entry found)
+  const hasEntryPrecon = {
+    id: 'debugged-issue-recorded',
+    description: 'A ## Debugged Issues entry exists in at least one plan file',
+    check: { kind: 'command', command: 'node -e "process.exit(0)"' },
+    on_fail: 'needs-replan',
+  };
+
+  const validDoneReport = {
+    verdict: 'done',
+    verdict_reason: 'investigation complete',
+    next_route: 'clove',
+    reasoning: 'root cause identified and documented',
+    persona: 'sasha',
+    checklist: {},
+  };
+
+  const validNeedsFixReport = {
+    verdict: 'needs-fix',
+    verdict_reason: 'critical issue found',
+    next_route: 'clove',
+    reasoning: 'critical issue requires fix',
+    persona: 'sasha',
+    checklist: {},
+    payload: {
+      findings: [{ severity: 'critical', description: 'Null pointer in resolver' }],
+    },
+  };
+
+  const gatesNoPreconditions = makeSashaGates([reportWrittenPrecon]);
+  const gatesWithFailingContent = makeSashaGates([reportWrittenPrecon, noEntryPrecon]);
+  const gatesWithPassingContent = makeSashaGates([reportWrittenPrecon, hasEntryPrecon]);
+
+  // L.a: missing required field 'persona' → validateShape fails → exit 2
+  {
+    const badReport = { verdict: 'done', verdict_reason: 'done', next_route: 'clove', reasoning: 'ok', checklist: {} };
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: badReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 2,
+        `L.a: missing 'persona' field — expected exit 2, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // L.b: coherent done report with all required fields and valid route → exit 0
+  {
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validDoneReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 0,
+        `L.b: coherent done report — expected exit 0, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // L.c: content-precondition fails (no plan entry) → exit 2 AND strike NOT incremented.
+  // Discriminator: precondition misses do not consume a gate strike (protocol miss, not gate fail).
+  {
+    const { tmpDir, strikesPath } = setupStopFixture({ gates: gatesWithFailingContent, report: validDoneReport, strikes: 0 });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      const exitOk = assert(name, r.code === 2,
+        `L.c: content-precondition fail — expected exit 2, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+      if (exitOk) {
+        // Verify strike was NOT incremented — strikes.json should not exist or count remains 0.
+        const strikesAfter = existsSync(strikesPath)
+          ? JSON.parse(readFileSync(strikesPath, 'utf8'))
+          : { count: 0 };
+        assert(name, (strikesAfter.count ?? 0) === 0,
+          `L.c: precondition miss should not increment strike. Got count=${strikesAfter.count}`);
+      }
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // L.d: content-precondition passes (plan entry found) + coherent done report → exit 0
+  {
+    const { tmpDir } = setupStopFixture({ gates: gatesWithPassingContent, report: validDoneReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 0,
+        `L.d: content-precondition pass + coherent done — expected exit 0, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // L.e: needs-fix verdict with empty findings array → payload-coherence check fails → exit 2
+  {
+    const emptyFindingsReport = {
+      verdict: 'needs-fix',
+      verdict_reason: 'found issues',
+      next_route: 'clove',
+      reasoning: 'review complete',
+      persona: 'sasha',
+      checklist: {},
+      payload: { findings: [] },
+    };
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: emptyFindingsReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 2,
+        `L.e: needs-fix + empty findings — expected exit 2, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // L.f: needs-fix verdict with >= 1 critical/major finding → payload-coherence passes → exit 0
+  {
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validNeedsFixReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 0,
+        `L.f: needs-fix + critical finding — expected exit 0, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  console.log(`${PASS} ${name}`);
+}
 // ============================================================
 // Final result
 // ============================================================
