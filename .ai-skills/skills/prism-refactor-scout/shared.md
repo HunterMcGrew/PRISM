@@ -52,43 +52,43 @@ Ren looks for friction signals across the codebase. Each heuristic names the det
 
 Modules that add wrapping without adding meaning. Fails the deletion test from Phase 1.5e — delete the wrapper, complexity stays the same (or decreases).
 
-**Procedure:** Read the module and every file that imports it. Trace what complexity remains if the wrapper is removed — does the caller code become simpler, identical, or more complex? If simpler or identical, the module is a candidate. **Trigger:** the deletion test produces simpler or equal caller code. **Escape:** if the trace reveals the module has callers across more than one architectural layer and no clean extraction seam can be identified, emit `needs-replan` — name the layers and the seam gap; Winston decides scope before scouting continues.
+**Procedure:** Read the module and every file that imports it. Trace what complexity remains if the wrapper is removed — does the caller code become simpler, identical, or more complex? If simpler or identical, the module is a candidate. **Trigger:** the deletion test produces simpler or equal caller code. **Escape:** if the trace reveals the module has callers across more than one architectural layer and no clean extraction seam can be identified, record the layers and the seam gap in the refactor plan's `## Decisions` and hand off to Winston — scouting on this candidate pauses until Winston re-scopes.
 
 ### Pass-through abstractions
 
 Interfaces with one caller. Cite `.prism/rules/code-standards.md` § General ("two adapters = real seam") — one caller doesn't earn an interface.
 
-**Procedure:** Run `Glob` + `Grep` for every usage of the interface across the codebase. Count distinct callers. If exactly one caller exists, flag as a candidate. **Trigger:** caller count is 1. **Escape:** if removing the interface would change a public contract surface (an exported type used across package or API boundaries), emit `needs-replan` — blast radius beyond scout scope; Winston re-scopes before the candidate is grilled.
+**Procedure:** Run `Glob` + `Grep` for every usage of the interface across the codebase. Count distinct callers. If exactly one caller exists, flag as a candidate. **Trigger:** caller count is 1. **Escape:** if removing the interface would change a public contract surface (an exported type used across package or API boundaries), record the blast radius in the refactor plan's `## Decisions` and hand off to Winston — Winston re-scopes before the candidate is grilled.
 
 ### Premature abstractions
 
 Generic shapes built for hypothetical future variation that never materialized.
 
-**Procedure:** Read the generic shape, then `Grep` for every concrete instantiation or caller. Count distinct variation patterns (parameter combinations, type arguments, override methods). If fewer than three distinct patterns exist, flag as premature. **Trigger:** fewer than 3 distinct usage patterns. **Escape:** if the plan or a linked ticket records an imminent third caller (confirmed, not speculative), emit `needs-human` — a human must confirm whether the planned variation is still coming before the abstraction is flagged as premature.
+**Procedure:** Read the generic shape, then `Grep` for every concrete instantiation or caller. Count distinct variation patterns (parameter combinations, type arguments, override methods). If fewer than three distinct patterns exist, flag as premature. **Trigger:** fewer than 3 distinct usage patterns. **Escape:** if the plan or a linked ticket records an imminent third caller (confirmed, not speculative), record the open question in the refactor plan's `## Decisions` and present it to the user before flagging the candidate as premature — the user must confirm whether the planned variation is still coming.
 
 ### Leaky seams
 
 Abstractions whose internals callers must know about to use correctly.
 
-**Procedure:** Read the abstraction's public interface, then read each caller. Check whether caller code reaches directly into internal state (accesses private-by-convention properties, knows about internal field structure, bypasses the public API to set or read internal values). If any caller does, the seam is leaky. **Trigger:** at least one caller bypasses the public interface or relies on internal implementation details. **Escape:** if closing the leak requires redesigning the abstraction's public API, emit `needs-replan` — an API redesign is Winston's call, not a scout finding to act on unilaterally.
+**Procedure:** Read the abstraction's public interface, then read each caller. Check whether caller code reaches directly into internal state (accesses private-by-convention properties, knows about internal field structure, bypasses the public API to set or read internal values). If any caller does, the seam is leaky. **Trigger:** at least one caller bypasses the public interface or relies on internal implementation details. **Escape:** if closing the leak requires redesigning the abstraction's public API, record the API redesign scope in the refactor plan's `## Decisions` and hand off to Winston — an API redesign is Winston's call, not a scout finding to act on unilaterally.
 
 ### Untested interfaces
 
 Public APIs without test coverage, signaling the seam is structurally ambiguous.
 
-**Procedure:** `Glob` for test files that import or exercise the interface. If no test files reference it, flag as untested. **Trigger:** zero test files cover the interface. **Escape:** if establishing coverage requires fixtures or test infrastructure that does not yet exist in the codebase (new test runner setup, external service mock, missing harness), emit `found-followup-work` — name the missing infrastructure; that is a separate task before coverage can be written.
+**Procedure:** `Glob` for test files that import or exercise the interface. If no test files reference it, flag as untested. **Trigger:** zero test files cover the interface. **Escape:** if establishing coverage requires fixtures or test infrastructure that does not yet exist in the codebase (new test runner setup, external service mock, missing harness), record the missing infrastructure in the refactor plan's `## Decisions` as a prerequisite task and skip this candidate — the prerequisite work is a separate task before coverage can be written.
 
 ### Dead code
 
 Modules with no live callers.
 
-**Procedure:** `Grep` and `Glob` the module's exported names across the entire codebase. Confirm zero live references before flagging. Check non-code paths: build configs, CMS templates, dynamic import strings, and configuration files that reference module names as strings. **Trigger:** zero references in code AND non-code paths. **Escape:** if the module is referenced via a non-code path that static search cannot rule out (dynamic string construction, external config file outside the repo, runtime registration pattern), emit `needs-human` — name the ambiguous reference path; a human must confirm dead status before the candidate is grilled.
+**Procedure:** `Grep` and `Glob` the module's exported names across the entire codebase. Confirm zero live references before flagging. Check non-code paths: build configs, CMS templates, dynamic import strings, and configuration files that reference module names as strings. **Trigger:** zero references in code AND non-code paths. **Escape:** if the module is referenced via a non-code path that static search cannot rule out (dynamic string construction, external config file outside the repo, runtime registration pattern), record the ambiguous reference path in the refactor plan's `## Decisions` and ask the user to confirm dead status — grilling pauses until the user confirms.
 
 ### Three-similar-lines tax
 
 Three near-duplicates that may be better as shared logic — but only when the duplication is genuine, not coincidental.
 
-**Procedure:** When three near-duplicate blocks appear across files, read all three in full. Identify whether they are diverging (each handles a different case and will continue to diverge) or converging (they are the same logic copied). If converging, flag for extraction. **Trigger:** three or more near-duplicate blocks that implement the same logic with no meaningful variation. **Escape:** if the duplicates span more than one team's ownership boundary (different repos, different domain owners confirmed by `git log --follow`), emit `found-followup-work` — a cross-team refactor needs its own ticket and a named owner; do not include it in the current refactor plan.
+**Procedure:** When three near-duplicate blocks appear across files, read all three in full. Identify whether they are diverging (each handles a different case and will continue to diverge) or converging (they are the same logic copied). If converging, flag for extraction. **Trigger:** three or more near-duplicate blocks that implement the same logic with no meaningful variation. **Escape:** if the duplicates span more than one team's ownership boundary (different repos, different domain owners confirmed by `git log --follow`), record the cross-team refactor in the refactor plan as a separate stub in `## Implementation Tasks` with the named owner — exclude it from the current plan's scope.
 <!-- atlas:end -->
 
 ## State file schema
@@ -115,9 +115,9 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before writing the final output and emitting any done-class signal. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before writing the final output and handing off to Winston or Clove. Answer all four questions in sequence, inline in the response.
 
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
+1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Record any out-of-scope structural findings in the refactor plan's `## Decisions` and flag them to the user.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
 3. **Edge recall** — what boundary inputs (empty directory, zero callers, absent test files, malformed state file) does my work hit, and did I choose its behavior on purpose?
 4. **Verification honesty** — for each candidate I flagged, what is the evidence (a grep result, a read trace, a caller count)? Where am I asserting without proof?
