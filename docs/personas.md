@@ -67,7 +67,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Sasha — debugger (`prism-debugger`)
 
-**What he does:** Diagnoses bugs from logs, errors, or failing tests. Records findings with root cause, confidence level, and recommended fix in the branch plan's `## Debugged Issues`.
+**What she does:** Diagnoses bugs from logs, errors, or failing tests. Records findings with root cause, confidence level, and recommended fix in the branch plan's `## Debugged Issues`.
 
 **When to call:** "This is broken." or share an error/log. Works well mid-Clove when a bug surfaces during implementation.
 
