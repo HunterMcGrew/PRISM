@@ -56,6 +56,8 @@ Run when startup reads the strategy doc and finds the context absent:
 
 Run at startup before any jurisdiction-specific statute or regulation lookup:
 
+`deep-research` is a host-environment capability you orchestrate over — never reimplement it, never wrap it in a fake PRISM skill ([ADR-0060](../../../.prism/spec/adrs/_toolkit/0060-business-layer-substrate.md)).
+
 1. **Detect at runtime.** Run `ToolSearch select:deep-research`. If the schema returns, the capability is present this session.
 2. **Use the advertised shape.** When present, map the lookup need to whatever parameter names the schema advertises — do not hardcode argument names from memory.
 3. **Degrade gracefully when absent — and say so once.** State: "Jurisdiction-specific verification was not performed — `deep-research` was not available this session. Have a licensed attorney verify any jurisdiction-specific claims before relying on them." Fold this gap into the counsel recommendation from Procedure A. Do not repeat the caveat on every paragraph.
