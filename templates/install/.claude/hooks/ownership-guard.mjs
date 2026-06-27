@@ -721,14 +721,21 @@ function targetsEvidence(token) {
  * Strips git pathspec magic prefixes before path normalization.
  *
  * Git supports magic signatures like `:(top)`, `:/`, `:(glob)`, `:(literal)`,
- * `:(icase)`, and `:(exclude)` (short form `!`) prepended to a pathspec. These prefixes
- * are git's own syntax — not file-system paths — and they survive normalizeWriteTarget
- * verbatim because path.resolve treats them as filename characters. Stripping them before
- * normalization lets the prefix checks see the bare path and closes the `:(top)` bypass
- * vector (CRITICAL-2 / Eric PR #351).
+ * `:(icase)`, and `:(exclude)` (short forms `!`, `:!`, `:^`, `:!/`) prepended to a
+ * pathspec. These prefixes are git's own syntax — not file-system paths — and they
+ * survive normalizeWriteTarget verbatim because path.resolve treats them as filename
+ * characters. Stripping them before normalization lets the prefix checks see the bare
+ * path and closes the pathspec-magic bypass vector (CRITICAL-2 / Eric PR `#351`).
+ *
+ * The `:/` top-of-tree form is special: after stripping `:/` the remainder is
+ * repo-root-relative, so it is normalized against projectDir (not cwd) by returning
+ * a descriptor that the caller honors.
  *
  * Shell quoting (single or double quotes wrapping the whole token) is stripped first,
  * because the hook receives the literal command string with quote characters intact.
+ *
+ * Returns { path: string, useProjectDir: boolean } so the caller can choose the
+ * correct base directory for normalization.
  */
 function stripPathspecMagic(raw) {
   // Strip surrounding shell quotes — the hook receives the literal command text, so
@@ -739,10 +746,17 @@ function stripPathspecMagic(raw) {
   }
   // Long-form magic: :(word) or :(word,word,...) at the start of the token
   const longForm = raw.match(/^:\([^)]*\)(.*)/);
-  if (longForm) return longForm[1];
-  // Short-form exclude magic: ! prefix
-  if (raw.startsWith('!')) return raw.slice(1);
-  return raw;
+  if (longForm) return { path: longForm[1], useProjectDir: false };
+  // Short-form top-of-tree: :/ — remainder is repo-root-relative, normalize against projectDir
+  if (raw.startsWith(':/')) return { path: raw.slice(2), useProjectDir: true };
+  // Short-form exclude shorthands: :! :^ :!/ — whole-tree-minus-one restore ops;
+  // strip the magic prefix and treat the remainder as a normal path (cwd-relative)
+  if (raw.startsWith(':!/')) return { path: raw.slice(3), useProjectDir: false };
+  if (raw.startsWith(':!')) return { path: raw.slice(2), useProjectDir: false };
+  if (raw.startsWith(':^')) return { path: raw.slice(2), useProjectDir: false };
+  // Short-form exclude magic: standalone ! prefix
+  if (raw.startsWith('!')) return { path: raw.slice(1), useProjectDir: false };
+  return { path: raw, useProjectDir: false };
 }
 
 /**
@@ -754,9 +768,21 @@ function stripPathspecMagic(raw) {
  * file under that tree. The standard startsWith(prefix) check requires the trailing slash
  * so it misses the bare-directory form. This predicate matches when the target equals the
  * directory prefix (with or without trailing slash) or starts with it — without
- * over-blocking non-protected directories like `src/` (CRITICAL-2 / Eric PR #351).
+ * over-blocking non-protected directories like `src/` (CRITICAL-2 / Eric PR `#351`).
+ *
+ * The `__smoke__/` subtree is excluded from the canonical-hooks match — smoke files gate
+ * nothing and must remain writable via git the same way they are writable via the Write
+ * tool (MAJOR-D / Eric PR `#351`). This mirrors the CANONICAL_HOOKS_SMOKE_CARVEOUT
+ * applied in isProtectedCanonicalHookPath.
  */
 function pathspecCoversProtectedDirectory(normalizedTarget) {
+  // Smoke carveout: .ai-skills/hooks/__smoke__/ is writable via git as via Write.
+  // Check before the canonical-hooks prefix match so smoke paths fall through to the
+  // is-protected check which correctly returns false for them.
+  if (normalizedTarget.startsWith(CANONICAL_HOOKS_SMOKE_CARVEOUT)) return false;
+  // Runtime smoke carveout: .claude/hooks/__smoke__/ mirrors the canonical carveout.
+  if (normalizedTarget.startsWith('.claude/hooks/__smoke__/')) return false;
+
   const protectedDirs = [
     PROTECTED_CANONICAL_HOOKS_PREFIX,   // '.ai-skills/hooks/'
     '.claude/hooks/',                   // runtime hooks dir — individual files are in PROTECTED_WRITE_PATHS
@@ -828,15 +854,26 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
     if (!subcommand) continue;
 
     if (GIT_PATH_SUBCOMMANDS.has(subcommand)) {
+      // git checkout -b/-c creates a branch without touching the working tree — it is safe
+      // to permit regardless of any pathspec argument (which will be the new branch name).
+      // Detect the flag before pathspec extraction so the branch name doesn't land in the
+      // pathspec list and trigger Tier 1/2 denial (MINOR-E / Eric PR `#351`).
+      if (subcommand === 'checkout' && (args.includes('-b') || args.includes('-c') ||
+          args.some(a => a.startsWith('--orphan') || a.startsWith('-b') || a.startsWith('-c')))) {
+        return null; // create-branch: no working-tree mutation, always permit
+      }
       const pathspecs = extractGitPathspecs(args);
       if (pathspecs.length === 0) {
         // Bare checkout/restore with no pathspec — whole-tree op.
         return { tier: 2, subcommand };
       }
       for (const raw of pathspecs) {
-        // Strip pathspec magic before normalization so :(top), :/, ! prefixes do not hide the path.
-        const stripped = stripPathspecMagic(raw);
-        const target = normalizeWriteTarget(stripped, cwdBase);
+        // Strip pathspec magic before normalization so :(top), :/, :!, :^, :!/ prefixes do not
+        // hide the path. stripPathspecMagic returns { path, useProjectDir } — the :/ top-of-tree
+        // form is repo-root-relative and must be normalized against projectDir, not cwd.
+        const { path: stripped, useProjectDir } = stripPathspecMagic(raw);
+        const base = useProjectDir ? projectDir : cwdBase;
+        const target = normalizeWriteTarget(stripped, base);
         if (isEnforcementSourceProtected(target) || pathspecCoversProtectedDirectory(target)) {
           return { tier: 1, path: target, subcommand };
         }
@@ -861,31 +898,42 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
 }
 
 /**
- * Extracts the content of every command substitution body in a shell string.
+ * Extracts the content of every command substitution and process substitution body in a
+ * shell string.
  *
  * Bash executes a substitution body wherever it appears — whole-token, prefixed
  * (`echo $(cmd)`), suffixed, assignment-captured (`x=$(cmd)`), inside double-quotes
  * (`"$(cmd)"`), or nested (`$(echo $(cmd))`). The content of each body is a real
  * shell command that runs unconditionally, so it must be scanned for git mutations
  * regardless of the outer wrapping. This closes the embedded/prefixed substitution bypass
- * that `commandMutatesProtectedViaGit` previously missed (CRITICAL-1 / Eric PR #351).
+ * that `commandMutatesProtectedViaGit` previously missed (CRITICAL-1 / Eric PR `#351`).
+ *
+ * Process substitution `<(cmd)` and `>(cmd)` bodies are also extracted — bash executes
+ * their interiors as subshells, so a git mutation inside `<()` or `>()` runs just as
+ * surely as one inside `$()` (CRITICAL-C / Eric PR `#351`).
  *
  * Returns an array of body strings. Callers pass each body through splitCommandSegments so
  * nested substitutions surface on the next recursive call to commandMutatesProtectedViaGit.
  *
- * Two forms are handled:
+ * Three forms are handled:
  *   $(...) — POSIX dollar-paren, depth-tracked parenthesis scan.
+ *   <(...) / >(...) — process substitution, same depth-tracked scan as $(...).
  *   `...`  — backtick form, matched as content between paired backticks (flat form; nested
  *            backticks are not standard POSIX sh and are not handled recursively here).
  */
 function extractSubstitutionBodies(cmd) {
   const bodies = [];
 
-  // --- $(...) form: depth-tracked parenthesis scan ---
+  // --- $(...) and <(...) / >(...) forms: depth-tracked parenthesis scan ---
   let i = 0;
   while (i < cmd.length) {
-    if (cmd[i] === '$' && cmd[i + 1] === '(') {
-      const start = i + 2; // content starts after '$('
+    // Match $( — command substitution
+    const isDollarParen = cmd[i] === '$' && cmd[i + 1] === '(';
+    // Match <( or >( — process substitution (bash executes their bodies as subshells)
+    const isProcessSubst = (cmd[i] === '<' || cmd[i] === '>') && cmd[i + 1] === '(';
+
+    if (isDollarParen || isProcessSubst) {
+      const start = i + 2; // content starts after the two-char opener
       let depth = 1;
       let j = start;
       while (j < cmd.length && depth > 0) {
