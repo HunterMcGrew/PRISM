@@ -158,7 +158,21 @@ if (toolName === 'Bash' && toolInput.command) {
   const protectedWrite = commandWritesProtectedPath(effectiveCmd, payload.cwd ?? projectDir);
   if (protectedWrite) {
     if (isMaintenanceMode() && isEnforcementSourceProtected(protectedWrite)) {
-      appendMaintenanceLedger(payload, protectedWrite, projectDir);
+      // A fused command may both write a protected source path AND delete evidence — for example,
+      // `echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence`. Maintenance unlocks
+      // only the source-write; the evidence-delete protection is never suspended. Check the full
+      // command for evidence deletion before permitting the early exit so a co-fused rm cannot
+      // slip through the unlock — each protection is evaluated independently per its own target.
+      if (commandDeletesEvidence(effectiveCmd)) {
+        process.stderr.write(
+          `[ownership-guard] Denied: this Bash command deletes a .prism/evidence/ path.\n` +
+          `Gate state (strikes.json, ledger.jsonl, ratified-verdict.json, baseline.json) is hook-managed;\n` +
+          `${persona} may not delete evidence regardless of rm flag form. This is a lane boundary.\n` +
+          `Maintenance mode suspends enforcement-source writes only — evidence deletion is never unlocked.\n`
+        );
+        process.exit(2);
+      }
+      appendMaintenanceLedger(payload, protectedWrite, persona, projectDir);
       process.exit(0);
     }
     process.stderr.write(
@@ -225,7 +239,7 @@ if (writeTools.has(toolName)) {
   // (PROTECTED_EVIDENCE_BASENAMES) and the Bash-deletion/may_not_run paths are never suspended.
   if (isEnforcementSourceProtected(normalizedPath)) {
     if (isMaintenanceMode()) {
-      appendMaintenanceLedger(payload, normalizedPath, projectDir);
+      appendMaintenanceLedger(payload, normalizedPath, persona, projectDir);
       process.exit(0);
     }
     process.stderr.write(
@@ -378,20 +392,14 @@ function isEnforcementSourceProtected(normalizedPath) {
  * blocks persona tool-writes to 'maintenance-ledger.jsonl' does not block this function.
  * The append is non-fatal — a write failure does not block the permitted tool call.
  */
-function appendMaintenanceLedger(payload, normalizedPath, projectDir) {
+function appendMaintenanceLedger(payload, normalizedPath, resolvedPersona, projectDir) {
   try {
     const ledgerDir = path.join(projectDir, '.prism', 'evidence');
     mkdirSync(ledgerDir, { recursive: true });
     const ledgerPath = path.join(ledgerDir, 'maintenance-ledger.jsonl');
-    const persona = resolvePersona(payload, (() => {
-      try {
-        const gatesPath = path.join(projectDir, '.claude', 'hooks', 'gates.json');
-        return JSON.parse(readFileSync(gatesPath, 'utf8'));
-      } catch { return {}; }
-    })(), projectDir)?.persona ?? 'unknown';
     const entry = JSON.stringify({
       ts: Date.now(),
-      persona,
+      persona: resolvedPersona,
       tool: payload.tool_name,
       path: normalizedPath,
       runKey: payload.agent_id ?? payload.session_id,

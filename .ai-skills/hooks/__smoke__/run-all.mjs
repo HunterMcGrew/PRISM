@@ -1273,7 +1273,19 @@ function assert(scenarioName, condition, message) {
     const okK5 = assert(name, rK5.code === 2,
       `K5: maintenance ON — expected exit 2 for Write to maintenance-ledger.jsonl (audit trail tamper-proof), got ${rK5.code}. stderr: ${rK5.stderr.substring(0, 200)}`);
 
-    if (okK1 && okK2 && okK3 && okK4 && okK5) console.log(`${PASS} ${name}`);
+    // K6: maintenance ON + fused source-write && evidence-delete → DENY
+    // The Major Eric named: echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence
+    // exits 0 without this fix because the maintenance unlock fires early on the source-write
+    // segment, skipping the evidence-delete structural backstop. With the fix, commandDeletesEvidence
+    // runs on the full command before the early exit — the evidence arm fires and denies.
+    const rK6 = runGuardBash(
+      'echo x > .ai-skills/hooks/gates.json && rm -rf .prism/evidence',
+      maintenanceEnv
+    );
+    const okK6 = assert(name, rK6.code === 2,
+      `K6: maintenance ON + fused source-write && evidence-delete — expected exit 2 (evidence-delete arm fires despite source-write being unlocked), got ${rK6.code}. stderr: ${rK6.stderr.substring(0, 200)}`);
+
+    if (okK1 && okK2 && okK3 && okK4 && okK5 && okK6) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }
