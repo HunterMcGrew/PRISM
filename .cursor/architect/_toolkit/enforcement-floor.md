@@ -54,6 +54,8 @@ Class B is the intermediate class — between Class A's hard evidence gates and 
 
 **Floor:** universal primitives + procedural / structural preconditions and coherence checks. The canonical shape is **Briar's gate**: it proves she *worked* (the check-gates fired) and is *coherent* (a `needs-fix` verdict is shape-validated against a real critical/major finding), never that she is *right*. A review-quality gate cannot exist — see [ADR-0067](../../spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) § the Briar caveat. Do not build one in any later phase.
 
+For the 8 deterministic-target Class B personas (sasha, mira, eli, pixel, zoe, iris, reese, theo), the deliverable precondition is **run-scoped**: the persona writes a `deliverable.json` sidecar into its run-keyed evidence dir (`.prism/evidence/${runKey}/deliverable.json`) naming the path it produced, and a second precondition confirms that path is new or modified this run via a union diff against `origin/main`. Both checks are `on_fail: needs-replan` preconditions — they do not consume a gate strike. The evidence dir is git-ignored and created fresh per run, so it cannot hold a stale committed artifact; this makes it the run-scope anchor that closes the repo-global staleness hole.
+
 ### Class C — structurally trusted only
 
 A persona is Class C when there is **no runnable check for its output at all** — its value is judgment expressed as prose, and the only enforceable floor is *where it may write* and *that it returns a contract*.

@@ -286,7 +286,7 @@ The expected schema version is `1`. Run Procedure A on every startup to validate
 
 DoD = `gates.json#zoe` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`zoe`), and checklist; then write `audit-report-written.json` to `.prism/evidence/<runKey>/audit-report-written.json` confirming the audit report was written. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`zoe`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/audits/<YYYY-MM-DD>-audit.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the audit report this run wrote. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
 
 ---
 

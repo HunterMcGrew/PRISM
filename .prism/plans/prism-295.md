@@ -53,6 +53,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Authored Class B gates.json entries for 8 personas (winston, sasha, nora, mira, briar, eric, parker, reese); opened PR linking #289 + #295.
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Rewrote all 15 Class B gates.json entries to Winston mechanism (gates:[], content-preconditions for 8 deterministic-target personas); extended isCoherent for needs-fix payload coherence; added smoke scenario L (6 sub-tests); build triplet in sync, crossref clean.
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Briar review fix — expanded to all 15 Class B personas (added eli, pixel, theo, zoe, ren, iris, lilac); fixed triplet drift (ai-skills→canonical→runtime+install seed byte-identical); restored enforcement schema from accidental overwrite; added Final act + DoD references to all 13 skill shared.md files missing them.
+- 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Landed 3 Eric Majors (PR #348): replaced repo-global grep preconditions with run-scoped deliverable-sidecar + deliverable-touched-this-run for 8 deterministic-target personas; stripped UTF-8 BOM from 6 run-all/run-gates copies; updated 8 skill Final act lines to reference deliverable.json; added Scenario M smoke tests + enforcement-floor.md Class B prose; smoke 15/15 green.
 
 ---
 
@@ -91,13 +92,13 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
+- [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-27
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (enforcement-floor.md updated)
 
 **Last updated:** 2026-06-27

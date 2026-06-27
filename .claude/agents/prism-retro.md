@@ -171,7 +171,7 @@ The report is the durable artifact. The state file at `.prism/iris-state.json` i
 
 DoD = `gates.json#iris` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`iris`), and checklist; then write `retro-report-saved.json` to `.prism/evidence/<runKey>/retro-report-saved.json` confirming the retro report was saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`iris`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/retros/<YYYY-MM-DD>-retro.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the retro report this run saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
 
 ---
 

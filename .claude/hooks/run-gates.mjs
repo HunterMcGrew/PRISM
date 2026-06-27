@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * run-gates.mjs — Stop and SubagentStop verdict ratification hook.
  *

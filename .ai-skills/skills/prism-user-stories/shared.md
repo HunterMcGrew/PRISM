@@ -306,7 +306,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 DoD = `gates.json#mira` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`mira`), and checklist; then write `stories-written.json` to `.prism/evidence/<runKey>/stories-written.json` confirming user stories were written to the plan. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`mira`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/plans/<plan-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the plan file this run modified. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
 
 - [ ] Ticket type detected (bug, feature, or improvement)
 - [ ] Bug tickets redirected to bug report template / Sasha (no stories written)

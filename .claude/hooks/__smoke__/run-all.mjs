@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Smoke Test harness — Phase 1 scenarios (A, B, B.5, B.6, C, D), Phase 2 gate
  * self-protection (E), and Issue #300 gate-fix scenarios (F, G, H, I).
@@ -1490,6 +1490,112 @@ function assert(scenarioName, condition, message) {
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
       assert(name, r.code === 0,
         `L.f: needs-fix + critical finding — expected exit 0, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  console.log(`${PASS} ${name}`);
+}
+// ============================================================
+// Scenario M: run-scoped deliverable preconditions
+//
+// Uses Sasha (representative) to test the TWO-precondition run-scope shape:
+//   precondition A: deliverable-sidecar (file-validates on .prism/evidence/${runKey}/deliverable.json)
+//   precondition B: deliverable-touched-this-run (command — stubs via node -e)
+//
+// Sub-tests:
+//   M.a: FAIL — stale heading exists in repo (old grep would pass) but NO sidecar written
+//              → exit 2 (deliverable-sidecar precondition fails)
+//   M.b: PASS — sidecar written + deliverable touched this run → exit 0
+//
+// Regression guard: M.a specifically closes the stale-repo-artifact hole Eric flagged.
+// ============================================================
+{
+  const name = 'M: run-scoped deliverable preconditions';
+
+  const reportWritten = {
+    id: 'report-written',
+    description: 'report.json written before stop',
+    check: { kind: 'file-exists', path: '.prism/evidence/${runKey}/report.json' },
+    on_fail: 'needs-replan',
+  };
+
+  // Sidecar precondition (file-validates) — checks for deliverable.json in evidence dir
+  const sidecarPrecon = {
+    id: 'deliverable-sidecar',
+    description: 'Sasha wrote a deliverable-pointer sidecar into its run-keyed evidence dir',
+    check: { kind: 'file-validates', path: '.prism/evidence/${runKey}/deliverable.json' },
+    on_fail: 'needs-replan',
+  };
+
+  // Touched-this-run precondition stubs (command kind, node -e stubs)
+  const touchedPassPrecon = {
+    id: 'deliverable-touched-this-run',
+    description: 'the deliverable path is new or modified this run',
+    check: { kind: 'command', command: 'node -e "process.exit(0)"' },
+    on_fail: 'needs-replan',
+  };
+  const touchedFailPrecon = {
+    id: 'deliverable-touched-this-run',
+    description: 'the deliverable path is new or modified this run',
+    check: { kind: 'command', command: 'node -e "process.exit(1)"' },
+    on_fail: 'needs-replan',
+  };
+
+  function makeRunScopedGates(preconditions) {
+    return {
+      sasha: {
+        writes_report_to: '.prism/evidence/${runKey}/report.json',
+        preconditions,
+        gates: [],
+        allowed_routes: ['clove', 'human'],
+        ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+      },
+    };
+  }
+
+  const validDoneReport = {
+    verdict: 'done',
+    verdict_reason: 'investigation complete',
+    next_route: 'clove',
+    reasoning: 'root cause identified and documented',
+    persona: 'sasha',
+    checklist: {},
+  };
+
+  // M.a: sidecar absent (stale repo heading would pass old grep, but sidecar missing) → exit 2
+  // This simulates a no-op run: plan already has ## Debugged Issues from a prior run.
+  // The sidecar was not written this run — deliverable-sidecar precondition fails.
+  {
+    // Gates have all 3 preconditions (report-written + sidecar + touched-this-run)
+    const gates = makeRunScopedGates([reportWritten, sidecarPrecon, touchedFailPrecon]);
+    // report.json IS written (report-written passes), but NO deliverable.json sidecar
+    const { tmpDir } = setupStopFixture({ gates, report: validDoneReport });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 2,
+        `M.a: stale-repo no-op (no sidecar) — expected exit 2, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // M.b: sidecar written + deliverable touched this run → exit 0
+  {
+    const gates = makeRunScopedGates([reportWritten, sidecarPrecon, touchedPassPrecon]);
+    const { tmpDir } = setupStopFixture({ gates, report: validDoneReport });
+    try {
+      // Write the deliverable sidecar into the evidence dir
+      const runKey = 'smoke-session';
+      const sidecarPath = path.join(tmpDir, '.prism', 'evidence', runKey, 'deliverable.json');
+      writeFileSync(sidecarPath, JSON.stringify({ deliverable: '.prism/plans/prism-295.md', produced: true }), 'utf8');
+
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      assert(name, r.code === 0,
+        `M.b: sidecar written + deliverable touched — expected exit 0, got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
     } finally {
       cleanup(tmpDir);
     }

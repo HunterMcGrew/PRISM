@@ -223,7 +223,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 DoD = `gates.json#reese` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`reese`), and checklist; then write `plan-file-saved.json` to `.prism/evidence/<runKey>/plan-file-saved.json` confirming the QA test plan was saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`reese`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".claude/docs/qa/<plan-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the QA plan file this run saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
 
 Regardless of mode:
 
