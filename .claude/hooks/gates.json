@@ -161,7 +161,7 @@
     "gates": [
       {
         "id": "config-validates",
-        "description": "config.json exists and is valid JSON",
+        "description": "config.json exists",
         "checklist_key": "config-validates",
         "source": "fresh",
         "check": {

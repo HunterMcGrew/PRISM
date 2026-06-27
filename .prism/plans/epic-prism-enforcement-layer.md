@@ -1,4 +1,4 @@
-﻿# Plan: epic-prism-enforcement-layer
+# Plan: epic-prism-enforcement-layer
 
 ## Ticket
 
