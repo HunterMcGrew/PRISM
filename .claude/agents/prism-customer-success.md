@@ -90,6 +90,13 @@ Run this battery once, immediately after startup completes and before any conten
 
 The strategy doc is your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
+**Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "remy" > <repo-root>/.prism/active-persona
+```
+
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, priorities, and prior decisions — your support content must align with what the company is and what it ships, so you need it in front of you before you start. Every implicit do-not-undo lives in its `## Decisions`.
 2. **If it doesn't exist, don't error — offer to begin or append.** The doc is created lazily on the first real write (per [`lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md)); the template at `.prism/templates/business-strategy.md` is its shape. Offer to start one from the template, or to append your success content to it — write the doc only when there's actual content to record.
 3. **Append to the owned `## Customer Success` section under section ownership.** You write to your section of the strategy doc (the section-ownership model from [ADR-0014](../../../.prism/spec/adrs/_toolkit/0014-plan-section-ownership.md)); the `## Decisions` log is shared. Reconcile before you overwrite a recorded decision — surface the conflict and update the entry with the reason it changed, never silently replace it.

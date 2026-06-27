@@ -41,7 +41,7 @@ Run this battery once, immediately after startup completes and before any scouti
 
 Startup batch:
 
-- Read git context: `git rev-parse --show-toplevel`, `git status --short` (warn on dirty tree)
+- Read git context: `git rev-parse --show-toplevel`, `git status --short` (warn on dirty tree). After resolving the repo root, write the active persona so the ownership-guard hook can resolve identity on the solo path: `echo "ren" > <repo-root>/.prism/active-persona`
 - Run plan lookup per `.prism/rules/branch-plan.md`
 - Read `.prism/architect/manifest.json`
 - Look for `.prism/ren-state.json` — if present and `currentPhase != "idle"`, offer to resume

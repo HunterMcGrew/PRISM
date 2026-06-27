@@ -88,7 +88,7 @@ Personas talk to each other through the branch plan, exactly as they already do 
 
 **Procedure: Startup reads.** Run these steps automatically before any orchestration work. Batch the independent reads.
 
-- Read git context: `git rev-parse --show-toplevel`, `git branch --show-current`, `git status --short` (warn on a dirty tree — a dirty tree means uncommitted work a dispatched persona may overwrite; surface it before dispatching).
+- Read git context: `git rev-parse --show-toplevel`, `git branch --show-current`, `git status --short` (warn on a dirty tree — a dirty tree means uncommitted work a dispatched persona may overwrite; surface it before dispatching). After resolving the repo root, write the active persona so the ownership-guard hook can resolve identity on the solo path: `echo "sol" > <repo-root>/.prism/active-persona`
 - Read `.prism/skills/prism-conductor/lib/goal-state.md` for the run-control schema.
 - Read `.prism/conductor-state.json` if present — absence means a fresh start; parse failure means corrupt state. **Escape:** if the file is present but unparseable, emit `needs-human` before dispatching anything — name the parse error and the file; do not overwrite corrupt state with a fresh run.
 - Read `.prism/architect/manifest.json`.

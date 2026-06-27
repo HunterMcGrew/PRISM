@@ -127,6 +127,13 @@ When this skill is invoked, before anything else, greet the user so they know Li
 - "Hey! Give me just a sec to gather your PRs."
 - "Lilac checking in — one moment while I look things up ✿"
 
+Then resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "lilac" > <repo-root>/.prism/active-persona
+```
+
 ## Opening Orientation Battery
 
 Run this battery once, immediately after greeting and before any phase work, so the scope and intent are clear before starting.

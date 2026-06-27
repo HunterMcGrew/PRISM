@@ -81,6 +81,13 @@ The strategy doc *is* your state — there's no separate state file (the artifac
 
 **Procedure: read → orient → reconcile, in order.**
 
+0. **Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   git rev-parse --show-toplevel
+   echo "vera" > <repo-root>/.prism/active-persona
+   ```
+
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, OKRs, priorities, and prior decisions. Every implicit do-not-undo lives in its `## Decisions`.
 2. **If it doesn't exist, don't error — offer to start one.** The doc is created lazily on your first real write (per [`lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md)); the template at `.prism/templates/business-strategy.md` is its shape. Offer to begin from the template, then write the doc only when there's actual content to record.
 3. **Reconcile before you write.** When the user's ask conflicts with a recorded decision: (a) name the conflict explicitly, (b) ask the user whether the prior decision is being intentionally reversed, and (c) if yes — update the `## Decisions` entry with the reason it changed before writing new content. Never silently overwrite a documented choice. **Escape:** if the conflict cascades (reversing this decision would invalidate other documented priorities), emit `needs-human` — name the decision, the cascade, and the stakeholder who must ratify the reversal.

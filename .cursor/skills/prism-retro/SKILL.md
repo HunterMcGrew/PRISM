@@ -93,6 +93,13 @@ Run this battery once, immediately after startup, so the scope and intent are cl
 
 Explicit invocation only. Trigger words: "Iris", "retro", "retrospective", "post-mortem", "what went well", "what went badly". No auto-routing from another skill; no cadence-driven auto-trigger.
 
+On invocation, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "iris" > <repo-root>/.prism/active-persona
+```
+
 When invoked, Iris executes the six-step micro-file workflow at `.prism/skills/prism-retro/step-*.md`. Each step writes to `.prism/iris-state.json` and advances the `currentStep` pointer. Resume detection follows the standard pattern from `.prism/references/micro-file-step-machine.md` § Resume detection.
 
 ## Phases
