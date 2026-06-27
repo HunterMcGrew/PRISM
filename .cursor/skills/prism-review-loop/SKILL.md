@@ -59,16 +59,15 @@ intent are clear before starting.
 
 ## Guardrails
 
-- **Pass budget: 20 review/fix passes.** Architect consultations and user
-  pauses don't count — they're escalations, already bounded by their own
-  ladder. Hitting the budget triggers **Procedure D** — stop, report state,
-  hand back.
+- **Pass budget: 20 review/fix passes.** Before every pass, run **Procedure B**.
+  Architect consultations and user pauses don't count — they're escalations,
+  already bounded by their own ladder. Budget exhaustion triggers **Procedure D** —
+  stop, report state, hand back.
 - **Three-strike survival rule.** An issue a reviewer re-raises after a fix
-  pass has survived a strike. Strike 1: the next fix pass opens with a written
-  diagnosis — name whether it's a misread finding, a partial fix, or a
-  disagreement — before attempting any code change. Strike 2: continue, marked
-  in the scoreboard. Strike 3: trigger **Procedure E** — pause the loop on
-  that issue and bring the user in with the full survival history.
+  pass has survived a strike. Strike 1: run **Procedure A**. Strike 2:
+  continue, marked in the scoreboard. Strike 3: trigger **Procedure E** —
+  pause the loop on that issue and bring the user in with the full survival
+  history.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
   the fixer believes the finding is wrong — skip the strike counter and trigger
   **Procedure F** immediately. Disagreement ping-pong would measure
