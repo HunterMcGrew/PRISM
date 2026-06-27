@@ -77,6 +77,22 @@ const CANONICAL_HOOKS_SMOKE_CARVEOUT = '.ai-skills/hooks/__smoke__/';
 // declared lower would be in the temporal dead zone at that call.
 const SEGMENT_SEPARATORS = /(?:&&|\|\||[;\n|&])/;
 
+// Git subcommands that mutate the working tree by pathspec — both accept a path list that
+// names exactly which files to restore. When the pathspec set is empty (bare invocation),
+// these become whole-tree ops and fall through to the Tier 2 denial path.
+const GIT_PATH_SUBCOMMANDS = new Set(['checkout', 'restore']);
+
+// Git subcommands that unconditionally mutate the whole working tree without a pathspec
+// argument — there is no path-level granularity to check, so the protection must work by
+// subcommand. Includes both commands that can take a pathspec but may not (checkout/restore
+// without `--` or an explicit pathspec) and commands that never take one (reset, stash, etc.).
+// Whole-tree ops during a gated dispatch have no legitimate use case (they disrupt the
+// lane's own working state) and maintenance mode is the lawful escape if one is genuinely
+// needed for floor servicing.
+const GIT_WHOLE_TREE_SUBCOMMANDS = new Set([
+  'reset', 'stash', 'switch', 'clean', 'apply', 'am', 'checkout', 'restore',
+]);
+
 /**
  * Returns true when the human has set the maintenance-mode env var.
  *
@@ -188,6 +204,54 @@ if (toolName === 'Bash' && toolInput.command) {
       `or gate state. Changing a hook lawfully goes through the human-granted, build-reverted\n` +
       `path (ADR-0067 § the lawful hook-authoring path). The __smoke__/ trees stay writable.\n`
     );
+    process.exit(2);
+  }
+
+  // Git working-tree mutation guard. A git checkout/restore with a protected pathspec is
+  // the same write vector as a redirect — it restores a file from history, overwriting the
+  // working-tree copy — but it takes the Bash branch where commandWritesProtectedPath can't
+  // see it (there's no `>` operator to match). Tier 1 path-named ops (checkout/restore with
+  // an explicit pathspec) are matched by resolved path; Tier 2 whole-tree ops (reset --hard,
+  // stash pop/apply, switch, clean, apply, am, or bare checkout/restore) are matched by
+  // subcommand because there is no pathspec to resolve. Maintenance mode unlocks Tier 2
+  // unconditionally and Tier 1 only when the path is an enforcement SOURCE (not gate state).
+  const gitMutation = commandMutatesProtectedViaGit(effectiveCmd, payload.cwd ?? projectDir);
+  if (gitMutation) {
+    if (isMaintenanceMode() && (gitMutation.tier === 2 || isEnforcementSourceProtected(gitMutation.path))) {
+      // Co-fused evidence-delete guard — same discipline as the commandWritesProtectedPath
+      // unlock above: check the full command before permitting, so a fused command like
+      // `git checkout HEAD -- .ai-skills/hooks/gates.json && rm -rf .prism/evidence` cannot
+      // slip the evidence arm through the source-write maintenance unlock.
+      if (commandDeletesEvidence(effectiveCmd)) {
+        process.stderr.write(
+          `[ownership-guard] Denied: this Bash command deletes a .prism/evidence/ path.\n` +
+          `Gate state (strikes.json, ledger.jsonl, ratified-verdict.json, baseline.json) is hook-managed;\n` +
+          `${persona} may not delete evidence regardless of rm flag form. This is a lane boundary.\n` +
+          `Maintenance mode suspends enforcement-source writes only — evidence deletion is never unlocked.\n`
+        );
+        process.exit(2);
+      }
+      appendMaintenanceLedger(payload, gitMutation.path ?? `git ${gitMutation.subcommand}`, persona, projectDir);
+      process.exit(0);
+    }
+    if (gitMutation.tier === 1) {
+      process.stderr.write(
+        `[ownership-guard] Denied: 'git ${gitMutation.subcommand}' writes to '${gitMutation.path}', which is\n` +
+        `enforcement-source-protected (ADR-0067 § gate non-circumventability). A git pathspec restore\n` +
+        `overwrites the working-tree file from history — the same vector as a shell redirect. To change\n` +
+        `a hook lawfully, go through the human-granted build-reverted path (ADR-0067 § lawful hook-authoring path).\n` +
+        `To service the floor, set CLAUDE_PRISM_MAINTENANCE=1 in the shell that launches Claude Code.\n`
+      );
+    } else {
+      process.stderr.write(
+        `[ownership-guard] Denied: 'git ${gitMutation.subcommand}' is a whole-tree working-tree op.\n` +
+        `Whole-tree git ops (reset --hard, stash pop/apply, switch, checkout <branch>, clean, apply, am)\n` +
+        `restore files without naming a pathspec, which is the half of the git-mutation vector that\n` +
+        `path-matching structurally cannot see. Gated personas never legitimately need a whole-tree reset\n` +
+        `mid-dispatch — these are disruptive workspace ops. If floor servicing requires one, a human\n` +
+        `sets CLAUDE_PRISM_MAINTENANCE=1 to unlock it (ADR-0067 § gate non-circumventability, #289).\n`
+      );
+    }
     process.exit(2);
   }
 
@@ -651,6 +715,340 @@ function targetsEvidence(token) {
     token.startsWith('.prism/evidence/') ||
     token.startsWith('./.prism/evidence/')
   );
+}
+
+/**
+ * Strips git pathspec magic prefixes before path normalization.
+ *
+ * Git supports magic signatures like `:(top)`, `:/`, `:(glob)`, `:(literal)`,
+ * `:(icase)`, and `:(exclude)` (short forms `!`, `:!`, `:^`, `:!/`) prepended to a
+ * pathspec. These prefixes are git's own syntax — not file-system paths — and they
+ * survive normalizeWriteTarget verbatim because path.resolve treats them as filename
+ * characters. Stripping them before normalization lets the prefix checks see the bare
+ * path and closes the pathspec-magic bypass vector (CRITICAL-2 / Eric PR `#351`).
+ *
+ * The `:/` top-of-tree form is special: after stripping `:/` the remainder is
+ * repo-root-relative, so it is normalized against projectDir (not cwd). The flag
+ * is set on the first `:/` encounter and held through the fixpoint loop.
+ *
+ * Shell quoting (single or double quotes wrapping the whole token) is stripped first,
+ * because the hook receives the literal command string with quote characters intact.
+ *
+ * Strip runs as a fixpoint loop — the loop repeats until the token stops shrinking.
+ * A single pass misses stacked magic signatures (e.g. `:/!path` strips `:/` to leave
+ * `!path`, which requires a second pass to strip the `!`). The loop closes the entire
+ * stacking class regardless of depth or order.
+ *
+ * Belt-and-suspenders: if after the loop the remainder still begins with a recognized
+ * magic character (`:` or `!`), the token is treated as protected/deny — an opaque
+ * magic form that the parser cannot fully resolve is as dangerous as a known one.
+ *
+ * Returns { path: string, useProjectDir: boolean, rejectIfStillMagic: boolean } so the
+ * caller can choose the correct base directory and apply the reject-if-still-magic guard.
+ */
+function stripPathspecMagic(raw) {
+  // Strip surrounding shell quotes — the hook receives the literal command text, so
+  // `":(top)path"` has literal double-quote chars that must be removed before magic detection.
+  if ((raw.startsWith('"') && raw.endsWith('"')) ||
+      (raw.startsWith("'") && raw.endsWith("'"))) {
+    raw = raw.slice(1, -1);
+  }
+
+  let useProjectDir = false;
+
+  // Fixpoint loop: strip one magic prefix per iteration until the token stops shrinking.
+  // This closes stacked-magic forms (e.g. :/!path, :!:/path, :^:/path) regardless of
+  // depth or ordering — there is no stack-depth left to enumerate.
+  let prev;
+  do {
+    prev = raw;
+    // Long-form magic: :(word) or :(word,word,...) at the start of the token
+    const longForm = raw.match(/^:\([^)]*\)(.*)/s);
+    if (longForm) { raw = longForm[1]; continue; }
+    // Short-form top-of-tree: :/ — remainder is repo-root-relative; set useProjectDir flag
+    if (raw.startsWith(':/')) { raw = raw.slice(2); useProjectDir = true; continue; }
+    // Short-form exclude shorthands (longest prefix first to avoid partial matches)
+    if (raw.startsWith(':!/')) { raw = raw.slice(3); continue; }
+    if (raw.startsWith(':!'))  { raw = raw.slice(2); continue; }
+    if (raw.startsWith(':^'))  { raw = raw.slice(2); continue; }
+    // Short-form exclude magic: standalone ! prefix
+    if (raw.startsWith('!'))   { raw = raw.slice(1); continue; }
+  } while (raw !== prev);
+
+  // Belt-and-suspenders: an opaque magic prefix still present after the loop signals an
+  // unrecognized stacking form — treat it as protected/deny rather than passing it through.
+  const rejectIfStillMagic = raw.startsWith(':') || raw.startsWith('!');
+
+  return { path: raw, useProjectDir, rejectIfStillMagic };
+}
+
+/**
+ * Returns true when a normalized pathspec targets a protected directory or any file
+ * beneath one, treating a directory pathspec as covering all children.
+ *
+ * A pathspec of `.ai-skills/hooks` (no trailing slash) normalizes without the slash but
+ * is equivalent to `.ai-skills/hooks/` from git's perspective — it restores every tracked
+ * file under that tree. The standard startsWith(prefix) check requires the trailing slash
+ * so it misses the bare-directory form. This predicate matches when the target equals the
+ * directory prefix (with or without trailing slash) or starts with it — without
+ * over-blocking non-protected directories like `src/` (CRITICAL-2 / Eric PR `#351`).
+ *
+ * The `__smoke__/` subtree is excluded from the canonical-hooks match — smoke files gate
+ * nothing and must remain writable via git the same way they are writable via the Write
+ * tool (MAJOR-D / Eric PR `#351`). This mirrors the CANONICAL_HOOKS_SMOKE_CARVEOUT
+ * applied in isProtectedCanonicalHookPath.
+ */
+function pathspecCoversProtectedDirectory(normalizedTarget) {
+  // Smoke carveout: .ai-skills/hooks/__smoke__/ is writable via git as via Write.
+  // Check before the canonical-hooks prefix match so smoke paths fall through to the
+  // is-protected check which correctly returns false for them.
+  if (normalizedTarget.startsWith(CANONICAL_HOOKS_SMOKE_CARVEOUT)) return false;
+  // Runtime smoke carveout: .claude/hooks/__smoke__/ mirrors the canonical carveout.
+  if (normalizedTarget.startsWith('.claude/hooks/__smoke__/')) return false;
+
+  const protectedDirs = [
+    PROTECTED_CANONICAL_HOOKS_PREFIX,   // '.ai-skills/hooks/'
+    '.claude/hooks/',                   // runtime hooks dir — individual files are in PROTECTED_WRITE_PATHS
+    PROTECTED_LIB_PREFIX,               // '.claude/hooks/lib/'
+  ];
+  for (const dir of protectedDirs) {
+    const dirWithoutSlash = dir.slice(0, -1);
+    if (
+      normalizedTarget === dir ||
+      normalizedTarget === dirWithoutSlash ||
+      normalizedTarget.startsWith(dir)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns a git mutation descriptor when a command contains a git subcommand that would
+ * write a protected enforcement path, or null when no protected git mutation is found.
+ *
+ * Two tiers:
+ *   Tier 1 — path-named ops (checkout, restore with a pathspec). Each resolved pathspec is
+ *   checked against the same enforcement-source + gate-state protected sets that the tool-path
+ *   arm uses. Returns { tier: 1, path, subcommand } on the first protected-path hit, or
+ *   { tier: 2, subcommand } when the pathspec list is empty (bare invocation = whole-tree).
+ *
+ *   Tier 2 — whole-tree ops (reset, stash, switch, clean, apply, am, and bare checkout/restore).
+ *   These restore/clobber working-tree files without naming a pathspec, so the only protection
+ *   strategy is denial by subcommand. Returns { tier: 2, subcommand }.
+ *
+ * Returns null when no git segment is found or when the git op is read-only (status, diff, log).
+ *
+ * Scans both outer segments AND command-substitution bodies so that embedded or prefixed
+ * forms like `echo $(git reset --hard)` and `x=$(git checkout -- .ai-skills/hooks/gates.json)`
+ * are caught — bash executes the substitution body regardless of what wraps it (CRITICAL-1 /
+ * Eric PR #351). Pathspec magic prefixes (`:(top)`, `:/`, `!`) are stripped before
+ * normalization (CRITICAL-2 / Eric PR #351). Directory pathspecs (`.ai-skills/hooks`,
+ * `.ai-skills/hooks/`) are treated as covering all children under that tree (CRITICAL-2).
+ */
+function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
+  // Collect segments from the outer command and from ALL substitution bodies, including
+  // nested ones. A substitution body executes as its own shell command — its git mutation
+  // is real regardless of whether it appears as a whole token, a prefix, a suffix, an
+  // assignment RHS, inside double-quotes, or nested inside another substitution.
+  // Collecting bodies iteratively (BFS) ensures that $(echo $(git reset --hard)) surfaces
+  // the inner git command even though the outer body starts with "echo" not "git".
+  const allBodies = [];
+  const pending = [effectiveCmd];
+  while (pending.length > 0) {
+    const next = pending.shift();
+    const bodies = extractSubstitutionBodies(next);
+    for (const b of bodies) {
+      allBodies.push(b);
+      pending.push(b); // recurse into nested substitutions
+    }
+  }
+  const allSegments = [
+    ...splitCommandSegments(effectiveCmd),
+    ...allBodies.flatMap(body => splitCommandSegments(body)),
+  ];
+
+  for (const segment of allSegments) {
+    const tokens = tokenize(segment);
+    if (commandHead(tokens) !== 'git') continue;
+
+    const { subcommand, args } = parseGitInvocation(tokens);
+    if (!subcommand) continue;
+
+    if (GIT_PATH_SUBCOMMANDS.has(subcommand)) {
+      // git checkout -b/-c creates a branch without touching the working tree — it is safe
+      // to permit regardless of any pathspec argument (which will be the new branch name).
+      // Detect the flag before pathspec extraction so the branch name doesn't land in the
+      // pathspec list and trigger Tier 1/2 denial (MINOR-E / Eric PR `#351`).
+      if (subcommand === 'checkout' && (args.includes('-b') || args.includes('-c') ||
+          args.some(a => a.startsWith('--orphan') || a.startsWith('-b') || a.startsWith('-c')))) {
+        return null; // create-branch: no working-tree mutation, always permit
+      }
+      const pathspecs = extractGitPathspecs(args);
+      if (pathspecs.length === 0) {
+        // Bare checkout/restore with no pathspec — whole-tree op.
+        return { tier: 2, subcommand };
+      }
+      for (const raw of pathspecs) {
+        // Strip pathspec magic before normalization so :(top), :/, :!, :^, :!/ prefixes do not
+        // hide the path. The fixpoint loop in stripPathspecMagic removes all stacked magic forms;
+        // rejectIfStillMagic fires when an opaque prefix survives the loop (treat as protected).
+        const { path: stripped, useProjectDir, rejectIfStillMagic } = stripPathspecMagic(raw);
+        if (rejectIfStillMagic) {
+          return { tier: 1, path: raw, subcommand };
+        }
+        const base = useProjectDir ? projectDir : cwdBase;
+        const target = normalizeWriteTarget(stripped, base);
+        if (isEnforcementSourceProtected(target) || pathspecCoversProtectedDirectory(target)) {
+          return { tier: 1, path: target, subcommand };
+        }
+        if (target.startsWith('.prism/evidence/') || target === '.prism/evidence') {
+          for (const basename of PROTECTED_EVIDENCE_BASENAMES) {
+            if (target.includes(basename)) {
+              return { tier: 1, path: target, subcommand };
+            }
+          }
+        }
+      }
+      // Pathspecs present but none protected — not a protected mutation.
+      continue;
+    }
+
+    if (GIT_WHOLE_TREE_SUBCOMMANDS.has(subcommand)) {
+      return { tier: 2, subcommand };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extracts the content of every command substitution and process substitution body in a
+ * shell string.
+ *
+ * Bash executes a substitution body wherever it appears — whole-token, prefixed
+ * (`echo $(cmd)`), suffixed, assignment-captured (`x=$(cmd)`), inside double-quotes
+ * (`"$(cmd)"`), or nested (`$(echo $(cmd))`). The content of each body is a real
+ * shell command that runs unconditionally, so it must be scanned for git mutations
+ * regardless of the outer wrapping. This closes the embedded/prefixed substitution bypass
+ * that `commandMutatesProtectedViaGit` previously missed (CRITICAL-1 / Eric PR `#351`).
+ *
+ * Process substitution `<(cmd)` and `>(cmd)` bodies are also extracted — bash executes
+ * their interiors as subshells, so a git mutation inside `<()` or `>()` runs just as
+ * surely as one inside `$()` (CRITICAL-C / Eric PR `#351`).
+ *
+ * Returns an array of body strings. Callers pass each body through splitCommandSegments so
+ * nested substitutions surface on the next recursive call to commandMutatesProtectedViaGit.
+ *
+ * Three forms are handled:
+ *   $(...) — POSIX dollar-paren, depth-tracked parenthesis scan.
+ *   <(...) / >(...) — process substitution, same depth-tracked scan as $(...).
+ *   `...`  — backtick form, matched as content between paired backticks (flat form; nested
+ *            backticks are not standard POSIX sh and are not handled recursively here).
+ */
+function extractSubstitutionBodies(cmd) {
+  const bodies = [];
+
+  // --- $(...) and <(...) / >(...) forms: depth-tracked parenthesis scan ---
+  let i = 0;
+  while (i < cmd.length) {
+    // Match $( — command substitution
+    const isDollarParen = cmd[i] === '$' && cmd[i + 1] === '(';
+    // Match <( or >( — process substitution (bash executes their bodies as subshells)
+    const isProcessSubst = (cmd[i] === '<' || cmd[i] === '>') && cmd[i + 1] === '(';
+
+    if (isDollarParen || isProcessSubst) {
+      const start = i + 2; // content starts after the two-char opener
+      let depth = 1;
+      let j = start;
+      while (j < cmd.length && depth > 0) {
+        if (cmd[j] === '(') depth++;
+        else if (cmd[j] === ')') depth--;
+        j++;
+      }
+      // j now points one past the closing ')' (or past end if unclosed)
+      if (depth === 0) {
+        bodies.push(cmd.slice(start, j - 1));
+        i = j; // resume after the closing ')'
+      } else {
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+
+  // --- Backtick form: find content between paired backticks ---
+  let btStart = cmd.indexOf('`');
+  while (btStart !== -1) {
+    const btEnd = cmd.indexOf('`', btStart + 1);
+    if (btEnd === -1) break;
+    bodies.push(cmd.slice(btStart + 1, btEnd));
+    btStart = cmd.indexOf('`', btEnd + 1);
+  }
+
+  return bodies;
+}
+
+/**
+ * Parses git global options and returns { subcommand, args } for the real git subcommand.
+ *
+ * Git accepts global options before the subcommand — `-C <dir>`, `--git-dir=<path>`,
+ * `--work-tree=<path>`, `-c <k=v>`, `--namespace=<ns>`. These must be skipped to find
+ * the real subcommand. Value-taking flags in bare form (`-C`, `-c`, `--git-dir`,
+ * `--work-tree`, `--namespace`) consume the next token; `=`-fused forms (`--git-dir=x`,
+ * `-c k=v`) are single tokens and advance by one. The first non-option token is the
+ * subcommand; everything after it is args.
+ */
+function parseGitInvocation(tokens) {
+  const valueFlags = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace']);
+  const gitIdx = tokens.indexOf('git');
+  if (gitIdx < 0) return { subcommand: null, args: [] };
+
+  let i = gitIdx + 1;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (!tok.startsWith('-')) break; // first non-option = subcommand
+    if (valueFlags.has(tok)) {
+      i += 2; // bare value flag — skip flag and its value token
+    } else {
+      i += 1; // single-token option (--flag=val or standalone flag like --no-pager)
+    }
+  }
+
+  if (i >= tokens.length) return { subcommand: null, args: [] };
+  return { subcommand: tokens[i], args: tokens.slice(i + 1) };
+}
+
+/**
+ * Extracts the pathspec list from git subcommand args.
+ *
+ * Two forms:
+ *   With `--`: everything after `--` is a literal pathspec (empty after `--` is still empty).
+ *   Without `--`: positional args (non-flag tokens). A single positional with no `--` is
+ *   ambiguous — it could be a branch name (`git checkout main`) or a path. Without `--`
+ *   to disambiguate, a single positional is treated as a whole-tree branch switch → returns []
+ *   so the caller sees Tier 2 (whole-tree). Two or more positionals → the first is a tree-ish
+ *   ref and the rest are pathspecs (e.g. `git checkout HEAD -- file.ts` already handled by the
+ *   `--` path; without `--`: `git checkout main -- src/` → handled; bare `git checkout main src/`
+ *   is unusual but we conservatively take positionals[1:] as pathspecs). A bare `.` pathspec
+ *   normalizes to the project root and will not match any protected prefix — it falls through
+ *   to Tier 2 at the caller (pathspecs.length would be 1 after removing the treeish — the
+ *   caller receives ['.'] which normalizes to '' or the project dir; isEnforcementSourceProtected
+ *   won't match, so it continues to the next segment, landing in the GIT_WHOLE_TREE fallback).
+ */
+function extractGitPathspecs(args) {
+  const ddIdx = args.indexOf('--');
+  if (ddIdx >= 0) {
+    return args.slice(ddIdx + 1).filter(Boolean);
+  }
+  // No `--`: take non-flag positionals. Drop flags (start with `-`).
+  const positionals = args.filter(a => !a.startsWith('-'));
+  // Single positional without `--` → ambiguous branch name → whole-tree.
+  if (positionals.length <= 1) return [];
+  // Two or more positionals: first is tree-ish, rest are pathspecs.
+  return positionals.slice(1);
 }
 
 /**
