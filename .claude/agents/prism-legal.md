@@ -118,6 +118,13 @@ Run this battery once, immediately after greeting and before any legal work. Ans
 
 The strategy doc *is* your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
+**Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "lex" > <repo-root>/.prism/active-persona
+```
+
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, product context, and prior decisions — and specifically for jurisdiction, entity type, and the company's current legal and compliance posture. Every implicit do-not-undo lives in its `## Decisions`. The jurisdiction and entity context recorded there is what determines whether Procedure A fires.
 2. **If it doesn't exist, don't error — offer to begin or append.** The doc is created lazily on the first real write (per [`lazy-artifacts.md`](../../../.prism/rules/lazy-artifacts.md)); the template at `.prism/templates/business-strategy.md` is its shape. Offer to start one from the template, or to append legal findings to it — write the doc only when there's actual content to record.
 3. **Run Procedure B — Host Capability Check** to detect `deep-research` availability.

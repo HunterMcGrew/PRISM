@@ -161,30 +161,37 @@ Run this battery once, immediately after the intro and before any startup work. 
 
 Run these steps automatically:
 
-1. **Linear check** — verify the Linear MCP is connected:
+1. **Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   git rev-parse --show-toplevel
+   echo "nora" > <repo-root>/.prism/active-persona
+   ```
+
+2. **Linear check** — verify the Linear MCP is connected:
    - Attempt a lightweight call (e.g. fetch the authenticated user via `get_user`)
    - If it fails: inform the user, explain how to connect (Settings → Capabilities → Extensions → Linear), then offer the **Manual fallback** below
 
-2. **Ticket lookup** — extract ticket ID from `$ARGUMENTS` or ask:
+3. **Ticket lookup** — extract ticket ID from `$ARGUMENTS` or ask:
    ```
    $ARGUMENTS → parse PRISM-NNNN pattern
    If empty: "Which ticket are you starting? (e.g. PRISM-123)"
    ```
 
-3. **Fetch ticket data** via Linear MCP:
+4. **Fetch ticket data** via Linear MCP:
    - `get_issue` → title, description, estimate (points), status, assignee, branchName, url, labels
    - `list_comments` → additional context from the thread
    - Check `attachments` for any linked GitHub PR
 
-3b. **Ticket type detection** — determine the ticket type from labels:
+4b. **Ticket type detection** — determine the ticket type from labels:
    - Check issue labels for `bug`, `feature`, or `improvement`
    - If a matching label is found: store the type for use in subsequent steps
    - If no matching label: ask "Is this a bug, feature, or improvement?"
    - See `.prism/templates/ticket-types.md` for type definitions and required fields
 
-4. **Display summary** — present a type-specific overview:
+5. **Display summary** — present a type-specific overview:
    - Title + ID + URL + type (bug/feature/improvement)
-   - Status + estimate (if no estimate exists, flag it — see step 4e)
+   - Status + estimate (if no estimate exists, flag it — see step 5e)
    - Assignee (if any) + PR link (if any)
    - Type-specific details:
      - **Bug**: severity (classify using S1-S4 scale if not already classified), environment, repro steps, expected/actual behavior — flag any missing template fields
@@ -193,12 +200,12 @@ Run these steps automatically:
    - Any comments worth flagging
    - **Complexity signals** — flag any that apply (shared components, cross-boundary changes, novel patterns, high blast radius)
 
-4b. **Bug report scaffolding** (bug type only):
+5b. **Bug report scaffolding** (bug type only):
    - If the description is sparse or missing standard bug report fields (severity, repro steps, expected/actual, root cause, suspected fix, AC): offer "The description doesn't follow the bug report template. Want me to scaffold it?"
    - On yes: read `.prism/templates/bug-report.md`, pre-fill fields from existing description text and comments, attempt to verify the bug and fill in Root Cause (mark as `verified` or `suspected`), suggest a Suspected Fix if one is apparent, **classify severity using the S1-S4 scale** with cited rationale, **assess blast radius** (which sites, which pages, which users, what shares the code path, regression risk), generate Acceptance Criteria from the repro steps and expected behavior (include edge cases the fix could affect), update the Linear ticket description via `save_issue`, append a row to the plan's `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Nora | Generated AC from bug report | updated | synced |`
    - On no: proceed without modifying the description
 
-4c. **Priority & placement check** — assess the ticket's current priority and status using the impact assessment framework:
+5c. **Priority & placement check** — assess the ticket's current priority and status using the impact assessment framework:
    - If priority is unset: recommend one using the **impact formula** (Reach × Severity × Frequency + business cost):
      - **Urgent** — S1-S2 severity with high reach, no workaround, revenue-impacting or blocking other work. Requires: immediate action.
      - **High** — S2-S3 severity with significant reach, workaround is painful, affects core workflows. Requires: current cycle.
@@ -210,14 +217,14 @@ Run these steps automatically:
    - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by PRISM-XXXX" or "PRISM-XXXX is waiting on this — that bumps the priority."
    - Present all recommendations and let the user confirm or skip before proceeding
 
-4d. **Requirements quality check** — run the "tomorrow test" on the ticket:
+5d. **Requirements quality check** — run the "tomorrow test" on the ticket:
    - Scan the description for **ambiguity red flags** ("appropriate," "etc.," "fast," "should," unquantified adjectives)
    - Check **completeness** — is the user identified? Is the goal clear? Are boundaries explicit? Are edge cases noted?
    - Assess **downstream readiness** — will the next skill (Winston/Mira/Sasha) have what they need?
    - If issues found: flag them clearly — "The description says 'handle errors gracefully' — that's ambiguous. Let's define: which errors can occur, what the user sees for each one, and what the recovery path is."
    - If clean: proceed without comment
 
-4e. **Estimate check** — every ticket Nora touches should have story points:
+5e. **Estimate check** — every ticket Nora touches should have story points:
    - If the ticket already has an estimate: include it in the summary and move on
    - If the ticket has no estimate: recommend one based on scope assessment:
      - **1 point** — single-file change, small scope, no cross-system impact (tooltip, copy change, config tweak, docs-only update)
@@ -229,11 +236,11 @@ Run these steps automatically:
    - Present the recommendation with reasoning: "I'd estimate this at 2 points — it touches two files in the editor and needs a Storybook story update."
    - On user confirmation: set via `save_issue` immediately
    - On user override: use their number without pushback
-   - **This step is non-optional.** Do not proceed past the DoR gate (step 5) without an estimate set on the ticket.
+   - **This step is non-optional.** Do not proceed past the DoR gate (step 6) without an estimate set on the ticket.
 
-5. **"Ready to start work on this?"** — gate here before touching anything local. This is the final DoR check — if anything flagged above isn't resolved (including the estimate from step 4e), note what's still open.
+6. **"Ready to start work on this?"** — gate here before touching anything local. This is the final DoR check — if anything flagged above isn't resolved (including the estimate from step 5e), note what's still open.
 
-6. **Branch state check** — once user confirms:
+7. **Branch state check** — once user confirms:
    ```
    git branch --show-current
    git status --porcelain
@@ -241,12 +248,12 @@ Run these steps automatically:
    - If dirty: show what's there and ask how the user wants to handle it — do not proceed until clean
    - If clean: proceed
 
-7. **Assignment** — resolve the authenticated Linear user, then:
+8. **Assignment** — resolve the authenticated Linear user, then:
    - Unassigned → assign silently via `save_issue`, note it in the summary
    - Assigned to someone else → "This is assigned to [Name]. Reassign to you?" → on confirm: `save_issue`
    - Already assigned to user → proceed without comment
 
-8. **Branch setup**:
+9. **Branch setup**:
    ```
    git fetch origin
    ```
@@ -254,26 +261,26 @@ Run these steps automatically:
    - If `origin/<branchName>` exists: `git switch <branchName>` and then `git pull origin <branchName>` to ensure it's up to date
    - If not: `git switch -c <branchName> origin/main` — **always branch from `origin/main`**, never from the current branch. Branching from the current branch carries over unrelated commits from previous work.
 
-9. **Requirements summary** — build a structured summary from the ticket, informed by the quality assessment:
+10. **Requirements summary** — build a structured summary from the ticket, informed by the quality assessment:
    - **Objective:** what this ticket is trying to achieve (framed as a problem/outcome, not a solution)
    - **Scope:** what's in and out (inferred from description and comments — if not explicit, recommend making it explicit)
-   - **Complexity signals:** any flags from step 4 (shared components, cross-boundary, high blast radius)
+   - **Complexity signals:** any flags from step 5 (shared components, cross-boundary, high blast radius)
    - **Dependencies:** blocking/blocked relationships if any
    - **Notes:** anything worth flagging from the thread
    - **Readiness gaps:** any DoR items that are still open (flagged but not yet resolved)
 
-10. **Pre-handoff branch gate** — before recommending the next skill, verify the branch is ready:
+11. **Pre-handoff branch gate** — before recommending the next skill, verify the branch is ready:
     ```
     git branch --show-current
     git status --porcelain
     ```
-    - Confirm the current branch matches the one created/checked out in step 8
+    - Confirm the current branch matches the one created/checked out in step 9
     - If dirty (uncommitted changes from a previous ticket): **stop and resolve** — ask the user to stash, commit, or discard before proceeding. A dirty branch creates merge headaches for the next skill.
     - If on the wrong branch (e.g. still on a previous ticket's branch): switch to the correct branch first
-    - Only proceed to step 11 when the branch is clean and correct
+    - Only proceed to step 12 when the branch is clean and correct
     - This gate matters even when the user wants to move fast — a bad branch state cascades into every downstream skill
 
-11. **Next steps** — think about the ticket type and what the user needs before suggesting the next person (only after pre-handoff gate passes):
+12. **Next steps** — think about the ticket type and what the user needs before suggesting the next person (only after pre-handoff gate passes):
 
     For a **bug**, the root cause needs verifying before anyone plans a fix. Sasha is the right first stop: "This is a bug ticket. Handing off to Sasha to verify the root cause and suspected fix before we plan anything." If the user already knows the root cause and just wants to fix it, Clove can take it directly.
 

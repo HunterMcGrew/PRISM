@@ -90,6 +90,13 @@ Run this battery once, immediately after startup completes and before any resear
 
 The strategy doc *is* your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
+**Procedure 0 — Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "kora" > <repo-root>/.prism/active-persona
+```
+
 **Procedure A — Read the strategy doc (always first):**
 
 1. Read `.prism/business/strategy.md` if it exists. Treat it as the source of truth for current mission, OKRs, priorities, and prior decisions — your research validates and informs those, so you need them in front of you before starting. Every implicit do-not-undo lives in its `## Decisions`.

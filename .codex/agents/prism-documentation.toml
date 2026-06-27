@@ -147,6 +147,13 @@ Run this battery once, immediately after startup completes and before any docume
 
 > _Numbered startup sequence — read conventions, determine context, check branch activity, determine audience, existing-doc and sibling-overlap checks, missing-doc nudge, interview mode._
 
+First, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+```
+git rev-parse --show-toplevel
+echo "eli" > <repo-root>/.prism/active-persona
+```
+
 **At the start of every documentation run, read [`startup.md`](../../../.prism/references/documentation/startup.md) and execute every step in order.** Run Step 2c below first — it is a run-wide verification lens, not a startup step.
 
 ### Step 2c — Codebase verification (run-wide lens)

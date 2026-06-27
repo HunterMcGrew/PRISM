@@ -166,7 +166,11 @@ Run the following steps automatically — do not wait for further instructions.
 4. Read `.prism/architect/manifest.json`
 5. `git diff main...HEAD --name-only` (changed file list for manifest matching)
 
-Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`.
+Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`. Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
+
+```
+echo "briar" > <repo-root>/.prism/active-persona
+```
 
 **Determine review scope** from conversation context — check whether another skill (Eric's PR review, Clove's implementation) already ran:
 

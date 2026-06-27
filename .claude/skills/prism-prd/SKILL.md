@@ -140,9 +140,16 @@ Run this battery once, immediately after startup completes (mode detected, front
 
 ## Startup
 
-1. **Detect mode** from the trigger phrase + context. Default to asking if ambiguous.
-2. **Check for existing draft** in `.prism/prds/`. If draft frontmatter has `status: draft` and a non-empty `stepsCompleted`, offer to resume from the last completed step. If `status: finalized`, require explicit user confirmation before any edit — finalized PRDs are durable.
-3. **Read state from frontmatter** rather than a separate state file. The PRD's frontmatter IS Parker's state.
+1. **Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   git rev-parse --show-toplevel
+   echo "parker" > <repo-root>/.prism/active-persona
+   ```
+
+2. **Detect mode** from the trigger phrase + context. Default to asking if ambiguous.
+3. **Check for existing draft** in `.prism/prds/`. If draft frontmatter has `status: draft` and a non-empty `stepsCompleted`, offer to resume from the last completed step. If `status: finalized`, require explicit user confirmation before any edit — finalized PRDs are durable.
+4. **Read state from frontmatter** rather than a separate state file. The PRD's frontmatter IS Parker's state.
 
 ## Step dispatch
 
