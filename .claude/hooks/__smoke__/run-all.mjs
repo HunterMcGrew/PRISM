@@ -1286,7 +1286,30 @@ function assert(scenarioName, condition, message) {
     const okK6 = assert(name, rK6.code === 2,
       `K6: maintenance ON + fused source-write && evidence-delete — expected exit 2 (evidence-delete arm fires despite source-write being unlocked), got ${rK6.code}. stderr: ${rK6.stderr.substring(0, 200)}`);
 
-    if (okK1 && okK2 && okK3 && okK4 && okK5 && okK6) console.log(`${PASS} ${name}`);
+    // K7: build.ts emitter self-weaken vector (F1) — maintenance OFF → Write to build.ts DENY.
+    // scripts/ai-skills/build.ts is in clove.may_write (as the lawful authoring lane) but also
+    // in PROTECTED_WRITE_PATHS (via isEnforcementSourceProtected). A gated Clove editing it could
+    // emit a weakened runtime through the build pipe; the denylist closes that vector.
+    const rK7 = runGuardWrite('scripts/ai-skills/build.ts');
+    const okK7 = assert(name, rK7.code === 2,
+      `K7: maintenance OFF — expected exit 2 for Write to scripts/ai-skills/build.ts (emitter self-weaken vector, protected via PROTECTED_WRITE_PATHS), got ${rK7.code}. stderr: ${rK7.stderr.substring(0, 200)}`);
+
+    // K8: build.ts emitter self-weaken vector (F1) — maintenance ON → Write PERMITS + ledger line.
+    // Same protection arm as K7, but the maintenance lever unlocks it so a human can service the
+    // emitter — identical to how K2 permits canonical gates.json under maintenance.
+    const rK8 = runGuardWrite('scripts/ai-skills/build.ts', maintenanceEnv);
+    const okK8 = assert(name, rK8.code === 0,
+      `K8: maintenance ON — expected exit 0 for Write to scripts/ai-skills/build.ts (maintenance unlock covers PROTECTED_WRITE_PATHS), got ${rK8.code}. stderr: ${rK8.stderr.substring(0, 200)}`);
+    // Confirm a maintenance-ledger.jsonl line was written for the build.ts unlock
+    if (okK8) {
+      const lines2 = existsSync(ledgerPath)
+        ? readFileSync(ledgerPath, 'utf8').trim().split('\n').filter(Boolean)
+        : [];
+      assert(name, lines2.some(l => { try { return JSON.parse(l).path === 'scripts/ai-skills/build.ts'; } catch { return false; } }),
+        `K8: expected a maintenance-ledger.jsonl entry with path 'scripts/ai-skills/build.ts'`);
+    }
+
+    if (okK1 && okK2 && okK3 && okK4 && okK5 && okK6 && okK7 && okK8) console.log(`${PASS} ${name}`);
   } finally {
     cleanup(tmpDir);
   }

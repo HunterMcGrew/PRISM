@@ -44,6 +44,12 @@ const PROTECTED_WRITE_PATHS = [
   '.claude/hooks/evidence-ledger.mjs',
   '.claude/hooks/gates.json',
   '.claude/settings.json',
+  // The build emitter — a gated persona editing this file could emit a weakened
+  // runtime without being caught by the canonical-source prefix check (which covers
+  // .ai-skills/hooks/** but not scripts/). Protecting it here and in
+  // isEnforcementSourceProtected closes the vector; maintenance mode unlocks it for
+  // legitimate servicing alongside the rest of the enforcement surface.
+  'scripts/ai-skills/build.ts',
 ];
 const PROTECTED_LIB_PREFIX = '.claude/hooks/lib/';
 const PROTECTED_EVIDENCE_BASENAMES = ['strikes.json', 'ledger.jsonl', 'ratified-verdict.json', 'baseline.json', 'maintenance-ledger.jsonl'];

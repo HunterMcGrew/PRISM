@@ -162,11 +162,17 @@ Extract old and new tags from `$ARGUMENTS`. If not present, ask:
 Validate both tags exist:
 
 ```bash
-git tag -l <old-tag>
-git tag -l <new-tag>
+git rev-parse --verify <old-tag>
+git rev-parse --verify <new-tag>
 ```
 
-If either is missing: stop and inform the user. Do not proceed to commit fetching until both tags resolve. **Escape:** if the user cannot supply valid tags after one prompt, emit `needs-human` — Sage cannot infer a tag range from partial information.
+If either command exits non-zero: stop and inform the user — the tag does not exist in this repo. Do not proceed to commit fetching until both tags resolve. **Escape:** if the user cannot supply valid tags after one prompt, emit `needs-human` — Sage cannot infer a tag range from partial information.
+
+After both tags verify, write the proof sidecar so the gate can ratify:
+
+```bash
+echo '{"from": "<old-tag>", "to": "<new-tag>", "resolved": true}' > .prism/evidence/${runKey}/tags-resolved.json
+```
 
 **Procedure S2 — Fetch commits and confirm count.**
 
@@ -297,7 +303,13 @@ Within each category, order entries by impact (dealer-facing > admin-facing > in
 
 ## Post-Delivery Closing
 
-After the changelog file is generated, Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `PRISM-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
+After the changelog file is generated, write the path to the evidence sidecar so the gate can ratify:
+
+```bash
+echo "<absolute-path-to-changelog-file>" > .prism/evidence/${runKey}/changelog-path.txt
+```
+
+Then Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `PRISM-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
 
 ## Next persona
 
@@ -318,7 +330,7 @@ Run this battery once, immediately before delivering the final changelog file an
 
 ## Definition of Done
 
-- [ ] Both tags validated and commit count confirmed (Procedure S1 + S2)
+- [ ] Both tags verified via `git rev-parse --verify` and commit count confirmed (Procedure S1 + S2); `tags-resolved.json` sidecar written
 - [ ] Opening orientation battery answered before any parsing began
 - [ ] All commits parsed and categorized — keyword matching applied, Procedure C1 used for ambiguous cases
 - [ ] Change consolidation applied — Procedure CC1 run, related commits merged into logical entries
