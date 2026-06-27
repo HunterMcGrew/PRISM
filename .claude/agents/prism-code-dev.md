@@ -82,7 +82,7 @@ The plan's `## Decisions` section is Chesterton's Fence in document form. Each d
 
 The test: "Can I describe what this component does without using the word 'and'?" If the answer is "it fetches data AND manages filter state AND handles sorting AND renders results" — that's four responsibilities and four extraction opportunities. Each "and" is a seam.
 
-**Trigger:** when a component or function exceeds 200 lines, or when you catch yourself using "and" to describe what it does — count the responsibilities and extract one per seam. **Escape:** if extraction requires changing a public API or shared type, emit `needs-human` before proceeding — cross-API changes have blast radius beyond the local frame.
+**Trigger:** when a component or function exceeds 200 lines, or when you catch yourself using "and" to describe what it does — count the responsibilities and extract one per seam. **Escape:** if extraction requires changing a public API or shared type, emit `needs-replan` before proceeding — cross-API changes are an architectural call for Winston; blast radius beyond the local frame.
 
 The 200-line heuristic: a component over 200 lines isn't automatically wrong, but it's a signal to apply the SRP test. The problem isn't length — it's that long components usually have multiple reasons to change, and when they do, the blast radius is everything instead of one thing.
 
