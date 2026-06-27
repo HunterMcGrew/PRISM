@@ -659,9 +659,36 @@ function isRedirectToken(tok) {
  * Splits a command string on shell separators so each segment carries its own operators.
  * Uses SEGMENT_SEPARATORS — the single source of truth for command-segment boundaries, so
  * every Bash scan arm derives its segmentation from one constant and the arms cannot drift.
+ *
+ * After splitting, each segment is also unwrapped from a command-substitution or subshell
+ * prefix/suffix — `$(cmd args)`, `` `cmd args` ``, and `(cmd args)` — so git (and rm/tee/
+ * etc.) nested inside a substitution is still detected as the command head. A persona cannot
+ * bypass the guard by wrapping a mutation in `$(...)` or backticks.
  */
 function splitCommandSegments(cmd) {
-  return cmd.split(SEGMENT_SEPARATORS).map(s => s.trim()).filter(Boolean);
+  return cmd.split(SEGMENT_SEPARATORS).map(s => peelSubstitutionWrapper(s.trim())).filter(Boolean);
+}
+
+/**
+ * Strips a leading command-substitution or subshell wrapper from a segment so the actual
+ * command head is visible to commandHead and parseGitInvocation.
+ *
+ * Handles: `$(cmd ...)` → `cmd ...`, `` `cmd ...` `` → `cmd ...`, `(cmd ...)` → `cmd ...`.
+ * The trailing delimiter is stripped only when a matching opener is present — plain segments
+ * without wrappers pass through unchanged.
+ */
+function peelSubstitutionWrapper(segment) {
+  if (segment.startsWith('$(') && segment.endsWith(')')) {
+    return segment.slice(2, -1).trim();
+  }
+  if (segment.startsWith('`') && segment.endsWith('`') && segment.length > 1) {
+    return segment.slice(1, -1).trim();
+  }
+  if (segment.startsWith('(') && segment.endsWith(')')) {
+    return segment.slice(1, -1).trim();
+  }
+
+  return segment;
 }
 
 /** Whitespace tokenization — sufficient for the redirect/command-head analysis here. */
@@ -748,7 +775,12 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
         return { tier: 2, subcommand };
       }
       for (const raw of pathspecs) {
-        const target = normalizeWriteTarget(raw, cwdBase);
+        // Strip surrounding single or double quotes before path resolution — a shell-quoted
+        // pathspec like ".claude/settings.json" or '.claude/settings.json' is semantically
+        // identical to the unquoted form, but path.resolve treats the leading quote as part
+        // of the filename, producing a path that matches nothing in the protected sets.
+        const unquoted = raw.replace(/^(['"])(.*)\1$/, '$2');
+        const target = normalizeWriteTarget(unquoted, cwdBase);
         if (isEnforcementSourceProtected(target)) {
           return { tier: 1, path: target, subcommand };
         }

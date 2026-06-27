@@ -1714,10 +1714,7 @@ function assert(scenarioName, condition, message) {
     const okNi = assert(name, rNi.code === 2,
       `N.i: git am — expected exit 2, got ${rNi.code}. stderr: ${rNi.stderr.substring(0, 300)}`);
 
-    // N.j: git checkout src/app.ts → PERMIT (single positional = ambiguous branch, not in protected sets)
-    // The bare positional (no --) is treated as a branch name (whole-tree op), but src/app.ts
-    // is not a protected path — wait, bare single positional → tier 2 whole-tree → DENY.
-    // Per dispatch spec: the guard denies all whole-tree ops. Verify DENY.
+    // N.j: git checkout -- src/app.ts (Tier 1, non-protected path) → PERMIT
     const rNj = runGuardBash('git checkout -- src/app.ts');
     const okNj = assert(name, rNj.code === 0,
       `N.j: git checkout -- src/app.ts (non-protected path) — expected exit 0, got ${rNj.code}. stderr: ${rNj.stderr.substring(0, 300)}`);
@@ -1766,7 +1763,27 @@ function assert(scenarioName, condition, message) {
     const okNq = assert(name, rNq.code === 2,
       `N.q: fused Tier1 source checkout + git status — expected exit 2, got ${rNq.code}. stderr: ${rNq.stderr.substring(0, 300)}`);
 
-    const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq];
+    // N.r: double-quoted pathspec on protected path → DENY (quote-stripping fix)
+    const rNr = runGuardBash('git checkout -- ".claude/settings.json"');
+    const okNr = assert(name, rNr.code === 2,
+      `N.r: git checkout -- ".claude/settings.json" (double-quoted) — expected exit 2 (DENY), got ${rNr.code}. stderr: ${rNr.stderr.substring(0, 300)}`);
+
+    // N.s: single-quoted pathspec on protected path → DENY (quote-stripping fix)
+    const rNs = runGuardBash("git checkout -- '.claude/settings.json'");
+    const okNs = assert(name, rNs.code === 2,
+      `N.s: git checkout -- '.claude/settings.json' (single-quoted) — expected exit 2 (DENY), got ${rNs.code}. stderr: ${rNs.stderr.substring(0, 300)}`);
+
+    // N.t: double-quoted pathspec on non-protected path → PERMIT (no over-block)
+    const rNt = runGuardBash('git checkout -- "src/app.ts"');
+    const okNt = assert(name, rNt.code === 0,
+      `N.t: git checkout -- "src/app.ts" (non-protected, double-quoted) — expected exit 0 (PERMIT), got ${rNt.code}. stderr: ${rNt.stderr.substring(0, 300)}`);
+
+    // N.u: $(git reset --hard) wrapped in command substitution → DENY (substitution-unwrap fix)
+    const rNu = runGuardBash('$(git reset --hard)');
+    const okNu = assert(name, rNu.code === 2,
+      `N.u: $(git reset --hard) (command-substitution wrapper) — expected exit 2 (DENY), got ${rNu.code}. stderr: ${rNu.stderr.substring(0, 300)}`);
+
+    const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq, okNr, okNs, okNt, okNu];
     if (allN.every(Boolean)) {
       console.log(`${PASS} ${name}`);
     } else {
