@@ -43,6 +43,8 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
   - → no promotion needed (enforcement invariant; readable from gates.json directly)
 - `allowed_routes` derived from each skill's closing persona recommendation in shared.md — not assumed.
   - → no promotion needed (implementation tactic, self-evident from gates.json entries)
+- Class C gate mechanism (Phase 5 PR3): 10 business + conductor personas use lightest class — `gates: []` + single `report-written` precondition only. No command preconditions. All 9 business personas share `may_write: [".prism/business/strategy.md", ...]` since section-level filesystem globs aren't possible; Sol is restricted to `conductor-state.json` + `.tmp` only — no src, no plan, no Linear writes.
+  - → no promotion needed (mechanism described in enforcement-floor.md Class C section; gates.json is the authoritative data)
 - `isCoherent` extended with 5th `report` parameter: a `needs-fix` verdict with empty `payload.findings` (no critical/major entry) is shape-incoherent — an empty findings array claims review work was done but contains nothing actionable.
   - → no promotion needed (coherence invariant already described in enforcement-floor.md Class B section)
 
@@ -55,6 +57,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Briar review fix — expanded to all 15 Class B personas (added eli, pixel, theo, zoe, ren, iris, lilac); fixed triplet drift (ai-skills→canonical→runtime+install seed byte-identical); restored enforcement schema from accidental overwrite; added Final act + DoD references to all 13 skill shared.md files missing them.
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Landed 3 Eric Majors (PR #348): replaced repo-global grep preconditions with run-scoped deliverable-sidecar + deliverable-touched-this-run for 8 deterministic-target personas; stripped UTF-8 BOM from 6 run-all/run-gates copies; updated 8 skill Final act lines to reference deliverable.json; added Scenario M smoke tests + enforcement-floor.md Class B prose; smoke 15/15 green. 
 - 2026-06-27 [hmcgrew/295-phase5-pr2-classb]: Stripped UTF-8 BOM from 13 shared.md canonical sources (16 total including prism-code-dev, prism-design/lib/output-modes.md, prism-review-loop); added build-time bom-guard.ts with 7 unit tests wired into prism:build+check so the defect cannot recur silently.
+- 2026-06-27 [hmcgrew/295-phase5-pr3-classc]: Authored Class C gates.json entries for 10 personas (vera, kora, ellis, charlie, quinn, tess, remy, penny, lex, sol); triplet byte-identical, smoke 16/16, crossref clean.
 
 ---
 
@@ -99,7 +102,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-06-27
-- [ ] PR description up to date
+- [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (enforcement-floor.md updated)
 
-**Last updated:** 2026-06-27 (BOM strip + guard)
+**Last updated:** 2026-06-27 (PR3 Class C)
