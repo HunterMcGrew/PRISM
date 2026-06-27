@@ -3,7 +3,7 @@ title: "Distribution"
 description: "How PRISM lands in a consumer repo, how updates flow under the bifurcated layout, and what stays under team control."
 category: "operations"
 audience: "dev"
-last_updated: "2026-06-23"
+last_updated: "2026-06-27"
 ---
 
 # Distribution
@@ -51,7 +51,7 @@ See [Adopt PRISM into your repo](./adopt-prism.md) for the global `prism` comman
 
 ## What gets installed where
 
-When `prism:sync --target ../consumer/` runs, the consumer's repo receives a bifurcated layout: canonical content at `.prism/<area>/` plus a build-time copy of the read-only areas inside each platform dir.
+When `npx @huntermcgrew/prism adopt` (or `pnpm prism:adopt` from a checkout) runs, the consumer's repo receives a bifurcated layout: canonical content at `.prism/<area>/` plus a build-time copy of the read-only areas inside each platform dir.
 
 ### Canonical content (one source per file)
 
@@ -92,6 +92,17 @@ Skills are not under canonical at all. They're generated from `.ai-skills/skills
 | `.ai-skills/skills/<id>/`             | `consumer/.agents/skills/<id>/SKILL.md`                | Codex skill output                               |
 | `.ai-skills/skills/<id>/`             | `consumer/.codex/agents/<id>.toml`                     | Codex agent adapter                              |
 | `.ai-skills/skills/<id>/`             | `consumer/.cursor/skills/<id>/SKILL.md`                | Cursor output                                    |
+
+### Enforcement floor (build-generated, build-time copy)
+
+The build also emits the enforcement runtime into both the live `.claude/` tree and the install seed so new adopters get the floor on first `prism adopt`. The canonical source lives in `.ai-skills/hooks/`; the build writes copies to both destinations.
+
+| Canonical source                  | Build copies written to                                                       | Notes                                       |
+| --------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- |
+| `.ai-skills/hooks/`               | `.claude/hooks/`, `templates/install/.claude/hooks/`                          | Runtime hooks: `ownership-guard.mjs`, `run-gates.mjs`, `evidence-ledger.mjs`, `gates.json`, `lib/` |
+| `.ai-skills/hooks/settings.json`  | `.claude/settings.json`, `templates/install/.claude/settings.json`            | Hook wiring config; ships with `{"hooks":{}}` until floor is enabled |
+
+See [The Enforcement Floor](./ai-skills/enforcement-floor.md) for what these files do and how to enable or disable enforcement.
 
 ### Top-level anchor files
 
@@ -141,14 +152,23 @@ Hand-authored files (the consumer's own skills, their own rules with new names, 
 
 ## Pulling updates
 
+**From npm (recommended):**
+
+```bash
+cd your-repo
+npx @huntermcgrew/prism update
+```
+
+**From a checkout:**
+
 ```bash
 cd ~/work/prism
 git pull origin main           # or whichever branch your org tracks
 pnpm install                   # if package.json changed
-pnpm prism:sync --target ../ktc-codebase
+pnpm prism:update --consumer ../ktc-codebase
 ```
 
-`prism:sync` updates the canonical content in the consumer repo. After it finishes, the consumer runs `pnpm prism:build` locally to regenerate the platform copies. CI on the consumer side runs `pnpm prism:check` to confirm canonical and platform copies stay in sync.
+`prism update` refreshes canonical content in the consumer repo and regenerates platform copies. CI on the consumer side can run `pnpm prism:check` to confirm canonical and platform copies stay in sync.
 
 The sync prints a summary: files updated, files preserved as user-edited, conflicts requiring resolution. Conflicts open the diff in the consumer's repo and don't auto-resolve.
 
@@ -163,10 +183,10 @@ After sync:
 
 ## Branching and updates upstream
 
-PRISM uses phase branches for major work. Phase 1 (foundation) shipped; Phase 1.5 (bifurcated layout + tokenization) sits between Phase 1 and Phase 2; Phase 2 (Atlas onboarding) and Phase 3 (Winston codebase scan) follow. Consumer teams can choose:
+PRISM uses phase branches for major work. Phase 1 (foundation), Phase 1.5 (bifurcated layout + tokenization), Phase 2 (Atlas onboarding), and Phase 3 (Winston codebase scan) have all shipped to `main`. Consumer teams can choose:
 
 - **Track `main`** — get changes only when phases merge to main.
 - **Track a phase branch** — early access to in-progress work; expect breakage.
 
-Teams should pin to specific commits (record in their own repo's CHANGELOG or commit history) for production stability.
+Teams should pin to specific versions (`npx @huntermcgrew/prism@1.0.0 adopt`) for production stability.
 

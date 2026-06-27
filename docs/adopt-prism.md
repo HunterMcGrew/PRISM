@@ -3,7 +3,7 @@ title: "Adopt PRISM into your repo"
 description: "How to adopt PRISM into a consumer repo — via npx (recommended), or via a local checkout for air-gapped environments and contributors."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-06-23"
+last_updated: "2026-06-27"
 ---
 
 # Adopt PRISM into your repo
@@ -119,6 +119,8 @@ The explicit flag always takes priority over auto-detection. Both commands also 
 ## First contact — prism adopt
 
 `prism adopt` seeds `.prism/` and projects the full persona roster into `.claude/`, `.cursor/`, and `.codex/` (whichever platforms are relevant to your setup).
+
+The enforcement floor also lands during adoption: `.claude/hooks/` (the runtime hook scripts) and `.claude/settings.json` are written alongside the personas. See [The Enforcement Floor](./ai-skills/enforcement-floor.md) for what these files do and how to enable or disable enforcement.
 
 `prism adopt` is a first-contact command. It refuses to run a second time once `.prism/` already has a sync record — that's the signal that the repo is already adopted, and `prism update` is the right command from that point on.
 

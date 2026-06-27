@@ -3,7 +3,7 @@ title: "Publishing PRISM to npm"
 description: "The release ritual for PRISM maintainers — version bump, pre-publish gates, leak audit, and npm publish."
 category: "operations"
 audience: "dev"
-last_updated: "2026-06-23"
+last_updated: "2026-06-27"
 ---
 
 # Publishing PRISM to npm
@@ -49,7 +49,7 @@ PRISM follows semver. Patch releases fix bugs without changing the consumer-faci
 pnpm run prism:check
 ```
 
-`prism:check` validates the full persona roster and canonical content. A broken or stale roster must never publish — this is enforced automatically by `prepublishOnly`, which runs `prism:build` and `prism:check` before packing, but confirm it passes now so you're not surprised at publish time.
+`prism:check` validates the full persona roster and canonical content. A broken or stale roster must never publish — this is enforced automatically by `prepublishOnly`, which runs `prism:bundle` (the esbuild/dist step), `prism:build`, and `prism:check` before packing, but confirm it passes now so you're not surprised at publish time.
 
 ### Step 3 — Run the leak audit
 
@@ -77,7 +77,7 @@ Open `/tmp/prism-tarball-contents.txt` and read through it. Confirm:
 - `dist/cli.js` is present (the compiled binary)
 - `.prism/rules/`, `.prism/architect/`, `.prism/spec/`, `.prism/references/`, `.prism/templates/`, `.prism/SPEC.md` are present
 - `.prism/.sync-manifest.json` is present
-- `templates/install/` is present
+- `templates/install/` is present — including `templates/install/.claude/hooks/` (the enforcement floor seed: `ownership-guard.mjs`, `run-gates.mjs`, `evidence-ledger.mjs`, `gates.json`, `lib/`) and `templates/install/.claude/settings.json`
 - `.ai-skills/skills/`, `.ai-skills/definitions/roles.json`, `.ai-skills/definitions/paths.json`, `.ai-skills/config.json` are present
 - `scripts/` is **not** present (build-time only)
 - No files from `.prism/plans/`, `.prism/audits/`, `.prism/retros/`, `.prism/prds/`, `.prism/changelogs/`, `.prism/archived/`, `.prism/lessons.md`, or any `conductor-state*.json` or `audit-state.json`
@@ -106,7 +106,7 @@ Run through this before every publish:
 - [ ] `pnpm run prism:check` passes (green)
 - [ ] `npm pack` completes without error
 - [ ] Leak audit grep prints `CLEAN — no operational tree in tarball`
-- [ ] `/tmp/prism-tarball-contents.txt` reviewed by a human — expected paths present, `scripts/` absent
+- [ ] `/tmp/prism-tarball-contents.txt` reviewed by a human — expected paths present, `scripts/` absent, `templates/install/.claude/hooks/` present (enforcement floor seed)
 - [ ] `npm whoami` confirms you're authenticated to the `@huntermcgrew` scope
 
 ## Immutability and unpublish policy
