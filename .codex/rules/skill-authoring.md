@@ -54,6 +54,10 @@ Sort every section by **load-frequency × trigger-determinism**:
 
 **The test that resolves most calls:** would a session that never uses this content still be a valid run of the skill? Yes → it can leave the body. No → it pins.
 
+**The hard floor under the gate.** The gate is qualitative judgment; the build enforces a hard ceiling underneath it. The generated Claude `SKILL.md` body caps at **500 lines** (`MAX_SKILL_BODY_LINES` in `scripts/ai-skills/utils.ts`, asserted for every skill by `discovery-metadata.test.ts` — failure reads `Body for '<skillId>' is N lines (max 500)`). The count is taken on the *generated* body (`shared.md` + the platform file), not on `shared.md` alone, so a source file comfortably under 500 can still breach once the platform file concatenates. Passing the gate and feeling "lean enough" does not guarantee passing the cap — a rewrite that satisfies the disclosure judgment can still fail CI silently if it never checks the line count. When a body approaches the ceiling, the gate isn't optional polish — it's the mechanism that gets you back under. `pnpm prism:test` (or `pnpm prism:build`) is the local check; run it before relying on the gate alone.
+
+**A worked example of heavy externalization.** `prism-conductor` (Sol) is the canonical reference: a lean `shared.md` that pins the persona, the lens, and the workflow router, with whole steps externalized to `step-NN-*.md` and procedures to `lib/*.md`, each cited from the body by an imperative trigger naming the exact file and condition. When a body won't fit under the ceiling without dropping a lens, that's the shape to copy — pin the lenses, move the steps and procedures, cite them deterministically.
+
 ## Always pin
 
 Never externalize these, regardless of length:
