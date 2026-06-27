@@ -32,6 +32,24 @@ This is a utility skill — it carries no persona. It runs in the active persona
 voice and adds no identity of its own (per
 [ADR-0046](../../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
+## Opening Orientation Battery
+
+Run this battery once, immediately after the mode is determined and before any
+file is written, so the scope and intent are clear before the first edit.
+
+1. **Intent** — in one sentence, what is the user asking to create or migrate
+   (the outcome, not the literal words)?
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For
+   each: load-bearing (must resolve before starting) or non-load-bearing (proceed
+   on a documented default)? **Calibration:** there is no user available
+   mid-dispatch — do not stall; for each load-bearing gap pick a defensible
+   default, state the assumption, and proceed. Escalate only by the floor's
+   verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely
+   blocks — never by a question into the void.
+3. **Bounds** — what does "done" look like, and what must I not touch?
+4. **Approach** — what is the smallest correct approach; is there a simpler
+   framing than the obvious one?
+
 ## Shared conventions (both modes)
 
 - **Skill ID namespace.** PRISM owns `prism-*` IDs and the sync regenerates only
@@ -75,9 +93,13 @@ collecting anything else:
   adapter. Choose this when the skill is a procedure ("compact this session",
   "run the review loop"), not an identity.
 
-If the proposed persona overlaps an existing one's domain, stop and route to
-Winston (`prism-architect`) — a new persona that duplicates an existing lens is
-an architecture decision, not a scaffolding task.
+**Procedure A — Domain overlap detected.** When the proposed persona's stated
+domain overlaps an existing persona's: read the existing persona's `shared.md`
+and confirm whether the domains genuinely collide (same lens, same trigger
+phrases, same artifact type) or merely touch (adjacent subject matter). **Escape:**
+if genuine collision is confirmed, emit `needs-replan` — name both personas, the
+overlapping domain, and why a new persona is an architectural decision for
+Winston, not a scaffolding task. Do not proceed to Step 2 until this is resolved.
 
 ### Step 2 — Collect inputs
 
@@ -124,6 +146,15 @@ passes. For a **utility** skill, confirm the build wrote **no**
 `.codex/agents/<id>.toml` (the adapter gate is `roleDefinition.type !== "utility"`
 in `build.ts`). For a **persona** skill, confirm the adapter *was* written. Then
 run `pnpm prism:check-types` clean.
+
+**Procedure B — Build fails after source is written.** Run `pnpm prism:build`
+and read the first error line. Form one hypothesis about the cause (YAML syntax
+error in the skill body, line-count limit exceeded, missing `roles.json` entry,
+broken link where the target file exists but the path is mistyped). Make the
+smallest edit that tests the hypothesis. If wrong, form the next. Fix the
+source — never the generated output. **Escape:** after three hypotheses fail,
+emit `needs-human` — name the failing hypothesis, the exact build error, and
+which source file is suspect. Do not continue with a broken build.
 
 ## Migrate mode — decompose a generated skill into canonical source
 
@@ -180,6 +211,16 @@ migration script.
   token, but flag every uncertain case for human review — never block the
   migration on it.
 
+**Procedure C — Persona/utility disambiguation is ambiguous.** When the source
+skill has no clear type signal (no "You are X" opener, no `type: utility` in any
+found TOML), read the skill body: does it name a persona who introduces itself,
+have a domain lens, and carry trigger phrases routing to that name? If yes →
+persona. If the body opens with a procedure and carries no self-introduction →
+utility. **Escape:** if the type genuinely cannot be determined from the source
+(body is incomplete, stripped, or conflicted), emit `needs-human` — name the
+source file, quote the ambiguous signals, and ask the user to declare the type.
+Do not guess and register the wrong type.
+
 ### Step 4 — Recover per-platform deltas (nice-to-have)
 
 If multiple platform copies of the same skill exist, diff them to recover
@@ -199,6 +240,23 @@ block.
   produces the platform output the migration started from, minus team-specific
   literals you re-tokenized).
 
+**Procedure D — Build or round-trip fails after migrate.** Run `pnpm prism:build`
+and read the first error. If it is a line-count or description-length limit, the
+source extracted more content than the pipeline allows — trim to the limits
+(`MAX_SKILL_BODY_LINES` = 500 lines, `MAX_FRONTMATTER_DESCRIPTION_LENGTH` = 1000
+chars) and re-run. If the round-trip mismatches, compare the regenerated output
+to the original platform copy with a diff; the delta names what the extraction
+missed or over-included. Fix the canonical source to produce the correct output.
+**Escape:** if the build exits non-zero after three targeted fixes and the error
+points to a structural pipeline constraint — a referenced surface that does not
+exist in the pipeline at all, a `roles.json` schema field the pipeline does not
+support, a YAML shape the pipeline cannot parse regardless of content — emit
+`needs-replan`: name the constraint, the exact error, and what pipeline change
+would be needed to proceed. Tell: a broken link where the target file exists is a
+source typo (Procedure B → `needs-human`); a broken link where the referenced
+surface has no pipeline entry is structural (Procedure D → `needs-replan`).
+Do not continue with a mismatched or failing build.
+
 ## Adjacent — migrating hand-authored rules (not v1)
 
 Migrating a hand-authored Cursor `.mdc` rule (with `globs:` / `alwaysApply:`
@@ -207,3 +265,23 @@ frontmatter) into a canonical `.prism/rules/<name>.md` requires the reverse of
 `.mdc` frontmatter back into canonical rule shape. This is a small adjacent
 capability, not part of this skill's v1. Flag it if a user asks; route to a
 follow-up.
+
+## Closing Re-Orientation Battery
+
+Run this battery once, immediately before reporting the skill as complete, so
+the scope and correctness are confirmed before stopping.
+
+1. **Scope boundary** — what files did I write or modify; is any of it outside
+   what was named (source dir, `roles.json`, build verification)? What adjacent
+   files did I notice and leave alone? Emit `found-followup-work` per
+   [`.prism/rules/followup-scope.md`](../../../.prism/rules/followup-scope.md)
+   § worker-emit pre-filter for anything left alone that warranted it.
+2. **Unasked assumptions** — what did the request not specify that my work
+   nonetheless decided? Name each silent decision (persona vs utility choice,
+   namespace prefix, which platform files were omitted).
+3. **Edge recall** — what boundary inputs does this skill now handle on purpose:
+   empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at the
+   line-count limit, a TOML source with no persona opener?
+4. **Verification honesty** — for each claim of completion, what is the evidence:
+   did `pnpm prism:build` exit clean, did `pnpm prism:build --check` report no
+   drift, did `pnpm prism:crossref-lint` pass? Where am I asserting without proof?
