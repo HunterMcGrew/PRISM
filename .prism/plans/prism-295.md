@@ -1,4 +1,4 @@
-﻿# Plan: prism-295
+# Plan: prism-295
 
 ## Ticket
 
@@ -60,6 +60,7 @@ Add entries here via the design skill (Pixel). Optional — not all tickets need
 - 2026-06-27 [hmcgrew/295-phase5-pr3-classc]: Authored Class C gates.json entries for 10 personas (vera, kora, ellis, charlie, quinn, tess, remy, penny, lex, sol); triplet byte-identical, smoke 16/16, crossref clean.
 - 2026-06-27 [hmcgrew/295-git-guard-hardening]: Closed CRITICAL-1 (embedded/prefixed command substitution bypass) and CRITICAL-2 (directory pathspec + :(top) magic bypass) in ownership-guard.mjs; added extractSubstitutionBodies (BFS), stripPathspecMagic, pathspecCoversProtectedDirectory helpers; extended Scenario N with 10+1 probes; smoke all green, triplet byte-identical, crossref clean.
 - 2026-06-27 [hmcgrew/295-git-guard-hardening]: Closed Eric PR #351 closure list: CRITICAL-A (:/ top-of-tree), CRITICAL-B (:! :^ :!/ exclude shorthands), CRITICAL-C (<() >() process substitution), MAJOR-D (__smoke__ carveout in pathspecCoversProtectedDirectory), MINOR-E (checkout -b/-c create-branch permit); extended Scenario N with 16 new sub-tests (N.ad-N.as); smoke all green, triplet byte-identical, crossref clean.
+- 2026-06-27 [hmcgrew/295-git-guard-hardening]: Closed final Critical (PR #289 floor, stacked-magic class) — made stripPathspecMagic a fixpoint loop and added reject-if-still-magic belt-and-suspenders; extended Scenario N with 7 stacked-magic sub-tests (N.at-N.az including non-protected PERMIT control); smoke all green, triplet byte-identical, crossref clean.
 
 ---
 

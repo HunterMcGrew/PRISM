@@ -728,14 +728,23 @@ function targetsEvidence(token) {
  * path and closes the pathspec-magic bypass vector (CRITICAL-2 / Eric PR `#351`).
  *
  * The `:/` top-of-tree form is special: after stripping `:/` the remainder is
- * repo-root-relative, so it is normalized against projectDir (not cwd) by returning
- * a descriptor that the caller honors.
+ * repo-root-relative, so it is normalized against projectDir (not cwd). The flag
+ * is set on the first `:/` encounter and held through the fixpoint loop.
  *
  * Shell quoting (single or double quotes wrapping the whole token) is stripped first,
  * because the hook receives the literal command string with quote characters intact.
  *
- * Returns { path: string, useProjectDir: boolean } so the caller can choose the
- * correct base directory for normalization.
+ * Strip runs as a fixpoint loop — the loop repeats until the token stops shrinking.
+ * A single pass misses stacked magic signatures (e.g. `:/!path` strips `:/` to leave
+ * `!path`, which requires a second pass to strip the `!`). The loop closes the entire
+ * stacking class regardless of depth or order.
+ *
+ * Belt-and-suspenders: if after the loop the remainder still begins with a recognized
+ * magic character (`:` or `!`), the token is treated as protected/deny — an opaque
+ * magic form that the parser cannot fully resolve is as dangerous as a known one.
+ *
+ * Returns { path: string, useProjectDir: boolean, rejectIfStillMagic: boolean } so the
+ * caller can choose the correct base directory and apply the reject-if-still-magic guard.
  */
 function stripPathspecMagic(raw) {
   // Strip surrounding shell quotes — the hook receives the literal command text, so
@@ -744,19 +753,33 @@ function stripPathspecMagic(raw) {
       (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1);
   }
-  // Long-form magic: :(word) or :(word,word,...) at the start of the token
-  const longForm = raw.match(/^:\([^)]*\)(.*)/);
-  if (longForm) return { path: longForm[1], useProjectDir: false };
-  // Short-form top-of-tree: :/ — remainder is repo-root-relative, normalize against projectDir
-  if (raw.startsWith(':/')) return { path: raw.slice(2), useProjectDir: true };
-  // Short-form exclude shorthands: :! :^ :!/ — whole-tree-minus-one restore ops;
-  // strip the magic prefix and treat the remainder as a normal path (cwd-relative)
-  if (raw.startsWith(':!/')) return { path: raw.slice(3), useProjectDir: false };
-  if (raw.startsWith(':!')) return { path: raw.slice(2), useProjectDir: false };
-  if (raw.startsWith(':^')) return { path: raw.slice(2), useProjectDir: false };
-  // Short-form exclude magic: standalone ! prefix
-  if (raw.startsWith('!')) return { path: raw.slice(1), useProjectDir: false };
-  return { path: raw, useProjectDir: false };
+
+  let useProjectDir = false;
+
+  // Fixpoint loop: strip one magic prefix per iteration until the token stops shrinking.
+  // This closes stacked-magic forms (e.g. :/!path, :!:/path, :^:/path) regardless of
+  // depth or ordering — there is no stack-depth left to enumerate.
+  let prev;
+  do {
+    prev = raw;
+    // Long-form magic: :(word) or :(word,word,...) at the start of the token
+    const longForm = raw.match(/^:\([^)]*\)(.*)/s);
+    if (longForm) { raw = longForm[1]; continue; }
+    // Short-form top-of-tree: :/ — remainder is repo-root-relative; set useProjectDir flag
+    if (raw.startsWith(':/')) { raw = raw.slice(2); useProjectDir = true; continue; }
+    // Short-form exclude shorthands (longest prefix first to avoid partial matches)
+    if (raw.startsWith(':!/')) { raw = raw.slice(3); continue; }
+    if (raw.startsWith(':!'))  { raw = raw.slice(2); continue; }
+    if (raw.startsWith(':^'))  { raw = raw.slice(2); continue; }
+    // Short-form exclude magic: standalone ! prefix
+    if (raw.startsWith('!'))   { raw = raw.slice(1); continue; }
+  } while (raw !== prev);
+
+  // Belt-and-suspenders: an opaque magic prefix still present after the loop signals an
+  // unrecognized stacking form — treat it as protected/deny rather than passing it through.
+  const rejectIfStillMagic = raw.startsWith(':') || raw.startsWith('!');
+
+  return { path: raw, useProjectDir, rejectIfStillMagic };
 }
 
 /**
@@ -869,9 +892,12 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
       }
       for (const raw of pathspecs) {
         // Strip pathspec magic before normalization so :(top), :/, :!, :^, :!/ prefixes do not
-        // hide the path. stripPathspecMagic returns { path, useProjectDir } — the :/ top-of-tree
-        // form is repo-root-relative and must be normalized against projectDir, not cwd.
-        const { path: stripped, useProjectDir } = stripPathspecMagic(raw);
+        // hide the path. The fixpoint loop in stripPathspecMagic removes all stacked magic forms;
+        // rejectIfStillMagic fires when an opaque prefix survives the loop (treat as protected).
+        const { path: stripped, useProjectDir, rejectIfStillMagic } = stripPathspecMagic(raw);
+        if (rejectIfStillMagic) {
+          return { tier: 1, path: raw, subcommand };
+        }
         const base = useProjectDir ? projectDir : cwdBase;
         const target = normalizeWriteTarget(stripped, base);
         if (isEnforcementSourceProtected(target) || pathspecCoversProtectedDirectory(target)) {

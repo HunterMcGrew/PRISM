@@ -1936,12 +1936,54 @@ function assert(scenarioName, condition, message) {
     const okNas = assert(name, rNas.code === 2,
       `N.as: git checkout main (bare branch switch, not -b) — expected exit 2, got ${rNas.code}. stderr: ${rNas.stderr.substring(0, 300)}`);
 
+    // --- Stacked pathspec magic: fixpoint-loop closure (PR #289 floor Critical) ---
+    // Each test stacks two or more magic prefixes onto a pathspec. The fixpoint loop in
+    // stripPathspecMagic must reduce every stack to the bare path before the protection
+    // check fires. Non-protected paths with stacked magic must still PERMIT (no over-block).
+
+    // N.at: :/!<protected> — stacked :/ (top) + ! (exclude) on a protected file → DENY
+    const rNat = runGuardBash("git checkout HEAD -- ':/!.ai-skills/hooks/gates.json'");
+    const okNat = assert(name, rNat.code === 2,
+      `N.at: :/! stacked magic on protected path — expected exit 2 (fixpoint loop), got ${rNat.code}. stderr: ${rNat.stderr.substring(0, 300)}`);
+
+    // N.au: :!:/<protected> — stacked :! (exclude) + :/ (top) on a protected file → DENY
+    const rNau = runGuardBash("git checkout HEAD -- ':!:/.ai-skills/hooks/gates.json'");
+    const okNau = assert(name, rNau.code === 2,
+      `N.au: :!:/ stacked magic on protected path — expected exit 2 (fixpoint loop), got ${rNau.code}. stderr: ${rNau.stderr.substring(0, 300)}`);
+
+    // N.av: :^:/<protected> — stacked :^ (caret-exclude) + :/ (top) on a protected file → DENY
+    const rNav = runGuardBash("git checkout HEAD -- ':^:/.ai-skills/hooks/gates.json'");
+    const okNav = assert(name, rNav.code === 2,
+      `N.av: :^:/ stacked magic on protected path — expected exit 2 (fixpoint loop), got ${rNav.code}. stderr: ${rNav.stderr.substring(0, 300)}`);
+
+    // N.aw: :(top):(exclude)<protected> — two long-form magic stacked on a protected file → DENY
+    const rNaw = runGuardBash("git checkout HEAD -- ':(top):(exclude).ai-skills/hooks/gates.json'");
+    const okNaw = assert(name, rNaw.code === 2,
+      `N.aw: :(top):(exclude) long-form stack on protected path — expected exit 2 (fixpoint loop), got ${rNaw.code}. stderr: ${rNaw.stderr.substring(0, 300)}`);
+
+    // N.ax: depth-3 stack :/!:(exclude)<protected> — three prefixes, fixpoint resolves all → DENY
+    const rNax = runGuardBash("git checkout HEAD -- ':/!:(exclude).ai-skills/hooks/gates.json'");
+    const okNax = assert(name, rNax.code === 2,
+      `N.ax: depth-3 :/!:(exclude) stack on protected path — expected exit 2 (fixpoint loop), got ${rNax.code}. stderr: ${rNax.stderr.substring(0, 300)}`);
+
+    // N.ay: :^:/ on a NON-PROTECTED path — stacked magic on a safe path must still PERMIT
+    // (the fixpoint loop must not widen denial beyond protected paths)
+    const rNay = runGuardBash("git checkout HEAD -- ':^:/src/app.ts'");
+    const okNay = assert(name, rNay.code === 0,
+      `N.ay: :^:/ stacked magic on non-protected path — expected exit 0 (no over-block), got ${rNay.code}. stderr: ${rNay.stderr.substring(0, 300)}`);
+
+    // N.az: :/!<protected> in $() substitution — stacked magic inside subst body → DENY
+    const rNaz = runGuardBash("echo $(git checkout HEAD -- ':/!.ai-skills/hooks/gates.json')");
+    const okNaz = assert(name, rNaz.code === 2,
+      `N.az: :/! stacked magic inside $() substitution — expected exit 2 (fixpoint + subst extraction), got ${rNaz.code}. stderr: ${rNaz.stderr.substring(0, 300)}`);
+
     const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq,
                   okNr, okNs, okNt, okNu, okNv, okNw, okNx, okNy, okNz, okNaa, okNac,
                   okNad, okNae, okNaf, okNag, okNah, okNai, okNaj,
                   okNak, okNal, okNam, okNan,
                   okNao, okNap,
-                  okNaq, okNar, okNas];
+                  okNaq, okNar, okNas,
+                  okNat, okNau, okNav, okNaw, okNax, okNay, okNaz];
     if (allN.every(Boolean)) {
       console.log(`${PASS} ${name}`);
     } else {
