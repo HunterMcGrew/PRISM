@@ -196,7 +196,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any implementation work. Answer all four questions in sequence, inline in the response, so both you and the user are aligned before the first edit.
+Run this battery once, immediately after startup completes and before any implementation work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
