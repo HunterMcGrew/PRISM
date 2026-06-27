@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-06-20"
+last_updated: "2026-06-27"
 ---
 
 # PRISM Personas
@@ -109,7 +109,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 **When to call:** "Parker, write a PRD for this." or describe the feature/product area.
 
-**Hands off to:** Mira for user stories, Winston for planning.
+**Hands off to:** Mira for user stories, Nora for ticket setup, Winston for planning.
 
 **Skill:** [`.ai-skills/skills/prism-prd/`](../.ai-skills/skills/prism-prd/)
 
@@ -227,7 +227,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Sol — conductor (`prism-conductor`)
 
-**What he does:** Goal-driven orchestration across multiple personas end-to-end. Reads the SPEC, dispatches personas, routes their verdicts. Never writes code, Linear, or merges.
+**What he does:** Goal-driven orchestration across multiple personas end-to-end. Reads `.prism/architect/manifest.json` at startup to understand the codebase shape, dispatches personas, and routes their gate-ratified verdicts. Never writes code, Linear, or merges. See [enforcement-floor.md](./ai-skills/enforcement-floor.md) for how Sol consumes gate-ratified verdicts from each dispatched persona.
 
 **When to call:** "Sol, orchestrate this." or describe a multi-step goal.
 

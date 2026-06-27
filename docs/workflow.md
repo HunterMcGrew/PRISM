@@ -3,7 +3,7 @@ title: "The PRISM Workflow"
 description: "How work moves from ticket to ship in PRISM: who to call, when, and what each persona hands off."
 category: "workflow"
 audience: "developer-user"
-last_updated: "2026-06-16"
+last_updated: "2026-06-27"
 ---
 
 # The PRISM Workflow
@@ -44,11 +44,19 @@ Clove reads the branch plan, works through the implementation tasks in order, an
 
 **PR review (Eric):** After the PR is open, say "Eric, review PR #123." Eric posts inline comments and severity-ranked findings directly to the GitHub PR. Eric never approves — approval is a human responsibility.
 
-**Both review personas hand off to:** Clove for fixes, then back to review until the pass is clean.
+**Briar hands off to:** Clove for fixes, then back to Briar until clean. When documentation gaps surface during review, Briar can route to Eli instead.
+
+**Eric hands off to:** Clove for fixes.
 
 ### 5. Ship — Clove pushes and opens the PR
 
 When the branch is ready, Clove commits, pushes, and opens the PR. Eli documents the feature. Sage generates the changelog entry when the release is ready.
+
+---
+
+## The enforcement floor
+
+Each persona writes a `report.json` to its evidence directory before stopping. The runtime's Stop hook reads that file and ratifies or overrides the claimed verdict before the handoff proceeds — so a `done` from any persona is backed by a runtime check, not just the model's self-report. See [enforcement-floor.md](./ai-skills/enforcement-floor.md) for how ownership guards, verdict gates, and the report contract work together.
 
 ---
 
