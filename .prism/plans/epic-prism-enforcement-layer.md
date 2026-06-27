@@ -851,24 +851,24 @@ All three pass. Two separate harness entry points: `node .claude/hooks/__smoke__
 
 ### Behavioral
 
-- [ ] Given a persona claims completion while a required check is failing, When the session attempts to stop, Then it is prevented from stopping and is told which check failed with the real failure output.
-- [ ] Given a persona is asked to write to a file outside its ownership lane, When it attempts the write, Then the write is denied before it happens with a message naming the allowed paths.
-- [ ] Given a persona is asked to run a forbidden command (e.g. a merge), When it attempts the command, Then the command is denied before it runs.
-- [ ] Given a persona cannot pass its checks after three attempts, When it stops, Then its reported verdict is the escalation outcome, not a false success, and the run routes to a stronger-model escalation.
-- [ ] Given an enforced persona run under orchestration (as a subagent), When it finishes, Then the same enforcement applies as in a solo run (no silent bypass).
-- [ ] Given two enforced personas run concurrently in a fleet, When both record evidence, Then one lane's failures do not affect the other lane's completion.
-- [ ] Given a non-persona helper subagent (e.g. a search agent) runs, When it uses tools, Then enforcement stays out of its way.
-- [ ] Given a persona finishes without declaring where its work hands off, When it tries to stop, Then it is prevented from stopping until it names a valid next route.
-- [ ] Given a persona names a next route that contradicts its own verdict, When it tries to stop, Then it is prevented from stopping until the route and verdict agree.
-- [ ] Given enforcement runs without Sol (solo invocation), When a persona completes, Then the handoff destination is present and coherent for the human to act on — never auto-executed.
+- [x] Given a persona claims completion while a required check is failing, When the session attempts to stop, Then it is prevented from stopping and is told which check failed with the real failure output.
+- [x] Given a persona is asked to write to a file outside its ownership lane, When it attempts the write, Then the write is denied before it happens with a message naming the allowed paths.
+- [x] Given a persona is asked to run a forbidden command (e.g. a merge), When it attempts the command, Then the command is denied before it runs.
+- [x] Given a persona cannot pass its checks after three attempts, When it stops, Then its reported verdict is the escalation outcome, not a false success, and the run routes to a stronger-model escalation.
+- [x] Given an enforced persona run under orchestration (as a subagent), When it finishes, Then the same enforcement applies as in a solo run (no silent bypass).
+- [x] Given two enforced personas run concurrently in a fleet, When both record evidence, Then one lane's failures do not affect the other lane's completion.
+- [x] Given a non-persona helper subagent (e.g. a search agent) runs, When it uses tools, Then enforcement stays out of its way.
+- [x] Given a persona finishes without declaring where its work hands off, When it tries to stop, Then it is prevented from stopping until it names a valid next route.
+- [x] Given a persona names a next route that contradicts its own verdict, When it tries to stop, Then it is prevented from stopping until the route and verdict agree.
+- [x] Given enforcement runs without Sol (solo invocation), When a persona completes, Then the handoff destination is present and coherent for the human to act on — never auto-executed.
 
 ### Non-behavioral
 
-- [ ] Every persona has an ownership matrix and a typed report contract; evidence gates are present per the class taxonomy.
-- [ ] Command strings exist in exactly one source (`config.json`); `gates.json` references tokens; `verification-commands.md` renders the same data.
-- [ ] `prism:check` detects drift in the hooks, `settings.json`, and `gates.json`; seed-twin discipline holds for consumer install.
-- [ ] No skill body is bloated by the ceiling pass — the `skill-authoring.md` disclosure gate is applied per rewrite.
-- [ ] The enforcement layer functions with Sol absent (solo invocation) with no loss of guarantee — only the routing automation differs.
+- [x] Every persona has an ownership matrix and a typed report contract; evidence gates are present per the class taxonomy.
+- [x] Command strings exist in exactly one source (`config.json`); `gates.json` references tokens; `verification-commands.md` renders the same data.
+- [x] `prism:check` detects drift in the hooks, `settings.json`, and `gates.json`; seed-twin discipline holds for consumer install.
+- [x] No skill body is bloated by the ceiling pass — the `skill-authoring.md` disclosure gate is applied per rewrite.
+- [x] The enforcement layer functions with Sol absent (solo invocation) with no loss of guarantee — only the routing automation differs.
 
 ### AC Sync Log
 
@@ -1282,6 +1282,7 @@ All three items were resolved by Issue #300 (gate-fix + canonical-source split p
 - 2026-06-27 [main]: Merge-train backfill (per-lane History appends dropped during conflict resolution) — Phase 5 PR2 #348 (Class B ownership + gate specs), PR3 #349 (Class C ownership + contract gates), PR4 #350 (startup persona-resolve lines, task 3) completed the roster floor rollout; docs landed the canonical user-facing `docs/ai-skills/enforcement-floor.md` (#353), drift+floor-pointer fixes across core/persona/distribution docs (#354/#355/#356), and the README install/Commands/repo-shape fix (#352). All on `main`; the floor spine (#345–#351) and the ceiling roster (#316–#344) are shipped and merged.
 - 2026-06-27 [hmcgrew/289-epic-close]: Epic closed — promoted the at-close decisions to durable surfaces (ADR-0067 flipped to `accepted`; added part 6 always-on + maintenance mode, extended part 4 with escape-verdict typing + orientation/re-orientation batteries, extended part 5 with the complete Bash-segmentation grammar + git-mutation closure; `enforcement-floor.md` gained universal primitive 4 lawful maintenance and the two ceiling sub-sections). Ran the decision verdict gate — all 34 Decisions now carry an explicit verdict sub-bullet (8 early Phase-0/1 mechanism decisions back-filled). Floor re-enable + fleet integrity test remain the human-gated final step (not part of this close); `enforcementHooksDisabled` untouched.
 - 2026-06-27 [hmcgrew/289-reenable-floor]: Restored the four hook wirings in `.ai-skills/hooks/settings.json` (the canonical source) from the pre-disable commit, ran `tsx scripts/ai-skills/build.ts` to emit byte-identical copies to `.claude/settings.json` and `templates/install/.claude/settings.json`; `build.ts --check` no drift, smoke 14/14, crossref-lint clean. Re-enable checklist item checked.
+- 2026-06-27 [hmcgrew/prism-289-tail-ac-tick]: Close-tail AC verification — re-ran both smoke suites (`run-all.mjs` A–N all pass, `fleet-keying.mjs` E1–E3 all pass) and mapped each of the 15 AC items to first-hand smoke evidence or plan-recorded proof; ticked all 15 from `[ ]` to `[x]`. No code changes — plan bookkeeping only.
 
 ---
 
