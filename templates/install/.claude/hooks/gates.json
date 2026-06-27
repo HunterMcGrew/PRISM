@@ -51,7 +51,7 @@
       "code quality — whether Clove's implementation is correct, not just that types and tests pass",
       "design soundness — whether the approach matches the plan's intent"
     ],
-    "allowed_routes": ["briar", "human", "clove", "winston"],
+    "allowed_routes": ["briar", "human", "clove", "winston", "eric"],
     "ownership": {
       "may_write": [
         "src/**",
@@ -76,6 +76,112 @@
         "rm -f .prism/evidence",
         "rm -fr .prism/evidence",
         "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "sage": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "tags-resolve",
+        "description": "Both git tags referenced in the changelog resolve in the repo",
+        "checklist_key": "tags-resolve",
+        "source": "fresh",
+        "check": {
+          "kind": "command",
+          "command": "git tag -l"
+        },
+        "on_fail": "done-override"
+      },
+      {
+        "id": "changelog-file-written",
+        "description": "Changelog output file exists at the path Sage reported",
+        "checklist_key": "changelog-file-written",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/changelog-path.txt"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "categorization accuracy — whether commits were placed in the correct category",
+      "consolidation judgment — whether related commits were correctly merged into single entries"
+    ],
+    "allowed_routes": ["human"],
+    "ownership": {
+      "may_write": [
+        "CHANGELOG.md",
+        "docs/**/*.md",
+        "**/*.changelog.md",
+        ".prism/evidence/**/report.json",
+        ".prism/evidence/**/changelog-path.txt"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force"
+      ]
+    }
+  },
+  "atlas": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [
+      {
+        "id": "config-validates",
+        "description": "config.json passes JSON Schema validation against config.schema.json",
+        "checklist_key": "config-validates",
+        "source": "fresh",
+        "check": {
+          "kind": "file-exists",
+          "path": ".ai-skills/config.json"
+        },
+        "on_fail": "done-override"
+      }
+    ],
+    "unverifiable_boxes": [
+      "detection accuracy — whether the detected stack matches the team's actual stack",
+      "rule quality — whether generated rules reflect the team's real engineering standards"
+    ],
+    "allowed_routes": ["human", "winston"],
+    "ownership": {
+      "may_write": [
+        ".ai-skills/config.json",
+        ".ai-skills/registry/**",
+        ".prism/rules/**",
+        ".ai-skills/skills/**",
+        "AGENTS.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force"
       ]
     }
   }
