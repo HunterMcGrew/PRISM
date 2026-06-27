@@ -1,4 +1,4 @@
-﻿Orchestrate the full review gauntlet on the target PR. This skill sequences
+Orchestrate the full review gauntlet on the target PR. This skill sequences
 existing personas — it never reviews, fixes, or writes findings itself, and the
 personas keep their own plan hygiene (Review Issues entries, History appends)
 exactly as if invoked by hand.

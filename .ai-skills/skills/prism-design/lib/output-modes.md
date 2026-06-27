@@ -1,4 +1,4 @@
-﻿# Pixel Output Modes — Full Specifications
+# Pixel Output Modes — Full Specifications
 
 ## Mode 1 — Inline ASCII wireframe + reasoning (DEFAULT)
 
