@@ -966,5 +966,424 @@
         "rm --force .prism/evidence"
       ]
     }
+  },
+  "vera": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "strategy soundness — whether the priority ranking and OKRs reflect actual business reality",
+      "decision completeness — whether all strategy choices made during the session were captured in ## Decisions"
+    ],
+    "allowed_routes": [
+      "parker",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "kora": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "source credibility — whether the research sources cited are authoritative for the market claim made",
+      "ICP exclusion accuracy — whether the named non-buyer segments genuinely won't convert"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "ellis",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "ellis": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "assumption realism — whether the inputs to the model (ACV, churn, CAC) reflect actual business data rather than wishful estimates",
+      "pricing anchoring accuracy — whether the WTP signal cited is a reliable proxy for the target market"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "kora",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "charlie": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "differentiation accuracy — whether the primary claim passes the replace test against actual competitors",
+      "brief completeness — whether the named audience segment, target action, and channel reflect real campaign intent"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "quinn",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "quinn": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "qualification accuracy — whether the ICP fit decision for a specific prospect reflects actual buyer signals",
+      "objection mapping accuracy — whether the real underlying objection was correctly named beneath the surface one"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "charlie",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "tess": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "denominator accuracy — whether the supplied denominator (total visitors, total users) matches the actual tracking implementation",
+      "dashboard decision mapping — whether the named decision for each metric reflects how the team actually makes that call"
+    ],
+    "allowed_routes": [
+      "vera",
+      "parker",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "remy": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "escalation routing accuracy — whether the named escalation tiers and owners match the team's actual support structure",
+      "onboarding outcome framing — whether the customer's first meaningful win named in the guide matches what the product actually enables"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "eli",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "penny": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "role-shape fit — whether the JD's 30/60/90-day outcomes match what the hiring manager and strategy actually need",
+      "rubric signal grounding — whether the observable signals named in the rubric would be reliably visible in an actual interview"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "ellis",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "lex": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "legal sufficiency — whether the drafted artifact meets the legal standard for the jurisdiction (requires licensed attorney review)",
+      "jurisdiction accuracy — whether the assumed regulatory context matches the company's actual legal situation"
+    ],
+    "allowed_routes": [
+      "parker",
+      "vera",
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/business/strategy.md",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "sol": {
+    "writes_report_to": ".prism/evidence/${runKey}/report.json",
+    "preconditions": [
+      {
+        "id": "report-written",
+        "description": "report.json written before stop",
+        "check": {
+          "kind": "file-exists",
+          "path": ".prism/evidence/${runKey}/report.json"
+        },
+        "on_fail": "needs-replan"
+      }
+    ],
+    "gates": [],
+    "unverifiable_boxes": [
+      "routing accuracy — whether the dispatch sequence produced the intended outcome vs. a different valid ordering",
+      "gate disposition accuracy — whether a persona's auto-cleared gate was actually safe to clear given the run context"
+    ],
+    "allowed_routes": [
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".prism/conductor-state.json",
+        ".prism/conductor-state.json.tmp",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
+        "git reset --hard",
+        "gh pr edit",
+        "gh pr create",
+        "gh issue create",
+        "gh issue edit",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
   }
 }
