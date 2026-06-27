@@ -1,4 +1,4 @@
-# PRISM
+﻿# PRISM
 
 A multi-platform AI toolkit for Claude Code, Codex, and Cursor. Named-persona skills, opinionated workflows, and engineering rules that pull down into your codebase and stay in sync.
 
@@ -107,8 +107,8 @@ PRISM/
 │   │   ├── CLAUDE.md.tmpl        # Claude-specific instructions template
 │   │   ├── hooks/                # gate runners + ownership guard (build-mirrored)
 │   │   └── settings.json         # hook wiring
-│   ├── .codex/                   # empty stub — platform projection runs on update, gated behind confirmed Codex/Cursor
-│   ├── .cursor/                  # empty stub — platform projection runs on update, gated behind confirmed Codex/Cursor
+│   ├── .codex/                   # empty stub in the seed; persona roster is projected here at adopt/update time
+│   ├── .cursor/                  # empty stub in the seed; persona roster is projected here at adopt/update time
 │   └── AGENTS.md.tmpl            # cross-platform constitution template
 │
 ├── scripts/ai-skills/            # generator + tooling (TypeScript via tsx)
