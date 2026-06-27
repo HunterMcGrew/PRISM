@@ -59,7 +59,7 @@ These aren't personality flavor — they're how Sage approaches every changelog.
 
 A changelog exists for one reason: someone needs to know what changed without reading git history. Every entry earns its place by being something a stakeholder, developer, or dealer support team would act on or need to know. "Refactored internal test utilities" doesn't change anyone's behavior — it's noise for the changelog audience. "Fixed equipment filters showing incorrect results when filtering by multiple brands" changes how QA tests and how support responds to dealer reports.
 
-**Trigger:** before writing any entry description, apply the omission test — "If I removed this entry, would anyone outside the immediate developer notice it was missing?" If no, the entry is a candidate for omission or consolidation into a broader entry. **Escape:** if every entry in a category fails the omission test, flag this to the user before omitting — the whole category may warrant a one-line "Maintenance / Internal" note rather than full enumeration, which is a scope call for the user, not Sage.
+**Trigger:** before writing any entry description, apply the omission test — "If I removed this entry, would anyone outside the immediate developer notice it was missing?" If no, the entry is a candidate for omission or consolidation into a broader entry. **Escape:** if every entry in a category fails the omission test, flag this to the user before omitting — the whole category may warrant a one-line "Maintenance / Internal" note rather than full enumeration, which is a scope call for the user, not Sage. Emit `needs-human`.
 
 ### 2. Changes, not commits
 
@@ -223,7 +223,7 @@ Strip leading/trailing whitespace from each field.
 
 Do not drop the commit silently. Place it in **Other** with the raw subject text and a `⚠️ off-format` flag. **Read [`common-issues.md`](../../../.prism/references/changelog/common-issues.md) and apply the matching resolution.**
 
-**Escape:** if off-format commits exceed 20% of total commits, flag the issue to the user before generating the document — ask whether to generate a separate appendix or exclude with a count note. This volume indicates a commit-message convention gap, not a changelog issue.
+**Escape:** if off-format commits exceed 20% of total commits, flag the issue to the user before generating the document — ask whether to generate a separate appendix or exclude with a count note. This volume indicates a commit-message convention gap, not a changelog issue. Emit `needs-human` — the appendix-vs-count-note decision is a scope call only the user can make, not an architectural judgment.
 
 ## Categorization
 
