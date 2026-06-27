@@ -1629,6 +1629,19 @@ function assert(scenarioName, condition, message) {
 //   N.o: maintenance ON → git reset --hard HEAD → PERMIT + ledger written (Tier 2, maintenance unlocks whole-tree)
 //   N.p: maintenance ON → git checkout -- .prism/evidence/r/strikes.json → DENY (Tier 1 gate state, maintenance never unlocks)
 //   N.q: git checkout -- .ai-skills/hooks/gates.json && git status → DENY (Tier 1 path; second segment read-only doesn't rescue first)
+//   --- CRITICAL-1 extended (complete-grammar substitution forms) ---
+//   N.r–N.x: embedded/prefixed/nested/assignment $() and backtick substitutions → DENY
+//   N.ad: cat <(git checkout -- gates.json) — process substitution read form → DENY
+//   N.ae: echo data > >(git checkout -- gates.json) — process substitution write form → DENY
+//   --- CRITICAL-2 extended (complete pathspec-magic grammar) ---
+//   N.y–N.aa: directory pathspec forms and :(top) long form → DENY
+//   N.af: git checkout -- :/.ai-skills/hooks/gates.json — :/ top short form → DENY
+//   N.ag: git checkout -- :!.ai-skills/hooks/gates.json — :! exclude short form → DENY
+//   N.ah: git checkout -- :^.ai-skills/hooks/gates.json — :^ exclude synonym → DENY
+//   N.ai: git checkout -- :/!.ai-skills/hooks/gates.json — stacked short form → DENY
+//   --- Negative controls ---
+//   N.ac: gitfoo checkout (non-git head) → PERMIT
+//   N.aj: git checkout -- .ai-skills/hooks/__smoke__/scenario-x.mjs — smoke carveout → PERMIT
 // ============================================================
 {
   const name = 'N: git working-tree mutation guard';
@@ -1838,8 +1851,53 @@ function assert(scenarioName, condition, message) {
     const okNac = assert(name, rNac.code === 0,
       `N.ac: gitfoo checkout (non-git head) — expected exit 0 (not a git command), got ${rNac.code}. stderr: ${rNac.stderr.substring(0, 300)}`);
 
+    // --- Process substitution probes (complete-grammar re-architecture, PR #351 floor) ---
+
+    // N.ad: <(...) process substitution read form wrapping a protected git checkout → DENY
+    // bash executes the body of <(...) in a subshell regardless of outer context.
+    const rNad = runGuardBash('cat <(git checkout -- .ai-skills/hooks/gates.json)');
+    const okNad = assert(name, rNad.code === 2,
+      `N.ad: cat <(git checkout -- gates.json) — expected exit 2 (process-sub read form), got ${rNad.code}. stderr: ${rNad.stderr.substring(0, 300)}`);
+
+    // N.ae: >(...) process substitution write form wrapping a protected git checkout → DENY
+    // bash executes the body of >(...) in a subshell regardless of outer context.
+    const rNae = runGuardBash('echo data > >(git checkout -- .ai-skills/hooks/gates.json)');
+    const okNae = assert(name, rNae.code === 2,
+      `N.ae: echo data > >(git checkout -- gates.json) — expected exit 2 (process-sub write form), got ${rNae.code}. stderr: ${rNae.stderr.substring(0, 300)}`);
+
+    // --- Pathspec-magic short-form probes (complete-grammar re-architecture, PR #351 floor) ---
+
+    // N.af: :/ (top) short form — git resolves the pathspec from the repo root → DENY
+    const rNaf = runGuardBash('git checkout -- :/.ai-skills/hooks/gates.json');
+    const okNaf = assert(name, rNaf.code === 2,
+      `N.af: git checkout -- :/ (top short form) — expected exit 2 (pathspec magic :/ ), got ${rNaf.code}. stderr: ${rNaf.stderr.substring(0, 300)}`);
+
+    // N.ag: :! (exclude) short form — git treats this as a valid live pathspec → DENY
+    // Strip reveals the protected path; the exclude semantic is irrelevant to the guard.
+    const rNag = runGuardBash('git checkout -- :!.ai-skills/hooks/gates.json');
+    const okNag = assert(name, rNag.code === 2,
+      `N.ag: git checkout -- :! (exclude short form) — expected exit 2 (pathspec magic :!), got ${rNag.code}. stderr: ${rNag.stderr.substring(0, 300)}`);
+
+    // N.ah: :^ (exclude synonym) short form — synonym for :! per git-glossary → DENY
+    const rNah = runGuardBash('git checkout -- :^.ai-skills/hooks/gates.json');
+    const okNah = assert(name, rNah.code === 2,
+      `N.ah: git checkout -- :^ (exclude synonym short form) — expected exit 2 (pathspec magic :^), got ${rNah.code}. stderr: ${rNah.stderr.substring(0, 300)}`);
+
+    // N.ai: stacked :/! form — multiple short-form chars before the path → DENY
+    const rNai = runGuardBash('git checkout -- :/!.ai-skills/hooks/gates.json');
+    const okNai = assert(name, rNai.code === 2,
+      `N.ai: git checkout -- :/! (stacked short form) — expected exit 2 (stacked pathspec magic), got ${rNai.code}. stderr: ${rNai.stderr.substring(0, 300)}`);
+
+    // N.aj: smoke carveout — git checkout on __smoke__ path → PERMIT
+    // isProtectedCanonicalHookPath and pathspecCoversProtectedDirectory both carve out
+    // __smoke__; this probe guards against regression on the directory-check arm.
+    const rNaj = runGuardBash('git checkout -- .ai-skills/hooks/__smoke__/scenario-x.mjs');
+    const okNaj = assert(name, rNaj.code === 0,
+      `N.aj: git checkout -- __smoke__ path — expected exit 0 (smoke carveout), got ${rNaj.code}. stderr: ${rNaj.stderr.substring(0, 300)}`);
+
     const allN = [okNa, okNb, okNc, okNd, okNe, okNf, okNg, okNh, okNi, okNj, okNk, okNl, okNm, okNn, okNo, okNp, okNq,
-                  okNr, okNs, okNt, okNu, okNv, okNw, okNx, okNy, okNz, okNaa, okNac];
+                  okNr, okNs, okNt, okNu, okNv, okNw, okNx, okNy, okNz, okNaa, okNac,
+                  okNad, okNae, okNaf, okNag, okNah, okNai, okNaj];
     if (allN.every(Boolean)) {
       console.log(`${PASS} ${name}`);
     } else {

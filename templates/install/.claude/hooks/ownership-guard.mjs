@@ -720,12 +720,18 @@ function targetsEvidence(token) {
 /**
  * Strips git pathspec magic prefixes before path normalization.
  *
- * Git supports magic signatures like `:(top)`, `:/`, `:(glob)`, `:(literal)`,
- * `:(icase)`, and `:(exclude)` (short form `!`) prepended to a pathspec. These prefixes
- * are git's own syntax — not file-system paths — and they survive normalizeWriteTarget
- * verbatim because path.resolve treats them as filename characters. Stripping them before
- * normalization lets the prefix checks see the bare path and closes the `:(top)` bypass
- * vector (CRITICAL-2 / Eric PR #351).
+ * Git's pathspec grammar (see git-glossary § pathspec) allows magic signatures to precede
+ * the actual path. Two forms exist:
+ *
+ *   Long form  — `:(word[,word,...])path` where words are top, literal, icase, glob, attr:…,
+ *                or exclude. Balanced-group strip via `/^:\([^)]*\)(.*)/`.
+ *   Short form — one or more of `/`, `!`, `^` immediately after `:` (`:/ :! :^ :!/ :/!`
+ *                etc.), optionally followed by a terminating `:` before the path. The
+ *                generative rule is: consume the leading-colon run of magic-signature chars
+ *                (`/`, `!`, `^`) and an optional terminating colon.
+ *
+ * Both forms may be stacked (e.g. `:/!path`, `:!:/path`, `:^:path`). A loop strips each
+ * prefix in turn until neither form matches, then falls through to the bare-! check.
  *
  * Shell quoting (single or double quotes wrapping the whole token) is stripped first,
  * because the hook receives the literal command string with quote characters intact.
@@ -737,11 +743,31 @@ function stripPathspecMagic(raw) {
       (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1);
   }
-  // Long-form magic: :(word) or :(word,word,...) at the start of the token
-  const longForm = raw.match(/^:\([^)]*\)(.*)/);
-  if (longForm) return longForm[1];
-  // Short-form exclude magic: ! prefix
-  if (raw.startsWith('!')) return raw.slice(1);
+
+  // Iteratively strip long-form and short-form magic until neither matches.
+  let prev;
+  do {
+    prev = raw;
+    // Long-form magic: :(word) or :(word,word,...) — magic words contain no nested parens
+    const longForm = raw.match(/^:\([^)]*\)(.*)/s);
+    if (longForm) {
+      raw = longForm[1];
+      continue;
+    }
+    // Short-form magic: leading-colon run of /, !, ^ chars (the complete set of short magic
+    // signature characters per git-glossary), plus an optional terminating colon.
+    if (raw.startsWith(':')) {
+      const shortForm = raw.match(/^:[\/!\^]*:?(.*)/s);
+      if (shortForm) {
+        raw = shortForm[1];
+        continue;
+      }
+    }
+  } while (raw !== prev);
+
+  // Bare leading-! exclude shorthand (no leading colon) — git also accepts this form.
+  if (raw.startsWith('!')) raw = raw.slice(1);
+
   return raw;
 }
 
@@ -755,8 +781,16 @@ function stripPathspecMagic(raw) {
  * so it misses the bare-directory form. This predicate matches when the target equals the
  * directory prefix (with or without trailing slash) or starts with it — without
  * over-blocking non-protected directories like `src/` (CRITICAL-2 / Eric PR #351).
+ *
+ * The __smoke__ subtree is explicitly carved out: smoke files gate nothing and are writable
+ * by Clove for test authoring. This matches the same carveout applied by
+ * isProtectedCanonicalHookPath so that git checkout on a smoke path and a Write on the same
+ * path are treated identically — permitted on both arms.
  */
 function pathspecCoversProtectedDirectory(normalizedTarget) {
+  // Smoke paths are never a protected directory — same carveout as isProtectedCanonicalHookPath.
+  if (normalizedTarget.startsWith(CANONICAL_HOOKS_SMOKE_CARVEOUT)) return false;
+
   const protectedDirs = [
     PROTECTED_CANONICAL_HOOKS_PREFIX,   // '.ai-skills/hooks/'
     '.claude/hooks/',                   // runtime hooks dir — individual files are in PROTECTED_WRITE_PATHS
@@ -873,19 +907,28 @@ function commandMutatesProtectedViaGit(effectiveCmd, cwdBase) {
  * Returns an array of body strings. Callers pass each body through splitCommandSegments so
  * nested substitutions surface on the next recursive call to commandMutatesProtectedViaGit.
  *
- * Two forms are handled:
- *   $(...) — POSIX dollar-paren, depth-tracked parenthesis scan.
- *   `...`  — backtick form, matched as content between paired backticks (flat form; nested
- *            backticks are not standard POSIX sh and are not handled recursively here).
+ * Three paren-based forms use a shared depth-tracked scan; one flat form uses paired delimiters:
+ *   $(...) — POSIX command substitution; bash executes the body.
+ *   <(...) — process substitution, read form; bash executes the body in a subshell.
+ *   >(...) — process substitution, write form; bash executes the body in a subshell.
+ *   `...`  — backtick command substitution; matched as content between paired backticks
+ *            (flat form; nested backticks are not standard POSIX sh and are not handled here).
+ *
+ * Arithmetic expansion $((…)) is not a false positive: the depth-tracked scan opens at '$(('
+ * at depth 1, sees the inner '(' and goes to depth 2, then closes both ')' characters to
+ * reach depth 0. The captured body is arithmetic text (e.g. "1 + 2") whose first token is
+ * never "git", so commandMutatesProtectedViaGit's commandHead guard drops it harmlessly.
  */
 function extractSubstitutionBodies(cmd) {
   const bodies = [];
 
-  // --- $(...) form: depth-tracked parenthesis scan ---
+  // --- $(...), <(...), >(...) forms: shared depth-tracked parenthesis scan ---
+  // All three have the same structure: a single-character prefix followed by '('. The body
+  // runs as a real shell command in bash regardless of which prefix introduces it.
   let i = 0;
   while (i < cmd.length) {
-    if (cmd[i] === '$' && cmd[i + 1] === '(') {
-      const start = i + 2; // content starts after '$('
+    if (cmd[i + 1] === '(' && (cmd[i] === '$' || cmd[i] === '<' || cmd[i] === '>')) {
+      const start = i + 2; // content starts after the opening '('
       let depth = 1;
       let j = start;
       while (j < cmd.length && depth > 0) {
