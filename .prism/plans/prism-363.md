@@ -82,6 +82,17 @@ These are floor invariants, not preferences. They survive into every task below.
 
 - **skill-forge gate entry is ownership-only (`preconditions: []`).** A utility may finish without a report; the standard `report-written` precondition would false-fire `needs-replan`. Must land atomically with: removal from `EXEMPT_SKILLS` in `emit-hooks.test.ts`, and a `'prism-skill-forge' → '<key>'` mapping in `resolve-persona.mjs` (else orchestrated dispatch resolves null and the lane is a silent no-op). (Clove + Eric.)
 
+### Task 9 bypass-rider sweep — findings
+
+- **Sweep result: no new riders needed in `_shared.may_write` beyond the two confirmed seeds.** Full sweep of `.ai-skills/skills/*/shared.md`, `.ai-skills/references/**`, and `.prism/skills/**` for actual Bash write commands targeting repo paths.
+  - `.prism/active-persona` — structural carve-out (solo-permit / orchestrated-deny), cannot be a `_shared` entry by design.
+  - State files (`theo-state.json`, `ren-state.json`, `conductor-state.json`) — `mv` destination is the canonical path already in each persona's per-lane; `.tmp` intermediate goes via Write tool, not Bash.
+  - Sage's `echo >` to `tags-resolved.json` and `changelog-path.txt` — already in Sage's lane.
+  - Sidecar writes (`plan-updated.json`, `summary-posted.json`, `branch-ready.json`, `prd-written.json`) — go through Write tool not Bash per persona prose.
+  - `prism-handoff` — not a gated persona (no gate entry in gates.json); guard exits 0 for ungated dispatches.
+  - `.prism/lessons.md` — confirmed rider already in `_shared`. `.prism/evidence/**/deliverable.json` — confirmed rider already in `_shared`.
+  - → no promotion needed (sweep finding; task 2's `_shared` seed is complete as-is).
+
 ### One plan, one branch
 
 - **One plan, one branch — both tracks edit the same Bash branch.** Merging `enforcement-skill-lane-and-bash-guard.md` into this plan and running one branch prevents the near-certain merge conflict in `collectWriteTargets` / the Bash permit path that two branches would produce, and forces the active-persona denial (Defect 1), the `may_write` lane (Plan B), and the Windows path fix (#367) to be designed as ONE Bash-branch enforcement block rather than three divergent edits. Considered: keep two cross-referenced plans on two branches. Rejected — the tracks are not independent; they are the same function, and a divergent design is the worse failure than a slightly larger single plan.
@@ -194,7 +205,8 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 
 ### Defect 1: active-persona write-denial never fires against the real write mechanism (Bash echo)
 
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** task 7 (Bash `may_write` enforcement block, carve-out 1 — orchestrated-deny when `agent_type` present). Smoke scenario P covers all three Bash-arm sub-tests (orchestrated deny / solo permit / solo fused permit).
 - **Severity:** High
 - **Confidence:** High (Confirmed — code-grounded by Winston + verified against every skill's shared.md)
 - **Environment:** All platforms (not Windows-specific)
@@ -220,7 +232,8 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 
 ### Defect 2: runKey collision — dispatched Workflow agents share Sol's session_id as their runKey
 
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fixed in:** task 8 (`resolveRunKey` helper in resolve-persona.mjs using `session_id:agent_type` sha256 hash; all 3 call sites updated). Smoke scenario Y covers: distinct keys for same session_id+distinct agent_type; native-Task agent_id path unchanged.
 - **Severity:** High
 - **Confidence:** High (Confirmed — directly observed in `.prism/evidence/abe91dac-60cd-42bd-a837-7b6f46e2e2b7/`, hook code traced)
 - **Environment:** All platforms; affects Workflow `agent()` dispatches (not native Task dispatches)
@@ -309,3 +322,4 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 - 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Task 1 — extended `assertHookEmitDoesNotWeaken` in `scripts/ai-skills/build.ts` to validate `_shared.may_write` against the same `WHOLESALE_GRANTS` check as the per-persona loop; added the `#305` test to `emit-hooks.test.ts`; 9/10 tests pass (1 pre-existing settings.json drift failure unrelated to task 1).
 - 2026-06-28 [hmcgrew/prism-windows-gate-loop]: Tasks 2, 3, 5 — seeded `_shared.may_write` (lessons.md + deliverable.json); widened winston + clove lanes to `.ai-skills/skills/**` + `.prism/skills/**` + `.ai-skills/definitions/**`; added skill-forge gate entry (preconditions:[], ownership-only) with EXEMPT removal, resolver mapping, and shared.md startup write; risk-4 drift tests pass (9/10, 1 expected settings byte-match failure).
 - 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Tasks 6, 7, 8, 10 + comment fix — added `toCanonicalCwd` (#367 Windows MSYS-path fix) + `cwdBase` wired through all Bash consumers; added Bash `may_write` enforcement block with 3 carve-outs (active-persona, out-of-projectDir incl. cross-drive, substitution-body scan via `collectBashWriteTargets`); extracted `resolveRunKey` (session_id+agent_type sha256 hash) into resolve-persona.mjs and replaced all 3 call sites; added `install`/`truncate` to `collectWriteTargets`; fixed EXEMPT_SKILLS comment to reflect skill-forge now has a gate entry (2 utility skills, not 3). Synth tests: MSYS protected write → 2, out-of-dir → 0, eric in-repo → 2. Suite: 9/10 (1 pre-existing settings failure).
+- 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Tasks 9 + 11 — bypass-rider sweep found no new `_shared` riders needed (`.prism/active-persona` is a structural carve-out; state files and sidecar writes go via Write tool; all other Bash repo-writes are already in the owner's per-lane); added 12 smoke scenarios (P–Z) covering the full Test Matrix: active-persona Bash arm, #367 MSYS-cwd denial, out-of-projectDir permits, `_shared` rider grants/denials, lane enforcement across 5 personas, fused/multi-segment commands, substitution bodies, install/truncate, skill-forge persona, runKey isolation (Defect 2), and `_shared` isolation. Marked Defects 1 + 2 fixed; Defects 3 + 4 remain open (design/follow-up). emit-hooks.test.ts: 9/10 (1 pre-existing settings byte-match failure, expected).
