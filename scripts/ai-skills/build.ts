@@ -732,11 +732,15 @@ export async function writeSeedMirror(
  * the canonical prefix, or a consumer re-widens may_write back to the whole enforcement
  * tree — the canonical → runtime emit is the trusted channel that would silently propagate
  * the weakened gate. This asserts on the canonical text the build already reads, so the cost
- * is two structural checks per build with no maintained baseline file:
+ * is three structural checks per build with no maintained baseline file:
  *
  *   1. clove.ownership.may_write contains neither `.ai-skills/hooks/**` nor `.claude/hooks/**`
  *      — the wholesale enforcement-tree grants that are the hole.
- *   2. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
+ *   2. _shared.may_write (the reserved shared-rider key) contains no wholesale grant —
+ *      `_shared` is NOT a persona and has no `.ownership` wrapper; its `may_write` array
+ *      is a direct sibling field. Without this check, a `_shared.may_write: ['.ai-skills/hooks/**']`
+ *      entry would bypass the per-persona check and re-open the floor (#305).
+ *   3. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
  *      protection is present in what's about to go live.
  *
  * Throws on violation, naming issue #305 and the offending detail.
@@ -754,7 +758,9 @@ export function assertHookEmitDoesNotWeaken(
 		);
 	}
 
-	const mayWrite = (gates as Record<string, { ownership?: { may_write?: unknown } }>)
+	const gatesRecord = gates as Record<string, unknown>;
+
+	const mayWrite = (gatesRecord as Record<string, { ownership?: { may_write?: unknown } }>)
 		?.clove?.ownership?.may_write;
 	if (Array.isArray(mayWrite)) {
 		for (const grant of WHOLESALE_GRANTS) {
@@ -763,6 +769,23 @@ export function assertHookEmitDoesNotWeaken(
 					`emitHooks (#305): clove.may_write contains '${grant}', a wholesale ` +
 						`enforcement-tree grant that re-opens the canonical/runtime back door. ` +
 						`Narrow it to the '__smoke__/' lane before emitting.`
+				);
+			}
+		}
+	}
+
+	// _shared is NOT a persona — it has no .ownership wrapper. Its may_write is a direct
+	// field: { _shared: { may_write: [...] } }. Any wholesale grant here would let every
+	// persona write the enforcement tree, bypassing the per-persona check above.
+	const sharedMayWrite = (gatesRecord as Record<string, { may_write?: unknown }>)
+		?._shared?.may_write;
+	if (Array.isArray(sharedMayWrite)) {
+		for (const grant of WHOLESALE_GRANTS) {
+			if (sharedMayWrite.includes(grant)) {
+				throw new Error(
+					`emitHooks (#305): _shared.may_write contains '${grant}', a wholesale ` +
+						`enforcement-tree grant that re-opens the canonical/runtime back door for ` +
+						`every persona. Narrow _shared riders to non-enforcement paths.`
 				);
 			}
 		}

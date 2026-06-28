@@ -48,6 +48,16 @@ test("throws when clove may_write re-includes the wholesale .claude/hooks/** gra
 	);
 });
 
+test("throws when _shared.may_write contains a wholesale enforcement-tree grant", () => {
+	const weakened = JSON.stringify({
+		_shared: { may_write: [".ai-skills/hooks/**"] },
+	});
+	assert.throws(
+		() => assertHookEmitDoesNotWeaken(weakened, realCanonicalGuard),
+		/#305/
+	);
+});
+
 test("does not throw on the real post-fix canonical gates.json", () => {
 	const realGates = fs.readFileSync(
 		path.join(REPO_ROOT, ".ai-skills", "hooks", "gates.json"),
