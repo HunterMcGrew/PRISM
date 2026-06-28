@@ -131,12 +131,12 @@ test("settings.json install-seed twin byte-matches the canonical source", () => 
 //
 // Two categories are exempt:
 //   1. Utility skills (no persona state machine, no evidence gates by design):
-//        prism-handoff, prism-review-loop, prism-skill-forge
+//        prism-handoff, prism-review-loop
 //   2. Phase 5 rollout in-progress (gate entries will be added in subsequent Phase 5 PRs):
 //        all non-Class-A personas not yet gated in PR1
 //
 // When a Phase 5 PR adds a persona's gates.json entry, remove its skill ID from this list.
-// When all persona entries have landed, only the three utility skills should remain.
+// When all persona entries have landed, only the two utility skills should remain.
 const EXEMPT_SKILLS = new Set([
 	// --- Utility skills (no gates.json entry by design) ---
 	"prism-handoff",
