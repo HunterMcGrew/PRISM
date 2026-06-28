@@ -2024,7 +2024,7 @@ function assert(scenarioName, condition, message) {
   // Returns { tmpDir, runKey }. The gates/report fixtures are written into the repo so the
   // hook's projectDir (= tmpDir) is the git working tree run-gates diffs against.
   function setupGitRepoFixture({ check, withOrigin = true }) {
-    const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-l-'));
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-o-'));
     const runKey = 'smoke-session';
 
     const git = (args) => {
@@ -2095,7 +2095,7 @@ function assert(scenarioName, condition, message) {
     return { tmpDir, runKey, git };
   }
 
-  function runL(tmpDir) {
+  function runO(tmpDir) {
     return runHook(
       path.join(HOOKS_DIR, 'run-gates.mjs'),
       { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' },
@@ -2113,7 +2113,7 @@ function assert(scenarioName, condition, message) {
       mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
       writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
       git(['add', '.prism/plans/foo.md']);
-      const r = runL(tmpDir);
+      const r = runO(tmpDir);
       okA = assert(name, r.code === 0, `O.a: expected exit 0 (staged deliverable matches pattern), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
     } finally {
       cleanup(tmpDir);
@@ -2130,7 +2130,7 @@ function assert(scenarioName, condition, message) {
       mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
       writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
       git(['add', '.prism/plans/foo.md']);
-      const r = runL(tmpDir);
+      const r = runO(tmpDir);
       okB = assert(name, r.code === 2, `O.b: expected exit 2 (no changed file matches pattern), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`) &&
             assert(name, r.stderr.includes('deliverable-touched-this-run'), `O.b: expected the precondition id 'deliverable-touched-this-run' in stderr. Got: ${r.stderr.substring(0, 300)}`);
     } finally {
@@ -2149,7 +2149,7 @@ function assert(scenarioName, condition, message) {
       mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
       writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
       git(['add', '.prism/plans/foo.md']);
-      const r = runL(tmpDir);
+      const r = runO(tmpDir);
       okC = assert(name, r.code === 2, `O.c: expected exit 2 (missing-pattern guard fires), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
     } finally {
       cleanup(tmpDir);
@@ -2167,7 +2167,7 @@ function assert(scenarioName, condition, message) {
       mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
       writeFileSync(path.join(tmpDir, '.prism', 'plans', 'bar.md'), '# plan\n', 'utf8');
       git(['add', '.prism/plans/bar.md']);
-      const r = runL(tmpDir);
+      const r = runO(tmpDir);
       okD = assert(name, r.code === 0, `O.d: expected exit 0 (no origin/main; staged deliverable still matches), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
     } finally {
       cleanup(tmpDir);

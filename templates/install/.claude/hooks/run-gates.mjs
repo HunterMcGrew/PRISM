@@ -427,7 +427,9 @@ function runCheck(check, runKey, evidenceDir, projectDir) {
     if (mb.status === 0 && mb.stdout.trim()) {
       runGit(['diff', '--name-only', `${mb.stdout.trim()}...HEAD`]);
     }
-    // working-tree (unstaged) and staged.
+    // git diff HEAD lists both staged and unstaged changes to tracked files; the --cached
+    // arm additionally covers the staged-then-worktree-reverted edge case (a file staged
+    // then reverted in the working tree appears in --cached but not in the HEAD diff).
     runGit(['diff', '--name-only', 'HEAD']);
     runGit(['diff', '--name-only', '--cached']);
 

@@ -209,6 +209,7 @@ All tasks are `[AFK]` unless tagged. Canonical-source edits land first, then the
 
 - 2026-06-27 [main]: Winston design + plan for the Windows gate-loop fix (new structured `deliverable-touched` precondition kind) + PowerShell matcher widening. Read gates.json, run-gates.mjs `runCheck`, the smoke harness, and build.ts `emitHooks`/`assertHookEmitDoesNotWeaken` to ground the approach. Did NOT touch #363 (active-persona guard) — separate Sasha dependency. Design returned to Sol for Hunter sign-off before Clove implements.
 - 2026-06-27 [hmcgrew/prism-windows-gate-loop]: Clove implemented all 7 tasks — added the `deliverable-touched` branch to canonical `run-gates.mjs`, converted all 8 Class-B `deliverable-touched-this-run` preconditions in `gates.json` (regexes carried byte-for-byte), added shell-free smoke Scenario O (named O not L — L/M/N already taken), widened the canonical PreToolUse matcher to include `PowerShell`, and added `deliverable-touched` + a `pattern` field to the canonical gate JSON Schema (task-5 doc sweep; only enumeration found). `pnpm prism:build` re-enabled the floor (operator-authorized) and `pnpm prism:check` reported "Generated outputs are in sync" — drift-clean. The 4 remaining test failures (resolveRef path-norm trio, render-check-drift, esbuild devDep TS2307) are the named Windows-only baseline, not regressions; `ownership-guard.mjs` and #363's active-persona branch were NOT touched.
+- 2026-06-27 [hmcgrew/prism-windows-gate-loop]: Clove addressed two cosmetic review minors — corrected the inaccurate `git diff HEAD` comment in `run-gates.mjs` (kept both arms; `--cached` covers the staged-then-reverted edge case Eric mislabeled as redundant) and renamed Scenario O's stale `runL`/`prism-smoke-l-` internals to `runO`/`prism-smoke-o-` (Scenario L untouched). Build drift-clean, smoke `PASS O` green.
 
 ---
 
@@ -238,6 +239,29 @@ All tasks are `[AFK]` unless tagged. Canonical-source edits land first, then the
 
 ---
 
+## Review Issues
+
+### Minor: stale internal naming in Scenario O (`runL`, `prism-smoke-l-`)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/hooks/__smoke__/run-all.mjs:2027,2098`
+- **Problem:** The internal helper function is named `runL` and the tmp directory prefix is `prism-smoke-l-`, both reflecting the scenario's original planned letter `L` before the Decision renamed it to `O`. Block-scoped and cosmetic — no functional impact.
+- **Suggested fix:** Rename `runL` → `runO` and `prism-smoke-l-` → `prism-smoke-o-` inside the Scenario O block.
+- **Eric (PR review #364):** confirmed. Non-blocking; inline comment posted at `run-all.mjs:2098`.
+- **Fixed in:** `hmcgrew/prism-windows-gate-loop` — renamed `runL` → `runO` (5 sites) and `prism-smoke-l-` → `prism-smoke-o-` inside the Scenario O block only; Scenario L (line 1320) untouched. Verified no `runL`/`-l-` leftovers; `PASS O` green.
+
+### Minor: comment mislabels `git diff --name-only HEAD` coverage
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/hooks/run-gates.mjs:430`
+- **Problem:** The comment `// working-tree (unstaged) and staged.` describes `git diff --name-only HEAD` as "unstaged", but `git diff HEAD` captures both staged and unstaged changes (working tree vs last commit). The code is correct; the comment is inaccurate.
+- **Eric (PR review #364):** confirmed the comment is inaccurate. Eric additionally claimed the `--cached` arm is a strict subset (redundant for tracked files) — that claim is **wrong** and was not adopted: a file staged then reverted in the working tree appears in `git diff --cached` but NOT in `git diff HEAD`, so the `--cached` arm legitimately covers an edge case the HEAD diff misses. Both arms kept; only the comment changed.
+- **Fixed in:** `hmcgrew/prism-windows-gate-loop` — replaced the comment with an accurate three-line note stating `git diff HEAD` covers staged+unstaged and the `--cached` arm covers the staged-then-worktree-reverted edge case. Code (both `runGit` arms) unchanged.
+
+---
+
 ## PR Readiness
 
 - [x] No critical or major issues
@@ -246,5 +270,7 @@ All tasks are `[AFK]` unless tagged. Canonical-source edits land first, then the
 - [x] Per-persona regexes verified byte-identical to pre-change (all 8 confirmed against live grep strings)
 - [x] #363 active-persona branch confirmed untouched (`ownership-guard.mjs` not in diff)
 - [ ] PR description up to date (set at PR open)
+- [x] Briar self-review: 2 minor findings (stale naming + comment inaccuracy); no critical/major — ready for Eric
+- [x] Eric PR #364 minors resolved: both cosmetic findings fixed on `hmcgrew/prism-windows-gate-loop` (see Review Issues, both `fixed`)
 
-**Last updated:** 2026-06-27 (Clove — implementation)
+**Last updated:** 2026-06-27 (Clove — review-minors fix)
