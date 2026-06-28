@@ -323,3 +323,11 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-06-27 (epic #289 close, docs freshness pass) — user-facing docs predated the enforcement floor architecture, leaving ~11 docs with stale descriptions. Jumping straight to fixes churned current docs and introduced scope creep; an audit-first read-only triage (per-doc freshness verdict: current / stale / missing section) focused the fix pass on only what needed updating.
 
 **How to apply:** After a large epic lands, run a read-only triage first — assign a freshness verdict to each doc (current, stale, missing section) before touching any file. Fix only the stale and missing entries. This prevents churning docs that are already correct and keeps the diff reviewable.
+
+---
+
+## Ambiguous review findings route to Winston first — he decides or escalates to human; Sol does not triage them
+
+**Why:** 2026-06-28 (PRISM-363 floor-hardening, Eric's #369 review) — Eric's review surfaced two ambiguous items (a gate-coherence routing rejection, a glitched summary comment) plus a pre-existing-asymmetry finding whose scope was a judgment call. Sol triaged them straight to the human (and considered routing the gate anomaly to Sasha). Hunter corrected: ambiguous findings go to Winston first — the architect makes the call or escalates to `needs-human` himself. This is the routing target for reflex #5 of the role-drift remedy: not "Sol decides," not "straight to Sasha/human," but "Winston adjudicates, then escalates if needed."
+
+**How to apply:** When a review (or any dispatch) surfaces a finding whose disposition is ambiguous — is this a bug? in scope? a real floor issue? — route it to Winston, not to Sol's own judgment and not directly to the human or Sasha. Winston decides or escalates to `needs-human`. Clear-cut findings (an obviously-correct fix) still go straight to the implementer (Clove); only the ambiguous ones gate through Winston. Fold this into reflex #5 when the role-drift remedy lands: the symptom-trigger routes ambiguous dispositions to Winston-first.
