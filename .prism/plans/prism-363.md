@@ -314,6 +314,54 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 
 ---
 
+## Review Issues
+
+### Quoted-path carve-out 2 bypass — Bash lane enforcement
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** quote-strip applied as a pre-step in the `for` loop at the top of the Bash lane block (before both `normalizeWriteTarget` and carve-out 2's `path.resolve`). Smoke scenario AA (AA.a: Windows double-quoted cross-drive path → permit; AA.b: POSIX single-quoted `/tmp` path → permit; AA.c: unquoted in-repo out-of-lane path → deny) locks in the fix.
+- **File:** `.ai-skills/hooks/ownership-guard.mjs:315`
+- **Problem:** `normalizeWriteTarget` calls `path.resolve(cwdBase, rawTarget)` where `rawTarget` is produced by `tokenize` (whitespace-split only). When the Bash command uses a double-quoted path argument — e.g. `echo test > "C:\Users\...\file.txt"` — the token includes the surrounding quotes: `"C:\...`. Node's `path.resolve` sees `"C:` as a relative path (leading `"` is not a drive letter), so `path.isAbsolute` returns false and `path.relative` returns an in-repo-looking path. Carve-out 2 (out-of-projectDir permit) silently fails, and the guard incorrectly denies the write. The fix: strip surrounding single/double quotes from `rawTarget` before calling `path.resolve`. Observed directly: `echo test > "C:\Users\test\file.txt"` exits 2 with deny message `'C:Users'`.
+- **Suggested fix:** In `normalizeWriteTarget`, or as a pre-step in the `for` loop at line 288, strip `rawTarget` of surrounding quotes: `rawTarget = rawTarget.replace(/^(['"])(.*)\1$/, '$2')`.
+
+### Smoke harness inherits maintenance mode — deny-scenarios invert silently
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **Fixed in:** `CLAUDE_PRISM_MAINTENANCE: ''` added to the base env of groups E, I, J, K, and N. K's deny-scenarios (K1, K3, K5) now self-protect; K's maint-on scenarios (K2, K4, K6) continue to override via `...extraEnv`. Suite runs 29/29 with ambient `CLAUDE_PRISM_MAINTENANCE=1` (no `env -u` needed).
+- **File:** `.ai-skills/hooks/__smoke__/run-all.mjs:40`
+- **Problem:** `runHook` spreads `process.env` into every child process: `env: { ...process.env, ...env }`. When `CLAUDE_PRISM_MAINTENANCE=1` is set in the shell (the normal state for a hook-authoring session), all 25+ deny-scenarios in E, I, J, K, N pass through the maintenance unlock and exit 0 instead of 2 — the harness silently reports a false pass for half its scenarios. The fix instruction (`env -u CLAUDE_PRISM_MAINTENANCE`) is documented and works, but it's an invisible footgun for anyone running `node .claude/hooks/__smoke__/run-all.mjs` directly.
+- **Suggested fix:** For deny-scenario groups (E, I, J, K, N) that use a synthetic `tmpDir` as `CLAUDE_PROJECT_DIR`, pass `CLAUDE_PRISM_MAINTENANCE: ''` in their per-scenario `env` overrides (the same technique Scenario Q uses at line 2326: `const maintOff = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PRISM_MAINTENANCE: '' }`). Scenarios that exercise maintenance-mode behaviour (K) keep their existing explicit flag handling.
+
+---
+
+## Cleanup Items
+
+- `.prism/plans/issue-a-body.md`, `issue-b-body.md`, `issue-c-body.md` — untracked plan scratch files in `.prism/plans/`; check if these are safe to remove or archive.
+
+---
+
+## PR Readiness
+
+Living checklist — updated after Briar self-review 2026-06-28.
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (Defects 1 + 2 fixed; Defects 3 + 4 are pre-existing open with known remedies, tracked in their own follow-up scope)
+- [x] Build passes — last run: 2026-06-28 (428/432, 4 pre-existing #107 failures only)
+- [x] emit-hooks test: 10/10
+- [x] Smoke harness: 28/28 (env -u CLAUDE_PRISM_MAINTENANCE)
+- [x] Two minors resolved: quoted-path carve-out 2 bypass (fixed + AA scenario); smoke harness maint self-protection (E/I/J/K/N base env)
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (not applicable — all decisions are operational hook details)
+
+**Last updated:** 2026-06-28
+
+---
+
 ## History
 
 - 2026-06-27 [claude/youthful-jennings-22bbf2]: Read-only diagnosis session — root cause traced, findings returned as assistant message per user instruction. Plan stub created to satisfy gate precondition; formal findings recording deferred to the ticket pickup session.
@@ -324,3 +372,5 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 - 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Tasks 6, 7, 8, 10 + comment fix — added `toCanonicalCwd` (#367 Windows MSYS-path fix) + `cwdBase` wired through all Bash consumers; added Bash `may_write` enforcement block with 3 carve-outs (active-persona, out-of-projectDir incl. cross-drive, substitution-body scan via `collectBashWriteTargets`); extracted `resolveRunKey` (session_id+agent_type sha256 hash) into resolve-persona.mjs and replaced all 3 call sites; added `install`/`truncate` to `collectWriteTargets`; fixed EXEMPT_SKILLS comment to reflect skill-forge now has a gate entry (2 utility skills, not 3). Synth tests: MSYS protected write → 2, out-of-dir → 0, eric in-repo → 2. Suite: 9/10 (1 pre-existing settings failure).
 - 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Tasks 9 + 11 — bypass-rider sweep found no new `_shared` riders needed (`.prism/active-persona` is a structural carve-out; state files and sidecar writes go via Write tool; all other Bash repo-writes are already in the owner's per-lane); added 12 smoke scenarios (P–Z) covering the full Test Matrix: active-persona Bash arm, #367 MSYS-cwd denial, out-of-projectDir permits, `_shared` rider grants/denials, lane enforcement across 5 personas, fused/multi-segment commands, substitution bodies, install/truncate, skill-forge persona, runKey isolation (Defect 2), and `_shared` isolation. Marked Defects 1 + 2 fixed; Defects 3 + 4 remain open (design/follow-up). emit-hooks.test.ts: 9/10 (1 pre-existing settings byte-match failure, expected).
 - 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Task 12 build + smoke-harness fix — ran `pnpm prism:build` (emitted new floor canonical→runtime; the emit overwrote the maintenance env block in `.claude/settings.json`, so maint mode auto-disabled and the byte-match test went green). Verification surfaced smoke-harness fixture lag (NOT floor bugs, confirmed by direct guard tests): `setupStopFixture` hardcoded `runKey='smoke-session'` vs the new `resolveRunKey` hash, and the new P–Z scenarios used bare `D:\` paths for dynamic import. Fixed both in `__smoke__/run-all.mjs` (resolveRunKey-derived fixture runKey + `pathToFileURL`). Final: emit-hooks 10/10, runtime smoke 28/28, full suite 428/432 (only the 4 pre-existing #107 Windows-path failures). Opened draft PR #369. Meta-finding (task 13) filed as issue #370.
+- 2026-06-28 [hmcgrew/prism-363-floor-hardening]: Briar self-review — verification confirmed: emit-hooks 10/10, smoke 28/28 (env -u CLAUDE_PRISM_MAINTENANCE), suite 428/432 (4 pre-existing #107). Two minors found: (1) quoted-path tokens with surrounding double-quotes defeat carve-out 2 (out-of-projectDir permit fails for `> "C:\..."` commands); (2) smoke harness inherits `CLAUDE_PRISM_MAINTENANCE` from parent shell, causing deny-scenarios E/I/J/K/N to silently pass when maint mode is live. No critical or major issues. PR #369 is ready for Eric (after minors addressed or deferred).
+- 2026-06-28 [hmcgrew/prism-windows-gate-loop]: Briar minor fixes — (1) quote-strip applied as pre-step in the Bash lane for-loop (covers both normalizeWriteTarget and carve-out 2); new smoke scenario AA locks it in; (2) `CLAUDE_PRISM_MAINTENANCE: ''` added to base env of groups E/I/J/K/N; K's explicit maint-on overrides intact. Smoke: 29/29 with ambient maint set (no env -u), emit-hooks 10/10.

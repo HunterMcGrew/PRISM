@@ -284,7 +284,16 @@ if (toolName === 'Bash' && toolInput.command) {
   // (closing the tee >(cat > …) and cat <(echo x > …) bypass vectors). Three carve-outs
   // run before the lane check and mirror the Edit-arm structure.
   const bashWriteTargets = collectBashWriteTargets(effectiveCmd);
-  for (const rawTarget of bashWriteTargets) {
+  for (let rawTarget of bashWriteTargets) {
+    // Strip surrounding single or double quotes from shell-tokenized path arguments.
+    // When the Bash command uses a quoted path (e.g. echo test > "C:\Users\...\file.txt"),
+    // the whitespace tokenizer yields `"C:\...` as the raw token. Node's path.resolve
+    // sees `"C:` as a relative path (leading `"` is not a drive letter), so path.isAbsolute
+    // returns false and path.relative yields an in-repo-looking result — carve-out 2
+    // (out-of-projectDir permit) silently fails and the guard wrongly denies the write.
+    // Strip here, before BOTH normalizeWriteTarget and the carve-out 2 resolvedTarget line,
+    // so neither consumer sees the quoted form.
+    rawTarget = rawTarget.replace(/^(['"])(.*)\1$/, '$2');
     const target = normalizeWriteTarget(rawTarget, cwdBase);
 
     // Carve-out 1 — .prism/active-persona (Defect 1).

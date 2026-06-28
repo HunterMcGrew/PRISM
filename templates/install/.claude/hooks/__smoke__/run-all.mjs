@@ -502,7 +502,8 @@ function assert(scenarioName, condition, message) {
   // Use REPO_ROOT as CLAUDE_PROJECT_DIR so path normalization maps to the real relative
   // paths — the real gates.json is at REPO_ROOT too, and the denylist is hardcoded to the
   // canonical enforcement file paths relative to REPO_ROOT.
-  const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT };
+  // MAINTENANCE OFF: deny-scenarios must not be unlocked by ambient maintenance mode.
+  const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PRISM_MAINTENANCE: '' };
 
   function runGuardWrite(filePath) {
     return runHook(guardScript, {
@@ -886,7 +887,8 @@ function assert(scenarioName, condition, message) {
     mkdirSync(path.dirname(gatesPath), { recursive: true });
     writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
 
-    const env = { CLAUDE_PROJECT_DIR: tmpDir };
+    // MAINTENANCE OFF: deny-scenarios must not be unlocked by ambient maintenance mode.
+    const env = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
     const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
 
     function runGuardBash(command) {
@@ -1054,7 +1056,8 @@ function assert(scenarioName, condition, message) {
   // to it. .ai-skills/skills/prism-code-dev/** is in clove.may_write, so J7 permits via the
   // lane; .ai-skills/hooks/__smoke__/** is in clove.may_write (post-Task-2) AND carved out of
   // the canonical prefix, so J6 permits.
-  const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT };
+  // MAINTENANCE OFF: deny-scenarios must not be unlocked by ambient maintenance mode.
+  const envReal = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PRISM_MAINTENANCE: '' };
 
   function runGuardWrite(filePath) {
     return runHook(guardScript, {
@@ -1217,7 +1220,10 @@ function assert(scenarioName, condition, message) {
         tool_name: 'Write',
         tool_input: { file_path: relPath },
         cwd: tmpDir,
-      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+        // MAINTENANCE OFF by default so deny-scenarios (K1, K3, K5) are not unlocked by
+        // ambient maintenance mode. K2/K4/K6 pass maintenanceEnv = { CLAUDE_PRISM_MAINTENANCE: '1' }
+        // via extraEnv, which overrides this default and explicitly tests the unlock.
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '', ...extraEnv });
     }
 
     function runGuardBash(command, extraEnv = {}) {
@@ -1228,7 +1234,7 @@ function assert(scenarioName, condition, message) {
         tool_name: 'Bash',
         tool_input: { command },
         cwd: tmpDir,
-      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '', ...extraEnv });
     }
 
     // K1: maintenance OFF → canonical gates.json write is denied
@@ -1669,7 +1675,9 @@ function assert(scenarioName, condition, message) {
         tool_name: 'Bash',
         tool_input: { command },
         cwd: tmpDir,
-      }, { CLAUDE_PROJECT_DIR: tmpDir, ...extraEnv });
+        // MAINTENANCE OFF by default so deny-scenarios are not unlocked by ambient
+        // maintenance mode. N.n / N.o pass maintenanceEnv via extraEnv to test the unlock.
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '', ...extraEnv });
     }
 
     const maintenanceEnv = { CLAUDE_PRISM_MAINTENANCE: '1' };
@@ -3058,6 +3066,83 @@ function assert(scenarioName, condition, message) {
     } finally {
       cleanup(tmpDir);
     }
+  }
+}
+
+// ============================================================
+// Scenario AA: quoted-path out-of-projectDir permit (Briar review minor — Fix 1)
+//
+// When a Bash command uses a shell-quoted path argument (e.g. echo x > "C:\Users\...\f.txt"),
+// the whitespace tokenizer yields the token with surrounding quotes intact. Before the fix,
+// normalizeWriteTarget passed the quoted token directly to path.resolve — Node saw `"C:` as
+// a relative path, path.isAbsolute returned false, and carve-out 2 silently failed, causing
+// the guard to DENY a legitimate out-of-repo write.
+//
+// These scenarios confirm that surrounding quotes are stripped and carve-out 2 fires.
+//
+//   AA.a: gated persona echo to Windows double-quoted out-of-repo path → PERMIT (exit 0)
+//   AA.b: gated persona echo to POSIX single-quoted /tmp path → PERMIT (exit 0)
+//   AA.c: gated persona echo to unquoted in-repo src/ path → DENY (exit 2)
+//         (sanity-check that unquoted in-repo writes still enforce lane)
+// ============================================================
+{
+  const name = 'AA: quoted-path out-of-projectDir permit (Fix 1)';
+
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**', '.prism/plans/**'],
+        may_not_run: [],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-aa-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+    // MAINTENANCE OFF: deny-scenarios must not be unlocked by ambient maintenance mode.
+    const env = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-aa',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // AA.a: Windows-style double-quoted out-of-repo path — normalizeWriteTarget must strip
+    // the quotes so path.resolve sees a drive-rooted absolute path and carve-out 2 fires.
+    // Use a path on a different drive letter from the tmpDir so it is always out-of-repo.
+    const rA = runGuardBash('echo x > "C:\\Users\\test\\file.txt"');
+    const okA = assert(name, rA.code === 0,
+      `AA.a: echo to double-quoted Windows path — expected exit 0 (out-of-repo permit), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // AA.b: POSIX single-quoted /tmp path — out-of-projectDir on all platforms.
+    const rB = runGuardBash("echo x > '/tmp/prism-test-output.txt'");
+    const okB = assert(name, rB.code === 0,
+      `AA.b: echo to single-quoted /tmp path — expected exit 0 (out-of-repo permit), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // AA.c: unquoted in-repo path outside clove's lane → DENY (sanity check that lane
+    // enforcement still fires normally; the permit above was about carve-out 2, not lane bypass).
+    const rC = runGuardBash('echo x > .prism/architect/foo.md');
+    const okC = assert(name, rC.code === 2,
+      `AA.c: echo to unquoted in-repo .prism/architect/ path (outside clove lane) — expected exit 2 (lane deny), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
   }
 }
 
