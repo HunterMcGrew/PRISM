@@ -372,6 +372,21 @@ Eric's required matrix (the test task's detail bar), extended to cover the Plan 
 - **Suggested fix (repost):** re-post the summary using `gh pr comment <n> --body-file <path>` (the explicit flag, not the `@`-prefix body expansion) — mirrors the `pr-description.md § Writing mechanics` guidance to prefer `--body-file` over inline body on Windows. Whoever re-runs Eric's tooling reposts; no persona-lane issue (review comments are Eric's surface).
 - **Follow-up note (third Windows gh/path glitch):** this is now a recurring class across the floor work (alongside the #367 MSYS path-mangling already fixed in this PR, and the smoke-harness `D:\` dynamic-import fix in task 12). Worth a small follow-up to audit every `gh`/path invocation in the persona tooling for `@file` usage and Windows path assumptions, and standardize on `--body-file`. Scope is sharp enough for a ticket per `followup-scope.md` (one concern: "convert `@file` body args to `--body-file` across persona gh-invocation prose; audit Windows path handling"), but FILE IT SEPARATELY — out of scope for PR #369. Recommend Nora open it; not blocking.
 
+### Eric's #369 findings were undercounted — three recovered (SP2, S3, S4) NEED Winston disposition
+
+- **Severity:** `minor` (process — finding-capture gap)
+- **Status:** `open` — SP2/S3/S4 not yet adjudicated (Winston's disposition pass only saw SP1/S1/S2 + the two anomalies; the rest were missing because Eric's summary glitched as a literal `@file` and only SP1/S1/S2 posted as inline comments).
+- **Problem:** Eric's full report (recovered from his misplaced `report.json` — see anomaly below) lists **six** minors, not three. The three not previously captured:
+  - **SP2** — the OPEN decision "maintenance mode vs plain session" was never formally closed in the plan. *Already resolved in practice:* Hunter chose maintenance mode this session. Disposition: bookkeeping — formally close that OPEN decision in `## Decisions` (mark resolved → maint mode). Not blocking.
+  - **S3** — the solo `resolveRunKey` path (no `agent_type`, no `agent_id` → falls back to `session_id`) has no smoke coverage. Test-coverage gap. **Needs Winston disposition** (fold into #369 task 11/12, or follow-up).
+  - **S4** — `.claude/settings.json` in `clove.ownership.may_write` is a dead/stale entry. Cleanup. **Needs Winston disposition** (fold-in vs follow-up).
+- **Routing:** per the ambiguous→Winston rule (lessons.md), S3 and S4 dispositions go to Winston before implementation; SP2 is a plan bookkeeping close. Flagged for the execution session.
+
+### Eric's review report landed in the session-runKey dir with an invalid verdict (for Sasha — folds into the gate-coherence diagnosis)
+
+- **Severity:** `minor` → routes into the **gate-coherence found-bug already assigned to Sasha** (above); these are the same Eric-report-under-the-live-floor failure family.
+- **Symptoms (observed, not diagnosed here):** (1) Eric's `report.json` was written to `.prism/evidence/<session_id>/` (the Sol session dir, runKey `9dbf84cd…`) instead of an Eric-specific dir — a runKey collision the Defect-2 fix was meant to prevent, possibly specific to **background** native dispatch (foreground native dispatches this session got their own `agent_id` dirs). (2) Eric used `verdict: "has-minors"` and `next_route: "human-review-after-dev-addresses-minors"` — neither is in the valid verdict/route set; the Stop gate rejected the shape. (3) This invalid report then gated the **Sol conductor session** on stop (the live-floor-gates-the-conductor issue, lessons.md). Sasha to diagnose alongside the `run-gates.mjs:359–365` coherence rejection — likely one root cause (Eric's report-contract handling under the live floor).
+
 ---
 
 ## Cleanup Items
