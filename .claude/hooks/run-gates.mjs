@@ -367,7 +367,7 @@ function isCoherent(verdict, nextRoute, allowedRoutes, gateForcedPark = false, r
 /**
  * Runs a single CheckSpec and returns { passed: boolean, output?: string, error?: string }.
  *
- * Supports check kinds: 'command', 'file-exists', 'file-validates'.
+ * Supports check kinds: 'command', 'file-exists', 'file-validates', 'deliverable-touched'.
  * For 'ledger' source gates, looks up the most recent matching command in the ledger;
  * falls back to running the command fresh if no matching entry is found.
  */
@@ -388,6 +388,51 @@ function runCheck(check, runKey, evidenceDir, projectDir) {
     } catch (e) {
       return { passed: false, error: `JSON parse failed: ${e.message}` };
     }
+  }
+
+  if (check.kind === 'deliverable-touched') {
+    // Cross-platform replacement for the bash-only command precondition: gather the
+    // union of (committed-since-base ∪ working-tree ∪ staged) changed files via discrete
+    // argv git invocations (no shell grammar — Windows cmd.exe cannot parse the former
+    // `{ …; } | sort -u | grep` pipeline), then test the persona's deliverable pattern
+    // against that set. See plan prism-windows-gate-loop § Design.
+    const pattern = check.pattern;
+    if (typeof pattern !== 'string' || pattern.length === 0) {
+      return { passed: false, error: `deliverable-touched check is missing a 'pattern' string` };
+    }
+
+    let re;
+    try {
+      re = new RegExp(pattern);
+    } catch (e) {
+      return { passed: false, error: `deliverable-touched pattern is not a valid regex: ${e.message}` };
+    }
+
+    const changed = new Set();
+    const runGit = (args) => {
+      const r = spawnSync('git', args, { cwd: projectDir, encoding: 'utf8', timeout: 30000 });
+      if (r.status === 0 && typeof r.stdout === 'string') {
+        for (const line of r.stdout.split('\n')) {
+          const f = line.trim();
+          if (f) changed.add(f);
+        }
+      }
+      // Non-zero git exit (e.g. no origin/main, not a repo) is tolerated — the other
+      // arms still contribute; an empty set simply fails the pattern match, matching the
+      // original `2>/dev/null` swallow semantics.
+    };
+
+    // committed-since-base: resolve merge-base first, then diff base...HEAD.
+    const mb = spawnSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: projectDir, encoding: 'utf8', timeout: 30000 });
+    if (mb.status === 0 && mb.stdout.trim()) {
+      runGit(['diff', '--name-only', `${mb.stdout.trim()}...HEAD`]);
+    }
+    // working-tree (unstaged) and staged.
+    runGit(['diff', '--name-only', 'HEAD']);
+    runGit(['diff', '--name-only', '--cached']);
+
+    const passed = [...changed].some((f) => re.test(f));
+    return { passed, output: passed ? '' : `no changed file matched ${pattern}` };
   }
 
   if (check.kind === 'command') {

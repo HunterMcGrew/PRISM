@@ -1995,6 +1995,189 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario O: deliverable-touched precondition is cross-platform (plan prism-windows-gate-loop)
+//
+// Proves the new structured `kind: "deliverable-touched"` precondition evaluates the
+// git-diff union in Node via discrete argv `spawnSync('git', […])` calls — no shell
+// grammar — so it runs identically on Windows cmd.exe and CI. The former `command` form
+// (`{ …; } | sort -u | grep`) was unparseable by cmd.exe and looped the Stop gate forever.
+// Scenario M stubs this precondition with node -e; this scenario exercises the real
+// git-diff logic against a throwaway repo, which M never did.
+//
+// Each sub-test builds a real throwaway git repo with argv-only git commands (the test
+// itself is shell-free) and runs run-gates against it. The deliverable is staged before
+// stop — mirroring a real persona whose written file is staged/committed in the run; the
+// precondition diffs tracked changes, so an untracked file would not satisfy it (matching
+// the original bash form's semantics).
+//
+//   O.a: staged file matches the pattern → exit 0 (precondition satisfied).
+//   O.b: staged file does NOT match the pattern → exit 2, stderr names the
+//        deliverable-touched-this-run precondition (precondition correctly fails).
+//   O.c: pattern omitted from the check → exit 2 (malformed-check guard fires).
+//   O.d: no origin/main remote, staged matching file → exit 0 (merge-base arm skipped,
+//        staged arm still contributes — proves the non-zero-git tolerance).
+// ============================================================
+{
+  const name = 'O: deliverable-touched cross-platform precondition';
+
+  // Initialize tmpDir as a real git repo with a committed base, using argv-only git calls.
+  // Returns { tmpDir, runKey }. The gates/report fixtures are written into the repo so the
+  // hook's projectDir (= tmpDir) is the git working tree run-gates diffs against.
+  function setupGitRepoFixture({ check, withOrigin = true }) {
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-l-'));
+    const runKey = 'smoke-session';
+
+    const git = (args) => {
+      const r = spawnSync('git', args, { cwd: tmpDir, encoding: 'utf8' });
+      if (r.status !== 0) {
+        throw new Error(`git ${args.join(' ')} failed (status ${r.status}): ${r.stderr ?? ''}`);
+      }
+      return r;
+    };
+
+    git(['init']);
+    // Local identity so commits succeed in CI (no global git config there).
+    git(['config', 'user.email', 'smoke@prism.test']);
+    git(['config', 'user.name', 'PRISM Smoke']);
+
+    // Commit a base file so HEAD exists and diffs have a reference point.
+    writeFileSync(path.join(tmpDir, 'base.txt'), 'base\n', 'utf8');
+    git(['add', 'base.txt']);
+    git(['commit', '-m', 'base']);
+
+    if (withOrigin) {
+      // Point origin/main at the base commit so the merge-base arm resolves. A bare
+      // sibling repo is the simplest real remote; argv-only, no shell.
+      const remoteDir = path.join(tmpDir, 'remote.git');
+      const rInit = spawnSync('git', ['init', '--bare', remoteDir], { cwd: tmpDir, encoding: 'utf8' });
+      if (rInit.status !== 0) throw new Error(`git init --bare failed: ${rInit.stderr ?? ''}`);
+      git(['remote', 'add', 'origin', remoteDir]);
+      git(['push', '-q', 'origin', 'HEAD:main']);
+      git(['fetch', '-q', 'origin']);
+    }
+
+    // Synthetic gates.json giving a Class-B persona the deliverable-touched precondition.
+    const gates = {
+      sasha: {
+        writes_report_to: '.prism/evidence/${runKey}/report.json',
+        preconditions: [
+          {
+            id: 'deliverable-touched-this-run',
+            description: 'the deliverable path is new or modified this run',
+            check,
+            on_fail: 'needs-replan',
+          },
+        ],
+        gates: [],
+        allowed_routes: ['clove', 'human'],
+        ownership: { may_write: ['.prism/plans/**'], may_not_run: [] },
+      },
+    };
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    // Valid report.json so the precondition is the only thing under test.
+    const report = {
+      verdict: 'done',
+      verdict_reason: 'diagnosis complete',
+      next_route: 'clove',
+      reasoning: 'root cause identified',
+      persona: 'sasha',
+      checklist: {},
+    };
+    const evidenceDir = path.join(tmpDir, '.prism', 'evidence', runKey);
+    mkdirSync(evidenceDir, { recursive: true });
+    writeFileSync(path.join(evidenceDir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
+    // deliverable-sidecar precondition also runs for sasha-shaped configs only when present
+    // in the fixture; this fixture omits it (single precondition under test), so no sidecar needed.
+
+    return { tmpDir, runKey, git };
+  }
+
+  function runL(tmpDir) {
+    return runHook(
+      path.join(HOOKS_DIR, 'run-gates.mjs'),
+      { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' },
+      { CLAUDE_PROJECT_DIR: tmpDir },
+    );
+  }
+
+  // O.a: staged file matches pattern → exit 0.
+  let okA = false;
+  {
+    const { tmpDir, git } = setupGitRepoFixture({
+      check: { kind: 'deliverable-touched', pattern: '^\\.prism/plans/.*\\.md$' },
+    });
+    try {
+      mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
+      writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
+      git(['add', '.prism/plans/foo.md']);
+      const r = runL(tmpDir);
+      okA = assert(name, r.code === 0, `O.a: expected exit 0 (staged deliverable matches pattern), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // O.b: staged file does NOT match pattern → exit 2, names the precondition.
+  let okB = false;
+  {
+    const { tmpDir, git } = setupGitRepoFixture({
+      check: { kind: 'deliverable-touched', pattern: '^docs/.*\\.md$' },
+    });
+    try {
+      mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
+      writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
+      git(['add', '.prism/plans/foo.md']);
+      const r = runL(tmpDir);
+      okB = assert(name, r.code === 2, `O.b: expected exit 2 (no changed file matches pattern), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`) &&
+            assert(name, r.stderr.includes('deliverable-touched-this-run'), `O.b: expected the precondition id 'deliverable-touched-this-run' in stderr. Got: ${r.stderr.substring(0, 300)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // O.c: pattern omitted → exit 2 (malformed-check guard fires). Stage a matching file so the
+  // ONLY reason for failure is the missing pattern, not an empty diff set.
+  let okC = false;
+  {
+    const { tmpDir, git } = setupGitRepoFixture({
+      check: { kind: 'deliverable-touched' },
+    });
+    try {
+      mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
+      writeFileSync(path.join(tmpDir, '.prism', 'plans', 'foo.md'), '# plan\n', 'utf8');
+      git(['add', '.prism/plans/foo.md']);
+      const r = runL(tmpDir);
+      okC = assert(name, r.code === 2, `O.c: expected exit 2 (missing-pattern guard fires), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  // O.d: no origin/main, staged matching file → exit 0 (merge-base arm skipped, staged arm contributes).
+  let okD = false;
+  {
+    const { tmpDir, git } = setupGitRepoFixture({
+      check: { kind: 'deliverable-touched', pattern: '^\\.prism/plans/.*\\.md$' },
+      withOrigin: false,
+    });
+    try {
+      mkdirSync(path.join(tmpDir, '.prism', 'plans'), { recursive: true });
+      writeFileSync(path.join(tmpDir, '.prism', 'plans', 'bar.md'), '# plan\n', 'utf8');
+      git(['add', '.prism/plans/bar.md']);
+      const r = runL(tmpDir);
+      okD = assert(name, r.code === 0, `O.d: expected exit 0 (no origin/main; staged deliverable still matches), got ${r.code}. stderr: ${r.stderr.substring(0, 300)}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+
+  if (okA && okB && okC && okD) console.log(`${PASS} ${name}`);
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {

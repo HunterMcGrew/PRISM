@@ -267,8 +267,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/plans/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/plans/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -369,8 +369,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/plans/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/plans/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -555,8 +555,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.claude/docs/qa/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.claude/docs/qa/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -613,8 +613,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^docs/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^docs/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -673,8 +673,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/design/mocks/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/design/mocks/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -733,8 +733,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/architect/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/architect/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -793,8 +793,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/audits/.*-audit\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/audits/.*-audit\\.md$"
         },
         "on_fail": "needs-replan"
       }
@@ -895,8 +895,8 @@
         "id": "deliverable-touched-this-run",
         "description": "the deliverable path is new or modified this run (committed-since-base OR working-tree), not a stale repo artifact",
         "check": {
-          "kind": "command",
-          "command": "{ git diff --name-only $(git merge-base HEAD origin/main)...HEAD; git diff --name-only HEAD; git diff --name-only --cached; } 2>/dev/null | sort -u | grep -qE '^\\.prism/retros/.*\\.md$'"
+          "kind": "deliverable-touched",
+          "pattern": "^\\.prism/retros/.*\\.md$"
         },
         "on_fail": "needs-replan"
       }
