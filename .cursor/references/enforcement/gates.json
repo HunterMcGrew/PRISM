@@ -125,14 +125,14 @@
     },
     "CheckSpec": {
       "type": "object",
-      "description": "The actual check the runtime runs for a gate or precondition. Two kinds: command checks (run a command and inspect exit code) and file checks (assert a path exists and optionally validate its contents). The kind field determines which other fields apply.",
+      "description": "The actual check the runtime runs for a gate or precondition. Kinds: command checks (run a command and inspect exit code), file checks (assert a path exists and optionally validate its contents), and deliverable-touched checks (test a persona's deliverable pattern against the git-diff union of changed files). The kind field determines which other fields apply.",
       "required": ["kind"],
       "additionalProperties": false,
       "properties": {
         "kind": {
           "type": "string",
-          "enum": ["command", "file-exists", "file-validates"],
-          "description": "'command' — run a shell command and check its exit code. 'file-exists' — assert a file or directory exists at the given path. 'file-validates' — assert a file exists and parses/validates (e.g. JSON parse, schema validation)."
+          "enum": ["command", "file-exists", "file-validates", "deliverable-touched"],
+          "description": "'command' — run a shell command and check its exit code. 'file-exists' — assert a file or directory exists at the given path. 'file-validates' — assert a file exists and parses/validates (e.g. JSON parse, schema validation). 'deliverable-touched' — the git-diff union (committed-since-base ∪ working-tree ∪ staged) matched against a persona deliverable 'pattern'; a cross-platform replacement for the bash-only command form, evaluated in Node so it runs identically on Windows and CI."
         },
         "command": {
           "type": "string",
@@ -153,6 +153,11 @@
           "type": "integer",
           "description": "Optional when kind is 'command'. Expected exit code; defaults to 0. Use when a non-zero exit is the success condition.",
           "default": 0
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Required when kind is 'deliverable-touched'. A regex (JavaScript RegExp syntax) tested against each changed file in the git-diff union; the check passes when any changed file matches. Carries the per-persona deliverable path shape (e.g. '^\\.prism/plans/.*\\.md$').",
+          "examples": ["^\\.prism/plans/.*\\.md$", "^docs/.*\\.md$"]
         }
       }
     },
