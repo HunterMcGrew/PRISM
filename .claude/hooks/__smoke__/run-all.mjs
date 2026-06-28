@@ -17,9 +17,10 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
+import { resolveRunKey } from '../lib/resolve-persona.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,9 +54,12 @@ function runHook(hookScript, payload, env = {}) {
  * strikes accepts either a number (legacy: { count }) or an object written verbatim,
  * so a scenario can pre-seed the capped flag ({ count, capped }).
  */
-function setupStopFixture({ gates, report, strikes = 0, baseline = null }) {
+function setupStopFixture({ gates, report, strikes = 0, baseline = null, session_id = 'smoke-session', agent_type = 'prism-code-dev' }) {
   const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-'));
-  const runKey = 'smoke-session'; // must match session_id in payload (runKey = agent_id ?? session_id)
+  // Compute runKey the same way run-gates.mjs does: resolveRunKey(payload).
+  // Scenarios pass session_id + agent_type (no agent_id), so the key is a short
+  // sha256 hash of 'session_id:agent_type' — NOT the bare session_id string.
+  const runKey = resolveRunKey({ session_id, agent_type });
 
   // Write synthetic gates.json into tmpDir so we can override CLAUDE_PROJECT_DIR.
   const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
@@ -867,7 +871,10 @@ function assert(scenarioName, condition, message) {
       gates: [],
       allowed_routes: ['briar'],
       ownership: {
-        may_write: ['src/**'],
+        // report.json must be in may_write so the Bash-path carve-out in I.ab is
+        // tested against the real lane config — without it the new may_write Bash
+        // enforcement would deny the redirect and I.ab (exit 0 expected) would fail.
+        may_write: ['src/**', '.prism/evidence/**/report.json'],
         may_not_run: ['gh pr merge', 'rm .prism/evidence', 'rm -rf .prism/evidence'],
       },
     },
@@ -1401,7 +1408,7 @@ function assert(scenarioName, condition, message) {
   // L.a: missing required field 'persona' → validateShape fails → exit 2
   {
     const badReport = { verdict: 'done', verdict_reason: 'done', next_route: 'clove', reasoning: 'ok', checklist: {} };
-    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: badReport });
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: badReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1414,7 +1421,7 @@ function assert(scenarioName, condition, message) {
 
   // L.b: coherent done report with all required fields and valid route → exit 0
   {
-    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validDoneReport });
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validDoneReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1428,7 +1435,7 @@ function assert(scenarioName, condition, message) {
   // L.c: content-precondition fails (no plan entry) → exit 2 AND strike NOT incremented.
   // Discriminator: precondition misses do not consume a gate strike (protocol miss, not gate fail).
   {
-    const { tmpDir, strikesPath } = setupStopFixture({ gates: gatesWithFailingContent, report: validDoneReport, strikes: 0 });
+    const { tmpDir, strikesPath } = setupStopFixture({ gates: gatesWithFailingContent, report: validDoneReport, strikes: 0, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1449,7 +1456,7 @@ function assert(scenarioName, condition, message) {
 
   // L.d: content-precondition passes (plan entry found) + coherent done report → exit 0
   {
-    const { tmpDir } = setupStopFixture({ gates: gatesWithPassingContent, report: validDoneReport });
+    const { tmpDir } = setupStopFixture({ gates: gatesWithPassingContent, report: validDoneReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1471,7 +1478,7 @@ function assert(scenarioName, condition, message) {
       checklist: {},
       payload: { findings: [] },
     };
-    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: emptyFindingsReport });
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: emptyFindingsReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1484,7 +1491,7 @@ function assert(scenarioName, condition, message) {
 
   // L.f: needs-fix verdict with >= 1 critical/major finding → payload-coherence passes → exit 0
   {
-    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validNeedsFixReport });
+    const { tmpDir } = setupStopFixture({ gates: gatesNoPreconditions, report: validNeedsFixReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1571,7 +1578,7 @@ function assert(scenarioName, condition, message) {
     // Gates have all 3 preconditions (report-written + sidecar + touched-this-run)
     const gates = makeRunScopedGates([reportWritten, sidecarPrecon, touchedFailPrecon]);
     // report.json IS written (report-written passes), but NO deliverable.json sidecar
-    const { tmpDir } = setupStopFixture({ gates, report: validDoneReport });
+    const { tmpDir } = setupStopFixture({ gates, report: validDoneReport, agent_type: 'prism-debugger' });
     try {
       const payload = { session_id: 'smoke-session', agent_type: 'prism-debugger', stop_reason: 'end_turn' };
       const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
@@ -1585,10 +1592,10 @@ function assert(scenarioName, condition, message) {
   // M.b: sidecar written + deliverable touched this run → exit 0
   {
     const gates = makeRunScopedGates([reportWritten, sidecarPrecon, touchedPassPrecon]);
-    const { tmpDir } = setupStopFixture({ gates, report: validDoneReport });
+    const { tmpDir, runKey } = setupStopFixture({ gates, report: validDoneReport, agent_type: 'prism-debugger' });
     try {
-      // Write the deliverable sidecar into the evidence dir
-      const runKey = 'smoke-session';
+      // Write the deliverable sidecar into the evidence dir (using the computed runKey,
+      // not a hardcoded string, so it matches the directory setupStopFixture created).
       const sidecarPath = path.join(tmpDir, '.prism', 'evidence', runKey, 'deliverable.json');
       writeFileSync(sidecarPath, JSON.stringify({ deliverable: '.prism/plans/prism-295.md', produced: true }), 'utf8');
 
@@ -2025,7 +2032,9 @@ function assert(scenarioName, condition, message) {
   // hook's projectDir (= tmpDir) is the git working tree run-gates diffs against.
   function setupGitRepoFixture({ check, withOrigin = true }) {
     const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-o-'));
-    const runKey = 'smoke-session';
+    // runO sends session_id:'smoke-session' + agent_type:'prism-debugger', so compute
+    // runKey the same way run-gates does — must match the hash, not the bare session_id.
+    const runKey = resolveRunKey({ session_id: 'smoke-session', agent_type: 'prism-debugger' });
 
     const git = (args) => {
       const r = spawnSync('git', args, { cwd: tmpDir, encoding: 'utf8' });
@@ -2917,12 +2926,15 @@ function assert(scenarioName, condition, message) {
   let okD = false;
   try {
     // Dynamic import so we can test the exported function directly.
-    const { resolvePersona } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+    // pathToFileURL is required on Windows: bare Windows paths (D:\...) are rejected
+    // by Node's dynamic import, which requires a file:// URL scheme.
+    const { resolvePersona } = await import(pathToFileURL(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs')).href);
     const fs = await import('node:fs');
     const gatesData = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, '.ai-skills', 'hooks', 'gates.json'), 'utf8'));
     const resolved = resolvePersona({ agent_type: 'prism-skill-forge' }, gatesData, REPO_ROOT);
-    okD = assert(name, resolved !== null && resolved.key === 'skill-forge',
-      `X.d: resolvePersona({agent_type:'prism-skill-forge'}) — expected key 'skill-forge', got ${JSON.stringify(resolved)}`);
+    // resolvePersona returns { persona: <key> }, not { key: <key> } — assert on .persona.
+    okD = assert(name, resolved !== null && resolved.persona === 'skill-forge',
+      `X.d: resolvePersona({agent_type:'prism-skill-forge'}) — expected persona 'skill-forge', got ${JSON.stringify(resolved)}`);
   } catch (e) {
     assert(name, false, `X.d: dynamic import of resolve-persona.mjs failed: ${e.message}`);
   }
@@ -2945,18 +2957,21 @@ function assert(scenarioName, condition, message) {
 
   let okA = false, okB = false;
   try {
-    const { resolveRunKey } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+    // resolveRunKey is also available as a static import at the top of this file,
+    // but this dynamic form lets the scenario stay self-contained and symmetric with X.d and Z.
+    // pathToFileURL required on Windows — see X.d comment.
+    const { resolveRunKey: resolveRunKeyDynamic } = await import(pathToFileURL(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs')).href);
 
     // Y.a: same session_id, distinct agent_type → distinct keys
-    const key1 = resolveRunKey({ session_id: 'sess-abc', agent_type: 'prism-ticket-start' });
-    const key2 = resolveRunKey({ session_id: 'sess-abc', agent_type: 'prism-code-dev' });
+    const key1 = resolveRunKeyDynamic({ session_id: 'sess-abc', agent_type: 'prism-ticket-start' });
+    const key2 = resolveRunKeyDynamic({ session_id: 'sess-abc', agent_type: 'prism-code-dev' });
     okA = assert(name,
       typeof key1 === 'string' && typeof key2 === 'string' && key1 !== key2,
       `Y.a: expected two distinct runKeys for the same session_id with distinct agent_type. Got key1=${key1}, key2=${key2}`);
 
     // Y.b: agent_id present → runKey === agent_id (native Task path unchanged)
     const agentId = 'a38d158a7f3f8f1e6';
-    const key3 = resolveRunKey({ session_id: 'sess-xyz', agent_type: 'prism-code-dev', agent_id: agentId });
+    const key3 = resolveRunKeyDynamic({ session_id: 'sess-xyz', agent_type: 'prism-code-dev', agent_id: agentId });
     okB = assert(name, key3 === agentId,
       `Y.b: expected runKey === agent_id ('${agentId}'), got '${key3}'`);
   } catch (e) {
@@ -2985,7 +3000,8 @@ function assert(scenarioName, condition, message) {
 
   let okA = false, okB = false;
   try {
-    const { resolvePersona } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+    // pathToFileURL required on Windows — see X.d comment.
+    const { resolvePersona } = await import(pathToFileURL(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs')).href);
     // A gates object with only _shared — no persona entries
     const gatesOnlyShared = {
       _shared: { may_write: ['.prism/lessons.md'] },
@@ -2999,10 +3015,14 @@ function assert(scenarioName, condition, message) {
       resolvedSolo === null || (resolvedSolo && resolvedSolo.key !== '_shared'),
       `Z.a: expected null or a non-_shared persona, got key=${resolvedSolo?.key}`);
 
-    // Z.b: agent_type '_shared' → resolves null (no mapping for this string)
-    const resolvedShared = resolvePersona({ agent_type: '_shared' }, gatesOnlyShared, REPO_ROOT);
+    // Z.b: agent_type '_shared' with a real gates object that has no _shared key — resolves null.
+    // When the gates object does NOT contain '_shared' as a direct key and '_shared' has no
+    // SKILL_ID_TO_PERSONA entry, resolvePersona returns null. Use a gates object with only
+    // a real persona (clove) — no _shared key — so there is no direct match for '_shared'.
+    const gatesNoShared = { clove: { ownership: { may_write: ['src/**'], may_not_run: [] }, gates: [], preconditions: [], allowed_routes: [] } };
+    const resolvedShared = resolvePersona({ agent_type: '_shared' }, gatesNoShared, REPO_ROOT);
     okB = assert(name, resolvedShared === null,
-      `Z.b: resolvePersona({agent_type:'_shared'}) — expected null, got ${JSON.stringify(resolvedShared)}`);
+      `Z.b: resolvePersona({agent_type:'_shared'}) with no _shared key in gates — expected null, got ${JSON.stringify(resolvedShared)}`);
   } catch (e) {
     assert(name, false, `Z: dynamic import of resolve-persona.mjs failed: ${e.message}`);
   }
