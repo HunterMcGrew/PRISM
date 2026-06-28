@@ -141,7 +141,6 @@ const EXEMPT_SKILLS = new Set([
 	// --- Utility skills (no gates.json entry by design) ---
 	"prism-handoff",
 	"prism-review-loop",
-	"prism-skill-forge",
 	// --- Phase 5 rollout in-progress (not yet gated in PR1) ---
 	"prism-code-review-self",  // briar — Class B
 	"prism-code-review-pr",    // eric — Class B
@@ -210,7 +209,8 @@ test("risk-4: every gates.json persona key resolves in SKILL_ID_TO_PERSONA", () 
 	const skillIdToPersona = extractSkillIdToPersona(resolvePersonaSource);
 	const personaValues = new Set(skillIdToPersona.values());
 
-	const gatesPersonaKeys = Object.keys(gates);
+	// _shared is a reserved non-persona top-level key — skip it in the persona-key check.
+	const gatesPersonaKeys = Object.keys(gates).filter((key) => key !== "_shared");
 	const missing = gatesPersonaKeys.filter((key) => !personaValues.has(key));
 
 	assert.deepEqual(

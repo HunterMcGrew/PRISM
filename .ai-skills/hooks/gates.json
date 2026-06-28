@@ -1,4 +1,10 @@
 {
+  "_shared": {
+    "may_write": [
+      ".prism/lessons.md",
+      ".prism/evidence/**/deliverable.json"
+    ]
+  },
   "clove": {
     "writes_report_to": ".prism/evidence/${runKey}/report.json",
     "preconditions": [
@@ -64,7 +70,8 @@
         "**/*.test.*",
         ".prism/plans/**",
         ".prism/evidence/**/report.json",
-        ".ai-skills/skills/prism-code-dev/**",
+        ".ai-skills/skills/**",
+        ".prism/skills/**",
         ".ai-skills/hooks/__smoke__/**",
         ".claude/hooks/__smoke__/**",
         ".claude/settings.json",
@@ -227,7 +234,10 @@
         ".prism/architect/**",
         "docs/**",
         ".prism/spec/adrs/**",
-        ".prism/evidence/**/report.json"
+        ".prism/evidence/**/report.json",
+        ".ai-skills/skills/**",
+        ".prism/skills/**",
+        ".ai-skills/definitions/**"
       ],
       "may_not_run": [
         "gh pr merge",
@@ -1378,6 +1388,33 @@
         "gh pr create",
         "gh issue create",
         "gh issue edit",
+        "rm .prism/evidence",
+        "rm -rf .prism/evidence",
+        "rm -f .prism/evidence",
+        "rm -fr .prism/evidence",
+        "rm --force .prism/evidence"
+      ]
+    }
+  },
+  "skill-forge": {
+    "preconditions": [],
+    "gates": [],
+    "allowed_routes": [
+      "human"
+    ],
+    "ownership": {
+      "may_write": [
+        ".ai-skills/skills/**",
+        ".prism/skills/**",
+        ".ai-skills/definitions/**",
+        ".prism/plans/**",
+        ".prism/evidence/**/report.json"
+      ],
+      "may_not_run": [
+        "gh pr merge",
+        "git merge",
+        "git push -f",
+        "git push --force",
         "rm .prism/evidence",
         "rm -rf .prism/evidence",
         "rm -f .prism/evidence",

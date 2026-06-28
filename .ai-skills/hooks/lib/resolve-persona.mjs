@@ -111,6 +111,7 @@ function resolveAgentTypeToKey(agentType, gatesData) {
     'prism-customer-success': 'remy',
     'prism-recruiting': 'penny',
     'prism-legal': 'lex',
+    'prism-skill-forge': 'skill-forge',
   };
 
   const mappedKey = SKILL_ID_TO_PERSONA[agentType];
