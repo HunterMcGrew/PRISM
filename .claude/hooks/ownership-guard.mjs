@@ -2,11 +2,11 @@
 /**
  * ownership-guard.mjs — PreToolUse ownership enforcement hook.
  *
- * Fires on Edit, Write, MultiEdit, and Bash tool calls. Resolves the active persona,
- * then enforces two constraints from the persona's ownership matrix in gates.json:
+ * Fires on Edit, Write, MultiEdit, Bash, and PowerShell tool calls. Resolves the active
+ * persona, then enforces two constraints from the persona's ownership matrix in gates.json:
  *   - may_write: glob patterns the persona may write to. A write to any other path
  *     is denied before the tool executes.
- *   - may_not_run: command substrings the persona may never run via Bash. A match
+ *   - may_not_run: command substrings the persona may never run via Bash or PowerShell. A match
  *     on any non-heredoc command line is denied before execution. All non-heredoc
  *     lines are checked so multi-line commands cannot bypass the guard by placing a
  *     forbidden command after line 1.
@@ -150,7 +150,12 @@ const toolInput = payload.tool_input ?? {};
 // false positives where prohibited strings appear as data (e.g. a JSON payload that
 // contains "gh pr merge" as a value). A heredoc delimiter ('<<') marks where executable
 // commands end and inline data begins.
-if (toolName === 'Bash' && toolInput.command) {
+// PowerShell shares this branch with Bash: on Windows the harness exposes a PowerShell
+// tool whose calls would otherwise skip every check below, letting a gated persona run a
+// may_not_run command (e.g. `gh pr merge`) via PowerShell to bypass the floor (#366). The
+// may_not_run substring scan and the git/redirect scans cover PowerShell's shared operators;
+// native cmdlets (Set-Content, Out-File, Remove-Item) remain a tracked residual on #366.
+if ((toolName === 'Bash' || toolName === 'PowerShell') && toolInput.command) {
   const cmd = toolInput.command;
   const effectiveCmd = extractEffectiveCommand(cmd);
   // Evidence-rm prohibitions (e.g. "rm .prism/evidence", "rm -rf .prism/evidence") are the

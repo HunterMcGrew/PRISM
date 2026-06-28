@@ -295,13 +295,25 @@ process.exit(0);
 // --- Helper functions ---
 
 /**
+ * Strips a leading UTF-8 BOM before JSON.parse.
+ *
+ * Persona-written evidence files (report.json, deliverable.json) can be produced via
+ * PowerShell on Windows, whose Set-Content/Out-File prepend a BOM that Node's JSON.parse
+ * rejects (#366 Windows-robustness cluster). Hook-managed files are written BOM-free via
+ * Node fs, so this only matters at the persona-facing read sites.
+ */
+function stripBom(text) {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+/**
  * Validates the shape of report.json for the current run.
  * Implements the four-step validation from report-contract.md § Reference validator.
  */
 function validateShape(reportPath, allowedRoutes, gateForcedPark = false) {
   let raw;
   try {
-    raw = readFileSync(reportPath, 'utf8');
+    raw = stripBom(readFileSync(reportPath, 'utf8'));
   } catch {
     return { ok: false, error: 'report.json not found — emit your report before stopping.' };
   }
@@ -383,7 +395,7 @@ function runCheck(check, runKey, evidenceDir, projectDir) {
       return { passed: false, error: `File not found: ${checkPath}` };
     }
     try {
-      JSON.parse(readFileSync(checkPath, 'utf8'));
+      JSON.parse(stripBom(readFileSync(checkPath, 'utf8')));
       return { passed: true };
     } catch (e) {
       return { passed: false, error: `JSON parse failed: ${e.message}` };

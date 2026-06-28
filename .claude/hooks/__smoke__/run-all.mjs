@@ -284,6 +284,67 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario B.7: may_not_run enforced for the PowerShell tool (#366)
+// On Windows the harness exposes a PowerShell tool. Before #366 its calls matched the
+// PreToolUse matcher but hit no enforcement branch, so a gated persona could run a
+// may_not_run command (e.g. `gh pr merge`) via PowerShell to bypass the floor. The guard
+// must now deny PowerShell commands the same way it denies Bash, and allow permitted ones.
+//
+// Sub-tests:
+//   B.7a: PowerShell payload with "gh pr merge 123" → exit 2, prohibition in stderr
+//   B.7b: PowerShell payload with "git status"      → exit 0 (negative control — allowed)
+// ============================================================
+{
+  const name = 'B.7: may_not_run enforced for the PowerShell tool (#366)';
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: {
+        may_write: ['src/**'],
+        may_not_run: ['gh pr merge', 'git merge', 'git push -f', 'git push --force'],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const env = { CLAUDE_PROJECT_DIR: tmpDir };
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardPowerShell(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'PowerShell',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // B.7a: forbidden command via PowerShell is denied
+    const rA = runGuardPowerShell('gh pr merge 123');
+    const okA = assert(name, rA.code === 2, `B.7a: expected exit 2 for PowerShell 'gh pr merge 123', got ${rA.code}`) &&
+                assert(name, rA.stderr.length > 0, `B.7a: expected prohibition message in stderr. Got: ${rA.stderr.substring(0, 200)}`);
+
+    // B.7b: allowed command via PowerShell — negative control
+    const rB = runGuardPowerShell('git status');
+    const okB = assert(name, rB.code === 0, `B.7b: expected exit 0 for allowed PowerShell command 'git status', got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    if (okA && okB) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
 // Scenario B.6: multi-line Bash — forbidden command on line 2 is caught
 // Regression coverage for the extractEffectiveCommand multi-line bypass hole (Eric Major).
 // A two-line Bash payload puts an allowed command on line 1 and a forbidden command on
