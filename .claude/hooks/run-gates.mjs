@@ -25,7 +25,7 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { resolvePersona } from './lib/resolve-persona.mjs';
+import { resolvePersona, resolveRunKey } from './lib/resolve-persona.mjs';
 
 const STRIKE_CAP = 3;
 const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
@@ -74,8 +74,10 @@ if (!entry) {
   process.exit(0);
 }
 
-// runKey = agent_id ?? session_id — keyed by agent to prevent fleet-lane collision.
-const runKey = payload.agent_id ?? payload.session_id;
+// runKey — keyed by agent to prevent fleet-lane collision. Workflow dispatches carry
+// no agent_id, so resolveRunKey falls back to a short hash of session_id + agent_type,
+// giving each dispatched persona a distinct deterministic dir. See Defect-2 decision.
+const runKey = resolveRunKey(payload);
 if (!runKey) {
   process.stderr.write(`run-gates: cannot determine runKey — no agent_id or session_id in payload\n`);
   process.exit(0);

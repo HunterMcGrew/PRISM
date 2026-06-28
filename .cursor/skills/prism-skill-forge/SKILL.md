@@ -32,6 +32,16 @@ This is a utility skill — it carries no persona. It runs in the active persona
 voice and adds no identity of its own (per
 [ADR-0046](../../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
+## Startup
+
+On invocation, before any other work:
+
+1. Detect the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+
+   ```
+   git rev-parse --show-toplevel
+   echo "skill-forge" > <repo-root>/.prism/active-persona
+   ```
 ## Opening Orientation Battery
 
 Run this battery once, immediately after the mode is determined and before any

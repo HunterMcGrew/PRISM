@@ -13,6 +13,7 @@
  *   dispatch is not gated (non-persona agent_type or no active-persona file).
  */
 
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -111,6 +112,7 @@ function resolveAgentTypeToKey(agentType, gatesData) {
     'prism-customer-success': 'remy',
     'prism-recruiting': 'penny',
     'prism-legal': 'lex',
+    'prism-skill-forge': 'skill-forge',
   };
 
   const mappedKey = SKILL_ID_TO_PERSONA[agentType];
@@ -119,4 +121,28 @@ function resolveAgentTypeToKey(agentType, gatesData) {
   }
 
   return null;
+}
+
+/**
+ * Derives a collision-safe runKey for evidence directory naming.
+ *
+ * Native Task dispatches carry a unique agent_id — use it unchanged so the
+ * Task path is unaffected. Workflow agent() dispatches carry no agent_id, so
+ * the fallback combines session_id + agent_type into a short sha256 hash to give
+ * each dispatched persona a distinct, deterministic directory.
+ *
+ * Residual (v1 known limit): two concurrent dispatches of the SAME persona in the
+ * SAME session (identical session_id + agent_type) still collide. Fleet runs dispatch
+ * distinct personas per lane, so this is not a blocker for the current use case.
+ *
+ * @param {object} payload - The parsed hook payload (may contain agent_id, agent_type, session_id).
+ * @returns {string | null} The resolved runKey, or null if neither field is present.
+ */
+export function resolveRunKey(payload) {
+  if (payload.agent_id) return payload.agent_id;
+  if (payload.agent_type && payload.session_id) {
+    const raw = payload.session_id + ':' + payload.agent_type;
+    return createHash('sha256').update(raw).digest('hex').slice(0, 16);
+  }
+  return payload.session_id ?? null;
 }

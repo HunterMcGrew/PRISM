@@ -2178,6 +2178,870 @@ function assert(scenarioName, condition, message) {
 }
 
 // ============================================================
+// Scenario P: active-persona Bash arm (Defect 1 / Test Matrix row 1)
+//
+// The Edit-arm denial (lines 354–369 of ownership-guard.mjs) already had smoke
+// coverage in Scenario H. This scenario covers the Bash echo arm — the real write
+// mechanism used by every persona's startup line. Three sub-tests:
+//
+//   P.a: orchestrated echo > .prism/active-persona → DENY (agent_type present)
+//   P.b: solo echo > .prism/active-persona → PERMIT (no agent_type)
+//   P.c: solo fused "git status && echo done > .prism/active-persona" → PERMIT
+//
+// MAINTENANCE OFF is required for the deny assertions: the ambient session may
+// have CLAUDE_PRISM_MAINTENANCE=1 set, which would permit the protected write
+// and invert the expected exit code. Passing CLAUDE_PRISM_MAINTENANCE:'' in env
+// overrides the ambient value (runHook spreads { ...process.env, ...env }).
+// ============================================================
+{
+  const name = 'P: active-persona Bash arm (Defect 1)';
+
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: { may_write: ['src/**'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-p-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+    // CRITICAL: deny-scenarios must have maintenance OFF so the protected-write
+    // unlock does not invert the expected exit code.
+    const maintOff = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
+    const maintOffSolo = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
+
+    function runGuardBash(command, extra = {}) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+        ...extra,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '', ...extra._env });
+    }
+
+    // P.a: orchestrated (agent_type present) → DENY
+    const rA = runHook(guardScript, {
+      session_id: 'smoke-session',
+      agent_type: 'prism-code-dev',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'echo "clove" > .prism/active-persona' },
+      cwd: tmpDir,
+    }, maintOff);
+    const okA = assert(name, rA.code === 2,
+      `P.a: expected exit 2 (orchestrated Bash echo to active-persona → deny), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // P.b: solo (no agent_type) → PERMIT
+    // Seed .prism/active-persona so the solo resolver resolves Clove.
+    const activePersonaDir = path.join(tmpDir, '.prism');
+    mkdirSync(activePersonaDir, { recursive: true });
+    writeFileSync(path.join(activePersonaDir, 'active-persona'), 'clove', 'utf8');
+
+    const rB = runHook(guardScript, {
+      session_id: 'smoke-session',
+      // no agent_type — solo path
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'echo "clove" > .prism/active-persona' },
+      cwd: tmpDir,
+    }, maintOffSolo);
+    const okB = assert(name, rB.code === 0,
+      `P.b: expected exit 0 (solo Bash echo to active-persona → permit), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // P.c: solo fused command → PERMIT (the active-persona write is the non-dangerous segment)
+    const rC = runHook(guardScript, {
+      session_id: 'smoke-session',
+      // no agent_type — solo path
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'git status && echo done > .prism/active-persona' },
+      cwd: tmpDir,
+    }, maintOffSolo);
+    const okC = assert(name, rC.code === 0,
+      `P.c: expected exit 0 (solo fused 'git status && echo done > .prism/active-persona' → permit), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario Q: #367 Windows MSYS-cwd protected-write denial (Test Matrix row 2)
+//
+// On Windows + Git Bash, payload.cwd arrives in MSYS form (/d/Documents/...)
+// while CLAUDE_PROJECT_DIR is Windows form (D:\Documents\...). Before the fix,
+// path.relative produced ../../../d/... which matched nothing, so every Bash
+// protected-write check was inert on Windows.
+//
+// Two sub-tests:
+//   Q.a: MSYS cwd + echo evil > .claude/hooks/gates.json → DENY
+//   Q.b: MSYS cwd + printf '' >> .claude/hooks/run-gates.mjs → DENY
+//
+// MAINTENANCE OFF required (see Scenario P note).
+// The guard is run against REPO_ROOT so the real protected paths resolve.
+// ============================================================
+{
+  const name = 'Q: #367 Windows MSYS-cwd protected-write denial';
+
+  const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+  // Synthesize a MSYS-form cwd for the repo root.
+  // REPO_ROOT on Windows: D:\Documents\Coding Stuff\agent-crew
+  // MSYS form:            /d/Documents/Coding Stuff/agent-crew
+  // Convert: strip drive letter and colon, prepend /driveLetter/ (lowercase)
+  function toMsysCwd(winPath) {
+    // Match D:\... or D:/... (case insensitive)
+    const m = winPath.match(/^([a-zA-Z]):[/\\](.*)/);
+    if (!m) return winPath; // already POSIX or unrecognized, no-op
+    return '/' + m[1].toLowerCase() + '/' + m[2].replace(/\\/g, '/');
+  }
+
+  const msysCwd = toMsysCwd(REPO_ROOT);
+  // Only run if we actually produced a MSYS path (Windows environment).
+  // On Linux/Mac, REPO_ROOT has no drive letter so toMsysCwd is a no-op;
+  // the test would be testing normal path handling (not the Windows fix).
+  // Still run it — the guard's toCanonicalCwd is a no-op on POSIX paths,
+  // so a POSIX path with POSIX CLAUDE_PROJECT_DIR still resolves correctly.
+
+  // MAINTENANCE OFF: deny-scenarios must not be unlocked by ambient maintenance mode.
+  const maintOff = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PRISM_MAINTENANCE: '' };
+
+  // Q.a: MSYS cwd + redirect to gates.json → DENY
+  const rA = runHook(guardScript, {
+    session_id: 'smoke-q',
+    agent_type: 'prism-code-dev',
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'echo evil > .claude/hooks/gates.json' },
+    cwd: msysCwd, // MSYS form
+  }, maintOff);
+  const okA = assert(name, rA.code === 2,
+    `Q.a: MSYS cwd (${msysCwd}) + echo evil > gates.json — expected exit 2 (protected write denied on Windows), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+  // Q.b: MSYS cwd + append redirect to run-gates.mjs → DENY
+  const rB = runHook(guardScript, {
+    session_id: 'smoke-q',
+    agent_type: 'prism-code-dev',
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: "printf '' >> .claude/hooks/run-gates.mjs" },
+    cwd: msysCwd,
+  }, maintOff);
+  const okB = assert(name, rB.code === 2,
+    `Q.b: MSYS cwd + printf append to run-gates.mjs — expected exit 2 (protected write denied on Windows), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+  if (okA && okB) console.log(`${PASS} ${name}`);
+}
+
+// ============================================================
+// Scenario R: out-of-projectDir permits (Test Matrix row 3)
+//
+// Writes that land OUTSIDE the project dir must be permitted: /tmp paths,
+// /dev/null, and Windows cross-drive scratchpad (C:\... when repo is on D:\).
+//
+// Sub-tests:
+//   R.a: echo x > /tmp/pr-body.md → PERMIT
+//   R.b: echo x > /dev/null → PERMIT
+//   R.c: Windows cross-drive — echo x > C:\Users\...\Temp\scratch.txt → PERMIT
+//        (only meaningful on Windows where REPO_ROOT is on a different drive;
+//         on Linux, the path is treated as relative and may not be out-of-dir —
+//         the sub-test is skipped on POSIX when REPO_ROOT has no drive letter)
+// ============================================================
+{
+  const name = 'R: out-of-projectDir permits';
+
+  const gates = {
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: { may_write: ['src/**'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-r-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+    const env = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-r',
+        agent_type: 'prism-code-dev',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // R.a: /tmp path — out of projectDir → PERMIT
+    const rA = runGuardBash('echo x > /tmp/pr-body.md');
+    const okA = assert(name, rA.code === 0,
+      `R.a: echo x > /tmp/pr-body.md — expected exit 0 (out-of-projectDir permit), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // R.b: /dev/null → PERMIT
+    const rB = runGuardBash('echo x > /dev/null');
+    const okB = assert(name, rB.code === 0,
+      `R.b: echo x > /dev/null — expected exit 0 (out-of-projectDir permit), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // R.c: Windows cross-drive scratchpad — only meaningful when REPO_ROOT has a drive letter
+    // (i.e. on Windows). On Linux/Mac this would be treated as a relative path starting with C:
+    // which is ambiguous. We check by testing if REPO_ROOT has a drive letter.
+    let okC = true;
+    const hasDriveLetter = /^[a-zA-Z]:/.test(REPO_ROOT);
+    if (hasDriveLetter) {
+      // Pick the OTHER drive — if repo is on D:, use C:; otherwise use D:.
+      const repoDrive = REPO_ROOT[0].toUpperCase();
+      const otherDrive = repoDrive === 'D' ? 'C' : 'D';
+      const scratchPath = `${otherDrive}:\\Users\\scratchpad\\Temp\\smoke-${Date.now()}.txt`;
+      const rC = runGuardBash(`echo x > ${scratchPath}`);
+      okC = assert(name, rC.code === 0,
+        `R.c: echo x > ${scratchPath} (cross-drive Windows scratchpad) — expected exit 0 (out-of-projectDir permit), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+    } else {
+      console.log(`  R.c: skipped — REPO_ROOT has no drive letter (${REPO_ROOT}), cross-drive test only meaningful on Windows.`);
+    }
+
+    if (okA && okB && okC) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario S: _shared.may_write riders (Test Matrix rows 4–5)
+//
+// Two confirmed universal riders live in _shared.may_write:
+//   .prism/lessons.md — any persona may append lessons
+//   .prism/evidence/**/deliverable.json — any persona may write their sidecar
+//
+// Sub-tests:
+//   S.a: clove (src/** lane) echo >> .prism/lessons.md → PERMIT (_shared grants it)
+//   S.b: cat notes >> .prism/lessons.md → PERMIT
+//   S.c: clove echo '{}' > .prism/evidence/abc/deliverable.json → PERMIT (_shared)
+//   S.d: sasha echo '{}' > .prism/evidence/abc/deliverable.json → PERMIT (_shared)
+//   S.e: clove echo x > .prism/evidence/abc/strikes.json → DENY (gate-state protected — _shared does not grant)
+//   S.f: a non-plans persona (eric) echo > .prism/plans/foo.md → DENY (_shared only grants lessons+deliverable)
+//
+// MAINTENANCE OFF: deny-scenarios must not be unlocked.
+// ============================================================
+{
+  const name = 'S: _shared.may_write riders (lessons.md + deliverable.json)';
+
+  const gates = {
+    _shared: {
+      may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'],
+    },
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: { may_write: ['src/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    sasha: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['clove', 'human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-s-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command, agentType) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: agentType,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' });
+    }
+
+    // S.a: lessons.md append via echo >> — any persona (clove here) → PERMIT
+    const rA = runGuardBash('echo "lesson: X" >> .prism/lessons.md', 'prism-code-dev');
+    const okA = assert(name, rA.code === 0,
+      `S.a: echo >> .prism/lessons.md (clove) — expected exit 0 (_shared grants), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // S.b: cat >> .prism/lessons.md → PERMIT
+    const rB = runGuardBash('cat notes >> .prism/lessons.md', 'prism-code-dev');
+    const okB = assert(name, rB.code === 0,
+      `S.b: cat notes >> .prism/lessons.md — expected exit 0 (_shared grants), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // S.c: clove echo > deliverable.json → PERMIT (_shared)
+    const rC = runGuardBash("echo '{}' > .prism/evidence/abc/deliverable.json", 'prism-code-dev');
+    const okC = assert(name, rC.code === 0,
+      `S.c: clove echo > deliverable.json — expected exit 0 (_shared grants), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    // S.d: sasha echo > deliverable.json → PERMIT (_shared)
+    const rD = runGuardBash("echo '{}' > .prism/evidence/abc/deliverable.json", 'prism-debugger');
+    const okD = assert(name, rD.code === 0,
+      `S.d: sasha echo > deliverable.json — expected exit 0 (_shared grants), got ${rD.code}. stderr: ${rD.stderr.substring(0, 200)}`);
+
+    // S.e: echo > strikes.json — gate-state protected, _shared does NOT grant → DENY
+    const rE = runGuardBash("echo '{}' > .prism/evidence/abc/strikes.json", 'prism-code-dev');
+    const okE = assert(name, rE.code === 2,
+      `S.e: echo > strikes.json — expected exit 2 (gate-state protected, _shared does not grant), got ${rE.code}. stderr: ${rE.stderr.substring(0, 200)}`);
+
+    // S.f: eric echo > .prism/plans/foo.md — _shared only covers lessons.md and deliverable.json,
+    // NOT plans. Eric's may_write includes plans so this should PERMIT.
+    // Actually eric HAS .prism/plans/** in its lane above — let's test a path NOT in the lane.
+    // Use a persona that lacks plans: clove has no .prism/plans/** in its lane here.
+    const rF = runGuardBash('echo x > .prism/plans/foo.md', 'prism-code-dev'); // clove: no plans lane
+    const okF = assert(name, rF.code === 2,
+      `S.f: clove echo > .prism/plans/foo.md — expected exit 2 (_shared only covers lessons+deliverable, plans not granted), got ${rF.code}. stderr: ${rF.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD && okE && okF) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario T: Bash lane enforcement (Test Matrix row 6)
+//
+// Personas trying to Bash-write outside their lane are denied; those writing
+// inside are permitted. Tests tee, cp, and redirect across several personas.
+//
+// Sub-tests:
+//   T.a: eric echo > src/index.ts → DENY (eric has no src/ lane)
+//   T.b: sage echo > .prism/plans/foo.md → DENY (sage has no plans lane)
+//   T.c: lilac tee .prism/plans/foo.md → DENY (lilac has no plans lane)
+//   T.d: briar cp /tmp/fix.ts src/index.ts → DENY (briar has no src/ lane)
+//   T.e: clove echo > src/index.ts → PERMIT (clove has src/**)
+//   T.f: clove tee src/new.ts < /tmp/c.txt → PERMIT (clove has src/**)
+//
+// MAINTENANCE OFF on deny-scenarios.
+// ============================================================
+{
+  const name = 'T: Bash lane enforcement';
+
+  const gates = {
+    _shared: {
+      may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'],
+    },
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: { may_write: ['src/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    sage: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['CHANGELOG.md', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    lilac: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    briar: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-t-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command, agentType, maintainOff = true) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: agentType,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, {
+        CLAUDE_PROJECT_DIR: tmpDir,
+        ...(maintainOff ? { CLAUDE_PRISM_MAINTENANCE: '' } : {}),
+      });
+    }
+
+    // T.a: eric → src/ (denied — eric has no src/ lane)
+    const rA = runGuardBash('echo x > src/index.ts', 'prism-code-review-pr');
+    const okA = assert(name, rA.code === 2,
+      `T.a: eric echo > src/index.ts — expected exit 2 (eric has no src/ lane), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // T.b: sage → .prism/plans/ (denied)
+    const rB = runGuardBash('echo x > .prism/plans/foo.md', 'prism-changelog');
+    const okB = assert(name, rB.code === 2,
+      `T.b: sage echo > .prism/plans/foo.md — expected exit 2 (sage has no plans lane), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // T.c: lilac tee .prism/plans/foo.md → DENY
+    const rC = runGuardBash('tee .prism/plans/foo.md', 'prism-standup-summary');
+    const okC = assert(name, rC.code === 2,
+      `T.c: lilac tee .prism/plans/foo.md — expected exit 2 (lilac has no plans lane), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    // T.d: briar cp /tmp/fix.ts src/index.ts → DENY (briar has no src/ lane)
+    const rD = runGuardBash('cp /tmp/fix.ts src/index.ts', 'prism-code-review-self');
+    const okD = assert(name, rD.code === 2,
+      `T.d: briar cp /tmp/fix.ts src/index.ts — expected exit 2 (briar has no src/ lane), got ${rD.code}. stderr: ${rD.stderr.substring(0, 200)}`);
+
+    // T.e: clove echo > src/index.ts → PERMIT
+    const rE = runGuardBash('echo x > src/index.ts', 'prism-code-dev', false);
+    const okE = assert(name, rE.code === 0,
+      `T.e: clove echo > src/index.ts — expected exit 0 (clove has src/** lane), got ${rE.code}. stderr: ${rE.stderr.substring(0, 200)}`);
+
+    // T.f: clove tee src/new.ts < /tmp/c.txt → PERMIT (tee target is src/)
+    const rF = runGuardBash('tee src/new.ts < /tmp/c.txt', 'prism-code-dev', false);
+    const okF = assert(name, rF.code === 0,
+      `T.f: clove tee src/new.ts < /tmp/c.txt — expected exit 0 (clove has src/** lane), got ${rF.code}. stderr: ${rF.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC && okD && okE && okF) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario U: fused/multi-segment lane enforcement (Test Matrix row 7)
+//
+// Multi-segment commands where ANY in-repo write to an out-of-lane path denies
+// the whole command, but a redirect to a safe (out-of-projectDir) path permits.
+//
+// Sub-tests:
+//   U.a: eric "git status && echo bad > src/index.ts" → DENY
+//   U.b: eric "gh pr diff 123 > /tmp/diff.txt" → PERMIT (target is /tmp, out-of-dir)
+//   U.c: eric "echo bad > src/index.ts || true" → DENY
+//
+// MAINTENANCE OFF on deny-scenarios.
+// ============================================================
+{
+  const name = 'U: fused/multi-segment lane enforcement';
+
+  const gates = {
+    _shared: {
+      may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'],
+    },
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-u-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command, maintOff = true) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: 'prism-code-review-pr',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, {
+        CLAUDE_PROJECT_DIR: tmpDir,
+        ...(maintOff ? { CLAUDE_PRISM_MAINTENANCE: '' } : {}),
+      });
+    }
+
+    // U.a: && chaining — second segment is an out-of-lane write → DENY
+    const rA = runGuardBash('git status && echo "bad" > src/index.ts');
+    const okA = assert(name, rA.code === 2,
+      `U.a: git status && echo bad > src/index.ts (eric) — expected exit 2 (out-of-lane write in second segment), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // U.b: redirect to /tmp — out-of-projectDir → PERMIT
+    const rB = runGuardBash('gh pr diff 123 > /tmp/diff.txt', false);
+    const okB = assert(name, rB.code === 0,
+      `U.b: gh pr diff 123 > /tmp/diff.txt (eric) — expected exit 0 (target is /tmp, out-of-dir), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // U.c: || chaining — first segment is the out-of-lane write → DENY
+    const rC = runGuardBash('echo bad > src/index.ts || true');
+    const okC = assert(name, rC.code === 2,
+      `U.c: echo bad > src/index.ts || true (eric) — expected exit 2 (out-of-lane write), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario V: substitution body lane enforcement (Test Matrix row 8)
+//
+// Process substitution bodies ($(…), <(…), >(…)) embed writes that a
+// flat segment scan would miss. collectBashWriteTargets extracts and scans
+// them via extractSubstitutionBodies (closing the tee >(cat > …) bypass vector).
+//
+// Sub-tests:
+//   V.a: eric "cat <(echo bad > src/index.ts)" → DENY (write hidden in <() body)
+//   V.b: eric "echo x | tee >(cat > src/index.ts)" → DENY (write hidden in >() body)
+//
+// MAINTENANCE OFF on deny-scenarios.
+// ============================================================
+{
+  const name = 'V: substitution body lane enforcement';
+
+  const gates = {
+    _shared: {
+      may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'],
+    },
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-v-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    function runGuardBash(command) {
+      return runHook(guardScript, {
+        session_id: 'smoke-session',
+        agent_type: 'prism-code-review-pr',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command },
+        cwd: tmpDir,
+      }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' });
+    }
+
+    // V.a: write hidden inside <() body → DENY
+    const rA = runGuardBash('cat <(echo bad > src/index.ts)');
+    const okA = assert(name, rA.code === 2,
+      `V.a: cat <(echo bad > src/index.ts) — expected exit 2 (out-of-lane write in <() body), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // V.b: write hidden inside >() body (tee) → DENY
+    const rB = runGuardBash('echo x | tee >(cat > src/index.ts)');
+    const okB = assert(name, rB.code === 2,
+      `V.b: echo x | tee >(cat > src/index.ts) — expected exit 2 (out-of-lane write in >() body), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    if (okA && okB) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario W: install and truncate operators (Test Matrix row 9 / Task 10)
+//
+// Task 10 added 'install' and 'truncate' to collectWriteTargets. These write
+// operators formerly bypassed the Bash lane check.
+//
+// Sub-tests:
+//   W.a: clove "install /tmp/x src/new.ts" → PERMIT (src/** in clove lane)
+//   W.b: eric "truncate -s 0 src/index.ts" → DENY (eric has no src/ lane)
+//
+// MAINTENANCE OFF on deny-scenario.
+// ============================================================
+{
+  const name = 'W: install/truncate operators (Task 10)';
+
+  const gates = {
+    _shared: {
+      may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'],
+    },
+    clove: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['briar'],
+      ownership: { may_write: ['src/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['human'],
+      ownership: { may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'], may_not_run: [] },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-w-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+
+    // W.a: clove install /tmp/x src/new.ts → PERMIT
+    const rA = runHook(guardScript, {
+      session_id: 'smoke-session',
+      agent_type: 'prism-code-dev',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'install /tmp/x src/new.ts' },
+      cwd: tmpDir,
+    }, { CLAUDE_PROJECT_DIR: tmpDir });
+    const okA = assert(name, rA.code === 0,
+      `W.a: clove install /tmp/x src/new.ts — expected exit 0 (src/** in clove lane), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // W.b: eric truncate -s 0 src/index.ts → DENY
+    const rB = runHook(guardScript, {
+      session_id: 'smoke-session',
+      agent_type: 'prism-code-review-pr',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'truncate -s 0 src/index.ts' },
+      cwd: tmpDir,
+    }, { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' });
+    const okB = assert(name, rB.code === 2,
+      `W.b: eric truncate -s 0 src/index.ts — expected exit 2 (eric has no src/ lane), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    if (okA && okB) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario X: skill-forge persona (Test Matrix row 10)
+//
+// The skill-forge gate entry has preconditions:[] and owns the skill source lane.
+// Four sub-tests verify: skill source write permits, hook write denies,
+// plans write permits (in lane), and resolvePersona resolves correctly.
+//
+// X.a: skill-forge Write to .ai-skills/skills/prism-code-dev/SKILL.md → PERMIT
+// X.b: skill-forge Write to .ai-skills/hooks/gates.json → DENY (canonical-source-protected)
+// X.c: skill-forge echo > .prism/plans/foo.md → PERMIT (in lane)
+// X.d: resolvePersona({agent_type:'prism-skill-forge'}) → resolves 'skill-forge', not null
+//
+// Tests X.a/X.b/X.c run against REPO_ROOT so real enforcement paths resolve.
+// X.b MAINTENANCE OFF — deny must not be unlocked.
+// ============================================================
+{
+  const name = 'X: skill-forge persona';
+
+  const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+  const maintOff = { CLAUDE_PROJECT_DIR: REPO_ROOT, CLAUDE_PRISM_MAINTENANCE: '' };
+
+  // X.a: Write to skill source → PERMIT
+  const rA = runHook(guardScript, {
+    session_id: 'smoke-x',
+    agent_type: 'prism-skill-forge',
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Write',
+    tool_input: { file_path: '.ai-skills/skills/prism-code-dev/SKILL.md' },
+    cwd: REPO_ROOT,
+  }, { CLAUDE_PROJECT_DIR: REPO_ROOT });
+  const okA = assert(name, rA.code === 0,
+    `X.a: skill-forge Write to prism-code-dev/SKILL.md — expected exit 0 (in lane), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+  // X.b: Write to canonical hooks → DENY (canonical-source-protected)
+  const rB = runHook(guardScript, {
+    session_id: 'smoke-x',
+    agent_type: 'prism-skill-forge',
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Write',
+    tool_input: { file_path: '.ai-skills/hooks/gates.json' },
+    cwd: REPO_ROOT,
+  }, maintOff);
+  const okB = assert(name, rB.code === 2,
+    `X.b: skill-forge Write to .ai-skills/hooks/gates.json — expected exit 2 (canonical-source-protected), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+  // X.c: Bash echo > .prism/plans/foo.md → PERMIT (in lane)
+  const rC = runHook(guardScript, {
+    session_id: 'smoke-x',
+    agent_type: 'prism-skill-forge',
+    hook_event_name: 'PreToolUse',
+    tool_name: 'Bash',
+    tool_input: { command: 'echo x > .prism/plans/foo.md' },
+    cwd: REPO_ROOT,
+  }, { CLAUDE_PROJECT_DIR: REPO_ROOT });
+  const okC = assert(name, rC.code === 0,
+    `X.c: skill-forge echo > .prism/plans/foo.md — expected exit 0 (in lane), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+  // X.d: resolvePersona with agent_type 'prism-skill-forge' → resolves to 'skill-forge'
+  // Import resolve-persona and call it directly — no hook subprocess needed for this assertion.
+  let okD = false;
+  try {
+    // Dynamic import so we can test the exported function directly.
+    const { resolvePersona } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+    const fs = await import('node:fs');
+    const gatesData = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, '.ai-skills', 'hooks', 'gates.json'), 'utf8'));
+    const resolved = resolvePersona({ agent_type: 'prism-skill-forge' }, gatesData, REPO_ROOT);
+    okD = assert(name, resolved !== null && resolved.key === 'skill-forge',
+      `X.d: resolvePersona({agent_type:'prism-skill-forge'}) — expected key 'skill-forge', got ${JSON.stringify(resolved)}`);
+  } catch (e) {
+    assert(name, false, `X.d: dynamic import of resolve-persona.mjs failed: ${e.message}`);
+  }
+
+  if (okA && okB && okC && okD) console.log(`${PASS} ${name}`);
+}
+
+// ============================================================
+// Scenario Y: runKey isolation (Defect 2 / Test Matrix row 11)
+//
+// resolveRunKey must produce distinct keys for two payloads with the same
+// session_id and no agent_id when they carry distinct agent_type values.
+// A native-Task payload (agent_id present) must return agent_id unchanged.
+//
+// Y.a: payloads with same session_id, distinct agent_type → distinct keys
+// Y.b: payload with agent_id → runKey === agent_id (unchanged)
+// ============================================================
+{
+  const name = 'Y: runKey isolation (Defect 2)';
+
+  let okA = false, okB = false;
+  try {
+    const { resolveRunKey } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+
+    // Y.a: same session_id, distinct agent_type → distinct keys
+    const key1 = resolveRunKey({ session_id: 'sess-abc', agent_type: 'prism-ticket-start' });
+    const key2 = resolveRunKey({ session_id: 'sess-abc', agent_type: 'prism-code-dev' });
+    okA = assert(name,
+      typeof key1 === 'string' && typeof key2 === 'string' && key1 !== key2,
+      `Y.a: expected two distinct runKeys for the same session_id with distinct agent_type. Got key1=${key1}, key2=${key2}`);
+
+    // Y.b: agent_id present → runKey === agent_id (native Task path unchanged)
+    const agentId = 'a38d158a7f3f8f1e6';
+    const key3 = resolveRunKey({ session_id: 'sess-xyz', agent_type: 'prism-code-dev', agent_id: agentId });
+    okB = assert(name, key3 === agentId,
+      `Y.b: expected runKey === agent_id ('${agentId}'), got '${key3}'`);
+  } catch (e) {
+    assert(name, false, `Y: dynamic import of resolve-persona.mjs failed: ${e.message}`);
+  }
+
+  if (okA && okB) console.log(`${PASS} ${name}`);
+}
+
+// ============================================================
+// Scenario Z: _shared isolation (Test Matrix row 12)
+//
+// _shared must never be returned as a persona by resolvePersona, and
+// _shared has no .gates or .preconditions so any persona loop over gates.json
+// must skip it cleanly without throwing.
+//
+// Z.a: resolvePersona with no agent_type + no active-persona file →
+//       resolves null (or some real persona, but NOT 'skill' named '_shared')
+// Z.b: resolvePersona({agent_type: '_shared'}) → resolves null (no such mapping)
+// Z.c: run-gates.mjs with a synthetic _shared-only gates.json + valid report
+//       for a real persona → the stop hook resolves the persona from the
+//       real entry, not _shared, and exits 0. Verifies the gate runner skips _shared.
+// ============================================================
+{
+  const name = 'Z: _shared isolation';
+
+  let okA = false, okB = false;
+  try {
+    const { resolvePersona } = await import(path.join(HOOKS_DIR, 'lib', 'resolve-persona.mjs'));
+    // A gates object with only _shared — no persona entries
+    const gatesOnlyShared = {
+      _shared: { may_write: ['.prism/lessons.md'] },
+    };
+
+    // Z.a: no agent_type — solo path — resolves from active-persona file; no real file
+    // in this test, so it reads null/nothing → returns null. The key invariant is it does
+    // NOT return the _shared key as a persona.
+    const resolvedSolo = resolvePersona({}, gatesOnlyShared, REPO_ROOT);
+    okA = assert(name,
+      resolvedSolo === null || (resolvedSolo && resolvedSolo.key !== '_shared'),
+      `Z.a: expected null or a non-_shared persona, got key=${resolvedSolo?.key}`);
+
+    // Z.b: agent_type '_shared' → resolves null (no mapping for this string)
+    const resolvedShared = resolvePersona({ agent_type: '_shared' }, gatesOnlyShared, REPO_ROOT);
+    okB = assert(name, resolvedShared === null,
+      `Z.b: resolvePersona({agent_type:'_shared'}) — expected null, got ${JSON.stringify(resolvedShared)}`);
+  } catch (e) {
+    assert(name, false, `Z: dynamic import of resolve-persona.mjs failed: ${e.message}`);
+  }
+
+  // Z.c: run-gates stop hook with a _shared+clove gates.json — the runner skips _shared and
+  // processes only the clove entry. Verify no crash and gate exits 0 with a valid report.
+  {
+    const gates = {
+      _shared: { may_write: ['.prism/lessons.md', '.prism/evidence/**/deliverable.json'] },
+      clove: {
+        writes_report_to: '.prism/evidence/${runKey}/report.json',
+        preconditions: [],
+        gates: [],
+        allowed_routes: ['briar', 'human'],
+        ownership: { may_write: ['src/**'], may_not_run: [] },
+      },
+    };
+    const report = {
+      verdict: 'done',
+      verdict_reason: 'work complete',
+      next_route: 'briar',
+      reasoning: 'all good',
+      persona: 'clove',
+      checklist: {},
+    };
+    const { tmpDir } = setupStopFixture({ gates, report });
+    try {
+      const payload = { session_id: 'smoke-session', agent_type: 'prism-code-dev', stop_reason: 'end_turn' };
+      const r = runHook(path.join(HOOKS_DIR, 'run-gates.mjs'), payload, { CLAUDE_PROJECT_DIR: tmpDir });
+      const okC = assert(name, r.code === 0,
+        `Z.c: run-gates with _shared+clove gates — expected exit 0 (runner skips _shared cleanly), got ${r.code}. stderr: ${r.stderr.substring(0, 200)}`);
+      if (okA && okB && okC) console.log(`${PASS} ${name}`);
+    } finally {
+      cleanup(tmpDir);
+    }
+  }
+}
+
+// ============================================================
 // Final result
 // ============================================================
 if (allPassed) {

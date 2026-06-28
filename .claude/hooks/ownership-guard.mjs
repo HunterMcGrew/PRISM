@@ -23,7 +23,7 @@
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { resolvePersona } from './lib/resolve-persona.mjs';
+import { resolvePersona, resolveRunKey } from './lib/resolve-persona.mjs';
 
 // Paths no persona may write via tools, regardless of its may_write lane.
 // The enforcement runtime and gate state — a gated party editing or resetting
@@ -139,6 +139,9 @@ if (!entry?.ownership) {
 }
 
 const { may_write, may_not_run } = entry.ownership;
+// Merge per-persona may_write with the _shared pool so both the Edit arm and the Bash
+// enforcement arm draw from the same effective set — the two arms cannot drift.
+const effectiveMayWrite = [...may_write, ...(gatesData._shared?.may_write ?? [])];
 const toolName = payload.tool_name ?? '';
 const toolInput = payload.tool_input ?? {};
 
@@ -153,6 +156,12 @@ const toolInput = payload.tool_input ?? {};
 if (toolName === 'Bash' && toolInput.command) {
   const cmd = toolInput.command;
   const effectiveCmd = extractEffectiveCommand(cmd);
+  // Normalize MSYS-form cwd (/d/…) to Windows form (D:/…) ONCE here so every
+  // consumer that needs a filesystem base (commandWritesProtectedPath,
+  // commandMutatesProtectedViaGit, the may_write enforcement block below) sees
+  // a consistent Windows path and path.relative produces a correct relative path
+  // rather than the mangled ../../../d/… it emits against a Windows projectDir. (#367)
+  const cwdBase = toCanonicalCwd(payload.cwd ?? projectDir);
   // Evidence-rm prohibitions (e.g. "rm .prism/evidence", "rm -rf .prism/evidence") are the
   // declarative floor for evidence deletion, but a pure substring match over-blocks reads
   // that merely mention the pattern (grep rm .prism/evidence/...). Defer those entries to the
@@ -177,7 +186,7 @@ if (toolName === 'Bash' && toolInput.command) {
   // check alone would let through. Deny structurally so the redirect bypass cannot reach
   // the runtime — hooks are authored in canonical .ai-skills/hooks/, never via Bash here.
   // Under maintenance mode, source-protection writes are permitted and audited instead.
-  const protectedWrite = commandWritesProtectedPath(effectiveCmd, payload.cwd ?? projectDir);
+  const protectedWrite = commandWritesProtectedPath(effectiveCmd, cwdBase);
   if (protectedWrite) {
     if (isMaintenanceMode() && isEnforcementSourceProtected(protectedWrite)) {
       // A fused command may both write a protected source path AND delete evidence — for example,
@@ -215,7 +224,7 @@ if (toolName === 'Bash' && toolInput.command) {
   // stash pop/apply, switch, clean, apply, am, or bare checkout/restore) are matched by
   // subcommand because there is no pathspec to resolve. Maintenance mode unlocks Tier 2
   // unconditionally and Tier 1 only when the path is an enforcement SOURCE (not gate state).
-  const gitMutation = commandMutatesProtectedViaGit(effectiveCmd, payload.cwd ?? projectDir);
+  const gitMutation = commandMutatesProtectedViaGit(effectiveCmd, cwdBase);
   if (gitMutation) {
     if (isMaintenanceMode() && (gitMutation.tier === 2 || isEnforcementSourceProtected(gitMutation.path))) {
       // Co-fused evidence-delete guard — same discipline as the commandWritesProtectedPath
@@ -265,6 +274,62 @@ if (toolName === 'Bash' && toolInput.command) {
       `${persona} may not delete evidence regardless of rm flag form. This is a lane boundary.\n`
     );
     process.exit(2);
+  }
+
+  // Bash may_write lane enforcement (Defect 1 + Plan B Part 2).
+  //
+  // After the four global Bash checks (may_not_run, protected-write, git-mutation,
+  // evidence-delete), enforce per-persona lane boundaries on Bash writes. Collects
+  // write targets from the effective command AND from every nested substitution body
+  // (closing the tee >(cat > …) and cat <(echo x > …) bypass vectors). Three carve-outs
+  // run before the lane check and mirror the Edit-arm structure.
+  const bashWriteTargets = collectBashWriteTargets(effectiveCmd);
+  for (const rawTarget of bashWriteTargets) {
+    const target = normalizeWriteTarget(rawTarget, cwdBase);
+
+    // Carve-out 1 — .prism/active-persona (Defect 1).
+    // Under orchestration the resolver reads agent_type from the payload, never the
+    // file — a subagent writing it clobbers the solo session value and races other
+    // fleet lanes. Deny when orchestrated; permit when solo (matches Edit-arm lines
+    // 295–303 exactly).
+    if (target === '.prism/active-persona') {
+      if (payload.agent_type) {
+        process.stderr.write(
+          `[ownership-guard] Denied: '.prism/active-persona' is solo-path-only.\n` +
+          `Under orchestration the persona resolver reads agent_type from the hook payload,\n` +
+          `not this file. Writing it from a subagent corrupts the solo session's value and races\n` +
+          `concurrent fleet lanes. The orchestrated dispatch is already resolved — no write needed.\n`
+        );
+        process.exit(2);
+      }
+      // Solo write — permitted; skip lane check for this target.
+      continue;
+    }
+
+    // Carve-out 2 — out-of-projectDir (temp files, cross-drive scratchpad, /dev/null).
+    // path.relative returns an absolute/drive-rooted path when source and target are on
+    // different Windows drives (D: vs C:), which path.isAbsolute correctly detects. Both
+    // that case and the ../-prefixed case are out-of-repo and legitimately permitted.
+    // Normalize to forward slashes before the startsWith check — on Windows, path.relative
+    // returns backslash-separated strings (..\..\..\tmp\foo) that startsWith('../') misses.
+    const resolvedTarget = path.resolve(cwdBase, rawTarget);
+    const relativeTarget = path.relative(projectDir, resolvedTarget).replace(/\\/g, '/');
+    if (relativeTarget.startsWith('../') || path.isAbsolute(relativeTarget)) {
+      // Out of project dir — permit without lane check.
+      continue;
+    }
+
+    // In-repo target: enforce lane.
+    const allowed = effectiveMayWrite.some(pattern => matchGlob(pattern, target));
+    if (!allowed) {
+      process.stderr.write(
+        `[ownership-guard] Denied: ${persona} may not write to '${target}' via Bash.\n` +
+        `Allowed write paths for ${persona}:\n` +
+        effectiveMayWrite.map(p => `  - ${p}`).join('\n') + '\n' +
+        `Write to one of the allowed paths, or hand off to the persona that owns this path.\n`
+      );
+      process.exit(2);
+    }
   }
 
   // Bash with an allowed command — permit.
@@ -341,12 +406,12 @@ if (writeTools.has(toolName)) {
     }
   }
 
-  const allowed = may_write.some(pattern => matchGlob(pattern, normalizedPath));
+  const allowed = effectiveMayWrite.some(pattern => matchGlob(pattern, normalizedPath));
   if (!allowed) {
     process.stderr.write(
       `[ownership-guard] Denied: ${persona} may not write to '${normalizedPath}'.\n` +
       `Allowed write paths for ${persona}:\n` +
-      may_write.map(p => `  - ${p}`).join('\n') + '\n' +
+      effectiveMayWrite.map(p => `  - ${p}`).join('\n') + '\n' +
       `Write to one of the allowed paths, or hand off to the persona that owns this path.\n`
     );
     process.exit(2);
@@ -376,7 +441,7 @@ process.exit(0);
  */
 function captureBaseline(payload, entry, projectDir) {
   try {
-    const runKey = payload.agent_id ?? payload.session_id;
+    const runKey = resolveRunKey(payload);
     if (!runKey) return;
 
     const evidenceDir = path.join(projectDir, '.prism', 'evidence', runKey);
@@ -472,7 +537,7 @@ function appendMaintenanceLedger(payload, normalizedPath, resolvedPersona, proje
       persona: resolvedPersona,
       tool: payload.tool_name,
       path: normalizedPath,
-      runKey: payload.agent_id ?? payload.session_id,
+      runKey: resolveRunKey(payload),
     });
     appendFileSync(ledgerPath, entry + '\n', 'utf8');
   } catch {
@@ -541,6 +606,20 @@ function commandWritesProtectedPath(effectiveCmd, cwdBase) {
 }
 
 /**
+ * Maps an MSYS/Git-Bash cwd string to canonical Windows form before path.relative.
+ *
+ * Git Bash on Windows sets payload.cwd to MSYS form (e.g. /d/Documents/…) while
+ * CLAUDE_PROJECT_DIR is a Windows path (D:\Documents\…). path.relative between the
+ * two emits a mangled ../../../d/… string that defeats every prefix check. This helper
+ * converts the MSYS drive-prefix to forward-slash Windows form (D:/…) and is a no-op
+ * on already-Windows paths (D:\… / D:/…) and on genuine POSIX paths (/home/…). (#367)
+ */
+function toCanonicalCwd(cwd) {
+  // MSYS drive prefix: /d/ → D:/ (single lower- or upper-case letter followed by /)
+  return cwd.replace(/^\/([a-zA-Z])\//, (_, letter) => `${letter.toUpperCase()}:/`);
+}
+
+/**
  * Normalizes a Bash write-target token to a project-relative, forward-slash path.
  *
  * Mirrors the tool-path normalization (path.relative(projectDir, path.resolve(cwdBase, ...)))
@@ -556,6 +635,26 @@ function normalizeWriteTarget(rawTarget, cwdBase) {
   } catch {
     return rawTarget;
   }
+}
+
+/**
+ * Collects all file tokens a Bash command (including substitution bodies) would write.
+ *
+ * Extends collectWriteTargets by also scanning every nested substitution body via
+ * extractSubstitutionBodies + BFS, so `tee >(cat > src/x)` and `cat <(echo x > f)`
+ * surface the inner write target and are subject to lane enforcement.
+ */
+function collectBashWriteTargets(effectiveCmd) {
+  const targets = [...collectWriteTargets(effectiveCmd)];
+  const pending = [effectiveCmd];
+  while (pending.length > 0) {
+    const next = pending.shift();
+    for (const body of extractSubstitutionBodies(next)) {
+      targets.push(...collectWriteTargets(body));
+      pending.push(body); // recurse for nested substitutions
+    }
+  }
+  return targets;
 }
 
 /**
@@ -610,6 +709,19 @@ function collectWriteTargets(effectiveCmd) {
       for (const t of tokens) {
         if (t.startsWith('of=')) targets.push(t.slice(3));
       }
+    }
+
+    if (head === 'install') {
+      // install copies one or more source files to a destination; the destination is the
+      // last positional (non-flag) argument, matching the cp/mv convention.
+      const positionals = tokens.slice(tokens.indexOf('install') + 1).filter(t => !t.startsWith('-') && !isRedirectToken(t));
+      if (positionals.length >= 1) targets.push(positionals[positionals.length - 1]);
+    }
+
+    if (head === 'truncate') {
+      // truncate -s <size> <file> — the file to truncate is the last non-flag positional.
+      const positionals = tokens.slice(tokens.indexOf('truncate') + 1).filter(t => !t.startsWith('-') && !isRedirectToken(t));
+      if (positionals.length >= 1) targets.push(positionals[positionals.length - 1]);
     }
   }
 
