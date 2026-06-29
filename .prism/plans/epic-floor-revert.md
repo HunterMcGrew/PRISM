@@ -130,6 +130,7 @@ Sequence matters: delete runtime + build emission first (so the build stops expe
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Briar self-review — zero critical/major; build holds at 416/420 (no new fails). Two Minors found: an orphan `literal-allowlist.json` entry for deleted hook scripts (falsifies AC #114's "live surface clean" claim) and `prism-295` missing the `> Reverted` marker its sibling floor plans carry. See `## Review Issues`.
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Clove fixed both Briar Minors — removed the orphan `.claude/hooks` allowlist entry (canonical-only) and added the `> Reverted` marker + History line to `prism-295`. `pnpm prism:build` 416/420 (no new fails); AC #114 ("live guidance surface clean") now genuinely holds.
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Review-loop gauntlet complete (4 passes) — Briar self-review (2 Minors → fixed in `314fca8`) → Briar re-review clean → Eric PR review clean. Eric's independent live-surface orphan sweep, `build.ts` symbol-removal check, `prism:check-types`, and AC-vs-actual-state checks all passed; labels `effort:deep`/`confidence:high`. PR #371 ready for human review, stays draft.
+- 2026-06-29 [main]: Post-merge — `pnpm run prism:check` failed on a dangling crossref the revert sweep missed: ADR-0067's `## References` section still pointed at the deleted `.prism/architect/_toolkit/enforcement-floor.md`. Same removal-completeness class as the orphan `literal-allowlist.json` entry (reference sat outside the deletion diff). Removed the bullet, rebuilt the 3 platform mirrors; `pnpm run prism:check` green. See `## Review Issues`.
 
 ---
 
@@ -152,6 +153,15 @@ Sequence matters: delete runtime + build emission first (so the build stops expe
 - **Problem:** prism-295 (Goal: "Author Class B `gates.json` ownership and gate entries") is a floor-implementation plan but lacks the `> Reverted` marker its three sibling floor plans carry, so a cold reader sees a live-looking plan for a deleted mechanism. Judgment call — defensible as a sub-plan of the already-marked `epic-prism-enforcement-layer`, but inconsistent with the revert's own marking pattern.
 - **Suggested fix:** Add `> Reverted: 2026-06-29 — the enforcement floor this plan helped author was removed; see epic-floor-revert.md` under the title (matching the siblings) — or consciously leave it and record the scoping decision.
 - **Fixed in:** Added the `> Reverted` marker under the `# Plan: prism-295` title (sibling format, backticked link) plus a one-line History entry on prism-295. Confirmed prism-295's Goal is pure floor (Class B `gates.json` authoring), so the marker is correct, not over-marking.
+
+### Dangling crossref to deleted enforcement-floor.md in ADR-0067
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md:70`
+- **Problem:** The superseded ADR's `## References` section still listed `.prism/architect/_toolkit/enforcement-floor.md` — the gate-strength taxonomy doc the revert deleted in tasks 5–7. The bullet sat outside the deletion diff (same root cause as the orphan `literal-allowlist.json` entry), so the sweep missed it; it shipped in #371 and surfaced post-merge when `pnpm run prism:check` ran crossref-lint against the live `spec/` surface.
+- **Suggested fix:** Remove the dead bullet from the `## References` section; rebuild the platform mirrors; confirm `pnpm run prism:check` green.
+- **Fixed in:** Removed the bullet from canonical ADR-0067; `pnpm run prism:build` regenerated the `.claude`/`.codex`/`.cursor` mirrors; `pnpm run prism:check` passes clean (crossref-lint green, 420/420 tests).
 
 ---
 
