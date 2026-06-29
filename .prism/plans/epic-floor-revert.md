@@ -1,0 +1,124 @@
+# Plan: epic-floor-revert
+
+## Ticket
+
+To be filed — GitHub epic on `HunterMcGrew/PRISM`. Reverts the enforcement-floor epic ([#289](https://github.com/HunterMcGrew/PRISM/issues/289)) while preserving the Phase 6 ceiling persona rewrites ([#296](https://github.com/HunterMcGrew/PRISM/issues/296)).
+
+## Goal
+
+Remove the runtime enforcement floor (hooks, gates, ownership-guard, evidence ledger, build-side hook emission, and the gate-tied sections injected into every skill body) and return PRISM to its guidance-only model — because the `Stop`/`SubagentStop` gate sits directly on Sol's report-back channel and degrades orchestration. Keep the Phase 6 procedural-prose persona rewrites.
+
+---
+
+## Decisions
+
+- **Strategy is surgical forward removal — NOT `git revert`, NOT snapshot-and-restore.**
+  - **Root cause:** the ceiling rewrites were *authored with the floor baked in* — they were co-designed ("the ceiling is co-equal with the floor," epic plan). Verified: `prism-debugger/shared.md` carries the same 6 floor references at its Phase 6 commit (`1bb36ac`) as at current HEAD. Keep-content (procedural prose) and revert-content (gate refs) live in the *same commit, same files, interwoven* — there is no clean commit anywhere in history. The only floor-free state is the pre-Phase-6 baseline, which is the *old* prose the rewrites replaced.
+  - **Alternatives considered:**
+    - `git revert` of the ~15 floor squash commits — rejected: conflicts across skill files, and `build.ts` hook emission is woven in, not a clean append; risks clobbering the kept rewrites.
+    - **Snapshot current skill files → full revert → restore them** (the obvious shortcut) — rejected: current files carry the floor sections, so restoring them re-introduces dangling gate references pointing at deleted hooks. Moves the surgical work after the revert instead of avoiding it.
+    - **Checkout skill files from their Phase 6 commit** (the smarter snapshot) — rejected: the Phase 6 commit *already* contains the floor refs (proven above). No git operation separates keep from revert; only content editing does.
+  - **Chosen approach:** forward removal, file by file. Confirmed tractable — the floor refs cluster into repeating block-shapes rather than weaving through prose (next Decision). Verified by a tree-wide reference sweep (per `code-standards.md` § Removal and rename completeness) and a clean `pnpm prism:build`.
+  - → no promotion needed (reversal tactic specific to this epic).
+
+- **The surgical pass is mostly removing 2–3 repeating block-types per skill, not a deep reweave.** Confirmed on `prism-debugger`, the floor appears as the same shapes across skills: (1) the `echo "<persona>" > .prism/active-persona` startup block; (2) the `## Definition of Done` section (`DoD = gates.json#<persona>`); (3) the "Final act before stopping: write `report.json`…" paragraph; (4) a few inline parentheticals referencing `report.json`/the gate. Items 1–3 are clean section deletes; item 4 is a light inline edit (the sentence's ceiling meaning survives — drop the floor clause). Replace the `## Definition of Done` section with a lean prose DoD checklist (restored from the pre-Phase-6 version of that skill, or freshly written) rather than deleting it, so each skill keeps a DoD. Because the shapes repeat, establish the exact pattern on one skill (proof-of-pattern), then apply across the rest with a per-file grep verifying zero floor refs remain. Clove and Sol need individual care (more refs; Sol's `report-back.md` carries the routing contract).
+  - → no promotion needed (execution tactic).
+
+- **No hooks survive.** The `.claude/hooks/` directory was created by the floor (Phase 1, [#298](https://github.com/HunterMcGrew/PRISM/issues/298)) — nothing predates it. All three hooks (`run-gates`, `ownership-guard`, `evidence-ledger`) are floor machinery. Reverting the floor empties the `settings.json` hooks block entirely. If a lightweight `ownership-guard`-only safety is wanted later (write-lane protection without verdict ratification), that is a separate, smaller opt-in — not this revert.
+  - → no promotion needed (consequence of the revert).
+
+- **Floor plans are kept, not deleted.** `epic-prism-enforcement-layer.md`, `issue-305-floor-canonical-backdoor.md`, and `prism-windows-gate-loop.md` stay in `.prism/plans/` per `branch-plan.md` (plans are never deleted, ADR-0047). Each gets a `> Reverted: <date>` marker and a History entry pointing to this plan.
+  - → no promotion needed.
+
+- **ADR-0067 is superseded, not deleted.** Per ADR convention, add a superseding note (status → Superseded by this revert) rather than removing the file. The reasoning stays as historical record of why the floor was tried and why it was reverted.
+  - → no promotion needed.
+
+- **Keep the `config.json` `commands` map.** The `{{commands.*}}` token map (typecheck/test/lint/build) is harmless and reusable independent of the gates — `verification-commands.md` renders the same data. Removing it widens blast radius for no benefit. Strip only the gate-specific references, not the command tokens.
+  - → no promotion needed.
+
+- **Blessed removal pattern (proof set on `prism-debugger`).** Four block-shapes, each with a fixed handling rule. Apply to every skill's `shared.md` (the build regenerates the platform `.claude`/`.codex`/`.cursor` copies — edit canonical source only).
+  - **Shape 1 — `active-persona` startup write → clean delete.** The `echo "<persona>" > .prism/active-persona` block plus its lead-in ("…so the ownership-guard hook can resolve identity…"). Delete the block and lead-in; keep the rest of the startup step (detect branch, resolve repo root).
+  - **Shape 2 — `## Definition of Done` gate pointer → replace, don't delete.** Remove the `DoD = gates.json#<persona>` paragraph and the "Final act before stopping: write `report.json` to `.prism/evidence/<runKey>/`…" paragraph. Replace with one lean prose sentence naming the real deliverable (debugger: "the plan is the deliverable; the `## Debugged Issues` entry is the final act; when dispatched by Sol, return the verdict alongside the plan write"). Keep the section header, any existing prose preamble, and any existing `- [ ]` checklist — those are already a lean DoD.
+  - **Shape 3 — inline `report.json` / "done-class report" parentheticals → light inline edit.** Drop the floor clause, keep the sentence's meaning. E.g. "emitting the done-class report (writing `report.json` and declaring complete)" → "declaring the investigation complete and reporting back".
+  - **Shape 4 — "the floor's verdicts" / "floor's evidence gate" framing → light inline edit.** Typed escapes (`needs-replan` / `needs-human` / `blocked` / `found-bug` / `found-followup-work`) stay as prose guidance — they degrade gracefully without the gate. Only reword the phrases that name the floor as the runtime machinery ("Escalate only by the floor's verdicts (…)" → "Escalate only by emitting a typed verdict (…)").
+  - **Keep, never strip:** persona voice, the cognitive lens, anti-patterns, the workflow/phase frame, orientation batteries, the `## When dispatched by Sol` section (Sol still routes on the returned verdict per `report-back.md` — that contract survives the floor).
+  - **Per-file verification:** the machinery-only sweep must return no hits — `grep -niE "gates\.json|report\.json|active-persona|evidence/|run-gates|SubagentStop|may_write|deliverable\.json|ownership-guard|enforcement|floor|report-contract|done-class|verdict-enum"`. The literal `## Definition of Done` heading is intentionally retained (Shape 2), so it's the one expected hit on a pattern that *includes* "Definition of Done"; the machinery-only sweep above excludes it and must be empty.
+  - **Build note:** `pnpm prism:build` needs `node_modules` in the worktree (`pnpm install` first — fresh worktrees lack it). On Windows the suite carries 4 pre-existing path-handling failures (3 `resolveRef`, 1 "no drift" — doubled-drive-letter / `%20` / forward-slash bugs); unrelated to floor removal. Green = those 4 and only those 4.
+  - → no promotion needed (execution pattern for this epic; codified here for the scale-out).
+
+- **Pattern refinements from Winston's review of the proof (apply before scaling to Class A + Sol).** The four shapes are correct and scale as-is for Class B/C skills. The debugger (Class B) could not surface three things the harder files need:
+  - **Shape 2 has a Class A variant — preserve real criteria, don't delete them.** Class A bodies (`prism-code-dev`/Clove, `prism-changelog`/Sage, `prism-onboarding`/Atlas) carry a richer DoD: beyond the gate pointer and `report.json` paragraph, a `The gate enforces:` list with *real* criteria (`types`/`lint`/`tests`, `config.json` validates) and a `gate cannot verify (structurally trusted)` list. The real criteria are the persona's genuine DoD — they were merely *enforced* by the gate. Fold them back into a prose `- [ ]` checklist ("types pass, lint passes, tests pass before stopping"); strip only the gate-machinery framing. Deleting the `The gate enforces:` block wholesale would strip Clove's actual DoD. Demote from gate-enforced to self-verified prose, don't remove.
+  - **Verification sweep is insufficient for Class A — read, don't just grep.** The machinery sweep misses Class A framing: add `The gate enforces|gate cannot verify|structurally trusted|Ownership: writes only|gate ratifies` to the sweep. Even then, the criteria-preservation judgment in the Shape-2 Class A variant cannot be grepped — the scaling agent must *read* each Class A `## Definition of Done` section, not rely on the sweep alone.
+  - **Sol needs its own task — the routing contract is contaminated, and it is not a body shape.** The pattern's "keep `## When dispatched by Sol`" is correct, but the contract that section points to (`report-back.md`, location to confirm — not under `.ai-skills/skills/prism-conductor/` in the proof's `find`) itself carries floor language (`needs-stronger-model` gate-forced verdict, ratification/override). Restoring Sol's pre-floor routing is plan task 4, separate from the four body shapes. Do not assume Sol is covered by the shapes.
+  - → no promotion needed (review refinement to the execution pattern; consumed at scale-out).
+
+---
+
+## Implementation Tasks
+
+### Clove (implementation)
+
+Sequence matters: delete runtime + build emission first (so the build stops expecting hooks), then clean skill bodies, then docs/ADR, then verify.
+
+**1. Delete the runtime hooks (clean deletes).**
+   - `.claude/hooks/` — remove `run-gates.mjs`, `ownership-guard.mjs`, `evidence-ledger.mjs`, `gates.json`, `lib/`, `__smoke__/`.
+   - `.ai-skills/hooks/` (canonical source) — remove `run-gates.mjs`, `ownership-guard.mjs`, `evidence-ledger.mjs`, `gates.json`, `settings.json`, `lib/resolve-persona.mjs`, `__smoke__/` (`fleet-keying.mjs`, `run-all.mjs`).
+   - `.claude/settings.json` — remove the entire `hooks` block (`PreToolUse`, `PostToolUse`, `Stop`, `SubagentStop`). Leave the rest of settings intact.
+
+**2. Remove build-side hook emission (`scripts/ai-skills/build.ts`).**
+   - Delete `emitHooks`, `assertHookEmitDoesNotWeaken`, the #305 canonical-backdoor guards, and the canonical→runtime hook-copy logic (around lines 116–821).
+   - Remove the call sites that invoke them in the build flow.
+   - `scripts/ai-skills/bom-guard.test.ts` — remove the `run-gates.mjs` / `gates.json` BOM test cases (lines ~67–103).
+   - Verify `pnpm prism:build` runs clean with no hook emission.
+
+**3. Strip gate-tied sections from all skill bodies (~every `.ai-skills/skills/*/`).**
+   This is the largest and most delicate task — do it per-file, not as a blind sweep. For each skill's `shared.md` (and platform `.md` files if they carry it):
+   - Remove the `## Definition of Done` content that references `gates.json#<persona>`, the `report.json` / `plan-updated.json` "final act" writes to `.prism/evidence/<runKey>/`, and the `report-contract.md` pointer.
+   - Remove `active-persona` startup writes (`echo "<persona>" > .prism/active-persona`).
+   - Remove ownership-matrix references (`may_write` / `may_not_run` framing tied to the guard).
+   - Remove the typed report-back verdict-enum dispatch language where it exists only to feed the gate.
+   - **Keep** the Phase 6 procedural prose: named procedures, orientation batteries, the persona voice/personality, and the typed escapes *as guidance* (they degrade gracefully to prose Sol/human can act on).
+   - Highest-care files: `prism-code-dev` (Clove) and `prism-conductor` (Sol) — most floor-entangled.
+
+**4. Restore Sol's pre-floor report-back / dispatch.**
+   - `.ai-skills/skills/prism-conductor/lib/report-back.md` — remove gate-ratification, `needs-stronger-model` gate-forced verdict, and `report.json`-as-gate-input language. Sol still routes on the persona's returned verdict; it just isn't gate-intercepted.
+   - `shared.md` / `claude.md` — remove `SubagentStop`-dependency framing and gate-tiering language. The Workflow `schema` remains Sol's verdict shape.
+
+**5. Remove floor docs + supersede ADR.**
+   - Delete `.prism/references/enforcement/` (`gates.json`, `report-contract.md`).
+   - Delete the canonical enforcement-floor reference doc added in [#353](https://github.com/HunterMcGrew/PRISM/issues/353).
+   - Remove the "floor pointer" additions from core/persona/distribution docs ([#354](https://github.com/HunterMcGrew/PRISM/issues/354)–[#356](https://github.com/HunterMcGrew/PRISM/issues/356)) and README floor mentions.
+   - `.prism/spec/adrs/_toolkit/0067-*.md` — mark `Status: Superseded` with a one-line reason and a link to this plan. Do not delete.
+
+**6. Clean rules + state.**
+   - `.prism/rules/verification-commands.md` — remove floor references; keep the command documentation itself.
+   - Delete `.prism/evidence/` (runtime artifacts).
+   - Add `> Reverted: <date>` markers + History entries to the three floor plans.
+
+**7. Tree-wide completeness sweep + verification.**
+   - Grep the whole tree for dangling references: `gates.json`, `run-gates`, `ownership-guard`, `evidence-ledger`, `report.json`, `active-persona`, `enforcement-floor`, `ADR-0067`, `SubagentStop`, `needs-stronger-model`, `{{commands` (the last only to confirm remaining uses are the kept config map).
+   - `pnpm prism:build` green; discovery/literal/path tests green; BOM-guard test green.
+   - Sol dry-run: dispatch one lane, confirm no gate interception and a clean report-back.
+
+---
+
+## Acceptance Criteria
+
+### Behavioral
+- [ ] Given a persona finishes a task, When it stops, Then no hook intercepts, blocks, force-continues, or overrides its result.
+- [ ] Given Sol dispatches a persona, When the persona returns, Then Sol routes on the returned verdict with no gate in the channel.
+- [ ] Given the Phase 6 persona rewrites, When a persona loads, Then its procedural prose and voice are intact (rewrites preserved).
+
+### Non-behavioral
+- [ ] `pnpm prism:build` passes and emits no hooks.
+- [ ] No dangling references to floor concepts remain in the tree (sweep clean).
+- [ ] ADR-0067 marked Superseded; the three floor plans marked Reverted and retained.
+
+---
+
+## History
+
+- 2026-06-28 [claude/festive-cori-cfe87a]: Plan created. Winston diagnosed the `Stop`/`SubagentStop` gate as degrading Sol's report-back channel; strategy is surgical forward removal. Hooks answer: none survive.
+- 2026-06-28 [claude/festive-cori-cfe87a]: Evaluated snapshot-and-restore and Phase-6-commit-checkout as shortcuts; both rejected — the ceiling rewrites were authored floor-entangled (debugger Phase 6 commit carries the same 6 floor refs as HEAD), so no clean commit exists. Found the floor clusters into repeating removable block-shapes, so the surgical pass is proof-of-pattern + repeat, not a deep reweave.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Proof-of-pattern set on `prism-debugger/shared.md` — stripped all floor machinery via the four block-shapes (see Decision "Blessed removal pattern"); replaced the DoD gate pointer with a lean prose DoD, kept typed escapes as prose. Build regenerated all 4 platform copies clean; machinery sweep empty; prism:test green except the 4 pre-existing Windows path failures. Stopped for user review before scaling to other skills.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Winston reviewed the proof — verdict Proceed with changes. Diff is clean (all 4 shapes correct, machinery sweep clean bar the intentional header). Stress-test against Clove (Class A) surfaced 3 refinements now recorded in Decisions: Shape-2 Class A variant (preserve real types/lint/tests criteria as prose, don't delete), sweep insufficient for Class A (read the DoD section), and Sol's `report-back.md` routing contract is contaminated and needs its own task (task 4).

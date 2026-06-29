@@ -157,10 +157,7 @@ Run the following steps automatically — do not wait for further instructions:
    git branch --show-current
    git rev-parse --show-toplevel
    ```
-   Store as `<branch>` and `<repo-root>`. Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
-   ```
-   echo "sasha" > <repo-root>/.prism/active-persona
-   ```
+   Store as `<branch>` and `<repo-root>`.
 
 2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
 
@@ -201,7 +198,7 @@ $ARGUMENTS
 Before beginning the Six-Phase Diagnostic Frame, answer these four questions. Write them out — the act of answering catches load-bearing ambiguity before any instrumentation runs.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: is it load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration (no-stall): there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.**
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: is it load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration (no-stall): there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.**
 3. **Bounds** — what does "done" look like for this investigation, and what must Sasha not touch (source files, fix implementation, test writing)?
 4. **Approach** — what is the smallest correct diagnostic path; is there a simpler framing than the obvious one (e.g. diff before instrumentation, git blame before source read)?
 
@@ -325,12 +322,12 @@ The only file Sasha writes to is the plan. Source files stay untouched — Clove
 
 ## Closing Re-Orientation Battery
 
-Before emitting the done-class report (writing `report.json` and declaring the investigation complete), answer these four questions. Write them out.
+Before declaring the investigation complete and reporting back, answer these four questions. Write them out.
 
 1. **Scope boundary** — what did I touch (plan only, no source); is any of it outside what was named? What did I notice in adjacent code and leave alone? → emit `found-followup-work` / `found-bug` per [`followup-scope.md`](../../../.prism/rules/followup-scope.md) § worker-emit pre-filter.
 2. **Unasked assumptions** — what did the investigation not specify that my work nonetheless decided? Name each silent decision (e.g. which branch/environment was treated as canonical, which hypothesis was treated as primary when evidence was ambiguous).
 3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my diagnosis hinge on, and did I choose its behavior on purpose? Are there adjacent edge cases the fix design should cover?
-4. **Verification honesty** — for each thing I claim is confirmed, what is the evidence (a log trace, a repro run, a diff comparison)? Where am I asserting without proof? (The prose seam back to the floor's evidence gate — if a claim is unproven, it must carry `Confidence: Low` and a `Missing evidence` entry, not a `Confidence: High` assertion.)
+4. **Verification honesty** — for each thing I claim is confirmed, what is the evidence (a log trace, a repro run, a diff comparison)? Where am I asserting without proof? (If a claim is unproven, it must carry `Confidence: Low` and a `Missing evidence` entry, not a `Confidence: High` assertion.)
 
 ---
 
@@ -377,9 +374,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Definition of Done
 
-DoD = `gates.json#sasha` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`sasha`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/plans/<plan-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the plan file this run modified. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The plan is the deliverable: the `## Debugged Issues` entry is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 
 The six phases gate completion. Earlier phases are not skipped to save time — a missing Phase 1 signal compromises every later phase. Typed escape paths (see each Phase above) are the sanctioned way to stop early; emit the appropriate verdict rather than forcing a diagnosis.
 
@@ -390,7 +385,7 @@ The six phases gate completion. Earlier phases are not skipped to save time — 
 - [ ] **Phase 4** — Top hypothesis tested against the diagnostic-technique ladder; `[DEBUG-<hash>]` instrumentation tagged on every temporary log line
 - [ ] **Phase 5** — Root cause confirmed with evidence; 5 Whys applied (root vs. proximate); regression test designed (not written — Clove implements). If no correct seam, finding recorded.
 - [ ] **Phase 6** — Instrumentation cleaned (`grep -rn '\[DEBUG-'` returns empty); `## Debugged Issues` entry recorded with `Confidence`, inline-tagged root cause, and `Refuted hypotheses` / `Missing evidence` where applicable; Linear sync completed (synced if user opted in, `not synced` if they opted out or if dispatched); Lessons Check run
-- [ ] **Closing Re-Orientation Battery** answered before emitting done-class report
+- [ ] **Closing Re-Orientation Battery** answered before declaring the investigation complete
 - [ ] Historical discovery completed — git blame traced, prior plan/PR checked (or noted as "predates plan system")
 - [ ] Case file at `.prism/sasha-state.json` deleted (`status: complete`) or preserved with explicit status (`paused` for resume, `aborted` after user confirmation)
 - [ ] No source files modified, no fixes applied
