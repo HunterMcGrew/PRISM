@@ -104,7 +104,7 @@ If the trigger or context already names the work ("analyze the sign-up funnel", 
 Run this battery once, immediately after startup completes and before any metrics work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the measured outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like (a `## Metrics` update, a dashboard spec, a funnel table), and what must not change (existing `## Metrics` entries, prior OKR baselines)?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one (e.g. derive from supplied data vs. wait for raw exports)?
 
@@ -112,11 +112,10 @@ Run this battery once, immediately after startup completes and before any metric
 
 The strategy doc is your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
-**Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+**Repo context** — resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "tess" > <repo-root>/.prism/active-persona
 ```
 
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current OKRs, priorities, and prior decisions — your measurements validate those targets, so you need them in front of you before you start. Every implicit do-not-undo lives in its `## Decisions`.
@@ -158,6 +157,8 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a row in `## Metrics`, a cited source export, a denominator explicitly stated)? Where am I asserting without proof?
 
 ## Definition of Done
+
+The `## Metrics` section of `.prism/business/strategy.md` is the deliverable; writing it — with loop closure to Vera — is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
 A data session is done when:
 

@@ -90,7 +90,7 @@ When this skill is invoked, greet the user with one of these openers (pick one �
 Run this battery once, immediately after startup completes and before beginning any scan or candidate work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -104,12 +104,6 @@ Run these batches automatically at startup. Surface results to the user as one c
 - `git status --short` — uncommitted state (warn the user before walking if dirty)
 - Read `.prism/rules/code-standards.md` § General — the Deletion Test rule context
 - Read `.prism/references/triple-gated-adr-criterion.md` — the canonical triple-gated criterion for architect doc vs ADR routing
-
-After resolving repo root, write the active persona so the ownership-guard hook can resolve identity on the solo path:
-
-```
-echo "theo" > <repo-root>/.prism/active-persona
-```
 
 **Batch 2 — State + plan + manifest:**
 
@@ -182,7 +176,7 @@ If a user asks Theo to do work outside this scope, route the request to the righ
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before writing `report.json` and emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
@@ -199,9 +193,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 ## Definition of Done
 
-DoD = `gates.json#theo` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`theo`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/architect/<doc-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the architect doc this run wrote. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The architect doc written to `.prism/architect/<topic>.md` is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
 A Theo session is complete when:
 
@@ -212,7 +204,7 @@ A Theo session is complete when:
 - [ ] If `documentation.keepsDevDocs` is `true`: every paired dev doc has been drafted and accepted
 - [ ] No architect doc is written without an explicit `write` decision from the user
 - [ ] State file's `currentPhase` is `idle` when the session closes cleanly
-- [ ] **Closing Re-Orientation Battery** answered before emitting done-class report
+- [ ] **Closing Re-Orientation Battery** answered before declaring the session complete
 
 ## Lessons Check
 

@@ -118,17 +118,16 @@ If the trigger phrase or context makes the mode obvious ("write a PRD for the ne
 Run this battery once, immediately after startup completes (mode detected, frontmatter read) and before any PRD work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first step fires.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
 ## Startup
 
-1. **Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+1. **Repo context** — resolve the repo root:
 
    ```
    git rev-parse --show-toplevel
-   echo "parker" > <repo-root>/.prism/active-persona
    ```
 
 2. **Detect mode** from the trigger phrase + context. Default to asking if ambiguous.
@@ -199,9 +198,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
-DoD = `gates.json#parker` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`parker`), and checklist; then write `prd-written.json` to `.prism/evidence/<runKey>/prd-written.json` confirming the PRD was written. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `status: finalized` is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the PRD write.
 
 A PRD is done when:
 

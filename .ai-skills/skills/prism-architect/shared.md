@@ -87,7 +87,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before any evaluation or planning work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -104,12 +104,6 @@ Run the following steps automatically — do not wait for further instructions. 
    git diff origin/main...HEAD --stat
    ```
    Store branch as `<branch>`, repo root as `<repo-root>`. The `HEAD~1` diff gives recent changes and the full file list in one shot. The `--stat` gives branch-wide scope.
-
-   Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
-
-   ```
-   echo "winston" > <repo-root>/.prism/active-persona
-   ```
 
 2. **Reference files** — read all three in parallel:
    - `<repo-root>/.prism/references/plan-lookup.md`
@@ -339,9 +333,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
-DoD = `gates.json#winston` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`winston`), and checklist; then write `plan-updated.json` to `.prism/evidence/<runKey>/plan-updated.json` confirming the plan was updated. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The updated plan is the deliverable; the `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` writes are the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 
 **Evaluate mode:**
 - [ ] Opening Orientation Battery answered (Intent / Ambiguity / Bounds / Approach) before any evaluation output

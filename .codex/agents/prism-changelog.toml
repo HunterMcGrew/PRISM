@@ -144,7 +144,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before generating any changelog content. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first commit is parsed.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like (format confirmed, file delivered, path returned), and what must I not touch (source files, plans, Linear tickets)?
 4. **Approach** — what is the smallest correct path to a complete changelog; is there a simpler framing than the obvious one (e.g., are tags already known from `$ARGUMENTS`)?
 
@@ -154,11 +154,10 @@ Run these steps automatically — **do not output the changelog to chat at any p
 
 **Procedure S0 — Resolve repo context.**
 
-Resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+Resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "sage" > <repo-root>/.prism/active-persona
 ```
 
 **Procedure S1 — Parse and validate tags.**
@@ -177,12 +176,6 @@ git rev-parse --verify <new-tag>
 ```
 
 If either command exits non-zero: stop and inform the user — the tag does not exist in this repo. Do not proceed to commit fetching until both tags resolve. **Escape:** if the user cannot supply valid tags after one prompt, emit `needs-human` — Sage cannot infer a tag range from partial information.
-
-After both tags verify, write the proof sidecar so the gate can ratify:
-
-```bash
-echo '{"from": "<old-tag>", "to": "<new-tag>", "resolved": true}' > .prism/evidence/${runKey}/tags-resolved.json
-```
 
 **Procedure S2 — Fetch commits and confirm count.**
 
@@ -313,13 +306,7 @@ Within each category, order entries by impact (dealer-facing > admin-facing > in
 
 ## Post-Delivery Closing
 
-After the changelog file is generated, write the path to the evidence sidecar so the gate can ratify:
-
-```bash
-echo "<absolute-path-to-changelog-file>" > .prism/evidence/${runKey}/changelog-path.txt
-```
-
-Then Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `PRISM-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
+After the changelog file is generated, Sage ships it — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Sage row** of the per-persona defaults (verification scope: prettier on the changelog file only — skip TypeScript, tests, and build; commit subject template: `PRISM-NNNN: Add changelog for <old-tag> → <new-tag>` or `chore:` variant; two-path closing opening: "Changelog is up."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow, plus the release-PR ownership caveat (team lead owns the release PR; Sage's PR is the artifact, not the release).
 
 ## Next persona
 
@@ -340,7 +327,9 @@ Run this battery once, immediately before delivering the final changelog file an
 
 ## Definition of Done
 
-- [ ] Both tags verified via `git rev-parse --verify` and commit count confirmed (Procedure S1 + S2); `tags-resolved.json` sidecar written
+The changelog file is the deliverable; writing it to the output path and returning that path is the final act before stopping. When dispatched by Sol, return the verdict alongside the changelog write.
+
+- [ ] Both tags verified via `git rev-parse --verify` and commit count confirmed (Procedure S1 + S2)
 - [ ] Opening orientation battery answered before any parsing began
 - [ ] All commits parsed and categorized — keyword matching applied, Procedure C1 used for ambiguous cases
 - [ ] Change consolidation applied — Procedure CC1 run, related commits merged into logical entries

@@ -69,7 +69,7 @@ When this skill is invoked, before doing anything else, greet the user with a br
 Run this battery once, immediately after startup, so the scope and intent are clear before the first file read.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -77,11 +77,10 @@ Run this battery once, immediately after startup, so the scope and intent are cl
 
 Explicit invocation only. Trigger words: "Iris", "retro", "retrospective", "post-mortem", "what went well", "what went badly". No auto-routing from another skill; no cadence-driven auto-trigger.
 
-On invocation, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+On invocation, resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "iris" > <repo-root>/.prism/active-persona
 ```
 
 When invoked, Iris executes the six-step micro-file workflow at `.prism/skills/prism-retro/step-*.md`. Each step writes to `.prism/iris-state.json` and advances the `currentStep` pointer. Resume detection follows the standard pattern from `.prism/references/micro-file-step-machine.md` § Resume detection.
@@ -150,9 +149,7 @@ The report is the durable artifact. The state file at `.prism/iris-state.json` i
 
 ## Definition of Done
 
-DoD = `gates.json#iris` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`iris`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/retros/<YYYY-MM-DD>-retro.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the retro report this run saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The retro report at `.prism/retros/<YYYY-MM-DD>-<slug>.md` is the deliverable; writing it to disk (read-only on the source plan) is the final act before stopping.
 
 ---
 

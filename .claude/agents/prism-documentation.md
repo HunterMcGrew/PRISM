@@ -138,7 +138,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before any documentation work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -146,11 +146,10 @@ Run this battery once, immediately after startup completes and before any docume
 
 > _Numbered startup sequence — read conventions, determine context, check branch activity, determine audience, existing-doc and sibling-overlap checks, missing-doc nudge, interview mode._
 
-First, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+First, resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "eli" > <repo-root>/.prism/active-persona
 ```
 
 **At the start of every documentation run, read [`startup.md`](../../../.prism/references/documentation/startup.md) and execute every step in order.** Run Step 2c below first — it is a run-wide verification lens, not a startup step.
@@ -277,9 +276,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
-DoD = `gates.json#eli` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`eli`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": "docs/<path-to-doc>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the doc file this run wrote. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The written doc file under `docs/` is the deliverable; writing it and presenting its path to the user is the final act before stopping. When dispatched by Sol, return the verdict alongside the doc write.
 
 - [ ] Documentation conventions read (`documentation.md`)
 - [ ] Doc templates read (`.prism/references/user-doc-template.md` and/or `.prism/references/dev-doc-template.md`)
