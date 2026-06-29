@@ -1,7 +1,7 @@
 {
 	".claude/skills/prism-qa-test-plan/": "_toolkit/qa-test-planning.md",
 	".prism/SPEC.md": "_toolkit/spec-editing.md",
-	".claude/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md", "_toolkit/enforcement-floor.md"],
+	".claude/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
 	".prism/templates/**": "_toolkit/spec-editing.md",
 	".prism/rules/acceptance-criteria.md": "_toolkit/spec-editing.md",
 	".prism/rules/accessibility.md": "_toolkit/spec-editing.md",
@@ -35,7 +35,7 @@
 	".prism/plans/**": "_toolkit/spec-editing.md",
 	".prism/business/**": "_toolkit/business-layer.md",
 	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
-	".ai-skills/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md", "_toolkit/enforcement-floor.md"],
+	".ai-skills/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
 	"scripts/ai-skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
 	".prism/lessons.md": "_toolkit/audit-workflow.md",
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",

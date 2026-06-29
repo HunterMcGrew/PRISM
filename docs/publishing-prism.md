@@ -77,7 +77,7 @@ Open `/tmp/prism-tarball-contents.txt` and read through it. Confirm:
 - `dist/cli.js` is present (the compiled binary)
 - `.prism/rules/`, `.prism/architect/`, `.prism/spec/`, `.prism/references/`, `.prism/templates/`, `.prism/SPEC.md` are present
 - `.prism/.sync-manifest.json` is present
-- `templates/install/` is present — including `templates/install/.claude/hooks/` (the enforcement floor seed: `ownership-guard.mjs`, `run-gates.mjs`, `evidence-ledger.mjs`, `gates.json`, `lib/`) and `templates/install/.claude/settings.json`
+- `templates/install/` is present — including `templates/install/.claude/settings.json`
 - `.ai-skills/skills/`, `.ai-skills/definitions/roles.json`, `.ai-skills/definitions/paths.json`, `.ai-skills/config.json` are present
 - `scripts/` is **not** present (build-time only)
 - No files from `.prism/plans/`, `.prism/audits/`, `.prism/retros/`, `.prism/prds/`, `.prism/changelogs/`, `.prism/archived/`, `.prism/lessons.md`, or any `conductor-state*.json` or `audit-state.json`
@@ -106,7 +106,7 @@ Run through this before every publish:
 - [ ] `pnpm run prism:check` passes (green)
 - [ ] `npm pack` completes without error
 - [ ] Leak audit grep prints `CLEAN — no operational tree in tarball`
-- [ ] `/tmp/prism-tarball-contents.txt` reviewed by a human — expected paths present, `scripts/` absent, `templates/install/.claude/hooks/` present (enforcement floor seed)
+- [ ] `/tmp/prism-tarball-contents.txt` reviewed by a human — expected paths present, `scripts/` absent
 - [ ] `npm whoami` confirms you're authenticated to the `@huntermcgrew` scope
 
 ## Immutability and unpublish policy

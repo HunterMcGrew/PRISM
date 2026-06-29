@@ -8,7 +8,7 @@ paths:
 
 # Verification Commands
 
-Canonical commands for building, testing, formatting, and linting. Commands live in `.ai-skills/config.json#commands` and are referenced in `gates.json` as `{{commands.*}}` tokens — this file is the human-readable rendering of that data. Do not embed command strings in individual skill files; update config.json instead.
+Canonical commands for building, testing, formatting, and linting. Commands live in `.ai-skills/config.json#commands` and are referenced as `{{commands.*}}` tokens — this file is the human-readable rendering of that data. Do not embed command strings in individual skill files; update config.json instead.
 
 ---
 
@@ -22,7 +22,7 @@ Canonical commands for building, testing, formatting, and linting. Commands live
 | format | `{{commands.format}}` | _(none — PRISM has no standalone formatter step)_ |
 | build | `{{commands.build}}` | `pnpm run prism:build` |
 
-**When Atlas onboards a new team**, it populates these slots from the detected tech stack and regenerates this file. The token column is the stable reference gate runners and skill prose use; the command column is what executes at runtime.
+**When Atlas onboards a new team**, it populates these slots from the detected tech stack and regenerates this file. The token column is the stable reference skill prose uses; the command column is what executes at runtime.
 
 ---
 
@@ -74,7 +74,7 @@ No standalone formatter step for PRISM. The TypeScript build scripts follow the 
 pnpm run prism:build
 ```
 
-Runs `build.ts` (emits hooks, syncs seed mirror, validates manifest) then the test suite. Use for final verification before PR. Equivalent to `pnpm run prism:check` minus the explicit type-check and crossref-lint (those run as part of `prism:check`).
+Runs `build.ts` (syncs seed mirror, validates manifest) then the test suite. Use for final verification before PR. Equivalent to `pnpm run prism:check` minus the explicit type-check and crossref-lint (those run as part of `prism:check`).
 
 For full validation (all gates in sequence):
 

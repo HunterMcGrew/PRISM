@@ -1,9 +1,11 @@
 ---
 Number: 0067
 Title: The Runtime Ratifies Verdicts; the Model Only Proposes Them
-Status: accepted
+Status: superseded
 Date: 2026-06-25
 ---
+
+> **Superseded 2026-06-29 by the enforcement-floor revert** ([`.prism/plans/epic-floor-revert.md`](../../../plans/epic-floor-revert.md)). The runtime floor whose principle this ADR records was removed — the `Stop`/`SubagentStop` gate sat directly on Sol's report-back channel and degraded orchestration. PRISM returns to its guidance-only model: Sol routes on the persona's returned verdict, not a gate-ratified one. The reasoning below is retained as the historical record of why the floor was tried and why it was reverted.
 
 ## Context
 

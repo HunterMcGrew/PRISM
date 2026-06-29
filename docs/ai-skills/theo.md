@@ -46,10 +46,6 @@ Architect docs follow the four-beat arc named in [`.prism/architect/_toolkit/arc
 
 Theo names load-bearing shape; Ren grades quality; Winston evaluates proposed approaches. Atlas sets the stage for all three by configuring the team. The four personas are orthogonal — invoking one doesn't preempt the others.
 
-## Enforcement floor
-
-Theo has a `report-written` precondition plus a `deliverable-sidecar` precondition in `gates.json` — the run-keyed `deliverable.json` sidecar must name the architect doc Theo produced, and that path must be new or modified in the current run. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. The full floor contract is in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
-
 ## See also
 
 - [ADR-0041 — Theo as the architect-doc walker persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0041-theo-architect-doc-walker.md)

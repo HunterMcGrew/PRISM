@@ -23,7 +23,6 @@ PRISM addresses this by giving each AI tool a set of personas — specialists wi
 - **A tiered context system** — rules, architectural context, and skill behavior each live at the right scope, so agents load what applies rather than everything at once. See [SPEC.md](../.prism/SPEC.md) for the full hierarchy.
 - **Per-team parameterization** — your org name, ticket prefix, GitHub repo, and tech stack flow through the install. See [parameterization.md](./parameterization.md) for the config reference.
 - **Templates** — PR descriptions, acceptance criteria, bug reports, and standup summaries shaped for cross-team consistency.
-- **An enforcement floor** — a runtime layer that makes every persona's `done` mean something. An ownership guard fires at the write boundary (controlling what each persona may write or run), and a verdict-ratification gate fires at the stop boundary (ratifying or overriding the claimed result before the next handoff). See [enforcement-floor.md](./ai-skills/enforcement-floor.md) for the full model.
 
 ## How teams adopt it
 

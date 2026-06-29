@@ -105,14 +105,14 @@ Sequence matters: delete runtime + build emission first (so the build stops expe
 ## Acceptance Criteria
 
 ### Behavioral
-- [ ] Given a persona finishes a task, When it stops, Then no hook intercepts, blocks, force-continues, or overrides its result.
-- [ ] Given Sol dispatches a persona, When the persona returns, Then Sol routes on the returned verdict with no gate in the channel.
-- [ ] Given the Phase 6 persona rewrites, When a persona loads, Then its procedural prose and voice are intact (rewrites preserved).
+- [x] Given a persona finishes a task, When it stops, Then no hook intercepts, blocks, force-continues, or overrides its result. (Structural: `.claude/settings.json` is `{}`; no hook files exist in `.claude/hooks/`, `.ai-skills/hooks/`, or `templates/install/.claude/hooks/`.)
+- [x] Given Sol dispatches a persona, When the persona returns, Then Sol routes on the returned verdict with no gate in the channel. (`report-back.md` de-floored: gate-ratification paragraph removed; Sol routes on the returned verdict.)
+- [x] Given the Phase 6 persona rewrites, When a persona loads, Then its procedural prose and voice are intact (rewrites preserved). (Only floor sections/clauses removed; voice, phases, lenses, typed escapes kept.)
 
 ### Non-behavioral
-- [ ] `pnpm prism:build` passes and emits no hooks.
-- [ ] No dangling references to floor concepts remain in the tree (sweep clean).
-- [ ] ADR-0067 marked Superseded; the three floor plans marked Reverted and retained.
+- [x] `pnpm prism:build` passes and emits no hooks. (416/420 — the 4 fails are the pre-existing Windows path bugs; `emitHooks` removed in task 2.)
+- [x] No dangling references to floor concepts remain in the tree (sweep clean). (Live guidance surface clean; floor refs remain only in historical plans, `lessons.md`, and the superseded ADR-0067 + its README index — accurate-for-their-time records.)
+- [x] ADR-0067 marked Superseded; the three floor plans marked Reverted and retained.
 
 ---
 
@@ -125,3 +125,4 @@ Sequence matters: delete runtime + build emission first (so the build stops expe
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Tasks 1–2 — removed the enforcement runtime and build emission. Deleted `.claude/hooks/`, `.ai-skills/hooks/`, `templates/install/.claude/hooks/`; emptied both `settings.json` to `{}` (live edit user-authorized — auto-mode flagged it as self-modification). Stripped `emitHooks`/`assertHookEmitDoesNotWeaken`/`WHOLESALE_GRANTS` + call site + guard plumbing from `build.ts`; deleted `emit-hooks.test.ts`; repointed `bom-guard` `.mjs`/`.json` fixtures off hook paths (coverage kept); removed two hook-specific `literal-guard` tests. check-types green; prism:build 416/420 pass (4 pre-existing Windows path fails). Remaining: task 4 (Sol channel), task 3 (27 skill bodies), tasks 5–6 (docs/ADR/rules), task 7 (sweep).
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Winston reviewed the proof — verdict Proceed with changes. Diff is clean (all 4 shapes correct, machinery sweep clean bar the intentional header). Stress-test against Clove (Class A) surfaced 3 refinements now recorded in Decisions: Shape-2 Class A variant (preserve real types/lint/tests criteria as prose, don't delete), sweep insufficient for Class A (read the DoD section), and Sol's `report-back.md` routing contract is contaminated and needs its own task (task 4).
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Task 4 — stripped floor from Sol (prism-conductor). Removed the gate-ratification paragraph plus the `needs-stronger-model` gate-forced verdict (enum + routing table + step-05 route + goal-state enum) from the report-back routing contract, and the active-persona startup write / `the floor's verdicts` / `gate-ratified` framing from shared.md. Kept Sol's human-ratification gates, gate dispositions, and the strike-2→model-axis escalation (Sol's own, not gate-driven); the real machinery sweep was 24 hits across 9 files, not the handoff's ~71 (broad "gate"/"ratif" over-count). Build regenerated all platform copies clean; conductor machinery sweep empty; prism:build 416/420 (4 pre-existing Windows path fails).
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Tasks 5–7 — docs/ADR/rules/state cleanup + verification. Deleted `.prism/references/enforcement/`, the architect + dev `enforcement-floor.md` docs, and `.prism/evidence/`; superseded ADR-0067 (+ its README index row); stripped floor refs from `verification-commands.md`/`config.schema.json`/`seed-curation.json`/`manifest.json`/`.gitignore` (kept the `{{commands.*}}` map); removed `## Enforcement floor` sections + scattered mentions across 13 `docs/` files (docs sweep delegated to a subagent, verified clean); marked the 3 floor plans Reverted with History entries. Tree-wide sweep: live guidance surface clean (floor refs remain only in historical plans/lessons + the superseded ADR); `pnpm prism:build` 416/420 (4 pre-existing Windows path fails); no-gate-interception confirmed structurally (settings `{}`, zero hook files). All 6 AC ticked.

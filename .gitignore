@@ -36,12 +36,3 @@ node_modules/
 
 # npm pack output — regenerated each release; reviewed via /tmp/prism-tarball-contents.txt.
 *.tgz
-
-# Enforcement-layer runtime state — operational artifacts written per-run by the floor hooks.
-# Ignored per lazy-artifacts.md and the same precedent as conductor-state.json / ren-state.json.
-.prism/evidence/
-
-# Active-persona resolver file — runtime state written per-session by the solo-path resolver.
-# Single-writer by construction; must not be committed (stale state from a prior session would
-# mislead the resolver on the next solo dispatch). Same precedent as .prism/evidence/.
-.prism/active-persona

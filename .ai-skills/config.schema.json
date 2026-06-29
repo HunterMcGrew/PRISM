@@ -97,7 +97,7 @@
 		},
 		"commands": {
 			"type": "object",
-			"description": "Canonical verification commands for this team. Atlas populates this map during onboarding from the detected tech stack; gates.json references these values as {{commands.*}} tokens so command strings live in one place. Each value is the full shell command to run from the repo root.",
+			"description": "Canonical verification commands for this team. Atlas populates this map during onboarding from the detected tech stack; skill prose and verification-commands.md reference these values as {{commands.*}} tokens so command strings live in one place. Each value is the full shell command to run from the repo root.",
 			"properties": {
 				"typecheck": {
 					"type": "string",
