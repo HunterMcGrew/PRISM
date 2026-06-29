@@ -236,27 +236,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 ## Windows PowerShell `Set-Content` / `Out-File -Encoding utf8` emits a UTF-8 BOM that breaks `JSON.parse`
 
-**Why:** 2026-06-26 (Phase 2 enforcement dogfooding) — a `report.json` written via PowerShell `Set-Content` carried a UTF-8 BOM, and the live Stop gate's `JSON.parse` rejected it ("not valid JSON"), recording a strike against the dispatch. PowerShell 5.1's `utf8` encoding is BOM-prefixed by design; the BOM is invisible in most editors but fatal to a strict JSON parser.
+**Why:** 2026-06-26 — a machine-written JSON file produced via PowerShell `Set-Content` carried a UTF-8 BOM, and a strict `JSON.parse` rejected it ("not valid JSON"). PowerShell 5.1's `utf8` encoding is BOM-prefixed by design; the BOM is invisible in most editors but fatal to a strict JSON parser.
 
-**How to apply:** For any gate-consumed or machine-parsed JSON (`report.json`, evidence artifacts, conductor-state), write BOM-free — use Node `fs.writeFileSync(path, JSON.stringify(...), 'utf8')` or the Write tool (both BOM-free). Never write such files with PowerShell `Set-Content` / `Out-File -Encoding utf8`. If a parser rejects a file that looks valid, suspect a leading BOM first.
-
-## A live Stop gate fires on the gated persona's own dispatch — verify lane state from the durable bus, not the chat report
-
-**Why:** 2026-06-26 (Phase 2 enforcement dogfooding) — the enforcement floor's Stop/SubagentStop gate fires on the completion of any persona with a `gates.json` key, including the implementer building the floor on its own dispatch. The gated persona spends its final turns satisfying its own gate (writing `report.json`, clearing strikes) rather than cleanly reporting back, so the chat report-back can be disrupted or incomplete even when the work landed.
-
-**How to apply:** When a dispatch is itself gate-enforced (the persona has a `gates.json` key), read lane state from the durable content bus — the plan's `## History` / validation sections, `.prism/evidence/<runKey>/`, the branch diff — rather than trusting the chat report. The gate and the report-back compete for the persona's final turns; the durable artifacts are authoritative. This only affects gated personas (those with a `gates.json` entry); ungated dispatches report back normally.
+**How to apply:** For any machine-parsed JSON the agent writes (e.g. `.prism/conductor-state.json`), write BOM-free — use Node `fs.writeFileSync(path, JSON.stringify(...), 'utf8')` or the Write tool (both BOM-free). Never write such files with PowerShell `Set-Content` / `Out-File -Encoding utf8`. If a parser rejects a file that looks valid, suspect a leading BOM first.
 
 ## A worker and its self-reviewer can confidently misread the same spec — verify a reviewer's plan-claim against the source text before applying the fix it proposes
 
 **Why:** 2026-06-24 (epic-prism-consumer-boundary, L8) — Atlas built the acceptance-criteria offer as *unconditional*, asserting "the plan says unconditional"; Briar then "confirmed" it and proposed aligning the prose to unconditional. The plan said **skip-if-exists** in two places and "unconditional" in none — both agents collapsed two distinct properties (a skip-if-exists guard vs a user-skippable offer) into one. Applying the reviewer's proposed fix would have shipped behavior the plan explicitly rejects (the offer re-firing on every reconfigure). Caught by grepping the plan for the literal claim; root cause was partly an ambiguous plan line that compressed two properties into one bullet.
 
 **How to apply:** When a finding rests on a claim about what the spec says ("the plan requires X"), verify the claim against the source text before routing the proposed fix — a grep of the plan for the asserted term is cheap. A worker and its reviewer agreeing is not verification when both read the same ambiguous line the same wrong way. Route the disagreement to the spec's author to adjudicate *and* to disambiguate the phrasing so the next reader can't repeat it. Same exists-vs-honored family as the grep/seed-twin lessons — fix against the source of truth, not a paraphrase of it.
-
-## A baseline-regression gate fix changes the smoke-fixture contract: seed a clean baseline to observe a strike
-
-**Why:** 2026-06-26 (Issue #300) — Bug 2's baseline-regression tolerance makes `run-gates.mjs` strike a claimed-true fresh-gate failure ONLY when a `baseline.json` recorded that gate passing (exit 0); an absent baseline means "no regression provable → don't strike." After landing the fix, `fleet-keying.mjs` went red — its lanes pre-seeded a failing `types` gate and expected a strike, but seeded no baseline, so the failure was tolerated as pre-existing and no strike was written. The fix was correct; the fixtures were stale.
-
-**How to apply:** Any smoke scenario (or fleet lane) that wants a fresh-gate failure to *strike* must pre-seed `baseline.json` with `{ <gateId>: 0 }` (a clean baseline) so the now-failing gate registers as a regression. Scenarios that want to prove *tolerance* seed a failing baseline (`{ <gateId>: 1 }`) or none. When a gate-reconciliation rule changes, re-audit every fixture that depends on strike production.
 
 ## Moving hand-authored AGENTS.md content into a Tier-1 rule subjects it to the Thrive-literal guard
 
@@ -266,60 +254,34 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 ---
 
-## The report contract, not the dispatch prose, is the authority on `next_route`
-
-**What:** 2026-06-26 (Issue #300 / PR #301) — A Sol dispatch prompt said "next_route: eric (re-review)." I wrote `next_route: eric` into `report.json` with `verdict: done`. The Stop gate rejected it (strike 1/3): `next_route 'eric' is incoherent with verdict 'done'`. The report contract (`report-contract.md` § Verdict-to-route coherence) is explicit — a Clove `done` routes to `briar` (self-review), the normal forward persona; `eric` is in Clove's allowed-routes set but is not coherent with `done`.
-
-**Why:** Dispatch prose describes intent ("get this re-reviewed"), but the gate enforces the typed contract. "Eric re-reviews next" is the *human/Sol* routing intent; the *contract-coherent* handoff from a `done` Clove report is `briar`, because self-review precedes PR review. Taking the prose literally put an incoherent value in a gated field.
-
-**How to apply:** When the dispatch names a next_route that conflicts with the verdict's coherence rule, the contract wins — set the coherent route and let Sol/human route onward from there. For a `done` verdict, use the persona's *normal next persona* (Clove→briar, Winston→clove, Eric→human), never a downstream persona named only in the dispatch's intent. Check `report-contract.md` § Verdict-to-route coherence before writing `next_route`, not the prompt prose.
-
----
-
 ## UTF-8 BOM on canonical `.ai-skills/` sources is a recurring defect — guard it at build time
 
-**Why:** 2026-06-27 (PR #348, third Eric catch) — some editors save `.md`/`.mjs`/`.json` files as "UTF-8 with BOM" by default. On `main` the canonical sources start clean, but whenever a BOM-bearing editor touches them, the BOM silently persists through the Git delta and into the next commit. On PRISM, BOMs break `<!-- atlas:specializes-in -->` anchor substitution in consumer repos and corrupt hook shebangs on Unix. The defect was caught manually three times; `bom-guard.ts` converts it to a build-time exit-1 failure.
+**Why:** 2026-06-27 (third Eric catch) — some editors save `.md`/`.mjs`/`.json` files as "UTF-8 with BOM" by default. On `main` the canonical sources start clean, but whenever a BOM-bearing editor touches them, the BOM silently persists through the Git delta and into the next commit. On PRISM, BOMs break `<!-- atlas:specializes-in -->` anchor substitution in consumer repos. The defect was caught manually three times; `bom-guard.ts` converts it to a build-time exit-1 failure.
 
-**How to apply:** The guard is wired into `build.ts` and runs on every `pnpm prism:build` / `pnpm prism:check`. If it fires, strip the BOM with `tail -c +4 <file> > <tmp>; mv <tmp> <file>` on each affected file, then rebuild. Never suppress the guard — a BOM that "just passes" on Node (which strips it) still breaks Unix shebang execution and consumer anchor substitution.
+**How to apply:** The guard is wired into `build.ts` and runs on every `pnpm prism:build` / `pnpm prism:check`. If it fires, strip the BOM with `tail -c +4 <file> > <tmp>; mv <tmp> <file>` on each affected file, then rebuild. Never suppress the guard — a BOM that "just passes" on Node (which strips it) still breaks consumer anchor substitution.
 
-**Gap:** The `bom-guard.ts` covers `.ai-skills/` canonical sources but NOT top-level docs (`README.md`, `AGENTS.md`, etc.) — Windows agent file-writes can still prepend a BOM there. Strip on touch; a BOM on top-level docs breaks the atlas anchor and the shebang. Filed as a follow-up to extend the guard scope.
+**Gap:** The `bom-guard.ts` covers `.ai-skills/` canonical sources but NOT top-level docs (`README.md`, `AGENTS.md`, etc.) — Windows agent file-writes can still prepend a BOM there. Strip on touch; a BOM on top-level docs breaks the atlas anchor. Filed as a follow-up to extend the guard scope.
 
 ---
 
 ## Spend-limit or 529 mid-segment leaves lanes partially processed — detect and resume heterogeneously
 
-**Why:** 2026-06-27 (epic #289 close) — a Workflow segment interrupted mid-pipeline (spend limit, 529 error) left lanes in mixed states: some had a PR open but review never ran; others hadn't started. A uniform retry re-ran completed work wastefully and duplicated side effects.
+**Why:** 2026-06-27 — a Workflow segment interrupted mid-pipeline (spend limit, 529 error) left lanes in mixed states: some had a PR open but review never ran; others hadn't started. A uniform retry re-ran completed work wastefully and duplicated side effects.
 
-**How to apply:** Detect partial lanes from null review fields or missing evidence artifacts. Author a heterogeneous cleanup that resumes each lane at its correct stage (open PR → skip to review; not started → full run). Use `resumeFromRunId` for transient API failures — completed agents return cached results and don't re-execute.
+**How to apply:** Detect partial lanes from null review fields or missing plan/PR artifacts. Author a heterogeneous cleanup that resumes each lane at its correct stage (open PR → skip to review; not started → full run). Use `resumeFromRunId` for transient API failures — completed agents return cached results and don't re-execute.
 
 ---
 
 ## The 500-line skill-body cap lives in `prism:test`, not `build.ts --check` — a clean build doesn't mean CI passes
 
-**Why:** 2026-06-27 (epic #289) — `MAX_SKILL_BODY_LINES` is enforced by `prism:test`, not by `build.ts`. A skill rewrite that exceeds the cap reports `buildClean` but fails CI at the test step. The cap is invisible to `prism:build --check`.
+**Why:** 2026-06-27 — `MAX_SKILL_BODY_LINES` is enforced by `prism:test`, not by `build.ts`. A skill rewrite that exceeds the cap reports `buildClean` but fails CI at the test step. The cap is invisible to `prism:build --check`.
 
 **How to apply:** Enforce the cap during authoring, not after. When a skill body grows past ~400 lines, externalize content to `lib/` files (the conductor pattern) rather than cramming into the body. Now codified in `skill-authoring.md`. When CI fails on a skill-body check after a `prism:build` passes locally, the cap is the first suspect.
 
 ---
 
-## Static bash-parsing for protected-path git mutations converges with a complete closed grammar + fixpoint strip + adversarial review matrix
-
-**Why:** 2026-06-27 (epic #289, Bash guard hardening) — per-form patching of the git-mutation guard spiraled as Eric's adversarial PR review surfaced new substitution + pathspec-magic forms on each round. Switching to a complete closed grammar (enumerate every substitution form and pathspec-magic variant), a fixpoint strip (loop until stable), and an adversarial reviewer matrix converged in multiple rounds instead of indefinitely.
-
-**How to apply:** When writing a security-critical static parser for shell commands, enumerate the full grammar exhaustively rather than patching per-form. Budget for multiple adversarial review rounds — Eric's PR review is what surfaces the edges. Fixpoint stripping (strip → check → strip again until no change) handles nested and compound forms that a single-pass strip misses.
-
----
-
-## Enabling `.claude/settings.json` mid-session activates hooks for the main session too — re-enable the floor at a session boundary
-
-**Why:** 2026-06-27 (epic #289, floor re-enable) — enabling the enforcement floor mid-session activated the Stop gate for the current conductor session, not just fresh subagents. The gate then demanded `report.json` from the conductor and the ownership-guard denied its source edits. The only escape (before the git-guard closed it) was `git checkout` to undo the settings change mid-session.
-
-**How to apply:** Re-enable the enforcement floor (`settings.json` hook activation) at a session boundary, not mid-session on a live conductor run. The gate fires on the session that enables it, not only on subsequent sessions. If the floor must be enabled mid-run, the conductor session needs its own `report.json` and ownership scope, or it must hand off to a fresh session immediately after enabling.
-
----
-
 ## Docs drift after a large epic — run a read-only triage audit before fixing, not a bulk update
 
-**Why:** 2026-06-27 (epic #289 close, docs freshness pass) — user-facing docs predated the enforcement floor architecture, leaving ~11 docs with stale descriptions. Jumping straight to fixes churned current docs and introduced scope creep; an audit-first read-only triage (per-doc freshness verdict: current / stale / missing section) focused the fix pass on only what needed updating.
+**Why:** 2026-06-27 — after a large architecture epic landed, user-facing docs carried stale descriptions across ~11 files. Jumping straight to fixes churned current docs and introduced scope creep; an audit-first read-only triage (per-doc freshness verdict: current / stale / missing section) focused the fix pass on only what needed updating.
 
 **How to apply:** After a large epic lands, run a read-only triage first — assign a freshness verdict to each doc (current, stale, missing section) before touching any file. Fix only the stale and missing entries. This prevents churning docs that are already correct and keeps the diff reviewable.
