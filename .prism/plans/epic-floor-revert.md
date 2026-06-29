@@ -127,3 +127,38 @@ Sequence matters: delete runtime + build emission first (so the build stops expe
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Task 4 — stripped floor from Sol (prism-conductor). Removed the gate-ratification paragraph plus the `needs-stronger-model` gate-forced verdict (enum + routing table + step-05 route + goal-state enum) from the report-back routing contract, and the active-persona startup write / `the floor's verdicts` / `gate-ratified` framing from shared.md. Kept Sol's human-ratification gates, gate dispositions, and the strike-2→model-axis escalation (Sol's own, not gate-driven); the real machinery sweep was 24 hits across 9 files, not the handoff's ~71 (broad "gate"/"ratif" over-count). Build regenerated all platform copies clean; conductor machinery sweep empty; prism:build 416/420 (4 pre-existing Windows path fails).
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Tasks 5–7 — docs/ADR/rules/state cleanup + verification. Deleted `.prism/references/enforcement/`, the architect + dev `enforcement-floor.md` docs, and `.prism/evidence/`; superseded ADR-0067 (+ its README index row); stripped floor refs from `verification-commands.md`/`config.schema.json`/`seed-curation.json`/`manifest.json`/`.gitignore` (kept the `{{commands.*}}` map); removed `## Enforcement floor` sections + scattered mentions across 13 `docs/` files (docs sweep delegated to a subagent, verified clean); marked the 3 floor plans Reverted with History entries. Tree-wide sweep: live guidance surface clean (floor refs remain only in historical plans/lessons + the superseded ADR); `pnpm prism:build` 416/420 (4 pre-existing Windows path fails); no-gate-interception confirmed structurally (settings `{}`, zero hook files). All 6 AC ticked.
 - 2026-06-29 [claude/stupefied-liskov-b00735]: Post-revert cleanup — pruned floor-specific lessons from `.prism/lessons.md` (5 deleted, 4 reworded to keep non-floor value; commit `adde52e`), closed the 8 open floor-byproduct GitHub items (PRs #369/#368, issues #370/#367/#366/#365/#363/#362) with revert-linking comments, and deleted the 2 obsolete floor branches. Assessed docs for residual Eli work — none needed (concept sweep clean; narrative docs coherent; remaining "gate"/"enforce" language is Sol's human gates + build/publish guards).
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Briar self-review — zero critical/major; build holds at 416/420 (no new fails). Two Minors found: an orphan `literal-allowlist.json` entry for deleted hook scripts (falsifies AC #114's "live surface clean" claim) and `prism-295` missing the `> Reverted` marker its sibling floor plans carry. See `## Review Issues`.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Clove fixed both Briar Minors — removed the orphan `.claude/hooks` allowlist entry (canonical-only) and added the `> Reverted` marker + History line to `prism-295`. `pnpm prism:build` 416/420 (no new fails); AC #114 ("live guidance surface clean") now genuinely holds.
+
+---
+
+## Review Issues
+
+### Orphan literal-allowlist entry for deleted floor hook scripts
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/definitions/literal-allowlist.json:264`
+- **Problem:** The entry `{ "path": ".claude/hooks", "reason": "hand-authored hook scripts … ${STRIKE_CAP} … ${runKey}" }` allowlists floor hook scripts the revert deleted (`.claude/hooks/` confirmed gone). The file sat outside the diff, so the removal-completeness sweep missed it — falsifying AC #114's "live guidance surface clean" claim, and leaving a latent footgun (a future unrelated `.claude/hooks` dir would be silently exempted from the literal-guard).
+- **Suggested fix:** Remove the `.claude/hooks` entry from canonical `literal-allowlist.json` (and any platform copies); re-run `pnpm prism:build` to confirm the literal-guard stays green.
+- **Fixed in:** Removed the `.claude/hooks` entry (canonical-only — no platform copies exist); JSON re-validated, `pnpm prism:build` 416/420 with no new fails, literal-guard green. AC #114 now holds.
+
+### prism-295 floor plan missing Reverted marker
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-295.md:1`
+- **Problem:** prism-295 (Goal: "Author Class B `gates.json` ownership and gate entries") is a floor-implementation plan but lacks the `> Reverted` marker its three sibling floor plans carry, so a cold reader sees a live-looking plan for a deleted mechanism. Judgment call — defensible as a sub-plan of the already-marked `epic-prism-enforcement-layer`, but inconsistent with the revert's own marking pattern.
+- **Suggested fix:** Add `> Reverted: 2026-06-29 — the enforcement floor this plan helped author was removed; see epic-floor-revert.md` under the title (matching the siblings) — or consciously leave it and record the scoping decision.
+- **Fixed in:** Added the `> Reverted` marker under the `# Plan: prism-295` title (sibling format, backticked link) plus a one-line History entry on prism-295. Confirmed prism-295's Goal is pure floor (Class B `gates.json` authoring), so the marker is correct, not over-marking.
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues — two Minors open (see `## Review Issues`)
+- [x] Build passes — `pnpm prism:build` 416/420, the 4 fails pre-existing Windows path bugs (no new regressions) — last run: 2026-06-29
+- [x] Floor structurally gone — `settings.json` `{}`, zero hook files, no live-surface floor residue except the one orphan above
+- [x] All 6 AC ticked (AC #114 to be re-confirmed once the orphan entry is removed)
+
+**Last updated:** 2026-06-29

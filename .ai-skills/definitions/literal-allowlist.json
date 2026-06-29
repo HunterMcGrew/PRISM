@@ -259,10 +259,6 @@
 		{
 			"path": ".cursor/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
 			"reason": "platform-copy mirror of ADR-0065"
-		},
-		{
-			"path": ".claude/hooks",
-			"reason": "hand-authored hook scripts — contain JavaScript template literals (e.g. ${STRIKE_CAP}) and JSON template strings (e.g. ${runKey}) that are runtime code, not unresolved build tokens"
 		}
 	]
 }
