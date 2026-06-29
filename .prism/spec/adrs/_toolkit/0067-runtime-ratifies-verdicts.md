@@ -67,4 +67,3 @@ The lawful lever is **maintenance mode** — a human-held suspension of enforcem
 - `.prism/skills/prism-conductor/lib/report-back.md` — the authoritative verdict enum (`done` / `needs-fix` / `blocked` / `needs-replan` / `needs-stronger-model` / `needs-human`) and Sol's deterministic routing; the contract this floor hardens
 - [ADR-0011](./0011-eric-never-approves-prs.md) — the human merge boundary is the one unconditional human gate; this floor never crosses it (enforcement names and verifies the handoff, but a human still merges)
 - [ADR-0048](./0048-conductor-autonomy-between-gates.md) — Sol drives between gates and never clears one; a gate-ratified verdict is what makes that autonomy safe
-- `.prism/architect/_toolkit/enforcement-floor.md` — the gate-strength taxonomy: the three classes, the universal contract + ownership + protected-paths primitives, and what floor each class gets
