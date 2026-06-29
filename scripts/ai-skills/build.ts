@@ -118,6 +118,20 @@ const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 // tree. assertHookEmitDoesNotWeaken refuses to emit a gates.json carrying either.
 const WHOLESALE_GRANTS = [".ai-skills/hooks/**", ".claude/hooks/**"];
 
+// Individual enforcement-source files. A wholesale glob is not the only way to re-open the
+// floor through _shared — an exact path like `.claude/hooks/gates.json` or
+// `scripts/ai-skills/build.ts` grants the same write access to one protected file for every
+// persona. These mirror ownership-guard.mjs's PROTECTED_WRITE_PATHS; any of them in
+// _shared.may_write is rejected alongside the wholesale grants (issue #305).
+const INDIVIDUAL_ENFORCEMENT_SOURCE_PATHS = [
+	".claude/hooks/run-gates.mjs",
+	".claude/hooks/ownership-guard.mjs",
+	".claude/hooks/evidence-ledger.mjs",
+	".claude/hooks/gates.json",
+	".claude/settings.json",
+	"scripts/ai-skills/build.ts",
+];
+
 /**
  * Copies all managed content areas from `contentRoot` into `platformDir`,
  * applying token substitution and dialect transformation per file.
@@ -736,10 +750,12 @@ export async function writeSeedMirror(
  *
  *   1. clove.ownership.may_write contains neither `.ai-skills/hooks/**` nor `.claude/hooks/**`
  *      — the wholesale enforcement-tree grants that are the hole.
- *   2. _shared.may_write (the reserved shared-rider key) contains no wholesale grant —
- *      `_shared` is NOT a persona and has no `.ownership` wrapper; its `may_write` array
- *      is a direct sibling field. Without this check, a `_shared.may_write: ['.ai-skills/hooks/**']`
- *      entry would bypass the per-persona check and re-open the floor (#305).
+ *   2. _shared.may_write (the reserved shared-rider key) contains no wholesale grant AND
+ *      no individual enforcement-source path — `_shared` is NOT a persona and has no
+ *      `.ownership` wrapper; its `may_write` array is a direct sibling field. Without this
+ *      check, a `_shared.may_write: ['.ai-skills/hooks/**']` wholesale grant or an exact
+ *      `['.claude/hooks/gates.json']` individual grant would bypass the per-persona check and
+ *      re-open the floor for every persona (#305).
  *   3. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
  *      protection is present in what's about to go live.
  *
@@ -786,6 +802,15 @@ export function assertHookEmitDoesNotWeaken(
 					`emitHooks (#305): _shared.may_write contains '${grant}', a wholesale ` +
 						`enforcement-tree grant that re-opens the canonical/runtime back door for ` +
 						`every persona. Narrow _shared riders to non-enforcement paths.`
+				);
+			}
+		}
+		for (const protectedPath of INDIVIDUAL_ENFORCEMENT_SOURCE_PATHS) {
+			if (sharedMayWrite.includes(protectedPath)) {
+				throw new Error(
+					`emitHooks (#305): _shared.may_write contains '${protectedPath}', an ` +
+						`individual enforcement-source file that would grant every persona write ` +
+						`access to one protected file. Narrow _shared riders to non-enforcement paths.`
 				);
 			}
 		}

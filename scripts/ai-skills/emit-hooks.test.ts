@@ -58,6 +58,26 @@ test("throws when _shared.may_write contains a wholesale enforcement-tree grant"
 	);
 });
 
+test("throws when _shared.may_write contains an individual enforcement-source path", () => {
+	const weakened = JSON.stringify({
+		_shared: { may_write: [".claude/hooks/gates.json"] },
+	});
+	assert.throws(
+		() => assertHookEmitDoesNotWeaken(weakened, realCanonicalGuard),
+		/#305/
+	);
+});
+
+test("throws when _shared.may_write contains the build.ts enforcement-source path", () => {
+	const weakened = JSON.stringify({
+		_shared: { may_write: ["scripts/ai-skills/build.ts"] },
+	});
+	assert.throws(
+		() => assertHookEmitDoesNotWeaken(weakened, realCanonicalGuard),
+		/#305/
+	);
+});
+
 test("does not throw on the real post-fix canonical gates.json", () => {
 	const realGates = fs.readFileSync(
 		path.join(REPO_ROOT, ".ai-skills", "hooks", "gates.json"),

@@ -173,7 +173,10 @@ function assert(scenarioName, condition, message) {
 
 // ============================================================
 // Scenario B: out-of-lane write denied
-// Clove tries to write to a path not in may_write.
+// Clove tries to write to an in-repo path not in may_write.
+// The target must be in-repo: an out-of-repo path (leading-slash absolute, ../-prefixed,
+// or cross-drive) is permitted by the writeTools-arm out-of-projectDir carve-out (task 14),
+// so it would not exercise lane enforcement. Use an in-repo path outside src/** instead.
 // Expected: ownership-guard exits 2, stderr contains "may not write".
 // ============================================================
 {
@@ -202,7 +205,7 @@ function assert(scenarioName, condition, message) {
       agent_type: 'prism-code-dev',
       hook_event_name: 'PreToolUse',
       tool_name: 'Write',
-      tool_input: { file_path: '/other-service/index.js' },
+      tool_input: { file_path: 'other-service/index.js' },
       cwd: tmpDir,
     };
     const env = { CLAUDE_PROJECT_DIR: tmpDir };
@@ -2959,11 +2962,14 @@ function assert(scenarioName, condition, message) {
 //
 // Y.a: payloads with same session_id, distinct agent_type → distinct keys
 // Y.b: payload with agent_id → runKey === agent_id (unchanged)
+// Y.c: payload with session_id only (no agent_id, no agent_type) → bare session_id
+//      (the solo-session fallback — the most-traveled branch; a regression returning
+//      undefined or a hash here would mis-resolve every non-dispatched session's dir)
 // ============================================================
 {
   const name = 'Y: runKey isolation (Defect 2)';
 
-  let okA = false, okB = false;
+  let okA = false, okB = false, okC = false;
   try {
     // resolveRunKey is also available as a static import at the top of this file,
     // but this dynamic form lets the scenario stay self-contained and symmetric with X.d and Z.
@@ -2982,11 +2988,16 @@ function assert(scenarioName, condition, message) {
     const key3 = resolveRunKeyDynamic({ session_id: 'sess-xyz', agent_type: 'prism-code-dev', agent_id: agentId });
     okB = assert(name, key3 === agentId,
       `Y.b: expected runKey === agent_id ('${agentId}'), got '${key3}'`);
+
+    // Y.c: session_id only, no agent_id, no agent_type → bare session_id unchanged.
+    const soloKey = resolveRunKeyDynamic({ session_id: 'solo-abc123' });
+    okC = assert(name, soloKey === 'solo-abc123',
+      `Y.c: expected solo fallback runKey === 'solo-abc123' (bare session_id, not a hash, not undefined), got '${soloKey}'`);
   } catch (e) {
     assert(name, false, `Y: dynamic import of resolve-persona.mjs failed: ${e.message}`);
   }
 
-  if (okA && okB) console.log(`${PASS} ${name}`);
+  if (okA && okB && okC) console.log(`${PASS} ${name}`);
 }
 
 // ============================================================
@@ -3019,9 +3030,11 @@ function assert(scenarioName, condition, message) {
     // in this test, so it reads null/nothing → returns null. The key invariant is it does
     // NOT return the _shared key as a persona.
     const resolvedSolo = resolvePersona({}, gatesOnlyShared, REPO_ROOT);
+    // resolvePersona returns { persona: <key> }, never { key } — assert on .persona so
+    // the check actually tests the resolved value (asserting .key was vacuously green).
     okA = assert(name,
-      resolvedSolo === null || (resolvedSolo && resolvedSolo.key !== '_shared'),
-      `Z.a: expected null or a non-_shared persona, got key=${resolvedSolo?.key}`);
+      resolvedSolo === null || (resolvedSolo && resolvedSolo.persona !== '_shared'),
+      `Z.a: expected null or a non-_shared persona, got persona=${resolvedSolo?.persona}`);
 
     // Z.b: agent_type '_shared' with a real gates object that has no _shared key — resolves null.
     // When the gates object does NOT contain '_shared' as a direct key and '_shared' has no
@@ -3139,6 +3152,81 @@ function assert(scenarioName, condition, message) {
     const rC = runGuardBash('echo x > .prism/architect/foo.md');
     const okC = assert(name, rC.code === 2,
       `AA.c: echo to unquoted in-repo .prism/architect/ path (outside clove lane) — expected exit 2 (lane deny), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
+
+    if (okA && okB && okC) console.log(`${PASS} ${name}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+}
+
+// ============================================================
+// Scenario BB: Edit/Write arm out-of-projectDir permit (S1 fold-in — task 14)
+//
+// The Bash arm permits writes that resolve outside projectDir (carve-out 2). The
+// Edit/Write/MultiEdit arm now mirrors that: a narrow-lane persona writing a memory file
+// (~/.claude/...), a /tmp scratch file, or a cross-drive Windows scratchpad via the Write
+// tool produces a ../-prefixed or drive-rooted normalizedPath that matches no may_write
+// glob, and would have been wrongly denied. The protected-source and gate-state checks run
+// BEFORE this carve-out, so it cannot grant the enforcement surface — the in-repo deny
+// (BB.c) confirms lane enforcement is intact.
+//
+//   BB.a: narrow-lane persona Write to cross-drive C:\...\Temp path → PERMIT (exit 0)
+//   BB.b: narrow-lane persona Write to POSIX /tmp path → PERMIT (exit 0)
+//   BB.c: narrow-lane persona Write to in-repo out-of-lane src/index.ts → DENY (exit 2)
+// ============================================================
+{
+  const name = 'BB: Edit/Write arm out-of-projectDir permit (task 14)';
+
+  const gates = {
+    eric: {
+      writes_report_to: '.prism/evidence/${runKey}/report.json',
+      preconditions: [],
+      gates: [],
+      allowed_routes: ['clove'],
+      ownership: {
+        may_write: ['.prism/plans/**', '.prism/evidence/**/report.json'],
+        may_not_run: [],
+      },
+    },
+  };
+
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'prism-smoke-bb-'));
+  try {
+    const gatesPath = path.join(tmpDir, '.claude', 'hooks', 'gates.json');
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    writeFileSync(gatesPath, JSON.stringify(gates, null, 2), 'utf8');
+
+    const guardScript = path.join(HOOKS_DIR, 'ownership-guard.mjs');
+    // MAINTENANCE OFF: deny-scenario (BB.c) must not be unlocked by ambient maintenance mode.
+    const env = { CLAUDE_PROJECT_DIR: tmpDir, CLAUDE_PRISM_MAINTENANCE: '' };
+
+    function runGuardWrite(filePath) {
+      return runHook(guardScript, {
+        session_id: 'smoke-bb',
+        agent_type: 'prism-code-review-pr',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Write',
+        tool_input: { file_path: filePath, content: 'x' },
+        cwd: tmpDir,
+      }, env);
+    }
+
+    // BB.a: cross-drive Windows scratchpad — path.relative yields a drive-rooted absolute
+    // path that path.isAbsolute catches, so the carve-out permits. Use a drive letter the
+    // tmpDir is not on; C: is the canonical Windows scratch drive.
+    const rA = runGuardWrite('C:\\Users\\test\\Temp\\x.txt');
+    const okA = assert(name, rA.code === 0,
+      `BB.a: Write to cross-drive C:\\...\\Temp path — expected exit 0 (out-of-repo permit), got ${rA.code}. stderr: ${rA.stderr.substring(0, 200)}`);
+
+    // BB.b: POSIX /tmp scratch path — ../-prefixed relative on all platforms.
+    const rB = runGuardWrite('/tmp/prism-bb-output.md');
+    const okB = assert(name, rB.code === 0,
+      `BB.b: Write to /tmp path — expected exit 0 (out-of-repo permit), got ${rB.code}. stderr: ${rB.stderr.substring(0, 200)}`);
+
+    // BB.c: in-repo path outside eric's lane → DENY (lane enforcement intact after carve-out).
+    const rC = runGuardWrite('src/index.ts');
+    const okC = assert(name, rC.code === 2,
+      `BB.c: Write to in-repo src/index.ts (outside eric lane) — expected exit 2 (lane deny), got ${rC.code}. stderr: ${rC.stderr.substring(0, 200)}`);
 
     if (okA && okB && okC) console.log(`${PASS} ${name}`);
   } finally {

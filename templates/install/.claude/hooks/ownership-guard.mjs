@@ -415,6 +415,16 @@ if (writeTools.has(toolName)) {
     }
   }
 
+  // Carve-out — out-of-projectDir (memory files, temp/scratch, cross-drive scratchpad).
+  // Mirrors the Bash arm's carve-out 2: a Write-tool target that resolves outside the repo
+  // is neither the enforcement surface (checked above) nor an in-repo lane, so denying it is
+  // pure false-positive. normalizedPath is already backslash-forwarded (lines above), so the
+  // Windows cross-drive case (path.relative('D:\\…','C:\\…') → drive-rooted absolute) is
+  // caught by path.isAbsolute, exactly as the Bash arm handles it.
+  if (normalizedPath.startsWith('../') || path.isAbsolute(normalizedPath)) {
+    process.exit(0);
+  }
+
   const allowed = effectiveMayWrite.some(pattern => matchGlob(pattern, normalizedPath));
   if (!allowed) {
     process.stderr.write(
