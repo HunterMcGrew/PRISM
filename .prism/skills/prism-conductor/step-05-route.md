@@ -7,7 +7,6 @@ Apply the verdict + gate-disposition routing table. The table is canonical in `.
 - `done` → advance `currentPhase` to the next phase.
 - `needs-fix` → dispatch the implementer (Clove) for the `## Review Issues`, then re-dispatch the same reviewer; the lane stays in the review phase. This is the gauntlet loop (step-04 § The review phase is the gauntlet), bounded by the step-07 pass budget + three-strike rule.
 - `needs-replan` / `blocked` → route back to Winston (set `escalation.axis: replan`).
-- `needs-stronger-model` → step-06 (set `escalation.axis: model`; bump `models.<persona>` to `opus` for the next dispatch).
 - `needs-human` → pause the lane and append to `pendingHumanReport`.
 
 **Secondary signals** route independently — a dispatch can be `done` *and* carry a signal:
