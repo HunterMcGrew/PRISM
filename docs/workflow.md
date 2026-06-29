@@ -54,12 +54,6 @@ When the branch is ready, Clove commits, pushes, and opens the PR. Eli documents
 
 ---
 
-## The enforcement floor
-
-Each persona writes a `report.json` to its evidence directory before stopping. The runtime's Stop hook reads that file and ratifies or overrides the claimed verdict before the handoff proceeds — so a `done` from any persona is backed by a runtime check, not just the model's self-report. See [enforcement-floor.md](./ai-skills/enforcement-floor.md) for how ownership guards, verdict gates, and the report contract work together.
-
----
-
 ## Why rules load when they do
 
 The tier system is built so rules load at the right scope rather than all at once — a rule about WordPress blocks doesn't load when you're working on a TypeScript utility. See [SPEC.md](../.prism/SPEC.md) for the full tier breakdown and the [ADR for the three-tier rule loading model](../.prism/spec/adrs/_toolkit/0035-rule-loading-tiers.md).

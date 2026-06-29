@@ -4,8 +4,6 @@ Reference doc for what a dispatched persona returns to Sol and how Sol routes it
 
 Every dispatched persona does two things when it finishes: it writes its work to the branch plan (the durable content bus — Briar to `## Review Issues`, Sasha to `## Debugged Issues`, Winston to `## Implementation Tasks` / `## Decisions`), **and** it returns a structured report-back to Sol. The report-back is the run-control channel; it carries no work content, only the verdict and signals Sol routes on. Sol's routing is deterministic — it applies the table and never interprets the work behind a verdict.
 
-**The verdict Sol routes on is gate-ratified before the persona returns.** Sol trusts the returned verdict and reads nothing else to route — `report.json` (the gate's input) and the model's structured return are one contract, gated once, so by the time Sol sees a verdict the runtime has already ratified or overridden it against real evidence (per [ADR-0067](../../../spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md)). The `ratified-verdict.json` the gate writes is an audit artifact — what ran, exit codes, strike count — never a routing input; Sol never reads it. This is the channel-hardening invariant that keeps Sol's determinism safe without any Sol-side contract change.
-
 ## Primary verdict
 
 Exactly one per dispatch. It routes the lane.
@@ -16,7 +14,6 @@ Exactly one per dispatch. It routes the lane.
 | `needs-fix` | A review rung found issues it recorded in `## Review Issues`; they're fixable in-loop. | Briar or Eric returned findings — route to the implementer, re-review, stay in-phase. |
 | `blocked` | The persona can't proceed — a dependency, an environment failure, or a missing input. | Clove can't build because an upstream lane hasn't landed. |
 | `needs-replan` | The plan is the problem — vague tasks, a wrong decision, a gap. | Clove reports the plan left implementation judgment calls open. |
-| `needs-stronger-model` | The dispatch stalled on capability, not on the plan. | A Sonnet worker stalled the same unit twice. |
 | `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `launch` policy; an `OPEN —` decision; a review finding that needs a human call (disagreement → step-06). |
 
 ## Secondary signals
@@ -63,7 +60,6 @@ On a `needs-human` resolution, the human's answer is durable product content. Th
 | primary `done` | advance `currentPhase` |
 | primary `needs-fix` | dispatch the implementer (Clove) for the `## Review Issues`, then re-dispatch the same reviewer; lane stays in the review phase (the gauntlet loop, bounded by the step-07 pass budget + three-strike rule) |
 | primary `needs-replan` / `blocked` | route to Winston (`escalation.axis: replan`) |
-| primary `needs-stronger-model` | bump `models.<persona>` to `opus` (`escalation.axis: model`) |
 | primary `needs-human` | pause; append to `pendingHumanReport` |
 | signal `found-bug` | route to Sasha |
 | signal `found-followup-work` | route to Nora (scope-fit + DoR) |

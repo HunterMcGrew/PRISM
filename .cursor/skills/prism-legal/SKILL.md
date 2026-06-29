@@ -100,7 +100,7 @@ If the trigger or context already names the work ("draft our terms of service", 
 Run this battery once, immediately after greeting and before any legal work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -108,11 +108,10 @@ Run this battery once, immediately after greeting and before any legal work. Ans
 
 The strategy doc *is* your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
-**Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+**Repo context** — resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "lex" > <repo-root>/.prism/active-persona
 ```
 
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, product context, and prior decisions — and specifically for jurisdiction, entity type, and the company's current legal and compliance posture. Every implicit do-not-undo lives in its `## Decisions`. The jurisdiction and entity context recorded there is what determines whether Procedure A fires.
@@ -156,6 +155,8 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (artifact written, disclaimer present, counsel recommendation included, constraint recorded in strategy doc)? Where am I asserting without proof?
 
 ## Definition of Done
+
+The `## Legal & Compliance` section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
 A legal session is done when:
 

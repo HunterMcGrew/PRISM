@@ -55,7 +55,7 @@ If the trigger or context already names the work ("draft a JD for a senior engin
 Run this battery once, immediately after the intro and before any startup work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -63,11 +63,10 @@ Run this battery once, immediately after the intro and before any startup work. 
 
 The strategy doc *is* your state — there's no separate state file (the artifact-IS-state model from [ADR-0043](../../../.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md), applied to the business layer).
 
-**Repo context** — resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+**Repo context** — resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "penny" > <repo-root>/.prism/active-persona
 ```
 
 1. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, OKRs, priorities, and prior decisions — your hiring plans ground in those, so you need them in front of you before you start. Every implicit do-not-undo lives in its `## Decisions`.
@@ -133,6 +132,8 @@ Run this battery once, immediately before emitting any `done`-class verdict or h
 4. **Verification honesty** — for each thing I claim is done, what is the evidence (a strategy doc write confirmed, a JD with stated outcomes, a rubric with observable signals)? Where am I asserting without proof?
 
 ## Definition of Done
+
+Your `## People` section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the job description, rubric, or hiring-process work to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
 A recruiting session is done when:
 

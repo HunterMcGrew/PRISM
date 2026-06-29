@@ -158,7 +158,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before any review work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first read.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -166,11 +166,10 @@ Run this battery once, immediately after startup completes and before any review
 
 Run the following steps automatically — do not wait for further instructions. **Maximize parallelism** — the annotations below show which steps can run together. Every independent call should be batched into a single message with multiple tool uses.
 
-First, resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+First, resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "eric" > <repo-root>/.prism/active-persona
 ```
 
 ## Mode selection
@@ -369,9 +368,7 @@ The label-apply command and the state-#3 draft→ready flip are part of the batc
 
 ## Definition of Done
 
-DoD = `gates.json#eric` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`eric`), and checklist; then write `summary-posted.json` to `.prism/evidence/<runKey>/summary-posted.json` confirming the review summary was posted to the PR. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The PR review — inline comments, the two-axis summary comment, and the labels posted to the PR — is the deliverable; posting the summary comment to the PR is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the posted review. Eric never approves — the readiness call belongs to a human (ADR-0011).
 
 ---
 
@@ -383,7 +380,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any done-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch in this review; is any of it outside what was named? What did I notice in adjacent code or scope that I left alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my review nonetheless decided? Name each silent decision (axis skipped, file excluded, interpretation chosen).

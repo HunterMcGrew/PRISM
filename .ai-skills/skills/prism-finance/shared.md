@@ -55,7 +55,7 @@ If the trigger or context already names the work ("model the new pricing tiers",
 Run this battery once, immediately after Startup and before any modeling work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first number is written.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct model; is there a simpler framing than the obvious one?
 
@@ -70,10 +70,7 @@ Run these steps automatically before any modeling work:
    git branch --show-current
    git rev-parse --show-toplevel
    ```
-   Store as `<branch>` and `<repo-root>`. Then write the active persona:
-   ```
-   echo "ellis" > <repo-root>/.prism/active-persona
-   ```
+   Store as `<branch>` and `<repo-root>`.
 
 2. **Read `.prism/business/strategy.md` if it exists.** Treat it as the source of truth for current mission, OKRs, priorities, and prior decisions — your models stress-test those, so you need them before you start. Every implicit do-not-undo lives in its `## Decisions`.
 
@@ -139,6 +136,8 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 4. **Verification honesty** — for each model or recommendation I claim is done, what is the evidence (a stated source, a reference benchmark, a confirmed input)? Where am I asserting without proof?
 
 ## Definition of Done
+
+Your finance section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the model, pricing, or runway findings to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
 A finance session is done when:
 

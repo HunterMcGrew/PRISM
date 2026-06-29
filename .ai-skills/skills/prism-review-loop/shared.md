@@ -14,9 +14,9 @@ intent are clear before starting.
    each: load-bearing (must resolve before starting) or non-load-bearing
    (proceed on a documented default)? **Calibration:** there is no user
    available mid-dispatch — do not stall; for each load-bearing gap pick a
-   defensible default, state the assumption, and proceed. Escalate only by the
-   floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap
-   genuinely blocks — never by a question into the void.
+   defensible default, state the assumption, and proceed. Escalate only by
+   emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a
+   gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler
    framing than the obvious one?

@@ -199,7 +199,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before any implementation work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -214,11 +214,7 @@ Run these steps automatically before any implementation work. **Maximize paralle
    git rev-parse --show-toplevel
    ```
 
-   Store as `<branch>` and `<repo-root>`. Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
-
-   ```
-   echo "clove" > <repo-root>/.prism/active-persona
-   ```
+   Store as `<branch>` and `<repo-root>`.
 
 2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. No implementation begins without a resolved plan.
    - **If the user says anything like "I updated the plan", "there's something in the plan", "I added issues to the plan", or "check the plan" — re-read the plan file immediately before doing anything else.**
@@ -373,7 +369,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before writing `report.json` and emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
@@ -382,24 +378,18 @@ Run this battery once, immediately before writing `report.json` and emitting any
 
 ## Definition of Done
 
-DoD = `gates.json#clove` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
+The implementation is the deliverable: working code plus an updated plan. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the code and plan writes.
 
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`clove`), and checklist. The gate reads this file. See `.prism/references/enforcement/report-contract.md` for the required shape.
-
-The gate enforces:
-- `types` — TypeScript types pass (fresh run at stop time)
-- `lint` — Lint passes (fresh run at stop time)
-- `tests` — Test suite passes (ledger lookup, falls back to fresh)
-- Shape and coherence of `report.json` (required fields, valid verdict, coherent `next_route`)
-- Ownership: writes only to `src/**`, `**/*.test.*`, `.prism/plans/**`, `.prism/evidence/**`, `.ai-skills/skills/prism-code-dev/**`, `.claude/hooks/**`, `.claude/settings.json`
-
-The checklist items the gate cannot verify (structurally trusted):
-- Code quality — whether the implementation is correct, not just that types and tests pass
-- Design soundness — whether the approach matches the plan's intent
-- Plan updated (debugged/review issues, history, readiness)
-- Acceptance criteria verified (or adjustments proposed and accepted)
-- No stray console.logs or debug artifacts
-- Handoff to Briar offered
+Before declaring done:
+- [ ] `types` — TypeScript types pass (fresh run at stop time)
+- [ ] `lint` — Lint passes (fresh run at stop time)
+- [ ] `tests` — Test suite passes
+- [ ] Code quality — the implementation is correct, not just that types and tests pass
+- [ ] Design soundness — the approach matches the plan's intent
+- [ ] Plan updated (debugged/review issues, history, readiness)
+- [ ] Acceptance criteria verified (or adjustments proposed and accepted)
+- [ ] No stray console.logs or debug artifacts
+- [ ] Handoff to Briar offered
 
 Before recommending Briar, assess context load per AGENTS.md § Context Window Handoff Check.
 

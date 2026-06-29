@@ -3,9 +3,8 @@
  *
  * `runBomGuard` scans the `.ai-skills` tree (`.md`, `.mjs`, `.json`) for files that begin
  * with a UTF-8 BOM (0xEF 0xBB 0xBF). BOM-bearing canonical sources break the
- * `<!-- atlas:specializes-in -->` anchor substitution and corrupt generated
- * hook shebangs on Unix. The guard converts this recurring manual Eric catch
- * into a build-time failure.
+ * `<!-- atlas:specializes-in -->` anchor substitution and corrupt `.mjs` shebangs
+ * on Unix. The guard converts this recurring manual Eric catch into a build-time failure.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -64,12 +63,12 @@ test("bom guard flags a mjs file with a leading UTF-8 BOM", async () => {
 			UTF8_BOM,
 			Buffer.from("#!/usr/bin/env node\nconsole.log('hi');\n", "utf8"),
 		]);
-		await writeSource(aiSkillsRoot, "hooks/run-gates.mjs", bomContent);
+		await writeSource(aiSkillsRoot, "definitions/example.mjs", bomContent);
 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 1);
-		assert.match(violations[0].relativePath, /run-gates\.mjs$/);
+		assert.match(violations[0].relativePath, /example\.mjs$/);
 	});
 });
 
@@ -79,12 +78,12 @@ test("bom guard flags a json file with a leading UTF-8 BOM", async () => {
 			UTF8_BOM,
 			Buffer.from('{"key":"value"}\n', "utf8"),
 		]);
-		await writeSource(aiSkillsRoot, "hooks/gates.json", bomContent);
+		await writeSource(aiSkillsRoot, "definitions/example.json", bomContent);
 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 1);
-		assert.match(violations[0].relativePath, /gates\.json$/);
+		assert.match(violations[0].relativePath, /example\.json$/);
 	});
 });
 
@@ -97,10 +96,10 @@ test("bom guard passes on BOM-free canonical source files", async () => {
 		);
 		await writeSource(
 			aiSkillsRoot,
-			"hooks/run-gates.mjs",
+			"definitions/example.mjs",
 			"#!/usr/bin/env node\nconsole.log('hi');\n"
 		);
-		await writeSource(aiSkillsRoot, "hooks/gates.json", '{"key":"value"}\n');
+		await writeSource(aiSkillsRoot, "definitions/example.json", '{"key":"value"}\n');
 
 		const violations = await runBomGuard(repoRoot);
 

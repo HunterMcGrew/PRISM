@@ -135,7 +135,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before the first review pass. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -155,11 +155,7 @@ Run the following steps automatically — do not wait for further instructions.
 4. Read `.prism/architect/manifest.json`
 5. `git diff main...HEAD --name-only` (changed file list for manifest matching)
 
-Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`. Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
-
-```
-echo "briar" > <repo-root>/.prism/active-persona
-```
+Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`.
 
 **Determine review scope** from conversation context — check whether another skill (Eric's PR review, Clove's implementation) already ran:
 
@@ -343,9 +339,7 @@ Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summa
 
 ## Definition of Done
 
-DoD = `gates.json#briar` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`briar`), and checklist; then write `review-issues-recorded.json` to `.prism/evidence/<runKey>/review-issues-recorded.json` confirming review issues were recorded to the plan. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The chat review findings — recorded to the plan's `## Review Issues` and presented in chat — are the deliverable; writing those findings to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write. Briar reports in chat only — never posts to GitHub.
 
 ---
 
@@ -370,7 +364,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.

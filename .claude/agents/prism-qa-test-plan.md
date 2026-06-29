@@ -106,7 +106,7 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 Run this battery once, immediately after startup completes and before any plan-building work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first scenario is written.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -119,12 +119,6 @@ Run these steps automatically:
    ```bash
    git rev-parse --show-toplevel
    git fetch --tags 2>/dev/null
-   ```
-
-   Then write the active persona to `.prism/active-persona` so the ownership-guard hook can resolve identity on the solo path:
-
-   ```
-   echo "reese" > <repo-root>/.prism/active-persona
    ```
 
 2. **Read the domain knowledge file** — `.prism/architect/_toolkit/qa-test-planning.md`. It's the craft reference for everything Reese builds.
@@ -252,9 +246,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
-DoD = `gates.json#reese` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`reese`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".claude/docs/qa/<plan-file>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the QA plan file this run saved. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The saved QA test plan file is the deliverable; writing it to the mode-appropriate path and returning that path is the final act before stopping. When dispatched by Sol, return the verdict alongside the plan write.
 
 Regardless of mode:
 

@@ -1,6 +1,7 @@
 # Plan: epic-prism-enforcement-layer
 
 > Closed: 2026-06-27
+> Reverted: 2026-06-29 — the runtime floor this epic shipped was removed; see [`epic-floor-revert.md`](./epic-floor-revert.md).
 
 ## Ticket
 
@@ -1283,6 +1284,7 @@ All three items were resolved by Issue #300 (gate-fix + canonical-source split p
 - 2026-06-27 [hmcgrew/289-epic-close]: Epic closed — promoted the at-close decisions to durable surfaces (ADR-0067 flipped to `accepted`; added part 6 always-on + maintenance mode, extended part 4 with escape-verdict typing + orientation/re-orientation batteries, extended part 5 with the complete Bash-segmentation grammar + git-mutation closure; `enforcement-floor.md` gained universal primitive 4 lawful maintenance and the two ceiling sub-sections). Ran the decision verdict gate — all 34 Decisions now carry an explicit verdict sub-bullet (8 early Phase-0/1 mechanism decisions back-filled). Floor re-enable + fleet integrity test remain the human-gated final step (not part of this close); `enforcementHooksDisabled` untouched.
 - 2026-06-27 [hmcgrew/289-reenable-floor]: Restored the four hook wirings in `.ai-skills/hooks/settings.json` (the canonical source) from the pre-disable commit, ran `tsx scripts/ai-skills/build.ts` to emit byte-identical copies to `.claude/settings.json` and `templates/install/.claude/settings.json`; `build.ts --check` no drift, smoke 14/14, crossref-lint clean. Re-enable checklist item checked.
 - 2026-06-27 [hmcgrew/prism-289-tail-ac-tick]: Close-tail AC verification — re-ran both smoke suites (`run-all.mjs` A–N all pass, `fleet-keying.mjs` E1–E3 all pass) and mapped each of the 15 AC items to first-hand smoke evidence or plan-recorded proof; ticked all 15 from `[ ]` to `[x]`. No code changes — plan bookkeeping only.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Reverted — the runtime enforcement floor this epic shipped (hooks, build emission, skill-body gate sections, Sol's report-back gate, ADR-0067, floor docs) was removed; PRISM returns to its guidance-only model. See [`epic-floor-revert.md`](./epic-floor-revert.md).
 
 ---
 

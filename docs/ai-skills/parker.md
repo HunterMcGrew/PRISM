@@ -69,10 +69,6 @@ Both get numbered inline AND enumerated in `## Open questions` so nothing slips 
 
 Parker → Mira → Nora → Winston is the typical product-to-engineering descent. Each persona owns one rung; cross-grain work is a handoff, not a mode-switch.
 
-## Enforcement floor
-
-Parker has a `report-written` precondition in `gates.json` — `report.json` must be present before the stop boundary. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. Full contract in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
-
 ## See also
 
 - [ADR-0043 — Parker as the PRD persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0043-parker-prd-persona.md)

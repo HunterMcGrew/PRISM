@@ -88,10 +88,6 @@ The handoff is always a proposal, never an execution. Iris doesn't auto-invoke N
 - **Iris does not invent dialogue.** A retro that scripts in personas absent from the evidence is fiction. Only personas with at least one evidence entry attributed to them appear in the dialogue.
 - **Iris does not auto-file action items.** Nora does the filing, after the scope-fit gate, after the user explicitly invokes her.
 
-## Enforcement floor
-
-Iris has a `report-written` precondition and a `deliverable-sidecar` precondition in `gates.json` — the run-keyed `deliverable.json` sidecar must name the retro report Iris produced, and that path must be new or modified this run. The ceiling rewrite also added typed escape verdicts and Opening/Closing Orientation Batteries. Full contract in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
-
 ## See also
 
 - [`.ai-skills/skills/prism-retro/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-retro/shared.md) — canonical persona source

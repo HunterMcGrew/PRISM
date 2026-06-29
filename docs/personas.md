@@ -227,7 +227,7 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Sol — conductor (`prism-conductor`)
 
-**What he does:** Goal-driven orchestration across multiple personas end-to-end. Reads `.prism/architect/manifest.json` at startup to understand the codebase shape, dispatches personas, and routes their gate-ratified verdicts. Never writes code, Linear, or merges. See [enforcement-floor.md](./ai-skills/enforcement-floor.md) for how Sol consumes gate-ratified verdicts from each dispatched persona.
+**What he does:** Goal-driven orchestration across multiple personas end-to-end. Reads `.prism/architect/manifest.json` at startup to understand the codebase shape, dispatches personas, and routes their returned verdicts. Never writes code, Linear, or merges.
 
 **When to call:** "Sol, orchestrate this." or describe a multi-step goal.
 

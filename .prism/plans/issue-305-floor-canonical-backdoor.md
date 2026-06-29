@@ -1,5 +1,7 @@
 # Plan: issue-305-floor-canonical-backdoor
 
+> Reverted: 2026-06-29 — the enforcement floor this plan hardened was removed; see [`epic-floor-revert.md`](./epic-floor-revert.md).
+
 ## Ticket
 
 GitHub issue #305 — Close the canonical-source back-door in the enforcement floor.
@@ -180,6 +182,7 @@ Verification (run end-to-end after Task 4):
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Clove implemented Tasks 1–4 in the load-bearing order — Scenario J smoke (canonical protection), narrowed `clove.may_write` (both `.ai-skills/hooks/**` and `.claude/hooks/**` → their `__smoke__/` lanes, since the Task-4 backstop forbids both wholesale grants), `PROTECTED_CANONICAL_HOOKS_PREFIX` + shared `isProtectedCanonicalHookPath` wired into both guard branches, and `assertHookEmitDoesNotWeaken` backstop in `emitHooks`. `pnpm prism:build` cut the protection over to runtime + install seed with zero drift; canonical/runtime/install smoke all green (A–J), fleet-keying 3/3, emit-hooks unit test 5/5, crossref-lint clean. types/tests fail pre-existing (esbuild missing, Windows path-norm `D:\D:\…%20…`) — neither in this diff.
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Briar self-review — both guard arms verified (tool-path + Bash-path deny canonical `gates.json`/`*.mjs`/`lib/**`; carve-outs `__smoke__/` and `prism-code-dev/**` permit; Scenario J 10/10 on canonical+runtime). Adversarial `..`-traversal / `./`-prefix / trailing-slash probes all denied (path.relative collapses traversal before the prefix check). `pnpm prism:build` permits (not a protected write-target token; subprocess fs emit not guard-intercepted). emit-hooks unit test 5/5. Verdict: clean → Eric. Recorded one deferred `minor` (build.ts residual self-weakening vector) as a documented known-limitation/follow-up — not a #305 must-fix.
 - 2026-06-26 [hmcgrew/issue-305-floor-canonical-backdoor]: Clove fixed Eric's Major (Bash-arm `./`/absolute canonical bypass) by normalizing each Bash write-target the same way the tool-path normalizes filePath, before the protected checks; see Review Issue "Bash-path canonical protection bypassable…". Added Scenario J11–J15 (`./`/`..`-traversal/absolute/`sed -i` writes deny, read permits) and mopped three cosmetic minors. Live-probed the emitted runtime guard — every write spelling exits 2, reads/carve-outs/lookalike all correct; zero drift, all smoke + fleet-keying + emit-hooks green.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Reverted — the enforcement floor whose canonical-source back-door this plan closed was removed in the floor revert. See [`epic-floor-revert.md`](./epic-floor-revert.md).
 
 ---
 

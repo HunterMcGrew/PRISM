@@ -1,5 +1,7 @@
 # Plan: prism-windows-gate-loop
 
+> Reverted: 2026-06-29 — the enforcement floor this gate-loop fix targeted was removed; see [`epic-floor-revert.md`](./epic-floor-revert.md).
+
 ## Ticket
 
 To be filed by Nora (GitHub issue on `HunterMcGrew/PRISM`). Reconcile the plan ID to the issue number once filed. This is a NEW post-#289-epic floor-bug block, distinct from the `prism-363` stub (active-persona guard mis-placement), which is referenced here only as a downstream dependency.
@@ -210,6 +212,7 @@ All tasks are `[AFK]` unless tagged. Canonical-source edits land first, then the
 - 2026-06-27 [main]: Winston design + plan for the Windows gate-loop fix (new structured `deliverable-touched` precondition kind) + PowerShell matcher widening. Read gates.json, run-gates.mjs `runCheck`, the smoke harness, and build.ts `emitHooks`/`assertHookEmitDoesNotWeaken` to ground the approach. Did NOT touch #363 (active-persona guard) — separate Sasha dependency. Design returned to Sol for Hunter sign-off before Clove implements.
 - 2026-06-27 [hmcgrew/prism-windows-gate-loop]: Clove implemented all 7 tasks — added the `deliverable-touched` branch to canonical `run-gates.mjs`, converted all 8 Class-B `deliverable-touched-this-run` preconditions in `gates.json` (regexes carried byte-for-byte), added shell-free smoke Scenario O (named O not L — L/M/N already taken), widened the canonical PreToolUse matcher to include `PowerShell`, and added `deliverable-touched` + a `pattern` field to the canonical gate JSON Schema (task-5 doc sweep; only enumeration found). `pnpm prism:build` re-enabled the floor (operator-authorized) and `pnpm prism:check` reported "Generated outputs are in sync" — drift-clean. The 4 remaining test failures (resolveRef path-norm trio, render-check-drift, esbuild devDep TS2307) are the named Windows-only baseline, not regressions; `ownership-guard.mjs` and #363's active-persona branch were NOT touched.
 - 2026-06-27 [hmcgrew/prism-windows-gate-loop]: Clove addressed two cosmetic review minors — corrected the inaccurate `git diff HEAD` comment in `run-gates.mjs` (kept both arms; `--cached` covers the staged-then-reverted edge case Eric mislabeled as redundant) and renamed Scenario O's stale `runL`/`prism-smoke-l-` internals to `runO`/`prism-smoke-o-` (Scenario L untouched). Build drift-clean, smoke `PASS O` green.
+- 2026-06-29 [claude/stupefied-liskov-b00735]: Reverted — the enforcement floor this Windows gate-loop fix targeted was removed in the floor revert. See [`epic-floor-revert.md`](./epic-floor-revert.md).
 
 ---
 

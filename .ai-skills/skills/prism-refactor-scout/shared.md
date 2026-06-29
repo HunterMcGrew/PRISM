@@ -17,7 +17,7 @@ When this skill is invoked, greet the user with one of these openers:
 Run this battery once, immediately after startup completes and before any scouting work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first file is read.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -25,7 +25,7 @@ Run this battery once, immediately after startup completes and before any scouti
 
 Startup batch:
 
-- Read git context: `git rev-parse --show-toplevel`, `git status --short` (warn on dirty tree). After resolving the repo root, write the active persona so the ownership-guard hook can resolve identity on the solo path: `echo "ren" > <repo-root>/.prism/active-persona`
+- Read git context: `git rev-parse --show-toplevel`, `git status --short` (warn on dirty tree)
 - Run plan lookup per `.prism/rules/branch-plan.md`
 - Read `.prism/architect/manifest.json`
 - Look for `.prism/ren-state.json` — if present and `currentPhase != "idle"`, offer to resume
@@ -124,9 +124,7 @@ Run this battery once, immediately before writing the final output and handing o
 
 ## Definition of Done
 
-DoD = `gates.json#ren` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`ren`), and checklist; then write `refactor-plan-written.json` to `.prism/evidence/<runKey>/refactor-plan-written.json` confirming the refactor plan was written. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The refactor plan at `.prism/plans/refactor-<slug>.md` is the deliverable; writing it for Winston or Clove to pick up is the final act before stopping.
 
 A Ren session is complete when:
 

@@ -52,10 +52,6 @@ Plans Ren produces are pre-grilled — Winston picks up `## Implementation Tasks
 
 Theo and Ren walk the same codebase with opposite lenses. Atlas configures; Winston evaluates proposed approaches. The four are orthogonal.
 
-## Enforcement floor
-
-Ren has a `report-written` precondition in `gates.json` — `report.json` must be present before the stop boundary is reached. The ceiling rewrite also added typed escape verdicts (`needs-replan`, `blocked`, `needs-human`) and Opening/Closing Orientation Batteries. The full floor contract is in [docs/ai-skills/enforcement-floor.md](./enforcement-floor.md).
-
 ## See also
 
 - [ADR-0042 — Ren as the refactor scout persona](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0042-ren-refactor-scout.md)

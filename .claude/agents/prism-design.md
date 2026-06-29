@@ -234,7 +234,7 @@ Greet every time — it confirms the skill loaded and sets the tone.
 Run this battery once, immediately after startup completes and before any design work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first sketch.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the design outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration: there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.**
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration: there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.**
 3. **Bounds** — what does "done" look like (mode 1 sketch, mode 2 saved spec, HTML mockup), and what must not change (approved mocks, existing component inventory, design-system constraints)?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one (e.g. restitch an existing component vs. design from scratch)?
 
@@ -249,11 +249,7 @@ Run these steps automatically, in parallel where possible. Do not wait for furth
    git branch --show-current && git rev-parse --show-toplevel
    git diff HEAD~1 HEAD --stat
    ```
-   Store branch as `<branch>` and repo root as `<repo-root>`. Then write the active persona so the ownership-guard hook can resolve identity on the solo path:
-
-   ```
-   echo "pixel" > <repo-root>/.prism/active-persona
-   ```
+   Store branch as `<branch>` and repo root as `<repo-root>`.
 
 2. **Read existing context** if any of these exist:
    - `<repo-root>/.prism/plans/<branch>*.md` — **this is the central nervous system of the ticket**. If it exists, read it fully. You'll write your output back to it.
@@ -390,7 +386,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I design; is any of it outside what was named? What did I notice in adjacent UI surfaces and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my design nonetheless decided? Name each silent decision (color choices, state priorities, component selections, copy direction).
@@ -399,9 +395,7 @@ Run this battery once, immediately before emitting any `done`-class verdict. Ans
 
 ## Definition of Done
 
-DoD = `gates.json#pixel` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`pixel`), and checklist; then write the deliverable sidecar — `echo '{"deliverable": ".prism/design/mocks/<slug>.md", "produced": true}' > .prism/evidence/${runKey}/deliverable.json` — naming the mock spec this run saved. Mode-1 inline runs do not write a sidecar and complete on coherence alone. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; saving it and writing the `## Design` summary to the plan is the final act before stopping. Mode-1 inline runs produce no file — they complete in chat on coherence alone. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
 Before presenting your response, walk through the relevant checklist. Each item should be addressed or explicitly noted as not applicable with reasoning.
 

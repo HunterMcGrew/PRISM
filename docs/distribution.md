@@ -93,17 +93,6 @@ Skills are not under canonical at all. They're generated from `.ai-skills/skills
 | `.ai-skills/skills/<id>/`             | `consumer/.codex/agents/<id>.toml`                     | Codex agent adapter                              |
 | `.ai-skills/skills/<id>/`             | `consumer/.cursor/skills/<id>/SKILL.md`                | Cursor output                                    |
 
-### Enforcement floor (build-generated, build-time copy)
-
-The build also emits the enforcement runtime into both the live `.claude/` tree and the install seed so new adopters get the floor on first `prism adopt`. The canonical source lives in `.ai-skills/hooks/`; the build writes copies to both destinations.
-
-| Canonical source                  | Build copies written to                                                       | Notes                                       |
-| --------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- |
-| `.ai-skills/hooks/`               | `.claude/hooks/`, `templates/install/.claude/hooks/`                          | Runtime hooks: `ownership-guard.mjs`, `run-gates.mjs`, `evidence-ledger.mjs`, `gates.json`, `lib/` |
-| `.ai-skills/hooks/settings.json`  | `.claude/settings.json`, `templates/install/.claude/settings.json`            | Hook wiring config; ships with `{"hooks":{}}` until floor is enabled |
-
-See [The Enforcement Floor](./ai-skills/enforcement-floor.md) for what these files do and how to enable or disable enforcement.
-
 ### Top-level anchor files
 
 | Source                                       | Destination (in consumer) | Notes                                  |

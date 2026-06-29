@@ -113,11 +113,6 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
-// Wholesale enforcement-tree grants that constitute the #305 hole: either entry in
-// clove.may_write would let a gated persona write the whole canonical or runtime hooks
-// tree. assertHookEmitDoesNotWeaken refuses to emit a gates.json carrying either.
-const WHOLESALE_GRANTS = [".ai-skills/hooks/**", ".claude/hooks/**"];
-
 /**
  * Copies all managed content areas from `contentRoot` into `platformDir`,
  * applying token substitution and dialect transformation per file.
@@ -724,151 +719,6 @@ export async function writeSeedMirror(
 	}
 }
 
-/**
- * Build-side backstop: refuses to emit a gates.json or guard that weakens the floor.
- *
- * A second line behind ownership-guard.mjs's canonical denylist (issue #305), not the
- * primary guarantee. If Component 1 were ever bypassed or regressed — a future edit drops
- * the canonical prefix, or a consumer re-widens may_write back to the whole enforcement
- * tree — the canonical → runtime emit is the trusted channel that would silently propagate
- * the weakened gate. This asserts on the canonical text the build already reads, so the cost
- * is two structural checks per build with no maintained baseline file:
- *
- *   1. clove.ownership.may_write contains neither `.ai-skills/hooks/**` nor `.claude/hooks/**`
- *      — the wholesale enforcement-tree grants that are the hole.
- *   2. the guard source carries the PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical
- *      protection is present in what's about to go live.
- *
- * Throws on violation, naming issue #305 and the offending detail.
- */
-export function assertHookEmitDoesNotWeaken(
-	canonicalGatesRaw: string,
-	canonicalGuardRaw: string
-): void {
-	let gates: unknown;
-	try {
-		gates = JSON.parse(canonicalGatesRaw);
-	} catch (error) {
-		throw new Error(
-			`emitHooks (#305): canonical gates.json is not valid JSON — refusing to emit. ${String(error)}`
-		);
-	}
-
-	const mayWrite = (gates as Record<string, { ownership?: { may_write?: unknown } }>)
-		?.clove?.ownership?.may_write;
-	if (Array.isArray(mayWrite)) {
-		for (const grant of WHOLESALE_GRANTS) {
-			if (mayWrite.includes(grant)) {
-				throw new Error(
-					`emitHooks (#305): clove.may_write contains '${grant}', a wholesale ` +
-						`enforcement-tree grant that re-opens the canonical/runtime back door. ` +
-						`Narrow it to the '__smoke__/' lane before emitting.`
-				);
-			}
-		}
-	}
-
-	if (!canonicalGuardRaw.includes("PROTECTED_CANONICAL_HOOKS_PREFIX")) {
-		throw new Error(
-			`emitHooks (#305): canonical ownership-guard.mjs is missing the ` +
-				`PROTECTED_CANONICAL_HOOKS_PREFIX marker — the canonical-source protection was ` +
-				`dropped. Refusing to emit a guard that re-opens the back door.`
-		);
-	}
-}
-
-/**
- * Emits the canonical enforcement-runtime hooks from `.ai-skills/hooks/` into the
- * runtime (`.claude/hooks/`) and the install seed (`templates/install/.claude/hooks/`).
- *
- * The hooks are runtime `.mjs` and JSON — not skill prose. They are copied raw (no token
- * substitution, no dialect transformation) via writeFileIfChanged, so `prism:check` reports
- * drift and a clean build is idempotent. The whole `.ai-skills/hooks/**` tree is emitted
- * (the `.mjs` hooks, `lib/`, `gates.json`, and the `__smoke__/` harness — a consumer who
- * edits hooks benefits from the same smoke coverage).
- *
- * Scope is `.claude/` + the install seed only. `.codex/` is gated behind confirmed Codex
- * hook parity (Open Question default path) and is not emitted here. `.claude/settings.json`
- * is emitted from canonical `.ai-skills/hooks/settings.json` to the `.claude/` root and the
- * install seed — it travels a separate pass (not the hooks-tree loop) because its destination
- * is `.claude/settings.json`, not `.claude/hooks/settings.json`. The live-wiring content
- * (which hook events to fire) is owned by the floor re-enable (epic task `#5`); the disabled
- * state `{"hooks":{}}` is what the canonical source carries here.
- *
- * The emitted runtime is denylist-protected against gated-persona tool writes
- * (ownership-guard.mjs PROTECTED_WRITE_PATHS): canonical → build → runtime is the only
- * lawful path to change hooks once this emission is live.
- *
- * Before emitting, assertHookEmitDoesNotWeaken backstops the floor: it refuses to emit a
- * gates.json that re-opens the canonical or runtime back door, or a guard that dropped the
- * canonical protection (issue #305).
- */
-export async function emitHooks(
-	repoRootArg: string,
-	checkModeArg: boolean,
-	changedPathsArg: string[]
-): Promise<void> {
-	const canonicalHooksRoot = path.join(repoRootArg, ".ai-skills", "hooks");
-	if (!(await pathExists(canonicalHooksRoot))) {
-		return;
-	}
-
-	const canonicalGatesRaw = await fs.readFile(
-		path.join(canonicalHooksRoot, "gates.json"),
-		"utf8"
-	);
-	const canonicalGuardRaw = await fs.readFile(
-		path.join(canonicalHooksRoot, "ownership-guard.mjs"),
-		"utf8"
-	);
-	assertHookEmitDoesNotWeaken(canonicalGatesRaw, canonicalGuardRaw);
-
-	const targetRoots = [
-		path.join(repoRootArg, ".claude", "hooks"),
-		path.join(repoRootArg, "templates", "install", ".claude", "hooks"),
-	];
-
-	const entries = await listRelativeDirectoryEntries(canonicalHooksRoot);
-	for (const entry of entries) {
-		if (entry.kind !== "file") {
-			continue;
-		}
-
-		// settings.json is not a hook — it targets .claude/ root, not .claude/hooks/.
-		// It travels a separate pass below so it lands in the right directory.
-		if (entry.relativePath === "settings.json") {
-			continue;
-		}
-
-		const raw = await fs.readFile(
-			path.join(canonicalHooksRoot, entry.relativePath),
-			"utf8"
-		);
-		for (const targetRoot of targetRoots) {
-			await writeFileIfChanged(
-				path.join(targetRoot, entry.relativePath),
-				raw,
-				checkModeArg,
-				changedPathsArg
-			);
-		}
-	}
-
-	// settings.json targets the .claude/ root (not .claude/hooks/), so it gets its
-	// own pass rather than riding the hooks-tree loop above.
-	const settingsRaw = await fs.readFile(
-		path.join(canonicalHooksRoot, "settings.json"),
-		"utf8"
-	);
-	const settingsTargets = [
-		path.join(repoRootArg, ".claude", "settings.json"),
-		path.join(repoRootArg, "templates", "install", ".claude", "settings.json"),
-	];
-	for (const settingsTarget of settingsTargets) {
-		await writeFileIfChanged(settingsTarget, settingsRaw, checkModeArg, changedPathsArg);
-	}
-}
-
 const execFileAsync = promisify(execFile);
 
 /**
@@ -1062,11 +912,6 @@ async function main(): Promise<void> {
 		);
 	}
 
-	// Emit the enforcement-runtime hooks from canonical source into .claude/hooks/ and
-	// the install seed. Runs in both build and check mode — writeFileIfChanged reports
-	// drift in check mode so prism:check catches a runtime that diverged from canonical.
-	await emitHooks(repoRoot, checkMode, changedPaths);
-
 	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
 
 	// Skill-content roots: shared base for both Thrive-literal and leftover-token scanning.
@@ -1081,23 +926,7 @@ async function main(): Promise<void> {
 		path.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor),
 	];
 
-	// The emitted hooks tree (.mjs files, lib/, gates.json, __smoke__/) is added to the
-	// Thrive-literal scan but not the leftover-token scan. The .mjs files use UPPER_SNAKE_CASE
-	// JS template literals (${STRIKE_CAP}, ${PASS}, ${FAIL}) that are genuine JavaScript
-	// expressions — they match the leftover-token pattern but are not unresolved PRISM tokens,
-	// so including hooks in leftover-token scanning produces persistent false positives.
-	// path-guard is also excluded: the hooks legitimately reference .claude/hooks/ paths
-	// (PROTECTED_WRITE_PATHS), and path-guard would false-positive on every such reference
-	// inside ownership-guard.mjs.
-	// settings.json ({"hooks":{}}) carries no prose and no token risk in its disabled state
-	// — neither guard is extended to it; the re-enable (epic task `#5`) should revisit if
-	// interpolated paths are introduced.
-	const emittedHooksRoots = [
-		path.join(repoRoot, ".claude", "hooks"),
-		path.join(repoRoot, "templates", "install", ".claude", "hooks"),
-	];
-
-	const literalGuardRoots = [...skillContentRoots, ...emittedHooksRoots];
+	const literalGuardRoots = skillContentRoots;
 	const leftoverTokenGuardRoots = skillContentRoots;
 
 	const bomViolations = await runBomGuard(repoRoot);

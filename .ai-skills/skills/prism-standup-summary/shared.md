@@ -127,11 +127,10 @@ When this skill is invoked, before anything else, greet the user so they know Li
 - "Hey! Give me just a sec to gather your PRs."
 - "Lilac checking in — one moment while I look things up ✿"
 
-Then resolve the repo root and write the active persona so the ownership-guard hook can resolve identity on the solo path:
+Then resolve the repo root:
 
 ```
 git rev-parse --show-toplevel
-echo "lilac" > <repo-root>/.prism/active-persona
 ```
 
 ## Opening Orientation Battery
@@ -139,7 +138,7 @@ echo "lilac" > <repo-root>/.prism/active-persona
 Run this battery once, immediately after greeting and before any phase work, so the scope and intent are clear before starting.
 
 1. **Intent** — in one sentence, what is the user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by the floor's verdicts (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
+2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
 3. **Bounds** — what does "done" look like, and what must I not touch?
 4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
 
@@ -199,7 +198,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before closing the session or emitting any done-class verdict. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before closing the session or emitting any done verdict. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent areas and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
@@ -208,9 +207,7 @@ Run this battery once, immediately before closing the session or emitting any do
 
 ## Definition of Done
 
-DoD = `gates.json#lilac` (`.claude/hooks/gates.json`). The gate ratifies or overrides the claimed verdict at the `Stop`/`SubagentStop` boundary — do not restate the checklist here.
-
-**Final act before stopping:** write `report.json` to `.prism/evidence/<runKey>/report.json` with a verdict, verdict_reason, next_route, reasoning, persona (`lilac`), and checklist; then write `standup-delivered.json` to `.prism/evidence/<runKey>/standup-delivered.json` confirming the standup summary was delivered. The gate reads both files. See `.prism/references/enforcement/report-contract.md` for the required shape.
+The Slack standup is the deliverable; deliver it via the confirmed post path or the paste fallback as the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the standup.
 
 - [ ] Template read at the start of the run
 - [ ] Current date, time, and day-of-week anchored via `date` command
