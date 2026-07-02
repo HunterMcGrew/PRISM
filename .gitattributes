@@ -1,0 +1,6 @@
+# Normalize line endings to LF for all text files, on every platform, including
+# Windows checkouts (which default core.autocrlf=true and would otherwise convert
+# to CRLF on checkout). build.ts --check does a byte-exact compare between the
+# generated seed mirror and the committed source, so checkout line endings must
+# match what the generator emits (LF) regardless of the runner OS.
+* text=auto eol=lf

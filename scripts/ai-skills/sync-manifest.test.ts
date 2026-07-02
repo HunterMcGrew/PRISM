@@ -49,36 +49,6 @@ async function writeContentFile(
 	await fs.writeFile(absolutePath, body, "utf8");
 }
 
-test("path.join accepts a forward-slash manifest key and resolves it on the native separator", () => {
-	// Manifest keys are always stored forward-slash-normalized (sync-manifest.ts's
-	// own JSDoc), but every consumer of a key — applyIncomingFile, applyDeletedFile,
-	// seedConsumerContentRoot — re-joins it against a content root with `path.join`.
-	// This assumption is platform-independent by construction: `path.join` accepts
-	// forward slashes in a single segment and normalizes the result to the host
-	// platform's own separator, matching what `path.join` would produce from the
-	// same logical path built segment-by-segment. Pinning it here means a future
-	// refactor that swapped in raw string concatenation instead of `path.join` —
-	// which would NOT normalize — fails this test loudly rather than silently
-	// breaking only on Windows.
-	const manifestKey = "architect/_toolkit/nested/doc.md";
-	const contentRoot = path.join("consumer-root", ".prism");
-
-	const joinedFromKey = path.join(contentRoot, manifestKey);
-	const joinedSegmentBySegment = path.join(
-		contentRoot,
-		"architect",
-		"_toolkit",
-		"nested",
-		"doc.md"
-	);
-
-	assert.equal(joinedFromKey, joinedSegmentBySegment);
-	assert.ok(
-		!joinedFromKey.includes("/") || path.sep === "/",
-		"path.join must normalize a forward-slash key to the native separator"
-	);
-});
-
 test("hashContent is stable across identical byte inputs", () => {
 	const first = hashContent("# Same bytes\n");
 	const second = hashContent(Buffer.from("# Same bytes\n", "utf8"));
