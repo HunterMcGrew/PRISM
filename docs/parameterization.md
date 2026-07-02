@@ -53,6 +53,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `techStack` | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
+| `modelTiers` | object | optional | Optional per-persona model selection for Sol's conductor dispatches. Maps abstract tiers (top / worker) to concrete models, plus per-persona `overrides`. See § Model tiering below. |
 | `slackChannel` | string | optional | Optional Slack channel for Lilac standup posting. Substituted as `${SLACK_CHANNEL}`. |
 
 ## All tokens
@@ -137,6 +138,24 @@ Set it once; it survives reconfiguration runs (the reconfigure flow preserves un
 
 > [!NOTE]
 > Sol never mentions this flag during init, onboarding, or normal operation. If you ask Sol directly whether it can merge, it will describe the flag. Otherwise it stays invisible.
+
+---
+
+## Model tiering
+
+Sol dispatches every persona at an abstract tier — **top** (Sol, Winston, Eric) or **worker** (Clove, Sasha, Briar, …) — never a hardcoded model. The optional `modelTiers` object in `.ai-skills/config.json` maps those tiers to your runtime's concrete models (`top`, `worker`) and pins individual personas via `overrides`. Absent, the conductor uses its run-wide default model for every dispatch.
+
+One tradeoff is worth naming. If the reviewer (Eric) and the workers run the same model, the review loop loses some family-level blind-spot coverage — a mistake the model's family is prone to can slip past a reviewer of the same family. A team that wants cross-model review sets Eric's tier explicitly:
+
+```json
+{
+  "modelTiers": {
+    "top": "opus",
+    "worker": "sonnet",
+    "overrides": { "eric": "gpt-5" }
+  }
+}
+```
 
 ---
 
