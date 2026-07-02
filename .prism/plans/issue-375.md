@@ -38,6 +38,29 @@ Add `prism doctor` — a single command that reports install health (config vali
 
 - 2026-07-02 [hmcgrew/375-prism-doctor]: created plan; implementation pending.
 - 2026-07-02 [hmcgrew/375-prism-doctor]: implemented `prism doctor` (`scripts/ai-skills/doctor.ts` + `doctor.test.ts`), wired into `cli.ts` and `package.json`'s `prism:doctor` script, documented in README + `docs/adopt-prism.md`. Reused L376's `validateConsumerConfigAgainstSchema` and `assertInsideGitRepo` as accumulating findings instead of throws. 10 new tests pass; the 4 pre-existing Windows POSIX-path failures and the pre-existing missing-`esbuild` type-check failure are unchanged from origin/main.
+- 2026-07-02 [hmcgrew/375-prism-doctor]: Briar self-review — found a Major gap in the "never crash on a bad config" contract (`resolvePrismSource` calls `loadConfig` on the consumer root before `runDoctor`'s try/catch checks run) and a Minor unguarded `JSON.parse` in `checkVersion`. See `## Review Issues`.
+- 2026-07-02 [hmcgrew/375-prism-doctor]: Fixed both Briar findings — added `resolvePrismSourceOrFinding` (turns a `resolvePrismSource`/`loadConfig` throw into a `config` finding, falling back to `resolveSelfPrismSource()` so the other checks still run) and `readInstalledVersion` (guards the `checkVersion` `JSON.parse`). Added 2 new tests reproducing the exact dodged case; 12/12 doctor tests pass, 439/443 overall with the same 4 pre-existing unrelated failures as `origin/main`.
+
+---
+
+## Review Issues
+
+### `resolvePrismSource` bypasses doctor's accumulate-don't-throw contract for a class of bad config
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/doctor.ts:376` (call site), root cause in `scripts/ai-skills/update.ts:719` (`resolvePrismSource` → `loadConfig`)
+- **Problem:** `runDoctorCli` calls `resolvePrismSource(argv, consumerRepoRoot)` before `runDoctor` runs any of its own try/catch-wrapped checks. When no `--prism-source` flag is passed, `resolvePrismSource` falls through to `loadConfig(consumerRepoRoot).prismSource` (`update.ts:719`), and `loadConfig` throws synchronously on a missing `.ai-skills/config.json`, invalid JSON, a missing required top-level key (`org`/`project`/`ticketPrefix`/`ticketSystem`), or a non-string `org`/`project`/`ticketPrefix`. That throw propagated out of `runDoctorCli` to the top-level `.catch`, which printed the raw error and exited 1 — but none of `checkConfigSchema`, `checkGitRepo`, `checkSyncManifest`, or `checkVersion` ever ran, defeating the "every check is independent" contract for exactly the bad-install states `doctor` exists to diagnose.
+- **Fixed in:** `scripts/ai-skills/doctor.ts` — added `resolvePrismSourceOrFinding` (exported for tests), which wraps `resolvePrismSource` in try/catch. On a throw or a `null` result, it converts the failure into a `config`-severity `error` `DoctorFinding` and falls back to `resolveSelfPrismSource()` for `prismSourceRoot`, so `checkConfigSchema` and `checkVersion` still have a real schema/`package.json` to read against. `RunDoctorOptions` gained an `additionalFindings` seed array; `runDoctorCli` now calls the new resolver and passes any resolution finding through `additionalFindings` instead of letting `resolvePrismSource`'s throw propagate. `resolveConsumerRoot`/`parseConsumerFlag` are unchanged — they don't throw on bad *config* (only on a malformed `--consumer` CLI flag value, an explicit usage error out of this bug's scope).
+- **Suggested tests (now added):** `resolvePrismSourceOrFinding reports a missing required config key as a finding instead of throwing, with no --prism-source flag` and `resolvePrismSourceOrFinding reports invalid JSON as a finding instead of throwing` in `doctor.test.ts` — the first reproduces the exact dodged case (no `--prism-source` flag, config missing `ticketPrefix`) and asserts the git-repo and sync-manifest checks still ran in the full `runDoctor` report.
+
+### Unguarded `JSON.parse` in `checkVersion` breaks the same accumulate-don't-throw contract
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/doctor.ts:269`
+- **Problem:** `checkVersion` called `JSON.parse(pkgRaw)` with no try/catch, inconsistent with every other check in the file, which explicitly converts a throw into a finding.
+- **Fixed in:** `scripts/ai-skills/doctor.ts` — extracted `readInstalledVersion(pkgRaw)`, wrapping the `JSON.parse` in try/catch and degrading to `"unknown"` on parse failure, matching the existing missing-file fallback.
 
 ---
 
@@ -61,12 +84,12 @@ Add `prism doctor` — a single command that reports install health (config vali
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues — both Briar findings fixed (see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [x] Tests written for new logic and edge cases — 12/12 doctor tests pass, including the two new `resolvePrismSourceOrFinding` cases covering the previously-dodged bad-config-with-no-`--prism-source` path
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-07-02 (`prism:build`, `prism:crossref-lint`, `prism:verify-manifest` all green; 4 pre-existing Windows POSIX-path test failures and the pre-existing missing-`esbuild` type-check failure are unchanged from origin/main baseline)
+- [x] Build passes — last run: 2026-07-02 (`pnpm run prism:test`: 439/443 pass, same 4 pre-existing Windows POSIX-path / missing-paths.json failures as `origin/main`, unrelated to `doctor.ts`; `pnpm run prism:build` clean — `build.ts` completed, `prism:test` step shows the same unchanged 4 pre-existing failures)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable) — no lasting architectural decisions here; scoped to a new consumer-facing command
 

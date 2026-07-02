@@ -68,6 +68,57 @@ export interface DoctorReport {
 }
 
 /**
+ * Resolves the PRISM source root the same way `resolvePrismSource` does, but
+ * never throws. `resolvePrismSource` falls through to `loadConfig` when no
+ * `--prism-source` flag is passed, and `loadConfig` throws synchronously on a
+ * missing `.ai-skills/config.json`, invalid JSON, a missing required
+ * top-level key, or a non-string `org`/`project`/`ticketPrefix` — exactly the
+ * bad-install states `doctor` exists to diagnose. A throw here previously
+ * propagated out of `runDoctorCli` before any of `runDoctor`'s own
+ * try/catch-wrapped checks ran, defeating the "report everything in one pass"
+ * contract for that entire class of bad config.
+ *
+ * On failure, falls back to `resolveSelfPrismSource()` so `checkConfigSchema`
+ * and `checkVersion` still have a real schema and `package.json` to read —
+ * the resolution failure itself becomes a `config` finding, and the other
+ * checks proceed against the caller's own PRISM installation instead of the
+ * (broken) consumer-configured one.
+ */
+export function resolvePrismSourceOrFinding(
+	argv: string[],
+	consumerRepoRoot: string
+): { prismSourceRoot: string; finding: DoctorFinding | null } {
+	try {
+		const resolved = resolvePrismSource(argv, consumerRepoRoot);
+
+		if (resolved !== null) {
+			return { prismSourceRoot: resolved, finding: null };
+		}
+	} catch (error) {
+		return {
+			prismSourceRoot: resolveSelfPrismSource(),
+			finding: {
+				check: "config",
+				severity: "error",
+				message: error instanceof Error ? error.message : String(error),
+			},
+		};
+	}
+
+	return {
+		prismSourceRoot: resolveSelfPrismSource(),
+		finding: {
+			check: "config",
+			severity: "error",
+			message:
+				"prism doctor needs a PRISM source. Pass --prism-source <path-to-prism-repo>, " +
+				'or add a "prismSource" field to .ai-skills/config.json pointing at your ' +
+				"local PRISM checkout.",
+		},
+	};
+}
+
+/**
  * Validates `.ai-skills/config.json` against `config.schema.json`, reusing
  * L376's schema validator. Catches rather than lets the error propagate — a
  * single bad field should be one finding among several, not a thrown
@@ -255,6 +306,25 @@ export async function fetchLatestNpmVersion(
 }
 
 /**
+ * Parses the `version` field out of a raw `package.json` string, degrading to
+ * `"unknown"` on a missing file (`pkgRaw === null`) or malformed JSON — same
+ * catch-and-degrade pattern as every other check in this file, so a corrupted
+ * `package.json` at the PRISM source root is a finding, not a crash.
+ */
+function readInstalledVersion(pkgRaw: string | null): string {
+	if (pkgRaw === null) {
+		return "unknown";
+	}
+
+	try {
+		const pkg = JSON.parse(pkgRaw) as { version?: string };
+		return pkg.version ?? "unknown";
+	} catch {
+		return "unknown";
+	}
+}
+
+/**
  * Reads the installed PRISM version from `prismSourceRoot`'s own
  * `package.json`, then compares it against npm's `latest` dist-tag via
  * `fetcher` (defaults to `fetchLatestNpmVersion`, overridable so tests never
@@ -265,8 +335,7 @@ async function checkVersion(
 	fetcher: NpmVersionFetcher
 ): Promise<{ findings: DoctorFinding[]; version: VersionReport }> {
 	const pkgRaw = await readFileIfExists(path.join(prismSourceRoot, "package.json"));
-	const installed =
-		pkgRaw !== null ? ((JSON.parse(pkgRaw) as { version?: string }).version ?? "unknown") : "unknown";
+	const installed = readInstalledVersion(pkgRaw);
 
 	const latest = await fetcher(NPM_REGISTRY_URL, NPM_FETCH_TIMEOUT_MS);
 	const outOfDate = latest !== null && latest !== installed;
@@ -294,6 +363,13 @@ export interface RunDoctorOptions {
 	prismSourceRoot: string;
 	/** Overridable for tests — defaults to the real npm registry fetch. */
 	npmVersionFetcher?: NpmVersionFetcher;
+	/**
+	 * Findings collected before `runDoctor` was called — e.g. `runDoctorCli`
+	 * resolving `prismSourceRoot` itself failed. Prepended to the report so a
+	 * pre-check failure still surfaces alongside every other check's findings
+	 * instead of replacing them.
+	 */
+	additionalFindings?: DoctorFinding[];
 }
 
 /**
@@ -308,10 +384,11 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 		consumerRepoRoot,
 		prismSourceRoot,
 		npmVersionFetcher = fetchLatestNpmVersion,
+		additionalFindings = [],
 	} = options;
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
 
-	const findings: DoctorFinding[] = [];
+	const findings: DoctorFinding[] = [...additionalFindings];
 
 	findings.push(...(await checkConfigSchema(consumerRepoRoot, prismSourceRoot)));
 	findings.push(...checkGitRepo(consumerRepoRoot));
@@ -373,17 +450,16 @@ export async function runDoctorCli(): Promise<void> {
 		cwd: process.cwd(),
 		selfPrismRoot: resolveSelfPrismSource(),
 	});
-	const prismSourceRoot = resolvePrismSource(argv, consumerRepoRoot);
+	const { prismSourceRoot, finding: resolutionFinding } = resolvePrismSourceOrFinding(
+		argv,
+		consumerRepoRoot
+	);
 
-	if (prismSourceRoot === null) {
-		throw new Error(
-			"prism doctor needs a PRISM source. Pass --prism-source <path-to-prism-repo>, " +
-				'or add a "prismSource" field to .ai-skills/config.json pointing at your ' +
-				"local PRISM checkout."
-		);
-	}
-
-	const report = await runDoctor({ consumerRepoRoot, prismSourceRoot });
+	const report = await runDoctor({
+		consumerRepoRoot,
+		prismSourceRoot,
+		additionalFindings: resolutionFinding !== null ? [resolutionFinding] : [],
+	});
 
 	console.log(formatDoctorReport(report));
 

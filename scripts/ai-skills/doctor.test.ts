@@ -18,7 +18,12 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { formatDoctorReport, runDoctor, type NpmVersionFetcher } from "./doctor";
+import {
+	formatDoctorReport,
+	resolvePrismSourceOrFinding,
+	runDoctor,
+	type NpmVersionFetcher,
+} from "./doctor";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
@@ -191,6 +196,80 @@ test("runDoctor names the offending config field without throwing", async () => 
 			false,
 			"the git-repo check should still pass since the consumer root is a real git repo"
 		);
+	});
+});
+
+// --- resolve-before-check ordering (issue #375 Briar Major) ---
+
+test("resolvePrismSourceOrFinding reports a missing required config key as a finding instead of throwing, with no --prism-source flag", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		// Missing "ticketPrefix" entirely — loadConfig throws synchronously on
+		// this before any of runDoctor's own try/catch checks would run.
+		const { ticketPrefix: _omitted, ...configMissingKey } = CONSUMER_CONFIG_JSON;
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify(configMissingKey, null, "\t")}\n`
+		);
+
+		// No --prism-source flag — forces resolvePrismSource down the
+		// loadConfig(consumerRepoRoot) path that throws.
+		const argv: string[] = [];
+
+		const { prismSourceRoot: resolvedRoot, finding } = resolvePrismSourceOrFinding(
+			argv,
+			consumerRepoRoot
+		);
+
+		assert.ok(finding, "expected a finding instead of a throw");
+		assert.equal(finding?.check, "config");
+		assert.equal(finding?.severity, "error");
+		assert.ok(
+			finding?.message.includes("ticketPrefix"),
+			`expected the missing field named, got: ${finding?.message}`
+		);
+		// Falls back to a real source root so the other checks still have a
+		// schema/package.json to read against.
+		assert.notEqual(resolvedRoot, "");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot: resolvedRoot,
+			npmVersionFetcher: NEVER_FETCH,
+			additionalFindings: [finding as NonNullable<typeof finding>],
+		});
+
+		assert.equal(report.healthy, false);
+		assert.ok(
+			report.findings.some((f) => f.check === "config" && f.message.includes("ticketPrefix")),
+			"expected the resolution finding to carry through into the full report"
+		);
+		// The other checks still ran despite the config resolution failure —
+		// this is the crux of the fix: one bad-config throw no longer prevents
+		// git-repo, sync-manifest, and version checks from executing.
+		assert.equal(
+			report.findings.some((f) => f.check === "git-repo"),
+			false,
+			"the git-repo check should still have run and passed (consumer root is a real git repo)"
+		);
+		assert.ok(
+			report.findings.some((f) => f.check === "sync-manifest"),
+			"the sync-manifest check should still have run"
+		);
+		void prismSourceRoot; // unused fixture root — resolvePrismSourceOrFinding derives its own fallback
+	});
+});
+
+test("resolvePrismSourceOrFinding reports invalid JSON as a finding instead of throwing", async () => {
+	await withTempRoots(async ({ consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".ai-skills/config.json", "{ not valid json");
+
+		const { finding } = resolvePrismSourceOrFinding([], consumerRepoRoot);
+
+		assert.ok(finding, "expected a finding instead of a throw");
+		assert.equal(finding?.check, "config");
+		assert.equal(finding?.severity, "error");
+		assert.ok(finding?.message.includes("Invalid JSON"));
 	});
 });
 
