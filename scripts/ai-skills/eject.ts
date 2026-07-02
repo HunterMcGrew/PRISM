@@ -408,10 +408,8 @@ async function pruneEmptyDirs(consumerContentRoot: string, previewOnly: boolean)
 }
 
 /**
- * Reports PRISM's contribution to AGENTS.md and CLAUDE.md without modifying
- * either file. Both are seeded once and commonly consumer-edited, so eject
- * names what PRISM contributed and leaves pruning to the user rather than
- * risking destruction of consumer content via an automated edit.
+ * Reports PRISM's contribution to AGENTS.md (the injected Tier-1 block, if
+ * present) and notes a present CLAUDE.md, without modifying either file.
  */
 async function collectRootFileNotices(consumerRepoRoot: string): Promise<string[]> {
 	const notices: string[] = [];
@@ -427,7 +425,7 @@ async function collectRootFileNotices(consumerRepoRoot: string): Promise<string[
 	const claudeMdPath = path.join(consumerRepoRoot, "CLAUDE.md");
 	if (await pathExists(claudeMdPath)) {
 		notices.push(
-			"CLAUDE.md was seeded by PRISM and may contain your own edits — review manually before deleting."
+			"CLAUDE.md is present but was not created by PRISM — review manually before deleting."
 		);
 	}
 

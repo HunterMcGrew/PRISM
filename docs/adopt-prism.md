@@ -10,6 +10,8 @@ last_updated: "2026-06-27"
 
 `prism adopt` seeds `.prism/` and projects the full persona roster into your repo. `prism update` keeps it current. This guide covers the recommended path — running PRISM directly from npm — and the checkout-based alternatives for air-gapped environments, customization, and contributors.
 
+Adopting into a repo that already has its own AI tooling — an existing `AGENTS.md`, `.claude/skills/`, or `.cursor/rules`? See [docs/adopting-into-existing-repos.md](./adopting-into-existing-repos.md) for exactly what adopt touches vs. skips, and how to resolve the `.bak` files a later `update` can produce.
+
 ## Before you adopt: `prism init`
 
 `prism adopt` requires a config file — `.ai-skills/config.json` — to know which project it's seeding. If this is your first time bringing PRISM into this repo, run `init` first:
@@ -134,7 +136,7 @@ npx @huntermcgrew/prism update --dry-run
 npx @huntermcgrew/prism adopt --dry-run
 ```
 
-The printed summary is the same shape a real run produces, prefixed with `(dry run)` so it's unambiguous in CI logs. Useful before a first `adopt` on an unfamiliar repo, or before an `update` when you want to see how many files have diverged and would get a `.bak` before committing to the sync.
+The printed summary is the same shape a real run produces, prefixed with `(dry run)` so it's unambiguous in CI logs. Useful before a first `adopt` on an unfamiliar repo, or before an `update` when you want to see how many files have diverged and would get a `.bak` before committing to the sync. See [docs/adopting-into-existing-repos.md § The `.bak` conflict-resolution workflow](./adopting-into-existing-repos.md#the-bak-conflict-resolution-workflow) for what a `.bak` means and how to resolve one.
 
 `pnpm prism:adopt --dry-run` and `pnpm prism:update --dry-run` work the same way from a local checkout.
 
