@@ -163,6 +163,38 @@ Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every ch
 
 `pnpm prism:doctor` runs the same command from a local checkout.
 
+## Ejecting PRISM
+
+`prism eject` removes PRISM from a repo. It exists for the case where a team evaluates PRISM and decides not to keep it — adopting shouldn't read as lock-in.
+
+```bash
+npx @huntermcgrew/prism eject --yes
+```
+
+**What it removes:** every PRISM-owned `.prism/` file (the same `classifyPath` classification `prism update` uses), every projected `prism-*` skill and agent adapter under `.claude/`, `.codex/`, `.agents/`, and `.cursor/` — and, last, `.prism/.sync-manifest.json` itself.
+
+**What it preserves:**
+
+- Consumer-owned content — `plans/`, `lessons.md`, `custom/**`, flat `architect/*.md`, `architect/manifest.json`, flat `spec/adrs/*.md` — and any path the manifest doesn't recognize as PRISM-owned.
+- Any `prism-`-prefixed skill or agent file that lacks PRISM's `.ai-skill-generated` marker (or, for the flat Codex/Claude agent adapters, the generated header line). That combination — the `prism-` prefix without the marker — means you hand-authored it, so eject never touches it.
+- `AGENTS.md` and `CLAUDE.md`. Both are seeded once and commonly hand-edited afterward, so eject leaves them in place and instead reports what PRISM contributed: the delimited block markers in `AGENTS.md` you can delete by hand, and a note that `CLAUDE.md` was seeded by PRISM and may carry your own edits.
+
+**The `.bak` guarantee.** If you edited a PRISM-owned file, eject backs it up to `.bak` (or the next free `.bak.N`, never clobbering an earlier snapshot) before removing it — the same backup primitive `prism update` uses for diverged files. Eject never destroys your edits silently; the completeness report lists every `.bak` path it wrote so you can find and review them afterward.
+
+**`--yes` and `--dry-run`.** Like `adopt`/`update`, `eject` never writes without asking:
+
+```bash
+npx @huntermcgrew/prism eject             # dry run — prints what would happen, deletes nothing
+npx @huntermcgrew/prism eject --dry-run   # same as above, explicit
+npx @huntermcgrew/prism eject --yes       # performs the eject
+```
+
+Without `--yes`, eject computes the full report — every file and skill's outcome — and prints it, but performs no `fs` write. `--dry-run` is an explicit preview synonym and always wins: `eject --yes --dry-run` still previews only. This mirrors the `--dry-run` posture `adopt`/`update` already use.
+
+**Re-adopting.** Because eject removes `.sync-manifest.json` last, `prism adopt` will run cleanly again afterward — eject leaves no tombstone that would block a future re-adopt.
+
+`pnpm prism:eject` runs the same command from a local checkout.
+
 ## Help
 
 ```bash

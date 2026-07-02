@@ -90,8 +90,12 @@ export interface RunUpdateOptions {
 /**
  * Hashes a file, returning `null` when it does not exist. Lets the per-file
  * branching treat "absent" and "present with hash X" uniformly.
+ *
+ * Exported for `eject.ts`, which reuses this alongside `applyDeletedFile` and
+ * `backupConsumerFile` rather than reimplementing the same absent/present
+ * hash comparison.
  */
-async function hashFileIfExists(filePath: string): Promise<string | null> {
+export async function hashFileIfExists(filePath: string): Promise<string | null> {
 	if (!(await pathExists(filePath))) {
 		return null;
 	}
@@ -104,8 +108,11 @@ async function hashFileIfExists(filePath: string): Promise<string | null> {
  * it. Shared by the real backup and the dry-run preview so both agree on the
  * same "next free `.bak`, `.bak.1`, `.bak.2`, …" name — see `backupConsumerFile`
  * for why a repeat divergence must never clobber an earlier snapshot.
+ *
+ * Exported so `eject.ts`'s tests can assert on the same `.bak.N` naming
+ * scheme without duplicating the resolution logic.
  */
-async function resolveBackupPath(absolutePath: string, sourceHash: string): Promise<string> {
+export async function resolveBackupPath(absolutePath: string, sourceHash: string): Promise<string> {
 	let candidate = `${absolutePath}.bak`;
 	let suffix = 0;
 	while (await pathExists(candidate)) {
@@ -133,8 +140,11 @@ async function resolveBackupPath(absolutePath: string, sourceHash: string): Prom
  *
  * `dryRun` resolves and returns the same path without touching disk — the
  * caller is previewing what `--dry-run` would do, not doing it.
+ *
+ * Exported for `eject.ts`, which reuses this exact backup-before-delete
+ * primitive for the diverged-`.bak` guarantee rather than reimplementing it.
  */
-async function backupConsumerFile(absolutePath: string, dryRun: boolean): Promise<string> {
+export async function backupConsumerFile(absolutePath: string, dryRun: boolean): Promise<string> {
 	const sourceHash = await hashFile(absolutePath);
 	const candidate = await resolveBackupPath(absolutePath, sourceHash);
 
@@ -213,8 +223,12 @@ async function applyIncomingFile(
  * Removes a consumer file that PRISM no longer ships, backing it up first when
  * the consumer diverged from the recorded base. A consumer copy that still
  * matches its recorded hash is a clean delete with no `.bak`.
+ *
+ * Exported for `eject.ts`, which reuses this exact delete-with-backup
+ * semantics for every PRISM-owned file it removes — the diverged-`.bak`
+ * guarantee is the same one `prism:update` already relies on and tests.
  */
-async function applyDeletedFile(
+export async function applyDeletedFile(
 	relativePath: string,
 	consumerContentRoot: string,
 	recordedHash: string,
@@ -458,8 +472,11 @@ async function rewriteConsumerManifest(
  * place `prism:build` would. Mirrors `buildPlatformDirs`, which covers the
  * content-copy dirs; this covers the per-skill / per-agent target roots and the
  * Codex config file that `generatePlatformSkills` writes.
+ *
+ * Exported for `eject.ts`, which walks the same target roots to find and
+ * remove projected `prism-*` skills/agents on eject.
  */
-function resolveConsumerSkillTargetRoots(
+export function resolveConsumerSkillTargetRoots(
 	consumerRepoRoot: string,
 	pathDefinitions: PathDefinitions
 ): {

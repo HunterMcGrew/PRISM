@@ -14,6 +14,7 @@
  */
 import { runAdoptCli } from "./adopt";
 import { runDoctorCli } from "./doctor";
+import { runEjectCli } from "./eject";
 import { runInitCli } from "./init";
 import { runUpdateCli } from "./update";
 
@@ -24,6 +25,7 @@ Usage:
   prism adopt    Seed .prism/ and project the persona roster into this repo (first run)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
   prism doctor   Report install health — config, git repo, sync state, version
+  prism eject    Remove PRISM from this repo (requires --yes; --dry-run to preview)
 
 Run from your consumer repo root. PRISM source is auto-derived from the linked
 PRISM checkout; pass --prism-source <path> to override.
@@ -47,6 +49,9 @@ async function main(): Promise<void> {
 			break;
 		case "doctor":
 			await runDoctorCli();
+			break;
+		case "eject":
+			await runEjectCli();
 			break;
 		case "--help":
 		case "-h":

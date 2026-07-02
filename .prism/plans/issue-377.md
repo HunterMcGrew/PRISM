@@ -139,11 +139,34 @@ Docs tasks depend on Clove's command being implemented; sequence Eli after Clove
   - **Implementation guidance:** detection is read-only; the begin/end marker constants come from `agents-md-block.ts`.
   - → no promotion needed (ticket-tactical).
 
+- **`applyDeletedFile`/`backupConsumerFile`/`resolveBackupPath`/`hashFileIfExists`/`resolveConsumerSkillTargetRoots` are exported directly from `update.ts`, not lifted into a shared `lib/` module.** Option (a) from the task list.
+  - **Root cause:** the task list offered two options — export from `update.ts` (a), or lift into a shared `lib/` module if importing from `update.ts` was awkward (b).
+  - **Alternatives considered:** (b) lifting into `lib/`.
+  - **Chosen approach:** (a). `update.ts`'s module-level code has no side effects beyond `isMain`-guarded CLI dispatch, so importing its functions carries no unwanted load cost — (b)'s justification never applied.
+  - **Implementation guidance:** none beyond the exports themselves; see `update.ts` for the reused functions.
+  - → no promotion needed (ticket-tactical).
+
+- **Codex agent `.toml` removal keys off `removeDeletedManagedAgentFiles`'s existing generated-header-line gate, not a sibling skill dir's marker.** `generate-skills.ts` already ships `removeDeletedManagedAgentFiles`, which prunes `.toml`/`.md` agent adapters whose content contains `GENERATED_HEADER_LINE`/`GENERATED_MARKDOWN_HEADER_LINE` and whose skill ID is absent from a valid-set — the exact same marker-substitute problem the task anticipated, already solved for flat files with no directory to hold a `.ai-skill-generated` marker.
+  - **Root cause:** flat agent adapter files (`prism-*.toml`, `prism-*.md`) have no directory to carry `.ai-skill-generated`; `generate-skills.ts` already solved this with an in-file header-line check when it originally built agent-file pruning for `prism:update`.
+  - **Alternatives considered:** "only remove `prism-*.toml` when the corresponding `prism-*` skill dir was itself marker-confirmed" (the task's stated default).
+  - **Chosen approach:** reuse `removeDeletedManagedAgentFiles` directly (now exported) rather than re-deriving a sibling-dir dependency — it's the tested, already-existing mechanism for exactly this file shape, and coupling `.toml` removal to a *different* root's skill-dir marker would be a novel, untested dependency for no correctness gain.
+  - **Implementation guidance:** `eject.ts`'s `collectAgentFileOutcomes` scans `.codex/agents` and `.claude/agents` independently, applying the prefix gate first (see next Decision) and delegating to `removeDeletedManagedAgentFiles`.
+  - → no promotion needed (ticket-tactical; the reused function's contract is documented in `generate-skills.ts`).
+
+- **The `prism-*` prefix gate must be enforced by passing non-`prism-*` marked entries back into `removeDeletedManagedSkills`/`removeDeletedManagedAgentFiles`'s `validSkillIds` set — a pre-scan alone does not gate the delegated deletion.**
+  - **Root cause:** the first implementation pass pre-scanned each skill/agent root to classify outcomes (`skipped-not-prism` / `skipped-no-marker` / `removed`) but then called `removeDeletedManagedSkills(outputRoot, new Set(), ...)` with an *empty* valid-set — that empty set has no prefix awareness, so a marker-confirmed skill that is NOT `prism-*` (e.g. a hypothetical marked `custom-foo`) would still be deleted as an "orphan." Caught by the `eject.test.ts` marker-safety test (`custom-foo` case), which failed on first run.
+  - **Alternatives considered:** re-implement the deletion loop from scratch with an inline prefix+marker check (would duplicate `removeDeletedManagedSkills`'s tested logic); wrap `removeDeletedManagedSkills` in a pre-filter that renames/moves non-`prism-*` dirs temporarily (needlessly destructive).
+  - **Chosen approach:** collect every non-`prism-*` entry name into a `keepIds` set during the pre-scan and pass that set as `validSkillIds` to the reused deletion functions — they already treat anything in the valid-set as "not orphaned." This makes the prefix gate structurally enforced by the same call that enforces the marker gate, rather than relying on the pre-scan and the deletion call agreeing by convention.
+  - **Implementation guidance:** see `collectSkillDirOutcomes` and `collectAgentFileOutcomes` in `eject.ts` — both build `keepIds` before calling their respective `removeDeletedManaged*` function.
+  - → no promotion needed (ticket-tactical; but worth flagging in review as the kind of gap a "reuse the existing function" plan step can hide until a test exercises the exact combination).
+
 ---
 
 ## History
 
 - 2026-07-02 [hmcgrew/377-prism-eject]: Winston planned `prism eject` deletion semantics — delete set mirrors `classifyPath`, diverged files preserved as `.bak`, marker+prefix-gated skill removal, dry-run-by-default with `--yes`. Command is a thin composition of existing tested primitives (`applyDeletedFile`, `removeDeletedManagedSkills` marker gate).
+- 2026-07-02 [hmcgrew/377-prism-eject]: Clove implemented `scripts/ai-skills/eject.ts` (`runEject`/`runEjectCli`/`formatEjectReport`), exported `applyDeletedFile`/`backupConsumerFile`/`resolveBackupPath`/`hashFileIfExists`/`resolveConsumerSkillTargetRoots` from `update.ts` and `removeDeletedManagedAgentFiles` from `generate-skills.ts` for reuse, added `parseConfirmFlag` to `lib/consumer-root.ts`, and wired `eject` into `cli.ts` and `package.json`. See Decisions below for the prefix+marker gate fix a test caught.
+- 2026-07-02 [hmcgrew/377-prism-eject]: Eli documented `prism eject` in README's consumer CLI table and added the "Ejecting PRISM" section to `docs/adopt-prism.md`.
 
 ---
 
@@ -151,20 +174,20 @@ Docs tasks depend on Clove's command being implemented; sequence Eli after Clove
 
 ### Behavioral
 
-- [ ] Given a clean PRISM install (all PRISM-owned files match the recorded manifest hashes), When I run `prism eject --yes`, Then every PRISM-owned `.prism/` file and every projected `prism-*` skill/agent is removed, the sync manifest is removed, and the completeness report states the eject is complete.
-- [ ] Given a PRISM-owned file I edited (diverged from the recorded hash), When I run `prism eject --yes`, Then the file is backed up to a `.bak` snapshot before removal, the `.bak` is preserved on disk, and the completeness report lists that `.bak` path.
-- [ ] Given consumer-owned content (`plans/`, `lessons.md`, `custom/**`, a flat `architect/*.md`), When I run `prism eject --yes`, Then all of it remains on disk and the completeness report lists it as preserved.
-- [ ] Given a `prism-`-prefixed skill dir with no `.ai-skill-generated` marker (a hand-authored skill), When I run `prism eject --yes`, Then that skill is not deleted and the report records it as skipped (no marker).
-- [ ] Given a repo with no `.sync-manifest.json`, When I run `prism eject --yes`, Then nothing is deleted and the report states there is nothing to eject.
-- [ ] Given AGENTS.md and CLAUDE.md exist, When I run `prism eject --yes`, Then both files remain on disk and the report names PRISM's AGENTS.md block markers and notes CLAUDE.md for manual review.
+- [x] Given a clean PRISM install (all PRISM-owned files match the recorded manifest hashes), When I run `prism eject --yes`, Then every PRISM-owned `.prism/` file and every projected `prism-*` skill/agent is removed, the sync manifest is removed, and the completeness report states the eject is complete.
+- [x] Given a PRISM-owned file I edited (diverged from the recorded hash), When I run `prism eject --yes`, Then the file is backed up to a `.bak` snapshot before removal, the `.bak` is preserved on disk, and the completeness report lists that `.bak` path.
+- [x] Given consumer-owned content (`plans/`, `lessons.md`, `custom/**`, a flat `architect/*.md`), When I run `prism eject --yes`, Then all of it remains on disk and the completeness report lists it as preserved.
+- [x] Given a `prism-`-prefixed skill dir with no `.ai-skill-generated` marker (a hand-authored skill), When I run `prism eject --yes`, Then that skill is not deleted and the report records it as skipped (no marker).
+- [x] Given a repo with no `.sync-manifest.json`, When I run `prism eject --yes`, Then nothing is deleted and the report states there is nothing to eject.
+- [x] Given AGENTS.md and CLAUDE.md exist, When I run `prism eject --yes`, Then both files remain on disk and the report names PRISM's AGENTS.md block markers and notes CLAUDE.md for manual review.
 
 ### Non-behavioral
 
-- [ ] `prism eject` without `--yes` performs no deletion — it prints exactly what would be removed and leaves the repo byte-identical (dry-run-by-default).
-- [ ] `prism eject --dry-run` (with or without `--yes`) performs no deletion and produces the same report shape a real run would.
-- [ ] The completeness report accounts for every action: files removed, files removed-with-backup (each `.bak` path listed), consumer content preserved, skills/agents removed, skills skipped with reason, empty dirs removed, manifest removed.
-- [ ] Deletion and backup logic reuses `update.ts`'s `applyDeletedFile` / backup primitives and the `.ai-skill-generated` marker gate — no reimplemented delete-or-backup logic.
-- [ ] Verification passes: `pnpm run prism:check-types`, `pnpm run prism:crossref-lint`, `pnpm run prism:test` all green.
+- [x] `prism eject` without `--yes` performs no deletion — it prints exactly what would be removed and leaves the repo byte-identical (dry-run-by-default).
+- [x] `prism eject --dry-run` (with or without `--yes`) performs no deletion and produces the same report shape a real run would.
+- [x] The completeness report accounts for every action: files removed, files removed-with-backup (each `.bak` path listed), consumer content preserved, skills/agents removed, skills skipped with reason, empty dirs removed, manifest removed.
+- [x] Deletion and backup logic reuses `update.ts`'s `applyDeletedFile` / backup primitives and the `.ai-skill-generated` marker gate — no reimplemented delete-or-backup logic.
+- [x] Verification passes: `pnpm run prism:check-types`, `pnpm run prism:crossref-lint`, `pnpm run prism:test` all green.
 
 ### AC Adjustments
 
@@ -178,13 +201,13 @@ Docs tasks depend on Clove's command being implemented; sequence Eli after Clove
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (full eject / diverged / consumer-preserved / marker-safety / dry-run parity / no-manifest)
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (used a runtime type-guard narrowing function instead of a cast — see `isDeletePathAction` in `eject.ts`)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (full eject / diverged-with-existing-.bak / consumer-preserved / marker-safety for both skill dirs and flat agent files / dry-run parity (`confirmed: false` and `dryRun: true`) / no-manifest / AGENTS.md+CLAUDE.md reporting / empty-dir prune / non-git guard / report formatting)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm run prism:build` clean; `pnpm run prism:test` 456 tests, 452 pass, same 4 pre-existing Windows-path failures as `origin/main` baseline (confirmed via throwaway worktree, not stash)
+- [ ] PR description up to date (pending PR open)
+- [x] Lasting decisions promoted to architect context — not applicable; all Decisions are ticket-tactical per their verdict sub-bullets
 
 **Last updated:** 2026-07-02

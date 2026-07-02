@@ -203,3 +203,13 @@ export function parseConsumerFlag(argv: string[]): string | null {
 export function parseDryRunFlag(argv: string[]): boolean {
 	return argv.includes("--dry-run");
 }
+
+/**
+ * Parses the `--yes` flag from argv. Same boolean-flag shape as
+ * `parseDryRunFlag` — presence means `true`, absence means `false`. Used by
+ * `eject.ts` to require explicit confirmation before any deletion — without
+ * it, `prism eject` is dry-run-by-default.
+ */
+export function parseConfirmFlag(argv: string[]): boolean {
+	return argv.includes("--yes");
+}

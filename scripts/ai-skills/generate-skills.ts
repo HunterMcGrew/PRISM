@@ -354,7 +354,17 @@ async function syncOptionalSkillPayloads(
 	}
 }
 
-async function removeDeletedManagedAgentFiles(
+/**
+ * Prunes agent adapter files (`.toml` for Codex, `.md` for Claude) whose
+ * skill ID is not in `validSkillIds` and which carry `headerLine` somewhere
+ * in their content — the same managed-marker discipline `removeDeletedManagedSkills`
+ * applies to skill directories, adapted to a flat single-file-per-skill
+ * layout where a directory marker file doesn't apply.
+ *
+ * Exported for `eject.ts`, which reuses this with an empty `validSkillIds`
+ * set so every header-marked agent adapter is treated as an eject target.
+ */
+export async function removeDeletedManagedAgentFiles(
 	outputRoot: string,
 	validSkillIds: Set<string>,
 	extension: string,
