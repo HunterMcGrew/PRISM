@@ -13,6 +13,7 @@
  * clone even when invoked via a global symlink), not the consumer's PATH.
  */
 import { runAdoptCli } from "./adopt";
+import { runDoctorCli } from "./doctor";
 import { runInitCli } from "./init";
 import { runUpdateCli } from "./update";
 
@@ -22,6 +23,7 @@ Usage:
   prism init     Write .ai-skills/config.json so this repo can adopt PRISM (run before adopt)
   prism adopt    Seed .prism/ and project the persona roster into this repo (first run)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
+  prism doctor   Report install health — config, git repo, sync state, version
 
 Run from your consumer repo root. PRISM source is auto-derived from the linked
 PRISM checkout; pass --prism-source <path> to override.
@@ -42,6 +44,9 @@ async function main(): Promise<void> {
 			break;
 		case "update":
 			await runUpdateCli();
+			break;
+		case "doctor":
+			await runDoctorCli();
 			break;
 		case "--help":
 		case "-h":

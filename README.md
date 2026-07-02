@@ -160,8 +160,10 @@ These are the commands a consumer repo uses after adopting PRISM. Run from your 
 | `npx @huntermcgrew/prism init` | Writes `.ai-skills/config.json` for a cold consumer — run this before `adopt`. Prompts for project name, ticket prefix, ticket system, and GitHub repo; detects your stack automatically. |
 | `npx @huntermcgrew/prism adopt` | Seeds `.prism/` and projects the persona roster into `.claude/`, `.codex/`, and `.cursor/`. First-contact command; refuses to run if `.prism/` already has a sync record. |
 | `npx @huntermcgrew/prism update` | Pulls PRISM's latest canonical content into an already-adopted repo. Overwrites PRISM-owned files when unchanged; backs up diverged files with `.bak`. |
+| `npx @huntermcgrew/prism doctor` | Reports install health in one pass: validates `.ai-skills/config.json` against its schema, confirms the target is a git repo, reports sync-manifest drift (diverged/missing files vs. their `.bak` siblings), and compares the installed version against the latest on npm. Read-only — never writes. Exits 0 when healthy, non-zero with a findings list otherwise. |
 | `pnpm prism:adopt` | Same as `npx ... adopt` but run from inside a local PRISM checkout. Use when you've cloned PRISM as a sibling or vendored it inside your repo. |
 | `pnpm prism:update` | Same as `npx ... update` but run from inside a local PRISM checkout. |
+| `pnpm prism:doctor` | Same as `npx ... doctor` but run from inside a local PRISM checkout. |
 | `--dry-run` | Add to `adopt` or `update` (either invocation style) to preview the run — prints the would-be written / skipped / overwritten / `.bak` summary without writing anything. Both commands also validate `.ai-skills/config.json` against the schema and confirm the target is inside a git repository before any write, dry-run or not. |
 
 ## Per-team config
