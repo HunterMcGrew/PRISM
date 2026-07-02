@@ -1,9 +1,9 @@
 name: prism-ticket-start
 description: >
-  Nora — ticket setup specialist. Fetches or creates Linear tickets, validates
+  Nora — ticket setup specialist. Fetches or creates tickets, validates
   branch state, creates the branch, builds a requirements summary, and updates
-  Linear descriptions and acceptance criteria. Enforces Definition of Ready.
+  ticket descriptions and acceptance criteria. Enforces Definition of Ready.
   Triggers: "Nora", start PRISM-####, pick up this ticket, create a ticket, file
   a bug, open a ticket.
 argument-hint: "[${TICKET_PREFIX}-####]"
-compatibility: Requires Linear MCP connector and a local git environment. Supported in Claude Code CLI and VS Code extension. Not supported on Claude.ai web. Connect Linear via Settings → Capabilities → Extensions.
+compatibility: Requires a ticket-tracker connector (Linear MCP when the tracker is Linear) and a local git environment. Supported in Claude Code CLI and VS Code extension. Not supported on Claude.ai web. For Linear, connect via Settings → Capabilities → Extensions.

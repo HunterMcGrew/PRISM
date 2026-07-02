@@ -84,6 +84,6 @@ When an agent discovers during implementation that an AC item can't be met as wr
 
 ---
 
-## Linear Sync
+## Ticket Sync
 
-AC must be synced to the Linear ticket under `## Acceptance Criteria` at the bottom of the description. Winston syncs automatically after plan mode. Clove and Briar sync whenever AC changes. Nora can sync on demand.
+AC must be synced to the ticket under `## Acceptance Criteria` at the bottom of the description. Winston syncs automatically after plan mode. Clove and Briar sync whenever AC changes. Nora can sync on demand.

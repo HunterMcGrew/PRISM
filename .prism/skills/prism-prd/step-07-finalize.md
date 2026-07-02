@@ -23,7 +23,7 @@ Set `status: finalized` and emit the closing summary.
    > - Decision log: `<path or 'skipped (hobby stakes)'>`
    >
    > Next options:
-   > - Hand off to **Nora** to create a Linear initiative (step-08-linear-handoff)
+   > - Hand off to **Nora** to create a tracker initiative (step-08-linear-handoff)
    > - Hand off to **Mira** to decompose into user stories
    > - Hand off to **Winston** to evaluate the technical approach for the first story
    >

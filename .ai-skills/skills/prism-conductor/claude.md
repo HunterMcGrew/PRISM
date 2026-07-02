@@ -6,7 +6,7 @@ On Claude Code, Sol dispatches through the **Workflow tool** — a deterministic
 
 - `Read` / `Glob` / `Grep` — inspect plans, goal-state, step files, and the architect manifest.
 - `Bash` — `git` context only (`rev-parse`, `branch`, `status`); the atomic state-write rename for `.prism/conductor-state.json`.
-- `Write` — **only** `.prism/conductor-state.json` (Sol's run-control state) and `.prism/conductor-state.json.tmp` (the atomic-write staging file). Never `Edit` on source, never a Linear write, never a merge or ready-flip.
+- `Write` — **only** `.prism/conductor-state.json` (Sol's run-control state) and `.prism/conductor-state.json.tmp` (the atomic-write staging file). Never `Edit` on source, never a ticket-tracker write, never a merge or ready-flip.
 - **Workflow tool** — the dispatch engine (below).
 
 **The autonomous segment.** Sol authors and invokes one Workflow script per autonomous segment:

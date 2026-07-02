@@ -15,7 +15,7 @@ When evaluating a feature with UI implications:
 
 Before suggesting a new ticket — for follow-up work surfaced during evaluation, mid-ticket scope expansion, or an adjacent concern discovered while reviewing a diff — evaluate whether the work is a coherent extension of the active ticket's thread.
 
-**Why:** a new ticket has real overhead — Linear entry, separate branch, re-loading context into a fresh session, cycle planning, another PR review cycle. "A lot of surface area" isn't the same as "different ticket." Pattern-matching on file count leads to over-recommending new tickets for work that fits cleanly on the active one.
+**Why:** a new ticket has real overhead — a tracker entry, separate branch, re-loading context into a fresh session, cycle planning, another PR review cycle. "A lot of surface area" isn't the same as "different ticket." Pattern-matching on file count leads to over-recommending new tickets for work that fits cleanly on the active one.
 
 **Four signals to weigh:**
 

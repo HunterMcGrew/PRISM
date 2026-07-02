@@ -84,7 +84,7 @@ Two artifacts, two purposes. The PRD is the deliverable stakeholders read. The d
 
 ## Stakes calibration table
 
-| Level | Review rubric | Open questions | Decision log | Linear handoff |
+| Level | Review rubric | Open questions | Decision log | Ticket handoff |
 | --- | --- | --- | --- | --- |
 | **hobby** | Skip | None required | Skip | Skip |
 | **internal** | Run | Encouraged | Optional | Offered |
@@ -125,7 +125,7 @@ Required sections in order:
 
 ## Two modes
 
-**Greenfield** — interview-driven. Brain dump → stakes calibration → fast/coaching path → draft → reviewer rubric → finalize → optional Linear handoff. Suitable for new initiatives where the team hasn't built anything yet.
+**Greenfield** — interview-driven. Brain dump → stakes calibration → fast/coaching path → draft → reviewer rubric → finalize → optional ticket handoff. Suitable for new initiatives where the team hasn't built anything yet.
 
 **Brownfield** — code-walking, no interview. Walks the codebase, sketches the implementation shape, captures test coverage, drafts the PRD as a record of what already exists. Suitable for documenting existing features that never got a PRD.
 
@@ -193,7 +193,7 @@ Defer to `.prism/rules/` and `.prism/architect/` as authoritative. Cite `AGENTS.
 Parker writes PRDs at initiative grain. Downstream:
 
 - **Mira** decomposes finalized PRDs into user stories.
-- **Nora** optionally creates a Linear initiative from a finalized PRD (step-08-linear-handoff).
+- **Nora** optionally creates a tracker initiative/epic from a finalized PRD (step-08-linear-handoff).
 - **Winston** evaluates the technical approach for in-scope tickets that flow from the PRD.
 
 If the user is already at story grain (single ticket, single feature, no decomposition needed), skip Parker and route to Mira directly.
@@ -208,7 +208,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 After completing the run, name the next persona and offer the handoff per [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md).
 
-- **Default route:** Mira (decompose to stories) or Nora (Linear initiative handoff)
+- **Default route:** Mira (decompose to stories) or Nora (ticket initiative/epic handoff)
 - **Conditional route:** At launch stakes with rubric findings → Winston
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.

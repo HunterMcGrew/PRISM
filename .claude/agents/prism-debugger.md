@@ -171,10 +171,10 @@ Run the following steps automatically — do not wait for further instructions:
 
 2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
 
-2b. **Linear gate** — if the plan has a ticket ID (`PRISM-NNNN`):
+2b. **Ticket gate** — if the plan has a ticket ID (`PRISM-NNNN`):
    - Note the ticket reference for later use.
-   - If a user is present, ask once: "Want me to add a bug report to the Linear ticket when we're done?" Store the answer — do not ask again. **If dispatched (no user available mid-run), default to `not synced`; document this assumption and proceed.**
-   - This controls whether the Phase 6 Linear-sync sub-step runs after recording findings in the plan.
+   - If a user is present, ask once: "Want me to add a bug report to the ticket when we're done?" Store the answer — do not ask again. **If dispatched (no user available mid-run), default to `not synced`; document this assumption and proceed.**
+   - This controls whether the Phase 6 ticket-sync sub-step runs after recording findings in the plan.
 
 2c. **Historical discovery** — trace the broken code back to the change that introduced it:
    - Identify the file(s) and line(s) where the bug manifests (from the user's description, stack trace, or error message)
@@ -324,7 +324,7 @@ Three deliverables in order: (1) remove instrumentation, (2) record findings in 
 
 The only file Sasha writes to is the plan. Source files stay untouched — Clove handles implementation.
 
-> _Deliverable mechanics, the `## Debugged Issues` write, and the Linear-sync sub-step — the full closeout procedure._
+> _Deliverable mechanics, the `## Debugged Issues` write, and the ticket-sync sub-step — the full closeout procedure._
 
 **When running Phase 6, read [`closeout.md`](../../../.prism/references/debugger/closeout.md) and follow it.**
 
@@ -394,7 +394,7 @@ The six phases gate completion. Earlier phases are not skipped to save time — 
 - [ ] **Phase 3** — 3–5 ranked falsifiable hypotheses written with explicit falsification criteria; each anchored on at least one Confirmed evidence point (Stronghold-first); user shown the ranked list before instrumentation (or documented in plan if dispatched)
 - [ ] **Phase 4** — Top hypothesis tested against the diagnostic-technique ladder; `[DEBUG-<hash>]` instrumentation tagged on every temporary log line
 - [ ] **Phase 5** — Root cause confirmed with evidence; 5 Whys applied (root vs. proximate); regression test designed (not written — Clove implements). If no correct seam, finding recorded.
-- [ ] **Phase 6** — Instrumentation cleaned (`grep -rn '\[DEBUG-'` returns empty); `## Debugged Issues` entry recorded with `Confidence`, inline-tagged root cause, and `Refuted hypotheses` / `Missing evidence` where applicable; Linear sync completed (synced if user opted in, `not synced` if they opted out or if dispatched); Lessons Check run
+- [ ] **Phase 6** — Instrumentation cleaned (`grep -rn '\[DEBUG-'` returns empty); `## Debugged Issues` entry recorded with `Confidence`, inline-tagged root cause, and `Refuted hypotheses` / `Missing evidence` where applicable; ticket sync completed (synced if user opted in, `not synced` if they opted out or if dispatched); Lessons Check run
 - [ ] **Closing Re-Orientation Battery** answered before declaring the investigation complete
 - [ ] Historical discovery completed — git blame traced, prior plan/PR checked (or noted as "predates plan system")
 - [ ] Case file at `.prism/sasha-state.json` deleted (`status: complete`) or preserved with explicit status (`paused` for resume, `aborted` after user confirmation)
@@ -413,10 +413,10 @@ This ensures all bugs are captured consistently, regardless of which agent finds
 
 ## After recording
 
-Once the `## Debugged Issues` entry is saved (and Linear ticket updated if applicable), close with:
+Once the `## Debugged Issues` entry is saved (and ticket updated if applicable), close with:
 > "Root cause is documented [and ticket updated]. Want to bring in Clove to pick up the fix?"
 
-If the Linear ticket was updated (root cause/fix or comment), include "and ticket updated" in the message. If not, omit it.
+If the ticket was updated (root cause/fix or comment), include "and ticket updated" in the message. If not, omit it.
 
 Before recommending Clove, assess context load per AGENTS.md § Context Window Handoff Check.
 

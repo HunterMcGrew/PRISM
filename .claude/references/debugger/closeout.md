@@ -1,8 +1,8 @@
-# Sasha — Phase 6 Closeout & Linear Sync
+# Sasha — Phase 6 Closeout & Ticket Sync
 
-Reference for `prism-debugger`. Read this when running Phase 6 — recording findings in the plan and syncing to Linear. The skill body pins the evidence-grading lens (Confirmed / Deduced / Hypothesized) and the phase spine; this file carries the deterministic closeout procedure.
+Reference for `prism-debugger`. Read this when running Phase 6 — recording findings in the plan and syncing to the ticket tracker. The skill body pins the evidence-grading lens (Confirmed / Deduced / Hypothesized) and the phase spine; this file carries the deterministic closeout procedure.
 
-> _Phase 6 deliverables — record findings, Linear sync, Lessons Check._
+> _Phase 6 deliverables — record findings, ticket sync, Lessons Check._
 
 Three deliverables in order.
 
@@ -16,26 +16,26 @@ Three deliverables in order.
 - `Missing evidence:` (optional) — a Gap / Impact / How to Obtain mini-table for any unconfirmed claim the diagnosis still depends on. Missing evidence is a finding, not an admission that the investigation is incomplete.
 - `Suggested tests:` — what to cover, "none needed", or `"no correct seam — architecture prevents lockdown"` if the Phase 1/5 seam check failed.
 
-Status defaults to `open`. The `Linear` field reflects whether the Linear sync sub-step ran.
+Status defaults to `open`. The `Ticket` field reflects whether the ticket-sync sub-step ran.
 
 The only file Sasha writes to is the plan. Source files stay untouched — Clove handles implementation.
 
 **3. Lessons Check.** Did the root cause reveal a class of bug not previously documented? A codebase constraint or pattern that made the bug harder to find than it should have been? An assumption made during isolation that turned out to be wrong? If yes, append to `.prism/lessons.md` without being asked.
 
-## Phase 6 sub-step: Linear sync
+## Phase 6 sub-step: Ticket sync
 
-**Root Cause and Suspected Fix update.** Check whether the Linear ticket's `## Root Cause` and `## Suspected Fix` sections match Sasha's findings:
+**Root Cause and Suspected Fix update.** Check whether the ticket's `## Root Cause` and `## Suspected Fix` sections match Sasha's findings:
 
 - Fetch current ticket description via `get_issue`.
 - If Sasha's root cause or fix differs from what's in the ticket (e.g. Nora's initial `suspected` entry): replace those sections in the description via `save_issue`, updating the confidence to `verified`.
 - If they match: no update needed.
-- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on Linear ticket PRISM-NNNN`.
+- Append to plan `## History`: `YYYY-MM-DD [<branch>]: Updated Root Cause / Suspected Fix on ticket PRISM-NNNN`.
 - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Sasha | Updated Root Cause + Fix | — | synced |`.
 
-**Optional Linear comment.** If the user said **yes** to the Linear gate (startup step 2b):
+**Optional ticket comment.** If the user said **yes** to the ticket gate (startup step 2b):
 
 - Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry.
-- Post it as a Linear comment via `save_comment` on the ticket.
-- Mark the plan entry as `Linear: synced`.
+- Post it as a ticket comment (via the tracker's comment API — `save_comment` on Linear).
+- Mark the plan entry as `Ticket: synced`.
 
-If the user said **no** (or there is no ticket ID): mark the plan entry as `Linear: not synced`. Do not prompt again.
+If the user said **no** (or there is no ticket ID): mark the plan entry as `Ticket: not synced`. Do not prompt again.

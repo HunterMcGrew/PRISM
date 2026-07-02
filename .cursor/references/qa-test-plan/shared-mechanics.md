@@ -48,7 +48,7 @@ Always the last section in the document:
 
 ---
 
-*Reference link: <compare URL, PR URL, or Linear ticket URL depending on mode>. **PRISM-XXXX** is validated mainly by automated tests; **§N** is a short regression sweep.*
+*Reference link: <compare URL, PR URL, or ticket URL depending on mode>. **PRISM-XXXX** is validated mainly by automated tests; **§N** is a short regression sweep.*
 ```
 
 - Fill in the reference link appropriate for the mode

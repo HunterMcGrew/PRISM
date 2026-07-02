@@ -11,9 +11,9 @@ Triggered by a single PR (number, URL, or branch name) without bug-verification 
 - **PR number or URL:** resolve with `gh pr view <num> --json commits,title,headRefName,baseRefName,number,url`.
 - **Branch name:** resolve with `gh pr view <branch>` (same JSON fields). If no PR exists for the branch yet, fall back to treating it as an in-flight feature: `origin/main..<branch>` is the commit range, no PR number yet.
 
-## 2. Inline the Linear AC when a PRISM-\* is in the PR title
+## 2. Inline the ticket AC when a PRISM-\* is in the PR title
 
-If the PR title contains `PRISM-NNNN`, call `get_issue` and pull the `## Acceptance Criteria` section from the ticket description. These get inlined in the document so the tester can verify acceptance directly from the checklist without jumping to Linear.
+If the PR title contains `PRISM-NNNN`, call `get_issue` and pull the `## Acceptance Criteria` section from the ticket description. These get inlined in the document so the tester can verify acceptance directly from the checklist without jumping to the tracker.
 
 ## 3. Resolve the commit set and inspect the diff
 
@@ -36,7 +36,7 @@ Or, for a branch with no PR, use the `origin/main..<branch>` range. Then run `gi
 # PRISM — PR QA Checklist
 
 **PR:** [#<number> — <title>](<pr-url>)
-**Ticket:** PRISM-NNNN (inline; link to Linear)
+**Ticket:** PRISM-NNNN (inline; link to the tracker)
 **Scope:** Manual scenarios for the user-visible change in this PR, plus targeted regression on surfaces the diff touches.
 
 **Who this is for:** Testers using the site like real visitors, plus the **content or block editor** when the change involves editor UI.

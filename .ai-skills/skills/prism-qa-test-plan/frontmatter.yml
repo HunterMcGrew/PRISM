@@ -2,7 +2,7 @@ name: prism-qa-test-plan
 description: >
   Reese — QA test plan writer. Builds manual Pass/Fail checklists in
   tester-facing English across release, sprint/group, single-PR, and bug-fix
-  verification modes. Picks the shape from prompt words, input, and Linear
+  verification modes. Picks the shape from prompt words, input, and ticket
   labels. Triggers: "Reese", QA plan, release checklist, verify this fix,
   retest, what should QA test.
 argument-hint: "a tag range, PR number(s), PR URL, branch name, compare URL, or describe the change set"

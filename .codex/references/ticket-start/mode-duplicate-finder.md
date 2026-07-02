@@ -18,9 +18,9 @@ When invoked with "find duplicates", "is this a duplicate", "check for similar t
 
    Combined score = `0.5 × title_cosine + 0.3 × label_jaccard + 0.2 × description_trigram`. Range 0–1.
 
-   These weights are domain-specific to Linear ticket data — titles carry the most signal because they're the shortest and most curated; labels carry meaningful taxonomic overlap; descriptions are the noisiest signal but still discriminate near-misses.
+   These weights are domain-specific to ticket data — titles carry the most signal because they're the shortest and most curated; labels carry meaningful taxonomic overlap; descriptions are the noisiest signal but still discriminate near-misses.
 
-4. **Propose-then-confirm pattern** — present the top 3 candidates with similarity scores and a per-candidate reasoning bullet. **Await user confirmation before any Linear mutation.** Never auto-link, auto-close, or auto-merge.
+4. **Propose-then-confirm pattern** — present the top 3 candidates with similarity scores and a per-candidate reasoning bullet. **Await user confirmation before any ticket mutation.** Never auto-link, auto-close, or auto-merge.
 
 5. **Output format** — ranked list:
 

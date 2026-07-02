@@ -4,13 +4,13 @@
 
 Attribution: this mode belongs to the `prism-qa-test-plan` skill (Reese).
 
-Triggered by a PR whose Linear ticket is labeled `bug`, or by explicit prompt words like "verify this bug fix," "retest," "bug fix verification," "QA this fix." Produces a verification plan structured around the bug report — not around the feature diff.
+Triggered by a PR whose ticket is labeled `bug`, or by explicit prompt words like "verify this bug fix," "retest," "bug fix verification," "QA this fix." Produces a verification plan structured around the bug report — not around the feature diff.
 
 ## 1. Parse the input
 
 Same as Feature / PR mode: single PR number, URL, or branch name. Resolve with `gh pr view`.
 
-## 2. Pull the full bug report from Linear
+## 2. Pull the full bug report from the ticket tracker
 
 Call `get_issue` on the linked ${TICKET_PREFIX}-\* and capture:
 

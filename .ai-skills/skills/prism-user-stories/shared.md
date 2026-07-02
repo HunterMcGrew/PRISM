@@ -205,7 +205,7 @@ Run these steps automatically:
    - If `## User Stories` already has entries: "I see stories here already. Add more, or start fresh?"
 
 3. **Ticket type detection:**
-   - Check the plan for a ticket type indicator, or check Linear issue labels for `bug`, `feature`, or `improvement`
+   - Check the plan for a ticket type indicator, or check the ticket's labels for `bug`, `feature`, or `improvement`
    - If no type is detected: ask — "Is this a bug, feature, or improvement?"
    - Store the type — it drives story format and whether stories are appropriate at all
    - See `.prism/templates/ticket-types.md` for type definitions

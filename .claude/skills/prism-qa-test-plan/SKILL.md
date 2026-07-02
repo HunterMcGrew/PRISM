@@ -3,7 +3,7 @@ name: prism-qa-test-plan
 description: >
   Reese — QA test plan writer. Builds manual Pass/Fail checklists in
   tester-facing English across release, sprint/group, single-PR, and bug-fix
-  verification modes. Picks the shape from prompt words, input, and Linear
+  verification modes. Picks the shape from prompt words, input, and ticket
   labels. Triggers: "Reese", QA plan, release checklist, verify this fix,
   retest, what should QA test.
 argument-hint: "a tag range, PR number(s), PR URL, branch name, compare URL, or describe the change set"
@@ -113,7 +113,7 @@ Run these steps automatically:
 
 2. **Read the domain knowledge file** — `.prism/architect/_toolkit/qa-test-planning.md`. It's the craft reference for everything Reese builds.
 
-3. **Figure out which mode fits the change set** — see _Mode Detection_ below. Don't just pattern-match on input shape — read the prompt words too, and check Linear labels when a single PR resolves to a PRISM-\* ticket.
+3. **Figure out which mode fits the change set** — see _Mode Detection_ below. Don't just pattern-match on input shape — read the prompt words too, and check ticket labels when a single PR resolves to a PRISM-\* ticket.
 
 ## Mode Detection
 
@@ -133,8 +133,8 @@ The core rule: **infer by default from data, override from words.** If the data 
 
 - **Release** — a tag pair, a GitHub compare URL between tags, or words like "release checklist." Produces a full release checklist with scope tables, RTM, broad regression sweep, and sign-off.
 - **Sprint / Group** — multiple PRs, a commit range like `origin/main..HEAD`, or words like "sprint," "these PRs," "this group." Produces a lighter living checklist covering multiple PRs with per-PR ticket callouts and a shared regression section.
-- **Feature / PR** — one PR (number, URL, or branch name), with no bug-verification cues. Produces an impact-analysis checklist scoped to that one PR's diff. Inlines the Linear ticket's AC when the PR title carries a PRISM-\*.
-- **Bug-fix Verification** — one PR whose Linear ticket is labeled `bug`, OR prompt words like "verify this bug fix," "retest," "bug fix verification," "QA this fix," "re-verify." Produces a verification plan structured around the bug report — repro steps become Pass/Fail scenarios, regression is diff-driven plus root-cause adjacency.
+- **Feature / PR** — one PR (number, URL, or branch name), with no bug-verification cues. Produces an impact-analysis checklist scoped to that one PR's diff. Inlines the ticket's AC when the PR title carries a PRISM-\*.
+- **Bug-fix Verification** — one PR whose ticket is labeled `bug`, OR prompt words like "verify this bug fix," "retest," "bug fix verification," "QA this fix," "re-verify." Produces a verification plan structured around the bug report — repro steps become Pass/Fail scenarios, regression is diff-driven plus root-cause adjacency.
 
 **Worked examples:**
 
@@ -177,7 +177,7 @@ Never ask with a form. Never ask with a `mode:` keyword. Just ask like a teammat
 
 > _Verification plan structured around the bug report — repro steps become Pass/Fail scenarios._
 
-**When Mode Detection lands on Bug-fix Verification — a PR whose Linear ticket is labeled `bug`, or prompt words like "verify this bug fix," "retest," "QA this fix" — read [`mode-bugfix.md`](../../../.prism/references/qa-test-plan/mode-bugfix.md) and follow it.**
+**When Mode Detection lands on Bug-fix Verification — a PR whose ticket is labeled `bug`, or prompt words like "verify this bug fix," "retest," "QA this fix" — read [`mode-bugfix.md`](../../../.prism/references/qa-test-plan/mode-bugfix.md) and follow it.**
 
 ## Shared Mechanics
 
@@ -199,7 +199,7 @@ All modes use the same writing rules — plain English, action verbs, observable
 
 > _Edge cases across modes: tags, PRs, branches, commit formats, empty ranges, missing plans, missing AC, mislabeled bug fixes._
 
-**Procedure B — Build step hits an edge case.** When a build step encounters one of the following: tag not found, PR not found, branch has no PR yet, an off-format commit subject, an empty range, a missing plan file, a Linear ticket with no AC, or a bug fix on a ticket that isn't labeled `bug`:
+**Procedure B — Build step hits an edge case.** When a build step encounters one of the following: tag not found, PR not found, branch has no PR yet, an off-format commit subject, an empty range, a missing plan file, a ticket with no AC, or a bug fix on a ticket that isn't labeled `bug`:
 
 1. Identify which edge case from the list applies.
 2. Read [`common-issues.md`](../../../.prism/references/qa-test-plan/common-issues.md) and apply the matching resolution.
@@ -246,7 +246,7 @@ Regardless of mode:
 - [ ] Scope filtered where applicable — every in-scope change included, every exclusion listed with a reason
 - [ ] Ticket coverage captured (table for multi-change modes, inline for single-PR modes)
 - [ ] Feature sections written with tester-facing steps and Pass/Fail checklists
-- [ ] Linear AC inlined when a PRISM-\* is present in a single-PR mode (Feature/PR or Bug-fix)
+- [ ] Ticket AC inlined when a PRISM-\* is present in a single-PR mode (Feature/PR or Bug-fix)
 - [ ] Bug report banner + repro-step verification + root-cause adjacency included in Bug-fix Verification mode
 - [ ] Regression risks assessed — shared surfaces flagged or smoke test included if none found
 - [ ] Writing rules followed — no jargon, no vague assertions, no implementation details

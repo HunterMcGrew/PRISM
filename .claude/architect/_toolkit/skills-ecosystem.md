@@ -22,7 +22,7 @@ Personas split across three axes. **Ticket-flow personas** are invoked in the co
 
 | Skill                   | Persona     | Role                                                                                                                                                                                                                                                                                           | Writes code? |
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| prism-ticket-start     | **Nora**    | Fetches Linear tickets, validates branch state, creates branches, builds requirements summaries. Guides priority and triage placement for new and existing tickets. Cycle View surfaces Ready/In-flight/Blocked buckets with rollover detection; Duplicate Finder ranks similarity by title (50%), labels (30%), description (20%) and proposes-then-confirms before any link or close. All Linear writes pass a shared-state confirmation gate; reads are exempt.                                                                                                                            | No           |
+| prism-ticket-start     | **Nora**    | Fetches tickets, validates branch state, creates branches, builds requirements summaries. Guides priority and triage placement for new and existing tickets. Cycle View surfaces Ready/In-flight/Blocked buckets with rollover detection; Duplicate Finder ranks similarity by title (50%), labels (30%), description (20%) and proposes-then-confirms before any link or close. All ticket-tracker writes pass a shared-state confirmation gate; reads are exempt.                                                                                                                            | No           |
 | prism-user-stories     | **Mira**    | Generates user stories from tickets or interviews, saves to plan with AC hints                                                                                                                                                                                                                 | No           |
 | prism-design            | **Pixel**   | UI/UX designer — convention audits, wireframes, interaction flows, state coverage, microcopy direction. Invoke-only; not part of the standard handoff chain.                                                                                                                                   | No           |
 | prism-architect        | **Winston** | Evaluates approaches, builds implementation plans, manages decisions. Enforces the Decision verdict gate at plan close per `branch-plan.md § Decision verdict gate`. Includes devil's advocate analysis and docs impact check — adds docs update tasks when work changes documented features. Pushes for the simpler design at evaluate time per `structural-remedies.md` — raises what he recommends, never what must clear the gate.                                                                                                 | No           |
@@ -32,7 +32,7 @@ Personas split across three axes. **Ticket-flow personas** are invoked in the co
 | prism-code-review-pr   | **Eric**    | Reviews an existing GitHub PR — posts inline comments and readiness checklist. Dual-mode: defaults to in-branch (reads PR head via `gh` + `git show`, no checkout) for the cheap common path; opts into worktree mode on `--worktree` flag, divergent branch with dirty working tree, or when formatters/tests/builds must run against the PR's branch. Default in-branch keeps Eric cheap on the common path; worktree opt-in preserves isolation for branches with divergent state. In state #3 (`confidence:high` / `confidence:needs-judgment`), Eric runs `gh pr ready` to flip the PR out of draft per `shipping-flow.md § Draft-by-default`. Surfaces a non-blocking "Cleaner Paths" bucket in the review summary per `structural-remedies.md` — never a label, severity tier, or PR Readiness entry.                                                                                                                                                  | No           |
 | prism-changelog        | **Sage**    | Generates release changelogs between git tags. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                                                                                                                                  | No           |
 | prism-documentation    | **Eli**     | Creates and updates user-facing and developer documentation. Writes directly to `docs/` with frontmatter, topic-based naming, and index updates. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                               | No           |
-| prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets — tag ranges, PR groups, single PRs, or feature branches. Picks the artifact shape per mode (Release, Sprint / Group, Feature / PR, Bug-fix Verification) based on prompt words, input shape, and Linear labels. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging. | No           |
+| prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets — tag ranges, PR groups, single PRs, or feature branches. Picks the artifact shape per mode (Release, Sprint / Group, Feature / PR, Bug-fix Verification) based on prompt words, input shape, and ticket labels. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging. | No           |
 | prism-doc-walker       | **Theo**    | Walks a target directory, applies the Deletion Test to find load-bearing decisions, then drafts architect docs (`.prism/architect/`) and paired dev docs (config-conditional — `documentation.keepsDevDocs: true` only) with write/skip/defer prompts. Resumable across sessions via `.prism/theo-state.json`. Invoke-only; not part of the standard handoff chain.                          | No           |
 | prism-refactor-scout   | **Ren**     | Walks the codebase, ranks refactor candidates by deletion-test strength, grills the chosen candidate through five passes, and writes a refactor plan to `.prism/plans/refactor-<slug>.md` for Winston or Clove. Never modifies source. Invoke-only; not part of the standard handoff chain.                                                                                                      | No           |
 | prism-prd              | **Parker**  | Writes initiative-level Product Requirements Documents in two modes: greenfield (brain dump → stakes calibration → finalize) and brownfield (walks the codebase to synthesize). Saves to `.prism/prds/<slug>.md`. Sits above Mira on grain — PRDs decompose into stories. Invoke-only; not part of the standard handoff chain.                                                                    | No           |
@@ -53,7 +53,7 @@ An orchestration persona is invoked with a goal rather than a ticket. It decompo
 
 | Skill           | Persona | Role                                                                                                                                                                                                                                                                                  | Writes code? |
 | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| prism-conductor | **Sol** | Goal-driven orchestrator — decomposes a goal into lifecycle phases, dispatches the existing personas, pauses at every human gate, routes report-back verdicts, contains failures per-lane in fleet runs. Writes only its run-control state (`.prism/conductor-state.json`); never code, Linear, or merges. Invoke-only. | No           |
+| prism-conductor | **Sol** | Goal-driven orchestrator — decomposes a goal into lifecycle phases, dispatches the existing personas, pauses at every human gate, routes report-back verdicts, contains failures per-lane in fleet runs. Writes only its run-control state (`.prism/conductor-state.json`); never code, tracker writes, or merges. Invoke-only. | No           |
 
 ### Utility skills
 
@@ -82,7 +82,7 @@ Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for 
 - **Improvement** (label: `improvement`) — existing functionality made better. User stories optional.
 - **DX** (label: `DX`) — work QA cannot verify. See `.prism/templates/ticket-types.md` for the full decision rule.
 
-**Detection:** check Linear labels first, ask the user if no label matches. Never guess.
+**Detection:** check the ticket's labels first, ask the user if no label matches. Never guess.
 
 ---
 
@@ -109,11 +109,11 @@ Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/E
 Nora (verify + scaffold + AC) → Sasha (confirm root cause + fix) → Clove → Briar → [Eric] → [Reese]
 ```
 
-1. **Nora** fetches the ticket, reviews priority and triage placement, verifies the bug, scaffolds bug report with root cause + suspected fix + AC, syncs AC to Linear
+1. **Nora** fetches the ticket, reviews priority and triage placement, verifies the bug, scaffolds bug report with root cause + suspected fix + AC, syncs AC to the tracker
 2. **Sasha** confirms root cause and suspected fix before implementation
-3. **Clove** implements the fix, syncs AC to Linear if adjusted
-4. **Briar** self-reviews, syncs AC to Linear if updated
-5. **[Reese]** (optional) generates a bug-fix verification plan for QA to retest against — invoke after the fix ships when QA needs a structured retest artifact rooted in the Linear bug report.
+3. **Clove** implements the fix, syncs AC to the tracker if adjusted
+4. **Briar** self-reviews, syncs AC to the tracker if updated
+5. **[Reese]** (optional) generates a bug-fix verification plan for QA to retest against — invoke after the fix ships when QA needs a structured retest artifact rooted in the ticket's bug report.
 
 ### Improvement
 
@@ -202,7 +202,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Decisions`                    | Winston                                                                | All                                         |
 | `## Implementation Tasks`         | Winston                                                                | Clove                                       |
 | `## Acceptance Criteria`          | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
-| `## Acceptance Criteria` → Linear | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
+| `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
 | AC Sync Log                       | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
 | `## Design`                       | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
 | `## History`                      | All (append-only)                                                      | All                                         |
@@ -293,12 +293,12 @@ PR-related skills (Eric, Briar, Reese, Sage when scoped to a PR) accept any of: 
 ## Bug Report Lifecycle
 
 1. **Discovery** — any agent that discovers a bug uses the shared template at `.prism/templates/bug-report.md`
-2. **Scaffolding** — Nora verifies the bug, fills in root cause (`verified` or `suspected`), suspected fix, and acceptance criteria. Updates the Linear ticket description with the full template including AC.
+2. **Scaffolding** — Nora verifies the bug, fills in root cause (`verified` or `suspected`), suspected fix, and acceptance criteria. Updates the ticket description with the full template including AC.
 3. **Verification** — Sasha confirms the root cause and suspected fix before implementation begins
 4. **Recording** — Sasha records confirmed findings in `## Debugged Issues` using the extended format (severity, environment, repro steps, expected/actual)
-5. **Linear sync** — opt-in: Sasha asks whether to post the bug report to Linear. If yes, formats using the template and posts via `save_comment`
-6. **Fix** — Clove implements the fix, syncs AC to Linear if adjusted
-7. **Review** — Briar checks the fix during self-review, syncs AC to Linear if updated
+5. **Ticket sync** — opt-in: Sasha asks whether to post the bug report to the tracker. If yes, formats using the template and posts via `save_comment`
+6. **Fix** — Clove implements the fix, syncs AC to the tracker if adjusted
+7. **Review** — Briar checks the fix during self-review, syncs AC to the tracker if updated
 
 ---
 
@@ -329,13 +329,13 @@ Promotion happens via Winston during plan close — the lessons accumulated duri
 6. **Ask before introducing dependencies** — no new packages without user approval.
 7. **Follow existing patterns** — read the codebase before writing. Match what's already there.
 8. **Architect context is mandatory** — every skill loads relevant architect docs via `manifest.json` on startup.
-9. **AC is required and synced to Linear** — every ticket must have `## Acceptance Criteria` in the Linear description. Winston syncs AC automatically after plan mode. Clove and Briar sync AC to Linear whenever it changes (adjustments accepted, gaps filled). Nora can sync on demand. AC goes at the bottom of the ticket description. See ADR-0009.
+9. **AC is required and synced to the ticket tracker** — every ticket must have `## Acceptance Criteria` in the ticket description. Winston syncs AC automatically after plan mode. Clove and Briar sync AC to the tracker whenever it changes (adjustments accepted, gaps filled). Nora can sync on demand. AC goes at the bottom of the ticket description. See ADR-0009.
 10. **Pre-handoff branch gate** — Nora must verify the branch is clean and correct before any handoff to another skill. Dirty branches block handoffs. This prevents skills from starting work on stale or wrong branches. See ADR-0010.
 11. **Eric never approves PRs** — Eric reviews and comments only. PR approval is a human responsibility. Eric must never run `gh pr review --approve` or take any approval action. If the review is clean, Eric says "ready for a human to approve." See ADR-0011.
 12. **Skill auto-routing** — when a user works without invoking a skill, detect the intent and proactively invoke the matching skill. See `AGENTS.md § Skill Auto-Routing` for the routing table and ADR-0002 for the decision. Skills should also redirect when a user asks them to do something outside their role (e.g. Clove redirects architecture questions to Winston).
 13. **Persona headings define task ownership** — `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`, etc.). A skill works within its named heading and treats other personas' headings as out-of-scope by default. When work crosses a lane, the skill skips it, absorbs it with a `## Decisions` entry documenting the scope shift, or routes to the owning persona. Silent cross-lane edits are the failure mode. See ADR-0018 and `.prism/rules/branch-plan.md`.
 14. **Spec content uses onboarding voice** — new skills, rules, architect context, ADRs, and templates are written for a teammate, not a compliance contract. Cite the reason alongside the rule. See `.prism/rules/writing-voice.md`.
-15. **PR body reflects current scope, synced at two moments** — parallel to rule 9's AC-to-Linear sync pattern. The PR body describes what's shipping now, not what was planned at PR-open time. this project squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. Winston syncs the PR body when plan scope changes (`## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`); Clove syncs it when pushing to a branch whose plan has drifted past the last body write. Both agents rewrite only templated sections and preserve user-added sections (any section the agent didn't originate). Silent by default, with a session-scoped opt-out when the user says "don't touch the PR body." See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) and [`.prism/rules/pr-description.md`](../rules/pr-description.md) § Keeping the PR in sync with scope.
+15. **PR body reflects current scope, synced at two moments** — parallel to rule 9's AC-to-tracker sync pattern. The PR body describes what's shipping now, not what was planned at PR-open time. this project squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. Winston syncs the PR body when plan scope changes (`## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`); Clove syncs it when pushing to a branch whose plan has drifted past the last body write. Both agents rewrite only templated sections and preserve user-added sections (any section the agent didn't originate). Silent by default, with a session-scoped opt-out when the user says "don't touch the PR body." See [ADR-0020](../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) and [`.prism/rules/pr-description.md`](../rules/pr-description.md) § Keeping the PR in sync with scope.
 
 ---
 
