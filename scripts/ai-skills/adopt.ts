@@ -27,6 +27,7 @@ import {
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { loadSyncManifest } from "./sync-manifest";
 import {
+	formatVersionDeltaLine,
 	resolvePrismSource,
 	resolveSelfPrismSource,
 	runUpdate,
@@ -258,6 +259,11 @@ function reportSummary(summary: AdoptSummary, dryRun = false): void {
 			? `${prefix} sync would apply ${parts || "no changes"}.`
 			: `${prefix} sync complete — ${parts || "no changes"}.`
 	);
+
+	const deltaLine = formatVersionDeltaLine(update.versionDelta);
+	if (deltaLine !== null) {
+		console.log(deltaLine);
+	}
 
 	if (update.backups.length > 0) {
 		console.log(

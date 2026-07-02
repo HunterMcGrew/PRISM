@@ -69,9 +69,23 @@ export interface FileOutcome {
 	backupPath?: string;
 }
 
+/**
+ * The consumer's recorded PRISM version before this run versus the PRISM
+ * source's version applied by it. `previous` is `null` on first-adopt (no
+ * prior manifest) — there is nothing to delta against yet. `changed` is
+ * `false` whenever `previous === current`, including the first-adopt case,
+ * so callers can gate the printed delta line on a single flag.
+ */
+export interface VersionDelta {
+	previous: string | null;
+	current: string;
+	changed: boolean;
+}
+
 export interface UpdateSummary {
 	outcomes: FileOutcome[];
 	backups: string[];
+	versionDelta: VersionDelta;
 }
 
 export interface RunUpdateOptions {
@@ -275,7 +289,9 @@ export async function applyDeletedFile(
  * `dryRun` runs the full classification pass — every file still gets the same
  * `written` / `no-op` / `overwritten` / `backed-up` / `removed` /
  * `removed-with-backup` decision — but skips the `fs` calls that would carry
- * it out, including the manifest rewrite. The returned `UpdateSummary` is
+ * it out, including the manifest rewrite (the version delta is still computed
+ * via `previewVersionDelta`, a read-only counterpart, so `--dry-run` reports
+ * the same delta a real run would record). The returned `UpdateSummary` is
  * identical in shape to a real run, so callers print the same report either way.
  */
 export async function applyFilePass(
@@ -333,19 +349,19 @@ export async function applyFilePass(
 		);
 	}
 
-	if (!dryRun) {
-		await rewriteConsumerManifest(
-			prismContentRoot,
-			consumerContentRoot,
-			consumerManifest
-		);
-	}
+	const versionDelta = dryRun
+		? await previewVersionDelta(prismContentRoot, consumerManifest)
+		: await rewriteConsumerManifest(
+				prismContentRoot,
+				consumerContentRoot,
+				consumerManifest
+			);
 
 	const backups = outcomes
 		.filter((outcome) => outcome.backupPath !== undefined)
 		.map((outcome) => outcome.backupPath as string);
 
-	return { outcomes, backups };
+	return { outcomes, backups, versionDelta };
 }
 
 /**
@@ -438,23 +454,44 @@ export async function runUpdate(
 }
 
 /**
+ * Compares the consumer's previously recorded `prismVersion` against the
+ * version the incoming PRISM source manifest carries, resolving the same
+ * `"0.0.0"` fallback `rewriteConsumerManifest` writes when the source ships
+ * no manifest at all. `previous: null` on first-adopt (no prior manifest) —
+ * there is nothing to delta against yet, so `changed` is `false` in that case
+ * even though a version is being recorded for the first time.
+ */
+function computeVersionDelta(
+	sourceManifest: SyncManifest | null,
+	previousConsumerManifest: SyncManifest | null
+): VersionDelta {
+	const current =
+		sourceManifest?.prismVersion ??
+		previousConsumerManifest?.prismVersion ??
+		"0.0.0";
+	const previous = previousConsumerManifest?.prismVersion ?? null;
+
+	return { previous, current, changed: previous !== null && previous !== current };
+}
+
+/**
  * Rewrites `.prism/.sync-manifest.json` in the consumer repo to the PRISM
  * source's current base hashes. Version/commit metadata is carried from the
  * PRISM source manifest when it ships one, falling back to a freshly generated
- * manifest's values otherwise.
+ * manifest's values otherwise. Returns the version delta so callers (`prism
+ * update`'s summary, `prism adopt`'s first-run report) can surface it without
+ * re-reading either manifest.
  */
 async function rewriteConsumerManifest(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	previousConsumerManifest: SyncManifest | null
-): Promise<void> {
+): Promise<VersionDelta> {
 	const sourceManifest = await loadSyncManifest(prismContentRoot);
+	const versionDelta = computeVersionDelta(sourceManifest, previousConsumerManifest);
 
 	const generated = await generateSyncManifest(prismContentRoot, {
-		prismVersion:
-			sourceManifest?.prismVersion ??
-			previousConsumerManifest?.prismVersion ??
-			"0.0.0",
+		prismVersion: versionDelta.current,
 		sourceCommit: sourceManifest?.sourceCommit ?? "unknown",
 		generatedAt: new Date().toISOString(),
 	});
@@ -462,6 +499,21 @@ async function rewriteConsumerManifest(
 	const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
 	const serialized = `${JSON.stringify(generated, null, "\t")}\n`;
 	await fs.writeFile(manifestPath, serialized, "utf8");
+
+	return versionDelta;
+}
+
+/**
+ * Read-only counterpart to `rewriteConsumerManifest` for `--dry-run`: computes
+ * the same delta a real run would record, without writing the manifest.
+ */
+async function previewVersionDelta(
+	prismContentRoot: string,
+	previousConsumerManifest: SyncManifest | null
+): Promise<VersionDelta> {
+	const sourceManifest = await loadSyncManifest(prismContentRoot);
+
+	return computeVersionDelta(sourceManifest, previousConsumerManifest);
 }
 
 /**
@@ -808,6 +860,22 @@ export async function runUpdateCli(): Promise<void> {
 	reportSummary(summary, dryRun);
 }
 
+/**
+ * Renders the version delta line for the CLI report, or `null` when there's
+ * nothing to print — first-adopt (`previous === null`) or an already-current
+ * consumer (`changed === false`) both have no delta worth surfacing.
+ *
+ * Exported so `adopt.ts`'s `reportSummary` prints the identical line rather
+ * than duplicating the wording.
+ */
+export function formatVersionDeltaLine(delta: VersionDelta): string | null {
+	if (!delta.changed || delta.previous === null) {
+		return null;
+	}
+
+	return `PRISM ${delta.previous} -> ${delta.current} — see CHANGELOG.md for what changed.`;
+}
+
 function reportSummary(summary: UpdateSummary, dryRun = false): void {
 	const counts = summary.outcomes.reduce<Record<string, number>>(
 		(acc, outcome) => {
@@ -826,6 +894,11 @@ function reportSummary(summary: UpdateSummary, dryRun = false): void {
 			? `prism:update (dry run) — would apply ${parts || "no changes"}.`
 			: `prism:update complete — ${parts || "no changes"}.`
 	);
+
+	const deltaLine = formatVersionDeltaLine(summary.versionDelta);
+	if (deltaLine !== null) {
+		console.log(deltaLine);
+	}
 
 	if (summary.backups.length > 0) {
 		console.log(
