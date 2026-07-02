@@ -34,7 +34,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
+import {
+	AGENTS_MD_BLOCK_BEGIN,
+	AGENTS_MD_BLOCK_END,
+	AGENTS_MD_SEEDED_MARKER,
+} from "./agents-md-block";
 import {
 	GENERATED_MARKDOWN_HEADER_LINE,
 	removeDeletedManagedAgentFiles,
@@ -408,6 +412,36 @@ async function pruneEmptyDirs(consumerContentRoot: string, previewOnly: boolean)
 }
 
 /**
+ * Removes a PRISM-seeded root `AGENTS.md` — one carrying
+ * `AGENTS_MD_SEEDED_MARKER`, written by `prism adopt --seed-agents-md`. A root
+ * `AGENTS.md` without the marker is consumer-authored (or had the marker line
+ * deleted on purpose) and is never removed. Returns the notice describing what
+ * happened, or null when there is no seeded file to act on.
+ */
+async function removeSeededAgentsMd(
+	consumerRepoRoot: string,
+	previewOnly: boolean
+): Promise<{ removed: boolean; notice: string } | null> {
+	const agentsMdPath = path.join(consumerRepoRoot, "AGENTS.md");
+	const content = await readFileIfExists(agentsMdPath);
+
+	if (content === null || !content.includes(AGENTS_MD_SEEDED_MARKER)) {
+		return null;
+	}
+
+	if (!previewOnly) {
+		await fs.rm(agentsMdPath);
+	}
+
+	return {
+		removed: true,
+		notice: previewOnly
+			? "Would remove PRISM-seeded AGENTS.md (carries the prism:seeded-agents-md marker)."
+			: "Removed PRISM-seeded AGENTS.md (carried the prism:seeded-agents-md marker).",
+	};
+}
+
+/**
  * Reports PRISM's contribution to AGENTS.md (the injected Tier-1 block, if
  * present) and notes a present CLAUDE.md, without modifying either file.
  */
@@ -475,7 +509,12 @@ export async function runEject(options: RunEjectOptions): Promise<EjectReport> {
 		await fs.rm(manifestPath);
 	}
 
+	const seededAgentsMdResult = await removeSeededAgentsMd(consumerRepoRoot, previewOnly);
 	const rootFileNotices = await collectRootFileNotices(consumerRepoRoot);
+
+	if (seededAgentsMdResult !== null) {
+		rootFileNotices.unshift(seededAgentsMdResult.notice);
+	}
 
 	return {
 		fileOutcomes,

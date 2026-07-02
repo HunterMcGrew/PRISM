@@ -25,6 +25,41 @@ export const AGENTS_MD_BLOCK_BEGIN =
 export const AGENTS_MD_BLOCK_END = "<!-- END GENERATED TIER-1 RULE BODIES -->";
 
 /**
+ * Provenance marker recording that `prism adopt --seed-agents-md` created this
+ * file. `prism eject` keys on this comment to decide whether a root `AGENTS.md`
+ * is PRISM-seeded (safe to delete) or consumer-authored (must be preserved).
+ * The manifest cannot carry this signal — its keys are `.prism/`-relative
+ * (see `PRISM_OWNED_GLOBS`), and a root `AGENTS.md` is not a `.prism/` path.
+ */
+export const AGENTS_MD_SEEDED_MARKER =
+	"<!-- prism:seeded-agents-md — this AGENTS.md was created by `prism adopt --seed-agents-md`; prism eject will remove it. Delete this line if you want to keep the file after ejecting. -->";
+
+/**
+ * The minimal root `AGENTS.md` body `prism adopt --seed-agents-md` writes when
+ * none exists. Carries the provenance marker plus an empty Tier-1 begin/end
+ * marker pair so the next `pnpm prism:build` run's `syncAgentsMdTier1Block`
+ * finds the pair and fills it via `replaceTier1Block` — no build.ts change
+ * needed, because the file is present after seeding (the early-return at
+ * build.ts:476-478 only fires on an absent file).
+ */
+export function renderSeededAgentsMd(): string {
+	return [
+		"# Agent Behavior Rules",
+		"",
+		AGENTS_MD_SEEDED_MARKER,
+		"",
+		"PRISM manages the generated block below. Run `pnpm prism:build` to fill it",
+		"with the always-on Tier-1 rule bodies your Codex-based agents load. See",
+		"docs/adopting-into-existing-repos.md.",
+		"",
+		`${AGENTS_MD_BLOCK_BEGIN}`,
+		"",
+		`${AGENTS_MD_BLOCK_END}`,
+		"",
+	].join("\n");
+}
+
+/**
  * Basenames of `.prism/rules/*.md` files that must not be inlined into the
  * generated block even though they carry no `paths:` frontmatter. Empty today —
  * the set exists to handle any future Tier-3 rule that lands without `paths:`

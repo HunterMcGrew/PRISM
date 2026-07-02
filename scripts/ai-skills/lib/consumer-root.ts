@@ -213,3 +213,13 @@ export function parseDryRunFlag(argv: string[]): boolean {
 export function parseConfirmFlag(argv: string[]): boolean {
 	return argv.includes("--yes");
 }
+
+/**
+ * Parses the `--seed-agents-md` flag from argv. Same boolean-flag shape as
+ * `parseDryRunFlag`/`parseConfirmFlag` — presence means `true`, absence means
+ * `false`. Used by `adopt.ts` to opt into seeding a minimal root `AGENTS.md`
+ * when one is absent; without it, adopt never creates the file (only warns).
+ */
+export function parseSeedAgentsMdFlag(argv: string[]): boolean {
+	return argv.includes("--seed-agents-md");
+}

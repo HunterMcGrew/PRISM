@@ -18,11 +18,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { renderSeededAgentsMd } from "./agents-md-block";
 import {
 	assertInsideGitRepo,
 	resolveConsumerRoot,
 	parseConsumerFlag,
 	parseDryRunFlag,
+	parseSeedAgentsMdFlag,
 } from "./lib/consumer-root";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { loadSyncManifest } from "./sync-manifest";
@@ -45,6 +47,7 @@ export interface AdoptSummary {
 	seed: SeedSummary;
 	update: UpdateSummary;
 	rootFileNotices: string[];
+	agentsMdSeeded: boolean;
 }
 
 /**
@@ -172,8 +175,9 @@ export async function runAdopt(options: {
 	prismSourceRoot: string;
 	consumerRepoRoot: string;
 	dryRun?: boolean;
+	seedAgentsMd?: boolean;
 }): Promise<AdoptSummary> {
-	const { prismSourceRoot, consumerRepoRoot, dryRun = false } = options;
+	const { prismSourceRoot, consumerRepoRoot, dryRun = false, seedAgentsMd = false } = options;
 
 	const installSeedRoot = path.join(prismSourceRoot, "templates", "install", ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
@@ -216,7 +220,15 @@ export async function runAdopt(options: {
 
 	const rootFileNotices = await collectRootFileNotices(consumerRepoRoot);
 
-	return { pathsProvisioned, seed, update, rootFileNotices };
+	const agentsMdPath = path.join(consumerRepoRoot, "AGENTS.md");
+	const agentsMdAbsent = !(await pathExists(agentsMdPath));
+	const agentsMdSeeded = seedAgentsMd && agentsMdAbsent;
+
+	if (agentsMdSeeded && !dryRun) {
+		await fs.writeFile(agentsMdPath, renderSeededAgentsMd(), "utf8");
+	}
+
+	return { pathsProvisioned, seed, update, rootFileNotices, agentsMdSeeded };
 }
 
 export async function runAdoptCli(): Promise<void> {
@@ -237,16 +249,22 @@ export async function runAdoptCli(): Promise<void> {
 	}
 
 	const dryRun = parseDryRunFlag(argv);
+	const seedAgentsMd = parseSeedAgentsMdFlag(argv);
 
 	// The manifest-exists guard lives in runAdopt so every caller is protected,
 	// not just this CLI path. runAdoptCli relies on runAdopt's guard.
-	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot, dryRun });
+	const summary = await runAdopt({
+		prismSourceRoot: prismRepoRoot,
+		consumerRepoRoot,
+		dryRun,
+		seedAgentsMd,
+	});
 
 	reportSummary(summary, dryRun);
 }
 
 function reportSummary(summary: AdoptSummary, dryRun = false): void {
-	const { pathsProvisioned, seed, update, rootFileNotices } = summary;
+	const { pathsProvisioned, seed, update, rootFileNotices, agentsMdSeeded } = summary;
 	const prefix = dryRun ? "prism:adopt (dry run)" : "prism:adopt";
 
 	if (pathsProvisioned === "written") {
@@ -307,6 +325,14 @@ function reportSummary(summary: AdoptSummary, dryRun = false): void {
 
 	for (const notice of rootFileNotices) {
 		console.log(notice);
+	}
+
+	if (agentsMdSeeded) {
+		console.log(
+			dryRun
+				? `${prefix} would seed a minimal AGENTS.md — run pnpm prism:build to fill its Tier-1 rules block.`
+				: `${prefix} seeded a minimal AGENTS.md — run pnpm prism:build to fill its Tier-1 rules block.`
+		);
 	}
 }
 
