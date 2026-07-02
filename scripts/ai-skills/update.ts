@@ -28,7 +28,13 @@ import {
 	generatePlatformSkills,
 	type RolesDefinitions,
 } from "./generate-skills";
-import { resolveConsumerRoot, parseConsumerFlag } from "./lib/consumer-root";
+import {
+	assertInsideGitRepo,
+	resolveConsumerRoot,
+	parseConsumerFlag,
+	parseDryRunFlag,
+} from "./lib/consumer-root";
+import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
@@ -73,6 +79,12 @@ export interface RunUpdateOptions {
 	consumerRepoRoot: string;
 	prismContentRoot: string;
 	consumerContentRoot: string;
+	/**
+	 * When true, runs the full classification pass and returns the summary a
+	 * real run would produce, without writing, overwriting, or removing any
+	 * file. Defaults to `false` — a real run.
+	 */
+	dryRun?: boolean;
 }
 
 /**
@@ -88,19 +100,12 @@ async function hashFileIfExists(filePath: string): Promise<string | null> {
 }
 
 /**
- * Copies a consumer file to a backup before it is overwritten or removed,
- * preserving a diverged edit. Returns the backup path for the run summary.
- *
- * Never silently destroys a prior backup. `<file>.bak` is the preferred target,
- * but a repeat divergence would clobber a snapshot from an earlier run, so when
- * `<file>.bak` already exists the copy is skipped if its bytes are identical
- * (the snapshot is already preserved) and otherwise written to the next free
- * `<file>.bak.1`, `<file>.bak.2`, … name. Each diverged edit keeps its own
- * durable archive.
+ * Resolves which `.bak` path a diverged file would land at, without writing
+ * it. Shared by the real backup and the dry-run preview so both agree on the
+ * same "next free `.bak`, `.bak.1`, `.bak.2`, …" name — see `backupConsumerFile`
+ * for why a repeat divergence must never clobber an earlier snapshot.
  */
-async function backupConsumerFile(absolutePath: string): Promise<string> {
-	const sourceHash = await hashFile(absolutePath);
-
+async function resolveBackupPath(absolutePath: string, sourceHash: string): Promise<string> {
 	let candidate = `${absolutePath}.bak`;
 	let suffix = 0;
 	while (await pathExists(candidate)) {
@@ -112,6 +117,31 @@ async function backupConsumerFile(absolutePath: string): Promise<string> {
 		candidate = `${absolutePath}.bak.${suffix}`;
 	}
 
+	return candidate;
+}
+
+/**
+ * Copies a consumer file to a backup before it is overwritten or removed,
+ * preserving a diverged edit. Returns the backup path for the run summary.
+ *
+ * Never silently destroys a prior backup. `<file>.bak` is the preferred target,
+ * but a repeat divergence would clobber a snapshot from an earlier run, so when
+ * `<file>.bak` already exists the copy is skipped if its bytes are identical
+ * (the snapshot is already preserved) and otherwise written to the next free
+ * `<file>.bak.1`, `<file>.bak.2`, … name. Each diverged edit keeps its own
+ * durable archive.
+ *
+ * `dryRun` resolves and returns the same path without touching disk — the
+ * caller is previewing what `--dry-run` would do, not doing it.
+ */
+async function backupConsumerFile(absolutePath: string, dryRun: boolean): Promise<string> {
+	const sourceHash = await hashFile(absolutePath);
+	const candidate = await resolveBackupPath(absolutePath, sourceHash);
+
+	if (dryRun || (await pathExists(candidate))) {
+		return candidate;
+	}
+
 	await fs.copyFile(absolutePath, candidate);
 
 	return candidate;
@@ -119,8 +149,13 @@ async function backupConsumerFile(absolutePath: string): Promise<string> {
 
 async function writeIncoming(
 	incomingAbsolute: string,
-	consumerAbsolute: string
+	consumerAbsolute: string,
+	dryRun: boolean
 ): Promise<void> {
+	if (dryRun) {
+		return;
+	}
+
 	await fs.mkdir(path.dirname(consumerAbsolute), { recursive: true });
 	await fs.copyFile(incomingAbsolute, consumerAbsolute);
 }
@@ -143,7 +178,8 @@ async function applyIncomingFile(
 	relativePath: string,
 	prismContentRoot: string,
 	consumerContentRoot: string,
-	recordedHash: string | null
+	recordedHash: string | null,
+	dryRun: boolean
 ): Promise<FileOutcome> {
 	const incomingAbsolute = path.join(prismContentRoot, relativePath);
 	const consumerAbsolute = path.join(consumerContentRoot, relativePath);
@@ -152,7 +188,7 @@ async function applyIncomingFile(
 	const consumerHash = await hashFileIfExists(consumerAbsolute);
 
 	if (consumerHash === null) {
-		await writeIncoming(incomingAbsolute, consumerAbsolute);
+		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
 		return { relativePath, action: "written" };
 	}
@@ -162,13 +198,13 @@ async function applyIncomingFile(
 	}
 
 	if (recordedHash !== null && consumerHash === recordedHash) {
-		await writeIncoming(incomingAbsolute, consumerAbsolute);
+		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
 		return { relativePath, action: "overwritten" };
 	}
 
-	const backupPath = await backupConsumerFile(consumerAbsolute);
-	await writeIncoming(incomingAbsolute, consumerAbsolute);
+	const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
+	await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
 	return { relativePath, action: "backed-up", backupPath };
 }
@@ -181,7 +217,8 @@ async function applyIncomingFile(
 async function applyDeletedFile(
 	relativePath: string,
 	consumerContentRoot: string,
-	recordedHash: string
+	recordedHash: string,
+	dryRun: boolean
 ): Promise<FileOutcome> {
 	const consumerAbsolute = path.join(consumerContentRoot, relativePath);
 	const consumerHash = await hashFileIfExists(consumerAbsolute);
@@ -191,13 +228,17 @@ async function applyDeletedFile(
 	}
 
 	if (consumerHash === recordedHash) {
-		await fs.rm(consumerAbsolute);
+		if (!dryRun) {
+			await fs.rm(consumerAbsolute);
+		}
 
 		return { relativePath, action: "removed" };
 	}
 
-	const backupPath = await backupConsumerFile(consumerAbsolute);
-	await fs.rm(consumerAbsolute);
+	const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
+	if (!dryRun) {
+		await fs.rm(consumerAbsolute);
+	}
 
 	return { relativePath, action: "removed-with-backup", backupPath };
 }
@@ -216,11 +257,18 @@ async function applyDeletedFile(
  * and threads it in as `preloadedManifest` so the file isn't read twice per
  * call; callers that don't have it (the unit tests) omit it and the manifest is
  * loaded here.
+ *
+ * `dryRun` runs the full classification pass — every file still gets the same
+ * `written` / `no-op` / `overwritten` / `backed-up` / `removed` /
+ * `removed-with-backup` decision — but skips the `fs` calls that would carry
+ * it out, including the manifest rewrite. The returned `UpdateSummary` is
+ * identical in shape to a real run, so callers print the same report either way.
  */
 export async function applyFilePass(
 	prismContentRoot: string,
 	consumerContentRoot: string,
-	preloadedManifest?: SyncManifest | null
+	preloadedManifest?: SyncManifest | null,
+	dryRun = false
 ): Promise<UpdateSummary> {
 	const incomingRelativePaths =
 		await listPrismOwnedRelativePaths(prismContentRoot);
@@ -251,7 +299,8 @@ export async function applyFilePass(
 				relativePath,
 				prismContentRoot,
 				consumerContentRoot,
-				recordedHashes.get(relativePath) ?? null
+				recordedHashes.get(relativePath) ?? null,
+				dryRun
 			)
 		);
 	}
@@ -266,15 +315,17 @@ export async function applyFilePass(
 		}
 
 		outcomes.push(
-			await applyDeletedFile(relativePath, consumerContentRoot, recordedHash)
+			await applyDeletedFile(relativePath, consumerContentRoot, recordedHash, dryRun)
 		);
 	}
 
-	await rewriteConsumerManifest(
-		prismContentRoot,
-		consumerContentRoot,
-		consumerManifest
-	);
+	if (!dryRun) {
+		await rewriteConsumerManifest(
+			prismContentRoot,
+			consumerContentRoot,
+			consumerManifest
+		);
+	}
 
 	const backups = outcomes
 		.filter((outcome) => outcome.backupPath !== undefined)
@@ -294,6 +345,18 @@ export async function applyFilePass(
  * and validated up front so a bad config fails fast with nothing written,
  * instead of half-applying the file pass and throwing at the very end (see plan
  * prism-242 Decision "Adopt-path seam").
+ *
+ * Config schema validation and the git-repo check run before any of that
+ * resolution — a hand-edited config that violates `config.schema.json`
+ * (a bad `ticketPrefix` pattern, an unrecognized `techStack` entry) previously
+ * passed `loadConfig`'s narrower structural check and only surfaced later as a
+ * leftover-token build failure pointing at rendered platform output, nowhere
+ * near the config field that caused it. Both guards name what's wrong and
+ * where before touching disk.
+ *
+ * `dryRun` passes through to `applyFilePass` and to the platform refresh
+ * steps' own `checkMode` (they already support a read-only preview for drift
+ * detection) — every write in the whole `runUpdate` pipeline is guarded.
  */
 export async function runUpdate(
 	options: RunUpdateOptions
@@ -303,7 +366,11 @@ export async function runUpdate(
 		consumerRepoRoot,
 		prismContentRoot,
 		consumerContentRoot,
+		dryRun = false,
 	} = options;
+
+	assertInsideGitRepo(consumerRepoRoot);
+	validateConsumerConfigAgainstSchema(consumerRepoRoot, prismRepoRoot);
 
 	// Resolve and validate everything the platform refresh needs before the file
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
@@ -333,21 +400,24 @@ export async function runUpdate(
 	const summary = await applyFilePass(
 		prismContentRoot,
 		consumerContentRoot,
-		consumerManifest
+		consumerManifest,
+		dryRun
 	);
 
 	await refreshPlatformDirs(
 		consumerContentRoot,
 		overlayContentRoot,
 		platformDirs,
-		tokenMap
+		tokenMap,
+		dryRun
 	);
 
 	await refreshPlatformSkills(
 		prismRepoRoot,
 		consumerRepoRoot,
 		consumerPathDefinitions,
-		tokenMap
+		tokenMap,
+		dryRun
 	);
 
 	return summary;
@@ -423,17 +493,19 @@ function resolveConsumerSkillTargetRoots(
  * over the rendered output.
  *
  * The roster source is the PRISM checkout, not the consumer — the consumer
- * renders whatever personas PRISM ships. `checkMode` is always `false`: this is
- * a write, never a drift check. The Thrive-literal guard is deliberately not run
- * here — a consumer's output legitimately contains "Thrive"-flavored words, so
- * only the leftover-token guard applies (see plan prism-242 Decision "Two
- * guards, not one").
+ * renders whatever personas PRISM ships. `checkMode` mirrors the caller's
+ * `dryRun` — `false` for a real `runUpdate` write, `true` when previewing via
+ * `--dry-run`, and the same flag `prism:build`'s own drift check uses. The
+ * Thrive-literal guard is deliberately not run here — a consumer's output
+ * legitimately contains "Thrive"-flavored words, so only the leftover-token
+ * guard applies (see plan prism-242 Decision "Two guards, not one").
  */
 async function refreshPlatformSkills(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
 	consumerPathDefinitions: PathDefinitions,
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	dryRun: boolean
 ): Promise<void> {
 	const sourceSkillsRoot = path.join(prismRepoRoot, ".ai-skills", "skills");
 	if (!(await pathExists(sourceSkillsRoot))) {
@@ -483,9 +555,17 @@ async function refreshPlatformSkills(
 			claudeAgents: true,
 			codexConfig: true,
 		},
-		checkMode: false,
+		checkMode: dryRun,
 		changedPaths,
 	});
+
+	if (dryRun) {
+		// A dry-run preview leaves the rendered roster on disk unchanged (stale or
+		// absent), so scanning it for leftover tokens would report false positives
+		// or miss real ones. The leftover-token guard only makes sense against
+		// output this pass actually wrote.
+		return;
+	}
 
 	const leftoverTokenViolations = await runLeftoverTokenGuard(consumerRepoRoot, [
 		targetRoots.claude,
@@ -521,17 +601,22 @@ const OVERLAY_SUBPATH = "custom";
  * collision structurally impossible, and each pass carries its own
  * `.ai-skill-generated` marker so orphan cleanup stays scoped to its own tree.
  * The overlay pass is skipped when the consumer ships no `.prism/custom`.
+ *
+ * `dryRun` passes straight through as `syncAllPlatformContentCopies`'s own
+ * `checkModeArg` — that function already supports a read-only preview mode
+ * for `prism:build`'s drift check, so no new write-guarding is needed here.
  */
 async function refreshPlatformDirs(
 	consumerContentRoot: string,
 	overlayContentRoot: string,
 	platformDirs: ReturnType<typeof buildPlatformDirs>,
-	tokenMap: Map<string, string>
+	tokenMap: Map<string, string>,
+	dryRun: boolean
 ): Promise<void> {
 	await syncAllPlatformContentCopies(
 		consumerContentRoot,
 		platformDirs,
-		false,
+		dryRun,
 		[],
 		tokenMap
 	);
@@ -540,7 +625,7 @@ async function refreshPlatformDirs(
 		await syncAllPlatformContentCopies(
 			overlayContentRoot,
 			platformDirs,
-			false,
+			dryRun,
 			[],
 			tokenMap,
 			OVERLAY_SUBPATH
@@ -693,17 +778,20 @@ export async function runUpdateCli(): Promise<void> {
 		);
 	}
 
+	const dryRun = parseDryRunFlag(argv);
+
 	const summary = await runUpdate({
 		prismRepoRoot,
 		consumerRepoRoot,
 		prismContentRoot,
 		consumerContentRoot,
+		dryRun,
 	});
 
-	reportSummary(summary);
+	reportSummary(summary, dryRun);
 }
 
-function reportSummary(summary: UpdateSummary): void {
+function reportSummary(summary: UpdateSummary, dryRun = false): void {
 	const counts = summary.outcomes.reduce<Record<string, number>>(
 		(acc, outcome) => {
 			acc[outcome.action] = (acc[outcome.action] ?? 0) + 1;
@@ -716,11 +804,17 @@ function reportSummary(summary: UpdateSummary): void {
 	const parts = Object.entries(counts)
 		.map(([action, count]) => `${count} ${action}`)
 		.join(", ");
-	console.log(`prism:update complete — ${parts || "no changes"}.`);
+	console.log(
+		dryRun
+			? `prism:update (dry run) — would apply ${parts || "no changes"}.`
+			: `prism:update complete — ${parts || "no changes"}.`
+	);
 
 	if (summary.backups.length > 0) {
 		console.log(
-			`Preserved ${summary.backups.length} diverged file(s) as .bak:`
+			dryRun
+				? `Would preserve ${summary.backups.length} diverged file(s) as .bak:`
+				: `Preserved ${summary.backups.length} diverged file(s) as .bak:`
 		);
 		for (const backup of summary.backups) {
 			console.log(`  ${backup}`);
