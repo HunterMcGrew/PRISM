@@ -113,10 +113,11 @@ async function fileExists(
 
 async function writeConsumerManifest(
 	consumerContentRoot: string,
-	files: Record<string, string>
+	files: Record<string, string>,
+	prismVersion = "1.0.0"
 ): Promise<void> {
 	const manifest: SyncManifest = {
-		prismVersion: "1.0.0",
+		prismVersion,
 		sourceCommit: "abc123",
 		generatedAt: "2026-01-01T00:00:00.000Z",
 		files: Object.fromEntries(
@@ -128,6 +129,28 @@ async function writeConsumerManifest(
 	};
 	await writeFile(
 		consumerContentRoot,
+		SYNC_MANIFEST_FILENAME,
+		`${JSON.stringify(manifest, null, "\t")}\n`
+	);
+}
+
+/**
+ * Writes a PRISM source manifest recording only `prismVersion` — enough for
+ * `computeVersionDelta`'s `sourceManifest?.prismVersion` read, without
+ * needing every source file hashed into `files`.
+ */
+async function writeSourceManifestVersion(
+	prismContentRoot: string,
+	prismVersion: string
+): Promise<void> {
+	const manifest: SyncManifest = {
+		prismVersion,
+		sourceCommit: "source-commit",
+		generatedAt: "2026-01-01T00:00:00.000Z",
+		files: {},
+	};
+	await writeFile(
+		prismContentRoot,
 		SYNC_MANIFEST_FILENAME,
 		`${JSON.stringify(manifest, null, "\t")}\n`
 	);
@@ -387,6 +410,55 @@ test("rewrites the consumer manifest to the new PRISM base hashes after the run"
 	});
 });
 
+test("applyFilePass reports a version delta when the consumer's prior manifest is older", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeFile(prismContentRoot, "rules/a.md", "# A\n");
+		await writeSourceManifestVersion(prismContentRoot, "0.7.0");
+		await writeFile(consumerContentRoot, "rules/a.md", "# A\n");
+		await writeConsumerManifest(consumerContentRoot, { "rules/a.md": "# A\n" }, "0.6.0");
+
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+		assert.deepEqual(summary.versionDelta, {
+			previous: "0.6.0",
+			current: "0.7.0",
+			changed: true,
+		});
+	});
+});
+
+test("applyFilePass reports no delta on first-adopt (no prior manifest)", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeFile(prismContentRoot, "rules/a.md", "# A\n");
+		await writeSourceManifestVersion(prismContentRoot, "0.7.0");
+
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+		assert.deepEqual(summary.versionDelta, {
+			previous: null,
+			current: "0.7.0",
+			changed: false,
+		});
+	});
+});
+
+test("applyFilePass reports no delta when the consumer is already current", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeFile(prismContentRoot, "rules/a.md", "# A\n");
+		await writeSourceManifestVersion(prismContentRoot, "0.7.0");
+		await writeFile(consumerContentRoot, "rules/a.md", "# A\n");
+		await writeConsumerManifest(consumerContentRoot, { "rules/a.md": "# A\n" }, "0.7.0");
+
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+		assert.deepEqual(summary.versionDelta, {
+			previous: "0.7.0",
+			current: "0.7.0",
+			changed: false,
+		});
+	});
+});
+
 test("assertSourceIsPlausible refuses when the source has no PRISM-owned files", async () => {
 	await withTempRoots(async ({ prismContentRoot }) => {
 		await assert.rejects(
@@ -613,6 +685,36 @@ test("runUpdate --dry-run reports a diverged file as backed-up without writing a
 				await fileExists(consumerContentRoot, "rules/diverged.md.bak"),
 				false,
 				"dry-run must not write a .bak"
+			);
+		}
+	);
+});
+
+test("runUpdate --dry-run reports the same version delta a real run would record", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeSourceManifestVersion(prismContentRoot, "0.7.0");
+			await writeConsumerManifest(consumerContentRoot, {}, "0.6.0");
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			assert.deepEqual(summary.versionDelta, {
+				previous: "0.6.0",
+				current: "0.7.0",
+				changed: true,
+			});
+			const rawManifest = await readFile(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+			assert.equal(
+				(JSON.parse(rawManifest) as SyncManifest).prismVersion,
+				"0.6.0",
+				"dry-run must not rewrite the sync manifest even though the delta was computed"
 			);
 		}
 	);

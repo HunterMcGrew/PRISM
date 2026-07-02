@@ -67,7 +67,9 @@ See [workflow.md](./workflow.md) for the full ticket-to-ship flow, and [personas
 npx @huntermcgrew/prism update
 ```
 
-`prism update` pulls PRISM's latest canonical content into your already-adopted repo. It's idempotent — running it twice in a row produces the same result. PRISM-owned files are overwritten when you haven't diverged from the last-known base; files you've edited are preserved as `.bak` snapshots.
+`prism update` pulls PRISM's latest canonical content into your already-adopted repo. It's idempotent — running it twice in a row produces the same result. PRISM-owned files are overwritten when you haven't diverged from the last-known base; files you've edited are preserved as `.bak` snapshots. When your version changes, the run prints the delta and points at `CHANGELOG.md`.
+
+For CI or multi-machine setups, pin to a specific version instead of `@latest` — see [adopt-prism.md](./adopt-prism.md#recommended-npx) for when and how to pin.
 
 ## Config reference
 

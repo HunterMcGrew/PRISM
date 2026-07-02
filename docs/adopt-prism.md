@@ -40,16 +40,19 @@ After this runs, open Claude Code in `your-repo` and the personas are available:
 npx @huntermcgrew/prism update
 ```
 
-`prism update` refreshes canonical content under `.prism/` and regenerates platform outputs. It's idempotent — running it twice in a row produces the same result.
+`prism update` refreshes canonical content under `.prism/` and regenerates platform outputs. It's idempotent — running it twice in a row produces the same result. When your prior version differs from the one you're updating to, the run prints the delta (e.g. `PRISM 0.6.0 -> 0.7.0 — see CHANGELOG.md for what changed`) so you know what changed before you read the diff.
 
 **Pinning vs. latest.** npm versions are immutable — a published version never changes after release. We recommend pinning to a specific version so your team adopts at a known point and updates intentionally:
 
 ```bash
-npx @huntermcgrew/prism@1.0.0 adopt   # pinned — reproducible across machines
-npx @huntermcgrew/prism@latest adopt  # always pulls the current release
+npx @huntermcgrew/prism@1.0.0 adopt    # pinned — reproducible across machines
+npx @huntermcgrew/prism@latest adopt   # always pulls the current release
+
+npx @huntermcgrew/prism@1.1.0 update   # pinned — update to a known, reviewed version
+npx @huntermcgrew/prism@latest update  # always pulls the current release
 ```
 
-Pinning is especially useful for teams adopting PRISM in a CI context or across multiple machines. When you're ready to update, pin to the next version deliberately.
+Pinning is especially useful for teams adopting PRISM in a CI context or across multiple machines. When you're ready to update, pin to the next version deliberately — read the CHANGELOG entries between your current version and the one you're pinning to first, since that's exactly the range the delta line points you at.
 
 ## Alternative install methods
 
