@@ -684,6 +684,11 @@ test("runUpdate refuses a config.json missing a required field", async () => {
 					return true;
 				}
 			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
 		}
 	);
 });

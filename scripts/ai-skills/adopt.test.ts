@@ -772,7 +772,7 @@ test("runAdopt refuses a config.json with a ticketPrefix that fails the schema p
 
 test("runAdopt refuses a config.json with an unrecognized techStack entry", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
 			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			await writeFile(
@@ -791,6 +791,11 @@ test("runAdopt refuses a config.json with an unrecognized techStack entry", asyn
 					);
 					return true;
 				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/some-rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
 			);
 		}
 	);

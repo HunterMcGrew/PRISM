@@ -36,6 +36,30 @@ Adopt/update mutate files immediately with no preview, don't re-validate config,
 - 2026-07-02 [hmcgrew/376-pre-write-safety]: Plan created — read adopt.ts/update.ts/cli.ts, existing test patterns, config.schema.json, and lib/consumer-root.ts's git-probe pattern before designing the three seams.
 - 2026-07-02 [hmcgrew/376-pre-write-safety]: Implemented all three seams — `--dry-run` threaded through adopt.ts/update.ts/utils.ts (`ensureConsumerPathDefinitions`) and generate-skills.ts/build.ts's existing `checkMode`; `lib/config-schema-validate.ts` added (reads `config.schema.json` directly, no hand-maintained mirror, no new dependency) and wired into `runUpdate`/`runAdopt` before any write; `assertInsideGitRepo` added to `lib/consumer-root.ts` and wired the same way. Existing `withTempRoots`/`withTempRepoRoots` test fixtures in adopt.test.ts/update.test.ts/cli.test.ts needed `git init` + a copy of the real schema file added — those fixtures previously ran outside a git repo and without a schema file, which the new upfront guards now correctly reject.
 - 2026-07-02 [hmcgrew/376-pre-write-safety]: README command table and docs/adopt-prism.md updated with `--dry-run` usage and a "Safety checks before any write" section covering config validation and the git-repo check.
+- 2026-07-02 [hmcgrew/376-pre-write-safety]: Briar self-review — verified all fs-write paths in adopt.ts/update.ts/utils.ts/generate-skills.ts/build.ts are dryRun/checkMode-gated, git-repo + schema-validation checks run before any write in both runAdopt and runUpdate, and local `prism:test` matches the plan's claimed 431/427/4 (4 pre-existing, 0 new). Two minor findings (test coverage gap, redundant existence check) — see `## Review Issues`.
+- 2026-07-02 [hmcgrew/376-pre-write-safety]: Fixed the test-coverage minor — added the write-nothing assertion to the techStack (`adopt.test.ts`) and missing-required-field (`update.test.ts`) schema-failure tests. Deferred the `backupConsumerFile` redundant-check minor — the `pathExists` half is load-bearing for the hash-match early-return path, not fully dead. `prism:test` still 431/427/4 (0 new failures); `prism:build` clean.
+
+---
+
+## Review Issues
+
+### Schema-validation tests don't all assert "nothing written"
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/adopt.test.ts:773` (techStack test), `scripts/ai-skills/update.test.ts:1116` (missing-required-field test)
+- **Problem:** The `ticketPrefix` pattern-failure tests in both `adopt.test.ts` and `update.test.ts` assert both the error message and that no file was written. The sibling `techStack` enum test (`adopt.test.ts`) and the missing-required-field test (`update.test.ts`) only assert the error message — they don't confirm the write-nothing guarantee for those specific failure modes.
+- **Suggested fix:** Add the same `fileExists(...) === false` assertion used in the pattern-failure tests to these two tests, for consistency and full coverage of the "fails before any write" AC item across all schema-validation failure shapes.
+- **Fixed in:** added the matching `fileExists(...) === false` assertion (same shape as the sibling `ticketPrefix` tests) to both tests.
+
+### Redundant existence check in `backupConsumerFile`
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `scripts/ai-skills/update.ts:141`
+- **Problem:** `if (dryRun || (await pathExists(candidate))) { return candidate; }` — after `resolveBackupPath` returns via its loop-exit path (the common case), `pathExists(candidate)` is already guaranteed `false` by that function's own loop invariant (the loop only exits when the candidate path doesn't exist). The `pathExists(candidate)` half of this condition is therefore dead code for that path and only actually matters for the hash-match early-return case inside `resolveBackupPath` — which already returns a path guaranteed to exist. Harmless (an extra `fs.stat`), not a correctness bug, but reads as though re-checking existence is doing real work when the invariant already guarantees the answer.
+- **Suggested fix:** Optional cleanup — `resolveBackupPath` could return both the candidate path and whether it already exists (or the two cases could be split explicitly), removing the redundant recheck. Not blocking; a Minor readability note.
+- **Deferred reason:** out of scope for this fix pass — the `pathExists` check is not fully dead (it matters on `resolveBackupPath`'s hash-match early-return path); touching it risks a behavioral change beyond a readability cleanup without deeper verification than this pass calls for.
 
 ---
 
