@@ -49,7 +49,11 @@ function gitCommitAll(dir: string): void {
 async function makeTempRoot(label: string): Promise<string> {
 	const dir = await fs.mkdtemp(path.join(os.tmpdir(), `prism-consumer-${label}-`));
 
-	return realpathSync(dir);
+	// realpathSync.native canonicalizes Windows 8.3 short names (RUNNER~1 ->
+	// runneradmin) to match the long form git rev-parse --show-toplevel returns
+	// on windows-latest CI runners; it still resolves symlinks like the JS impl,
+	// so the macOS /var -> /private/var case above continues to work.
+	return realpathSync.native(dir);
 }
 
 // --- precedence: explicit flag and cwd-default (no git) ---
