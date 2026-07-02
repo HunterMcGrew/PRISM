@@ -49,6 +49,25 @@ You have two options:
 1. **Leave it as-is.** If your existing `AGENTS.md` already covers what your Codex agents need, there's nothing to do. PRISM's rules still apply to Claude Code sessions (which read `.prism/rules/` directly through the generated skills), just not to Codex sessions reading only `AGENTS.md`.
 2. **Add PRISM's generated block by hand.** Run `pnpm prism:build` (or `prism update` again after making a first pass) to see what the generated Tier-1 block would look like, then paste it into your `AGENTS.md` yourself, wrapped in the same begin/end markers PRISM uses. Once that block exists in your file, future `prism update` runs will keep it current automatically — the sync only skips *creating* the file, not updating a block that's already present in one.
 
+### When you don't have an AGENTS.md: the opt-in auto-seed
+
+If `AGENTS.md` is absent, you can skip the hand-authoring step above entirely by passing `--seed-agents-md` to adopt:
+
+```bash
+prism adopt --seed-agents-md
+```
+
+**What the flag does.** When `AGENTS.md` doesn't exist at your repo root, adopt writes a minimal one — a heading, a provenance comment (see below), and an empty pair of the same begin/end markers `pnpm prism:build` already knows how to fill. The next time you run `pnpm prism:build`, that empty pair gets populated with the full Tier-1 rule bodies, exactly as if you'd pasted the block in by hand per option 2 above. Every build after that keeps it current automatically, the same as any other `AGENTS.md` that already carries the markers.
+
+**The no-overwrite guarantee still holds.** The flag only ever writes when `AGENTS.md` is absent. If a file already exists — hand-written, seeded by something else, whatever — adopt leaves it byte-for-byte untouched, with or without `--seed-agents-md` on the command line. This is opt-in, not automatic: without the flag, adopt behaves exactly as described above (it prints the absent-`AGENTS.md` warning and creates nothing).
+
+**Provenance and reversibility.** A seeded file carries an HTML-comment marker (`<!-- prism:seeded-agents-md ... -->`) recording that `prism adopt --seed-agents-md` created it. `prism eject` reads that marker to decide what to do with the file:
+
+- **Marker present** — the file is PRISM's, so `eject` removes it and reports that it did.
+- **Marker absent** — either you wrote the file yourself, or you deleted the marker line on purpose. Either way, `eject` treats it as yours and preserves it.
+
+That second case is the deliberate escape hatch: if you want to keep a seeded `AGENTS.md` after ejecting PRISM, delete the marker comment line before you run `prism eject`. Once the marker's gone, the file is yours as far as PRISM is concerned.
+
 ## Skill-prefix rules and how consumer-owned skills coexist
 
 Every skill PRISM generates uses the `prism-` prefix — `prism-code-dev`, `prism-architect`, and so on. This is the whole coexistence mechanism for skills: PRISM only ever regenerates or deletes files under that prefix, marked with its own generated-file marker. A skill you or another toolkit already installed under any other name — an org-specific prefix like `acme-code-review`, or a fully custom name — is invisible to PRISM's sync. It's never read, never overwritten, never deleted.
