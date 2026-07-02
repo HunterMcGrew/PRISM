@@ -150,7 +150,7 @@ PRISM's coexistence mechanics — never overwriting a consumer's existing `AGENT
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-07-02 (`pnpm run prism:build`, 471/471 tests)
-- [ ] PR description up to date — PR opened this lane, see below
+- [x] PR description up to date — PR #392 opened this lane
 - [ ] Lasting decisions promoted to architect context (if applicable — none pending; the re-scope Decision already carries a `no promotion needed` verdict)
 
 **Last updated:** 2026-07-02
