@@ -83,6 +83,7 @@ PRISM's coexistence mechanics — never overwriting a consumer's existing `AGENT
 - 2026-07-02 [hmcgrew/374-coexistence-docs]: Created plan for issue #374; verified adopt/update/ownership mechanics against `scripts/ai-skills/adopt.ts`, `update.ts`, `ownership.ts`, `build.ts`, `eject.ts` before writing.
 - 2026-07-02 [hmcgrew/374-coexistence-docs]: Wrote `docs/adopting-into-existing-repos.md`; linked from `README.md` and `docs/adopt-prism.md`; added two Cross-Reference Map rows in `documentation.md`. `prism:crossref-lint` clean.
 - 2026-07-02 [hmcgrew/374-coexistence-docs]: Winston re-scoped the Clove adopt-warning task — issue #374's "seed skipped" premise was backwards; verified adopt never seeds root `AGENTS.md`/`CLAUDE.md` (traced `adopt.ts`, `build.ts:468-497`, `init.ts`, the `.tmpl` twins). Accurate warning now fires on *absent* `AGENTS.md` (Codex gap); folded the `eject.ts` seeding-claim fix into the same lane; escalated seed-a-fresh-`AGENTS.md` as `OPEN — needs Hunter`. See Decision "Issue #374's warning premise was backwards".
+- 2026-07-02 [hmcgrew/374-coexistence-docs]: Implemented Clove's re-scoped tasks — `adopt.ts` now returns `AdoptSummary.rootFileNotices` (absent/present `AGENTS.md` notices, no `CLAUDE.md` notice) and prints them via `reportSummary`; `eject.ts`'s `collectRootFileNotices` no longer claims PRISM seeded `CLAUDE.md`. Added `adopt.test.ts` coverage for both notice branches. `pnpm run prism:test` (471/471), `prism:check-types`, `prism:build`, `prism:crossref-lint` all clean.
 
 ---
 
@@ -90,7 +91,7 @@ PRISM's coexistence mechanics — never overwriting a consumer's existing `AGENT
 
 ### `eject.ts` claims CLAUDE.md is "seeded by PRISM" — no seed path exists
 
-- **Status:** `open` (fix folded into Clove task 3 this lane — see Decisions "eject.ts CLAUDE.md notice folded in")
+- **Status:** `fixed` — **Fixed in:** `scripts/ai-skills/eject.ts` `collectRootFileNotices` notice + JSDoc corrected; `hmcgrew/374-coexistence-docs`
 - **Severity:** Low
 - **Confidence:** `High` (Confirmed — verified absence across every write path)
 - **Environment:** `scripts/ai-skills/eject.ts:411-414` (JSDoc) and `:430` (notice string)
@@ -112,16 +113,16 @@ PRISM's coexistence mechanics — never overwriting a consumer's existing `AGENT
 
 ### Behavioral
 
-- [ ] Given a consumer repo with **no** `AGENTS.md` at the root, When `prism adopt` runs, Then a notice prints explaining PRISM's always-on rules are not reaching Codex-based agents and pointing at `docs/adopting-into-existing-repos.md`, and adopt still completes successfully (REQ-1)
-- [ ] Given a consumer repo with a pre-existing `AGENTS.md`, When `prism adopt` runs, Then an informational notice prints saying the file was left untouched and to run `pnpm prism:build` to inject the Tier-1 block, and adopt still completes successfully (REQ-1)
-- [ ] Given a consumer repo with or without a `CLAUDE.md`, When `prism adopt` runs, Then no `CLAUDE.md` notice prints (REQ-1)
-- [ ] Given `prism eject` runs on a repo with a `CLAUDE.md`, When the eject report prints, Then the `CLAUDE.md` notice does not claim PRISM seeded the file (Debug-1)
-- [ ] Given the new doc, When a reader follows any relative link inside it or into it from `README.md`/`docs/adopt-prism.md`, Then the link resolves (REQ-1)
+- [x] Given a consumer repo with **no** `AGENTS.md` at the root, When `prism adopt` runs, Then a notice prints explaining PRISM's always-on rules are not reaching Codex-based agents and pointing at `docs/adopting-into-existing-repos.md`, and adopt still completes successfully (REQ-1)
+- [x] Given a consumer repo with a pre-existing `AGENTS.md`, When `prism adopt` runs, Then an informational notice prints saying the file was left untouched and to run `pnpm prism:build` to inject the Tier-1 block, and adopt still completes successfully (REQ-1)
+- [x] Given a consumer repo with or without a `CLAUDE.md`, When `prism adopt` runs, Then no `CLAUDE.md` notice prints (REQ-1)
+- [x] Given `prism eject` runs on a repo with a `CLAUDE.md`, When the eject report prints, Then the `CLAUDE.md` notice does not claim PRISM seeded the file (Debug-1)
+- [x] Given the new doc, When a reader follows any relative link inside it or into it from `README.md`/`docs/adopt-prism.md`, Then the link resolves (REQ-1)
 
 ### Non-behavioral
 
-- [ ] `pnpm run prism:crossref-lint` passes with the new doc and its inbound/outbound links
-- [ ] `pnpm run prism:test` and `pnpm run prism:check-types` pass with Clove's warning + test added
+- [x] `pnpm run prism:crossref-lint` passes with the new doc and its inbound/outbound links
+- [x] `pnpm run prism:test` and `pnpm run prism:check-types` pass with Clove's warning + test added
 
 ### AC Adjustments
 
@@ -141,15 +142,15 @@ PRISM's coexistence mechanics — never overwriting a consumer's existing `AGENT
 ## PR Readiness
 
 - [x] Docs written and linked (Eli's half)
-- [ ] Adopt-time warning implemented (Clove's half)
-- [ ] Test added alongside `adopt.test.ts` (Clove's half)
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries — one `open` entry above, low severity, doc-only fix recommended)
-- [ ] Build passes — last run: not yet run (docs-only change so far; Clove runs full build after code lands)
-- [ ] PR description up to date — PR not yet opened (Clove opens after code lands, per `.claude/rules/skill-routing.md § Authors ship, reviewers review`)
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Adopt-time warning implemented (Clove's half)
+- [x] Test added alongside `adopt.test.ts` (Clove's half)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-02 (`pnpm run prism:build`, 471/471 tests)
+- [ ] PR description up to date — PR opened this lane, see below
+- [ ] Lasting decisions promoted to architect context (if applicable — none pending; the re-scope Decision already carries a `no promotion needed` verdict)
 
 **Last updated:** 2026-07-02

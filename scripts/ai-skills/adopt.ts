@@ -44,6 +44,7 @@ export interface AdoptSummary {
 	pathsProvisioned: "written" | "ok";
 	seed: SeedSummary;
 	update: UpdateSummary;
+	rootFileNotices: string[];
 }
 
 /**
@@ -101,6 +102,32 @@ async function walkAndSeed(
 			}
 		}
 	}
+}
+
+/**
+ * Checks the consumer's root `AGENTS.md` for the Codex-reach gap adopt never
+ * closes on its own. adopt never seeds or edits `AGENTS.md` — an absent file
+ * means PRISM's always-on Tier-1 rules never reach Codex-based agents (Codex
+ * auto-loads only `AGENTS.md`); a present file is left untouched by adopt and
+ * only receives the generated Tier-1 block when `pnpm prism:build` runs.
+ *
+ * `CLAUDE.md` gets no notice in either state — adopt never creates or touches
+ * it, and Claude-based agents load `.prism/rules/` directly, so there is no
+ * gap to surface.
+ */
+async function collectRootFileNotices(consumerRepoRoot: string): Promise<string[]> {
+	const agentsMdPath = path.join(consumerRepoRoot, "AGENTS.md");
+	const agentsMdExists = await pathExists(agentsMdPath);
+
+	if (!agentsMdExists) {
+		return [
+			"prism adopt: no AGENTS.md found at repo root — PRISM's always-on rules are not reaching Codex-based agents (Codex auto-loads only AGENTS.md). Claude-based agents are unaffected (they load .prism/rules/ directly). See docs/adopting-into-existing-repos.md to add an AGENTS.md by hand.",
+		];
+	}
+
+	return [
+		"prism adopt: existing AGENTS.md left untouched — run pnpm prism:build to inject PRISM's generated Tier-1 rules block into it, then review the marked block. See docs/adopting-into-existing-repos.md.",
+	];
 }
 
 /**
@@ -187,7 +214,9 @@ export async function runAdopt(options: {
 		dryRun,
 	});
 
-	return { pathsProvisioned, seed, update };
+	const rootFileNotices = await collectRootFileNotices(consumerRepoRoot);
+
+	return { pathsProvisioned, seed, update, rootFileNotices };
 }
 
 export async function runAdoptCli(): Promise<void> {
@@ -217,7 +246,7 @@ export async function runAdoptCli(): Promise<void> {
 }
 
 function reportSummary(summary: AdoptSummary, dryRun = false): void {
-	const { pathsProvisioned, seed, update } = summary;
+	const { pathsProvisioned, seed, update, rootFileNotices } = summary;
 	const prefix = dryRun ? "prism:adopt (dry run)" : "prism:adopt";
 
 	if (pathsProvisioned === "written") {
@@ -274,6 +303,10 @@ function reportSummary(summary: AdoptSummary, dryRun = false): void {
 		for (const backup of update.backups) {
 			console.log(`  ${backup}`);
 		}
+	}
+
+	for (const notice of rootFileNotices) {
+		console.log(notice);
 	}
 }
 

@@ -827,6 +827,70 @@ test("runAdopt refuses a config.json with an unrecognized techStack entry", asyn
 	);
 });
 
+// --- root-file coexistence notices (issue #374) ---
+
+test("runAdopt reports the absent-AGENTS.md notice and no CLAUDE.md notice when neither file exists", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.rootFileNotices.length, 1);
+			assert.ok(
+				summary.rootFileNotices[0].includes("no AGENTS.md found at repo root"),
+				`expected the absent-AGENTS.md notice, got: ${summary.rootFileNotices.join(" | ")}`
+			);
+			assert.ok(
+				summary.rootFileNotices[0].includes("docs/adopting-into-existing-repos.md"),
+				"absent-AGENTS.md notice points at the coexistence doc"
+			);
+			assert.ok(
+				!summary.rootFileNotices.some((n) => n.includes("CLAUDE.md")),
+				"no CLAUDE.md notice fires when CLAUDE.md is absent"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				true,
+				"adopt still completes successfully alongside the notice"
+			);
+		}
+	);
+});
+
+test("runAdopt reports the present-AGENTS.md notice and no CLAUDE.md notice when both files exist", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			await writeFile(consumerRepoRoot, "AGENTS.md", "# AGENTS\n");
+			await writeFile(consumerRepoRoot, "CLAUDE.md", "# CLAUDE.md\n");
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.rootFileNotices.length, 1);
+			assert.ok(
+				summary.rootFileNotices[0].includes("existing AGENTS.md left untouched"),
+				`expected the present-AGENTS.md notice, got: ${summary.rootFileNotices.join(" | ")}`
+			);
+			assert.ok(
+				summary.rootFileNotices[0].includes("pnpm prism:build"),
+				"present-AGENTS.md notice points at the build-time injection step"
+			);
+			assert.ok(
+				!summary.rootFileNotices.some((n) => n.includes("CLAUDE.md")),
+				"no CLAUDE.md notice fires when CLAUDE.md is present"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				true,
+				"adopt still completes successfully alongside the notice"
+			);
+		}
+	);
+});
+
 // --- git-repo check tests (issue #376) ---
 
 test("runAdopt fails fast when the consumer directory is not inside a git repository", async () => {
