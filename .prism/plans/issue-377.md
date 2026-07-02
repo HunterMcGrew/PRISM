@@ -167,6 +167,20 @@ Docs tasks depend on Clove's command being implemented; sequence Eli after Clove
 - 2026-07-02 [hmcgrew/377-prism-eject]: Winston planned `prism eject` deletion semantics — delete set mirrors `classifyPath`, diverged files preserved as `.bak`, marker+prefix-gated skill removal, dry-run-by-default with `--yes`. Command is a thin composition of existing tested primitives (`applyDeletedFile`, `removeDeletedManagedSkills` marker gate).
 - 2026-07-02 [hmcgrew/377-prism-eject]: Clove implemented `scripts/ai-skills/eject.ts` (`runEject`/`runEjectCli`/`formatEjectReport`), exported `applyDeletedFile`/`backupConsumerFile`/`resolveBackupPath`/`hashFileIfExists`/`resolveConsumerSkillTargetRoots` from `update.ts` and `removeDeletedManagedAgentFiles` from `generate-skills.ts` for reuse, added `parseConfirmFlag` to `lib/consumer-root.ts`, and wired `eject` into `cli.ts` and `package.json`. See Decisions below for the prefix+marker gate fix a test caught.
 - 2026-07-02 [hmcgrew/377-prism-eject]: Eli documented `prism eject` in README's consumer CLI table and added the "Ejecting PRISM" section to `docs/adopt-prism.md`.
+- 2026-07-02 [hmcgrew/377-prism-eject]: Clove fixed the Briar-flagged under-deletion gap — `eject.ts`'s discarded `codexConfigPath` is now used to remove the generated `.codex/codex-config.toml` behind the `GENERATED_HEADER_LINE` safety check and `previewOnly` gate, reported via `EjectSkillOutcome`. Added 3 tests covering removal, preview/dry-run parity, and header-less preservation.
+
+---
+
+## Review Issues
+
+### Eject leaves a stale generated artifact behind (.codex/codex-config.toml)
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/eject.ts:201-224` (pre-fix line range)
+- **Problem:** `runSkillRemovalPass` destructured and discarded `codexConfigPath` from `resolveConsumerSkillTargetRoots` (`void _codexConfigPath`), so the generated `.codex/codex-config.toml` was never removed on eject — contradicting task 6's explicit scope ("plus the `codexConfigFile`") and leaving a stale PRISM artifact behind.
+- **Suggested fix:** Read the file if present, confirm it carries `GENERATED_HEADER_LINE` (same safety principle as the marker gate), remove it behind `previewOnly`, and report it as an `EjectSkillOutcome`.
+- **Fixed in:** `collectCodexConfigOutcome` in `eject.ts`, called from `runSkillRemovalPass`. Checks `GENERATED_HEADER_LINE` via `readFileIfExists`, gates the `fs.rm` on `previewOnly`, and pushes a `removed` / `skipped-no-marker` outcome. Covered by 3 new tests in `eject.test.ts`: removal on a confirmed run, preview/dry-run parity (previewed but not removed), and preservation of a `codex-config.toml` without the header line.
 
 ---
 
@@ -204,9 +218,10 @@ Docs tasks depend on Clove's command being implemented; sequence Eli after Clove
 - [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as` (used a runtime type-guard narrowing function instead of a cast — see `isDeletePathAction` in `eject.ts`)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (full eject / diverged-with-existing-.bak / consumer-preserved / marker-safety for both skill dirs and flat agent files / dry-run parity (`confirmed: false` and `dryRun: true`) / no-manifest / AGENTS.md+CLAUDE.md reporting / empty-dir prune / non-git guard / report formatting)
+- [x] Tests written for new logic and edge cases (full eject / diverged-with-existing-.bak / consumer-preserved / marker-safety for both skill dirs and flat agent files / codex-config.toml removal + preview parity + header-less preservation / dry-run parity (`confirmed: false` and `dryRun: true`) / no-manifest / AGENTS.md+CLAUDE.md reporting / empty-dir prune / non-git guard / report formatting)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — `pnpm run prism:build` clean; `pnpm run prism:test` 456 tests, 452 pass, same 4 pre-existing Windows-path failures as `origin/main` baseline (confirmed via throwaway worktree, not stash)
+- [x] No open Major/Critical review issues (codex-config.toml under-deletion gap fixed)
+- [x] Build passes — `pnpm run prism:build` clean (test-suite portion); `pnpm run prism:test` 459 tests, 455 pass, same 4 pre-existing Windows-path failures as `origin/main` baseline (443 tests, 438 pass, 4 fail — confirmed via throwaway worktree, not stash)
 - [ ] PR description up to date (pending PR open)
 - [x] Lasting decisions promoted to architect context — not applicable; all Decisions are ticket-tactical per their verdict sub-bullets
 

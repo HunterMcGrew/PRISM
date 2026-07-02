@@ -4,20 +4,20 @@
  *
  * Deletes every PRISM-owned `.prism/` file (per `classifyPath`), every
  * projected `prism-*` skill/agent whose `.ai-skill-generated` marker (or, for
- * flat agent adapters, generated header line) confirms PRISM authored it, and
- * finally the sync manifest itself — while preserving consumer-owned content,
- * unknown paths, and every diverged file's `.bak` snapshot. Existing for an
- * evaluation-minded team that wants a clean way to back out without PRISM
- * reading as lock-in.
+ * flat agent adapters and the generated Codex config file, generated header
+ * line) confirms PRISM authored it, and finally the sync manifest itself —
+ * while preserving consumer-owned content, unknown paths, and every diverged
+ * file's `.bak` snapshot. Existing for an evaluation-minded team that wants a
+ * clean way to back out without PRISM reading as lock-in.
  *
  * The command is a thin composition of primitives `prism:update` and
  * `prism:build` already ship and test: `applyDeletedFile`/`backupConsumerFile`
  * (delete-with-`.bak`, from `update.ts`), the `.ai-skill-generated` marker gate
  * (`removeDeletedManagedSkills`, from `utils.ts`), the generated-header gate for
- * flat agent adapters (`removeDeletedManagedAgentFiles`, from
- * `generate-skills.ts`), and the `--dry-run` compute-then-guard split L376
- * established for `prism:update`. Deletion and backup logic is never
- * reimplemented here.
+ * flat agent adapters and the Codex config file
+ * (`removeDeletedManagedAgentFiles`, from `generate-skills.ts`), and the
+ * `--dry-run` compute-then-guard split L376 established for `prism:update`.
+ * Deletion and backup logic is never reimplemented here.
  *
  * Two exported entry points, matching `doctor.ts`'s shape:
  * - `runEject` — the testable core. Takes resolved roots and confirmation
@@ -174,16 +174,18 @@ async function runFileRemovalPass(
 
 /**
  * Runs the projected-skill/agent removal pass across every platform skill and
- * agent root. Two gates must both pass before a candidate is removed:
+ * agent root, plus the generated Codex config file. Two gates must both pass
+ * before a candidate is removed:
  *
  * 1. **Prefix** — only `prism-`-prefixed names are candidates at all. A
  *    consumer's own `custom-*` or org-token skill is never even considered.
  * 2. **Marker** — the candidate must carry PRISM's authored-by-us signal: the
  *    `.ai-skill-generated` marker file for skill directories
  *    (`removeDeletedManagedSkills`), or the generated header line for flat
- *    agent adapter files (`removeDeletedManagedAgentFiles`). A `prism-`-prefixed
- *    dir or file without that signal is a consumer's hand-authored work and is
- *    never deleted.
+ *    agent adapter files and the Codex config file
+ *    (`removeDeletedManagedAgentFiles`, `collectCodexConfigOutcome`). A
+ *    `prism-`-prefixed dir or file without that signal is a consumer's
+ *    hand-authored work and is never deleted.
  *
  * Reuses `removeDeletedManagedSkills`/`removeDeletedManagedAgentFiles` with an
  * empty valid-set so every marker-confirmed `prism-*` entry is treated as an
@@ -191,16 +193,20 @@ async function runFileRemovalPass(
  * by pre-scanning each root and only including `prism-*` entries in the
  * tracked outcome list; the reused functions still walk the whole directory,
  * but they only ever delete a marker-confirmed entry, so a non-`prism-*`
- * marked skill (if one ever existed) stays untouched by construction.
+ * marked skill (if one ever existed) stays untouched by construction. The
+ * Codex config file is a single file (not `prism-*`-prefixed — it has no
+ * per-consumer name to gate on) so it is checked directly against
+ * `GENERATED_HEADER_LINE` rather than through the prefix+marker pre-scan.
  */
 async function runSkillRemovalPass(
 	consumerRepoRoot: string,
 	pathDefinitions: PathDefinitions,
 	previewOnly: boolean
 ): Promise<EjectSkillOutcome[]> {
-	const { targetRoots, codexConfigPath: _codexConfigPath } =
-		resolveConsumerSkillTargetRoots(consumerRepoRoot, pathDefinitions);
-	void _codexConfigPath;
+	const { targetRoots, codexConfigPath } = resolveConsumerSkillTargetRoots(
+		consumerRepoRoot,
+		pathDefinitions
+	);
 
 	const outcomes: EjectSkillOutcome[] = [];
 
@@ -221,8 +227,39 @@ async function runSkillRemovalPass(
 		previewOnly,
 		outcomes
 	);
+	await collectCodexConfigOutcome(codexConfigPath, previewOnly, outcomes);
 
 	return outcomes;
+}
+
+/**
+ * Removes the generated `.codex/codex-config.toml` if present, mirroring the
+ * generated-header-line safety check `collectAgentFileOutcomes` applies to
+ * flat agent adapters — the file has no directory to hold a
+ * `.ai-skill-generated` marker, so its first line
+ * (`GENERATED_HEADER_LINE`) is the only PRISM-authored signal. A
+ * `codex-config.toml` that exists but doesn't carry the header is a
+ * consumer's own file and is left untouched.
+ */
+async function collectCodexConfigOutcome(
+	codexConfigPath: string,
+	previewOnly: boolean,
+	outcomes: EjectSkillOutcome[]
+): Promise<void> {
+	const content = await readFileIfExists(codexConfigPath);
+	if (content === null) {
+		return;
+	}
+
+	if (!content.includes(GENERATED_HEADER_LINE)) {
+		outcomes.push({ path: codexConfigPath, action: "skipped-no-marker" });
+		return;
+	}
+
+	outcomes.push({ path: codexConfigPath, action: "removed" });
+	if (!previewOnly) {
+		await fs.rm(codexConfigPath);
+	}
 }
 
 /**

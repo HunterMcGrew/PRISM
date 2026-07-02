@@ -402,6 +402,106 @@ test("runEject removes a marker-confirmed prism-* Claude agent .md adapter and s
 	});
 });
 
+// --- codex-config.toml removal ---
+
+test("runEject removes a generated .codex/codex-config.toml and reports it", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(
+			consumerRepoRoot,
+			".codex/codex-config.toml",
+			`${GENERATED_HEADER_LINE}\n[agents]\nmax_threads = 6\n`
+		);
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, ".codex/codex-config.toml")),
+			false
+		);
+
+		const outcome = report.skillOutcomes.find((o) => o.path.includes("codex-config.toml"));
+		assert.equal(outcome?.action, "removed");
+	});
+});
+
+test("runEject previews but does not remove .codex/codex-config.toml under dry-run or without --yes", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(
+			consumerRepoRoot,
+			".codex/codex-config.toml",
+			`${GENERATED_HEADER_LINE}\n[agents]\nmax_threads = 6\n`
+		);
+
+		const previewReport = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: false,
+			dryRun: false,
+		});
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, ".codex/codex-config.toml")),
+			true
+		);
+		assert.equal(
+			previewReport.skillOutcomes.find((o) => o.path.includes("codex-config.toml"))?.action,
+			"removed"
+		);
+
+		const dryRunReport = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: true,
+		});
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, ".codex/codex-config.toml")),
+			true
+		);
+		assert.equal(
+			dryRunReport.skillOutcomes.find((o) => o.path.includes("codex-config.toml"))?.action,
+			"removed"
+		);
+	});
+});
+
+test("runEject preserves a .codex/codex-config.toml that lacks the generated header line", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(
+			consumerRepoRoot,
+			".codex/codex-config.toml",
+			"[agents]\nmax_threads = 2\n"
+		);
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, ".codex/codex-config.toml")),
+			true
+		);
+		assert.equal(
+			report.skillOutcomes.find((o) => o.path.includes("codex-config.toml"))?.action,
+			"skipped-no-marker"
+		);
+	});
+});
+
 // --- no manifest ---
 
 test("runEject against a repo with no sync manifest deletes nothing and reports nothing to eject", async () => {
