@@ -16,7 +16,9 @@ import assert from "node:assert/strict";
 import {
 	AGENTS_MD_BLOCK_BEGIN,
 	AGENTS_MD_BLOCK_END,
+	AGENTS_MD_SEEDED_MARKER,
 	collectTier1RuleBodies,
+	renderSeededAgentsMd,
 	renderTier1Block,
 	replaceTier1Block,
 } from "./agents-md-block";
@@ -150,4 +152,34 @@ test("replaceTier1Block inserts after Behavioral norms when no block exists", ()
 	assert.ok(blockPos > tableRowPos, "block should appear after the table row");
 	assert.ok(blockPos < standaloneSepPos, "block should appear before the standalone --- separator after the table");
 	assert.match(result, /# A Rule/);
+});
+
+test("renderSeededAgentsMd carries the provenance marker and an empty Tier-1 marker pair", () => {
+	const seeded = renderSeededAgentsMd();
+
+	assert.ok(seeded.includes(AGENTS_MD_SEEDED_MARKER));
+	assert.ok(
+		seeded.includes(`${AGENTS_MD_BLOCK_BEGIN}\n\n${AGENTS_MD_BLOCK_END}`),
+		"the marker pair must be empty so replaceTier1Block's marker-match path fills it"
+	);
+});
+
+test("replaceTier1Block fills the seeded stub's empty marker pair via the marker-match path, not the insert-fallback path", () => {
+	const seeded = renderSeededAgentsMd();
+	const rules = [{ name: "a.md", body: "# A Rule\n\nBody." }];
+	const block = renderTier1Block(rules);
+
+	const filled = replaceTier1Block(seeded, block);
+
+	assert.match(filled, /# A Rule/);
+	assert.ok(
+		filled.includes(AGENTS_MD_SEEDED_MARKER),
+		"provenance marker survives the fill untouched"
+	);
+	assert.equal(
+		(filled.match(new RegExp(AGENTS_MD_BLOCK_BEGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) ?? [])
+			.length,
+		1,
+		"exactly one marker pair after filling — the empty pair was replaced in place, not appended alongside a second pair"
+	);
 });

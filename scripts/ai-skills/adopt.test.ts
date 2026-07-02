@@ -21,6 +21,11 @@ import {
 	runAdopt,
 	seedConsumerContentRoot,
 } from "./adopt";
+import {
+	AGENTS_MD_BLOCK_BEGIN,
+	AGENTS_MD_BLOCK_END,
+	AGENTS_MD_SEEDED_MARKER,
+} from "./agents-md-block";
 import { ensureConsumerPathDefinitions, hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
@@ -886,6 +891,114 @@ test("runAdopt reports the present-AGENTS.md notice and no CLAUDE.md notice when
 				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
 				true,
 				"adopt still completes successfully alongside the notice"
+			);
+		}
+	);
+});
+
+// --- --seed-agents-md tests (issue #393) ---
+
+test("runAdopt seeds a minimal AGENTS.md when absent and the opt-in flag is given", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({
+				prismSourceRoot,
+				consumerRepoRoot,
+				seedAgentsMd: true,
+			});
+
+			assert.equal(summary.agentsMdSeeded, true);
+			assert.ok(
+				await fileExists(consumerRepoRoot, "AGENTS.md"),
+				"AGENTS.md written when seedAgentsMd is true and the file is absent"
+			);
+			const seeded = await readFile(consumerRepoRoot, "AGENTS.md");
+			assert.ok(
+				seeded.includes(AGENTS_MD_SEEDED_MARKER),
+				"seeded file carries the provenance marker"
+			);
+			assert.ok(seeded.includes(AGENTS_MD_BLOCK_BEGIN), "seeded file carries the begin marker");
+			assert.ok(seeded.includes(AGENTS_MD_BLOCK_END), "seeded file carries the end marker");
+			assert.equal(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				true,
+				"adopt still completes successfully alongside the seed"
+			);
+		}
+	);
+});
+
+test("runAdopt does not seed AGENTS.md when absent and the opt-in flag is omitted", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(summary.agentsMdSeeded, false);
+			assert.equal(
+				await fileExists(consumerRepoRoot, "AGENTS.md"),
+				false,
+				"AGENTS.md is not created without the opt-in flag"
+			);
+			assert.ok(
+				summary.rootFileNotices.some((n) => n.includes("no AGENTS.md found at repo root")),
+				"the absent-AGENTS.md warning still prints without the opt-in flag"
+			);
+		}
+	);
+});
+
+test("runAdopt never overwrites an existing AGENTS.md even with the opt-in flag given", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			const consumerAuthored = "# My AGENTS.md\nCustom consumer content.\n";
+			await writeFile(consumerRepoRoot, "AGENTS.md", consumerAuthored);
+
+			const summary = await runAdopt({
+				prismSourceRoot,
+				consumerRepoRoot,
+				seedAgentsMd: true,
+			});
+
+			assert.equal(summary.agentsMdSeeded, false);
+			assert.equal(
+				await readFile(consumerRepoRoot, "AGENTS.md"),
+				consumerAuthored,
+				"existing AGENTS.md is left byte-for-byte unchanged"
+			);
+		}
+	);
+});
+
+test("runAdopt --dry-run computes the seed outcome but writes nothing", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({
+				prismSourceRoot,
+				consumerRepoRoot,
+				seedAgentsMd: true,
+				dryRun: true,
+			});
+
+			assert.equal(
+				summary.agentsMdSeeded,
+				true,
+				"dry-run still reports the outcome a real run would produce"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, "AGENTS.md"),
+				false,
+				"dry-run must not write AGENTS.md"
 			);
 		}
 	);

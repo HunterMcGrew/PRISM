@@ -19,7 +19,12 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
+import {
+	AGENTS_MD_BLOCK_BEGIN,
+	AGENTS_MD_BLOCK_END,
+	AGENTS_MD_SEEDED_MARKER,
+	renderSeededAgentsMd,
+} from "./agents-md-block";
 import { formatEjectReport, runEject, type EjectReport } from "./eject";
 import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import {
@@ -546,7 +551,94 @@ test("runEject leaves AGENTS.md and CLAUDE.md in place and names PRISM's contrib
 		assert.equal(await fileExists(path.join(consumerRepoRoot, "AGENTS.md")), true);
 		assert.equal(await fileExists(path.join(consumerRepoRoot, "CLAUDE.md")), true);
 		assert.ok(report.preservedNotices.some((n) => n.includes("AGENTS.md") && n.includes(AGENTS_MD_BLOCK_BEGIN)));
-		assert.ok(report.preservedNotices.some((n) => n.includes("CLAUDE.md")));
+		assert.ok(
+			report.preservedNotices.some(
+				(n) => n === "CLAUDE.md is present but was not created by PRISM — review manually before deleting."
+			)
+		);
+	});
+});
+
+test("runEject removes a PRISM-seeded AGENTS.md and names it in the report", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(consumerRepoRoot, "AGENTS.md", renderSeededAgentsMd());
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, "AGENTS.md")),
+			false,
+			"seeded AGENTS.md is removed"
+		);
+		assert.ok(
+			report.preservedNotices.some(
+				(n) => n === "Removed PRISM-seeded AGENTS.md (carried the prism:seeded-agents-md marker)."
+			)
+		);
+	});
+});
+
+test("runEject preserves an AGENTS.md whose seeded marker was deleted (disown-to-keep)", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		const disowned = renderSeededAgentsMd().replace(`${AGENTS_MD_SEEDED_MARKER}\n\n`, "");
+		assert.ok(
+			!disowned.includes(AGENTS_MD_SEEDED_MARKER),
+			"test fixture must not carry the marker after disowning"
+		);
+		await writeFile(consumerRepoRoot, "AGENTS.md", disowned);
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, "AGENTS.md")),
+			true,
+			"marker-deleted AGENTS.md is preserved, not removed"
+		);
+		assert.ok(
+			report.preservedNotices.some(
+				(n) => n.includes("AGENTS.md") && n.includes(AGENTS_MD_BLOCK_BEGIN)
+			)
+		);
+	});
+});
+
+test("runEject preview leaves a PRISM-seeded AGENTS.md in place and reports it would be removed", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeFile(consumerRepoRoot, "AGENTS.md", renderSeededAgentsMd());
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: false,
+			dryRun: false,
+		});
+
+		assert.equal(
+			await fileExists(path.join(consumerRepoRoot, "AGENTS.md")),
+			true,
+			"preview must not remove the seeded file"
+		);
+		assert.ok(
+			report.preservedNotices.some(
+				(n) => n === "Would remove PRISM-seeded AGENTS.md (carries the prism:seeded-agents-md marker)."
+			)
+		);
 	});
 });
 
