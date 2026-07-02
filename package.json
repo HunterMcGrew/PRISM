@@ -39,6 +39,7 @@
 		"prism:check-types": "tsc --noEmit -p scripts/ai-skills/tsconfig.json",
 		"prism:crossref-lint": "tsx scripts/ai-skills/crossref-lint.ts",
 		"prism:doctor": "tsx scripts/ai-skills/doctor.ts",
+		"prism:eject": "tsx scripts/ai-skills/eject.ts",
 		"prism:migrate-skill": "tsx scripts/ai-skills/migrate-skill.ts",
 		"prism:test": "tsx --test scripts/ai-skills/*.test.ts",
 		"prism:update": "tsx scripts/ai-skills/update.ts",
