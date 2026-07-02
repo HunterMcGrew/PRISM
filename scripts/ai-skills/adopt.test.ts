@@ -248,6 +248,32 @@ test("seed writes an absent file into the consumer content root", async () => {
 	);
 });
 
+test("seed writes a nested multi-segment path with a forward-slash-normalized summary key", async () => {
+	await withTempRoots(
+		async ({ installSeedRoot, consumerContentRoot }) => {
+			// walkAndSeed builds its relativePath via
+			// `path.relative(seedRoot, seedAbsolute).split(path.sep).join("/")` —
+			// pins that a deeply nested seed path still lands at the correct
+			// consumer location and reports a forward-slash key in the summary
+			// on Windows, where `path.relative` returns backslash segments.
+			await writeFile(
+				installSeedRoot,
+				"architect/_toolkit/nested/deep/doc.md",
+				"# nested seed\n"
+			);
+
+			const summary = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
+
+			assert.equal(
+				await readFile(consumerContentRoot, "architect/_toolkit/nested/deep/doc.md"),
+				"# nested seed\n"
+			);
+			assert.deepEqual(summary.written, ["architect/_toolkit/nested/deep/doc.md"]);
+			assert.ok(!summary.written[0].includes("\\"));
+		}
+	);
+});
+
 test("seed skips a path already present in the consumer", async () => {
 	await withTempRoots(
 		async ({ installSeedRoot, consumerContentRoot }) => {

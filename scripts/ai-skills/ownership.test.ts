@@ -67,6 +67,30 @@ test("a path matching neither set is unknown", () => {
   assert.equal(classifyPath("audits/2026-06-15-audit.md"), "unknown");
 });
 
+test("classifyPath matches manifest-form forward-slash keys regardless of host OS", () => {
+  // classifyPath is always called with the manifest's stored key form
+  // (forward-slash, per sync-manifest.ts's own normalization), never a raw
+  // OS path — this pins that a nested multi-segment key classifies
+  // identically whether the test process itself runs on Windows or POSIX,
+  // since the glob matcher operates on the string, not `path.sep`.
+  assert.equal(
+    classifyPath("architect/_toolkit/nested/deep/doc.md"),
+    "prism"
+  );
+  assert.equal(classifyPath("rules/nested/deeply/rule.md"), "prism");
+  assert.equal(classifyPath("custom/rules/nested/team.md"), "consumer");
+});
+
+test("classifyPath treats a raw backslash-joined path as unclassified", () => {
+  // A defensive pin, not a supported input: classifyPath's globs are
+  // authored against forward-slash paths, so a caller that accidentally
+  // passes a raw Windows-native path (backslashes, un-normalized) fails to
+  // match either glob set and falls through to "unknown" rather than
+  // silently misclassifying — the update flow's safe default for a path it
+  // can't provably classify.
+  assert.equal(classifyPath("architect\\_toolkit\\doc.md"), "unknown");
+});
+
 test("the glob sets are non-empty", () => {
   assert.ok(PRISM_OWNED_GLOBS.length > 0);
   assert.ok(CONSUMER_OWNED_GLOBS.length > 0);

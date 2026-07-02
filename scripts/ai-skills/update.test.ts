@@ -238,6 +238,38 @@ test("backs up a diverged file before overwriting it", async () => {
 	});
 });
 
+test("backs up a diverged file at a nested path with Windows-correct separators", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		// `resolveBackupPath`/`backupConsumerFile` operate on the absolute path
+		// `path.join` already produced (native separators), not the manifest's
+		// forward-slash key — this pins that a multi-segment nested relative
+		// path still resolves to the correct `.bak` sibling on Windows, where
+		// `path.dirname`/`path.join` on an intermediate directory could
+		// otherwise mis-split on the wrong separator.
+		const relativePath = "rules/nested/deeply/diverged.md";
+		await writeFile(prismContentRoot, relativePath, "# incoming\n");
+		await writeFile(consumerContentRoot, relativePath, "# hand-edited\n");
+		await writeConsumerManifest(consumerContentRoot, {
+			[relativePath]: "# original base\n",
+		});
+
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+		assert.equal(await readFile(consumerContentRoot, relativePath), "# incoming\n");
+		assert.equal(
+			await readFile(consumerContentRoot, `${relativePath}.bak`),
+			"# hand-edited\n"
+		);
+		assert.equal(outcomeFor(summary, relativePath).action, "backed-up");
+
+		const outcome = outcomeFor(summary, relativePath);
+		assert.equal(
+			outcome.backupPath,
+			path.join(consumerContentRoot, `${relativePath}.bak`)
+		);
+	});
+});
+
 test("no-manifest fallback: a diverged file is backed up", async () => {
 	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
 		await writeFile(prismContentRoot, "rules/r.md", "# incoming\n");
