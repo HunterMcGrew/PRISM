@@ -144,6 +144,25 @@ Before either command writes a single file, it runs two checks:
 
 Both checks apply whether or not `--dry-run` is set.
 
+## Check install health with `prism doctor`
+
+`prism doctor` runs the same config and git-repo checks as `adopt`/`update`, plus a sync-state and version report, and prints every finding in one pass — instead of a bad config only surfacing later as an opaque leftover-token build failure.
+
+```bash
+npx @huntermcgrew/prism doctor
+```
+
+`doctor` never writes anything; it's a read-only report. It checks:
+
+- **Config validity.** Same schema validation `adopt`/`update` run — the offending field is named directly.
+- **Git repo.** Confirms the target is inside a git repository.
+- **Sync state.** Reads `.prism/.sync-manifest.json` and reports how many recorded files are PRISM-owned vs. consumer-owned, which PRISM-owned files have diverged from their recorded base (paired with any `.bak` siblings already on disk), and which recorded files are missing entirely. A repo that hasn't run `adopt` yet reports no manifest as informational, not an error.
+- **Version.** Compares the installed PRISM version against the latest published on npm. When the network is unavailable or the package hasn't been published yet, this check degrades to "unavailable" rather than failing the whole command.
+
+Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every check runs regardless of what the others found, so you see everything wrong in one pass. It exits `0` when healthy and non-zero with the findings list printed when it isn't, which makes it a natural fit for a CI health-check step.
+
+`pnpm prism:doctor` runs the same command from a local checkout.
+
 ## Help
 
 ```bash
@@ -154,4 +173,4 @@ Prints available subcommands and flags.
 
 ## What's running under the hood
 
-Whether you run `npx @huntermcgrew/prism adopt`, `pnpm prism:adopt`, or `prism adopt` via a global link, the same underlying adopt script runs. The three invocation paths are dispatchers — the logic is identical. If you're debugging an unexpected result, `adopt.ts` and `update.ts` in the PRISM repository are the source of truth.
+Whether you run `npx @huntermcgrew/prism adopt`, `pnpm prism:adopt`, or `prism adopt` via a global link, the same underlying adopt script runs. The three invocation paths are dispatchers — the logic is identical. If you're debugging an unexpected result, `adopt.ts`, `update.ts`, and `doctor.ts` in the PRISM repository are the source of truth.
