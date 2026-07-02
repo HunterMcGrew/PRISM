@@ -13,7 +13,7 @@ PRISM gives AI tools a set of named personas — specialists with defined roles,
 - **Drop-in adoption for existing repos** — `npx @huntermcgrew/prism adopt` seeds `.prism/` and projects the persona roster into any codebase. A local-checkout path is also available for air-gapped environments and contributors.
 - **Sol — the multi-agent conductor** — orchestrates the full dev lifecycle for a stated goal: dispatches personas in sequence, pauses at human gates, and runs parallel lanes when blast radius doesn't overlap.
 
-See [docs/overview.md](./docs/overview.md) for the full overview. See [CHANGELOG.md](./CHANGELOG.md) for history.
+See [docs/overview.md](./docs/overview.md) for the full overview. See [CHANGELOG.md](./CHANGELOG.md) for history. See [SECURITY.md](./SECURITY.md) for PRISM's trust model and how to report a security issue.
 
 ## Quick start
 
@@ -45,6 +45,8 @@ Open Claude Code inside your repo and invoke Atlas:
 Atlas generates per-team engineering rules from your actual code, populates stack-specific guidance, and fills in the stub anchors `adopt` put in place.
 
 For the full setup walkthrough — stack detection, config writing, resumable state, and alternative install methods (vendor clone, global link, `--consumer` flag) — see **[docs/getting-started.md](./docs/getting-started.md)** and **[docs/adopt-prism.md](./docs/adopt-prism.md)**. Adopting into a repo that already has its own AI tooling? See **[docs/adopting-into-existing-repos.md](./docs/adopting-into-existing-repos.md)** for what adopt touches, what it skips, and how to resolve `.bak` conflicts.
+
+Want to know exactly what PRISM will write before you run it? See **[docs/what-prism-writes.md](./docs/what-prism-writes.md)** for the full inventory, and **[SECURITY.md](./SECURITY.md)** for the trust model behind it. Hit a snag? See **[docs/troubleshooting.md](./docs/troubleshooting.md)**.
 
 ## Repo shape
 
@@ -125,12 +127,15 @@ PRISM/
 │   ├── getting-started.md        # setup walkthrough
 │   ├── adopt-prism.md            # adopt + update reference (npx, vendor, global link)
 │   ├── adopting-into-existing-repos.md  # coexisting with existing AI tooling + .bak conflicts
+│   ├── what-prism-writes.md      # full inventory of every path adopt/update/eject can touch
+│   ├── troubleshooting.md        # common adopt/update/build failures and how to resolve them
 │   ├── workflow.md               # ticket → plan → implement → review → ship
 │   ├── personas.md               # what each persona does and when to call them
 │   └── parameterization.md       # config keys + token reference
 │
 ├── package.json                  # pnpm prism:* scripts
 ├── tsconfig.json
+├── SECURITY.md                   # trust model + how to report a security issue
 └── README.md                     # this file
 ```
 
