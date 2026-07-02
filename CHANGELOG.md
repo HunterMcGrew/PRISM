@@ -1,6 +1,6 @@
 # Changelog
 
-PRISM has no versioned releases. This file tracks the evolution of the toolkit by phase and epic, sourced from the development history. Most recent work is at the top.
+PRISM uses semantic versioning; this file tracks evolution by phase and epic, most recent first.
 
 ---
 

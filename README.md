@@ -57,7 +57,6 @@ PRISM/
 │   ├── definitions/
 │   │   ├── paths.json            # canonical roots + platform output locations
 │   │   └── roles.json            # skill-id → persona mapping
-│   ├── hooks/                    # gate runners and ownership guard
 │   └── skills/
 │       └── prism-<role>/
 │           ├── frontmatter.yml
@@ -79,7 +78,7 @@ PRISM/
 ├── .claude/                      # Claude Code build copy
 │   ├── skills/                   # generated SKILL.md per persona
 │   ├── agents/                   # generated agent markdown per persona
-│   └── ...                       # hooks, rules, architect, references (mirrored)
+│   └── ...                       # rules, architect, references (mirrored)
 │
 ├── .agents/                      # Codex (OpenAI agents SDK) build copy
 │   └── skills/                   # generated SKILL.md per persona
@@ -105,8 +104,7 @@ PRISM/
 │   │   └── SPEC.md.tmpl          # tier hierarchy template
 │   ├── .claude/                  # seeded into consumer's .claude/ by adopt
 │   │   ├── CLAUDE.md.tmpl        # Claude-specific instructions template
-│   │   ├── hooks/                # gate runners + ownership guard (build-mirrored)
-│   │   └── settings.json         # hook wiring
+│   │   └── settings.json         # empty stub; consumer-populated
 │   ├── .codex/                   # empty stub in the seed; persona roster is projected here at adopt/update time
 │   ├── .cursor/                  # empty stub in the seed; persona roster is projected here at adopt/update time
 │   └── AGENTS.md.tmpl            # cross-platform constitution template
