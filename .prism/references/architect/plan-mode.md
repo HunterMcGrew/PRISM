@@ -85,15 +85,15 @@ Slices ship in dependency order — earliest demoable slice first. Later slices 
 
 ## Syncs (run after the plan write)
 
-8. **Sync AC to Linear** — after writing AC to the plan, automatically push it to the Linear ticket:
+8. **Sync AC to the ticket tracker** — after writing AC to the plan, automatically push it to the ticket:
    - Extract ticket ID from the plan's `## Ticket` field
    - Fetch current ticket description via `get_issue`
    - If an `## Acceptance Criteria` section already exists in the description, replace it
    - If not, append `## Acceptance Criteria` at the bottom of the description
    - Update via `save_issue`
-   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced AC to Linear ticket ${TICKET_PREFIX}-NNNN`
+   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced AC to ticket ${TICKET_PREFIX}-NNNN`
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Winston | Generated AC | updated | synced |`
-   - This is automatic — AC is required on every ticket. No opt-in prompt. (If the team doesn't use Linear, skip the push and record AC in the plan only.)
+   - This is automatic — AC is required on every ticket. No opt-in prompt. If the team's tracker doesn't support AC push, record AC in the plan only.
 
 9. **Sync the PR body if a PR is open** — after modifying `## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`, check whether an open PR exists for the current branch:
 
@@ -117,8 +117,8 @@ After building implementation tasks, evaluate whether the work qualifies as an e
 - If the threshold is met: flag it — "This is large-scoped. I'd recommend breaking it into an epic with separate stories. Each story should be independently shippable."
 - On user confirmation:
   - Outline the stories with brief descriptions
-  - Recommend creating separate Linear tickets for each story (via Nora)
-  - Create an epic plan file (`<repo-root>/.prism/plans/epic-<ticket-id>.md`) with a `## Stories` section referencing individual story plans. If no parent ticket exists in Linear, fall back to `epic-<descriptive-name>.md` — but prefer creating a parent ticket first.
+  - Recommend creating separate tickets for each story (via Nora)
+  - Create an epic plan file (`<repo-root>/.prism/plans/epic-<ticket-id>.md`) with a `## Stories` section referencing individual story plans. If no parent ticket exists in the tracker, fall back to `epic-<descriptive-name>.md` — but prefer creating a parent ticket first.
 - **Vertical mode + epic threshold:** when both fire (plan was vertical-mode AND slice count > 5), each slice becomes an independent story plan. The epic plan references the slice-story plans by file path. Slices ARE the story shape under this composition — they're already independently shippable, so the story decomposition is already done.
 - If not met: proceed as a normal story — no action needed
 

@@ -7,7 +7,7 @@
 
 ## What goes in the PR body
 
-The PR description carries reasoning the diff can't show. File-level change details live in the GitHub diff; acceptance criteria live in Linear and the branch plan. The PR body should never duplicate either.
+The PR description carries reasoning the diff can't show. File-level change details live in the GitHub diff; acceptance criteria live in the ticket tracker and the branch plan. The PR body should never duplicate either.
 
 ## Structure
 
@@ -19,16 +19,16 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
 - `## Screenshots` — UI PRs only; delete the heading when not applicable
 - `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — PRISM-#### or Linear URL
+- `## Ticket` — PRISM-#### or ticket URL
 - `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
 
 **Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.
 
 **Why optionality is placeholder text, not branching:** templates stay linear and scannable. `[Skip this section if the change is self-evident from the diff.]` teaches contributors what's expected and signals that empty sections are acceptable when honest.
 
-## AC lives in Linear, not the PR body
+## AC lives in the ticket tracker, not the PR body
 
-Acceptance criteria live in the Linear ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
+Acceptance criteria live in the ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
 
 ## File changes live in the diff, not the PR body
 
@@ -54,7 +54,7 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to the tracker, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
 
 **Two enforcement moments:**
 

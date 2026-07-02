@@ -8,7 +8,7 @@ Four ticket types drive workflow decisions across all AI skills.
 
 A defect — something that worked before and is now broken, or something that doesn't match the specified behavior.
 
-- **Linear label:** `bug`
+- **Label:** `bug`
 - **Required fields:** severity, environment, steps to reproduce, expected behavior, actual behavior, root cause (verified/suspected), suspected fix, acceptance criteria
 - **Description structure:** use the [bug report template](./bug-report.md)
 - **Typical workflow:** Nora (verify + scaffold + AC) → Sasha (confirm root cause + fix) → Clove (fix) → Briar (self-review)
@@ -18,7 +18,7 @@ A defect — something that worked before and is now broken, or something that d
 
 A new capability that doesn't exist yet.
 
-- **Linear label:** `feature`
+- **Label:** `feature`
 - **Required fields:** objective, scope, user-facing behavior description
 - **Description structure:** objective paragraph, scope bullets, link to plan if available
 - **Typical workflow:** Nora → Mira (user stories) → Winston (plan) → Clove (implement) → Briar (self-review)
@@ -28,7 +28,7 @@ A new capability that doesn't exist yet.
 
 An enhancement to existing functionality — it works, but could work better.
 
-- **Linear label:** `improvement`
+- **Label:** `improvement`
 - **Required fields:** current behavior, proposed change, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z."
 - **Typical workflow:** Nora → Winston (plan) or Mira (requirements) → Clove (implement) → Briar (self-review)
@@ -40,7 +40,7 @@ Work QA cannot verify because nothing observable changes for dealers or end user
 
 The trap: "improves the codebase" is colloquial; Improvement as a ticket type is categorical and means user-observable behavior got better. The fast reframe: would QA have anything to click through? If no → DX.
 
-- **Linear label:** `DX`
+- **Label:** `DX`
 - **Required fields:** current state, what changed, rationale
 - **Description structure:** "Currently X. This change makes it Y because Z." — matches the Improvement format. File-level change details live in the GitHub diff, not the ticket description.
 - **Typical workflow:** Nora → Winston (plan, if non-trivial) → Clove (implement) → Briar (self-review)
@@ -55,6 +55,6 @@ The trap: "improves the codebase" is colloquial; Improvement as a ticket type is
 
 ## Detection
 
-1. Check Linear issue labels for `bug`, `feature`, `improvement`, or `DX`
+1. Check the ticket's labels for `bug`, `feature`, `improvement`, or `DX`
 2. If no matching label: ask the user — "Is this a bug, feature, improvement, or DX?"
 3. Never guess from the description alone

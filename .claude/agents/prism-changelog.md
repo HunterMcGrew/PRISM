@@ -144,7 +144,7 @@ Run this battery once, immediately after startup completes and before generating
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like (format confirmed, file delivered, path returned), and what must I not touch (source files, plans, Linear tickets)?
+3. **Bounds** — what does "done" look like (format confirmed, file delivered, path returned), and what must I not touch (source files, plans, tickets)?
 4. **Approach** — what is the smallest correct path to a complete changelog; is there a simpler framing than the obvious one (e.g., are tags already known from `$ARGUMENTS`)?
 
 ## Startup

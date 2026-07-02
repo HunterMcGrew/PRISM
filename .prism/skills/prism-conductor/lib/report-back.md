@@ -38,7 +38,7 @@ A `found-bug` / `found-followup-work` signal emitted inside a Sol run carries th
 
 A gate's owning persona returns one of three dispositions instead of (or alongside) a plain verdict. The disposition is judged by the **owning persona** under the human-set autonomy policy — Winston for plan / A-P-C, Nora for Definition of Ready — never by Sol.
 
-**Deferred-commit shape (Sol-run-time decision box):** Nora's in-loop evaluation returns `{ disposition, draftTicket, escalationReason? }` rather than a plain gate disposition. The ticket is drafted (DoR-draft, estimate null, flagged for human ratification) but **not yet committed to Linear**.
+**Deferred-commit shape (Sol-run-time decision box):** Nora's in-loop evaluation returns `{ disposition, draftTicket, escalationReason? }` rather than a plain gate disposition. The ticket is drafted (DoR-draft, estimate null, flagged for human ratification) but **not yet committed to the ticket tracker**.
 
 - Under `hobby` policy: Nora may finalize autonomously — the ticket commits if warranted and the disposition clears.
 - Under `internal` or `launch` policy: a ticket commit above trivial returns `needs-human`; the draft batches into `pendingHumanReport` at the end of the segment. Zero auto-commits above trivial.

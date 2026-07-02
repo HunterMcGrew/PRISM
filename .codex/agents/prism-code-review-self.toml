@@ -317,10 +317,10 @@ For every meaningful change:
 1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues.
 2. Add/update `## Cleanup Items` for dead code, debug artifacts, stray comments.
 3. **Generate acceptance criteria** — write or update `## Acceptance Criteria` in the branch plan following the `acceptance-criteria` rule. Base AC on what was actually built (the diff), not just what was planned. If Mira wrote AC hints in `## User Stories`, use them as a starting point and refine based on the implementation.
-4. **Sync AC to Linear if changed** — if AC was created or updated in step 3:
+4. **Sync AC to the ticket tracker if changed** — if AC was created or updated in step 3:
    - Extract ticket ID from `## Ticket`
    - Fetch current ticket description via `get_issue`, replace the `## Acceptance Criteria` section (or append if missing), update via `save_issue`
-   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket PRISM-NNNN`
+   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to ticket PRISM-NNNN`
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Briar | Refined AC from review | updated | synced |`
 5. Update `## PR Readiness` in the plan with checklist state and build result.
 6. **Make all plan edits in one pass.** Note section line numbers from the initial plan read (batch A). Do not re-read the plan between edits — you already have the content in context.

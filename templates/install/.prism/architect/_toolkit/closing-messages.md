@@ -33,7 +33,7 @@ The table below provides the default next persona and the conditional routes for
 | **Eli** | Done (docs ship via author-ships flow) | If a decision-log emerged during writing → Winston for ADR promotion |
 | **Sage** | Done (changelog ships) | None |
 | **Reese** | Done (checklist ships) | If checklist surfaces a bug → Nora to file follow-up |
-| **Parker** | Mira (decompose to stories) or Nora (Linear initiative handoff) | At launch stakes with rubric findings → Winston |
+| **Parker** | Mira (decompose to stories) or Nora (ticket initiative/epic handoff) | At launch stakes with rubric findings → Winston |
 | **Theo** | Done (architect docs ship); Eli for paired dev doc when `keepsDevDocs: true` | Paired dev doc is config-conditional on `documentation.keepsDevDocs` |
 | **Ren** | Winston (evaluate refactor plan) or Clove (execute) | Refactor plan needs Winston review before Clove |
 | **Zoe** | Done (report saved); user decides on archive actions | None — cadence persona, not part of handoff chain |

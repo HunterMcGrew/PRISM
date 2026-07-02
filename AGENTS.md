@@ -107,7 +107,7 @@ Examples:
 
 - Ticket PRISM-1448 → `.prism/plans/prism-1448.md`
 - Epic PRISM-1524 → `.prism/plans/epic-prism-1524.md`
-- Epic with no parent ticket → `.prism/plans/epic-<descriptive-name>.md` (fallback — prefer creating a parent ticket in Linear)
+- Epic with no parent ticket → `.prism/plans/epic-<descriptive-name>.md` (fallback — prefer creating a parent ticket in the tracker)
 
 ---
 
@@ -297,7 +297,7 @@ When creating a new plan, use the following structure.
 
 ## Ticket
 
-<Linear ticket URL or reference — optional>
+<Ticket URL or reference — optional>
 
 ## Goal
 
@@ -420,7 +420,7 @@ Add entries here via the debugger skill. Each entry has a structured format:
 - **Recommended fix:** minimal description
 - **Suggested tests:** what to cover, or "none needed", or `"no correct seam — architecture prevents lockdown"` (legitimate finding that flags Winston/Ren follow-up)
 - **Missing evidence:** (optional — Gap / Impact / How to Obtain mini-table for any unconfirmed claims that the diagnosis still depends on)
-- **Linear:** `synced` | `not synced` | `N/A`
+- **Ticket:** `synced` | `not synced` | `N/A`
 
 The inline tag on `Root cause` and the explicit `Confidence` field carry the same evidence grading principle: every claim names whether it's observed (`Confirmed`), inferred with named logical steps (`Deduced`), or unverified (`Hypothesized`). The `Refuted hypotheses` and `Missing evidence` fields keep eliminated alternatives and known gaps visible — a refuted hypothesis is data, and a missing-evidence note is itself a finding (not an admission that the investigation is incomplete).
 
@@ -458,10 +458,10 @@ Add entries here via the architect skill (Winston). Reference `.prism/templates/
 
 ### AC Sync Log
 
-| Date | Agent | Action | Plan | Linear |
+| Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 
-<!-- Each skill appends a row when it creates, updates, or syncs AC. "Plan" = updated/—, "Linear" = synced/pending/—. Downstream skills check the last row to see current sync state. -->
+<!-- Each skill appends a row when it creates, updates, or syncs AC. "Plan" = updated/—, "Ticket" = synced/pending/—. Downstream skills check the last row to see current sync state. -->
 
 ---
 
@@ -1207,7 +1207,7 @@ For any non-trivial task — 3 or more steps, or a real architectural decision �
 
 ## What goes in the PR body
 
-The PR description carries reasoning the diff can't show. File-level change details live in the GitHub diff; acceptance criteria live in Linear and the branch plan. The PR body should never duplicate either.
+The PR description carries reasoning the diff can't show. File-level change details live in the GitHub diff; acceptance criteria live in the ticket tracker and the branch plan. The PR body should never duplicate either.
 
 ## Structure
 
@@ -1219,16 +1219,16 @@ The canonical shape lives in `.prism/templates/pr-description.md`. Sections in o
 - `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
 - `## Screenshots` — UI PRs only; delete the heading when not applicable
 - `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — PRISM-#### or Linear URL
+- `## Ticket` — PRISM-#### or ticket URL
 - `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
 
 **Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.
 
 **Why optionality is placeholder text, not branching:** templates stay linear and scannable. `[Skip this section if the change is self-evident from the diff.]` teaches contributors what's expected and signals that empty sections are acceptable when honest.
 
-## AC lives in Linear, not the PR body
+## AC lives in the ticket tracker, not the PR body
 
-Acceptance criteria live in the Linear ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
+Acceptance criteria live in the ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
 
 ## File changes live in the diff, not the PR body
 
@@ -1254,7 +1254,7 @@ When updating an existing PR description:
 
 The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
 
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to Linear, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
+**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to the tracker, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
 
 **Two enforcement moments:**
 
@@ -1346,7 +1346,7 @@ When a user works without invoking a specific skill, detect what they're doing a
 | Architecture or design questions       | **Winston** (`prism-architect`)      | "should we", "is this the right approach", "how should I structure", "does this pattern fit", asks about data flow or abstractions                                                                                                                                                                              |
 | Debugging a bug                        | **Sasha** (`prism-debugger`)         | "this is broken", "why is this happening", "I'm getting an error", "it's not working", describes unexpected behavior                                                                                                                                                                                            |
 | Reviewing a PR                         | **Eric** (`prism-code-review-pr`)    | "review pr", "review pr #123", "review #123", "review 123", "review this PR", "review pull request", "look at this PR", "check this PR", "PR review", shares a PR URL or number                                                                                                                                 |
-| Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a Linear ticket ID                                                                                                                                                                                                                          |
+| Starting a ticket                      | **Nora** (`prism-ticket-start`)      | "start PRISM-NNNN", "pick up this ticket", "I want to work on", shares a ticket ID                                                                                                                                                                                                                          |
 | Writing user stories                   | **Mira** (`prism-user-stories`)      | "write user stories", "what are the requirements", "define the scope"                                                                                                                                                                                                                                           |
 | Self-reviewing the current branch      | **Briar** (`prism-code-review-self`) | "review my changes", "is this ready for PR", "self-review", "check my work"                                                                                                                                                                                                                                     |
 | UI/UX design questions                 | **Pixel** (`prism-design`)            | "what should this look like", "I don't have a mock", "does this layout make sense", "how should I lay this out", "propose a UI", "what should the empty state look like", "this feels off but I don't know why"                                                                                                 |
@@ -1374,7 +1374,7 @@ When a user works without invoking a specific skill, detect what they're doing a
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
 - `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
 
-**Sol is a persona, not a utility.** Unlike the two skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, Linear, or merges. See the conductor-autonomy-between-gates decision in `.prism/spec/adrs/_toolkit/`.
+**Sol is a persona, not a utility.** Unlike the two skills above, Sol (`prism-conductor`) carries its own persona and voice on the orchestration axis — it may be invoked directly or auto-routed per the table. It has no authoritative write path: it writes only its run-control state (`.prism/conductor-state.json`), dispatches the other personas, and routes their verdicts — never code, tracker writes, or merges. See the conductor-autonomy-between-gates decision in `.prism/spec/adrs/_toolkit/`.
 
 ## Skip auto-routing when
 
@@ -1428,7 +1428,7 @@ Prove a task works before marking it complete. Run tests, check logs, demonstrat
 
 # Writing Voice
 
-Write durable communication like you're onboarding a teammate, not drafting a compliance contract. This rule applies to skills, rules, architect context, ADRs, templates, the durable parts of plan files, PR descriptions, commit messages, and Linear tickets and comments — and the rule itself follows the voice it asks for, so the example reads alongside the explanation.
+Write durable communication like you're onboarding a teammate, not drafting a compliance contract. This rule applies to skills, rules, architect context, ADRs, templates, the durable parts of plan files, PR descriptions, commit messages, and tickets and comments — and the rule itself follows the voice it asks for, so the example reads alongside the explanation.
 
 The principle is _durable_ communication — anything a future reader will load as context. Lessons (`.prism/lessons.md`), in-progress plan history, Slack messages, and ad-hoc conversation are not held to this standard — they're working notes, not durable record.
 

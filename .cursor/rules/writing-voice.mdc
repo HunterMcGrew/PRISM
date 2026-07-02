@@ -4,7 +4,7 @@ alwaysApply: true
 
 # Writing Voice
 
-Write durable communication like you're onboarding a teammate, not drafting a compliance contract. This rule applies to skills, rules, architect context, ADRs, templates, the durable parts of plan files, PR descriptions, commit messages, and Linear tickets and comments — and the rule itself follows the voice it asks for, so the example reads alongside the explanation.
+Write durable communication like you're onboarding a teammate, not drafting a compliance contract. This rule applies to skills, rules, architect context, ADRs, templates, the durable parts of plan files, PR descriptions, commit messages, and tickets and comments — and the rule itself follows the voice it asks for, so the example reads alongside the explanation.
 
 The principle is _durable_ communication — anything a future reader will load as context. Lessons (`.prism/lessons.md`), in-progress plan history, Slack messages, and ad-hoc conversation are not held to this standard — they're working notes, not durable record.
 

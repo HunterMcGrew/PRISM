@@ -4,7 +4,7 @@ Read this when the Re-plan tripwire in Winston's skill body fires: the user sign
 
 > _Running re-plan mode — propagation report and routing offers._
 
-Re-plan Mode fires when the ticket's scope has shifted *after* implementation has started — the plan's `## Implementation Tasks` is no longer the truth, and several downstream artifacts (Linear AC, PR body, user stories, in-flight Clove work) are now stale relative to the new scope. The mode's job is to update the plan, then propagate the changes to every artifact that depends on it without silently overwriting work that was correct under the old scope.
+Re-plan Mode fires when the ticket's scope has shifted *after* implementation has started — the plan's `## Implementation Tasks` is no longer the truth, and several downstream artifacts (the tracker's AC, PR body, user stories, in-flight Clove work) are now stale relative to the new scope. The mode's job is to update the plan, then propagate the changes to every artifact that depends on it without silently overwriting work that was correct under the old scope.
 
 **Triggers (either fires the mode):**
 
@@ -17,15 +17,15 @@ Re-plan Mode fires when the ticket's scope has shifted *after* implementation ha
 2. **Rewrite the plan.** Replace `## Implementation Tasks` and `## Acceptance Criteria` with the new scope's content. Apply the detail bar from [`implementation-task-detail.md`](../../rules/implementation-task-detail.md). Preserve completed-task markers so Clove can see what survived the re-scope. Append a `## Decisions` entry documenting *what changed and why* (the original scope plus the trigger that produced the re-plan — user request, surfaced constraint, etc.). The plan must reflect the new scope before propagation begins, because every downstream artifact's sync reads from the plan.
 3. **Walk the stale-artifact table** (below). For each artifact, decide whether the diff makes it stale, clean, or needs verification.
 4. **Output a propagation report.** Per-artifact verdict: `stale` / `clean` / `verify`. One line per artifact.
-5. **Route stale artifacts.** For each `stale`, offer routing to the owning persona — Mira (user stories), Parker (PRD), Nora (Linear ticket description), Clove (in-flight work coordination), Pixel (mock spec), Reese (AC checklist).
-6. **Auto-sync what Winston owns.** Linear AC sync (per the standard plan-mode flow at step 8 in [`plan-mode.md`](./plan-mode.md)) and PR body sync run without prompt. Report what was synced in the closing message.
+5. **Route stale artifacts.** For each `stale`, offer routing to the owning persona — Mira (user stories), Parker (PRD), Nora (ticket description), Clove (in-flight work coordination), Pixel (mock spec), Reese (AC checklist).
+6. **Auto-sync what Winston owns.** Ticket AC sync (per the standard plan-mode flow at step 8 in [`plan-mode.md`](./plan-mode.md)) and PR body sync run without prompt. Report what was synced in the closing message.
 
 **Stale-artifact table:**
 
 | Artifact | Owner | Stale when... |
 |---|---|---|
-| Linear AC | Winston (auto-sync) | Tasks change → AC changes |
-| Linear ticket description | Nora | User stories or goal restate |
+| Ticket AC | Winston (auto-sync) | Tasks change → AC changes |
+| Ticket description | Nora | User stories or goal restate |
 | `## User Stories` in plan | Mira | Scope shift adds/removes a user-facing capability |
 | `.prism/prds/<slug>.md` | Parker | PRD-grain change (rare mid-ticket; possible on epic re-plans) |
 | In-flight Clove work | Clove | Tasks Clove was executing got removed or restated |

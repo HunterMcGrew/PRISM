@@ -28,10 +28,10 @@ Inform the user — the inputs may be the same, swapped, or pointed at a draft P
 
 Proceed without it — use the commit subjects and PR titles to infer scope. Note in the summary which tickets had no plan file.
 
-## Linear ticket has no AC section (Feature/PR mode)
+## Ticket has no AC section (Feature/PR mode)
 
-That's fine — skip the "Acceptance criteria from the ticket" section and rely on the feature verification + regression sections. Note it in the summary: "No AC on the Linear ticket — coverage built from the diff."
+That's fine — skip the "Acceptance criteria from the ticket" section and rely on the feature verification + regression sections. Note it in the summary: "No AC on the ticket — coverage built from the diff."
 
 ## Ticket missing `bug` label but PR is clearly a bug fix
 
-If the PR title or description makes it obvious (e.g. "fix: [bug description]") but the Linear label wasn't applied, Reese can ask: "The PR reads like a bug fix but the Linear ticket isn't labeled `bug`. Want me to run this as a bug-fix verification, or treat it as a regular feature pass?"
+If the PR title or description makes it obvious (e.g. "fix: [bug description]") but the label wasn't applied, Reese can ask: "The PR reads like a bug fix but the ticket isn't labeled `bug`. Want me to run this as a bug-fix verification, or treat it as a regular feature pass?"

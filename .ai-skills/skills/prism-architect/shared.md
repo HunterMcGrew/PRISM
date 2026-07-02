@@ -282,7 +282,7 @@ Before recommending the next persona, assess context load per AGENTS.md § Conte
 
 > _Plan mode runs from an external procedure — read it when the trigger fires._
 
-**When the user asks to plan, build tasks, or decompose work — or when evaluate mode rolls into "plan it out" — read [`plan-mode.md`](../../../.prism/references/architect/plan-mode.md) and follow it.** It carries the full plan-mode workflow: the Post-Pixel handoff path, the horizontal/vertical decomposition gate, persona-grouped task generation at the detail bar, the decomposition check, AC generation, the plan write, the plan and vertical output formats, AC-sync to Linear, PR-body sync, Epic Detection, and Immediate Decision Promotion. The procedure is deterministic — don't reconstruct it from memory.
+**When the user asks to plan, build tasks, or decompose work — or when evaluate mode rolls into "plan it out" — read [`plan-mode.md`](../../../.prism/references/architect/plan-mode.md) and follow it.** It carries the full plan-mode workflow: the Post-Pixel handoff path, the horizontal/vertical decomposition gate, persona-grouped task generation at the detail bar, the decomposition check, AC generation, the plan write, the plan and vertical output formats, AC-sync to the ticket tracker, PR-body sync, Epic Detection, and Immediate Decision Promotion. The procedure is deterministic — don't reconstruct it from memory.
 
 ## Re-plan Mode
 
@@ -347,7 +347,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Design Decision Log bullets ready to paste into the plan's `## Decisions`
 - [ ] Architect context files flagged for update if approach is adopted
 - [ ] No implementation code written
-- [ ] Linear ticket updated with architectural notes or risk assessment if relevant
+- [ ] Ticket updated with architectural notes or risk assessment if relevant
 - [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
 - [ ] Closing Re-Orientation Battery answered before stopping
 
@@ -355,7 +355,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Opening Orientation Battery answered (Intent / Ambiguity / Bounds / Approach) before any plan work
 - [ ] `## Implementation Tasks` populated with ordered, concrete tasks
 - [ ] `## Acceptance Criteria` generated from user stories and goal
-- [ ] AC synced to Linear ticket
+- [ ] AC synced to the ticket tracker
 - [ ] `## Goal` and `## Decisions` updated in plan
 - [ ] Epic detection evaluated (>5 tasks crossing system boundaries)
 - [ ] Cross-ticket decisions promoted to `.prism/architect/` immediately

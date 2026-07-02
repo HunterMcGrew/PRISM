@@ -219,7 +219,7 @@ Run these steps automatically before any implementation work. **Maximize paralle
 4c. **Acceptance criteria check** — after reading the plan, check `## Acceptance Criteria`:
 
 - If AC exists: acknowledge it to the user — "I see N acceptance criteria. I'll make sure the implementation covers these." List any Gherkin (`Given/When/Then`) items briefly so the user knows you've internalized them.
-- **Sync status check:** Review the `## Acceptance Criteria > AC Sync Log` table. If the most recent entry shows AC was modified after the last `synced` entry, flag: "AC was updated since the last Linear sync — I'll sync it after implementation if needed."
+- **Sync status check:** Review the `## Acceptance Criteria > AC Sync Log` table. If the most recent entry shows AC was modified after the last `synced` entry, flag: "AC was updated since the last ticket sync — I'll sync it after implementation if needed."
 - If no AC section or it's empty: note it but proceed — AC is not required for every ticket — only generate AC if the user asks.
 
 ## Task
@@ -247,11 +247,11 @@ $ARGUMENTS
    - Cross-check each AC item against the implementation — confirm it's covered
    - If any AC items were adjusted, confirm the adjustments were accepted before marking complete
    - If an AC item can't be verified from code alone (e.g. visual behavior), note it for manual QA
-8. **Sync AC to Linear if changed** — if any AC adjustments were accepted during implementation:
+8. **Sync AC to the ticket tracker if changed** — if any AC adjustments were accepted during implementation:
    - Read the updated `## Acceptance Criteria` from the plan
    - Extract ticket ID from `## Ticket`
    - Fetch current ticket description via `get_issue`, replace the `## Acceptance Criteria` section, update via `save_issue`
-   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to Linear ticket PRISM-NNNN`
+   - Append to `## History`: `YYYY-MM-DD [<branch>]: Synced updated AC to ticket PRISM-NNNN`
    - Append a row to `## Acceptance Criteria > AC Sync Log`: `| YYYY-MM-DD | Clove | AC adjustment accepted | updated | synced |`
 9. When implementation is complete, ask: "Would you like me to update the PR description with these changes?"
 

@@ -62,4 +62,4 @@ Save goal-state with `status` set per the write protocol in `.prism/skills/prism
 
 ## Exit condition
 
-Goal-state saved with a terminal-or-paused `status` and the human report surfaced — the run is complete, resumable, or stopped, with no source / Linear / merge writes from Sol.
+Goal-state saved with a terminal-or-paused `status` and the human report surfaced — the run is complete, resumable, or stopped, with no source / ticket-tracker / merge writes from Sol.

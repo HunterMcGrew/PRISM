@@ -4,7 +4,7 @@ The agent-generated PR description. This is the spec Clove, Briar, and Eric read
 
 This template intentionally diverges from `.github/pull_request_template.md`, which stays minimal. A PR body using this richer structure signals an agent-aware flow generated it; a PR body matching the sparse GitHub template signals the PR was opened cold. See `.prism/rules/pr-description.md` — do not sync the two files.
 
-File-level change details live in the GitHub diff, and acceptance criteria live in Linear and the branch plan. The PR body should never duplicate either.
+File-level change details live in the GitHub diff, and acceptance criteria live in the ticket tracker and the branch plan. The PR body should never duplicate either.
 
 **Keep this body current as scope evolves.** On squash-merge, this body becomes the merge commit description in `main` history — a stale body at merge time means a stale record forever. Agents auto-sync the agent-owned sections (Summary, What did you do?, Why did you do it?, How did you achieve it?) when the plan or branch drifts past the last body write; user-owned sections (any section the agent didn't originate) are preserved verbatim. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md).
 
@@ -22,7 +22,7 @@ File-level change details live in the GitHub diff, and acceptance criteria live 
 
 ## Why did you do it?
 
-[The problem or motivation. Link the Linear ticket's "Rationale" if it's already well-written there.]
+[The problem or motivation. Link the ticket's "Rationale" if it's already well-written there.]
 
 ## How did you achieve it?
 
@@ -38,7 +38,7 @@ File-level change details live in the GitHub diff, and acceptance criteria live 
 
 ## Ticket
 
-[${TICKET_PREFIX}-#### or Linear URL]
+[${TICKET_PREFIX}-#### or ticket URL]
 
 ## Type of Change
 
