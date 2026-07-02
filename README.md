@@ -162,6 +162,7 @@ These are the commands a consumer repo uses after adopting PRISM. Run from your 
 | `npx @huntermcgrew/prism update` | Pulls PRISM's latest canonical content into an already-adopted repo. Overwrites PRISM-owned files when unchanged; backs up diverged files with `.bak`. |
 | `pnpm prism:adopt` | Same as `npx ... adopt` but run from inside a local PRISM checkout. Use when you've cloned PRISM as a sibling or vendored it inside your repo. |
 | `pnpm prism:update` | Same as `npx ... update` but run from inside a local PRISM checkout. |
+| `--dry-run` | Add to `adopt` or `update` (either invocation style) to preview the run — prints the would-be written / skipped / overwritten / `.bak` summary without writing anything. Both commands also validate `.ai-skills/config.json` against the schema and confirm the target is inside a git repository before any write, dry-run or not. |
 
 ## Per-team config
 
