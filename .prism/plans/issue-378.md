@@ -68,7 +68,7 @@ https://github.com/HunterMcGrew/PRISM/issues/378 (lane L378 of epic #373)
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-07-02 (`prism:build`'s test step surfaces the same 4 pre-existing Windows-only failures present on origin/main; confirmed via baseline worktree, not introduced by this change)
-- [ ] PR description up to date
+- [x] PR description up to date — PR #390
 - [ ] Lasting decisions promoted to architect context (if applicable — none identified; delta computation is a local implementation detail, not a cross-cutting pattern)
 
 **Last updated:** 2026-07-02
