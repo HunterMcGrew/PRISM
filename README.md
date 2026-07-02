@@ -44,7 +44,7 @@ Open Claude Code inside your repo and invoke Atlas:
 
 Atlas generates per-team engineering rules from your actual code, populates stack-specific guidance, and fills in the stub anchors `adopt` put in place.
 
-For the full setup walkthrough — stack detection, config writing, resumable state, and alternative install methods (vendor clone, global link, `--consumer` flag) — see **[docs/getting-started.md](./docs/getting-started.md)** and **[docs/adopt-prism.md](./docs/adopt-prism.md)**.
+For the full setup walkthrough — stack detection, config writing, resumable state, and alternative install methods (vendor clone, global link, `--consumer` flag) — see **[docs/getting-started.md](./docs/getting-started.md)** and **[docs/adopt-prism.md](./docs/adopt-prism.md)**. Adopting into a repo that already has its own AI tooling? See **[docs/adopting-into-existing-repos.md](./docs/adopting-into-existing-repos.md)** for what adopt touches, what it skips, and how to resolve `.bak` conflicts.
 
 ## Repo shape
 
@@ -124,6 +124,7 @@ PRISM/
 │   ├── overview.md               # what PRISM is and why teams adopt it
 │   ├── getting-started.md        # setup walkthrough
 │   ├── adopt-prism.md            # adopt + update reference (npx, vendor, global link)
+│   ├── adopting-into-existing-repos.md  # coexisting with existing AI tooling + .bak conflicts
 │   ├── workflow.md               # ticket → plan → implement → review → ship
 │   ├── personas.md               # what each persona does and when to call them
 │   └── parameterization.md       # config keys + token reference

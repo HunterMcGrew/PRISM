@@ -112,6 +112,8 @@ The map is per-team and lives at the bottom of this file once your team's docs a
 |------------|------------------|--------------|
 | `.prism/rules/<rule>.md` | `${documentation.location}<path>.md` | Rules file has enforceable spec; docs file is narrative onboarding |
 | `.prism/architect/<topic>.md` | `${documentation.location}<path>.md` | Architect file has patterns and review rules; docs file walks readers through the topic |
+| `.prism/rules/skill-routing.md` | `docs/adopting-into-existing-repos.md` | Rules file is the enforceable always-loaded routing table; docs file explains how it interacts with a consumer's own pre-existing skills and routing |
+| `scripts/ai-skills/ownership.ts`, `scripts/ai-skills/adopt.ts` | `docs/adopting-into-existing-repos.md` | Source is the enforced skip-if-exists / `.bak`-on-divergence logic; docs file narrates the coexistence and conflict-resolution workflow for consumers |
 
 Add rows as architect docs land. The map is informal — its job is to surface counterpart files during edit, not to be exhaustive.
 
