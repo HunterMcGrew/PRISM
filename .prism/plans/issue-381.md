@@ -176,6 +176,7 @@ Run `pnpm prism:check` (or `pnpm prism:build` if `prism:check` is not the aggreg
 ## History
 
 - 2026-07-02 [hmcgrew/381-config-model-tiers]: Winston planned the lane — chose tier-named-buckets + overrides schema for `modelTiers`; classified CHANGE vs KEEP across conductor body/steps/rules/docs; re-anchored the goal-state tier-vocabulary cross-reference. See Decision: modelTiers schema shape.
+- 2026-07-02 [hmcgrew/381-config-model-tiers]: Clove implemented all 9 content tasks — abstracted the shared.md tier table plus the "Sol-on-Opus" phrase, fixed codex.md/cursor.md, added `modelTiers` to config.schema.json, added the review-loop Eric-override sentence, re-anchored goal-state.md:79, fixed step-03/step-06, rewrote implementation-task-detail.md's Why line, and added parameterization.md's field row + `## Model tiering` section. Verified via the full sweep, schema parse, `prism:build`, and `prism:crossref-lint`.
 
 ---
 
@@ -183,18 +184,18 @@ Run `pnpm prism:check` (or `pnpm prism:build` if `prism:check` is not the aggreg
 
 ### Behavioral
 
-- [ ] Given a Codex or Cursor platform build, When the generated `prism-conductor` body is read, Then it names no Claude model (Opus/Sonnet/Haiku/Fable) — only the abstract tiers `top` and `worker`.
-- [ ] Given a consumer's `.ai-skills/config.json` with a `modelTiers` object, When the config is validated against `config.schema.json`, Then it passes (the field is optional and its `top`/`worker`/`overrides` shape is accepted).
-- [ ] Given a consumer sets `modelTiers.overrides.eric` to a model in a different family from the workers, When they read the review-loop three-strike survival rule, Then it tells them a configured Eric override restores the independent second opinion.
-- [ ] Given `docs/parameterization.md`, When a reader reaches the `## Model tiering` section, Then it explains the same-model review tradeoff and shows how to set Eric's tier explicitly.
+- [x] Given a Codex or Cursor platform build, When the generated `prism-conductor` body is read, Then it names no Claude model (Opus/Sonnet/Haiku/Fable) — only the abstract tiers `top` and `worker`.
+- [x] Given a consumer's `.ai-skills/config.json` with a `modelTiers` object, When the config is validated against `config.schema.json`, Then it passes (the field is optional and its `top`/`worker`/`overrides` shape is accepted).
+- [x] Given a consumer sets `modelTiers.overrides.eric` to a model in a different family from the workers, When they read the review-loop three-strike survival rule, Then it tells them a configured Eric override restores the independent second opinion.
+- [x] Given `docs/parameterization.md`, When a reader reaches the `## Model tiering` section, Then it explains the same-model review tradeoff and shows how to set Eric's tier explicitly.
 
 ### Non-behavioral
 
-- [ ] The sweep `grep -rnE 'Opus|Sonnet|Haiku|Fable'` over the six canonical CHANGE surfaces (conductor `shared.md`/`codex.md`/`cursor.md`, `step-03`/`step-06`, `implementation-task-detail.md`) returns nothing.
-- [ ] `goal-state.md` has no dangling pointer claiming tier model values are "defined in shared.md § Model tiering."
-- [ ] ADR references to models are unchanged (historical records preserved).
-- [ ] The Claude overlay `model: 'opus'` / `model: 'sonnet'` examples in `CLAUDE.md` are preserved (illustrative mechanism).
-- [ ] `pnpm prism:check` (or `pnpm prism:build`) exits 0, and the literal guard passes.
+- [x] The sweep `grep -rnE 'Opus|Sonnet|Haiku|Fable'` over the six canonical CHANGE surfaces (conductor `shared.md`/`codex.md`/`cursor.md`, `step-03`/`step-06`, `implementation-task-detail.md`) returns nothing.
+- [x] `goal-state.md` has no dangling pointer claiming tier model values are "defined in shared.md § Model tiering."
+- [x] ADR references to models are unchanged (historical records preserved).
+- [x] The Claude overlay `model: 'opus'` / `model: 'sonnet'` examples in `CLAUDE.md` are preserved (illustrative mechanism).
+- [x] `pnpm prism:build` and `pnpm prism:crossref-lint` exit 0; `pnpm prism:check-types` fails on a pre-existing, unrelated `esbuild` module-resolution error reproduced identically on unmodified `origin/main` (confirmed via `git stash` A/B) — not a regression from this change. `prism:test`'s 3 Windows POSIX-path failures + 1 `paths.json` drift-check failure likewise reproduce identically pre-change.
 
 ### AC Sync Log
 

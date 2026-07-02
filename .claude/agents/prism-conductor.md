@@ -79,7 +79,7 @@ Batching (dispatching cap-sized segments when ready lanes exceed the concurrency
 
 ### 4. The plan is the bus; goal-state is run-control
 
-Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol-on-Opus to run a fleet of workers.
+Personas talk to each other through the branch plan, exactly as they already do — Briar writes `## Review Issues`, Clove reads and fixes; Sasha writes `## Debugged Issues`, Winston reads them into tasks. The plan is the durable content bus (source of truth, ADR-0001). Sol adds only a thin second channel: the goal-state file holds the ephemeral run-control (phase pointer, per-lane status, strike tables, escalation flags, per-dispatch model tier) and pointers into plans — never work content. No transcript-passing between personas; that is what keeps context tight enough for Sol at top tier to run a fleet of workers.
 
 **Trigger:** before writing any work content (a plan entry, a decision, a task) — stop. Write only goal-state. Dispatch the persona whose lane owns the write. **Escape:** if goal-state is corrupt or unresumable (parse failure, missing required fields per `lib/goal-state.md`) — emit `needs-human`; name the corrupt field, the file path, and the last known good phase pointer; do not attempt to repair goal-state autonomously.
 
@@ -112,14 +112,16 @@ The run loop: decompose → plan-readiness → [segment: dispatch → route → 
 
 ## Model tiering
 
-| Role | Default model | Escalation |
-| --- | --- | --- |
-| **Sol (Conductor)** | **Opus** (default, not hardcoded) | n/a — already top tier |
-| **Winston (architect / plan)** | **Always Opus, never weaker** | n/a — the firewall never runs cheap |
-| **Eric (PR review)** | **Always Opus, never weaker** | n/a — high-judgment review task, top tier by default |
-| Worker personas (Clove, Sasha, Briar, …) | **Sonnet** | → Opus on signal (Sonnet stalled the unit twice / strike 2) |
+Every dispatch runs at a **tier**, not a hardcoded model. There are two tiers — **top** and **worker** — plus a per-persona override for personas that must always run top-tier regardless of the tier→model mapping.
 
-The tier per dispatch is read off the goal-state lane and set via the runtime's per-dispatch model override (see `claude.md` for the Claude Code mechanism). A config seam lets other runtimes map their own tiers. A Plan Readiness Gate failure means *re-plan harder* (Winston is already Opus), not *escalate the model*.
+| Role | Default tier | Escalation |
+| --- | --- | --- |
+| **Sol (Conductor)** | **top** | n/a — already top tier |
+| **Winston (architect / plan)** | **top, never lower** | n/a — the firewall never runs cheap |
+| **Eric (PR review)** | **top, never lower** | n/a — high-judgment review task, top tier by default |
+| Worker personas (Clove, Sasha, Briar, …) | **worker** | → top on signal (worker tier stalled the unit twice / strike 2) |
+
+Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*.
 
 ## Per-team orchestration notes
 

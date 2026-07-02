@@ -68,6 +68,12 @@ intent are clear before starting.
   continue, marked in the scoreboard. Strike 3: trigger **Procedure E** —
   pause the loop on that issue and bring the user in with the full survival
   history.
+  When the reviewer and fixer run the same model, their strike votes are
+  correlated — a blind spot one misses, the other likely misses too — so the
+  mandatory one-sentence diagnosis (Procedure A) is the arbiter of whether a
+  re-raise is real progress, not the strike count alone. Honor a configured
+  Eric `overrides` entry (`.ai-skills/config.json` `modelTiers.overrides.eric`)
+  when present — a cross-model reviewer restores the independent second opinion.
 - **Disagreement fast-path.** If the strike-1 diagnosis names disagreement —
   the fixer believes the finding is wrong — skip the strike counter and trigger
   **Procedure F** immediately. Disagreement ping-pong would measure
