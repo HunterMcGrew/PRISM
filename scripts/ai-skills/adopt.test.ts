@@ -6,8 +6,10 @@
  * state plus the returned summary. Branches covered: seed writes-absent /
  * seed skips-present / runAdopt produces .sync-manifest.json / byte-identical
  * consumer file is a no-op not a .bak / diverged consumer file preserved as .bak /
- * manifest-exists refusal.
+ * manifest-exists refusal / --dry-run leaves the filesystem untouched / config
+ * schema validation names the offending field / git-repo check fails fast.
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -19,13 +21,32 @@ import {
 	runAdopt,
 	seedConsumerContentRoot,
 } from "./adopt";
-import { hashContent } from "./utils";
+import { ensureConsumerPathDefinitions, hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
+
+/** Initializes a git repo at `dir` with deterministic, side-effect-free config. */
+function gitInit(dir: string): void {
+	execFileSync("git", ["init", "-q"], { cwd: dir, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "test@prism.local"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "PRISM Test"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+}
 
 /**
  * Sets up a temporary directory tree with isolated prism and consumer roots.
  * Provides `prismSourceRoot` (the PRISM repo root, containing both `.prism/`
  * and `templates/install/.prism/`) and `consumerRepoRoot`.
+ *
+ * `consumerRepoRoot` is git-initialized so `assertInsideGitRepo` (issue #376)
+ * passes for every test that doesn't specifically exercise the git-repo
+ * refusal path. `prismSourceRoot` gets a copy of the real `config.schema.json`
+ * so `validateConsumerConfigAgainstSchema` validates against the actual schema
+ * shape, not a hand-maintained test double that could drift from it.
  */
 async function withTempRoots(
 	body: (roots: {
@@ -46,6 +67,18 @@ async function withTempRoots(
 	await fs.mkdir(prismContentRoot, { recursive: true });
 	await fs.mkdir(installSeedRoot, { recursive: true });
 	await fs.mkdir(consumerContentRoot, { recursive: true });
+	gitInit(consumerRepoRoot);
+
+	const realSchemaPath = path.join(
+		process.cwd(),
+		".ai-skills",
+		"config.schema.json"
+	);
+	await fs.mkdir(path.join(prismSourceRoot, ".ai-skills"), { recursive: true });
+	await fs.copyFile(
+		realSchemaPath,
+		path.join(prismSourceRoot, ".ai-skills", "config.schema.json")
+	);
 
 	try {
 		await body({
@@ -600,3 +633,215 @@ test("runAdopt leaves a complete consumer paths.json untouched (no clobber)", as
 		}
 	);
 });
+
+// --- --dry-run tests (issue #376) ---
+
+test("runAdopt --dry-run writes nothing but returns the full summary", async () => {
+	await withTempRoots(
+		async ({
+			prismSourceRoot,
+			prismContentRoot,
+			installSeedRoot,
+			consumerRepoRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await writeFile(installSeedRoot, "rules/seed-only.md", "# Seed\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true });
+
+			assert.deepEqual(summary.seed.written, ["rules/seed-only.md"]);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/seed-only.md"),
+				false,
+				"dry-run must not write the seed file"
+			);
+
+			const outcome = summary.update.outcomes.find(
+				(o) => o.relativePath === "rules/some-rule.md"
+			);
+			assert.ok(outcome, "dry-run still computes the file-pass outcome");
+			assert.equal(outcome.action, "written");
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/some-rule.md"),
+				false,
+				"dry-run must not write the PRISM-owned file"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				false,
+				"dry-run must not write the sync manifest"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				false,
+				"dry-run must not project the persona roster"
+			);
+		}
+	);
+});
+
+test("runAdopt --dry-run reports a diverged file as backed-up without writing a .bak", async () => {
+	await withTempRoots(
+		async ({
+			prismSourceRoot,
+			prismContentRoot,
+			consumerRepoRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(prismContentRoot, "rules/rule.md", "# PRISM version\n");
+			await writeFile(consumerContentRoot, "rules/rule.md", "# Hand-edited\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true });
+
+			const outcome = summary.update.outcomes.find(
+				(o) => o.relativePath === "rules/rule.md"
+			);
+			assert.ok(outcome);
+			assert.equal(outcome.action, "backed-up");
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/rule.md"),
+				"# Hand-edited\n",
+				"dry-run must not touch the consumer's existing file"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md.bak"),
+				false,
+				"dry-run must not write a .bak"
+			);
+		}
+	);
+});
+
+test("ensureConsumerPathDefinitions --dry-run reports 'written' without provisioning an absent paths.json", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, consumerRepoRoot }) => {
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			await fs.rm(path.join(consumerRepoRoot, ".ai-skills/definitions/paths.json"));
+
+			const outcome = await ensureConsumerPathDefinitions(
+				prismSourceRoot,
+				consumerRepoRoot,
+				true
+			);
+
+			assert.equal(outcome, "written", "dry-run reports the outcome a real run would have");
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".ai-skills/definitions/paths.json"),
+				false,
+				"dry-run must not provision paths.json"
+			);
+		}
+	);
+});
+
+// --- config schema validation tests (issue #376) ---
+
+test("runAdopt refuses a config.json with a ticketPrefix that fails the schema pattern", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, ticketPrefix: "not-valid" }, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() => runAdopt({ prismSourceRoot, consumerRepoRoot }),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("/ticketPrefix"),
+						`expected the offending field named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/some-rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
+		}
+	);
+});
+
+test("runAdopt refuses a config.json with an unrecognized techStack entry", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, techStack: ["not-a-real-stack"] }, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() => runAdopt({ prismSourceRoot, consumerRepoRoot }),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("techStack"),
+						`expected the offending field named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+		}
+	);
+});
+
+// --- git-repo check tests (issue #376) ---
+
+test("runAdopt fails fast when the consumer directory is not inside a git repository", async () => {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-adopt-nogit-"));
+	try {
+		const prismSourceRoot = path.join(tempRoot, "prism");
+		const prismContentRoot = path.join(prismSourceRoot, ".prism");
+		const consumerRepoRoot = path.join(tempRoot, "consumer");
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+
+		await fs.mkdir(prismContentRoot, { recursive: true });
+		await fs.mkdir(consumerContentRoot, { recursive: true });
+		// Deliberately no gitInit(consumerRepoRoot) — this is the case under test.
+
+		const realSchemaPath = path.join(process.cwd(), ".ai-skills", "config.schema.json");
+		await fs.mkdir(path.join(prismSourceRoot, ".ai-skills"), { recursive: true });
+		await fs.copyFile(
+			realSchemaPath,
+			path.join(prismSourceRoot, ".ai-skills", "config.schema.json")
+		);
+
+		await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+		);
+
+		await assert.rejects(
+			() => runAdopt({ prismSourceRoot, consumerRepoRoot }),
+			(err: unknown) => {
+				assert.ok(err instanceof Error);
+				assert.ok(
+					err.message.includes("not inside a git repository"),
+					`expected a git-repo refusal message, got: ${err.message}`
+				);
+				return true;
+			}
+		);
+		assert.equal(
+			await fileExists(consumerContentRoot, "rules/some-rule.md"),
+			false,
+			"a non-git target must fail before any file is written"
+		);
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+});
+

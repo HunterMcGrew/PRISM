@@ -7,6 +7,7 @@
  * `runAdoptCli`/`runUpdateCli`; its branches are exercised by the adopt/update
  * suites plus this file's coverage of the shared resolution and guard seams.
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -22,6 +23,19 @@ import {
 import { runInitCli } from "./init";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
+
+/** Initializes a git repo at `dir` with deterministic, side-effect-free config. */
+function gitInit(dir: string): void {
+	execFileSync("git", ["init", "-q"], { cwd: dir, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "test@prism.local"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "PRISM Test"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+}
 
 const CONSUMER_CONFIG_JSON = {
 	org: "Acme",
@@ -173,10 +187,24 @@ test("runUpdate refuses an empty PRISM source — the guard now fires through th
 	// case self-derivation makes reachable without a human in the loop.
 	await fs.mkdir(prismContentRoot, { recursive: true });
 	await fs.mkdir(consumerContentRoot, { recursive: true });
+	// runUpdate's git-repo check (issue #376) runs before the plausibility guard,
+	// so the consumer needs a real repo underneath it to reach the behavior
+	// under test.
+	gitInit(consumerRepoRoot);
 
 	// The consumer is fully onboarded: config + paths so runUpdate reaches the
-	// guard rather than failing on config resolution.
+	// guard rather than failing on config resolution. The config also has to
+	// pass runUpdate's schema validation (issue #376), which now also runs
+	// before the plausibility guard — a copy of the real schema lets it.
 	await writeConsumerConfig(consumerRepoRoot);
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/config.schema.json",
+		await fs.readFile(
+			path.join(process.cwd(), ".ai-skills", "config.schema.json"),
+			"utf8"
+		)
+	);
 
 	// The consumer records two PRISM-owned files; an empty source would wipe both.
 	await writeConsumerManifest(consumerContentRoot, {
