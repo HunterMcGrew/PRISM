@@ -33,6 +33,7 @@ Give consumers three trust docs — `SECURITY.md`, `docs/what-prism-writes.md`, 
 ## History
 
 - 2026-07-02 [hmcgrew/382-trust-docs]: Wrote SECURITY.md, docs/what-prism-writes.md, docs/troubleshooting.md — all claims verified against ownership.ts, adopt.ts, update.ts, build.ts, doctor.ts, eject.ts, sync-manifest.ts, agents-md-block.ts, templates/install/.claude/settings.json, and ADR-0067. Linked from README; crossref-lint and install-relative-link-gate pass clean.
+- 2026-07-02 [hmcgrew/382-trust-docs]: Fixed Briar's Major — added a "PRISM-owned platform mirrors" section to `docs/what-prism-writes.md` documenting the `.claude`/`.codex`/`.cursor` content-copy sync, verified against `build.ts` (`COPIED_CONTENT_AREAS`, marker-gated orphan cleanup) and `update.ts` (`runUpdate` → `refreshPlatformDirs` → `syncAllPlatformContentCopies`).
 
 ---
 
@@ -62,6 +63,18 @@ None.
 
 ---
 
+## Review Issues
+
+### `what-prism-writes.md` omits the platform content-copy write surface
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `docs/what-prism-writes.md` (whole doc — missing category)
+- **Problem:** `runUpdate` (called by both `prism update` and `prism adopt`, via `refreshPlatformDirs` → `syncAllPlatformContentCopies` in `update.ts:437` / `build.ts:273`) copies token-substituted, dialect-translated content from `.prism/rules`, `.prism/architect`, `.prism/spec`, `.prism/templates`, `.prism/references`, and `.prism/SPEC.md` (the exact `COPIED_CONTENT_AREAS` list, `build.ts:107-114`) into `.claude/`, `.codex/`, `.cursor/` **in the consumer's own repo** — not just PRISM's own repo. `docs/what-prism-writes.md`'s inventory only covers `.prism/` PRISM-owned paths and the `prism-*` persona skill directories; it never names this platform-mirror write surface as its own category. A consumer reading the doc to learn "every path adopt/update/eject can touch" would not learn that `.claude/rules/`, `.claude/architect/`, `.claude/references/`, and the Codex/Cursor equivalents also receive PRISM-generated content synced on every `update`.
+- **Suggested fix:** add a fourth category (or a subsection under PRISM-owned) documenting the platform content-copy dirs — name the exact areas copied (`rules`, `architect`, `spec`, `templates`, `references`, `SPEC.md`), the target roots per platform (`.claude/`, `.codex/`, `.agents/`, `.cursor/`), and that these are managed/overwritten on every sync (with the `.ai-skill-generated` marker gating orphan cleanup, same as the persona-skill dirs). Cross-reference `ownership.ts`'s `PRISM_OWNED_GLOBS` alongside `build.ts`'s `COPIED_CONTENT_AREAS` as the two sources of truth.
+
+---
+
 ## Cleanup Items
 
 None.
@@ -70,7 +83,7 @@ None.
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [x] No critical or major issues — the 1 Major (platform content-copy write surface undocumented) is fixed
 - [x] All links resolve — crossref-lint + install-relative-link-gate clean
 - [x] No stray console.logs or debug artifacts (docs-only change)
 - [x] Every non-trivial claim verified against source, cited in PR body / report

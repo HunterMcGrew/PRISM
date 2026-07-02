@@ -34,6 +34,21 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 | `.prism/references/**` | Operational reference docs shared across skills (startup sequences, doc-writing guides, and similar) |
 | `.prism/SPEC.md` | The top-level spec file describing how the tier system works |
 
+## PRISM-owned platform mirrors (synced on every update)
+
+`prism update` and `prism adopt` also mirror a subset of `.prism/` into every AI platform directory your config enables — `.claude/`, `.codex/`, and `.cursor/` by default (the exact target roots live in `.prism/paths.json` under `generated.platformContentCopies`). This is a second PRISM-owned write surface, separate from the `.prism/` paths above: every path it touches lives inside your own repo, outside `.prism/`.
+
+The mirrored areas are `rules`, `architect`, `spec`, `templates`, and `references`, plus the loose `SPEC.md` file — the `COPIED_CONTENT_AREAS` list in `scripts/ai-skills/build.ts`. Notably absent: `plans/` and `lessons.md` never leave `.prism/`, since those are agent-written working memory, not synced content.
+
+| When | What happens |
+|---|---|
+| Every `prism update` | `runUpdate` calls `refreshPlatformDirs`, which calls `syncAllPlatformContentCopies` — each enabled platform directory gets a fresh copy of the areas above, with token substitution and per-platform dialect transforms applied |
+| Every `prism adopt` | The same sync pass runs as part of the initial file pass, so the mirrors exist from the first adopt |
+
+Each synced area directory carries a marker file (`Managed by scripts/ai-skills/build.ts`) that PRISM uses two ways: to tell a genuinely unbuilt platform apart from drift during `prism doctor` / check mode, and to gate orphan cleanup — if a file that previously existed in the source area is removed from `.prism/`, its mirrored copy is deleted from the platform directory on the next sync, but only inside marker-carrying areas. A platform directory with no marker (never built) is left alone rather than reported as drift.
+
+These mirrors are generated output, not a second copy for you to maintain — don't hand-edit files under `.claude/rules/`, `.claude/architect/`, `.claude/spec/`, `.claude/templates/`, `.claude/references/` (or the `.codex`/`.cursor` equivalents). Anything you write there is overwritten on the next sync with no `.bak` protection — the divergence-and-backup mechanism described below applies to canonical `.prism/` paths, not to these generated platform copies. If you need a permanent customization, it belongs in `.prism/custom/` (mirrored via the same mechanism into each platform's `custom/` subdirectory) or another consumer-owned path.
+
 ## Consumer-owned paths (never touched after creation)
 
 PRISM's sync passes never write to these paths once they exist — not on `adopt`, not on any later `update`. This is where your own customizations, decisions, and working history belong.
