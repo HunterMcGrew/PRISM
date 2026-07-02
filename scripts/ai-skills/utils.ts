@@ -398,11 +398,15 @@ export function isPathDefinitionsComplete(value: unknown): value is PathDefiniti
  * is the correct shape.
  *
  * Returns "written" when it provisioned or repaired, "ok" when the consumer
- * file was already complete.
+ * file was already complete. `dryRun` still performs both existence/completeness
+ * checks and returns the outcome that would result, but skips the write —
+ * consistent with the "compute, then guard the write" split the rest of the
+ * dry-run seams use.
  */
 export async function ensureConsumerPathDefinitions(
 	prismSourceRoot: string,
-	consumerRepoRoot: string
+	consumerRepoRoot: string,
+	dryRun = false
 ): Promise<"written" | "ok"> {
 	const consumerPathsFile = path.join(
 		consumerRepoRoot,
@@ -436,8 +440,10 @@ export async function ensureConsumerPathDefinitions(
 		);
 	}
 
-	await ensureDirectory(path.dirname(consumerPathsFile));
-	await fs.writeFile(consumerPathsFile, packageRaw, "utf8");
+	if (!dryRun) {
+		await ensureDirectory(path.dirname(consumerPathsFile));
+		await fs.writeFile(consumerPathsFile, packageRaw, "utf8");
+	}
 
 	return "written";
 }

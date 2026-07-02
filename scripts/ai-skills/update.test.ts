@@ -7,8 +7,12 @@
  * new / no-op / clean-overwrite / diverged→.bak / no-manifest byte-compare
  * fallback (no .bak when already current) / consumer-owned untouched /
  * unknown-classified untouched / deleted-in-PRISM removed / deleted-in-PRISM
- * already-absent no-op / manifest rewritten.
+ * already-absent no-op / manifest rewritten / --dry-run leaves the filesystem
+ * untouched / config schema validation names the offending field / git-repo
+ * check fails fast (issue #376, `runUpdate` integration tests only —
+ * `applyFilePass` itself carries no guard and its tests are unaffected).
  */
+import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
@@ -21,6 +25,19 @@ import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
 } from "./sync-manifest";
+
+/** Initializes a git repo at `dir` with deterministic, side-effect-free config. */
+function gitInit(dir: string): void {
+	execFileSync("git", ["init", "-q"], { cwd: dir, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "test@prism.local"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "PRISM Test"], {
+		cwd: dir,
+		stdio: "ignore",
+	});
+}
 
 const CONSUMER_PATHS_JSON = {
 	canonical: {
@@ -403,6 +420,13 @@ test("assertSourceIsPlausible passes when the source has at least one PRISM-owne
 
 // --- runUpdate integration: file pass + content copy + roster projection ---
 
+/**
+ * `consumerRepoRoot` is git-initialized so `assertInsideGitRepo` (issue #376)
+ * passes for every test that doesn't specifically exercise the git-repo
+ * refusal path. `prismRepoRoot` gets a copy of the real `config.schema.json`
+ * so `validateConsumerConfigAgainstSchema` validates against the actual
+ * schema shape.
+ */
 async function withTempRepoRoots(
 	body: (roots: {
 		prismRepoRoot: string;
@@ -418,6 +442,14 @@ async function withTempRepoRoots(
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
 	await fs.mkdir(prismContentRoot, { recursive: true });
 	await fs.mkdir(consumerContentRoot, { recursive: true });
+	gitInit(consumerRepoRoot);
+
+	const realSchemaPath = path.join(process.cwd(), ".ai-skills", "config.schema.json");
+	await fs.mkdir(path.join(prismRepoRoot, ".ai-skills"), { recursive: true });
+	await fs.copyFile(
+		realSchemaPath,
+		path.join(prismRepoRoot, ".ai-skills", "config.schema.json")
+	);
 
 	// Consumer config + paths.json so the platform refresh resolves.
 	await writeFile(
@@ -507,4 +539,210 @@ test("runUpdate copies content and projects the persona roster", async () => {
 			);
 		}
 	);
+});
+
+// --- --dry-run tests (issue #376) ---
+
+test("runUpdate --dry-run writes nothing but returns the full summary", async () => {
+	await withTempRepoRoots(
+		async ({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerContentRoot, "rules/local.md", "# Local rule\n");
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			const outcome = outcomeFor(summary, "rules/shipped.md");
+			assert.equal(outcome.action, "written");
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/shipped.md"),
+				false,
+				"dry-run must not write the PRISM-owned file"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, SYNC_MANIFEST_FILENAME),
+				false,
+				"dry-run must not write the sync manifest"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/rules/local.md"),
+				false,
+				"dry-run must not run the platform content copy"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				false,
+				"dry-run must not project the persona roster"
+			);
+		}
+	);
+});
+
+test("runUpdate --dry-run reports a diverged file as backed-up without writing anything", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/diverged.md", "# incoming\n");
+			await writeFile(consumerContentRoot, "rules/diverged.md", "# hand-edited\n");
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			const outcome = outcomeFor(summary, "rules/diverged.md");
+			assert.equal(outcome.action, "backed-up");
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/diverged.md"),
+				"# hand-edited\n",
+				"dry-run must not overwrite the consumer's diverged file"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/diverged.md.bak"),
+				false,
+				"dry-run must not write a .bak"
+			);
+		}
+	);
+});
+
+// --- config schema validation tests (issue #376) ---
+
+test("runUpdate refuses a config.json with a ticketPrefix that fails the schema pattern", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/rule.md", "# Rule\n");
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, ticketPrefix: "lowercase" }, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("/ticketPrefix"),
+						`expected the offending field named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
+		}
+	);
+});
+
+test("runUpdate refuses a config.json missing a required field", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/rule.md", "# Rule\n");
+			const { ticketSystem: _ticketSystem, ...withoutTicketSystem } = CONSUMER_CONFIG_JSON;
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify(withoutTicketSystem, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("/ticketSystem"),
+						`expected the offending field named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
+		}
+	);
+});
+
+// --- git-repo check tests (issue #376) ---
+
+test("runUpdate fails fast when the consumer directory is not inside a git repository", async () => {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-update-nogit-"));
+	try {
+		const prismRepoRoot = path.join(tempRoot, "prism");
+		const consumerRepoRoot = path.join(tempRoot, "consumer");
+		const prismContentRoot = path.join(prismRepoRoot, ".prism");
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await fs.mkdir(prismContentRoot, { recursive: true });
+		await fs.mkdir(consumerContentRoot, { recursive: true });
+		// Deliberately no gitInit(consumerRepoRoot) — this is the case under test.
+
+		const realSchemaPath = path.join(process.cwd(), ".ai-skills", "config.schema.json");
+		await fs.mkdir(path.join(prismRepoRoot, ".ai-skills"), { recursive: true });
+		await fs.copyFile(
+			realSchemaPath,
+			path.join(prismRepoRoot, ".ai-skills", "config.schema.json")
+		);
+
+		await writeFile(prismContentRoot, "rules/rule.md", "# Rule\n");
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify(CONSUMER_CONFIG_JSON, null, "\t")}\n`
+		);
+
+		await assert.rejects(
+			() =>
+				runUpdate({
+					prismRepoRoot,
+					consumerRepoRoot,
+					prismContentRoot,
+					consumerContentRoot,
+				}),
+			(err: unknown) => {
+				assert.ok(err instanceof Error);
+				assert.ok(
+					err.message.includes("not inside a git repository"),
+					`expected a git-repo refusal message, got: ${err.message}`
+				);
+				return true;
+			}
+		);
+		assert.equal(
+			await fileExists(consumerContentRoot, "rules/rule.md"),
+			false,
+			"a non-git target must fail before any file is written"
+		);
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
 });

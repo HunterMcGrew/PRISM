@@ -18,7 +18,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { resolveConsumerRoot, parseConsumerFlag } from "./lib/consumer-root";
+import {
+	assertInsideGitRepo,
+	resolveConsumerRoot,
+	parseConsumerFlag,
+	parseDryRunFlag,
+} from "./lib/consumer-root";
+import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { loadSyncManifest } from "./sync-manifest";
 import {
 	resolvePrismSource,
@@ -47,15 +53,20 @@ export interface AdoptSummary {
  *
  * Returns a summary listing which paths were written and which were skipped so
  * the caller can surface the result to the user.
+ *
+ * `dryRun` still walks the full seed tree and classifies every path as
+ * written or skipped, but never touches the consumer filesystem — the same
+ * "compute the outcome, then guard the write" split `update.ts` uses.
  */
 export async function seedConsumerContentRoot(
 	installSeedRoot: string,
-	consumerContentRoot: string
+	consumerContentRoot: string,
+	dryRun = false
 ): Promise<SeedSummary> {
 	const written: string[] = [];
 	const skipped: string[] = [];
 
-	await walkAndSeed(installSeedRoot, installSeedRoot, consumerContentRoot, written, skipped);
+	await walkAndSeed(installSeedRoot, installSeedRoot, consumerContentRoot, written, skipped, dryRun);
 
 	return { written, skipped };
 }
@@ -65,7 +76,8 @@ async function walkAndSeed(
 	currentDir: string,
 	consumerContentRoot: string,
 	written: string[],
-	skipped: string[]
+	skipped: string[],
+	dryRun: boolean
 ): Promise<void> {
 	const entries = await fs.readdir(currentDir, { withFileTypes: true });
 
@@ -75,13 +87,15 @@ async function walkAndSeed(
 		const consumerAbsolute = path.join(consumerContentRoot, relativePath);
 
 		if (entry.isDirectory()) {
-			await walkAndSeed(seedRoot, seedAbsolute, consumerContentRoot, written, skipped);
+			await walkAndSeed(seedRoot, seedAbsolute, consumerContentRoot, written, skipped, dryRun);
 		} else if (entry.isFile()) {
 			if (await pathExists(consumerAbsolute)) {
 				skipped.push(relativePath);
 			} else {
-				await ensureDirectory(path.dirname(consumerAbsolute));
-				await fs.copyFile(seedAbsolute, consumerAbsolute);
+				if (!dryRun) {
+					await ensureDirectory(path.dirname(consumerAbsolute));
+					await fs.copyFile(seedAbsolute, consumerAbsolute);
+				}
 				written.push(relativePath);
 			}
 		}
@@ -114,12 +128,24 @@ export async function assertConsumerIsEstablished(
  * Refuses when a `.sync-manifest.json` already exists — that is `prism:update`
  * territory, not `prism:adopt`. The guard lives here (not only in `main()`) so
  * any caller of `runAdopt` gets the safety invariant, not just the CLI path.
+ *
+ * The git-repo check and config schema validation run before any write —
+ * including the seed pass, which happens before `runUpdate` is even called.
+ * `runUpdate` re-validates both on its own path too (so a direct `runUpdate`
+ * caller is protected), but adopt's seed writes land first in this function's
+ * own sequence, so adopt needs its own upfront guard rather than relying on
+ * `runUpdate` to catch it later.
+ *
+ * `dryRun` threads through every write in the sequence — path-definitions
+ * provisioning, the seed pass, and the delegated `runUpdate` — so the whole
+ * `runAdopt` orchestration can be previewed with nothing written.
  */
 export async function runAdopt(options: {
 	prismSourceRoot: string;
 	consumerRepoRoot: string;
+	dryRun?: boolean;
 }): Promise<AdoptSummary> {
-	const { prismSourceRoot, consumerRepoRoot } = options;
+	const { prismSourceRoot, consumerRepoRoot, dryRun = false } = options;
 
 	const installSeedRoot = path.join(prismSourceRoot, "templates", "install", ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
@@ -140,19 +166,24 @@ export async function runAdopt(options: {
 		);
 	}
 
+	assertInsideGitRepo(consumerRepoRoot);
+	validateConsumerConfigAgainstSchema(consumerRepoRoot, prismSourceRoot);
+
 	await assertConsumerIsEstablished(consumerContentRoot);
 
 	const pathsProvisioned = await ensureConsumerPathDefinitions(
 		prismSourceRoot,
-		consumerRepoRoot
+		consumerRepoRoot,
+		dryRun
 	);
 
-	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
+	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot, dryRun);
 	const update = await runUpdate({
 		prismRepoRoot: prismSourceRoot,
 		consumerRepoRoot,
 		prismContentRoot,
 		consumerContentRoot,
+		dryRun,
 	});
 
 	return { pathsProvisioned, seed, update };
@@ -175,29 +206,38 @@ export async function runAdoptCli(): Promise<void> {
 		);
 	}
 
+	const dryRun = parseDryRunFlag(argv);
+
 	// The manifest-exists guard lives in runAdopt so every caller is protected,
 	// not just this CLI path. runAdoptCli relies on runAdopt's guard.
-	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot });
+	const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot, dryRun });
 
-	reportSummary(summary);
+	reportSummary(summary, dryRun);
 }
 
-function reportSummary(summary: AdoptSummary): void {
+function reportSummary(summary: AdoptSummary, dryRun = false): void {
 	const { pathsProvisioned, seed, update } = summary;
+	const prefix = dryRun ? "prism:adopt (dry run)" : "prism:adopt";
 
 	if (pathsProvisioned === "written") {
 		console.log(
-			"prism:adopt provisioned .ai-skills/definitions/paths.json (was absent or incomplete)."
+			dryRun
+				? `${prefix} would provision .ai-skills/definitions/paths.json (absent or incomplete).`
+				: `${prefix} provisioned .ai-skills/definitions/paths.json (was absent or incomplete).`
 		);
 	}
 
 	if (seed.written.length > 0) {
-		console.log(`prism:adopt seeded ${seed.written.length} file(s) from install surface.`);
+		console.log(
+			dryRun
+				? `${prefix} would seed ${seed.written.length} file(s) from install surface.`
+				: `${prefix} seeded ${seed.written.length} file(s) from install surface.`
+		);
 	}
 
 	if (seed.skipped.length > 0) {
 		console.log(
-			`prism:adopt skipped ${seed.skipped.length} existing file(s) during seed.`
+			`${prefix} skipped ${seed.skipped.length} existing file(s) during seed.`
 		);
 	}
 
@@ -213,11 +253,17 @@ function reportSummary(summary: AdoptSummary): void {
 	const parts = Object.entries(counts)
 		.map(([action, count]) => `${count} ${action}`)
 		.join(", ");
-	console.log(`prism:adopt sync complete — ${parts || "no changes"}.`);
+	console.log(
+		dryRun
+			? `${prefix} sync would apply ${parts || "no changes"}.`
+			: `${prefix} sync complete — ${parts || "no changes"}.`
+	);
 
 	if (update.backups.length > 0) {
 		console.log(
-			`Preserved ${update.backups.length} diverged file(s) as .bak:`
+			dryRun
+				? `Would preserve ${update.backups.length} diverged file(s) as .bak:`
+				: `Preserved ${update.backups.length} diverged file(s) as .bak:`
 		);
 		for (const backup of update.backups) {
 			console.log(`  ${backup}`);

@@ -122,6 +122,28 @@ The explicit flag always takes priority over auto-detection. Both commands also 
 
 `prism adopt` is a first-contact command. It refuses to run a second time once `.prism/` already has a sync record — that's the signal that the repo is already adopted, and `prism update` is the right command from that point on.
 
+## Preview a run with `--dry-run`
+
+Both `adopt` and `update` accept `--dry-run`. It runs the full classification pass — every file still gets a `written` / `no-op` / `overwritten` / `backed-up` / `removed` decision — but nothing is written, overwritten, or removed:
+
+```bash
+npx @huntermcgrew/prism update --dry-run
+npx @huntermcgrew/prism adopt --dry-run
+```
+
+The printed summary is the same shape a real run produces, prefixed with `(dry run)` so it's unambiguous in CI logs. Useful before a first `adopt` on an unfamiliar repo, or before an `update` when you want to see how many files have diverged and would get a `.bak` before committing to the sync.
+
+`pnpm prism:adopt --dry-run` and `pnpm prism:update --dry-run` work the same way from a local checkout.
+
+## Safety checks before any write
+
+Before either command writes a single file, it runs two checks:
+
+- **Config validation.** `.ai-skills/config.json` is validated against the schema — required fields, the `ticketPrefix` pattern, `ticketSystem.kind`, and `techStack` entries all have to be valid. A hand-edited config that fails validation is rejected with the specific field that's wrong, before any file is touched.
+- **Git-repo check.** The target directory has to be inside a git repository. PRISM writes files that should be reviewable and revertable via `git diff` / `git checkout` — running adopt or update outside version control (a bad `--consumer` path, or a stray invocation) is refused with a clear message instead of silently writing ungoverned files.
+
+Both checks apply whether or not `--dry-run` is set.
+
 ## Help
 
 ```bash

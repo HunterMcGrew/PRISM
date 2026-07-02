@@ -136,6 +136,31 @@ export function resolveConsumerRoot(options: {
 	return path.resolve(enclosing);
 }
 
+/**
+ * Guards against running adopt/update against a directory that isn't inside a
+ * git repository. Uses the same `git rev-parse` probe style as the rest of
+ * this file (`--is-inside-work-tree` returns `"true"` on stdout when `dir` is
+ * inside a work tree, and a non-zero exit — caught by `gitCapture` — anywhere
+ * else, including when `git` itself isn't installed).
+ *
+ * Without this guard, a bad `--consumer` path or a stray invocation outside
+ * any repo still runs the full write pass: PRISM-owned files land on disk
+ * with no version control underneath them, so a bad sync can't be reviewed or
+ * reverted via `git diff` / `git checkout`. Failing fast here, before any
+ * file is touched, keeps that safety net in place.
+ */
+export function assertInsideGitRepo(dir: string): void {
+	const result = gitCapture(["rev-parse", "--is-inside-work-tree"], dir);
+
+	if (result !== "true") {
+		throw new Error(
+			`prism: ${dir} is not inside a git repository. PRISM writes files that ` +
+				"should be reviewable and revertable via git — run this from inside a " +
+				"git repo, or pass --consumer <path-to-a-git-repo>."
+		);
+	}
+}
+
 /** Parses the `--consumer <dir>` / `--consumer=<dir>` flag from argv, or null. */
 export function parseConsumerFlag(argv: string[]): string | null {
 	const flagIndex = argv.indexOf("--consumer");
@@ -167,4 +192,14 @@ export function parseConsumerFlag(argv: string[]): string | null {
 	}
 
 	return null;
+}
+
+/**
+ * Parses the `--dry-run` flag from argv. A boolean-valued flag, unlike
+ * `--consumer` / `--prism-source` — presence means `true`, absence means
+ * `false`. Shared by `adopt.ts`'s and `update.ts`'s CLI entry points so both
+ * commands recognize the flag the same way.
+ */
+export function parseDryRunFlag(argv: string[]): boolean {
+	return argv.includes("--dry-run");
 }
