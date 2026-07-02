@@ -257,6 +257,7 @@ Give `prism adopt` an opt-in path that seeds a minimal, build-maintainable root 
 ## History
 
 - 2026-07-02 [hmcgrew/393-seed-agents-md]: Winston created the plan for issue #393 (lane L-SEED, epic #373). Verified the composition points before designing — `syncAgentsMdTier1Block` early-returns only on absent file (`build.ts:476-478`), `replaceTier1Block` matches the marker pair first (`agents-md-block.ts:118-125`), and the sync manifest is `.prism/`-scoped so a root `AGENTS.md` cannot be a manifest key (`ownership.ts:24-30`, `sync-manifest.ts:45-55`). Those three facts fixed Decisions 2 (stub not full block) and 3 (in-file marker not manifest entry).
+- 2026-07-02 [hmcgrew/393-seed-agents-md]: Clove implemented all 5 tasks per Winston's plan — `parseSeedAgentsMdFlag`, `AGENTS_MD_SEEDED_MARKER` + `renderSeededAgentsMd` in `agents-md-block.ts`, the gated seed write in `runAdopt`/`runAdoptCli`/`reportSummary`, `removeSeededAgentsMd` in eject wired ahead of `collectRootFileNotices`, and the tightened `eject.test.ts:549` assertion. Verified the composition claim directly — a manual script confirmed `syncAgentsMdTier1Block` fills a seeded empty marker pair with real Tier-1 rule bodies while leaving the provenance marker untouched — then locked that behavior into two permanent tests in `agents-md-block.test.ts`. Added 4 adopt seed tests, 3 eject seed-reversal tests, and updated `docs/adopting-into-existing-repos.md` with the opt-in path.
 
 ---
 
@@ -272,19 +273,19 @@ Give `prism adopt` an opt-in path that seeds a minimal, build-maintainable root 
 
 ### Behavioral
 
-- [ ] Given a consumer repo with no `AGENTS.md` at the root, When the consumer runs `prism adopt` with the seed opt-in given, Then a minimal `AGENTS.md` is created carrying PRISM's generated-block markers and a note to run the build step, and adopt reports that it seeded the file (REQ-1, REQ-2)
-- [ ] Given a consumer repo with no `AGENTS.md`, When the consumer runs `prism adopt` without the seed opt-in, Then no `AGENTS.md` is created and the existing "no AGENTS.md found" warning still prints (REQ-4)
-- [ ] Given a consumer repo that already has an `AGENTS.md`, When the consumer runs `prism adopt` with or without the seed opt-in, Then the existing file is left byte-for-byte unchanged (REQ-4)
-- [ ] Given a consumer seeds an `AGENTS.md` and then runs the project's build step, When the build completes, Then the file's generated block is filled with the always-on Tier-1 rule bodies (REQ-2)
-- [ ] Given an `AGENTS.md` that PRISM seeded (carrying the seeded-provenance marker), When the consumer runs `prism eject` to completion, Then the seeded `AGENTS.md` is removed and the eject report names it (REQ-3)
-- [ ] Given an `AGENTS.md` the consumer authored themselves (no seeded-provenance marker), When the consumer runs `prism eject`, Then the file is preserved and the eject report notes it was not created by PRISM (REQ-3)
-- [ ] Given a consumer previews `prism eject` without confirming, When the report prints for a PRISM-seeded `AGENTS.md`, Then the file is left in place and the report states it would be removed (REQ-3)
+- [x] Given a consumer repo with no `AGENTS.md` at the root, When the consumer runs `prism adopt` with the seed opt-in given, Then a minimal `AGENTS.md` is created carrying PRISM's generated-block markers and a note to run the build step, and adopt reports that it seeded the file (REQ-1, REQ-2)
+- [x] Given a consumer repo with no `AGENTS.md`, When the consumer runs `prism adopt` without the seed opt-in, Then no `AGENTS.md` is created and the existing "no AGENTS.md found" warning still prints (REQ-4)
+- [x] Given a consumer repo that already has an `AGENTS.md`, When the consumer runs `prism adopt` with or without the seed opt-in, Then the existing file is left byte-for-byte unchanged (REQ-4)
+- [x] Given a consumer seeds an `AGENTS.md` and then runs the project's build step, When the build completes, Then the file's generated block is filled with the always-on Tier-1 rule bodies (REQ-2)
+- [x] Given an `AGENTS.md` that PRISM seeded (carrying the seeded-provenance marker), When the consumer runs `prism eject` to completion, Then the seeded `AGENTS.md` is removed and the eject report names it (REQ-3)
+- [x] Given an `AGENTS.md` the consumer authored themselves (no seeded-provenance marker), When the consumer runs `prism eject`, Then the file is preserved and the eject report notes it was not created by PRISM (REQ-3)
+- [x] Given a consumer previews `prism eject` without confirming, When the report prints for a PRISM-seeded `AGENTS.md`, Then the file is left in place and the report states it would be removed (REQ-3)
 
 ### Non-behavioral
 
-- [ ] `docs/adopting-into-existing-repos.md` describes the opt-in seed path, the no-overwrite guarantee, and the seeded-marker/eject-reversal behavior (REQ-1)
-- [ ] The project's type-check, cross-reference lint, test, and build steps all pass with the new flag, seed content, eject-reversal logic, and tests added (REQ-1)
-- [ ] The tightened eject test pins the exact corrected CLAUDE.md notice wording so a wording regression fails the suite (REQ-3)
+- [x] `docs/adopting-into-existing-repos.md` describes the opt-in seed path, the no-overwrite guarantee, and the seeded-marker/eject-reversal behavior (REQ-1)
+- [x] The project's type-check, cross-reference lint, test, and build steps all pass with the new flag, seed content, eject-reversal logic, and tests added (REQ-1)
+- [x] The tightened eject test pins the exact corrected CLAUDE.md notice wording so a wording regression fails the suite (REQ-3)
 
 ### AC Adjustments
 
@@ -302,19 +303,19 @@ Give `prism adopt` an opt-in path that seeds a minimal, build-maintainable root 
 
 ## PR Readiness
 
-- [ ] `--seed-agents-md` flag parser added (`consumer-root.ts`)
-- [ ] Seed content + provenance marker authored (`agents-md-block.ts`)
-- [ ] Seed wired into `runAdopt` gated on opt-in + absence, threaded through CLI + report (`adopt.ts`)
-- [ ] eject removes PRISM-seeded AGENTS.md, preserves consumer-authored (`eject.ts`)
-- [ ] Loose `eject.test.ts:549` assertion tightened
-- [ ] adopt seed tests + eject seed-reversal tests added
-- [ ] Docs updated (Eli)
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] Build passes — last run: (pending Clove)
+- [x] `--seed-agents-md` flag parser added (`consumer-root.ts`)
+- [x] Seed content + provenance marker authored (`agents-md-block.ts`)
+- [x] Seed wired into `runAdopt` gated on opt-in + absence, threaded through CLI + report (`adopt.ts`)
+- [x] eject removes PRISM-seeded AGENTS.md, preserves consumer-authored (`eject.ts`)
+- [x] Loose `eject.test.ts:549` assertion tightened
+- [x] adopt seed tests + eject seed-reversal tests added (plus 2 composition-lock tests in `agents-md-block.test.ts`)
+- [x] Docs updated (`docs/adopting-into-existing-repos.md`)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] Build passes — last run: 2026-07-02 (`pnpm run prism:build`, 480/480 tests)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable — none pending; all four Decisions carry `no promotion needed` verdicts)
+- [x] Lasting decisions promoted to architect context (if applicable — none pending; all four Decisions carry `no promotion needed` verdicts)
 
 **Last updated:** 2026-07-02
