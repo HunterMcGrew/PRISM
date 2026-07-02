@@ -34,6 +34,7 @@ Give consumers three trust docs — `SECURITY.md`, `docs/what-prism-writes.md`, 
 
 - 2026-07-02 [hmcgrew/382-trust-docs]: Wrote SECURITY.md, docs/what-prism-writes.md, docs/troubleshooting.md — all claims verified against ownership.ts, adopt.ts, update.ts, build.ts, doctor.ts, eject.ts, sync-manifest.ts, agents-md-block.ts, templates/install/.claude/settings.json, and ADR-0067. Linked from README; crossref-lint and install-relative-link-gate pass clean.
 - 2026-07-02 [hmcgrew/382-trust-docs]: Fixed Briar's Major — added a "PRISM-owned platform mirrors" section to `docs/what-prism-writes.md` documenting the `.claude`/`.codex`/`.cursor` content-copy sync, verified against `build.ts` (`COPIED_CONTENT_AREAS`, marker-gated orphan cleanup) and `update.ts` (`runUpdate` → `refreshPlatformDirs` → `syncAllPlatformContentCopies`).
+- 2026-07-02 [hmcgrew/382-trust-docs]: Fixed Eric's two Majors on `docs/what-prism-writes.md` — corrected the `.prism/paths.json` citation to `.ai-skills/definitions/paths.json` (both occurrences), and added a seed-once inventory entry for that file sourced from `ensureConsumerPathDefinitions` (`scripts/ai-skills/utils.ts:406`).
 
 ---
 
@@ -64,6 +65,14 @@ None.
 ---
 
 ## Review Issues
+
+### `what-prism-writes.md` cites a nonexistent `.prism/paths.json` path and omits the `.ai-skills/definitions/paths.json` adopt write
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `docs/what-prism-writes.md:39` (wrong path) and the Seed-once table (missing entry)
+- **Problem:** The doc cited `.prism/paths.json`, which doesn't exist — the real path definitions file lives at `.ai-skills/definitions/paths.json` (confirmed in `scripts/ai-skills/utils.ts:411-416`). The same gap meant the inventory never listed `.ai-skills/definitions/paths.json` itself as a write surface, even though `ensureConsumerPathDefinitions` (`utils.ts:406`, called from `adopt.ts:206`) provisions it during every `prism adopt`.
+- **Suggested fix:** correct the path citation everywhere it appears, and add a Seed-once inventory row describing exactly when `ensureConsumerPathDefinitions` writes (absent, or present but missing `generated.platformContentCopies`) versus leaves untouched (a structurally complete file, customized or not).
 
 ### `what-prism-writes.md` omits the platform content-copy write surface
 

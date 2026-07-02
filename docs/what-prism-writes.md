@@ -36,7 +36,7 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 
 ## PRISM-owned platform mirrors (synced on every update)
 
-`prism update` and `prism adopt` also mirror a subset of `.prism/` into every AI platform directory your config enables — `.claude/`, `.codex/`, and `.cursor/` by default (the exact target roots live in `.prism/paths.json` under `generated.platformContentCopies`). This is a second PRISM-owned write surface, separate from the `.prism/` paths above: every path it touches lives inside your own repo, outside `.prism/`.
+`prism update` and `prism adopt` also mirror a subset of `.prism/` into every AI platform directory your config enables — `.claude/`, `.codex/`, and `.cursor/` by default (the exact target roots live in `.ai-skills/definitions/paths.json` under `generated.platformContentCopies` — see [Seed-once paths](#seed-once-paths-written-once-then-left-alone) below for how that file itself gets there). This is a second PRISM-owned write surface, separate from the `.prism/` paths above: every path it touches lives inside your own repo, outside `.prism/`.
 
 The mirrored areas are `rules`, `architect`, `spec`, `templates`, and `references`, plus the loose `SPEC.md` file — the `COPIED_CONTENT_AREAS` list in `scripts/ai-skills/build.ts`. Notably absent: `plans/` and `lessons.md` never leave `.prism/`, since those are agent-written working memory, not synced content.
 
@@ -69,6 +69,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 | Path | Written when | What happens after |
 |---|---|---|
+| `.ai-skills/definitions/paths.json` | Absent, or present but missing `generated.platformContentCopies` | `prism adopt` copies PRISM's own `paths.json` in verbatim, before the rest of adopt runs — `update` reads this file, so adopt provisions it first. A complete existing file is left untouched, including a customized one; this isn't a strict one-time seed, since a broken file gets repaired even after it "exists," but the effect is the same once it's complete — PRISM stops touching it. |
 | `.claude/settings.json` | Doesn't already exist | Written as a literal empty object (`{}`) — a placeholder, not a hook definition. If it already exists, adopt leaves it (and any hooks or permissions you've configured) completely untouched. |
 | `AGENTS.md` (root) | Only if you pass `--seed-agents-md` to `prism adopt`, and only if `AGENTS.md` doesn't already exist | Written with a heading, a provenance comment (`<!-- prism:seeded-agents-md ... -->`), and an empty begin/end marker pair that `pnpm prism:build` (or your team's build step) fills with PRISM's Tier-1 rule content on the next build. Every subsequent build keeps that block current — the file itself is never re-seeded once it exists. The provenance comment is what lets `prism eject` tell a PRISM-seeded `AGENTS.md` apart from one you wrote yourself; delete the comment line if you want to keep a seeded file after ejecting. |
 | `CLAUDE.md` | Doesn't already exist | Not created by `prism adopt` at all — you write this yourself, or generate it via Atlas onboarding. If it already exists, adopt never touches it. |
