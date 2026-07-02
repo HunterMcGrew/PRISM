@@ -95,6 +95,54 @@ test("generateSyncManifest covers exactly the PRISM-owned globs", async () => {
 	});
 });
 
+test("generateSyncManifest normalizes nested relative paths to forward slashes", async () => {
+	await withContentRoot(async (contentRoot) => {
+		// `listPrismOwnedRelativePaths` builds keys via `path.relative(...).split(path.sep).join("/")`.
+		// On Windows, `path.relative` returns backslash-joined segments — this
+		// pins that a multi-segment nested path still round-trips to a
+		// forward-slash manifest key, matching the POSIX-style globs `classifyPath`
+		// matches against.
+		await writeContentFile(
+			contentRoot,
+			"rules/nested/deeply/example.md",
+			"# nested\n"
+		);
+
+		const manifest = await generateSyncManifest(contentRoot, FIXED_OPTIONS);
+
+		assert.deepEqual(Object.keys(manifest.files), [
+			"rules/nested/deeply/example.md",
+		]);
+		assert.ok(!Object.keys(manifest.files)[0].includes("\\"));
+	});
+});
+
+test("nested relative path round-trips: write, manifest key, re-resolve", async () => {
+	await withContentRoot(async (contentRoot) => {
+		// The full contract `prism:update` relies on: a manifest key is always
+		// forward-slash form, but `path.join(contentRoot, key)` must still
+		// resolve to the correct file on disk on every OS — `path.join`
+		// normalizes forward slashes back to the native separator internally,
+		// so a POSIX-style key re-resolves correctly even from a Windows
+		// backslash-native content root.
+		const relativePath = "architect/_toolkit/nested/deep/doc.md";
+		await writeContentFile(contentRoot, relativePath, "# deep doc\n");
+
+		const manifest = await generateSyncManifest(contentRoot, FIXED_OPTIONS);
+		const [manifestKey] = Object.keys(manifest.files);
+
+		assert.equal(manifestKey, relativePath);
+
+		const reResolvedPath = path.join(contentRoot, manifestKey);
+		const reReadContent = await fs.readFile(reResolvedPath, "utf8");
+		assert.equal(reReadContent, "# deep doc\n");
+		assert.equal(
+			manifest.files[manifestKey].contentHash,
+			hashContent(reReadContent)
+		);
+	});
+});
+
 test("generateSyncManifest records the version, commit, and per-file hash", async () => {
 	await withContentRoot(async (contentRoot) => {
 		await writeContentFile(contentRoot, "rules/alpha.md", "# Alpha\n");

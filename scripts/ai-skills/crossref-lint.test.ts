@@ -153,25 +153,38 @@ test("isExternalOrToken: accepts normal repo-relative paths", () => {
 // resolveRef
 // ---------------------------------------------------------------------------
 
+// `resolveRef` resolves through `path.resolve`/`path.join`, which always emit
+// the host OS's native separator (backslash-joined on Windows). These tests
+// assert against a `path.resolve`/`path.join`-computed expected value instead
+// of a hardcoded POSIX string, so the same assertion holds on every OS —
+// pinning the resolution *contract* rather than one platform's literal output.
+
 test("resolveRef: resolves relative refs against the referencing file's dir", () => {
-	const repoRootPath = "/repo";
-	const refFile = "/repo/.prism/architect/doc.md";
+	const repoRootPath = path.resolve("/repo");
+	const refFile = path.join(repoRootPath, ".prism", "architect", "doc.md");
 	const resolved = resolveRef(refFile, repoRootPath, "../rules/foo.md");
-	assert.equal(resolved, "/repo/.prism/rules/foo.md");
+	assert.equal(resolved, path.join(repoRootPath, ".prism", "rules", "foo.md"));
 });
 
 test("resolveRef: resolves repo-root-absolute refs (.prism/ prefix) against repo root", () => {
-	const repoRootPath = "/repo";
-	const refFile = "/repo/templates/install/.prism/architect/doc.md.tmpl";
+	const repoRootPath = path.resolve("/repo");
+	const refFile = path.join(
+		repoRootPath,
+		"templates",
+		"install",
+		".prism",
+		"architect",
+		"doc.md.tmpl"
+	);
 	const resolved = resolveRef(refFile, repoRootPath, ".prism/rules/foo.md");
-	assert.equal(resolved, "/repo/.prism/rules/foo.md");
+	assert.equal(resolved, path.join(repoRootPath, ".prism", "rules", "foo.md"));
 });
 
 test("resolveRef: strips anchor fragment before resolving", () => {
-	const repoRootPath = "/repo";
-	const refFile = "/repo/.prism/rules/foo.md";
+	const repoRootPath = path.resolve("/repo");
+	const refFile = path.join(repoRootPath, ".prism", "rules", "foo.md");
 	const resolved = resolveRef(refFile, repoRootPath, "../spec/bar.md#section");
-	assert.equal(resolved, "/repo/.prism/spec/bar.md");
+	assert.equal(resolved, path.join(repoRootPath, ".prism", "spec", "bar.md"));
 });
 
 test("resolveRef: returns empty string for pure-anchor ref", () => {

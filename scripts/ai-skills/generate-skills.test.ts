@@ -17,6 +17,7 @@ import path from "node:path";
 import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 
 import {
 	buildRoleMap,
@@ -313,8 +314,14 @@ test("a consumer's marker-less prism-* dir survives orphan cleanup", async () =>
 });
 
 test("renders PRISM's own source in check mode with no drift", async () => {
+	// `fileURLToPath` (not `new URL(...).pathname`) — the `.pathname` accessor
+	// returns a URL path component, not an OS path: on Windows it keeps a
+	// leading slash before the drive letter and leaves spaces `%20`-encoded,
+	// which corrupts the `path.dirname`/`path.join` calls below into a doubled
+	// drive letter with a literal `%20` segment. `fileURLToPath` is the same
+	// conversion `update.ts` and `adopt.ts` already use for this exact purpose.
 	const repoRoot = path.resolve(
-		path.dirname(new URL(import.meta.url).pathname),
+		path.dirname(fileURLToPath(import.meta.url)),
 		"../.."
 	);
 	const pathDefinitions = await loadPathDefinitions(repoRoot);
