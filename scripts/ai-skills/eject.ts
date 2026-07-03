@@ -206,7 +206,7 @@ async function runSkillRemovalPass(
 	consumerRepoRoot: string,
 	pathDefinitions: PathDefinitions,
 	previewOnly: boolean
-): Promise<EjectSkillOutcome[]> {
+): Promise<{ outcomes: EjectSkillOutcome[]; targetRoots: string[] }> {
 	const { targetRoots, codexConfigPath } = resolveConsumerSkillTargetRoots(
 		consumerRepoRoot,
 		pathDefinitions
@@ -233,7 +233,16 @@ async function runSkillRemovalPass(
 	);
 	await collectCodexConfigOutcome(codexConfigPath, previewOnly, outcomes);
 
-	return outcomes;
+	return {
+		outcomes,
+		targetRoots: [
+			targetRoots.claude,
+			targetRoots.codex,
+			targetRoots.cursor,
+			targetRoots.codexAgents,
+			targetRoots.claudeAgents,
+		],
+	};
 }
 
 /**
@@ -369,46 +378,111 @@ async function collectAgentFileOutcomes(
 }
 
 /**
- * Prunes now-empty directories under `.prism/` bottom-up, after the file and
- * skill passes have run. A directory that still holds preserved consumer
- * content (e.g. `plans/`, `custom/`) is never removed — only directories with
- * zero files and zero non-empty subdirectories qualify.
+ * Prunes now-empty directories under `root` bottom-up. A directory that still
+ * holds preserved content (e.g. `.prism/plans/`, a consumer's own skill dir)
+ * is never removed — only directories with zero files and zero non-empty
+ * subdirectories qualify.
+ *
+ * Two things keep preview and real accounting in agreement here:
+ *
+ * 1. In preview mode (`previewOnly`), no directory is ever actually `rmdir`'d,
+ *    so a real run and a preview run would otherwise disagree the moment
+ *    pruning is more than one level deep: a parent directory only becomes
+ *    empty *after* its child is removed, and in preview mode the child never
+ *    leaves disk. `walk` returns whether `dir` itself is now empty instead of
+ *    re-reading it after the loop, so a just-pruned child's emptiness carries
+ *    up to its parent regardless of whether the child was actually `rmdir`'d.
+ * 2. `virtuallyRemovedFiles` is the set of file paths `runFileRemovalPass`
+ *    already decided to remove (its `removed` / `removed-with-backup`
+ *    outcomes) — in preview mode those files are still physically on disk
+ *    too. Without treating them as absent, a directory whose only content was
+ *    one of these files would never read as empty under preview, even though
+ *    a real run empties it by deleting the file first.
  */
-async function pruneEmptyDirs(consumerContentRoot: string, previewOnly: boolean): Promise<string[]> {
-	if (!(await pathExists(consumerContentRoot))) {
+async function pruneEmptyDirs(
+	root: string,
+	previewOnly: boolean,
+	virtuallyRemovedFiles: ReadonlySet<string>
+): Promise<string[]> {
+	if (!(await pathExists(root))) {
 		return [];
 	}
 
 	const removed: string[] = [];
 
-	async function isEmpty(dir: string): Promise<boolean> {
+	async function walk(dir: string): Promise<boolean> {
 		const entries = await fs.readdir(dir, { withFileTypes: true });
-		return entries.length === 0;
-	}
-
-	async function walk(dir: string): Promise<void> {
-		const entries = await fs.readdir(dir, { withFileTypes: true });
+		let hasRemainingEntry = false;
 
 		for (const entry of entries) {
+			const entryPath = path.join(dir, entry.name);
+
 			if (!entry.isDirectory()) {
+				if (!virtuallyRemovedFiles.has(entryPath)) {
+					hasRemainingEntry = true;
+				}
 				continue;
 			}
 
-			const childPath = path.join(dir, entry.name);
-			await walk(childPath);
+			const childIsNowEmpty = await walk(entryPath);
 
-			if (await isEmpty(childPath)) {
-				removed.push(childPath);
+			if (childIsNowEmpty) {
+				removed.push(entryPath);
 				if (!previewOnly) {
-					await fs.rmdir(childPath);
+					await fs.rmdir(entryPath);
 				}
+			} else {
+				hasRemainingEntry = true;
 			}
 		}
+
+		return !hasRemainingEntry;
 	}
 
-	await walk(consumerContentRoot);
+	await walk(root);
 
 	return removed;
+}
+
+/**
+ * Prunes one projected skill/agent root (e.g. `.claude/skills`,
+ * `.codex/agents`) if it is now empty, after `runSkillRemovalPass` has
+ * removed every marker-confirmed `prism-*` entry from it. Deliberately
+ * shallow — unlike `pruneEmptyDirs`, this never recurses into a surviving
+ * entry's own subdirectories, because a surviving entry here is always a
+ * consumer's own skill or agent file, and its internal contents are consumer
+ * content this pass must never touch. Only the root itself, having zero
+ * entries left of any kind, qualifies.
+ *
+ * `virtuallyRemovedEntries` is the set of entry paths `runSkillRemovalPass`
+ * already decided to remove — in preview mode those entries are still
+ * physically on disk (the same preview-accounting gap `pruneEmptyDirs`
+ * documents), so a raw `readdir` would never see the root as empty. Skip
+ * those "still on disk but already claimed" entries instead of trusting
+ * `readdir` alone.
+ */
+async function pruneEmptySkillRoot(
+	root: string,
+	previewOnly: boolean,
+	virtuallyRemovedEntries: ReadonlySet<string>
+): Promise<string | null> {
+	if (!(await pathExists(root))) {
+		return null;
+	}
+
+	const entries = await fs.readdir(root);
+	const remainingEntries = entries.filter(
+		(entryName) => !virtuallyRemovedEntries.has(path.join(root, entryName))
+	);
+	if (remainingEntries.length > 0) {
+		return null;
+	}
+
+	if (!previewOnly) {
+		await fs.rmdir(root);
+	}
+
+	return root;
 }
 
 /**
@@ -499,9 +573,33 @@ export async function runEject(options: RunEjectOptions): Promise<EjectReport> {
 		previewOnly
 	);
 
-	const skillOutcomes = await runSkillRemovalPass(consumerRepoRoot, pathDefinitions, previewOnly);
+	const { outcomes: skillOutcomes, targetRoots: skillTargetRoots } = await runSkillRemovalPass(
+		consumerRepoRoot,
+		pathDefinitions,
+		previewOnly
+	);
 
-	const emptyDirsRemoved = await pruneEmptyDirs(consumerContentRoot, previewOnly);
+	const virtuallyRemovedFiles = new Set(
+		fileOutcomes
+			.filter((outcome) => outcome.action === "removed" || outcome.action === "removed-with-backup")
+			.map((outcome) => path.join(consumerContentRoot, outcome.relativePath))
+	);
+	const emptyDirsRemoved = await pruneEmptyDirs(consumerContentRoot, previewOnly, virtuallyRemovedFiles);
+
+	const virtuallyRemovedSkillEntries = new Set(
+		skillOutcomes.filter((outcome) => outcome.action === "removed").map((outcome) => outcome.path)
+	);
+	// Deduped so a misconfigured `paths.json` mapping two of the five projected
+	// roots to the same directory can't double-prune (and double-count) it —
+	// not reachable with shipped defaults, but the loop below assumes distinct
+	// paths.
+	const uniqueSkillTargetRoots = [...new Set(skillTargetRoots)];
+	for (const skillRoot of uniqueSkillTargetRoots) {
+		const prunedRoot = await pruneEmptySkillRoot(skillRoot, previewOnly, virtuallyRemovedSkillEntries);
+		if (prunedRoot !== null) {
+			emptyDirsRemoved.push(prunedRoot);
+		}
+	}
 
 	const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
 	const manifestRemoved = await pathExists(manifestPath);
