@@ -663,7 +663,122 @@ test("runEject prunes now-empty directories but keeps directories still holding 
 
 		assert.equal(await fileExists(path.join(consumerContentRoot, "rules")), false);
 		assert.equal(await fileExists(path.join(consumerContentRoot, "plans")), true);
-		assert.ok(report.emptyDirsRemoved.some((d) => d.endsWith("rules")));
+		assert.equal(
+			report.emptyDirsRemoved.includes(path.join(consumerContentRoot, "rules")),
+			true
+		);
+	});
+});
+
+test("runEject preview and real runs agree on nested empty-dir pruning (issue #397)", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		// `rules/nested/a.md` is the only file under `rules/` — once it's removed,
+		// `rules/nested` becomes empty, and only then does `rules` itself become
+		// empty. A preview run must report both levels exactly as a real run would.
+		await writeFile(consumerContentRoot, "rules/nested/a.md", "# A\n");
+		await writeConsumerManifest(consumerContentRoot, {
+			"rules/nested/a.md": "# A\n",
+		});
+
+		const previewReport = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: false,
+			dryRun: false,
+		});
+
+		const nestedPath = path.join(consumerContentRoot, "rules", "nested");
+		const rulesPath = path.join(consumerContentRoot, "rules");
+
+		assert.equal(previewReport.emptyDirsRemoved.includes(nestedPath), true);
+		assert.equal(previewReport.emptyDirsRemoved.includes(rulesPath), true);
+		assert.equal(await fileExists(nestedPath), true, "preview must not touch the filesystem");
+
+		const realReport = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(realReport.emptyDirsRemoved.includes(nestedPath), true);
+		assert.equal(realReport.emptyDirsRemoved.includes(rulesPath), true);
+		assert.equal(await fileExists(nestedPath), false);
+		assert.equal(await fileExists(rulesPath), false);
+
+		assert.deepEqual(
+			[...previewReport.emptyDirsRemoved].sort(),
+			[...realReport.emptyDirsRemoved].sort(),
+			"preview and real emptyDirsRemoved must agree exactly"
+		);
+	});
+});
+
+test("runEject prunes a projected skill root that becomes empty after removing its only prism-* skill", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeMarkedSkillDir(consumerRepoRoot, ".claude/skills", "prism-sample");
+
+		const skillRootPath = path.join(consumerRepoRoot, ".claude", "skills");
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(skillRootPath), false, "empty skill root must be pruned");
+		assert.equal(report.emptyDirsRemoved.includes(skillRootPath), true);
+	});
+});
+
+test("runEject preserves a projected skill root that still holds a consumer-owned skill after removal", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeMarkedSkillDir(consumerRepoRoot, ".claude/skills", "prism-sample");
+		await writeFile(consumerRepoRoot, ".claude/skills/custom-foo/SKILL.md", "# custom\n");
+
+		const skillRootPath = path.join(consumerRepoRoot, ".claude", "skills");
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(await fileExists(skillRootPath), true, "root still holds a consumer skill");
+		assert.equal(
+			await fileExists(path.join(skillRootPath, "custom-foo", "SKILL.md")),
+			true,
+			"consumer skill contents must be untouched"
+		);
+		assert.equal(report.emptyDirsRemoved.includes(skillRootPath), false);
+	});
+});
+
+test("runEject preview reports a would-be-pruned skill root without touching the filesystem", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeMarkedSkillDir(consumerRepoRoot, ".claude/skills", "prism-sample");
+
+		const skillRootPath = path.join(consumerRepoRoot, ".claude", "skills");
+
+		const previewReport = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: PATH_DEFINITIONS,
+			confirmed: false,
+			dryRun: false,
+		});
+
+		assert.equal(previewReport.emptyDirsRemoved.includes(skillRootPath), true);
+		assert.equal(await fileExists(skillRootPath), true, "preview must not remove the root");
 	});
 });
 
