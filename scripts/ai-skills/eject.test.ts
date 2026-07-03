@@ -782,6 +782,40 @@ test("runEject preview reports a would-be-pruned skill root without touching the
 	});
 });
 
+test("runEject counts a duplicated projected skill root once even if two path-definition keys resolve to it", async () => {
+	await withTempConsumerRoot(async ({ consumerRepoRoot, consumerContentRoot }) => {
+		await writeConsumerManifest(consumerContentRoot, {});
+		await writeMarkedSkillDir(consumerRepoRoot, ".claude/skills", "prism-sample");
+
+		const skillRootPath = path.join(consumerRepoRoot, ".claude", "skills");
+
+		// Misconfigured `paths.json` mapping two of the five projected roots to
+		// the same directory — not reachable with shipped defaults, but the
+		// dedup must hold if a consumer ever does this (issue #397 review follow-up).
+		const duplicateRootPathDefinitions: PathDefinitions = {
+			...PATH_DEFINITIONS,
+			generated: {
+				...PATH_DEFINITIONS.generated,
+				codexSkillsRoot: PATH_DEFINITIONS.generated.claudeSkillsRoot,
+			},
+		};
+
+		const report = await runEject({
+			consumerRepoRoot,
+			consumerContentRoot,
+			pathDefinitions: duplicateRootPathDefinitions,
+			confirmed: true,
+			dryRun: false,
+		});
+
+		assert.equal(
+			report.emptyDirsRemoved.filter((removedPath) => removedPath === skillRootPath).length,
+			1,
+			"a duplicated root must only be counted once in emptyDirsRemoved"
+		);
+	});
+});
+
 // --- report formatting ---
 
 test("formatEjectReport prints preview-mode header and the re-run hint when not confirmed", async () => {

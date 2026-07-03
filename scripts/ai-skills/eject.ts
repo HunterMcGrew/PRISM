@@ -589,7 +589,12 @@ export async function runEject(options: RunEjectOptions): Promise<EjectReport> {
 	const virtuallyRemovedSkillEntries = new Set(
 		skillOutcomes.filter((outcome) => outcome.action === "removed").map((outcome) => outcome.path)
 	);
-	for (const skillRoot of skillTargetRoots) {
+	// Deduped so a misconfigured `paths.json` mapping two of the five projected
+	// roots to the same directory can't double-prune (and double-count) it —
+	// not reachable with shipped defaults, but the loop below assumes distinct
+	// paths (issue #397 review follow-up).
+	const uniqueSkillTargetRoots = [...new Set(skillTargetRoots)];
+	for (const skillRoot of uniqueSkillTargetRoots) {
 		const prunedRoot = await pruneEmptySkillRoot(skillRoot, previewOnly, virtuallyRemovedSkillEntries);
 		if (prunedRoot !== null) {
 			emptyDirsRemoved.push(prunedRoot);
