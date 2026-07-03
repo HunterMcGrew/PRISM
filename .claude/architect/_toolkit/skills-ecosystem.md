@@ -195,21 +195,21 @@ All templates live in `.prism/templates/`. They are the **single source of truth
 
 Each plan section has designated readers and writers. This prevents conflicts and ensures the right skill updates the right section. See ADR-0014.
 
-| Plan Section                      | Written by                                                             | Read by                                     |
-| --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| `## Goal`                         | Winston, Nora                                                          | All                                         |
-| `## User Stories`                 | Mira                                                                   | Winston, Clove, Eli                         |
-| `## Decisions`                    | Winston                                                                | All                                         |
-| `## Implementation Tasks`         | Winston                                                                | Clove                                       |
-| `## Acceptance Criteria`          | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
+| Plan Section                                  | Written by                                                             | Read by                                     |
+| ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| `## Goal`                                     | Winston, Nora                                                          | All                                         |
+| `## User Stories`                             | Mira                                                                   | Winston, Clove, Eli                         |
+| `## Decisions`                                | Winston                                                                | All                                         |
+| `## Implementation Tasks`                     | Winston                                                                | Clove                                       |
+| `## Acceptance Criteria`                      | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
 | `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
-| AC Sync Log                       | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
-| `## Design`                       | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
-| `## History`                      | All (append-only)                                                      | All                                         |
-| `## Debugged Issues`              | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
-| `## Review Issues`                | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
-| `## Cleanup Items`                | Briar                                                                  | Clove                                       |
-| `## PR Readiness`                 | Briar                                                                  | Clove, Eric                                 |
+| AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
+| `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
+| `## History`                                  | All (append-only)                                                      | All                                         |
+| `## Debugged Issues`                          | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
+| `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
+| `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
+| `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |
 
 ---
 
