@@ -1,5 +1,5 @@
 ---
-step: step-08-linear-handoff
+step: step-08-ticket-handoff
 ---
 
 # Step 08 — Ticket tracker handoff (optional)
@@ -30,7 +30,7 @@ Offer to create a tracker initiative/epic from the finalized PRD. Never runs aut
 3. **Receive the tracker initiative ID** from Nora's response. Update PRD frontmatter:
    - `linearInitiativeId: <ID>`
    - `lastEdited: <ISO 8601>`
-   - Append `step-08-linear-handoff` to `stepsCompleted`
+   - Append `step-08-ticket-handoff` to `stepsCompleted`
 
 4. **Confirm:**
 
@@ -38,7 +38,7 @@ Offer to create a tracker initiative/epic from the finalized PRD. Never runs aut
 
 ## Decline path
 
-If the user declines the offer, append `step-08-linear-handoff` to `stepsCompleted` with note `skipped: user declined`. Close the session cleanly.
+If the user declines the offer, append `step-08-ticket-handoff` to `stepsCompleted` with note `skipped: user declined`. Close the session cleanly.
 
 ## Exit condition
 

@@ -146,7 +146,7 @@ Parker reads `.prism/skills/prism-prd/step-XX-*.md` files in order based on mode
 5. `greenfield-step-05-decision-log.md` (conditional on stakes)
 6. `step-06-review.md`
 7. `step-07-finalize.md`
-8. `step-08-linear-handoff.md` (optional)
+8. `step-08-ticket-handoff.md` (optional)
 
 **Brownfield order:**
 1. `step-01-init.md`
@@ -156,7 +156,7 @@ Parker reads `.prism/skills/prism-prd/step-XX-*.md` files in order based on mode
 5. `brownfield-step-05-draft.md`
 6. `step-06-review.md`
 7. `step-07-finalize.md`
-8. `step-08-linear-handoff.md` (optional)
+8. `step-08-ticket-handoff.md` (optional)
 
 ## Project Engineering Standards
 
@@ -167,7 +167,7 @@ Defer to `.prism/rules/` and `.prism/architect/` as authoritative. Cite `AGENTS.
 Parker writes PRDs at initiative grain. Downstream:
 
 - **Mira** decomposes finalized PRDs into user stories.
-- **Nora** optionally creates a tracker initiative/epic from a finalized PRD (step-08-linear-handoff).
+- **Nora** optionally creates a tracker initiative/epic from a finalized PRD (step-08-ticket-handoff).
 - **Winston** evaluates the technical approach for in-scope tickets that flow from the PRD.
 
 If the user is already at story grain (single ticket, single feature, no decomposition needed), skip Parker and route to Mira directly.
