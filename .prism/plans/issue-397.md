@@ -39,6 +39,7 @@ GitHub issue #397 — eject: preview report doesn't faithfully reflect empty-dir
 - 2026-07-03 [huntermcgrew/prism-397-eject-preview-empty-dir-fidelity]: Fixed `pruneEmptyDirs` nested-directory preview/real divergence and added `pruneEmptySkillRoot` to prune emptied projected skill/agent roots; both passes now share virtually-removed-entry accounting so preview never re-reads a filesystem that `previewOnly` deliberately left unmutated. Added 4 new tests (nested-dir parity, skill-root pruning, consumer-skill preservation, skill-root preview parity) and tightened one loose `.some()` assertion in the existing empty-dir test to an exact path check. `pnpm prism:check` green — 484/484 tests.
 - 2026-07-03 [huntermcgrew/prism-397-eject-preview-empty-dir-fidelity]: Briar self-reviewed the PR #399 diff. Verified the parity fix holds by hand-tracing `walk`'s return-value propagation and the shallow skill-root scope decision against adversarial cases (mixed file/subdir emptying, multi-level nesting, all five projected roots). Confirmed path-join normalization is consistent between outcome recording and prune-time lookups (no raw string comparisons). Found one open Minor (duplicate-root defensive gap); no Critical/Major findings.
 - 2026-07-03 [huntermcgrew/prism-397-eject-preview-empty-dir-fidelity]: Fixed the duplicate-root Minor — deduped `skillTargetRoots` before the prune loop and added a test asserting single-count on a duplicated root. `pnpm prism:check` green — 485/485 tests.
+- 2026-07-03 [huntermcgrew/prism-397-eject-preview-empty-dir-fidelity]: Fixed Eric's PR-review Minor — reworded three durable comments (lines 386, 462, 595) to drop `(issue #397)` ticket tails per code-comments.md and writing-voice.md session-context-leakage guidance. Comment wording only; types and 485/485 tests unaffected.
 
 ---
 
@@ -52,6 +53,15 @@ GitHub issue #397 — eject: preview report doesn't faithfully reflect empty-dir
 - **Problem:** `skillTargetRoots` is a plain array, not deduplicated. If a consumer's `paths.json` ever configured two of the five `generated.*` root keys to the same directory, `pruneEmptySkillRoot` would run twice against the identical path and could push the same path into `emptyDirsRemoved` twice (most visibly in preview mode, where the root still "exists" with zero remaining entries on the second call too). Not reachable with the shipped default `.ai-skills/definitions/paths.json` — all five roots are distinct there — so this is a defensive gap, not a live bug.
 - **Suggested fix:** dedupe `skillTargetRoots` (e.g. `[...new Set(skillTargetRoots)]`) before the loop, or track already-pruned paths in a `Set` and skip repeats.
 - **Fixed in:** `scripts/ai-skills/eject.ts` — dedupe via `[...new Set(skillTargetRoots)]` before the prune loop; all five root values are already `path.join` results from `resolveConsumerSkillTargetRoots`, so a plain string `Set` normalizes consistently with the rest of the file's path accounting. Added `scripts/ai-skills/eject.test.ts` coverage asserting a duplicated root is only counted once in `emptyDirsRemoved`.
+
+### Durable comments carry `(issue #397)` ticket tails
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/eject.ts:386,462,595`
+- **Problem:** Three durable comments cited `(issue #397)` / `(issue #397 review follow-up)` inline, violating `code-comments.md` § changelog-voice and `writing-voice.md` § Anti-pattern: Session-context leakage — a durable comment should state the current invariant, not the ticket that produced it.
+- **Suggested fix:** drop the ticket tails, keep the substantive what+why; let git history carry the ticket linkage.
+- **Fixed in:** `scripts/ai-skills/eject.ts` — reworded all three comments (lines 386, 462, 595) to remove the `(issue #397)` tails with no change to the substantive content. No logic, tests, or other comments touched.
 
 ---
 

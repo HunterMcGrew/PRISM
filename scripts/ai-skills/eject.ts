@@ -383,7 +383,7 @@ async function collectAgentFileOutcomes(
  * is never removed — only directories with zero files and zero non-empty
  * subdirectories qualify.
  *
- * Two things keep preview and real accounting in agreement here (issue #397):
+ * Two things keep preview and real accounting in agreement here:
  *
  * 1. In preview mode (`previewOnly`), no directory is ever actually `rmdir`'d,
  *    so a real run and a preview run would otherwise disagree the moment
@@ -459,7 +459,7 @@ async function pruneEmptyDirs(
  * physically on disk (the same preview-accounting gap `pruneEmptyDirs`
  * documents), so a raw `readdir` would never see the root as empty. Skip
  * those "still on disk but already claimed" entries instead of trusting
- * `readdir` alone (issue #397).
+ * `readdir` alone.
  */
 async function pruneEmptySkillRoot(
 	root: string,
@@ -592,7 +592,7 @@ export async function runEject(options: RunEjectOptions): Promise<EjectReport> {
 	// Deduped so a misconfigured `paths.json` mapping two of the five projected
 	// roots to the same directory can't double-prune (and double-count) it —
 	// not reachable with shipped defaults, but the loop below assumes distinct
-	// paths (issue #397 review follow-up).
+	// paths.
 	const uniqueSkillTargetRoots = [...new Set(skillTargetRoots)];
 	for (const skillRoot of uniqueSkillTargetRoots) {
 		const prunedRoot = await pruneEmptySkillRoot(skillRoot, previewOnly, virtuallyRemovedSkillEntries);
