@@ -14,8 +14,8 @@ This is not a default-on procedure. A persona that operates on the current branc
 
 ## Who uses this reference
 
-- **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — runs the worktree procedure when invoked in worktree mode. The mode-selection logic and the procedure itself live in the skill source; this reference defines the isolation invariant and the cleanup contract the procedure must satisfy.
-- **Sol** ([prism-conductor](../skills/prism-conductor/SKILL.md)) — creates one worktree per fleet lane so parallel lanes stay isolated, bound to the same cleanup contract (remove on success, error, or interruption). The fleet scheduler that allocates and tears down lane worktrees lives in `.prism/skills/prism-conductor/lib/fleet.md`; this reference defines the isolation invariant it satisfies.
+- **Eric** (`prism-code-review-pr`) — runs the worktree procedure when invoked in worktree mode. The mode-selection logic and the procedure itself live in the skill source; this reference defines the isolation invariant and the cleanup contract the procedure must satisfy.
+- **Sol** (`prism-conductor`) — creates one worktree per fleet lane so parallel lanes stay isolated, bound to the same cleanup contract (remove on success, error, or interruption). The fleet scheduler that allocates and tears down lane worktrees lives in `.prism/skills/prism-conductor/lib/fleet.md`; this reference defines the isolation invariant it satisfies.
 
 Future personas that need isolated checkouts load this reference the same way.
 
