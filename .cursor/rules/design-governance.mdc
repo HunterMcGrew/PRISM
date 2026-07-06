@@ -24,7 +24,7 @@ When an improvement beyond the artifact suggests itself mid-implementation, defe
 
 ## Who runs this rule
 
-- **Pixel** ([prism-design](../skills/prism-design/SKILL.md)) — stays inside the approved artifact when updating a saved mock spec (mode 2); departures are surfaced as proposals, never folded in silently.
-- **Winston** ([prism-architect](../skills/prism-architect/SKILL.md)) — when planning design-aware work, checks that an approved artifact exists before writing implementation tasks against it.
-- **Clove** ([prism-code-dev](../skills/prism-code-dev/SKILL.md)) — implements to the artifact; mid-implementation improvement ideas route through the follow-up gate.
-- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — flag implementation that departs from the approved artifact without recorded sign-off.
+- **Pixel** (`prism-design`) — stays inside the approved artifact when updating a saved mock spec (mode 2); departures are surfaced as proposals, never folded in silently.
+- **Winston** (`prism-architect`) — when planning design-aware work, checks that an approved artifact exists before writing implementation tasks against it.
+- **Clove** (`prism-code-dev`) — implements to the artifact; mid-implementation improvement ideas route through the follow-up gate.
+- **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — flag implementation that departs from the approved artifact without recorded sign-off.
