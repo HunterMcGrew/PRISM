@@ -2,7 +2,7 @@
 
 This folder holds ADRs for durable, cross-cutting decisions — skill ecosystem, codebase architecture, spec structure. Each ADR captures the context, the decision, and the consequences so the reasoning survives future reorganizations.
 
-See [`.prism/SPEC.md`](../../SPEC.md) for the tier hierarchy that these ADRs govern.
+See [`.prism/SPEC.md`](../../../SPEC.md) for the tier hierarchy that these ADRs govern.
 
 ---
 

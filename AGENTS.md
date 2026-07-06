@@ -970,10 +970,10 @@ The common shape: it could plausibly have been part of the originating ticket bu
 
 ## Who runs this rule
 
-- **Nora** ([prism-ticket-start](../skills/prism-ticket-start/SKILL.md)) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
-- **Winston** ([prism-architect](../skills/prism-architect/SKILL.md)) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
-- **Briar** ([prism-code-review-self](../skills/prism-code-review-self/SKILL.md)) and **Eric** ([prism-code-review-pr](../skills/prism-code-review-pr/SKILL.md)) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
-- **Sasha** ([prism-debugger](../skills/prism-debugger/SKILL.md)) — when investigation surfaces an adjacent fix or refinement, applies the same table.
+- **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
+- **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
+- **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
+- **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
 
 ## Worker emit pre-filter (Sol-run-time)
 

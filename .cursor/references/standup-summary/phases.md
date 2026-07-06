@@ -77,7 +77,7 @@ For every PR authored by the user (from queries 2.2 and 2.3), query the PR's com
 gh api repos/HunterMcGrew/PRISM/pulls/<number>/commits --jq "[.[] | select(.commit.author.email | contains(\"$USERNAME\")) | select(.commit.author.date < \"$SINCE_DATE\")] | length"
 ```
 
-The `email | contains` check is a loose match — GitHub commit author identification varies, so the query looks for the username within the author's email field (e.g. `owner@example.com` for username `hunter`). If the result is `> 0`, the PR has pre-window commits. Record this per-PR as `$HAS_PRIOR_COMMITS`.
+The `email | contains` check is a loose match — GitHub commit author identification varies, so the query looks for the username within the author's email field (e.g. `owner@example.com` for username `octocat`). If the result is `> 0`, the PR has pre-window commits. Record this per-PR as `$HAS_PRIOR_COMMITS`.
 
 If the email check is unreliable for a given user, fall back to matching `commit.author.name` against the GitHub display name resolved via `gh api user --jq '.name'`.
 

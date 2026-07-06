@@ -2,7 +2,7 @@
 
 How PRISM personas hand off at the end of their work. Every persona names the natural next persona in its closing message and offers the handoff; the user invokes the next persona explicitly. No persona auto-invokes another.
 
-**Source:** Synthesizes the ownership/handoff table at [`AGENTS.md § 9`](../../AGENTS.md#9-ownership--handoff) with persona-specific conditional routing (e.g., Briar → Clove if issues / "ready to ship" if clean). Captures the recommend-without-auto-invoke posture so the closing message stays a suggestion, not an execution.
+**Source:** Synthesizes the ownership/handoff table at [`AGENTS.md § 9`](../../../AGENTS.md#9-ownership--handoff) with persona-specific conditional routing (e.g., Briar → Clove if issues / "ready to ship" if clean). Captures the recommend-without-auto-invoke posture so the closing message stays a suggestion, not an execution.
 
 ## The pattern
 
