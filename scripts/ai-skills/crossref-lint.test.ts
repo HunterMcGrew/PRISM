@@ -34,6 +34,7 @@ import {
 	runInstallRelativeLinkGate,
 	isInstallRelativeLinkAllowlisted,
 	INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS,
+	INSTALL_RELATIVE_LINK_ALLOWLIST,
 } from "./crossref-lint";
 
 // ---------------------------------------------------------------------------
@@ -1493,15 +1494,23 @@ test("scanFileForRelativeLinks: allowlisted pair is exempt from the gate", async
 // isInstallRelativeLinkAllowlisted — allowlist predicate
 // ---------------------------------------------------------------------------
 
-test("isInstallRelativeLinkAllowlisted: tracked dangling entry is recognized as allowlisted", () => {
-	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
-	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
-	const [relPath, rawRef] = firstEntry.split("::");
-	assert.equal(
-		isInstallRelativeLinkAllowlisted(relPath, rawRef),
-		true,
-		"tracked dangling entry must be recognized as allowlisted"
-	);
+test("isInstallRelativeLinkAllowlisted: permanent allowlist entry is recognized as allowlisted", () => {
+	// INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS is empty (PRISM-284 fixed all 27
+	// tracked entries), so this test seeds a synthetic permanent-allowlist
+	// entry to exercise the lookup mechanism, then cleans up after itself.
+	const mutableAllowlist = INSTALL_RELATIVE_LINK_ALLOWLIST as Set<string>;
+	const relPath = "templates/install/.prism/rules/synthetic-test-fixture.md";
+	const rawRef = "../synthetic/target.md";
+	mutableAllowlist.add(`${relPath}::${rawRef}`);
+	try {
+		assert.equal(
+			isInstallRelativeLinkAllowlisted(relPath, rawRef),
+			true,
+			"permanent allowlist entry must be recognized as allowlisted"
+		);
+	} finally {
+		mutableAllowlist.delete(`${relPath}::${rawRef}`);
+	}
 });
 
 test("isInstallRelativeLinkAllowlisted: non-allowlisted pair returns false", () => {
@@ -1516,14 +1525,21 @@ test("isInstallRelativeLinkAllowlisted: non-allowlisted pair returns false", () 
 test("isInstallRelativeLinkAllowlisted: rawRef with anchor fragment matches allowlist entry", () => {
 	// Fragment-stripping branch: `rawRef#heading` must match the same allowlist
 	// entry as bare `rawRef`, because the key is built from the path-part only.
-	const [firstEntry] = INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS;
-	assert.ok(firstEntry, "tracked-violations allowlist must have at least one entry");
-	const [relPath, rawRef] = firstEntry.split("::");
-	assert.equal(
-		isInstallRelativeLinkAllowlisted(relPath, `${rawRef}#heading`),
-		true,
-		"rawRef with anchor fragment must still match the allowlist entry"
-	);
+	// Seeds and cleans up a synthetic permanent-allowlist entry — see the test
+	// above for why TRACKED_VIOLATIONS can no longer supply this fixture.
+	const mutableAllowlist = INSTALL_RELATIVE_LINK_ALLOWLIST as Set<string>;
+	const relPath = "templates/install/.prism/rules/synthetic-test-fixture.md";
+	const rawRef = "../synthetic/target.md";
+	mutableAllowlist.add(`${relPath}::${rawRef}`);
+	try {
+		assert.equal(
+			isInstallRelativeLinkAllowlisted(relPath, `${rawRef}#heading`),
+			true,
+			"rawRef with anchor fragment must still match the allowlist entry"
+		);
+	} finally {
+		mutableAllowlist.delete(`${relPath}::${rawRef}`);
+	}
 });
 
 // ---------------------------------------------------------------------------

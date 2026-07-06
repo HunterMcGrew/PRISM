@@ -951,65 +951,18 @@ export interface InstallRelativeLinkViolation {
 
 /**
  * Dangling relative links under `templates/install/` that are tracked pending a fix.
- * All 27 unique `(file, ref)` pairs are genuine broken links — two root-cause
- * categories:
  *
- * 1. `../skills/<name>/SKILL.md` (19 unique entries, 6 files) — rules in
- *    `.prism/rules/` and `.prism/references/` cite skill files via `../skills/`
- *    but skills are installed at `.claude/skills/` / `.cursor/skills/` /
- *    `.codex/skills/`, not at `.prism/skills/`. Fix: update the ownership
- *    attribution links to the correct tool-namespace path, or drop them.
- *
- * 2. Miscellaneous (8 entries) — wrong relative depth (AGENTS.md, SPEC.md),
- *    `.ai-skills/` docs not shipped in the install template, one
- *    skills-ecosystem wrong-level ref, and a historical plan reference.
- *
- * Remove entries from this set as the root causes are fixed. When the set
- * reaches zero, delete the constant and simplify `isInstallRelativeLinkAllowlisted`
- * to delegate only to `INSTALL_RELATIVE_LINK_ALLOWLIST`.
+ * Empty — the 27 links tracked here (19 `../skills/` references de-linked to
+ * plain skill-ID text, 8 miscellaneous wrong-depth or unshippable-target paths
+ * corrected or de-linked) were all fixed in PRISM-284. Any future genuine
+ * dangling link should be fixed at the source rather than re-added here;
+ * links that are correct-by-design in the installed tree but unresolvable in
+ * the raw seed tree belong in `INSTALL_RELATIVE_LINK_ALLOWLIST` instead.
  *
  * Key: `relativePath::rawRef` (same convention as `CROSSREF_FILE_ALLOWLIST`).
  */
 export const INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS: ReadonlySet<string> =
-	new Set([
-		// --- Category 1: ../skills/ refs — rules pointing at .prism/skills/ which
-		//     does not exist; skills install at .claude/skills/ etc. ---
-		"templates/install/.prism/references/worktree-mode.md::../skills/prism-code-review-pr/SKILL.md",
-		"templates/install/.prism/references/worktree-mode.md::../skills/prism-conductor/SKILL.md",
-		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-architect/SKILL.md",
-		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-code-review-pr/SKILL.md",
-		"templates/install/.prism/rules/architect-doc-verification.md::../skills/prism-code-review-self/SKILL.md",
-		"templates/install/.prism/rules/design-governance.md::../skills/prism-architect/SKILL.md",
-		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-dev/SKILL.md",
-		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-review-pr/SKILL.md",
-		"templates/install/.prism/rules/design-governance.md::../skills/prism-code-review-self/SKILL.md",
-		"templates/install/.prism/rules/design-governance.md::../skills/prism-design/SKILL.md",
-		"templates/install/.prism/rules/followup-scope.md::../skills/prism-architect/SKILL.md",
-		"templates/install/.prism/rules/followup-scope.md::../skills/prism-code-review-pr/SKILL.md",
-		"templates/install/.prism/rules/followup-scope.md::../skills/prism-code-review-self/SKILL.md",
-		"templates/install/.prism/rules/followup-scope.md::../skills/prism-debugger/SKILL.md",
-		"templates/install/.prism/rules/followup-scope.md::../skills/prism-ticket-start/SKILL.md",
-		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-architect/SKILL.md",
-		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-code-review-pr/SKILL.md",
-		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-code-review-self/SKILL.md",
-		"templates/install/.prism/rules/implementation-task-detail.md::../skills/prism-design/SKILL.md",
-		// --- Category 2: miscellaneous wrong paths ---
-		// CLAUDE.md.tmpl is in .claude/; AGENTS.md.tmpl is at the install root, not .claude/
-		"templates/install/.claude/CLAUDE.md.tmpl::./AGENTS.md",
-		// closing-messages.md is at depth .prism/architect/_toolkit/; AGENTS.md is at install root
-		"templates/install/.prism/architect/_toolkit/closing-messages.md::../../AGENTS.md",
-		// install-layout.md references .ai-skills/docs/ which is not part of the install template
-		"templates/install/.prism/architect/_toolkit/install-layout.md::../../.ai-skills/docs/compatibility.md",
-		// onboarding.md and stack-detection.md reference .ai-skills/skills/ not in install template
-		"templates/install/.prism/architect/_toolkit/onboarding.md::../../.ai-skills/skills/prism-onboarding/shared.md",
-		// skills-ecosystem.md uses wrong relative depth for pr-description.md (one level too shallow)
-		"templates/install/.prism/architect/_toolkit/skills-ecosystem.md::../rules/pr-description.md",
-		"templates/install/.prism/architect/_toolkit/stack-detection.md::../../.ai-skills/skills/prism-onboarding/shared.md",
-		// shipping-flow.md references a historical plan file that does not exist in the install template
-		"templates/install/.prism/references/shipping-flow.md::../plans/4.7-skill-audit-strategy.md",
-		// ADR README uses wrong relative depth for SPEC.md (one level too deep)
-		"templates/install/.prism/spec/adrs/_toolkit/README.md::../../SPEC.md",
-	]);
+	new Set([]);
 
 /**
  * Permanent allowlist for relative links under `templates/install/` that are
