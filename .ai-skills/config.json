@@ -30,5 +30,11 @@
 		"audience": "developer-user",
 		"keepsDevDocs": false,
 		"format": "flat-markdown-guides"
+	},
+	"retroEvidence": {
+		"ci": { "present": true, "system": "github-actions" },
+		"prPlatform": "github",
+		"testCommand": "pnpm run prism:test",
+		"dodGates": ["types", "crossref-lint", "tests", "build"]
 	}
 }

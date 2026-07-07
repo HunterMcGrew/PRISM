@@ -411,6 +411,7 @@ Before recommending Briar, assess context load per AGENTS.md § Context Window H
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History entries: cap at 3 sentences](../../../.prism/rules/branch-plan.md#history-entries-cap-at-3-sentences).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
+- When fixing PR-review findings from Eric's GitHub comments, record each non-trivial finding in the plan's `## Review Issues` with Status `fixed`. The plan is the durable content bus — PR threads don't survive as plan evidence.
 
 <!-- Optional Codex-only additions. Keep this file empty when not needed. -->
 """

@@ -228,7 +228,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
 
 ### Phase 5: Plan update
 
-11. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly.
+11. **Plan update is skipped in in-branch mode.** Eric cannot write to the PR's branch without a checkout. Findings live in the PR comments (inline + summary) and the labels. The plan on the PR branch is updated by Briar (next time the author runs self-review) or by Clove (when fixing the flagged issues) — both run on the branch directly. **The downstream obligation is sharpened, not just skipped:** non-trivial findings from this review must be recorded by Clove as `## Review Issues` entries (Status: `fixed`) when fixing them, not compressed into a one-line `## History` entry — the plan is the durable content bus the retro charter reads from, and a History one-liner starves it.
 
    If the user wants the plan updated as part of the review, that's the trigger to opt into worktree mode — call out the missing plan update in the summary comment and offer to re-run in worktree mode.
 
@@ -436,6 +436,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
 - During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
+- When the PR is a close-out PR for any plan (ticket or epic) missing the `> Retro:` line, surface it as Minor. A recorded `declined` line satisfies the gate; only a *missing* line is flagged — see [.prism/rules/branch-plan.md § Before Closing](../../../.prism/rules/branch-plan.md#before-closing).
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 

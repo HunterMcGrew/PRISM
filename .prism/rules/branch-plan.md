@@ -166,10 +166,23 @@ Run the close on the ticket's **final PR branch** — after implementation is do
 
 **Why:** a close that waits for merge costs an extra PR whose only diff is close bookkeeping for already-shipped work. Closing on the final branch makes the close part of the work that completed it. AC items conditioned on merge ("Given the PR has merged…") are verified as holding-at-merge during the close — the squash makes them true atomically.
 
+The close ceremony runs in two phases: **reflect**, then **close**.
+
+**Reflect** is grain-adaptive. At ticket/PR grain, run the lightweight charter-fidelity check — plan-AC vs. merged diff, its own CI, its own review — mechanical, runnable inside the existing close pass, no persona dispatch required. At epic grain, run the full Iris charter retro (or record the decline). Either way, the reflect phase produces evidence-checked findings — divergence verdicts, action items, lesson candidates, and any `## Promotion cautions` (a Decision the execution record refuted) — that the close phase consumes.
+
+**Close** promotes lasting Decisions (consuming any `## Promotion cautions` from the reflect phase — a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged), runs the verdict gate, records the retro verdict line, and marks the plan closed. Steps 1–2 below are the close phase; their content is unchanged from before the restructure.
+
+**Universal gate — every plan close, not just epics.** Every plan (ticket and epic) records a retro verdict line beside `> Closed:`: `> Retro: <path>` or `> Retro: declined — <one-line reason>`. The nudge is universal; declining is always legitimate; the decline is visible and recorded so the skip has teeth. The theater risk a universal gate raises — heavyweight synthesis on a one-line bugfix — is answered by **grain**, not by exempting trivial plans from the gate: an exemption would re-open the silent-skip hole the gate exists to close.
+
+**Why declinable, not enforced:** PRISM cannot force a retro to run involuntarily outside a Sol run — no scheduler, personas never auto-invoke each other, and hook enforcement was deliberately reverted. What the gate can replicate is CI's real property: skipping is a visible, recorded override, not a silent omission. Under Sol the retro *is* involuntary — Sol auto-dispatches Iris at run close, both grains, and records every dispatch and its outcome in the run report. Outside Sol, the gate is the human-declinable nudge. Promotion-without-relitigation is the defect the reflect phase fixes — today's ceremony, unrestructured, could promote a decision the work itself disproved.
+
+**Placement:** the pre-merge-on-final-branch placement above stands for the reflect phase too — the retro report rides the final PR as a committed file. At epic grain, earlier children are fully merge-settled by close time; only the final child's main-CI is approximated by its PR CI, and the charter-coverage table names this approximation explicitly.
+
 When the ticket or epic is complete (the final PR is reviewed and ready to merge):
 
-1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`.
-2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line under the plan's title and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
+0. **Reflect** — grain-adaptive per above. Record the outcome as `> Retro: <path>` or `> Retro: declined — <reason>` beside the plan's `> Closed:` line (added in step 2 below).
+1. **Promote lasting decisions** — review `## Decisions` for any entries that describe how the system works going forward (not just how this ticket was implemented). Add these to the relevant architect context file in `.prism/architect/`. Consume any `## Promotion cautions` from a retro report for this plan: a Decision the execution record refuted is promoted as corrected or demoted to a lesson, never promoted unchanged.
+2. **Mark the plan closed** — once decisions are promoted, add a `> Closed: YYYY-MM-DD` line and the `> Retro:` line from step 0 under the plan's title, and append the close entry to `## History`. The file stays in `.prism/plans/` — plans are never deleted, and only Zoe (cadence audit) may later move one out as an archive action. **Why:** "git history preserves it" undercounts the cost — audits, retros, and next-wave triage walk the live tree, not git archaeology, and practice preserved every shipped epic plan from the start while the delete instruction kept re-raising the question at each close. See [ADR-0047](../spec/adrs/_toolkit/0047-plans-are-preserved-at-close.md).
 
 Decisions that should be promoted:
 
@@ -315,7 +328,7 @@ Examples:
 
 ## Debugged Issues
 
-Add entries here via the debugger skill. Each entry has a structured format:
+Add entries here via the debugger skill. Each entry has a structured format. Non-trivial CI/build failures fixed during implementation earn an entry here even when no debugger session ran — the plan is the durable content bus, and a failure fixed inline without a record starves anything that reads this section later (the retro charter, an audit, a future debugger session).
 
 ### <short issue title>
 
@@ -342,7 +355,7 @@ The inline tag on `Root cause` and the explicit `Confidence` field carry the sam
 
 ## Review Issues
 
-Add entries here via the code-review-self or code-review-pr skills. Each entry has a structured format:
+Add entries here via the code-review-self or code-review-pr skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass — so the section is a durable review record, not just a defect log. Iris reads it as self-review evidence for charter items 4/5. Each entry has a structured format:
 
 ### <short issue title>
 

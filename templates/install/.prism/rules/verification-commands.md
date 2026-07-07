@@ -92,3 +92,18 @@ Briar (self-review) owns the build step and runs it conditionally based on the d
 ## Operational gotchas
 
 When Winston populates this file during onboarding, he records the team's environmental gotchas inline (e.g. plugin resolution paths, monorepo flag placement, cache locations). Until then, see `.prism/references/operational-gotchas.md` if it exists.
+
+---
+
+## Retro evidence sources (`.ai-skills/config.json#retroEvidence`)
+
+A sibling block to the commands above — Iris's retro charter (`prism-retro` step-02) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.
+
+| Key | Meaning |
+| --- | --- |
+| `ci.present` / `ci.system` | Whether this team runs CI and which system. Absent or `false` renders charter item 6 (test-passing / CI record) as `not configured for this team`. |
+| `prPlatform` | Platform hosting PRs/reviews (`github`, `gitlab`, `bitbucket`, ...). Drives how step-02 fetches PR review threads. |
+| `testCommand` | The team's test command, referenced when reading CI conclusions. |
+| `dodGates` | The gates that define "done" for this team (types, lint, tests, build, coverage, ...). |
+
+Atlas populates this block during onboarding (the retro-evidence question set) and proposes defaults from stack detection. Until onboarded, Iris treats every execution-record source as not configured and leans on plan evidence plus git (which is always available).

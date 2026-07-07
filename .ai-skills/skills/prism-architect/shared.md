@@ -384,6 +384,8 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
 - During plan close, every `## Decisions` entry must carry a `→ promoted to X` or `→ no promotion needed (reason)` verdict sub-bullet — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
+- During plan close, run the reflect phase first — grain-adaptive (lightweight fidelity check at ticket grain, full Iris retro at epic grain) — and record the `> Retro:` verdict line before the close marker lands; see [.prism/rules/branch-plan.md § Before Closing](../../../.prism/rules/branch-plan.md#before-closing).
+- When a retro report exists for the plan being closed, consume its `## Promotion cautions` in the Decision verdict gate — a refuted Decision is promoted as corrected or demoted to a lesson, never promoted unchanged.
 
 ---
 
