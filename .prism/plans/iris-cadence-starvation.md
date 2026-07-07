@@ -1,5 +1,7 @@
 # Plan: iris-cadence-starvation — retro-charter redesign
 
+> Closed: 2026-07-07
+
 ## Ticket
 
 None yet — the operator files after reviewing this plan (Winston evaluation dispatched by Sol, 2026-07-06). Do not open a GitHub issue from this plan without operator sign-off.
@@ -270,6 +272,7 @@ No tasks. Consumer-facing docs don't describe Iris's invocation mechanics; the r
 - 2026-07-06 [main]: Winston added Tasks 15–16 (additive, on top of the green 14) after two operator-authorized post-finalize refinements. Task 15 (R1): step-02 must fetch PR issue-comments via the REST issues endpoint, not only `--json reviews` — dogfood against #400/#401 showed Eric's issue-comment reviews returning empty `reviews[]`, mis-marking charter items 4/5 unavailable on reviewed PRs. Task 16 (R2): Briar writes a zero-findings durable record and the "chat only" phrasing is scoped to GitHub — corrected the directive's premise (Briar already writes `## Review Issues`; the gaps were the clean-pass record and the ambiguous phrasing), so the retro-side change is a one-clause source note, not a contradiction to unwind.
 - 2026-07-06 [huntermcgrew/retro-charter-redesign]: Clove implemented Tasks 15–16. Task 15: rewrote the PR-review-threads bullet in `.prism/skills/prism-retro/step-02-gather-evidence.md` (this micro-file step has no `.ai-skills/` mirror — it's canonical source in place) to fetch issue-comments, review objects + line comments, and check-run rollup, merged under `source: "pr-thread"`. Task 16: three edits landed in `.ai-skills/skills/prism-code-review-self/shared.md` (zero-findings durable line; both "chat only" phrasings scoped to GitHub) plus one clause in `.prism/rules/branch-plan.md § Review Issues`; grepped the canonical retro source for the items-4/5 source list and found one authoritative spot (`.ai-skills/skills/prism-retro/shared.md`'s Two-source rule) — added self-review there, no scattering. `pnpm run prism:check` green (types, tests 485/485, verify-manifest, crossref-lint); dogfood re-proof against PR #400 confirmed `gh pr view --json reviews` returns empty while the new issue-comments fetch surfaces Eric's full review body.
 - 2026-07-06 [huntermcgrew/retro-charter-redesign]: Clove fixed both Briar self-review findings. Major: corrected Task 15's body (line 174) and Decision write-up (line 251) to state the true step-file sourcing model — `.prism/skills/prism-retro/step-02-gather-evidence.md` is hand-authored canonical source in place, confirmed against disk and `scripts/ai-skills/build.ts` (no `.ai-skills/` source, no platform mirrors); tree-wide re-grep found no other surface repeating the false claim. Minor: tightened `.ai-skills/skills/prism-retro/frontmatter.yml`'s description from 467 to 393 characters, within the 250–400 target band, preserving all trigger keywords. `pnpm run prism:build`/`prism:check` green (485/485 tests, mirrors regenerated with zero drift).
+- 2026-07-07 [huntermcgrew/retro-charter-redesign]: Winston ran the reflect-then-close ceremony on the final PR branch (the first live use of the ceremony this plan designed). Consumed Iris's retro (`.prism/retros/retro-charter-redesign.md`, full charter coverage, zero divergences, zero promotion cautions). Verdict gate: all 11 Decisions carry verdict sub-bullets — confirmed. Completed the R1/R2 promotions the verdict sub-bullets promised but that hadn't fully landed in ADR-0068: appended the issue-comments/ADR-0011 sourcing fact to decision (a) and the Briar self-review/zero-findings record to decision (f). Iris's soft note on per-PR retro-note co-location: judged no new `.prism/rules/` line needed — the path convention lives in step-06 (its enforcing home) and ADR-0068's map-reduce decision; a rule file for one directory shape would over-promote. Plan marked closed.
 
 ---
 
@@ -288,6 +291,7 @@ _(none — this plan originates from an architecture evaluation, not a bug inves
 - **File:** `.prism/plans/iris-cadence-starvation.md:174` and `:251`
 - **Problem:** Both lines assert "canonical source `.ai-skills/skills/prism-retro/step-02-gather-evidence.md` (the build regenerates `.prism/skills/prism-retro/step-02-gather-evidence.md`, `.claude/…`, etc. — edit the `.ai-skills/` source, never the generated copy)." This is factually wrong. Confirmed on disk: `.ai-skills/skills/prism-retro/` contains only `claude.md`, `codex.md`, `cursor.md`, `frontmatter.yml`, `shared.md` — no `step-*.md` files exist there, ever have, or are referenced anywhere in `scripts/ai-skills/build.ts` (zero hits for `step-0` or a per-file mirror mechanism for this directory). `.prism/skills/prism-retro/step-*.md` are hand-authored canonical source in place — no `.claude/`, `.codex/`, `.cursor/` mirrors exist for them either, and the actual diff to `step-02-gather-evidence.md` carries no auto-generated header (unlike genuinely build-generated files such as `.prism/skills/prism-code-dev/SKILL.md`). The plan is internally self-contradictory: its own History entry (line 271) and the Task 15 preamble correctly say "this micro-file step has no `.ai-skills/` mirror — it's canonical source in place," but the task body and Decision write-up assert the opposite. A future session reading Task 15 or its Decision cold (without the corrective History entry front-of-mind) would edit the wrong file or expect a build step that doesn't exist.
 - **Fixed in:** `.prism/plans/iris-cadence-starvation.md:174` and `:251` rewritten to state the true model — `.prism/skills/prism-retro/step-02-gather-evidence.md` is canonical, hand-authored source in place with no `.ai-skills/` mirror and no build-regeneration step. Tree-wide re-grep confirmed ADR-0068 carries no matching claim (clean) and no other surface in `.ai-skills`/`.prism`/`.claude`/`.codex`/`.cursor` repeats the inaccurate sourcing claim outside this finding's own record (line 288, which quotes the bug for documentation purposes).
+- **Re-review confirmation (2026-07-06, Briar, gauntlet re-pass at `2fffbbb`):** verified lines 174/251 now state the corrected model; independently re-ran the tree-wide grep for `.ai-skills/skills/prism-retro/step` — sole hit is this finding's own quoted record (line 289), as expected. Confirmed fixed, no regression.
 
 ### Frontmatter description exceeds its own stated target band
 
@@ -296,10 +300,12 @@ _(none — this plan originates from an architecture evaluation, not a bug inves
 - **File:** `.ai-skills/skills/prism-retro/frontmatter.yml:2-9`
 - **Problem:** Task 5 specifies "target 250–400 chars, 1000 cap." The new description measures 467 characters — over the target band, though safely under the 1000 cap enforced by `discovery-metadata.test.ts` (which passes).
 - **Fixed in:** `.ai-skills/skills/prism-retro/frontmatter.yml` — tightened to 393 characters (within the 250–400 band) while preserving all trigger keywords and the charter/two-source/two-grain/coverage-table/routing/read-only meaning. `pnpm run prism:build` regenerated the `.claude`/`.codex`/`.cursor` mirrors; `pnpm run prism:check` green (485/485 tests, including discovery-metadata length checks).
+- **Re-review confirmation (2026-07-06, Briar, gauntlet re-pass at `2fffbbb`):** independently measured the folded description at 399 characters (Clove reported 393 — trivial counting-method variance, both within the 250–400 band and well under the 1000 cap). Diffed old vs. new description: all 6 substantive trigger phrases preserved verbatim; only the generic phrase "what went well" was dropped, a legitimate trim per the "quality beats count" guidance in `skill-authoring.md`, not a regression. Ran `pnpm run prism:build` — `git status` on `.claude`/`.codex`/`.cursor`/`.ai-skills` came back empty, confirming zero drift. Confirmed fixed.
 
-No other findings. Types, comment hygiene, and build/test/crossref-lint all verified clean — see PR Readiness below.
+No other findings. Types, comment hygiene, and build/test/crossref-lint all verified clean — see PR Readiness below. Re-review independently re-ran full `pnpm run prism:check` (build --check, types, 485/485 tests, verify-manifest, crossref-lint) — all green, matching Clove's report.
 
 - No issues found beyond the two above — 2026-07-06 [huntermcgrew/retro-charter-redesign]
+- Re-reviewed and confirmed both fixes clean, zero regressions — 2026-07-06 [huntermcgrew/retro-charter-redesign] (Briar, gauntlet re-pass at `2fffbbb`)
 
 ---
 
@@ -349,9 +355,9 @@ _(none)_
 
 ## PR Readiness
 
-- [x] No critical or major issues — Briar's self-review found one Major (Task 15 body/Decision misstates step-file sourcing model) and one Minor (frontmatter description over target band); both fixed by Clove. See `## Review Issues`.
-- [x] Build passes — last run: 2026-07-06, `pnpm run prism:check` green (build/seed-drift, types, tests 485/485, verify-manifest, crossref-lint) — re-verified after Tasks 15–16, during Briar's self-review, and again after fixing both findings
-- [ ] PR description up to date (no PR opened yet — Sol runs Briar's self-review first)
+- [x] No critical or major issues — Briar's self-review found one Major (Task 15 body/Decision misstates step-file sourcing model) and one Minor (frontmatter description over target band); both fixed by Clove and independently re-confirmed fixed by Briar's gauntlet re-review at `2fffbbb`. See `## Review Issues`.
+- [x] Build passes — last run: 2026-07-06, `pnpm run prism:check` green (build/seed-drift, types, tests 485/485, verify-manifest, crossref-lint) — re-verified after Tasks 15–16, during Briar's self-review, again after fixing both findings, and a fourth time by Briar's independent gauntlet re-review
+- [ ] PR description up to date (no PR opened yet — Sol runs Eric's PR review next)
 - [x] Lasting decisions promoted to architect context (ADR-0068 written, task 12; all `## Decisions` entries carry a verdict sub-bullet, including tasks 15–16's R1/R2 Decisions)
 
-**Last updated:** 2026-07-06 (Clove fixed both self-review findings)
+**Last updated:** 2026-07-06 (Briar's gauntlet re-review confirmed both self-review findings fixed, zero regressions — ready for PR review)
