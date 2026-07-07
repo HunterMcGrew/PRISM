@@ -56,6 +56,15 @@ When an integration gate fires (a lane with `type: "integration"` whose `depends
 
 The trigger is defined in `lib/fleet.md § Integration gate`. The integration gate report and the file-conflict gate report are distinct — label them clearly so the operator can tell which is which.
 
+## Retro dispatch (auto, both grains)
+
+Under a conducted run, Sol **auto-dispatches** the retro at run close — not propose. This is the one context that holds both the trigger authority and the evidence a retro needs, so the retro is genuinely involuntary here, unlike the human-declinable gate in `.prism/rules/branch-plan.md § Before Closing` that governs solo (non-Sol) closes.
+
+- **Per-PR grain.** As each lane's ticket closes, Sol dispatches Iris (or runs the mechanical fidelity check inline) at `per-pr` grain with that lane's plan path, PR number, verdict, and CI conclusion — producing the compact per-ticket fidelity note that feeds the epic retro.
+- **Epic grain.** When a run closed one or more epic-scale lanes, Sol dispatches Iris at `epic` grain per closed epic. The dispatch prompt carries the plan path, touched PR numbers, per-lane verdicts, CI outcomes, and the child per-PR notes as step-02 evidence pointers. The returned report path lands in the run report and satisfies the plan's `> Retro:` line.
+
+Every dispatch and its outcome is recorded in the run report — on-the-loop, never dark, the same shape as the auto-cleared-gates line above. Sol remains within his constitution: he dispatches a persona and records run-state; Iris writes the artifact. Auto-dispatching a persona at a phase boundary is Sol's native verb, not a new authority.
+
 Save goal-state with `status` set per the write protocol in `.prism/skills/prism-conductor/lib/goal-state.md`: `done` (run complete), `paused` (stopped at a gate, resumable via `resumeFromRunId`), or `stopped` (tripped a budget).
 
 **Never flip a PR ready or merge.** Merge is the human's call — branch protection enforces it (ADR-0011) and `git-conventions.md` § Who merges binds every persona. Sol surfaces what's parked at merge; the human clicks it.

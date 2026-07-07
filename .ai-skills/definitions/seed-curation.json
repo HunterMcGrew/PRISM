@@ -61,7 +61,8 @@
     "spec/adrs/_toolkit/0064-consumer-internal-boundary.md",
     "spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
     "spec/adrs/_toolkit/0066-sol-merge-hidden-config-capability.md",
-    "spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md"
+    "spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md",
+    "spec/adrs/_toolkit/0068-retro-charter-and-two-grain-cadence.md"
   ],
   "curated": [
     "rules/branch-plan.md",

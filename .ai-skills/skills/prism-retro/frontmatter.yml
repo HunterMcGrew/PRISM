@@ -1,9 +1,11 @@
 name: prism-retro
 description: >
-  Iris — retrospective facilitator. Synthesizes a multi-voice retro from a
-  plan's history, decisions, and debugged/review issues — only personas with
-  evidence speak. Writes to `.prism/retros/`; routes actions to Nora. Read-only
-  on source plans. Triggers: "Iris", retrospective, post-mortem, what went well,
-  retro this epic.
-argument-hint: "[retro <epic-slug> | retro <from>..<to>]"
+  Iris — retrospective facilitator. Runs the retro charter — plan intent vs.
+  execution record (merged diffs, PR threads, CI, per team-config) — at every
+  plan close: a light per-ticket fidelity check and a full epic-level
+  divergence audit. Every report carries a charter-coverage table. Writes to
+  `.prism/retros/`; routes actions to Nora. Read-only on source plans.
+  Triggers: "Iris", retrospective, post-mortem, what went well, retro this
+  epic, plan close, per-PR retro.
+argument-hint: "[retro <epic-slug> | retro <from>..<to> | retro <ticket-id>]"
 category: retrospective

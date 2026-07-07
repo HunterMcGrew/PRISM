@@ -402,6 +402,7 @@ Run this battery once, immediately before emitting any verdict. Answer all four 
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
 - During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
+- When a plan being closed (any grain — ticket or epic) lacks the `> Retro:` line, surface it as Minor. A recorded `declined` line satisfies the gate; only a *missing* line is flagged — see [.prism/rules/branch-plan.md § Before Closing](../../../.prism/rules/branch-plan.md#before-closing).
 
 Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
 

@@ -19,6 +19,7 @@ In `init-bootstrapped` mode, questions 1–5 are pre-seeded from the existing `c
 9. **Discovery sweep** *(first-contact mode only)* — see § Discovery-sweep below. Fires after the asset-path survey; skipped in all other modes.
 10. **Slack channel (optional)** — "What Slack channel should Lilac post standup summaries to? Skip if you're not using Lilac yet." Optional; omitted from `slackChannel` when blank.
 11. **Documentation setup** — see § Documentation question set below. Saved together under step `documentation-setup` when all four answers are accepted.
+12. **Retro evidence sources** — see § Retro evidence question set below. Saved together under step `retro-evidence` when all four answers are accepted.
 
 ---
 
@@ -37,6 +38,22 @@ Atlas runs `detectDocLayout(<repo-root>)` before asking and proposes detected va
 When `detectDocLayout` returns non-empty evidence, Atlas frames each sub-question as "Does this look right?" rather than asking cold. When evidence is empty, Atlas asks plainly without a pre-fill.
 
 **Skip path:** if the user answers "skip" or "none" to question 11a, Atlas omits the entire `documentation` block from the config write. Eli operates without it (falling back to its own heuristics) until the team configures it.
+
+---
+
+## Retro evidence question set
+
+Atlas runs the same stack-detection pass already used elsewhere (a `.github/workflows/` directory, the GitHub remote, `commands.test`) and proposes defaults before asking. Each sub-question is one turn within the single `retro-evidence` state step. Iris (`prism-retro` step-02) reads the resulting `retroEvidence` config block to know which execution-record sources exist for this team.
+
+**12a. CI system** — "Does this team run CI? Which system?" Pre-fill `present: true, system: "github-actions"` when `.github/workflows/` is detected; otherwise pre-fill `present: false`. Stored as `retroEvidence.ci`.
+
+**12b. PR platform** — "What platform hosts your PRs/reviews?" Pre-fill `"github"` when a GitHub remote is detected. Stored as `retroEvidence.prPlatform`.
+
+**12c. Test command** — "What's your test command?" Pre-fill with the already-answered `commands.test` value (his standard detection-then-confirm shape — no re-asking a value already captured). Stored as `retroEvidence.testCommand`.
+
+**12d. DoD gates** — "What gates define done for this team — types, lint, tests, build, coverage, something else?" Freeform list; no pre-fill beyond suggesting the gates already wired into `commands.*`. Stored as `retroEvidence.dodGates`.
+
+Atlas proposes each default, the user confirms or corrects — his standard detection-then-confirm shape. A no-CI or non-GitHub team simply gets `ci.present: false` or a different `prPlatform` value; Iris's charter-coverage table renders those sources as `not configured for this team` rather than treating the absence as a miss.
 
 ---
 

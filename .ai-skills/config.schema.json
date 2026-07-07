@@ -186,6 +186,40 @@
 				}
 			}
 		},
+		"retroEvidence": {
+			"type": "object",
+			"description": "Per-team execution-record sources for Iris's retro charter (prism-retro step-02). Populated by Atlas's retro-evidence onboarding question set. A source this block marks absent renders in the retro's charter-coverage table as 'not configured for this team', distinct from a configured-but-unreachable-this-run source — so the coverage table degrades honestly on teams without CI or without a GitHub-hosted PR platform.",
+			"properties": {
+				"ci": {
+					"type": "object",
+					"description": "Whether this team runs CI, and which system. Absent or `present: false` means charter item 6 (test-passing / CI record) always renders as not-configured.",
+					"properties": {
+						"present": { "type": "boolean" },
+						"system": {
+							"type": "string",
+							"description": "CI system name. Open string — Atlas writes whatever the team names.",
+							"examples": ["github-actions", "circleci", "gitlab-ci", "none"]
+						}
+					}
+				},
+				"prPlatform": {
+					"type": "string",
+					"description": "Platform hosting PRs/reviews. Drives how step-02 fetches PR review threads for charter items 4/5. Open string — not limited to GitHub.",
+					"examples": ["github", "gitlab", "bitbucket"]
+				},
+				"testCommand": {
+					"type": "string",
+					"description": "The team's test command, for reference in the retro's CI-conclusion reads. Mirrors commands.test — kept as a separate field so retroEvidence stays self-contained even if commands.* changes shape later.",
+					"examples": ["pnpm run prism:test"]
+				},
+				"dodGates": {
+					"type": "array",
+					"description": "The gates that define 'done' for this team (types, lint, tests, build, coverage, etc.) — informs which charter items step-02 can expect evidence for.",
+					"items": { "type": "string" },
+					"examples": [["types", "crossref-lint", "tests", "build"]]
+				}
+			}
+		},
 		"modelTiers": {
 			"type": "object",
 			"description": "Optional per-persona model selection for Sol's conductor dispatches. Maps PRISM's abstract tiers (top / worker, defined in prism-conductor shared.md) to this runtime's concrete model names, plus optional per-persona overrides. Read by Sol to seed each lane's goal-state `models` map; absent means the conductor uses its run-wide default model for every dispatch. Model-name strings are examples only — a consumer on a non-Claude runtime supplies that runtime's model identifiers.",
