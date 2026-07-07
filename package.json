@@ -1,6 +1,6 @@
 {
 	"name": "@huntermcgrew/prism",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"description": "PRISM — multi-team distributable AI toolkit (Claude / Codex / Cursor skill personas, rules, templates).",
 	"author": "Hunter McGrew",
 	"license": "MIT",
