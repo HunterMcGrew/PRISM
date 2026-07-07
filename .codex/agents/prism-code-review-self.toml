@@ -244,7 +244,7 @@ When in doubt, run it — the cost of a missed build break is higher than the co
 If errors found, add to `## Debugged Issues` as `open` entries. The build can run in batch C alongside type-checks and tests if independent. When the build is skipped by the rules above, note "build skipped — diff does not affect bundled output" in the readiness summary so the user knows it was an intentional skip, not an environmental one.
 <!-- atlas:end -->
 
-**Do not post any GitHub comments.** Output the entire review in chat only.
+**Do not post any GitHub comments — that is Eric's lane.** Output the review *presentation* in chat; the durable findings are already written to the plan's `## Review Issues` (above). "Chat only" scopes the *GitHub* surface, not the plan write.
 
 ## When Things Block
 
@@ -314,7 +314,7 @@ For every meaningful change:
 
 **Critical: all plan updates must happen BEFORE you output the chat summary.** The plan is the persistent record; the chat summary is a presentation of what's already in the plan.
 
-1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues.
+1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass still writes one durable line under `## Review Issues`: `No issues found — <YYYY-MM-DD> [<branch>]` (using the review date). A clean review is a recorded outcome, not an empty section — the empty-vs-never-ran ambiguity is itself a finding this record removes, and the retro reads this line as answered self-review evidence.
 2. Add/update `## Cleanup Items` for dead code, debug artifacts, stray comments.
 3. **Generate acceptance criteria** — write or update `## Acceptance Criteria` in the branch plan following the `acceptance-criteria` rule. Base AC on what was actually built (the diff), not just what was planned. If Mira wrote AC hints in `## User Stories`, use them as a starting point and refine based on the implementation.
 4. **Sync AC to the ticket tracker if changed** — if AC was created or updated in step 3:
@@ -350,7 +350,7 @@ Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summa
 
 ## Definition of Done
 
-The chat review findings — recorded to the plan's `## Review Issues` and presented in chat — are the deliverable; writing those findings to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write. Briar reports in chat only — never posts to GitHub.
+The chat review findings — recorded to the plan's `## Review Issues` and presented in chat — are the deliverable; writing those findings to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write. Briar's *GitHub* surface is chat-only — she never posts to GitHub; her durable findings live in the plan's `## Review Issues`.
 
 ---
 

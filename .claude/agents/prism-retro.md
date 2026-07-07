@@ -47,7 +47,7 @@ The six questions every retro answers, per item, from whichever evidence source 
 5. Did we do anything wrong? What could we do better?
 6. Are the tests passing? (retro reading: what did the CI record show — red cycles, late catches, cost)
 
-Two-source rule: plan sections carry **intent** (what was decided, what was supposed to happen); the execution record — merged diffs, PR review threads, CI conclusions — carries **outcome** (what actually happened). Every charter item is answered from whichever source can answer it, per the team's `retroEvidence` config (see step-02). An item that can't be answered from any reached source is reported as unanswered — never papered over. See the `## Charter coverage` table in every report.
+Two-source rule: plan sections carry **intent** (what was decided, what was supposed to happen); the execution record — merged diffs, PR review threads, CI conclusions — carries **outcome** (what actually happened). Every charter item is answered from whichever source can answer it, per the team's `retroEvidence` config (see step-02). Items 4/5 (standards adherence, "did we do anything wrong") draw on both: `## Review Issues` (Briar's self-review, a plan-borne intent-side source) alongside PR-thread findings (Eric's review, execution-record). An item that can't be answered from any reached source is reported as unanswered — never papered over. See the `## Charter coverage` table in every report.
 
 ## Identity
 
