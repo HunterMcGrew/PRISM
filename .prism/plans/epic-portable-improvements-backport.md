@@ -124,9 +124,28 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 
 ---
 
+## Review Issues
+
+### Closing-battery persona elaboration dropped in most skill lanes
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-founder/shared.md:146` (representative; pattern repeats in ~20 of ~27 skill lanes — finance, legal, sales, data, customer-success, recruiting, marketing, conductor, changelog, code-dev, code-review-self, design, doc-walker, onboarding, prd, qa-test-plan, standup-summary, surface-audit, ticket-start, user-stories, architect)
+- **Problem:** Plan task 5 said to "keep any persona-specific battery framing that is NOT in the generic rule" when swapping the full Opening/Closing battery text for a pinned pointer. Every skill's original Closing battery had domain-specific parenthetical examples per question (e.g. founder's Edge recall: "empty strategy doc, no mission stated, conflicting decisions, absent stakeholder"; finance's: "zero revenue, no ACV, absent burn rate, negative margin"). In most lanes the pointer swap dropped these entirely, leaving a bare "immediately before emitting any `done`-class verdict." with no domain examples. Five lanes did it correctly by appending a trailing sentence preserving the domain specifics (`prism-code-review-pr:363`, `prism-documentation:252`, `prism-market-research:130`, `prism-refactor-scout:117`, `prism-debugger` closing battery) — proving the pattern was achievable and making the inconsistency visible rather than a uniform simplification choice.
+- **Suggested fix:** For each affected lane, append one sentence to the Closing (and where applicable Opening) battery pointer line preserving the domain-specific Edge recall / Unasked assumptions / Verification honesty examples that existed pre-edit, following the pattern already used in the five correct lanes.
+
+### Ren's Sessions-persistence stance is unstated
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-refactor-scout/shared.md:101`
+- **Problem:** Ren's refactor plan (`.prism/plans/refactor-<slug>.md`) uses the branch-plan template, which now includes `## Sessions` (task 4b). Unlike Sol/Iris/Zoe/Lilac, Ren's shared.md doesn't say whether battery answers persist to that `## Sessions` line or are exempt like the other four non-ticket-plan personas — an ambiguity, not a clear defect, since Ren does own a plan file in the standard template.
+- **Suggested fix:** Add one clause to Ren's Opening battery pointer, either instructing it to persist `open:`/`close:` to its own refactor plan's `## Sessions`, or explicitly exempting it with the reason (parallel to the surface-audit/retro/conductor/standup-summary wording).
+
 ## History
 
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Plan created — backport spec drafted from the completed portable-roster build; see the improvement package and verify-then-fix list.
+- 2026-07-09 [claude/prism-skills-portability-f37a25]: Briar self-review — confirmed all 8 verify-then-fix items correctly applied, portability artifacts clean, `## Sessions` wording identical across the 3 surfaces, DEFAULT_BRANCH tree-swept clean, `pnpm prism:check` green (485/485); found the closing-battery persona-elaboration drop across ~20 lanes (Major) and Ren's unstated Sessions stance (Minor). See `## Review Issues`.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Open question closed — quick-consult ports with winston-judged grain and an escalation trigger; see Decision.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Winston design pass at the Sol gate — placement confirmed as a Tier-1 rule, all 8 bugs verified reproducing (3 fixes adjusted, Bug 6 scope widened to architect), execution shape set to parallel edits + one serialized build; `## Sessions` and rule specs written to Implementation Tasks; `## Ticket` set to issue #404.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Integration lane (task 8) — regenerated the full generated tree in one commit (`2c68175`) after merging a redundant redirect paragraph in `prism-ticket-start/shared.md` to clear the 500-line body cap; `pnpm prism:check` green (485/485 tests, types, manifest, crossref-lint).
