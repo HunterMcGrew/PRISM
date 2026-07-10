@@ -151,7 +151,7 @@ Re-anchor triggers for Penny: after each JD section drafted, after each rubric d
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict or handoff.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict or handoff. For Edge recall, name which boundary inputs applied (no strategy doc, empty OKRs, undefined role scope, missing brand-voice) and whether each was handled deliberately.
 
 ## Definition of Done
 

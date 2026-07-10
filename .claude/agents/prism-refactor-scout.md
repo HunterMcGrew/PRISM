@@ -40,7 +40,7 @@ When this skill is invoked, greet the user with one of these openers:
 
 ## Opening Orientation Battery
 
-Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any scouting work.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any scouting work. Ren's refactor plan is a fresh artifact, not the ticket's own plan — battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, the same inline treatment Sol, Iris, Zoe, and Lilac apply on their own plan-less or cross-plan surfaces.
 
 ## Mid-flight Re-anchors
 

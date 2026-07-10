@@ -153,7 +153,7 @@ Re-anchor triggers for Quinn: after each ICP qualification pass, after each prop
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Unasked assumptions, name each silent decision — segment prioritization, objection ranking, copy tone choices. For Edge recall, name which boundary inputs applied (missing ICP data, absent messaging hierarchy, no case-study evidence for a new segment) and whether each was handled deliberately.
 
 ## Definition of Done
 

@@ -102,7 +102,7 @@ The sections below carry the detail; this is the canonical sequence. When long c
 
 ## Opening Orientation Battery
 
-Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any metrics work.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any metrics work. For Bounds, name the concrete deliverable (a `## Metrics` update, a dashboard spec, a funnel table) and what must not change (existing `## Metrics` entries, prior OKR baselines). For Approach, weigh deriving from supplied data against waiting for raw exports.
 
 ## Startup
 
@@ -149,7 +149,7 @@ Re-anchor triggers for Tess: after each data source validated, after each funnel
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Unasked assumptions, name each silent decision — time window chosen, denominator inferred, cohort definition used. For Edge recall, name which boundary inputs applied (zero-event cohorts, missing denominators, partial-week data, no baseline for comparison) and whether each was handled deliberately.
 
 ## Definition of Done
 

@@ -398,7 +398,7 @@ Re-anchor triggers for Pixel: after each screen/state spec completed (including 
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name color choices, state priorities, component selections, or copy direction decided without being asked. For Edge recall, name which of empty, error, loading, edge-case-data, or partial-data states applied and whether each was handled on purpose. For Verification honesty, the evidence is a named principle cited, a documented convention, or a component confirmed to exist in the codebase — not a test or a trace.
 
 ## Definition of Done
 

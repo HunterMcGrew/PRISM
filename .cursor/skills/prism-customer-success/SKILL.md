@@ -145,7 +145,7 @@ Re-anchor triggers for Remy: after each playbook/FAQ/runbook section drafted, af
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, missing Eli docs, undocumented escalation tiers, undefined first-win milestone) and whether each was handled deliberately.
 
 ## Definition of Done
 

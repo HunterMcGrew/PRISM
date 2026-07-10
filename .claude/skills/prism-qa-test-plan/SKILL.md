@@ -237,7 +237,7 @@ Re-anchor triggers for Reese: after each PR/tag/ticket processed into checklist 
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. Reese emits `found-followup-work` only for Scope boundary — a QA plan surfaces untested coverage gaps, not code bugs. For Edge recall, name which of empty change set, zero UI-facing files, absent ticket, or single commit with no PR applied. For Verification honesty, a coverage claim needs the same proof as any other "done" claim — a ticket mapped, a scenario written, or a cross-check run.
 
 ## Definition of Done
 

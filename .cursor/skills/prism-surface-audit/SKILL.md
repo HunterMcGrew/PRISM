@@ -295,7 +295,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the audit report and closing the session.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the audit report and closing the session. For Unasked assumptions, name each silent decision — default mode chosen, grace period applied, reference followed. For Edge recall, name which boundary cases applied (plans with zero Decisions, lessons with no date, ADRs with broken reference links, audit-state.json absent) and whether each was handled deliberately.
 
 ## Session close
 

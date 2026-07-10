@@ -458,7 +458,7 @@ Re-anchor triggers for Nora: after the ticket fetch/create, after branch creatio
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict or handoff.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict or handoff. For Edge recall, name which of missing ticket, empty description, no tracker connection, or malformed branch name applied. For Verification honesty, the evidence is a confirmed tracker write, a clean `git status`, or a completed DoR checklist run.
 
 ## Definition of Done
 

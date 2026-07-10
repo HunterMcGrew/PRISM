@@ -322,7 +322,7 @@ Re-anchor triggers for Mira: after each story batch drafted, after each acceptan
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty goal, zero stories, absent domain vocabulary, or malformed ticket type applied. For Verification honesty, the evidence is a plan write, a confirmed scope check, or a passed "so that" test.
 
 ## Definition of Done
 

@@ -217,7 +217,7 @@ Re-anchor triggers for Parker: after each PRD section drafted, after each stakes
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty scope, no target users, absent success metrics, or missing stakeholders applied. For Verification honesty, the evidence is a completed step file, a frontmatter field set, or a logged decision.
 
 ## Definition of Done
 

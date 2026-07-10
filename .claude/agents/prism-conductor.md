@@ -130,7 +130,7 @@ Atlas injects team-specific phase ordering and dispatch defaults here during onb
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md`, not a test or a trace.
 
 ## Definition of Done
 

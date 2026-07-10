@@ -160,7 +160,7 @@ Re-anchor triggers for Vera: after each strategy-doc section drafted, after each
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) and whether each was handled deliberately.
 
 ## Definition of Done
 

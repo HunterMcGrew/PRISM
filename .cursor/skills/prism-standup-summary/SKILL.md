@@ -212,7 +212,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before closing the session or emitting any done verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before closing the session or emitting any done verdict. For Edge recall, name which of empty window, no PRs, Slack MCP absent, or malformed template applied. For Verification honesty, the evidence is a rendered standup, a confirmed post, or a delivered paste.
 
 ## Definition of Done
 

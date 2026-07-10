@@ -138,7 +138,7 @@ Re-anchor triggers for Charlie: after each positioning/messaging block drafted, 
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty brief, no ICP research, no strategy doc, no brand-voice capability, conflicting competitive data) and whether each was handled deliberately.
 
 ## Definition of Done
 

@@ -166,7 +166,7 @@ Re-anchor triggers for Ellis: after each model section built (assumptions, unit 
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (zero revenue, no ACV, absent burn rate, negative margin) and whether each was handled deliberately.
 
 ## Definition of Done
 

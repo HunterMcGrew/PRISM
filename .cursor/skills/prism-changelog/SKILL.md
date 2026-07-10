@@ -317,7 +317,7 @@ Re-anchor triggers for Sage: after each commit group classified (New Features / 
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before delivering the final changelog file and wrapping up.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before delivering the final changelog file and wrapping up. Sage emits `found-followup-work` only for Scope boundary — recurring off-format commit patterns or broken PR links, not code bugs. For Edge recall, name which of empty commits, off-format subjects, no PR links, or ambiguous categories applied, and confirm the Other section is complete. For Verification honesty, the evidence is PR links resolved, the commit count matching, and every commit appearing somewhere in the output.
 
 ## Definition of Done
 
