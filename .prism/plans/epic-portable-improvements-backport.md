@@ -1,5 +1,8 @@
 # Plan: epic-portable-improvements-backport
 
+> Closed: 2026-07-10
+> Retro: .prism/retros/portable-improvements-backport/2026-07-10-portable-improvements-backport.md
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/404
@@ -118,9 +121,14 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 - **Every reported source bug verify-then-fix — all 8 reproduce; three adjusted.** Reason: port agents diagnosed against generated copies (`cross-agent-handoff-accountability.md`). Adjustments from canonical verification: (1) ticket-start fix uses the existing `${TICKET_PREFIX_LOWERCASE}` token (line 378's pattern), not a literal; (2) code-review-self fix uses the existing `${DEFAULT_BRANCH}` token (`followup-scope.md` precedent), not runtime `origin/HEAD`, and the hardcoded-`main` pattern also hits `prism-architect:104` (scope widened by one skill); (3) prd greenfield-no-user is a hardening — the `needs-human` escape already prevents invented answers, so the fix adds an explicit early guard and recommends the `needs-human` verdict over `blocked`.
   - → no promotion needed (per-ticket verification record).
 - **Quick-consult mode ports, with winston self-judging the grain** (resolved by Hunter 2026-07-09; confirmed implementable). A quick architecture question with no ticket gets an inline evaluation — no plan ceremony, battery answers stated in chat. The escalation trigger keeps the discipline guarantee: the moment the consult deepens (scope grows past one question, a decision worth recording emerges, or implementation planning starts), winston shifts into full mode — resolves or creates the plan then, and retroactively records the decisions already made. Implementable as a mode gate ahead of the Batch-2 plan-lookup requirement (`shared.md:115`). Considered: not porting, to preserve "no evaluation without a resolved plan." Rejected: the strict form makes people route around winston for small questions, costing more discipline than the escape hatch does.
-  - → promoted to `.prism/architect/` on plan close (persona-behavior change other personas rely on when handing quick questions to Winston).
+  - → promoted to `.prism/architect/_toolkit/skills-ecosystem.md` § Winston's quick-consult mode (persona-behavior change other personas rely on when handing quick questions to Winston).
 - **`prism-ticket-start` body trimmed by one paragraph to clear the 500-line cap.** The generated Claude `SKILL.md` landed at 501 lines (over `MAX_SKILL_BODY_LINES`) after the battery-pointer swap — the redirect guidance was split across two adjacent paragraphs in `.ai-skills/skills/prism-ticket-start/shared.md` ("Ownership & Handoff" and "Nora redirects to the correct next persona"), which said overlapping things. Merged them into one paragraph; no content dropped, generated body now 499 lines.
   - → no promotion needed (line-count fix local to one skill's source).
+- **`prism-skill-forge` absorbed into task 5 after the fact (recorded retroactively at close, per Iris retro divergence `#2`).** `prism-skill-forge` was omitted from task 5's enumerated batching — batch (d) named handoff, review-loop, and onboarding, not skill-forge — a genuine enumeration gap, not a judgment call. Eric flagged it in his PR #405 review as out-of-scope for the diff and recommended a follow-up PR; the pointer-pattern conversion was then folded into the same PR (commits `6badda3`, `31f7453`) about six minutes later, with no `## Decisions` or `## History` entry at the time. That undocumented absorption is what `branch-plan.md`'s cross-lane rule ("documented absorption is fine; undocumented absorption is not") exists to prevent — this entry is the missing documentation.
+  - **What landed:** skill-forge's `shared.md` re-pointed at `session-orientation.md` (same battery-pointer pattern verified across the other lanes) plus its platform regen.
+  - **Verification gap:** Sol confirmed the mechanical properties (pointer present, lifecycle list intact, portability grep clean, green `prism:check`) but the two commits did NOT go through a fresh Briar/Eric adversarial pass — round-2 self-review predates them, and Eric never saw the diff. "Very likely fine, unreviewed" is below the review bar the rest of the epic held.
+  - **Open follow-up:** skill-forge's conversion still needs a real review pass — a scoped Eric re-review of `6badda3`/`31f7453`, or a Briar self-review confirming the pattern matches the already-verified lanes. Tracked in the retro's Action Items.
+  - → no promotion needed (per-ticket scope-absorption record; the general cross-lane-absorption rule already lives in `branch-plan.md` § Implementation Tasks and `followup-scope.md`).
 
 ---
 
@@ -144,6 +152,12 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 - **Round-2 verification:** commit `a8c071a` adds a clause to Ren's Opening battery pointer: battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, exempting Ren with the same reasoning already applied to Sol/Iris/Zoe/Lilac. Confirmed present and correctly worded.
 - **Suggested fix:** N/A — resolved.
 
+## Sessions
+
+Append-only orientation log — one line per skill session.
+
+- 2026-07-10 [huntermcgrew/prism-404-followup-close] open: Intent — run the epic's CLOSE phase (promote quick-consult, record retro divergences, verdict gate, mark closed); Bounds — plan + skills-ecosystem.md + lessons.md doc edits, one commit, no rebuild, no merge; Approach — targeted Edits, no build · close: scope held
+
 ## History
 
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Plan created — backport spec drafted from the completed portable-roster build; see the improvement package and verify-then-fix list.
@@ -152,6 +166,9 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Winston design pass at the Sol gate — placement confirmed as a Tier-1 rule, all 8 bugs verified reproducing (3 fixes adjusted, Bug 6 scope widened to architect), execution shape set to parallel edits + one serialized build; `## Sessions` and rule specs written to Implementation Tasks; `## Ticket` set to issue #404.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Integration lane (task 8) — regenerated the full generated tree in one commit (`2c68175`) after merging a redundant redirect paragraph in `prism-ticket-start/shared.md` to clear the 500-line body cap; `pnpm prism:check` green (485/485 tests, types, manifest, crossref-lint).
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Round-2 self-review — both round-1 Review Issues confirmed fixed (persona-specific closing framing restored across all affected lanes, verified byte-for-byte against `origin/main`; Ren's Sessions-persistence clause added). No regressions, no over-restoration, portability grep clean, `## Sessions` identical across all 3 surfaces, `pnpm prism:check` green (485/485). Branch ready for PR.
+- 2026-07-10 [claude/prism-skills-portability-f37a25]: Execution ran the pre-approved sequential-single-branch fallback, not the parallel-worktree-lanes primary path — worktree merge added no value at this lane count (git shows zero merge commits across the PR range). Recorded per Iris retro divergence `#1`; the fallback was legitimated in advance in the "Execution shape" Decision, this note just closes which path ran.
+- 2026-07-10 [claude/prism-skills-portability-f37a25]: `prism-skill-forge` folded into the same PR (commits `6badda3`, `31f7453`) after Eric flagged it out-of-scope; recorded retroactively at close — see Decision "`prism-skill-forge` absorbed into task 5 after the fact." Review pass still owed.
+- 2026-07-10 [huntermcgrew/prism-404-followup-close]: Epic closed on the close-out branch (Sol-conducted CLOSE phase). Promoted the quick-consult Decision to `skills-ecosystem.md`, recorded the two retro divergences, ran the verdict gate; epic merged to main as squash `5d5bcd9`, PR #405 CI green both platforms.
 
 ---
 
