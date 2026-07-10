@@ -44,6 +44,7 @@ Repo map / `.repo-map.md` / first-run interview; `_shared/core.md` pointer block
    - `prism-documentation`: Definition of Done says presenting the path is the final act while the shipping flow ships afterward — align DoD with shipping.
    - `prism-code-review-self`: hardcoded `main` in branch-diff commands → resolve `<default-branch>` from `origin/HEAD` once, use everywhere.
    - `prism-code-review-pr`: worktree cleanup should appear in the closing flow, not only the procedure section.
+   - `prism-architect`: add quick-consult mode with the escalation trigger, per the resolved Decision below — inline evaluation for planless quick questions; deepening shifts to full mode with retroactive decision recording.
 7. **Build + tests per lane:** `pnpm prism:build` after each lane (regenerates platform outputs + runs tests); full `pnpm prism:check` before review. Generated `.claude/.cursor/.codex/.agents` diffs are expected and land with the lane.
 
 ### briar → eric (review)
@@ -62,13 +63,14 @@ The portable roster is the reference: each portable skill's "Persona notes on th
 - **Shared mechanics land as a rule, not 30 copies** (default path, winston task 1 confirms). Reason: PRISM loads `.prism/rules/` into every session — it is the native `_shared/core.md`; per-skill duplication is the drift the portable roster just engineered away.
 - **Edit canonical sources only** (`.ai-skills/skills/`, `.prism/rules/`, `templates/install/.prism/`); generated outputs come from `pnpm prism:build`. Reason: generated files carry the AUTO-GENERATED header for exactly this.
 - **Every reported source bug is verify-then-fix.** Reason: the port agents diagnosed against generated copies; canonical may differ — `cross-agent-handoff-accountability.md`.
-- **OPEN — TBD, needs Hunter input.** Whether winston's quick-consult mode (answer architecture questions without a resolved plan when no ticket exists) back-ports too — it loosens PRISM's "no evaluation without a resolved plan" invariant, which may be intentional discipline in team settings. **Default path (used until resolved):** not ported; note it in the run report as a candidate follow-up.
+- **Quick-consult mode ports, with winston self-judging the grain** (resolved by Hunter 2026-07-09). A quick architecture question with no ticket gets an inline evaluation — no plan ceremony, battery answers stated in chat. The escalation trigger keeps the discipline guarantee: the moment the consult deepens (scope grows past one question, a decision worth recording emerges, or implementation planning starts), winston shifts into full mode — resolves or creates the plan then, and retroactively records the decisions already made in the consult. Considered: not porting, to preserve "no evaluation without a resolved plan." Rejected: the strict form makes people route around winston for small questions, which costs more discipline than the escape hatch does — the escalation trigger closes the record-loss hole.
 
 ---
 
 ## History
 
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Plan created — backport spec drafted from the completed portable-roster build; see the improvement package and verify-then-fix list.
+- 2026-07-09 [claude/prism-skills-portability-f37a25]: Open question closed — quick-consult ports with winston-judged grain and an escalation trigger; see Decision.
 
 ---
 
