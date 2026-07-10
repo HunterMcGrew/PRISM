@@ -2,7 +2,7 @@
 
 ## Ticket
 
-None yet — epic fallback naming per branch-plan rule. Suggest nora create a parent ticket on run start; rename this file to `epic-<ticket-id>.md` when it exists.
+https://github.com/HunterMcGrew/PRISM/issues/404
 
 ## Goal
 
@@ -26,44 +26,99 @@ Repo map / `.repo-map.md` / first-run interview; `_shared/core.md` pointer block
 
 ## Implementation Tasks
 
-### winston (design pass — run first, human gate before implementation)
+> Persona-grouped. Winston's design pass (tasks 1–3) is **complete** — outcomes are recorded in `## Decisions` and baked into the Clove tasks below. Clove executes tasks 4–8.
 
-1. **Decide the placement of shared mechanics.** Default path: a new rule `.prism/rules/session-orientation.md` carrying the generic mechanics once — both batteries (current text lives per-skill), battery persistence to `## Sessions`, close-diffs-open, and the generic re-anchor rule — with skills keeping only their persona-specific trigger lines and battery pointers (mirror of how `context-reuse.md` is loaded by every skill). Verify against how PRISM skills currently embed batteries; if per-skill embedding is load-bearing for generation, fall back to per-skill edits with identical text.
-2. **Spec the `## Sessions` plan-section addition** to `.prism/rules/branch-plan.md` (canonical) and its `templates/install/.prism/rules/` copy: one line per session, `- YYYY-MM-DD [<branch>] open: Intent — …; Bounds — …; Approach — …` plus the close verdict appended to the same entry. Wide blast radius (every persona reads the plan rule) — present at the gate before clove starts.
-3. Confirm the verify-then-fix list below against **canonical sources** (`.ai-skills/skills/<id>/`), not the generated `.claude/skills/` copies the port agents read — per `cross-agent-handoff-accountability.md`, each reported bug is a diagnosis to verify, not a fact.
+### winston (design pass — COMPLETE, human gate cleared)
 
-### clove (implementation — one lane per group; edit canonical sources only, never generated outputs)
+1. **[DONE] Placement of shared mechanics → `confirmed-new-rule`.** Verified against the build: `.prism/rules/*.md` are copied verbatim to every platform dir (`copyContentToPlatformDir`, `COPIED_CONTENT_AREAS` includes `rules`) and auto-loaded into every session as project instructions; Tier-1 rules (no `paths:`) also inline into AGENTS.md. Per-skill embedding is **not** load-bearing for generation — `build.ts` copies rules and generates skills independently; nothing concatenates the batteries into `shared.md`. A new always-loaded rule is therefore the native `_shared/core.md`, exactly the `context-reuse.md` precedent. See Decision "Shared mechanics land as a Tier-1 rule."
+2. **[DONE] `## Sessions` spec** written into Clove task 4 at the detail bar (exact files, insertion point, literal format). Confirmed `rules/branch-plan.md` is **curated** in `seed-curation.json` (canonical and `templates/install/` copies differ) → both copies need manual edits; a new non-curated rule auto-mirrors to the seed via `writeSeedMirror`.
+3. **[DONE] Verify-then-fix list confirmed against canonical `.ai-skills/skills/`.** All 8 reproduce; two fixes adjusted and one scope-widened — folded into Clove task 5 and recorded in `## Decisions`.
 
-4. **Foundation lane:** add `## Sessions` to the plan template in `.prism/rules/branch-plan.md` + install template; create `.prism/rules/session-orientation.md` per winston's task 1 outcome.
-5. **Skill lanes — apply the improvement package to every persona skill in `.ai-skills/skills/`** (utilities `prism-handoff` / `prism-review-loop` get only what applies; `prism-onboarding` gets lifecycle only). For each skill: read the canonical source AND its portable counterpart (mapping table below) as the reference implementation; apply lifecycle list, battery persistence + close-diff wiring, and the persona's re-anchor trigger line; strip every portability artifact before landing. Suggested lane batching: (a) core dev — architect, code-dev, debugger, code-review-self, code-review-pr, documentation; (b) workflow — ticket-start, user-stories, prd, design, qa-test-plan, changelog, standup-summary, retro, doc-walker, refactor-scout, surface-audit, conductor; (c) business — founder, market-research, finance, marketing, sales, data, customer-success, recruiting, legal; (d) utilities.
-6. **Verify-then-fix lane** (each item: confirm in canonical source first; fix only what reproduces):
-   - `prism-ticket-start`: stale `thr-###` branch-derivation → `<username>/<ticket-id>-<slug>` per git-conventions.
-   - `prism-refactor-scout`: Definition of Done checks candidate status `drafting`, which the state schema doesn't define — correct value `grilling`.
-   - `prism-prd`: brownfield mode never sets the `stakes` field its review branches on (add the one-question stakes confirm at init); greenfield dispatched with no live user should return `blocked`, not invent interview answers.
-   - `prism-debugger`: "the only file she writes to is the plan / source files stay untouched" contradicts Phase-4 instrumentation — reword to no-*persistent*-modification + the Phase-6 cleanup gate. Also add phase-boundary plan checkpointing (stub entry at Phase 2, updated at each transition — the compaction-proof resume point).
-   - `prism-documentation`: Definition of Done says presenting the path is the final act while the shipping flow ships afterward — align DoD with shipping.
-   - `prism-code-review-self`: hardcoded `main` in branch-diff commands → resolve `<default-branch>` from `origin/HEAD` once, use everywhere.
-   - `prism-code-review-pr`: worktree cleanup should appear in the closing flow, not only the procedure section.
-   - `prism-architect`: add quick-consult mode with the escalation trigger, per the resolved Decision below — inline evaluation for planless quick questions; deepening shifts to full mode with retroactive decision recording.
-7. **Build + tests per lane:** `pnpm prism:build` after each lane (regenerates platform outputs + runs tests); full `pnpm prism:check` before review. Generated `.claude/.cursor/.codex/.agents` diffs are expected and land with the lane.
+### clove (implementation — edit CANONICAL sources only; never hand-edit generated `.claude`/`.cursor`/`.codex`/`.agents` outputs)
+
+**Execution shape (read first — see Decision "Execution shape: parallel edits, one serialized build"):** Lanes edit canonical sources only. **No skill lane runs `pnpm prism:build` to commit generated output** — the generated tree and seed mirror are derived state, regenerated once at the end (task 8). Lanes may run `pnpm prism:check-types` / `pnpm prism:test` locally, but must not commit `.claude/`, `.cursor/`, `.codex/`, `.agents/`, `templates/install/` (except the two hand-curated branch-plan edits in task 4), or `AGENTS.md`.
+
+4. **Foundation lane — the shared-mechanics rule + `## Sessions` plan section.** Land/spec this first so every skill lane references the exact rule name, section headings, and pointer wording.
+
+   a. **Create `.prism/rules/session-orientation.md`** (new Tier-1 rule — no `paths:` frontmatter, so it auto-loads every session). Follow the `.prism/rules/` house format (`# Title` → `## Purpose` → rule → `**Why:**` → `**How to apply:**`), matching `context-reuse.md`. Content carries the **generic** mechanics once:
+      - **Opening Orientation Battery** — the four questions verbatim from the current skill bodies: Intent / Ambiguity / Bounds / Approach, including the mid-dispatch calibration clause ("there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`)").
+      - **Battery persistence** — opening answers compress to the `## Sessions` `open:` line at session start; the closing battery re-reads it and diffs finished work against the opening `Bounds`.
+      - **Closing Re-Orientation Battery** — the four closing questions verbatim (Scope boundary / Unasked assumptions / Edge recall / Verification honesty), plus "append the `close:` verdict to the same `## Sessions` line."
+      - **Mid-flight re-anchors** — the generic rule: emit a one-line re-orientation at event boundaries; each persona declares its own trigger events (the persona-specific trigger line stays in the skill body, sourced from the roster table below).
+      - **Lifecycle list** — the generic instruction: each skill carries a short "The run, in order" sequence near the top as a long-context anchor.
+      - **`## Who runs this rule` / citation list** — name that every persona skill loads it (state the membership rule "every persona skill," not a count, per `writing-voice.md § Count rules`).
+      - Verification: content-only, no build effect for the source edit; final propagation verified in task 8. Leave the build's "unclassified file" seed-mirror warning as-is (verbatim mirror is correct) — do **not** add it to `seed-curation.json`.
+
+   b. **Add `## Sessions` to the plan template in `.prism/rules/branch-plan.md`** — insert a new section immediately **before** `## History` (currently line 316) in the "Plan File Template" block, with this literal content:
+      ```markdown
+      ## Sessions
+
+      Append-only orientation log — one line per skill session. The opening battery compresses to the `open:` clause at session start; the closing battery appends the `close:` verdict to the same line at session end.
+
+      - YYYY-MM-DD [<branch>] open: Intent — <one line>; Bounds — <one line>; Approach — <one line> · close: <scope held | drifted — why>
+
+      ---
+      ```
+      Also add one line to `## Maintenance Expectations` ("Append to `## Sessions` at session start and close — never delete entries"). Verification: content-only.
+
+   c. **Mirror the same `## Sessions` addition into `templates/install/.prism/rules/branch-plan.md`** (the curated consumer copy — it differs from canonical and is NOT auto-mirrored, so it must be hand-edited). Match the consumer copy's existing section ordering; place `## Sessions` before its `## History`. Verification: content-only; parity is checked by `pnpm prism:check` (`checkSeedDrift`) in task 8 — but note curated files are exempt from drift, so confirm the section landed by reading the file.
+
+5. **Skill lanes — one lane per persona skill in `.ai-skills/skills/`.** Each lane edits ONLY that skill's `shared.md` (canonical-source-disjoint → lanes never collide). For each skill the lane applies the improvement package AND that skill's verify-then-fix item (below) in the same lane, so no skill file is touched by two lanes.
+
+   Per-skill improvement-package edits:
+   - **Replace** the skill's full `## Opening Orientation Battery` and `## Closing Re-Orientation Battery` body text with a short **pinned pointer** to `session-orientation.md` (imperative, per `skill-authoring.md § Externalization mechanics`: "Run the Opening/Closing Orientation Battery per [`session-orientation.md`](../../../.prism/rules/session-orientation.md)"), keeping the placement gate in the workflow and the DoD checkboxes ("Opening battery answered before X" / "Closing battery answered before stopping") **intact** — the rule carries the content, the body keeps the *when*.
+   - Keep any **persona-specific** battery framing that is NOT in the generic rule (e.g. Winston's "before any evaluation or planning work").
+   - Add the persona's **re-anchor trigger line** verbatim from the roster table in `## Per-persona re-anchor trigger spec` below.
+   - Add the persona's **lifecycle list** ("The run, in order") near the top if not already present.
+   - **Strip every portability artifact** before landing (grep the added text for `repo-map`, `_shared`, `.claude-work`, `worklogs` — must be clean).
+   - Utilities `prism-handoff` / `prism-review-loop`: apply only what fits a persona-less utility (lifecycle list + battery pointer if they run batteries; no persona re-anchor line if none applies). `prism-onboarding` (Atlas): lifecycle list + batteries only.
+   - Guard the body line cap: the generated Claude `SKILL.md` body must stay ≤500 lines (`MAX_SKILL_BODY_LINES`) — replacing full battery text with a pointer should *reduce* size, but verify with `pnpm prism:test` if a body was already near the cap.
+
+   Suggested batching for Sol dispatch (each entry is one lane): (a) core dev — architect, code-dev, debugger, code-review-self, code-review-pr, documentation; (b) workflow — ticket-start, user-stories, prd, design, qa-test-plan, changelog, standup-summary, retro, doc-walker, refactor-scout, surface-audit, conductor; (c) business — founder, market-research, finance, marketing, sales, data, customer-success, recruiting, legal; (d) utilities — handoff, review-loop, onboarding.
+
+   **Verify-then-fix items** (each folded into the named skill's lane; all 8 confirmed reproducing against canonical sources — fixes adjusted where noted):
+   - **`prism-ticket-start`** — `shared.md:243` derives the fallback branch as `<username>/thr-###-<title-slug>` (stale Thrive prefix). Fix: mirror `shared.md:378`, which already uses the correct `${TICKET_PREFIX_LOWERCASE}` token → change line 243 to `<username>/${TICKET_PREFIX_LOWERCASE}-###-<title-slug>`. (Do NOT hardcode `prism` — the token is the portable form.)
+   - **`prism-refactor-scout`** — `shared.md:133` DoD checks candidate `status` is `drafting`; the state schema's candidate `status` enum is `{pending, grilling, skipped, deferred, committed}` (confirmed in `.prism/skills/prism-refactor-scout/step-0*.md`) — `drafting` is undefined. Fix: change `drafting` → `grilling` (the in-progress status; a candidate stuck mid-grill at close is the real failure the DoD guards).
+   - **`prism-prd`** — two fixes:
+     (a) Brownfield never sets `stakes` (init sets `stakes: null` at `step-01-init.md:28`; greenfield advances to `greenfield-step-02-stakes.md`, brownfield advances to `brownfield-step-02-explore.md` with no stakes step), yet `step-06-review.md` branches on `stakes` (`internal`/`launch` → rubric; `hobby` → skip) — with `null` it falls through. Fix: add a one-question stakes confirm at brownfield init (in `step-01-init.md` for the brownfield branch, or a `brownfield-step-01b-stakes` step) that sets `stakes` before `step-06-review`. While there, drop the now-stale `step-01-init.md:38` note claiming brownfield "lands in PR-3.2 / stub returns pending" — brownfield is implemented.
+     (b) Greenfield with no live user: the stakes-calibration escape (`shared.md:15`) and opening-battery calibration (`shared.md:121`) already prevent *inventing* interview answers by emitting `needs-human`. Adjusted fix: add an explicit early no-live-user guard at greenfield init that emits a typed verdict up-front rather than discovering it at the stakes interview. Recommend `needs-human` (matches the existing stakes-escape convention — an interview needs human input) over `blocked`; note the label choice in the fix. This is a hardening, not a from-scratch fix.
+   - **`prism-debugger`** — `shared.md:194` and `:300` assert "Source files stay untouched," contradicting Phase 4 (Instrument, `:243`) which adds `[DEBUG-<hash>]` logging to source, cleaned at Phase 6 (`:287`). Fix: reword both to the true invariant — "no *persistent* source modification; temporary Phase-4 instrumentation is added and removed at the Phase-6 cleanup gate." Phase-boundary plan checkpointing rides in as part of the re-anchor package (the Sasha re-anchor line already says "at each phase transition (alongside the plan checkpoint)"): add a stub `## Debugged Issues` entry at Phase 2, updated at each transition. Note: `.prism/sasha-state.json` already gives JSON-based resume; the plan checkpoint's marginal value is compaction survival — keep it, it's additive and coherent with the re-anchor line.
+   - **`prism-documentation`** — `shared.md:254` DoD says "presenting its path to the user is the final act before stopping," but `shared.md:233` ships the docs afterward (commit → detect PR → push → conditional create → two-path closing, per `shipping-flow.md`). Fix: align the DoD so the shipping flow (through the two-path closing) is the final act, not presenting the path.
+   - **`prism-code-review-self`** — hardcoded `main` in 4 branch-diff commands (`shared.md:62, 141, 231, 395`: `git diff main...HEAD`). Adjusted fix: replace `main` with the existing **`${DEFAULT_BRANCH}` build token** (already used in `followup-scope.md:5,16`) — NOT runtime `origin/HEAD` resolution. The token is the established, per-team-static convention and is consistent with the build's substitution system.
+   - **`prism-code-review-pr`** — worktree cleanup lives only in `worktree-mode.md` and the procedure section; the DoD (`shared.md`, "posting the summary comment … is the final act") omits it, so a worktree-mode run that follows the DoD literally leaves the worktree un-torn-down. Fix: add a conditional line to the DoD/closing — "in worktree mode, tear down the worktree per `worktree-mode.md` before stopping."
+   - **`prism-architect`** — add **quick-consult mode** per the resolved Decision below. Carve out the `shared.md:115` rule "No evaluation or planning begins without a resolved plan": a planless quick architecture question gets an inline evaluation (battery answers stated in chat, no plan ceremony). Add the escalation trigger — the moment scope grows past one question, a recordable decision emerges, or implementation planning starts, shift to full mode, resolve/create the plan, and retroactively record decisions made during the consult. Implementable as a mode gate ahead of the Batch-2 plan-lookup step. Also (scope-widen from Bug 6): `prism-architect/shared.md:104` hardcodes `git diff origin/main...HEAD --stat` in Winston's own startup — apply the same `${DEFAULT_BRANCH}` token fix here. (Tree-wide sweep found the hardcoded-`main` diff pattern in exactly these two skills.)
+
+6. **[folded into task 5]** — verify-then-fix items are executed inside each owning skill's lane, not as a separate lane, to avoid two lanes touching one file.
+
+7. **[folded into task 5]** — targeted per-skill improvements (sasha checkpointing, eric cleanup) are in their skill lanes above.
+
+8. **Integration + single serialized build.** After all canonical edits (tasks 4–5) are on one integration branch: run `pnpm prism:build` ONCE to regenerate the entire `.claude`/`.cursor`/`.codex`/`.agents` tree + seed mirror + AGENTS.md Tier-1 block (which now includes `session-orientation.md`), commit the generated tree in one commit, then run `pnpm prism:check` to green (build drift, types, tests, manifest, crossref-lint). Generated diffs are expected and land here, not per-lane.
 
 ### briar → eric (review)
 
-8. Self-review then PR review per the normal loop. Review focus: no portability artifacts leaked into canonical content (grep for `repo-map`, `_shared`, `.claude-work`, `worklogs`); re-anchor triggers match the persona's actual work shape; `## Sessions` wording identical between rule, template, and any skill references.
+9. Self-review then PR review per the normal loop. Review focus: no portability artifacts leaked into canonical content (grep `repo-map`, `_shared`, `.claude-work`, `worklogs` — clean); re-anchor trigger lines match each persona's actual work shape; `## Sessions` wording identical across the rule, canonical `branch-plan.md`, and the curated `templates/install/` copy; DoD checkboxes for the batteries survived the pointer swap; every touched skill still generates ≤500-line bodies (`pnpm prism:test`).
 
 ## Per-persona re-anchor trigger spec
 
-The portable roster is the reference: each portable skill's "Persona notes on the shared core" block contains the tuned trigger line (`grep "Re-anchor triggers for" ~/Downloads/portable-skills/skills/*/SKILL.md` prints the full table). Mapping: winston=prism-architect, sasha=prism-debugger, clove=prism-code-dev, briar=prism-code-review-self, eric=prism-code-review-pr, eli=prism-documentation, nora=prism-ticket-start, mira=prism-user-stories, parker=prism-prd, pixel=prism-design, reese=prism-qa-test-plan, sage=prism-changelog, lilac=prism-standup-summary, iris=prism-retro, theo=prism-doc-walker, ren=prism-refactor-scout, zoe=prism-surface-audit, sol=prism-conductor, vera=prism-founder, kora=prism-market-research, ellis=prism-finance, charlie=prism-marketing, quinn=prism-sales, tess=prism-data, remy=prism-customer-success, penny=prism-recruiting, lex=prism-legal.
+Source: each portable skill's "Persona notes on the shared core" block (`grep "Re-anchor triggers for" ~/Downloads/portable-skills/skills/*/SKILL.md` prints the full table). Mapping: winston=prism-architect, sasha=prism-debugger, clove=prism-code-dev, briar=prism-code-review-self, eric=prism-code-review-pr, eli=prism-documentation, nora=prism-ticket-start, mira=prism-user-stories, parker=prism-prd, pixel=prism-design, reese=prism-qa-test-plan, sage=prism-changelog, lilac=prism-standup-summary, iris=prism-retro, theo=prism-doc-walker, ren=prism-refactor-scout, zoe=prism-surface-audit, sol=prism-conductor, vera=prism-founder, kora=prism-market-research, ellis=prism-finance, charlie=prism-marketing, quinn=prism-sales, tess=prism-data, remy=prism-customer-success, penny=prism-recruiting, lex=prism-legal.
 
 ---
 
 ## Decisions
 
 - **Improvements yes, portability no.** The scope split above is the contract; the portable roster is a reference implementation, never a copy source. Reason: PRISM's rules layer, build system, and Sol machinery already own what the portability layer re-invented for repo-independence.
-- **Shared mechanics land as a rule, not 30 copies** (default path, winston task 1 confirms). Reason: PRISM loads `.prism/rules/` into every session — it is the native `_shared/core.md`; per-skill duplication is the drift the portable roster just engineered away.
-- **Edit canonical sources only** (`.ai-skills/skills/`, `.prism/rules/`, `templates/install/.prism/`); generated outputs come from `pnpm prism:build`. Reason: generated files carry the AUTO-GENERATED header for exactly this.
-- **Every reported source bug is verify-then-fix.** Reason: the port agents diagnosed against generated copies; canonical may differ — `cross-agent-handoff-accountability.md`.
-- **Quick-consult mode ports, with winston self-judging the grain** (resolved by Hunter 2026-07-09). A quick architecture question with no ticket gets an inline evaluation — no plan ceremony, battery answers stated in chat. The escalation trigger keeps the discipline guarantee: the moment the consult deepens (scope grows past one question, a decision worth recording emerges, or implementation planning starts), winston shifts into full mode — resolves or creates the plan then, and retroactively records the decisions already made in the consult. Considered: not porting, to preserve "no evaluation without a resolved plan." Rejected: the strict form makes people route around winston for small questions, which costs more discipline than the escape hatch does — the escalation trigger closes the record-loss hole.
+  - → no promotion needed (scope contract for this epic; not a general rule).
+- **Shared mechanics land as a Tier-1 rule, not ~30 body copies** (`confirmed-new-rule`). Reason: `.prism/rules/*.md` copy verbatim to every platform and auto-load every session (project instructions) — the native `_shared/core.md`. Verified per-skill embedding is not load-bearing for generation; the build copies rules and generates skills independently. A rule (not a reference) is the only externalization that keeps the batteries "present when reasoning begins" — moving a lens to a load-on-demand reference would degrade adherence (`skill-authoring.md`). Each skill keeps the pinned placement gate + DoD checkboxes + persona-specific re-anchor line; the rule carries the generic content.
+  - **Tradeoff:** one always-loaded rule adds its length to every session's base context (including non-PRISM chats), vs. de-duplicating ~27 drifting copies. Same tradeoff `context-reuse.md` already accepted; drift-elimination wins.
+  - → no promotion needed (recorded here; the rule itself is the durable surface).
+- **Execution shape: parallel canonical-source lanes, one serialized build.** `pnpm prism:build` regenerates the ENTIRE generated tree + seed mirror + AGENTS.md from canonical sources and is idempotent (`writeFileIfChanged`). If N parallel worktree lanes each ran the build and committed generated output, they'd N-way-conflict on the shared artifacts (rules copies, AGENTS.md, codex-config, sync-manifest) even though their skill-source edits are disjoint. Chosen approach: lanes edit canonical `shared.md` only (disjoint → trivial merges), no lane commits generated output, and a single serialized `pnpm prism:build` + `pnpm prism:check` at the end (task 8) derives the whole generated tree once. Considered: per-lane build+commit (rejected — pure conflict on derived state); fully sequential single-branch (viable fallback if worktree merge adds friction — same final-build discipline, zero merge step).
+  - → no promotion needed (execution tactic for this epic).
+- **One lane per skill, verify-then-fix folded in.** Eight skills (ticket-start, refactor-scout, prd, debugger, documentation, code-review-self, code-review-pr, architect) are both improvement-package targets and bug-fix targets. Running the bug fix inside the same lane avoids two lanes touching one `shared.md`. Reason: file-disjoint lanes are the whole basis for safe parallelism.
+  - → no promotion needed (decomposition tactic).
+- **Every reported source bug verify-then-fix — all 8 reproduce; three adjusted.** Reason: port agents diagnosed against generated copies (`cross-agent-handoff-accountability.md`). Adjustments from canonical verification: (1) ticket-start fix uses the existing `${TICKET_PREFIX_LOWERCASE}` token (line 378's pattern), not a literal; (2) code-review-self fix uses the existing `${DEFAULT_BRANCH}` token (`followup-scope.md` precedent), not runtime `origin/HEAD`, and the hardcoded-`main` pattern also hits `prism-architect:104` (scope widened by one skill); (3) prd greenfield-no-user is a hardening — the `needs-human` escape already prevents invented answers, so the fix adds an explicit early guard and recommends the `needs-human` verdict over `blocked`.
+  - → no promotion needed (per-ticket verification record).
+- **Quick-consult mode ports, with winston self-judging the grain** (resolved by Hunter 2026-07-09; confirmed implementable). A quick architecture question with no ticket gets an inline evaluation — no plan ceremony, battery answers stated in chat. The escalation trigger keeps the discipline guarantee: the moment the consult deepens (scope grows past one question, a decision worth recording emerges, or implementation planning starts), winston shifts into full mode — resolves or creates the plan then, and retroactively records the decisions already made. Implementable as a mode gate ahead of the Batch-2 plan-lookup requirement (`shared.md:115`). Considered: not porting, to preserve "no evaluation without a resolved plan." Rejected: the strict form makes people route around winston for small questions, costing more discipline than the escape hatch does.
+  - → promoted to `.prism/architect/` on plan close (persona-behavior change other personas rely on when handing quick questions to Winston).
 
 ---
 
@@ -71,6 +126,7 @@ The portable roster is the reference: each portable skill's "Persona notes on th
 
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Plan created — backport spec drafted from the completed portable-roster build; see the improvement package and verify-then-fix list.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Open question closed — quick-consult ports with winston-judged grain and an escalation trigger; see Decision.
+- 2026-07-09 [claude/prism-skills-portability-f37a25]: Winston design pass at the Sol gate — placement confirmed as a Tier-1 rule, all 8 bugs verified reproducing (3 fixes adjusted, Bug 6 scope widened to architect), execution shape set to parallel edits + one serialized build; `## Sessions` and rule specs written to Implementation Tasks; `## Ticket` set to issue #404.
 
 ---
 
@@ -78,17 +134,21 @@ The portable roster is the reference: each portable skill's "Persona notes on th
 
 ### Behavioral
 
-- [ ] Given any persona skill session completes its opening battery, When the plan is inspected, Then a `## Sessions` entry with the `open:` line exists (or the skill stated answers inline where no plan applies)
-- [ ] Given a persona finishes its run, When the closing battery executes, Then it references the opening answers and appends a `close:` verdict to the same entry
-- [ ] Given the fixed bugs' trigger conditions (ticket-start branch derivation, refactor-scout DoD, prd stakes/dispatch, debugger instrumentation, documentation DoD, self-review default branch), When exercised, Then each behaves per its fix description
+- [ ] Given any persona skill session completes its opening battery, When the plan is inspected, Then a `## Sessions` entry with the `open:` line exists (or the skill stated answers inline where no plan applies) (REQ-1)
+- [ ] Given a persona finishes its run, When the closing battery executes, Then it references the opening answers and appends a `close:` verdict to the same entry (REQ-1)
+- [ ] Given the fixed bugs' trigger conditions (ticket-start branch derivation, refactor-scout DoD status, prd brownfield stakes, prd greenfield-no-user guard, debugger instrumentation invariant, documentation DoD, code-review-self default branch, code-review-pr worktree cleanup, architect quick-consult), When exercised, Then each behaves per its fix description (REQ-2)
+- [ ] Given a planless quick architecture question, When Winston is invoked, Then he answers inline without plan ceremony and escalates to full mode (resolving/creating a plan and retroactively recording decisions) the moment scope deepens (REQ-3)
 
 ### Non-behavioral
 
-- [ ] `pnpm prism:check` passes (build, types, tests, manifest, crossref-lint)
-- [ ] No portability artifacts in canonical content (`repo-map`, `_shared`, `.claude-work`, `worklogs` grep-clean)
-- [ ] Every persona skill carries its lifecycle list and its re-anchor trigger line
+- [ ] `pnpm prism:check` passes (build drift, types, tests, manifest, crossref-lint) (REQ-1)
+- [ ] No portability artifacts in canonical content (`repo-map`, `_shared`, `.claude-work`, `worklogs` grep-clean) (REQ-1)
+- [ ] Every persona skill carries its lifecycle list and its re-anchor trigger line; the batteries' DoD checkboxes survive the pointer swap (REQ-1)
+- [ ] `## Sessions` wording is identical across `session-orientation.md`, canonical `branch-plan.md`, and the curated `templates/install/.prism/rules/branch-plan.md` copy (REQ-1)
+- [ ] Branch-diff commands use `${DEFAULT_BRANCH}`, not hardcoded `main`, in code-review-self and architect (REQ-2)
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
+| 2026-07-09 | Winston | AC refined at design gate (added quick-consult + widened bug list) | epic-portable-improvements-backport | #404 |
