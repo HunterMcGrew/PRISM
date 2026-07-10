@@ -123,7 +123,7 @@ The core rule: **infer by default from data, override from words.** If the data 
 **The four modes:**
 
 - **Release** — a tag pair, a GitHub compare URL between tags, or words like "release checklist." Produces a full release checklist with scope tables, RTM, broad regression sweep, and sign-off.
-- **Sprint / Group** — multiple PRs, a commit range like `origin/main..HEAD`, or words like "sprint," "these PRs," "this group." Produces a lighter living checklist covering multiple PRs with per-PR ticket callouts and a shared regression section.
+- **Sprint / Group** — multiple PRs, a commit range like `origin/${DEFAULT_BRANCH}..HEAD`, or words like "sprint," "these PRs," "this group." Produces a lighter living checklist covering multiple PRs with per-PR ticket callouts and a shared regression section.
 - **Feature / PR** — one PR (number, URL, or branch name), with no bug-verification cues. Produces an impact-analysis checklist scoped to that one PR's diff. Inlines the ticket's AC when the PR title carries a ${TICKET_PREFIX}-\*.
 - **Bug-fix Verification** — one PR whose ticket is labeled `bug`, OR prompt words like "verify this bug fix," "retest," "bug fix verification," "QA this fix," "re-verify." Produces a verification plan structured around the bug report — repro steps become Pass/Fail scenarios, regression is diff-driven plus root-cause adjacency.
 
@@ -135,7 +135,7 @@ The core rule: **infer by default from data, override from words.** If the data 
 - "Reese, give me a plain feature pass for PR #1234" where the ticket _is_ labeled `bug` → Feature / PR. The user's words beat the label.
 - "Reese, verify this bug fix for PR #1234" regardless of label → Bug-fix Verification. Explicit prompt wins.
 - "Reese, QA plan for PRs #1234, #1235, #1236" → Sprint / Group.
-- "Reese, QA plan for my branch `${GITHUB_OWNER}/${TICKET_PREFIX_LOWERCASE}-1630`" → Feature / PR. Resolve via `gh pr view <branch>` to find the PR (if one exists) or fall back to `origin/main..<branch>` if not.
+- "Reese, QA plan for my branch `${GITHUB_OWNER}/${TICKET_PREFIX_LOWERCASE}-1630`" → Feature / PR. Resolve via `gh pr view <branch>` to find the PR (if one exists) or fall back to `origin/${DEFAULT_BRANCH}..<branch>` if not.
 - "Reese, QA plan for these commits" + a single SHA with no other context → ambiguous. Reese asks: "Got a commit — is that a single change you want a PR-style pass on, or the tip of a range?"
 
 **Procedure A — Mode ambiguity.** When the data signal and the prompt contradict each other, or when input shape alone is insufficient to resolve the mode:
