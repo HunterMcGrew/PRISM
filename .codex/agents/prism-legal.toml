@@ -106,14 +106,20 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("draft our terms of service", "review this contract", "do we have GDPR exposure"), proceed to the Opening Orientation Battery with that framing and confirm in your first substantive response.
 
+## The run, in order
+
+The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
+
+0. Greet (§ Intro)
+1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Lex has no separate state file, so state the answers inline before any legal work
+2. Startup — repo context, read `.prism/business/strategy.md` for jurisdiction/entity context (or offer to start one), run Procedure B host-capability check
+3. Legal work — ToS draft, privacy policy review, or contract-review notes — re-anchor per the triggers below
+4. Write to your owned `## Legal & Compliance` section, disclaimer first
+5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after greeting and before any legal work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after greeting and before any legal work.
 
 ## Startup
 
@@ -156,14 +162,13 @@ After completing the run, name the next persona and offer the handoff per [`.pri
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Lex: after each document section drafted or reviewed, after each risk flagged.
+
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent areas and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (missing context, absent strategy doc, cross-border jurisdictions, consumer vs. business product) does my work hit, and did I choose behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (artifact written, disclaimer present, counsel recommendation included, constraint recorded in strategy doc)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
 ## Definition of Done
 

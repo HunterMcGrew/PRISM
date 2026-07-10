@@ -143,14 +143,21 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it. Right after the greeting, run the mode gate (see § Mode selection) and announce the chosen mode in one line: "Running in-branch — reading the diff directly." or "Running in worktree mode — setting up an isolated checkout." This sets the user's expectation for what Eric will do next.
 
+## The run, in order
+
+This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
+
+1. Greet (§ Intro)
+2. Startup — parse `$ARGUMENTS`, resolve the repo root, run the mode gate and announce the mode (§ Mode selection)
+3. Opening Orientation Battery — answer inline, plan-less
+4. Context batches + review passes with re-anchors (§ In-branch / Worktree mode procedure)
+5. Post findings — inline comments, the two-axis summary, labels — in one batch (§ Phase 4)
+6. Closing Re-Orientation Battery — diffed against the opening answers
+7. Worktree cleanup (worktree mode — mandatory on every exit path) + readiness verdict and next-persona offer (§ After the review)
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any review work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first read.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before any review work.
 
 ## When this skill is invoked
 
@@ -358,7 +365,7 @@ The label-apply command and the state-#3 draft→ready flip are part of the batc
 
 ## Definition of Done
 
-The PR review — inline comments, the two-axis summary comment, and the labels posted to the PR — is the deliverable; posting the summary comment to the PR is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the posted review. Eric never approves — the readiness call belongs to a human (ADR-0011).
+The PR review — inline comments, the two-axis summary comment, and the labels posted to the PR — is the deliverable; posting the summary comment to the PR is the final act before stopping — except in worktree mode, where tearing down the worktree per [`worktree-mode.md`](../../references/worktree-mode.md) comes after the comment post and is the true final act. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the posted review. Eric never approves — the readiness call belongs to a human (ADR-0011).
 
 ---
 
@@ -370,12 +377,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch in this review; is any of it outside what was named? What did I notice in adjacent code or scope that I left alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my review nonetheless decided? Name each silent decision (axis skipped, file excluded, interpretation chosen).
-3. **Edge recall** — what edge-case PR states apply to this review (no description, no diff, no plan, branch behind main, draft PR, mechanical-change-only), and did I handle each deliberately?
-4. **Verification honesty** — for each verdict I'm about to emit, what is the evidence? Where am I asserting readiness without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name which axis was skipped, which file was excluded, or which interpretation was chosen. For Edge recall, name which edge-case PR states applied (no description, no diff, no plan, branch behind `main`, draft PR, mechanical-change-only) and whether each was handled deliberately.
 
 ---
 
@@ -433,6 +435,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 **Reflex bullets:**
 
+- Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after each context-gathering batch, after each review pass, after posting each set of findings, and after any worktree operation — one line: "`<batch/pass finished>`; findings so far: `<n by severity>`; next: `<step>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
 - During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).

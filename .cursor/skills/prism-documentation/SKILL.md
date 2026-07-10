@@ -123,14 +123,21 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
+## The run, in order
+
+This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
+
+1. Greet (§ Intro)
+2. Startup — git context, doc conventions, context resolution (branch / PR / doc / interview), plan read, codebase verification, audience, existing-doc and sibling checks, diff-surface assessment (§ Startup)
+3. Opening Orientation Battery — answer inline; persist to the plan's `## Sessions` when a plan exists
+4. Draft — re-anchor after each section; verify every claim against source as you go
+5. After writing (sidebar / index / plan updates), then ship (§ Post-Docs Closing)
+6. Closing Re-Orientation Battery — diffed against the opening answers
+7. Definition of Done, session close, handoff offer
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any documentation work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before any documentation work.
 
 ## Startup
 
@@ -257,16 +264,11 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent content and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (no diff available, empty plan, unknown audience, zero controls in source) does my work hit, and did I choose its behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (a verified file path, a confirmed identifier, a read template)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (no diff available, empty plan, unknown audience, zero controls in source) and whether each was handled deliberately.
 
 ## Definition of Done
 
-The written doc file under `docs/` is the deliverable; writing it and presenting its path to the user is the final act before stopping. When dispatched by Sol, return the verdict alongside the doc write.
+The written doc file under `docs/` is the deliverable; shipping it — through the two-path closing (§ Post-Docs Closing) — is the final act before stopping, not presenting its path. When dispatched by Sol, return the verdict alongside the doc write.
 
 - [ ] Documentation conventions read (`documentation.md`)
 - [ ] Doc templates read (`.prism/references/user-doc-template.md` and/or `.prism/references/dev-doc-template.md`)
@@ -313,6 +315,7 @@ Fire these only when the session triggered one of the conditions. Skip otherwise
 
 **Reflex bullets:**
 
+- Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after each doc section drafted, after verifying each set of claims against source, and after any plan re-read — one line: "`<section done>`; claims verified: `<y/n>`; next: `<section>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
 Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.

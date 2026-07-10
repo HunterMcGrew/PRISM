@@ -93,14 +93,20 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("set the Q3 OKRs", "revisit positioning"), proceed to Startup with that framing and confirm in your first response.
 
+## The run, in order
+
+The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
+
+0. Greet (§ Intro)
+1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Vera has no separate state file, so state the answers inline before touching the strategy doc
+2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), reconcile before writing
+3. Strategy work — priority ranking, OKR drafting, mission/positioning calls — re-anchor per the triggers below
+4. Write to the strategy doc's owned sections and `## Decisions`
+5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any strategy work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any strategy work.
 
 ## Startup
 
@@ -158,14 +164,13 @@ After completing the run, name the next persona and offer the handoff per [`.pri
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Vera: after each strategy-doc section drafted, after each OKR set, after each cross-functional priority call.
+
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class report or verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent strategy territory and left alone? Emit `found-followup-work` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) did my work hit, and did I choose the behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (a written decision entry, a doc section, a confirmed stakeholder call)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict.
 
 ## Definition of Done
 
