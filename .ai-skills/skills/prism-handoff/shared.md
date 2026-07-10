@@ -3,6 +3,10 @@ from. The fresh chat is the win: every message in a long session re-pays for
 every tool result and tangent that came before it; the handoff doc replaces the
 conversation, not the working memory. The branch plan stays the working memory.
 
+**The run, in order:** opening orientation → flush plan-worthy state into the
+branch plan → parse arguments (scope filter / target persona) → write the
+handoff document → closing re-orientation → report the path.
+
 ## Invocation trigger
 
 Invoke when any of these conditions are true:
@@ -17,25 +21,22 @@ exactly when a good one matters most.
 
 ## Step 0 — Opening orientation
 
-Run this pass once, before any other step. Answer all four questions internally,
-then proceed — this is not visible output.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
+once, before any other step. Answer all four questions internally, then
+proceed — this is not visible output.
 
-1. **Intent** — in one sentence, what is the user actually asking for (the
-   outcome, not the literal words)? E.g.: "resume this Clove session as Briar
-   for self-review" not "write a handoff."
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For
-   each: load-bearing (must resolve before writing) or non-load-bearing (proceed
-   on a documented default)? **No user is available mid-dispatch — do not stall.
-   For each load-bearing gap: pick a defensible default, state the assumption in
-   the handoff `## Focus` section, and proceed. Escalate only by the active
-   persona's floor verdicts (`needs-replan` / `blocked` / `needs-human`) when a
-   gap genuinely prevents producing a useful handoff — never by asking a
-   question into the void.**
-3. **Bounds** — what does a complete handoff look like, and what must not be
-   touched? (Branch plan is read and may be written; source files are never
-   touched by this skill.)
-4. **Approach** — is a same-persona resume or a cross-persona route the right
-   shape? Is there a simpler framing than the one the user implied?
+Handoff-specific framing for two of the four questions:
+
+- **Intent** — e.g. "resume this Clove session as Briar for self-review," not
+  "write a handoff."
+- **Bounds** — a complete handoff covers the branch plan (read and may be
+  written); source files are never touched by this skill.
+
+The rule's mid-dispatch calibration applies as written: no user is available,
+so pick a defensible default for each load-bearing gap, state the assumption in
+the handoff `## Focus` section, and proceed — escalate only via the active
+persona's floor verdicts (`needs-replan` / `blocked` / `needs-human`), never by
+a question into the void.
 
 ## Step 1 — Flush before writing
 
@@ -120,25 +121,27 @@ persona's voice.
 
 ## Step 3b — Closing re-orientation
 
-Run this pass once, after drafting the document but before reporting the path.
-Check each question; update the draft if any answer reveals a gap.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
+once, after drafting the document but before reporting the path. Check each
+question; update the draft if any answer reveals a gap.
 
-1. **Scope boundary** — what did the handoff doc include; is any of it outside
-   what was named in the arguments? What did you notice in adjacent open threads
-   and exclude? If adjacent work should be tracked but was left out, emit a
-   `found-followup-work` signal per followup-scope.md § worker-emit pre-filter
-   (this utility runs in the active persona's voice, so the signal is attributed
-   to that persona's lane).
-2. **Unasked assumptions** — what did the request not specify that the document
-   nonetheless decided? Name each silent decision in `## Focus` so the next
-   session sees them explicitly.
-3. **Edge recall** — did the session involve empty states, absent files, missing
-   plans, or malformed arguments? Did the handoff document capture each of those
-   states explicitly, or did it silently resolve them?
-4. **Verification honesty** — for each item in `## Live state` and `## Open
-   threads`, is the claim current (verifiable from this session's tool outputs)
-   or asserted from memory? Mark asserted-from-memory items with "(unverified)"
-   so the next session knows to re-check before acting on them.
+Handoff-specific framing:
+
+- **Scope boundary** — what did the handoff doc include; is any of it outside
+  what was named in the arguments? What did you notice in adjacent open threads
+  and exclude? If adjacent work should be tracked but was left out, emit a
+  `found-followup-work` signal per followup-scope.md § worker-emit pre-filter
+  (this utility runs in the active persona's voice, so the signal is attributed
+  to that persona's lane).
+- **Unasked assumptions** — name each silent decision in `## Focus` so the next
+  session sees them explicitly.
+- **Edge recall** — did the session involve empty states, absent files, missing
+  plans, or malformed arguments? Did the handoff document capture each of those
+  states explicitly, or did it silently resolve them?
+- **Verification honesty** — for each item in `## Live state` and `## Open
+  threads`, is the claim current (verifiable from this session's tool outputs)
+  or asserted from memory? Mark asserted-from-memory items with "(unverified)"
+  so the next session knows to re-check before acting on them.
 
 ## Step 4 — Report the path
 

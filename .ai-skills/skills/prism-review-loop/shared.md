@@ -3,23 +3,16 @@ existing personas — it never reviews, fixes, or writes findings itself, and th
 personas keep their own plan hygiene (Review Issues entries, History appends)
 exactly as if invoked by hand.
 
+**The run, in order:** opening orientation → self-review loop (findings → fixes
+→ re-review until clean) → phase-boundary gate → PR-review loop (findings →
+fixes → re-review until clean, threads resolved) → cleaner-path routing →
+closing re-orientation → scoreboard TLDR.
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately before the first loop pass, so the scope and
-intent are clear before starting.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the
-   outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For
-   each: load-bearing (must resolve before starting) or non-load-bearing
-   (proceed on a documented default)? **Calibration:** there is no user
-   available mid-dispatch — do not stall; for each load-bearing gap pick a
-   defensible default, state the assumption, and proceed. Escalate only by
-   emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a
-   gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler
-   framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
+once, immediately before the first loop pass, so the scope and intent are clear
+before starting.
 
 ## The ladder
 
@@ -153,19 +146,21 @@ ready-for-review remain the human's call (`.prism/rules/git-conventions.md`
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before producing the scoreboard TLDR, so
-scope and verification are confirmed before closing.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
+once, immediately before producing the scoreboard TLDR, so scope and
+verification are confirmed before closing.
 
-1. **Scope boundary** — what passes did I run; is any of it outside what was
-   named? What did I notice in adjacent code and leave alone? Emit
-   `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md`
-   § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work
-   nonetheless decided? Name each silent decision (e.g. runtime chosen for
-   Procedure G, cleaner paths parked vs rejected).
-3. **Edge recall** — what boundary inputs (zero findings on first pass, budget
-   hit on pass 1, all cleaner paths rejected) did this run hit, and did I
-   handle each on purpose?
-4. **Verification honesty** — for each phase I claim is clean, what is the
-   evidence (a zero-findings reviewer pass, a resolved-thread count)? Where am
-   I asserting without proof?
+Gauntlet-specific framing:
+
+- **Scope boundary** — what passes did I run; is any of it outside what was
+  named? What did I notice in adjacent code and leave alone? Emit
+  `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md`
+  § worker-emit pre-filter for anything left alone that warranted it.
+- **Unasked assumptions** — name each silent decision (e.g. runtime chosen for
+  Procedure G, cleaner paths parked vs rejected).
+- **Edge recall** — what boundary inputs (zero findings on first pass, budget
+  hit on pass 1, all cleaner paths rejected) did this run hit, and did I
+  handle each on purpose?
+- **Verification honesty** — for each phase I claim is clean, what is the
+  evidence (a zero-findings reviewer pass, a resolved-thread count)? Where am
+  I asserting without proof?
