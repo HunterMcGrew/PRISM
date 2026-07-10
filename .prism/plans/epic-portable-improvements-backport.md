@@ -92,7 +92,7 @@ Repo map / `.repo-map.md` / first-run interview; `_shared/core.md` pointer block
 
 7. **[folded into task 5]** — targeted per-skill improvements (sasha checkpointing, eric cleanup) are in their skill lanes above.
 
-8. **Integration + single serialized build.** After all canonical edits (tasks 4–5) are on one integration branch: run `pnpm prism:build` ONCE to regenerate the entire `.claude`/`.cursor`/`.codex`/`.agents` tree + seed mirror + AGENTS.md Tier-1 block (which now includes `session-orientation.md`), commit the generated tree in one commit, then run `pnpm prism:check` to green (build drift, types, tests, manifest, crossref-lint). Generated diffs are expected and land here, not per-lane.
+8. **[DONE] Integration + single serialized build.** After all canonical edits (tasks 4–5) are on one integration branch: run `pnpm prism:build` ONCE to regenerate the entire `.claude`/`.cursor`/`.codex`/`.agents` tree + seed mirror + AGENTS.md Tier-1 block (which now includes `session-orientation.md`), commit the generated tree in one commit, then run `pnpm prism:check` to green (build drift, types, tests, manifest, crossref-lint). Generated diffs are expected and land here, not per-lane. Build committed as `2c68175`; `pnpm prism:check` green on first re-run after one in-scope fix (see Decisions).
 
 ### briar → eric (review)
 
@@ -119,6 +119,8 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
   - → no promotion needed (per-ticket verification record).
 - **Quick-consult mode ports, with winston self-judging the grain** (resolved by Hunter 2026-07-09; confirmed implementable). A quick architecture question with no ticket gets an inline evaluation — no plan ceremony, battery answers stated in chat. The escalation trigger keeps the discipline guarantee: the moment the consult deepens (scope grows past one question, a decision worth recording emerges, or implementation planning starts), winston shifts into full mode — resolves or creates the plan then, and retroactively records the decisions already made. Implementable as a mode gate ahead of the Batch-2 plan-lookup requirement (`shared.md:115`). Considered: not porting, to preserve "no evaluation without a resolved plan." Rejected: the strict form makes people route around winston for small questions, costing more discipline than the escape hatch does.
   - → promoted to `.prism/architect/` on plan close (persona-behavior change other personas rely on when handing quick questions to Winston).
+- **`prism-ticket-start` body trimmed by one paragraph to clear the 500-line cap.** The generated Claude `SKILL.md` landed at 501 lines (over `MAX_SKILL_BODY_LINES`) after the battery-pointer swap — the redirect guidance was split across two adjacent paragraphs in `.ai-skills/skills/prism-ticket-start/shared.md` ("Ownership & Handoff" and "Nora redirects to the correct next persona"), which said overlapping things. Merged them into one paragraph; no content dropped, generated body now 499 lines.
+  - → no promotion needed (line-count fix local to one skill's source).
 
 ---
 
@@ -127,6 +129,7 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Plan created — backport spec drafted from the completed portable-roster build; see the improvement package and verify-then-fix list.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Open question closed — quick-consult ports with winston-judged grain and an escalation trigger; see Decision.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Winston design pass at the Sol gate — placement confirmed as a Tier-1 rule, all 8 bugs verified reproducing (3 fixes adjusted, Bug 6 scope widened to architect), execution shape set to parallel edits + one serialized build; `## Sessions` and rule specs written to Implementation Tasks; `## Ticket` set to issue #404.
+- 2026-07-09 [claude/prism-skills-portability-f37a25]: Integration lane (task 8) — regenerated the full generated tree in one commit (`2c68175`) after merging a redundant redirect paragraph in `prism-ticket-start/shared.md` to clear the 500-line body cap; `pnpm prism:check` green (485/485 tests, types, manifest, crossref-lint).
 
 ---
 
