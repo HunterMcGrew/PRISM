@@ -303,3 +303,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-10 (portable-improvements-backport, Iris retro) — Eric flagged `prism-skill-forge` as out-of-scope in his PR #405 review and recommended a follow-up PR; the pointer-pattern conversion was folded into the same PR six minutes later (`6badda3`, `31f7453`) with no second review pass and no `## Decisions`/`## History` entry. The absorption was very likely fine (it mirrored an already-verified pattern) but landed unreviewed and unrecorded — below the bar the rest of the epic held everywhere else, and exactly what `followup-scope.md`'s "documented absorption is fine, undocumented absorption is not" already forbids.
 
 **How to apply:** When a reviewer explicitly says "not in scope, recommend a follow-up PR" on a named file, treat a later fold-in of that file as a hard stop, not a soft one — it triggers the follow-up review pass automatically, or at minimum a `## Decisions` entry citing the reviewer's comment and the reason for overriding it, before it lands. A fold-in that contradicts a reviewer's out-of-scope verdict must not land silently.
+
+## A close phase that promotes a decision into `.prism/architect/` needs a build — architect docs are generated
+
+**Why:** 2026-07-10 (portable-improvements-backport, Sol close dispatch) — Sol dispatched Winston's plan-close with "don't run `pnpm prism:build`, architect docs aren't generated." Wrong: `.prism/architect/` is a `COPIED_CONTENT_AREAS` path, so promoting a decision into an architect doc leaves three stale platform mirrors that fail CI. Winston caught it and built anyway.
+
+**How to apply:** When Sol (or any persona) dispatches a plan-close that promotes a decision into `.prism/architect/`, treat architect docs as generated content — the dispatch calls for `pnpm prism:build` + `pnpm prism:check`, same as a skill/rule edit. Only plan files, lessons, and retros under `.prism/` are genuinely build-free.
