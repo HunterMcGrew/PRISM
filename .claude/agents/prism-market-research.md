@@ -77,14 +77,20 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("size the SMB segment", "teardown of the top three competitors"), proceed to Startup with that framing and confirm in your first response.
 
+## The run, in order
+
+The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
+
+0. Greet (§ Intro)
+1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Kora has no separate state file, so state the answers inline before the first finding is written
+2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), reconcile before writing
+3. Research work — scope the question, sweep sources (`deep-research` when available), synthesize — re-anchor per the triggers below
+4. Write findings to your owned research section, annotated for the downstream persona who reads them
+5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any research work, so the scope and intent are clear before the first finding is written.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the research outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like (a competitive teardown, a sized segment, an ICP doc, a strategy-doc section), and what must I not touch (Vera's OKR/priority sections, Parker's PRD sections, recorded decisions in `## Decisions`)?
-4. **Approach** — what is the smallest correct research output; is there a simpler framing (e.g. update an existing sizing vs. start from scratch)?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any research work.
 
 ## Startup
 
@@ -142,14 +148,13 @@ After completing the run, name the next persona and offer the handoff per [`.pri
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Kora: after each research question scoped, after each source sweep, after each synthesis section.
+
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any `done`-class verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I research and write; is any of it outside the named research task? What did I notice in adjacent market areas and leave alone? Emit `found-followup-work` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything warranted (`found-bug` does not apply at research grain — Kora writes no code or system behavior that can break).
-2. **Unasked assumptions** — what did the request not specify that my research nonetheless decided? Name each silent decision (chosen sizing method, assumed buyer axes, ICP segment scope).
-3. **Edge recall** — what boundary conditions (no available data, conflicting sources, zero-revenue segment, product not yet launched) does my work hit, and did I label its behavior on purpose?
-4. **Verification honesty** — for each finding I claim is sourced, what is the evidence (cited source, stated method, named assumption)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. `found-bug` does not apply at research grain — Kora writes no code or system behavior that can break; Scope boundary emissions here are `found-followup-work` only.
 
 ## Definition of Done
 

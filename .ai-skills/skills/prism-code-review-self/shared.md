@@ -59,7 +59,7 @@ Not everything is critical, and not everything is a nit. Classify every finding:
 
 Review quality drops below 70% after 400 lines of diff. On large changes, do multiple focused passes: first pass for design and architecture, second for correctness of critical paths, third for edge cases and polish. Never try to catch everything in one scan.
 
-**Trigger:** before reading the diff, run `git diff main...HEAD --stat` and check total line count. If the diff exceeds 400 lines, plan the passes explicitly — list them in the response — before starting the first pass. **Escape:** if the diff exceeds 1000 lines and the passes cannot be completed in a single session without context compression risks, emit `needs-human` — name the size, what passes were completed, and what remains. A partial review presented as complete is worse than no review.
+**Trigger:** before reading the diff, run `git diff ${DEFAULT_BRANCH}...HEAD --stat` and check total line count. If the diff exceeds 400 lines, plan the passes explicitly — list them in the response — before starting the first pass. **Escape:** if the diff exceeds 1000 lines and the passes cannot be completed in a single session without context compression risks, emit `needs-human` — name the size, what passes were completed, and what remains. A partial review presented as complete is worse than no review.
 
 ### 6. Justify every abstraction
 
@@ -115,14 +115,22 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
+## The run, in order
+
+This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
+
+1. Greet (§ Intro)
+2. Startup — one parallel batch: git context, PR lookup, plan lookup, changed-file list (§ Phase 1)
+3. Opening Orientation Battery — answer inline, persist to the plan's `## Sessions`
+4. Load context + diff, then run checks — type-check, tests, build, formatter/linter (§ Phases 2–4)
+5. Review passes — re-anchor after each pass (§ Phase 5)
+6. Write findings to the plan (`## Review Issues`, `## Cleanup Items`, `## PR Readiness`), then the chat summary
+7. Closing Re-Orientation Battery — diffed against the opening answers
+8. PR-readiness verdict + handoff offer (§ Clean-Review Closing)
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before the first review pass. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before starting.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before the first review pass.
 
 ## When this skill is invoked
 
@@ -138,7 +146,7 @@ Run the following steps automatically — do not wait for further instructions.
 2. `gh pr list --head "<branch>" --json number,title,baseRefName` (find PR)
 3. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. Create if missing.
 4. Read `.prism/architect/manifest.json`
-5. `git diff main...HEAD --name-only` (changed file list for manifest matching)
+5. `git diff ${DEFAULT_BRANCH}...HEAD --name-only` (changed file list for manifest matching)
 
 Store branch as `<branch>`, repo root as `<repo-root>`, PR number as `<pr-number>`.
 
@@ -228,7 +236,7 @@ Reviews stall for specific reasons. Named procedures, not guesswork:
 
 **Procedure B — A finding's severity is unclear due to missing context.** State the question: "Is this Critical or Major? The answer depends on [specific unknown]." Search the plan's `## Decisions` and `## Debugged Issues` for a matching entry. If found, use it to resolve severity. If not found, emit `needs-human` — name the specific question and why the diff and plan together cannot answer it. Do not guess Critical when the evidence is ambiguous.
 
-**Procedure C — The diff is too large to review without compression risk.** Check line count with `git diff main...HEAD --stat`. If the diff exceeds 1000 lines, plan passes explicitly before starting — list them in the response. If completing all passes would require re-reading already-compacted context, emit `needs-human` — name the passes completed, the passes remaining, and the size. A partial review presented as complete is worse than an honest partial.
+**Procedure C — The diff is too large to review without compression risk.** Check line count with `git diff ${DEFAULT_BRANCH}...HEAD --stat`. If the diff exceeds 1000 lines, plan passes explicitly before starting — list them in the response. If completing all passes would require re-reading already-compacted context, emit `needs-human` — name the passes completed, the passes remaining, and the size. A partial review presented as complete is worse than an honest partial.
 
 **Procedure D — You are stuck.** Emit `blocked` — name what you tried, which hypotheses you tested, where things went sideways, and the most promising direction you see. Do not spin past three attempts on the same question.
 
@@ -349,12 +357,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting any verdict. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
 
 ---
 
@@ -372,6 +375,7 @@ Run this battery once, immediately before emitting any verdict. Answer all four 
 
 **Reflex bullets:**
 
+- Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after each review pass/dimension completes, after any build or test run, and after any plan re-read — one line: "`<pass finished>`; findings so far: `<n by severity>`; next: `<pass>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
@@ -392,7 +396,7 @@ When the self-review is clean (no critical/major issues, no test gaps, no a11y i
 
 Eric's fresh-chat handoff is unconditional regardless of context load — he reviews the code as-is, not the reasoning behind it. Eric defaults to in-branch mode — he reads the PR's diff and files directly via `gh` and `git show` without checking out the branch, which keeps the common path cheap. He opts into worktree mode only when the user explicitly asks (`--worktree` or "review in worktree" phrasing), when the PR's branch differs from the current working tree and there are uncommitted changes that a plain checkout would discard, or when the review must run formatters/tests/builds against the PR's branch. The dual-mode mechanics live in [`.prism/references/worktree-mode.md`](../../references/worktree-mode.md) and Eric's own source — Briar doesn't need to set the flag; if the user wants worktree mode, they pass it through to Eric directly.
 
-**If no PR exists yet** — route back to the authoring persona so they can ship before Eric reviews. Briar doesn't absorb PR creation; she hands back to the lane that owns it. Use the changed-file list already captured in Phase 1 (batch A item 5, `git diff main...HEAD --name-only`) to determine the author — no need to re-query:
+**If no PR exists yet** — route back to the authoring persona so they can ship before Eric reviews. Briar doesn't absorb PR creation; she hands back to the lane that owns it. Use the changed-file list already captured in Phase 1 (batch A item 5, `git diff ${DEFAULT_BRANCH}...HEAD --name-only`) to determine the author — no need to re-query:
 
 - If every changed path is under `docs/` or `.claude/` → author is **Eli**
 - Otherwise → author is **Clove**

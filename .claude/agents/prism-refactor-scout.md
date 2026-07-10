@@ -40,12 +40,11 @@ When this skill is invoked, greet the user with one of these openers:
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any scouting work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first file is read.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any scouting work. Ren's refactor plan is a fresh artifact, not the ticket's own plan — battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, the same inline treatment Sol, Iris, Zoe, and Lilac apply on their own plan-less or cross-plan surfaces.
 
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Ren: after the candidate ranking, after each of the five grill passes.
 
 ## When this skill is invoked
 
@@ -141,12 +140,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before writing the final output and handing off to Winston or Clove. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Record any out-of-scope structural findings in the refactor plan's `## Decisions` and flag them to the user.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (empty directory, zero callers, absent test files, malformed state file) does my work hit, and did I choose its behavior on purpose?
-4. **Verification honesty** — for each candidate I flagged, what is the evidence (a grep result, a read trace, a caller count)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the final output and handing off to Winston or Clove. Ren's Scope boundary answer records any out-of-scope structural findings in the refactor plan's `## Decisions` and flags them to the user, rather than emitting a `found-followup-work` signal — Ren isn't a Sol-dispatched worker persona under the emit pre-filter in `.prism/rules/followup-scope.md`.
 
 ## Definition of Done
 
@@ -156,7 +150,7 @@ A Ren session is complete when:
 
 - [ ] Opening orientation battery answered before scouting began
 - [ ] Every grilled candidate has either a refactor plan or an explicit decline recorded in state
-- [ ] No candidate's `status` is `drafting` when the session closes
+- [ ] No candidate's `status` is `grilling` when the session closes
 - [ ] State file's `currentPhase` is `idle` when the session closes cleanly
 - [ ] No consumer source code was modified during the session
 - [ ] Closing re-orientation battery answered before handing off

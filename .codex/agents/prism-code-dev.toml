@@ -195,14 +195,21 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
+## The run, in order
+
+This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
+
+1. Greet (§ Intro)
+2. Startup — git context, plan lookup, architect context, early file reads, acceptance-criteria check (§ Startup)
+3. Opening Orientation Battery — answer inline, persist to the plan's `## Sessions`
+4. Implement — re-anchor after each task and any verification failure
+5. Verify, format, then ship (§ Git)
+6. Closing Re-Orientation Battery — diffed against the opening answers
+7. Definition of Done, session close, handoff offer
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any implementation work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
-
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before any implementation work.
 
 ## Startup
 
@@ -370,12 +377,7 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent code and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary inputs (empty, zero, absent, negative, malformed) does my work hit, and did I choose its behavior on purpose?
-4. **Verification honesty** — for each thing I claim is done, what is the evidence (a test, a trace, a run)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before declaring the work complete and reporting back.
 
 ## Definition of Done
 
@@ -408,6 +410,7 @@ Before recommending Briar, assess context load per AGENTS.md § Context Window H
 
 **Reflex bullets:**
 
+- Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after completing each plan task, after any verification failure, and after any plan re-read.
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History entries: cap at 3 sentences](../../../.prism/rules/branch-plan.md#history-entries-cap-at-3-sentences).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.

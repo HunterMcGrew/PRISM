@@ -13,23 +13,19 @@ This is a utility skill — it carries no persona. It runs in the active persona
 voice and adds no identity of its own (per
 [ADR-0046](../../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
+**The run, in order:** opening orientation → determine mode (create or migrate)
+→ apply shared conventions (ID namespace, authoring rules) → mode-specific steps
+(create: decide persona vs utility → collect inputs → write source → register
+the role; migrate: detect the source shape → extract canonical source → strip
+generated artifacts → recover per-platform deltas → normalize and register) →
+build and verify → closing re-orientation.
+
 ## Opening Orientation Battery
 
-Run this battery once, immediately after the mode is determined and before any
-file is written, so the scope and intent are clear before the first edit.
-
-1. **Intent** — in one sentence, what is the user asking to create or migrate
-   (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For
-   each: load-bearing (must resolve before starting) or non-load-bearing (proceed
-   on a documented default)? **Calibration:** there is no user available
-   mid-dispatch — do not stall; for each load-bearing gap pick a defensible
-   default, state the assumption, and proceed. Escalate only by emitting a typed
-   verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely
-   blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler
-   framing than the obvious one?
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md),
+immediately after the mode is determined and before any file is written, so the
+scope and intent are clear before the first edit. For Intent, name whether the
+ask is create or migrate.
 
 ## Shared conventions (both modes)
 
@@ -249,20 +245,13 @@ follow-up.
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before reporting the skill as complete, so
-the scope and correctness are confirmed before stopping.
-
-1. **Scope boundary** — what files did I write or modify; is any of it outside
-   what was named (source dir, `roles.json`, build verification)? What adjacent
-   files did I notice and leave alone? Emit `found-followup-work` per
-   [`.prism/rules/followup-scope.md`](../../../.prism/rules/followup-scope.md)
-   § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work
-   nonetheless decided? Name each silent decision (persona vs utility choice,
-   namespace prefix, which platform files were omitted).
-3. **Edge recall** — what boundary inputs does this skill now handle on purpose:
-   empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at the
-   line-count limit, a TOML source with no persona opener?
-4. **Verification honesty** — for each claim of completion, what is the evidence:
-   did `pnpm prism:build` exit clean, did `pnpm prism:build --check` report no
-   drift, did `pnpm prism:crossref-lint` pass? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md),
+immediately before reporting the skill as complete, so the scope and
+correctness are confirmed before stopping. For Scope boundary, confirm the
+touch stayed within the source dir, `roles.json`, and build verification. For
+Unasked assumptions, name each silent decision — persona vs utility choice,
+namespace prefix, which platform files were omitted. For Edge recall, name
+which of empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at
+the line-count limit, or a TOML source with no persona opener applied. For
+Verification honesty, the evidence is `pnpm prism:build` exiting clean, `pnpm
+prism:build --check` reporting no drift, or `pnpm prism:crossref-lint` passing.

@@ -109,12 +109,11 @@ When this skill is invoked, before doing anything else, greet the user with a br
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup, so the scope and intent are clear before the first file read.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup and before the first file read. Iris runs across whichever plan(s) or date range the retro targets, and never writes to a source plan (see "What Iris is not") — battery answers are stated inline rather than persisted to a `## Sessions` section.
 
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Iris: after each charter item checked, after each evidence source read (diff, PR thread, CI, plan).
 
 ## When this skill is invoked
 
@@ -225,12 +224,7 @@ The retro report — the full epic report or the compact per-PR fidelity note, p
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before writing the report to disk and offering the Nora handoff.
-
-1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent plan sections and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
-3. **Edge recall** — what boundary evidence inputs (empty plan, zero divergences, absent voices, malformed entries) did I encounter, and did I handle each on purpose?
-4. **Verification honesty** — for each claim in the report, what evidence entry backs it? Where am I asserting without a citation?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the report to disk and offering the Nora handoff.
 
 ## Next persona
 

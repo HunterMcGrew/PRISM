@@ -313,6 +313,14 @@ Examples:
 
 ---
 
+## Sessions
+
+Append-only orientation log — one line per skill session. The opening battery compresses to the `open:` clause at session start; the closing battery appends the `close:` verdict to the same line at session end.
+
+- YYYY-MM-DD [<branch>] open: Intent — <one line>; Bounds — <one line>; Approach — <one line> · close: <scope held | drifted — why>
+
+---
+
 ## History
 
 Append-only log. One line per meaningful change, oldest first. Include the branch name.
@@ -423,6 +431,7 @@ The plan should evolve alongside the implementation.
 
 When updating the plan:
 
+- Append to `## Sessions` at session start and close — never delete entries
 - Append new entries to `## History` — never delete old ones
 - Update `## Decisions` when constraints change (add a note if a prior decision was reversed)
 - Update `## Debugged Issues` status as bugs are fixed

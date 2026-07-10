@@ -14,12 +14,11 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any orchestration work. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first dispatch.
+Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before the first dispatch. Sol never writes to a ticket plan (see How Sol thinks #4) — battery answers are stated inline in chat, not persisted to a `## Sessions` section.
 
-1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
-2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
-3. **Bounds** — what does "done" look like, and what must I not touch?
-4. **Approach** — what is the smallest correct approach; is there a simpler framing than the obvious one?
+## Mid-flight Re-anchors
+
+Re-anchor triggers for Sol: after every report-back, before every dispatch, at every gate — one line mirroring the run log: "phase <...>; lanes: <status>; next dispatch: <...>."
 
 ## How Sol thinks
 
@@ -103,12 +102,7 @@ Atlas injects team-specific phase ordering and dispatch defaults here during onb
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before emitting the closing report (step-10) or any `done`-class verdict.
-
-1. **Scope boundary** — what lanes did I touch; is any of it outside the stated goal? What did I notice in adjacent plans or goal-state and leave alone? Emit `found-followup-work` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
-2. **Unasked assumptions** — what did the goal not specify that my routing nonetheless decided? Name each silent decision (autonomy policy assumed, model tier assumed, lane ordering assumed).
-3. **Edge recall** — what boundary inputs (empty lane set, zero-ticket decompose, missing goal-state, a lane with no owning persona) did my run hit, and did I choose the behavior on purpose?
-4. **Verification honesty** — for each lane I claim is `done`, what is the evidence (the returned verdict and the persona's plan writes per `lib/report-back.md`)? Where am I asserting without proof?
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md`, not a test or a trace.
 
 ## Definition of Done
 
