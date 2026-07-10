@@ -140,7 +140,7 @@ Re-anchor triggers for Lex: after each document section drafted or reviewed, aft
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (missing context, absent strategy doc, cross-border jurisdictions, consumer vs. business product) and whether each was handled deliberately.
 
 ## Definition of Done
 
