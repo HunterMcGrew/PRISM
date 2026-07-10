@@ -129,18 +129,20 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 ### Closing-battery persona elaboration dropped in most skill lanes
 
 - **Severity:** `major`
-- **Status:** `open`
-- **File:** `.ai-skills/skills/prism-founder/shared.md:146` (representative; pattern repeats in ~20 of ~27 skill lanes — finance, legal, sales, data, customer-success, recruiting, marketing, conductor, changelog, code-dev, code-review-self, design, doc-walker, onboarding, prd, qa-test-plan, standup-summary, surface-audit, ticket-start, user-stories, architect)
-- **Problem:** Plan task 5 said to "keep any persona-specific battery framing that is NOT in the generic rule" when swapping the full Opening/Closing battery text for a pinned pointer. Every skill's original Closing battery had domain-specific parenthetical examples per question (e.g. founder's Edge recall: "empty strategy doc, no mission stated, conflicting decisions, absent stakeholder"; finance's: "zero revenue, no ACV, absent burn rate, negative margin"). In most lanes the pointer swap dropped these entirely, leaving a bare "immediately before emitting any `done`-class verdict." with no domain examples. Five lanes did it correctly by appending a trailing sentence preserving the domain specifics (`prism-code-review-pr:363`, `prism-documentation:252`, `prism-market-research:130`, `prism-refactor-scout:117`, `prism-debugger` closing battery) — proving the pattern was achievable and making the inconsistency visible rather than a uniform simplification choice.
-- **Suggested fix:** For each affected lane, append one sentence to the Closing (and where applicable Opening) battery pointer line preserving the domain-specific Edge recall / Unasked assumptions / Verification honesty examples that existed pre-edit, following the pattern already used in the five correct lanes.
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-founder/shared.md:146` (representative; pattern repeated across skill lanes — finance, legal, sales, data, customer-success, recruiting, marketing, conductor, changelog, design, prd, qa-test-plan, standup-summary, surface-audit, ticket-start, user-stories, refactor-scout)
+- **Problem:** Plan task 5 said to "keep any persona-specific battery framing that is NOT in the generic rule" when swapping the full Opening/Closing battery text for a pinned pointer. Every skill's original Closing battery had domain-specific parenthetical examples per question (e.g. founder's Edge recall: "empty strategy doc, no mission stated, conflicting decisions, absent stakeholder"; finance's: "zero revenue, no ACV, absent burn rate, negative margin"). In most lanes the pointer swap dropped these entirely, leaving a bare "immediately before emitting any `done`-class verdict." with no domain examples.
+- **Round-2 verification:** commits `a8c071a` and `c6f366b` (+ `881988c` follow-up) restore the domain-specific parentheticals as a trailing sentence on each affected pointer line. Spot-checked 7 lanes across both commits (founder, changelog, design, refactor-scout, ticket-start, surface-audit, data) against `origin/main`'s pre-swap text byte-for-byte — every restored clause matches the original wording verbatim, condensed into one sentence per question, no invented content. Confirmed the 5 skills that needed no restoration (architect, code-dev, code-review-self, doc-walker, onboarding) truly had generic pre-swap text with no domain parentheticals to lose — verified against `origin/main`, not just taken on the commit message's word. No re-inlining of the full numbered battery lists occurred anywhere — every fix stayed a single trailing sentence appended to the pointer paragraph.
+- **Suggested fix:** N/A — resolved.
 
 ### Ren's Sessions-persistence stance is unstated
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.ai-skills/skills/prism-refactor-scout/shared.md:101`
 - **Problem:** Ren's refactor plan (`.prism/plans/refactor-<slug>.md`) uses the branch-plan template, which now includes `## Sessions` (task 4b). Unlike Sol/Iris/Zoe/Lilac, Ren's shared.md doesn't say whether battery answers persist to that `## Sessions` line or are exempt like the other four non-ticket-plan personas — an ambiguity, not a clear defect, since Ren does own a plan file in the standard template.
-- **Suggested fix:** Add one clause to Ren's Opening battery pointer, either instructing it to persist `open:`/`close:` to its own refactor plan's `## Sessions`, or explicitly exempting it with the reason (parallel to the surface-audit/retro/conductor/standup-summary wording).
+- **Round-2 verification:** commit `a8c071a` adds a clause to Ren's Opening battery pointer: battery answers fold into the refactor plan's `## Decisions` (grill-pass rationale) rather than a `## Sessions` entry, exempting Ren with the same reasoning already applied to Sol/Iris/Zoe/Lilac. Confirmed present and correctly worded.
+- **Suggested fix:** N/A — resolved.
 
 ## History
 
@@ -149,6 +151,7 @@ Source: each portable skill's "Persona notes on the shared core" block (`grep "R
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Open question closed — quick-consult ports with winston-judged grain and an escalation trigger; see Decision.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Winston design pass at the Sol gate — placement confirmed as a Tier-1 rule, all 8 bugs verified reproducing (3 fixes adjusted, Bug 6 scope widened to architect), execution shape set to parallel edits + one serialized build; `## Sessions` and rule specs written to Implementation Tasks; `## Ticket` set to issue #404.
 - 2026-07-09 [claude/prism-skills-portability-f37a25]: Integration lane (task 8) — regenerated the full generated tree in one commit (`2c68175`) after merging a redundant redirect paragraph in `prism-ticket-start/shared.md` to clear the 500-line body cap; `pnpm prism:check` green (485/485 tests, types, manifest, crossref-lint).
+- 2026-07-09 [claude/prism-skills-portability-f37a25]: Round-2 self-review — both round-1 Review Issues confirmed fixed (persona-specific closing framing restored across all affected lanes, verified byte-for-byte against `origin/main`; Ren's Sessions-persistence clause added). No regressions, no over-restoration, portability grep clean, `## Sessions` identical across all 3 surfaces, `pnpm prism:check` green (485/485). Branch ready for PR.
 
 ---
 
