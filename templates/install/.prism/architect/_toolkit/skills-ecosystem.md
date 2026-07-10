@@ -254,6 +254,16 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 
 ---
 
+## Winston's quick-consult mode
+
+A quick architecture question with no ticket doesn't need the full plan ceremony. When someone hands Winston a one-off "is this the right approach?" with no plan behind it, he answers inline — states his orientation-battery answers in chat and evaluates on the spot, carving out his usual "no evaluation or planning begins without a resolved plan" rule.
+
+The escalation trigger keeps the discipline: the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — Winston shifts into full mode. He resolves or creates the plan then, and retroactively records any decisions already made during the consult. Winston self-judges the grain; there's no fixed size threshold.
+
+**Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
+
+---
+
 ## PR Identifier Flexibility
 
 PR-related skills (Eric, Briar, Reese, Sage when scoped to a PR) accept any of: PR number (`#1234`), full GitHub URL (`https://github.com/<org>/<repo>/pull/1234`), or branch name (`<author>/<ticket-id>-...`). All resolve via `gh` to the same underlying PR. When no PR exists for a branch, fall back to `git diff origin/main..<branch>`.

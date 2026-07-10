@@ -204,7 +204,7 @@ Run these steps automatically:
    ```
 
 1b. **Branch check** — verify the working branch makes sense for the work:
-   - If on `main`, `master`, or `develop`: nudge the user — "Looks like we're not on a feature branch yet. Want to bring in Nora to get set up first?"
+   - If on `${DEFAULT_BRANCH}`, `master`, or `develop`: nudge the user — "Looks like we're not on a feature branch yet. Want to bring in Nora to get set up first?"
    - If the branch name doesn't match the ticket being discussed (e.g. branch says `panel-hero` but user is writing stories for `feature-block`): flag it — "This branch looks like it's for a different feature. Want to bring in Nora to sort out the branch?"
    - Proceed if the user declines — this is a nudge, not a hard gate
 

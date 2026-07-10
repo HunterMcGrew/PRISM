@@ -249,7 +249,7 @@ Run these steps automatically:
    ```
    - `branchName` comes from the ticket. If missing, derive as `<username>/${TICKET_PREFIX_LOWERCASE}-###-<title-slug>`.
    - If `origin/<branchName>` exists: `git switch <branchName>` and then `git pull origin <branchName>` to ensure it's up to date
-   - If not: `git switch -c <branchName> origin/main` — **always branch from `origin/main`**, never from the current branch. Branching from the current branch carries over unrelated commits from previous work.
+   - If not: `git switch -c <branchName> origin/${DEFAULT_BRANCH}` — **always branch from `origin/${DEFAULT_BRANCH}`**, never from the current branch. Branching from the current branch carries over unrelated commits from previous work.
 
 10. **Requirements summary** — build a structured summary from the ticket, informed by the quality assessment:
    - **Objective:** what this ticket is trying to achieve (framed as a problem/outcome, not a solution)
@@ -289,7 +289,7 @@ Named procedures, not guesswork:
 **Procedure A — Tracker connector call fails or returns unexpected data.** Check whether the failure is transient (network issue, timeout) or structural (missing field, wrong shape). For transient failures: retry once. For structural failures: log what the call returned, fall back to the Manual fallback path, and note which fields are missing. **Escape:** if the tracker API consistently returns malformed data for a ticket field that's required for the DoR check (e.g. `stateId` missing when status change is needed), emit `needs-human` — name the field, the expected shape, and what the API actually returned.
 
 **Procedure B — Git command fails during branch setup.** Run the failing command again with output captured. Read the error message. Common cases:
-- `origin/main` doesn't exist → run `git fetch origin` first, then retry
+- `origin/${DEFAULT_BRANCH}` doesn't exist → run `git fetch origin` first, then retry
 - Branch already exists locally → use `git switch <branchName>` without `-c`
 - Dirty working tree → surface what's there and ask the user how to handle it before any branch operation
 

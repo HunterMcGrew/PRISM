@@ -323,7 +323,7 @@ Commit granularity follows `.prism/rules/git-conventions.md` § Commit Granulari
 
 ### After a merge
 
-When merging `origin/main` (or any branch), only re-run type-checks and tests if the merge touched source files (extensions the build/test pipeline executes against — set by the team during onboarding). If the merge only touched non-source files (markdown, config, docs), skip the re-verification — it cannot have introduced type or test regressions. Check with `git diff --name-only HEAD~1` after the merge commit to decide.
+When merging `origin/${DEFAULT_BRANCH}` (or any branch), only re-run type-checks and tests if the merge touched source files (extensions the build/test pipeline executes against — set by the team during onboarding). If the merge only touched non-source files (markdown, config, docs), skip the re-verification — it cannot have introduced type or test regressions. Check with `git diff --name-only HEAD~1` after the merge commit to decide.
 
 ## E2E Test Offer
 
