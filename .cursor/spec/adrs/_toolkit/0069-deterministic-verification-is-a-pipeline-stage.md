@@ -38,7 +38,7 @@ A write-lane's `done` is **proposed, not accepted**. It advances only after a de
 
 ## References
 
-- `.prism/plans/sol-deterministic-verification.md` — the plan that ports this design back in, and its `## Decisions` section
+- `.prism/plans/issue-408.md` — the plan that ports this design back in, and its `## Decisions` section
 - [ADR-0067](./0067-runtime-ratifies-verdicts.md) (superseded) — the trust-gap goal this ADR carries forward, and the hook-based mechanism this ADR replaces
 - `.prism/plans/epic-floor-revert.md` — the revert that removed the `Stop`/`SubagentStop` hook and the incident that motivated it
 - `.prism/skills/prism-conductor/lib/report-back.md` — the verdict enum, evidence fields, and routing table this decision extends

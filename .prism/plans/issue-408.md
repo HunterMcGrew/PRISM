@@ -132,7 +132,7 @@ Two Minor observations recorded for visibility (neither blocks PR readiness):
 
 - **Severity:** minor
 - **Status:** open
-- **File:** `.prism/plans/sol-deterministic-verification.md:69` (task 9), `.ai-skills/skills/prism-conductor/shared.md` (Sasha/Pixel top-default rows)
+- **File:** `.prism/plans/issue-408.md:69` (task 9), `.ai-skills/skills/prism-conductor/shared.md` (Sasha/Pixel top-default rows)
 - **Problem:** Task 9 was explicitly flagged "veto before implementing" in the plan, but the History entry shows it was implemented in the same pass as tasks 1–8/10 with no visible stop-and-confirm checkpoint in this session's evidence.
 - **Suggested fix:** confirm with the user (Hunter) before merge that the Sasha/Pixel top-tier default is wanted; if not, revert that one table change independently of the rest of the branch.
 
