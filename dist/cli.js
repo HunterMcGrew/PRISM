@@ -1,115 +1,17 @@
 #!/usr/bin/env node
 
 // scripts/ai-skills/adopt.ts
-import fs11 from "node:fs/promises";
-import path13 from "node:path";
+import fs13 from "node:fs/promises";
+import path15 from "node:path";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
-
-// scripts/ai-skills/lib/consumer-root.ts
-import { execFileSync } from "node:child_process";
-import path from "node:path";
-function gitCapture(args, cwd) {
-  try {
-    const out = execFileSync("git", args, {
-      cwd,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    });
-    const trimmed = out.trim();
-    return trimmed.length > 0 ? trimmed : null;
-  } catch {
-    return null;
-  }
-}
-function resolveEnclosingConsumerRoot(prismRoot) {
-  const topLevel = gitCapture(["rev-parse", "--show-toplevel"], prismRoot);
-  if (topLevel !== null && path.resolve(topLevel) !== path.resolve(prismRoot)) {
-    return path.resolve(topLevel);
-  }
-  const superproject = gitCapture(
-    ["rev-parse", "--show-superproject-working-tree"],
-    prismRoot
-  );
-  if (superproject !== null) {
-    return path.resolve(superproject);
-  }
-  const parent = path.dirname(path.resolve(prismRoot));
-  if (parent === path.resolve(prismRoot)) {
-    return null;
-  }
-  const parentTopLevel = gitCapture(["rev-parse", "--show-toplevel"], parent);
-  if (parentTopLevel !== null && path.resolve(parentTopLevel) !== path.resolve(prismRoot)) {
-    return path.resolve(parentTopLevel);
-  }
-  return null;
-}
-function resolveConsumerRoot(options) {
-  const { explicitConsumer, cwd, selfPrismRoot } = options;
-  if (explicitConsumer !== null) {
-    return path.resolve(cwd, explicitConsumer);
-  }
-  if (selfPrismRoot.includes(path.sep + "node_modules" + path.sep)) {
-    return path.resolve(cwd);
-  }
-  const runningFromInsidePrism = path.resolve(cwd) === path.resolve(selfPrismRoot);
-  if (!runningFromInsidePrism) {
-    return path.resolve(cwd);
-  }
-  const enclosing = resolveEnclosingConsumerRoot(selfPrismRoot);
-  if (enclosing === null) {
-    throw new Error(
-      "prism: running from inside the PRISM checkout, but PRISM is not nested inside another git repository \u2014 there is no consumer repo to target. Run from your consumer repo, vendor PRISM inside it, or pass --consumer <path-to-consumer-repo>."
-    );
-  }
-  if (path.resolve(enclosing) === path.resolve(selfPrismRoot)) {
-    throw new Error(
-      "prism: enclosing-repo detection resolved back to the PRISM checkout itself \u2014 refusing to adopt PRISM into PRISM. Pass --consumer <path> to target the consumer repo explicitly."
-    );
-  }
-  return path.resolve(enclosing);
-}
-function parseConsumerFlag(argv) {
-  const flagIndex = argv.indexOf("--consumer");
-  if (flagIndex !== -1) {
-    const value = argv[flagIndex + 1];
-    if (!value) {
-      throw new Error(
-        "--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
-      );
-    }
-    return value;
-  }
-  const inlineFlag = argv.find((arg) => arg.startsWith("--consumer="));
-  if (inlineFlag) {
-    const value = inlineFlag.slice("--consumer=".length);
-    if (!value) {
-      throw new Error(
-        "--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
-      );
-    }
-    return value;
-  }
-  return null;
-}
-
-// scripts/ai-skills/sync-manifest.ts
-import fs9 from "node:fs/promises";
-import path11 from "node:path";
-
-// scripts/ai-skills/build.ts
-import { execFile } from "node:child_process";
-import fs7 from "node:fs/promises";
-import path9 from "node:path";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 
 // scripts/ai-skills/agents-md-block.ts
 import fs2 from "node:fs/promises";
-import path3 from "node:path";
+import path2 from "node:path";
 
 // scripts/ai-skills/lib/tokens.ts
 import fs from "node:fs";
-import path2 from "node:path";
+import path from "node:path";
 var REQUIRED_TOP_LEVEL_KEYS = [
   "org",
   "project",
@@ -117,7 +19,7 @@ var REQUIRED_TOP_LEVEL_KEYS = [
   "ticketSystem"
 ];
 function loadConfig(repoRoot3) {
-  const configPath = path2.join(repoRoot3, ".ai-skills", "config.json");
+  const configPath = path.join(repoRoot3, ".ai-skills", "config.json");
   if (!fs.existsSync(configPath)) {
     throw new Error(
       `Missing .ai-skills/config.json at ${configPath}. The build needs it to derive the token map.`
@@ -225,6 +127,23 @@ function describeType(value) {
 // scripts/ai-skills/agents-md-block.ts
 var AGENTS_MD_BLOCK_BEGIN = "<!-- BEGIN GENERATED TIER-1 RULE BODIES \u2014 managed by scripts/ai-skills/build.ts; do not edit -->";
 var AGENTS_MD_BLOCK_END = "<!-- END GENERATED TIER-1 RULE BODIES -->";
+var AGENTS_MD_SEEDED_MARKER = "<!-- prism:seeded-agents-md \u2014 this AGENTS.md was created by `prism adopt --seed-agents-md`; prism eject will remove it. Delete this line if you want to keep the file after ejecting. -->";
+function renderSeededAgentsMd() {
+  return [
+    "# Agent Behavior Rules",
+    "",
+    AGENTS_MD_SEEDED_MARKER,
+    "",
+    "PRISM manages the generated block below. Run `pnpm prism:build` to fill it",
+    "with the always-on Tier-1 rule bodies your Codex-based agents load. See",
+    "docs/adopting-into-existing-repos.md.",
+    "",
+    `${AGENTS_MD_BLOCK_BEGIN}`,
+    "",
+    `${AGENTS_MD_BLOCK_END}`,
+    ""
+  ].join("\n");
+}
 var CODEX_INLINE_EXCLUDE = /* @__PURE__ */ new Set([]);
 function splitFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -241,7 +160,7 @@ async function collectTier1RuleBodies(rulesDir, tokenMap) {
     if (CODEX_INLINE_EXCLUDE.has(name)) {
       continue;
     }
-    const content = await fs2.readFile(path3.join(rulesDir, name), "utf8");
+    const content = await fs2.readFile(path2.join(rulesDir, name), "utf8");
     const { frontmatter } = splitFrontmatter(content);
     if (frontmatter !== null && /^paths:/m.test(frontmatter)) {
       continue;
@@ -280,17 +199,260 @@ ${block}
 `;
 }
 
-// scripts/ai-skills/literal-guard.ts
-import fs4 from "node:fs/promises";
-import path6 from "node:path";
+// scripts/ai-skills/lib/consumer-root.ts
+import { execFileSync } from "node:child_process";
+import path3 from "node:path";
+function gitCapture(args, cwd) {
+  try {
+    const out = execFileSync("git", args, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+    const trimmed = out.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+function resolveEnclosingConsumerRoot(prismRoot) {
+  const topLevel = gitCapture(["rev-parse", "--show-toplevel"], prismRoot);
+  if (topLevel !== null && path3.resolve(topLevel) !== path3.resolve(prismRoot)) {
+    return path3.resolve(topLevel);
+  }
+  const superproject = gitCapture(
+    ["rev-parse", "--show-superproject-working-tree"],
+    prismRoot
+  );
+  if (superproject !== null) {
+    return path3.resolve(superproject);
+  }
+  const parent = path3.dirname(path3.resolve(prismRoot));
+  if (parent === path3.resolve(prismRoot)) {
+    return null;
+  }
+  const parentTopLevel = gitCapture(["rev-parse", "--show-toplevel"], parent);
+  if (parentTopLevel !== null && path3.resolve(parentTopLevel) !== path3.resolve(prismRoot)) {
+    return path3.resolve(parentTopLevel);
+  }
+  return null;
+}
+function resolveConsumerRoot(options) {
+  const { explicitConsumer, cwd, selfPrismRoot } = options;
+  if (explicitConsumer !== null) {
+    return path3.resolve(cwd, explicitConsumer);
+  }
+  if (selfPrismRoot.includes(path3.sep + "node_modules" + path3.sep)) {
+    return path3.resolve(cwd);
+  }
+  const runningFromInsidePrism = path3.resolve(cwd) === path3.resolve(selfPrismRoot);
+  if (!runningFromInsidePrism) {
+    return path3.resolve(cwd);
+  }
+  const enclosing = resolveEnclosingConsumerRoot(selfPrismRoot);
+  if (enclosing === null) {
+    throw new Error(
+      "prism: running from inside the PRISM checkout, but PRISM is not nested inside another git repository \u2014 there is no consumer repo to target. Run from your consumer repo, vendor PRISM inside it, or pass --consumer <path-to-consumer-repo>."
+    );
+  }
+  if (path3.resolve(enclosing) === path3.resolve(selfPrismRoot)) {
+    throw new Error(
+      "prism: enclosing-repo detection resolved back to the PRISM checkout itself \u2014 refusing to adopt PRISM into PRISM. Pass --consumer <path> to target the consumer repo explicitly."
+    );
+  }
+  return path3.resolve(enclosing);
+}
+function assertInsideGitRepo(dir) {
+  const result = gitCapture(["rev-parse", "--is-inside-work-tree"], dir);
+  if (result !== "true") {
+    throw new Error(
+      `prism: ${dir} is not inside a git repository. PRISM writes files that should be reviewable and revertable via git \u2014 run this from inside a git repo, or pass --consumer <path-to-a-git-repo>.`
+    );
+  }
+}
+function parseConsumerFlag(argv) {
+  const flagIndex = argv.indexOf("--consumer");
+  if (flagIndex !== -1) {
+    const value = argv[flagIndex + 1];
+    if (!value) {
+      throw new Error(
+        "--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
+      );
+    }
+    return value;
+  }
+  const inlineFlag = argv.find((arg) => arg.startsWith("--consumer="));
+  if (inlineFlag) {
+    const value = inlineFlag.slice("--consumer=".length);
+    if (!value) {
+      throw new Error(
+        "--consumer was given an empty value; pass a directory path (e.g. --consumer /path/to/repo)"
+      );
+    }
+    return value;
+  }
+  return null;
+}
+function parseDryRunFlag(argv) {
+  return argv.includes("--dry-run");
+}
+function parseConfirmFlag(argv) {
+  return argv.includes("--yes");
+}
+function parseSeedAgentsMdFlag(argv) {
+  return argv.includes("--seed-agents-md");
+}
+
+// scripts/ai-skills/lib/config-schema-validate.ts
+import fs3 from "node:fs";
+import path4 from "node:path";
+var ConfigSchemaValidationError = class extends Error {
+  constructor(pointer, reason) {
+    super(`${pointer}: ${reason}`);
+    this.pointer = pointer;
+    this.name = "ConfigSchemaValidationError";
+  }
+  pointer;
+};
+function describeType2(value) {
+  if (value === null) {
+    return "null";
+  }
+  if (Array.isArray(value)) {
+    return "array";
+  }
+  return typeof value;
+}
+function matchesType(value, type) {
+  switch (type) {
+    case "object":
+      return typeof value === "object" && value !== null && !Array.isArray(value);
+    case "array":
+      return Array.isArray(value);
+    case "string":
+      return typeof value === "string";
+    case "boolean":
+      return typeof value === "boolean";
+    case "number":
+    case "integer":
+      return typeof value === "number";
+    default:
+      return true;
+  }
+}
+function validateNode(value, schema, pointer) {
+  if (value === void 0) {
+    return;
+  }
+  const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
+  if (types.length > 0 && !types.some((t) => matchesType(value, t))) {
+    throw new ConfigSchemaValidationError(
+      pointer,
+      `must be of type ${types.join(" or ")} (got ${describeType2(value)})`
+    );
+  }
+  if (schema.enum && !schema.enum.some((allowed) => allowed === value)) {
+    throw new ConfigSchemaValidationError(
+      pointer,
+      `must be one of ${JSON.stringify(schema.enum)} (got ${JSON.stringify(value)})`
+    );
+  }
+  if (schema.pattern && typeof value === "string") {
+    const regex = new RegExp(schema.pattern);
+    if (!regex.test(value)) {
+      throw new ConfigSchemaValidationError(
+        pointer,
+        `must match pattern ${schema.pattern} (got ${JSON.stringify(value)})`
+      );
+    }
+  }
+  if (Array.isArray(value) && schema.items) {
+    value.forEach((item, index) => {
+      validateNode(item, schema.items, `${pointer}/${index}`);
+    });
+    if (schema.uniqueItems) {
+      const seen = /* @__PURE__ */ new Set();
+      for (const item of value) {
+        const key = JSON.stringify(item);
+        if (seen.has(key)) {
+          throw new ConfigSchemaValidationError(
+            pointer,
+            `must not contain duplicate values (${JSON.stringify(item)} appears more than once)`
+          );
+        }
+        seen.add(key);
+      }
+    }
+  }
+  if (typeof value === "object" && value !== null && !Array.isArray(value) && schema.properties) {
+    const objectValue = value;
+    for (const requiredKey of schema.required ?? []) {
+      if (!(requiredKey in objectValue)) {
+        throw new ConfigSchemaValidationError(
+          `${pointer}/${requiredKey}`,
+          "required field is missing"
+        );
+      }
+    }
+    for (const [key, propertySchema] of Object.entries(schema.properties)) {
+      validateNode(objectValue[key], propertySchema, `${pointer}/${key}`);
+    }
+  }
+}
+function loadConfigSchema(prismSourceRoot) {
+  const schemaPath = path4.join(prismSourceRoot, ".ai-skills", "config.schema.json");
+  if (!fs3.existsSync(schemaPath)) {
+    throw new Error(`Missing config schema at ${schemaPath}.`);
+  }
+  const raw = fs3.readFileSync(schemaPath, "utf8");
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in ${schemaPath}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+function validateConsumerConfigAgainstSchema(consumerRepoRoot, prismSourceRoot) {
+  const configPath = path4.join(consumerRepoRoot, ".ai-skills", "config.json");
+  if (!fs3.existsSync(configPath)) {
+    throw new Error(`Missing .ai-skills/config.json at ${configPath}.`);
+  }
+  const raw = fs3.readFileSync(configPath, "utf8");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `Invalid JSON in ${configPath}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+  const schema = loadConfigSchema(prismSourceRoot);
+  validateNode(parsed, schema, "");
+}
+
+// scripts/ai-skills/sync-manifest.ts
+import fs11 from "node:fs/promises";
+import path13 from "node:path";
+
+// scripts/ai-skills/build.ts
+import { execFile } from "node:child_process";
+import fs9 from "node:fs/promises";
+import path11 from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+
+// scripts/ai-skills/bom-guard.ts
+import fs5 from "node:fs/promises";
+import path7 from "node:path";
 
 // scripts/ai-skills/utils.ts
 import { createHash } from "node:crypto";
-import fs3 from "node:fs/promises";
-import path5 from "node:path";
+import fs4 from "node:fs/promises";
+import path6 from "node:path";
 
 // scripts/ai-skills/rule-dialect.ts
-import path4 from "node:path";
+import path5 from "node:path";
 var RULES_AREA = "rules";
 var verbatimRuleDialect = {
   transformContent: (_area, content) => content,
@@ -336,13 +498,13 @@ ${trimmedBody}`;
     if (area !== RULES_AREA || !relativePath.endsWith(".md")) {
       return relativePath;
     }
-    return `${relativePath.slice(0, -path4.extname(relativePath).length)}.mdc`;
+    return `${relativePath.slice(0, -path5.extname(relativePath).length)}.mdc`;
   },
   mapSourceRelativePath: (area, relativePath) => {
     if (area !== RULES_AREA || !relativePath.endsWith(".mdc")) {
       return relativePath;
     }
-    return `${relativePath.slice(0, -path4.extname(relativePath).length)}.md`;
+    return `${relativePath.slice(0, -path5.extname(relativePath).length)}.md`;
   }
 };
 var codexRuleDialect = {
@@ -366,7 +528,7 @@ var MAX_FRONTMATTER_DESCRIPTION_LENGTH = 1e3;
 var GENERATED_HEADER_LINE = "# AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.";
 async function readFileIfExists(filePath) {
   try {
-    return await fs3.readFile(filePath, "utf8");
+    return await fs4.readFile(filePath, "utf8");
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       return null;
@@ -376,25 +538,25 @@ async function readFileIfExists(filePath) {
 }
 async function pathExists(filePath) {
   try {
-    await fs3.access(filePath);
+    await fs4.access(filePath);
     return true;
   } catch {
     return false;
   }
 }
 async function listDirectories(rootPath) {
-  const entries = await fs3.readdir(rootPath, { withFileTypes: true });
+  const entries = await fs4.readdir(rootPath, { withFileTypes: true });
   return entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith(".")).map((entry) => entry.name).sort((a, b) => a.localeCompare(b));
 }
 async function listRelativeDirectoryEntries(rootPath, currentPath = rootPath) {
-  const entries = await fs3.readdir(currentPath, { withFileTypes: true });
+  const entries = await fs4.readdir(currentPath, { withFileTypes: true });
   const relativeEntries = [];
   for (const entry of entries) {
     if (entry.name.startsWith(".")) {
       continue;
     }
-    const entryPath = path5.join(currentPath, entry.name);
-    const relativePath = path5.relative(rootPath, entryPath);
+    const entryPath = path6.join(currentPath, entry.name);
+    const relativePath = path6.relative(rootPath, entryPath);
     if (entry.isDirectory()) {
       relativeEntries.push({ kind: "directory", relativePath });
       relativeEntries.push(
@@ -411,15 +573,15 @@ async function listRelativeDirectoryEntries(rootPath, currentPath = rootPath) {
   );
 }
 async function filesAreEqual(sourcePath, targetPath) {
-  const sourceContent = await fs3.readFile(sourcePath);
-  const targetContent = await fs3.readFile(targetPath);
+  const sourceContent = await fs4.readFile(sourcePath);
+  const targetContent = await fs4.readFile(targetPath);
   return sourceContent.equals(targetContent);
 }
 async function ensureDirectory(filePath) {
-  await fs3.mkdir(filePath, { recursive: true });
+  await fs4.mkdir(filePath, { recursive: true });
 }
 async function normalizeFrontmatter(frontmatterPath) {
-  const rawFrontmatter = await fs3.readFile(frontmatterPath, "utf8");
+  const rawFrontmatter = await fs4.readFile(frontmatterPath, "utf8");
   const trimmed = rawFrontmatter.trim();
   if (trimmed.startsWith("---")) {
     const match = trimmed.match(/^---\r?\n([\s\S]*?)\r?\n---\s*$/);
@@ -475,14 +637,14 @@ async function writeFileIfChanged(filePath, content, checkMode2, changedPaths2) 
   if (checkMode2) {
     return;
   }
-  await ensureDirectory(path5.dirname(filePath));
-  await fs3.writeFile(filePath, content, "utf8");
+  await ensureDirectory(path6.dirname(filePath));
+  await fs4.writeFile(filePath, content, "utf8");
 }
 async function removeDeletedManagedSkills(outputRoot, validSkillIds, checkMode2, changedPaths2) {
   if (!await pathExists(outputRoot)) {
     return;
   }
-  const entries = await fs3.readdir(outputRoot, { withFileTypes: true });
+  const entries = await fs4.readdir(outputRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith(".")) {
       continue;
@@ -490,8 +652,8 @@ async function removeDeletedManagedSkills(outputRoot, validSkillIds, checkMode2,
     if (validSkillIds.has(entry.name)) {
       continue;
     }
-    const skillPath = path5.join(outputRoot, entry.name);
-    const markerPath = path5.join(skillPath, MANAGED_MARKER);
+    const skillPath = path6.join(outputRoot, entry.name);
+    const markerPath = path6.join(skillPath, MANAGED_MARKER);
     if (!await pathExists(markerPath)) {
       continue;
     }
@@ -499,7 +661,7 @@ async function removeDeletedManagedSkills(outputRoot, validSkillIds, checkMode2,
     if (checkMode2) {
       continue;
     }
-    await fs3.rm(skillPath, { force: true, recursive: true });
+    await fs4.rm(skillPath, { force: true, recursive: true });
   }
 }
 function hashContent(content) {
@@ -507,11 +669,11 @@ function hashContent(content) {
   return `sha256:${digest}`;
 }
 async function hashFile(filePath) {
-  const content = await fs3.readFile(filePath);
+  const content = await fs4.readFile(filePath);
   return hashContent(content);
 }
 async function loadPathDefinitions(repoRoot3) {
-  const pathDefinitionsPath = path5.join(
+  const pathDefinitionsPath = path6.join(
     repoRoot3,
     ".ai-skills",
     "definitions",
@@ -522,7 +684,7 @@ async function loadPathDefinitions(repoRoot3) {
   }
   try {
     return JSON.parse(
-      await fs3.readFile(pathDefinitionsPath, "utf8")
+      await fs4.readFile(pathDefinitionsPath, "utf8")
     );
   } catch (error) {
     throw new Error(
@@ -559,8 +721,8 @@ function isPathDefinitionsComplete(value) {
   const c = copies;
   return typeof c.claude === "string" && typeof c.codex === "string" && typeof c.cursor === "string";
 }
-async function ensureConsumerPathDefinitions(prismSourceRoot, consumerRepoRoot) {
-  const consumerPathsFile = path5.join(
+async function ensureConsumerPathDefinitions(prismSourceRoot, consumerRepoRoot, dryRun = false) {
+  const consumerPathsFile = path6.join(
     consumerRepoRoot,
     ".ai-skills",
     "definitions",
@@ -575,7 +737,7 @@ async function ensureConsumerPathDefinitions(prismSourceRoot, consumerRepoRoot) 
     } catch {
     }
   }
-  const packagePathsFile = path5.join(
+  const packagePathsFile = path6.join(
     prismSourceRoot,
     ".ai-skills",
     "definitions",
@@ -587,34 +749,83 @@ async function ensureConsumerPathDefinitions(prismSourceRoot, consumerRepoRoot) 
       `prism:adopt: PRISM source has no paths.json at ${packagePathsFile} \u2014 cannot provision consumer path definitions.`
     );
   }
-  await ensureDirectory(path5.dirname(consumerPathsFile));
-  await fs3.writeFile(consumerPathsFile, packageRaw, "utf8");
+  if (!dryRun) {
+    await ensureDirectory(path6.dirname(consumerPathsFile));
+    await fs4.writeFile(consumerPathsFile, packageRaw, "utf8");
+  }
   return "written";
 }
 function buildPlatformDirs(repoRoot3, pathDefinitions) {
   const platformCopies = pathDefinitions.generated.platformContentCopies;
   return [
     {
-      dir: path5.join(repoRoot3, platformCopies.claude),
+      dir: path6.join(repoRoot3, platformCopies.claude),
       dialect: verbatimRuleDialect
     },
     {
-      dir: path5.join(repoRoot3, platformCopies.codex),
+      dir: path6.join(repoRoot3, platformCopies.codex),
       dialect: codexRuleDialect
     },
     {
-      dir: path5.join(repoRoot3, platformCopies.cursor),
+      dir: path6.join(repoRoot3, platformCopies.cursor),
       dialect: cursorRuleDialect
     }
   ];
 }
 
+// scripts/ai-skills/bom-guard.ts
+var UTF8_BOM = Buffer.from([239, 187, 191]);
+var CANONICAL_SOURCE_EXTENSIONS = /* @__PURE__ */ new Set([".md", ".mjs", ".json"]);
+async function collectCanonicalSources(aiSkillsRoot, repoRoot3) {
+  const violations = [];
+  await walk(aiSkillsRoot, aiSkillsRoot, repoRoot3, violations);
+  return violations;
+}
+async function walk(dirPath, aiSkillsRoot, repoRoot3, violations) {
+  if (!await pathExists(dirPath)) {
+    return;
+  }
+  const entries = await fs5.readdir(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path7.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      await walk(entryPath, aiSkillsRoot, repoRoot3, violations);
+      continue;
+    }
+    if (!entry.isFile()) {
+      continue;
+    }
+    const ext = path7.extname(entry.name).toLowerCase();
+    if (!CANONICAL_SOURCE_EXTENSIONS.has(ext)) {
+      continue;
+    }
+    const handle = await fs5.open(entryPath, "r");
+    try {
+      const headerBuf = Buffer.alloc(3);
+      await handle.read(headerBuf, 0, 3, 0);
+      if (headerBuf.equals(UTF8_BOM)) {
+        violations.push({
+          relativePath: path7.relative(repoRoot3, entryPath).split(path7.sep).join("/")
+        });
+      }
+    } finally {
+      await handle.close();
+    }
+  }
+}
+async function runBomGuard(repoRoot3) {
+  const aiSkillsRoot = path7.join(repoRoot3, ".ai-skills");
+  return collectCanonicalSources(aiSkillsRoot, repoRoot3);
+}
+
 // scripts/ai-skills/literal-guard.ts
+import fs6 from "node:fs/promises";
+import path8 from "node:path";
 var LITERAL_GUARD_PATTERN = /(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+)/;
 var LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
 async function listFilesRecursively(rootPath, currentPath = rootPath) {
   const out = [];
-  const entries = await fs4.readdir(currentPath, { withFileTypes: true });
+  const entries = await fs6.readdir(currentPath, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".") && entry.name !== ".managed-by-build") {
       continue;
@@ -622,21 +833,21 @@ async function listFilesRecursively(rootPath, currentPath = rootPath) {
     if (entry.name === "worktrees" && currentPath === rootPath) {
       continue;
     }
-    const entryPath = path6.join(currentPath, entry.name);
+    const entryPath = path8.join(currentPath, entry.name);
     if (entry.isDirectory()) {
       out.push(...await listFilesRecursively(rootPath, entryPath));
       continue;
     }
     if (entry.isFile()) {
       out.push({
-        relativePath: path6.relative(rootPath, entryPath)
+        relativePath: path8.relative(rootPath, entryPath)
       });
     }
   }
   return out;
 }
 async function loadAllowlist(repoRoot3) {
-  const allowlistPath = path6.join(
+  const allowlistPath = path8.join(
     repoRoot3,
     ".ai-skills",
     "definitions",
@@ -645,7 +856,7 @@ async function loadAllowlist(repoRoot3) {
   if (!await pathExists(allowlistPath)) {
     return [];
   }
-  const raw = await fs4.readFile(allowlistPath, "utf8");
+  const raw = await fs6.readFile(allowlistPath, "utf8");
   let parsed;
   try {
     parsed = JSON.parse(raw);
@@ -663,7 +874,7 @@ async function loadAllowlist(repoRoot3) {
   return allowlistFile.files.map((entry) => entry.path);
 }
 function isAllowlistedPath(relativePath, allowlist) {
-  const normalized = relativePath.split(path6.sep).join("/");
+  const normalized = relativePath.split(path8.sep).join("/");
   for (const prefix of allowlist) {
     if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
       return true;
@@ -695,12 +906,12 @@ async function scanPlatformRoots(repoRoot3, platformRoots, pattern) {
     }
     const entries = await listFilesRecursively(platformRoot);
     for (const entry of entries) {
-      const relativeFromRepoRoot = path6.relative(repoRoot3, path6.join(platformRoot, entry.relativePath)).split(path6.sep).join("/");
+      const relativeFromRepoRoot = path8.relative(repoRoot3, path8.join(platformRoot, entry.relativePath)).split(path8.sep).join("/");
       if (isAllowlistedPath(relativeFromRepoRoot, allowlist)) {
         continue;
       }
-      const filePath = path6.join(platformRoot, entry.relativePath);
-      const lines = (await fs4.readFile(filePath, "utf8")).split(/\r?\n/);
+      const filePath = path8.join(platformRoot, entry.relativePath);
+      const lines = (await fs6.readFile(filePath, "utf8")).split(/\r?\n/);
       violations.push(...scanLines(lines, relativeFromRepoRoot, pattern));
     }
   }
@@ -714,8 +925,8 @@ async function runLeftoverTokenGuard(repoRoot3, platformRoots) {
 }
 
 // scripts/ai-skills/path-guard.ts
-import fs5 from "node:fs/promises";
-import path7 from "node:path";
+import fs7 from "node:fs/promises";
+import path9 from "node:path";
 var PATH_GUARD_COPIED_AREAS = [
   "rules",
   "architect",
@@ -736,12 +947,12 @@ var PATH_GUARD_FILE_ALLOWLIST = /* @__PURE__ */ new Set([
 var PATH_GUARD_PATTERN = /(\.claude|\.codex|\.cursor)\/(rules|architect|spec|templates|references|plans)\//;
 async function listMarkdownFiles(rootPath, currentPath = rootPath) {
   const out = [];
-  const entries = await fs5.readdir(currentPath, { withFileTypes: true });
+  const entries = await fs7.readdir(currentPath, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) {
       continue;
     }
-    const entryPath = path7.join(currentPath, entry.name);
+    const entryPath = path9.join(currentPath, entry.name);
     if (entry.isDirectory()) {
       out.push(...await listMarkdownFiles(rootPath, entryPath));
       continue;
@@ -749,7 +960,7 @@ async function listMarkdownFiles(rootPath, currentPath = rootPath) {
     if (entry.isFile() && entry.name.endsWith(".md")) {
       out.push({
         kind: "file",
-        relativePath: path7.relative(rootPath, entryPath)
+        relativePath: path9.relative(rootPath, entryPath)
       });
     }
   }
@@ -783,38 +994,38 @@ async function runPathGuard(contentRoot) {
   }
   const violations = [];
   for (const area of PATH_GUARD_COPIED_AREAS) {
-    const areaPath = path7.join(contentRoot, area);
+    const areaPath = path9.join(contentRoot, area);
     if (!await pathExists(areaPath)) {
       continue;
     }
     const entries = await listMarkdownFiles(areaPath);
     for (const entry of entries) {
-      const relativeFromContentRoot = path7.join(area, entry.relativePath).split(path7.sep).join("/");
+      const relativeFromContentRoot = path9.join(area, entry.relativePath).split(path9.sep).join("/");
       if (PATH_GUARD_FILE_ALLOWLIST.has(relativeFromContentRoot)) {
         continue;
       }
-      const filePath = path7.join(areaPath, entry.relativePath);
-      const lines = (await fs5.readFile(filePath, "utf8")).split(/\r?\n/);
+      const filePath = path9.join(areaPath, entry.relativePath);
+      const lines = (await fs7.readFile(filePath, "utf8")).split(/\r?\n/);
       violations.push(...scanLines2(lines, relativeFromContentRoot));
     }
   }
   for (const looseFile of PATH_GUARD_LOOSE_FILES) {
-    const filePath = path7.join(contentRoot, looseFile);
+    const filePath = path9.join(contentRoot, looseFile);
     if (!await pathExists(filePath)) {
       continue;
     }
     if (PATH_GUARD_FILE_ALLOWLIST.has(looseFile)) {
       continue;
     }
-    const lines = (await fs5.readFile(filePath, "utf8")).split(/\r?\n/);
+    const lines = (await fs7.readFile(filePath, "utf8")).split(/\r?\n/);
     violations.push(...scanLines2(lines, looseFile));
   }
   return violations;
 }
 
 // scripts/ai-skills/generate-skills.ts
-import fs6 from "node:fs/promises";
-import path8 from "node:path";
+import fs8 from "node:fs/promises";
+import path10 from "node:path";
 var CLAUDE_AGENT_MODEL_DEFAULTS = /* @__PURE__ */ new Map([
   ["prism-conductor", "opus"],
   ["prism-architect", "opus"]
@@ -825,7 +1036,7 @@ var optionalSkillPayloads = [
   { kind: "directory", relativePath: "assets" },
   { kind: "directory", relativePath: "references" },
   { kind: "directory", relativePath: "scripts" },
-  { kind: "file", relativePath: path8.join("agents", "openai.yaml") }
+  { kind: "file", relativePath: path10.join("agents", "openai.yaml") }
 ];
 function buildSkillMarkdown({
   frontmatter,
@@ -914,12 +1125,12 @@ ${claudeSkillMarkdown.trim()}
 `;
 }
 async function loadSkillSource(skillId, sourceSkillsRoot) {
-  const skillRoot = path8.join(sourceSkillsRoot, skillId);
-  const frontmatterPath = path8.join(skillRoot, "frontmatter.yml");
-  const sharedPath = path8.join(skillRoot, "shared.md");
-  const claudePath = path8.join(skillRoot, "claude.md");
-  const codexPath = path8.join(skillRoot, "codex.md");
-  const cursorPath = path8.join(skillRoot, "cursor.md");
+  const skillRoot = path10.join(sourceSkillsRoot, skillId);
+  const frontmatterPath = path10.join(skillRoot, "frontmatter.yml");
+  const sharedPath = path10.join(skillRoot, "shared.md");
+  const claudePath = path10.join(skillRoot, "claude.md");
+  const codexPath = path10.join(skillRoot, "codex.md");
+  const cursorPath = path10.join(skillRoot, "cursor.md");
   if (!await pathExists(frontmatterPath)) {
     throw new Error(`Missing required file: ${frontmatterPath}`);
   }
@@ -934,7 +1145,7 @@ async function loadSkillSource(skillId, sourceSkillsRoot) {
       `Description for skill '${skillId}' is ${description.length} characters. Keep frontmatter descriptions under ${MAX_FRONTMATTER_DESCRIPTION_LENGTH} characters so Codex skill discovery can expose the skill.`
     );
   }
-  const sharedBody = (await fs6.readFile(sharedPath, "utf8")).trim();
+  const sharedBody = (await fs8.readFile(sharedPath, "utf8")).trim();
   const claudeBody = (await readFileIfExists(claudePath) ?? "").trim();
   const codexBody = (await readFileIfExists(codexPath) ?? "").trim();
   const cursorBody = (await readFileIfExists(cursorPath) ?? "").trim();
@@ -960,8 +1171,8 @@ async function directoriesAreEqual(sourcePath, targetPath) {
       return false;
     }
     if (sourceEntry.kind === "file" && !await filesAreEqual(
-      path8.join(sourcePath, sourceEntry.relativePath),
-      path8.join(targetPath, sourceEntry.relativePath)
+      path10.join(sourcePath, sourceEntry.relativePath),
+      path10.join(targetPath, sourceEntry.relativePath)
     )) {
       return false;
     }
@@ -979,8 +1190,8 @@ async function payloadIsDifferent(sourcePath, targetPath, payloadKind) {
 }
 async function syncOptionalSkillPayloads(sourceSkillRoot, targetSkillRoot, checkModeArg, changedPathsArg) {
   for (const payload of optionalSkillPayloads) {
-    const sourcePath = path8.join(sourceSkillRoot, payload.relativePath);
-    const targetPath = path8.join(targetSkillRoot, payload.relativePath);
+    const sourcePath = path10.join(sourceSkillRoot, payload.relativePath);
+    const targetPath = path10.join(targetSkillRoot, payload.relativePath);
     const sourceExists = await pathExists(sourcePath);
     const targetExists = await pathExists(targetPath);
     if (!sourceExists && !targetExists) {
@@ -989,7 +1200,7 @@ async function syncOptionalSkillPayloads(sourceSkillRoot, targetSkillRoot, check
     if (!sourceExists) {
       changedPathsArg.push(targetPath);
       if (!checkModeArg) {
-        await fs6.rm(targetPath, {
+        await fs8.rm(targetPath, {
           force: true,
           recursive: payload.kind === "directory"
         });
@@ -1003,23 +1214,23 @@ async function syncOptionalSkillPayloads(sourceSkillRoot, targetSkillRoot, check
     if (checkModeArg) {
       continue;
     }
-    await fs6.rm(targetPath, {
+    await fs8.rm(targetPath, {
       force: true,
       recursive: payload.kind === "directory"
     });
-    await ensureDirectory(path8.dirname(targetPath));
+    await ensureDirectory(path10.dirname(targetPath));
     if (payload.kind === "file") {
-      await fs6.copyFile(sourcePath, targetPath);
+      await fs8.copyFile(sourcePath, targetPath);
       continue;
     }
-    await fs6.cp(sourcePath, targetPath, { force: true, recursive: true });
+    await fs8.cp(sourcePath, targetPath, { force: true, recursive: true });
   }
 }
 async function removeDeletedManagedAgentFiles(outputRoot, validSkillIds, extension, headerLine, checkModeArg, changedPathsArg) {
   if (!await pathExists(outputRoot)) {
     return;
   }
-  const entries = await fs6.readdir(outputRoot, { withFileTypes: true });
+  const entries = await fs8.readdir(outputRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(extension) || entry.name.startsWith(".")) {
       continue;
@@ -1028,7 +1239,7 @@ async function removeDeletedManagedAgentFiles(outputRoot, validSkillIds, extensi
     if (validSkillIds.has(skillId)) {
       continue;
     }
-    const filePath = path8.join(outputRoot, entry.name);
+    const filePath = path10.join(outputRoot, entry.name);
     const fileContent = await readFileIfExists(filePath) ?? "";
     if (!fileContent.includes(headerLine)) {
       continue;
@@ -1037,7 +1248,7 @@ async function removeDeletedManagedAgentFiles(outputRoot, validSkillIds, extensi
     if (checkModeArg) {
       continue;
     }
-    await fs6.rm(filePath, { force: true });
+    await fs8.rm(filePath, { force: true });
   }
 }
 function buildRoleMap(roleDefinitions) {
@@ -1107,18 +1318,18 @@ async function generatePlatformSkills(options) {
       skillId,
       tokenMap
     });
-    const claudeSkillRoot = path8.join(targetRoots.claude, skillId);
-    const codexSkillRoot = path8.join(targetRoots.codex, skillId);
-    const cursorSkillRoot = path8.join(targetRoots.cursor, skillId);
+    const claudeSkillRoot = path10.join(targetRoots.claude, skillId);
+    const codexSkillRoot = path10.join(targetRoots.codex, skillId);
+    const cursorSkillRoot = path10.join(targetRoots.cursor, skillId);
     if (optedIn.claude) {
       await writeFileIfChanged(
-        path8.join(claudeSkillRoot, "SKILL.md"),
+        path10.join(claudeSkillRoot, "SKILL.md"),
         claudeMarkdown,
         checkMode2,
         changedPaths2
       );
       await writeFileIfChanged(
-        path8.join(claudeSkillRoot, MANAGED_MARKER),
+        path10.join(claudeSkillRoot, MANAGED_MARKER),
         "Managed by scripts/ai-skills/build.ts\n",
         checkMode2,
         changedPaths2
@@ -1126,19 +1337,19 @@ async function generatePlatformSkills(options) {
     }
     if (optedIn.codex) {
       await writeFileIfChanged(
-        path8.join(codexSkillRoot, "SKILL.md"),
+        path10.join(codexSkillRoot, "SKILL.md"),
         codexMarkdown,
         checkMode2,
         changedPaths2
       );
       await writeFileIfChanged(
-        path8.join(codexSkillRoot, MANAGED_MARKER),
+        path10.join(codexSkillRoot, MANAGED_MARKER),
         "Managed by scripts/ai-skills/build.ts\n",
         checkMode2,
         changedPaths2
       );
       await syncOptionalSkillPayloads(
-        path8.join(sourceSkillsRoot, skillId),
+        path10.join(sourceSkillsRoot, skillId),
         codexSkillRoot,
         checkMode2,
         changedPaths2
@@ -1146,19 +1357,19 @@ async function generatePlatformSkills(options) {
     }
     if (optedIn.cursor) {
       await writeFileIfChanged(
-        path8.join(cursorSkillRoot, "SKILL.md"),
+        path10.join(cursorSkillRoot, "SKILL.md"),
         cursorMarkdown,
         checkMode2,
         changedPaths2
       );
       await writeFileIfChanged(
-        path8.join(cursorSkillRoot, MANAGED_MARKER),
+        path10.join(cursorSkillRoot, MANAGED_MARKER),
         "Managed by scripts/ai-skills/build.ts\n",
         checkMode2,
         changedPaths2
       );
       await syncOptionalSkillPayloads(
-        path8.join(sourceSkillsRoot, skillId),
+        path10.join(sourceSkillsRoot, skillId),
         cursorSkillRoot,
         checkMode2,
         changedPaths2
@@ -1174,7 +1385,7 @@ async function generatePlatformSkills(options) {
         tokenMap
       });
       await writeFileIfChanged(
-        path8.join(targetRoots.codexAgents, `${skillId}.toml`),
+        path10.join(targetRoots.codexAgents, `${skillId}.toml`),
         codexAgentToml,
         checkMode2,
         changedPaths2
@@ -1189,7 +1400,7 @@ async function generatePlatformSkills(options) {
         tokenMap
       });
       await writeFileIfChanged(
-        path8.join(targetRoots.claudeAgents, `${skillId}.md`),
+        path10.join(targetRoots.claudeAgents, `${skillId}.md`),
         claudeAgentMarkdown,
         checkMode2,
         changedPaths2
@@ -1255,17 +1466,17 @@ async function generatePlatformSkills(options) {
 }
 
 // scripts/ai-skills/build.ts
-var scriptDirectory = path9.dirname(fileURLToPath(import.meta.url));
-var repoRoot = process.env.PRISM_REPO_ROOT ? path9.resolve(process.env.PRISM_REPO_ROOT) : path9.resolve(scriptDirectory, "../..");
+var scriptDirectory = path11.dirname(fileURLToPath(import.meta.url));
+var repoRoot = process.env.PRISM_REPO_ROOT ? path11.resolve(process.env.PRISM_REPO_ROOT) : path11.resolve(scriptDirectory, "../..");
 var checkMode = process.argv.includes("--check");
 var changedPaths = [];
 async function loadJsonFile(relativePath, fileLabel) {
-  const absolutePath = path9.join(repoRoot, relativePath);
+  const absolutePath = path11.join(repoRoot, relativePath);
   if (!await pathExists(absolutePath)) {
     throw new Error(`Missing ${fileLabel}: ${absolutePath}`);
   }
   try {
-    return JSON.parse(await fs7.readFile(absolutePath, "utf8"));
+    return JSON.parse(await fs9.readFile(absolutePath, "utf8"));
   } catch (error) {
     throw new Error(
       `Invalid ${fileLabel} JSON at ${absolutePath}: ${error instanceof Error ? error.message : String(error)}`
@@ -1282,8 +1493,8 @@ var COPIED_CONTENT_AREAS = [
 var COPIED_LOOSE_FILES = ["SPEC.md"];
 async function copyContentToPlatformDir(contentRoot, platformDir, checkModeArg, changedPathsArg, tokenMap, dialect = verbatimRuleDialect, targetSubpath = "") {
   for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path9.join(contentRoot, area);
-    const targetArea = path9.join(platformDir, area, targetSubpath);
+    const sourceArea = path11.join(contentRoot, area);
+    const targetArea = path11.join(platformDir, area, targetSubpath);
     if (!await pathExists(sourceArea)) {
       continue;
     }
@@ -1292,12 +1503,12 @@ async function copyContentToPlatformDir(contentRoot, platformDir, checkModeArg, 
       if (entry.kind !== "file") {
         continue;
       }
-      const sourcePath = path9.join(sourceArea, entry.relativePath);
+      const sourcePath = path11.join(sourceArea, entry.relativePath);
       const targetRelativePath = dialect.mapTargetRelativePath(
         area,
         entry.relativePath
       );
-      const targetPath = path9.join(targetArea, targetRelativePath);
+      const targetPath = path11.join(targetArea, targetRelativePath);
       await copyContentFileWithSubstitution(
         sourcePath,
         targetPath,
@@ -1308,7 +1519,7 @@ async function copyContentToPlatformDir(contentRoot, platformDir, checkModeArg, 
       );
     }
     await writeFileIfChanged(
-      path9.join(targetArea, MANAGED_MARKER),
+      path11.join(targetArea, MANAGED_MARKER),
       "Managed by scripts/ai-skills/build.ts\n",
       checkModeArg,
       changedPathsArg
@@ -1318,8 +1529,8 @@ async function copyContentToPlatformDir(contentRoot, platformDir, checkModeArg, 
     return;
   }
   for (const looseFile of COPIED_LOOSE_FILES) {
-    const sourcePath = path9.join(contentRoot, looseFile);
-    const targetPath = path9.join(platformDir, looseFile);
+    const sourcePath = path11.join(contentRoot, looseFile);
+    const targetPath = path11.join(platformDir, looseFile);
     if (!await pathExists(sourcePath)) {
       continue;
     }
@@ -1333,7 +1544,7 @@ async function copyContentToPlatformDir(contentRoot, platformDir, checkModeArg, 
   }
 }
 async function copyContentFileWithSubstitution(sourcePath, targetPath, checkModeArg, changedPathsArg, tokenMap, transformContent = (content) => content) {
-  const sourceContent = await fs7.readFile(sourcePath, "utf8");
+  const sourceContent = await fs9.readFile(sourcePath, "utf8");
   const substituted = transformContent(substituteTokens(sourceContent, tokenMap));
   await writeFileIfChanged(
     targetPath,
@@ -1379,7 +1590,7 @@ async function syncAllPlatformContentCopies(contentRoot, platformDirs, checkMode
 }
 async function platformHasManagedContent(platformDir, targetSubpath = "") {
   for (const area of COPIED_CONTENT_AREAS) {
-    if (await pathExists(path9.join(platformDir, area, targetSubpath, MANAGED_MARKER))) {
+    if (await pathExists(path11.join(platformDir, area, targetSubpath, MANAGED_MARKER))) {
       return true;
     }
   }
@@ -1389,12 +1600,12 @@ async function skillsRootHasManagedContent(skillsRoot) {
   if (!await pathExists(skillsRoot)) {
     return false;
   }
-  const entries = await fs7.readdir(skillsRoot, { withFileTypes: true });
+  const entries = await fs9.readdir(skillsRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith(".")) {
       continue;
     }
-    if (await pathExists(path9.join(skillsRoot, entry.name, MANAGED_MARKER))) {
+    if (await pathExists(path11.join(skillsRoot, entry.name, MANAGED_MARKER))) {
       return true;
     }
   }
@@ -1404,12 +1615,12 @@ async function codexAgentsRootHasManagedContent(agentsRoot) {
   if (!await pathExists(agentsRoot)) {
     return false;
   }
-  const entries = await fs7.readdir(agentsRoot, { withFileTypes: true });
+  const entries = await fs9.readdir(agentsRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".toml") || entry.name.startsWith(".")) {
       continue;
     }
-    const content = await readFileIfExists(path9.join(agentsRoot, entry.name)) ?? "";
+    const content = await readFileIfExists(path11.join(agentsRoot, entry.name)) ?? "";
     if (content.startsWith(GENERATED_HEADER_LINE)) {
       return true;
     }
@@ -1420,12 +1631,12 @@ async function claudeAgentsRootHasManagedContent(agentsRoot) {
   if (!await pathExists(agentsRoot)) {
     return false;
   }
-  const entries = await fs7.readdir(agentsRoot, { withFileTypes: true });
+  const entries = await fs9.readdir(agentsRoot, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".md") || entry.name.startsWith(".")) {
       continue;
     }
-    const content = await readFileIfExists(path9.join(agentsRoot, entry.name)) ?? "";
+    const content = await readFileIfExists(path11.join(agentsRoot, entry.name)) ?? "";
     if (content.includes(GENERATED_MARKDOWN_HEADER_LINE)) {
       return true;
     }
@@ -1434,9 +1645,9 @@ async function claudeAgentsRootHasManagedContent(agentsRoot) {
 }
 async function removeDeletedManagedContent(contentRoot, platformDir, checkModeArg, changedPathsArg, dialect = verbatimRuleDialect, targetSubpath = "") {
   for (const area of COPIED_CONTENT_AREAS) {
-    const targetArea = path9.join(platformDir, area, targetSubpath);
-    const sourceArea = path9.join(contentRoot, area);
-    const markerPath = path9.join(targetArea, MANAGED_MARKER);
+    const targetArea = path11.join(platformDir, area, targetSubpath);
+    const sourceArea = path11.join(contentRoot, area);
+    const markerPath = path11.join(targetArea, MANAGED_MARKER);
     if (!await pathExists(targetArea) || !await pathExists(markerPath)) {
       continue;
     }
@@ -1448,28 +1659,28 @@ async function removeDeletedManagedContent(contentRoot, platformDir, checkModeAr
       if (entry.relativePath === MANAGED_MARKER) {
         continue;
       }
-      if (targetSubpath === "" && entry.relativePath.startsWith(`custom${path9.sep}`)) {
+      if (targetSubpath === "" && entry.relativePath.startsWith(`custom${path11.sep}`)) {
         continue;
       }
       const sourceRelativePath = dialect.mapSourceRelativePath(
         area,
         entry.relativePath
       );
-      const sourcePath = path9.join(sourceArea, sourceRelativePath);
+      const sourcePath = path11.join(sourceArea, sourceRelativePath);
       const sourceExists = await pathExists(sourcePath);
       const sourceMapsBack = dialect.mapTargetRelativePath(area, sourceRelativePath) === entry.relativePath;
       if (sourceExists && sourceMapsBack) {
         continue;
       }
-      const targetPath = path9.join(targetArea, entry.relativePath);
+      const targetPath = path11.join(targetArea, entry.relativePath);
       changedPathsArg.push(targetPath);
       if (checkModeArg) {
         continue;
       }
-      await fs7.rm(targetPath, { force: true });
+      await fs9.rm(targetPath, { force: true });
     }
     if (!await pathExists(sourceArea)) {
-      const overlayMarkerPath = path9.join(
+      const overlayMarkerPath = path11.join(
         targetArea,
         "custom",
         MANAGED_MARKER
@@ -1479,19 +1690,19 @@ async function removeDeletedManagedContent(contentRoot, platformDir, checkModeAr
       }
       changedPathsArg.push(targetArea);
       if (!checkModeArg) {
-        await fs7.rm(targetArea, { force: true, recursive: true });
+        await fs9.rm(targetArea, { force: true, recursive: true });
       }
     }
   }
 }
 async function syncAgentsMdTier1Block(repoRootArg, checkModeArg, changedPathsArg, tokenMap) {
-  const agentsPath = path9.join(repoRootArg, "AGENTS.md");
+  const agentsPath = path11.join(repoRootArg, "AGENTS.md");
   if (!await pathExists(agentsPath)) {
     return;
   }
-  const current = await fs7.readFile(agentsPath, "utf8");
+  const current = await fs9.readFile(agentsPath, "utf8");
   const rules = await collectTier1RuleBodies(
-    path9.join(repoRootArg, ".prism", "rules"),
+    path11.join(repoRootArg, ".prism", "rules"),
     tokenMap
   );
   const block = renderTier1Block(rules);
@@ -1501,7 +1712,7 @@ async function syncAgentsMdTier1Block(repoRootArg, checkModeArg, changedPathsArg
   }
   changedPathsArg.push(agentsPath);
   if (!checkModeArg) {
-    await fs7.writeFile(agentsPath, next, "utf8");
+    await fs9.writeFile(agentsPath, next, "utf8");
   }
 }
 async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) {
@@ -1514,7 +1725,7 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
   const renames = curation.renames;
   const renameValues = new Set(Object.values(renames));
   for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path9.join(contentRoot, area);
+    const sourceArea = path11.join(contentRoot, area);
     if (!await pathExists(sourceArea)) {
       continue;
     }
@@ -1523,9 +1734,9 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
       if (entry.kind !== "file") {
         continue;
       }
-      const relPath = path9.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
+      const relPath = path11.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
       if (excludedSet.has(relPath)) {
-        const seedPath2 = path9.join(seedRoot, relPath);
+        const seedPath2 = path11.join(seedRoot, relPath);
         if (await pathExists(seedPath2)) {
           changedPathsArg.push(`seed contains excluded file: ${relPath}`);
         }
@@ -1533,25 +1744,25 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
       }
       if (relPath in renames) {
         const renamedRelPath = renames[relPath];
-        const renamedSeedPath = path9.join(seedRoot, renamedRelPath);
+        const renamedSeedPath = path11.join(seedRoot, renamedRelPath);
         if (!await pathExists(renamedSeedPath)) {
           changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
         }
         continue;
       }
       if (curatedSet.has(relPath)) {
-        const seedPath2 = path9.join(seedRoot, relPath);
+        const seedPath2 = path11.join(seedRoot, relPath);
         if (!await pathExists(seedPath2)) {
           changedPathsArg.push(`seed drift: ${relPath} (curated file missing from seed)`);
         }
         continue;
       }
-      const seedPath = path9.join(seedRoot, relPath);
+      const seedPath = path11.join(seedRoot, relPath);
       if (!await pathExists(seedPath)) {
         changedPathsArg.push(`seed drift: ${relPath}`);
         continue;
       }
-      if (!await filesAreEqual(path9.join(sourceArea, entry.relativePath), seedPath)) {
+      if (!await filesAreEqual(path11.join(sourceArea, entry.relativePath), seedPath)) {
         changedPathsArg.push(`seed drift: ${relPath}`);
       }
     }
@@ -1563,14 +1774,14 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
     }
     if (relPath in renames) {
       const renamedRelPath = renames[relPath];
-      const renamedSeedPath = path9.join(seedRoot, renamedRelPath);
+      const renamedSeedPath = path11.join(seedRoot, renamedRelPath);
       if (!await pathExists(renamedSeedPath)) {
         changedPathsArg.push(`seed drift: ${relPath} (expected renamed as ${renamedRelPath})`);
       }
       continue;
     }
-    const sourcePath = path9.join(contentRoot, looseFile);
-    const seedPath = path9.join(seedRoot, looseFile);
+    const sourcePath = path11.join(contentRoot, looseFile);
+    const seedPath = path11.join(seedRoot, looseFile);
     if (!await pathExists(sourcePath)) {
       continue;
     }
@@ -1583,7 +1794,7 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
     }
   }
   for (const area of COPIED_CONTENT_AREAS) {
-    const seedArea = path9.join(seedRoot, area);
+    const seedArea = path11.join(seedRoot, area);
     if (!await pathExists(seedArea)) {
       continue;
     }
@@ -1592,11 +1803,11 @@ async function checkSeedDrift(contentRoot, seedRoot, curation, changedPathsArg) 
       if (seedEntry.kind !== "file") {
         continue;
       }
-      const relPath = path9.posix.join(area, seedEntry.relativePath.replace(/\\/g, "/"));
+      const relPath = path11.posix.join(area, seedEntry.relativePath.replace(/\\/g, "/"));
       if (curatedSet.has(relPath) || seedOnlySet.has(relPath) || renameValues.has(relPath)) {
         continue;
       }
-      const canonicalPath = path9.join(contentRoot, relPath);
+      const canonicalPath = path11.join(contentRoot, relPath);
       if (!await pathExists(canonicalPath)) {
         changedPathsArg.push(`seed orphan: ${relPath}`);
       }
@@ -1608,7 +1819,7 @@ async function writeSeedMirror(contentRoot, seedRoot, curation, checkModeArg, ch
   const curatedSet = new Set(curation.curated);
   const renames = curation.renames;
   for (const area of COPIED_CONTENT_AREAS) {
-    const sourceArea = path9.join(contentRoot, area);
+    const sourceArea = path11.join(contentRoot, area);
     if (!await pathExists(sourceArea)) {
       continue;
     }
@@ -1617,7 +1828,7 @@ async function writeSeedMirror(contentRoot, seedRoot, curation, checkModeArg, ch
       if (entry.kind !== "file") {
         continue;
       }
-      const relPath = path9.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
+      const relPath = path11.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
       if (excludedSet.has(relPath)) {
         continue;
       }
@@ -1627,9 +1838,9 @@ async function writeSeedMirror(contentRoot, seedRoot, curation, checkModeArg, ch
       if (curatedSet.has(relPath)) {
         continue;
       }
-      const seedFilePath = path9.join(seedRoot, relPath);
+      const seedFilePath = path11.join(seedRoot, relPath);
       const seedFileIsNew = !await pathExists(seedFilePath);
-      const raw = await fs7.readFile(path9.join(sourceArea, entry.relativePath), "utf8");
+      const raw = await fs9.readFile(path11.join(sourceArea, entry.relativePath), "utf8");
       await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
       if (seedFileIsNew) {
         unclassifiedMirrored.push(relPath);
@@ -1645,13 +1856,13 @@ async function writeSeedMirror(contentRoot, seedRoot, curation, checkModeArg, ch
     if (relPath in renames) {
       continue;
     }
-    const sourcePath = path9.join(contentRoot, looseFile);
+    const sourcePath = path11.join(contentRoot, looseFile);
     if (!await pathExists(sourcePath)) {
       continue;
     }
-    const seedFilePath = path9.join(seedRoot, looseFile);
+    const seedFilePath = path11.join(seedRoot, looseFile);
     const seedFileIsNew = !await pathExists(seedFilePath);
-    const raw = await fs7.readFile(sourcePath, "utf8");
+    const raw = await fs9.readFile(sourcePath, "utf8");
     await writeFileIfChanged(seedFilePath, raw, checkModeArg, changedPathsArg);
     if (seedFileIsNew) {
       unclassifiedMirrored.push(relPath);
@@ -1660,7 +1871,7 @@ async function writeSeedMirror(contentRoot, seedRoot, curation, checkModeArg, ch
 }
 var execFileAsync = promisify(execFile);
 async function resolvePrismVersion(repoRootArg) {
-  const packageJsonPath = path9.join(repoRootArg, "package.json");
+  const packageJsonPath = path11.join(repoRootArg, "package.json");
   const raw = await readFileIfExists(packageJsonPath);
   if (raw === null) {
     return "0.0.0";
@@ -1694,7 +1905,7 @@ async function main() {
   );
   const config = loadConfig(repoRoot);
   const tokenMap = deriveTokenMap(config);
-  const sourceSkillsRoot = path9.join(
+  const sourceSkillsRoot = path11.join(
     repoRoot,
     pathDefinitions.canonical.skillsRoot
   );
@@ -1704,16 +1915,16 @@ async function main() {
     );
   }
   const targetRoots = {
-    claude: path9.join(repoRoot, pathDefinitions.generated.claudeSkillsRoot),
-    claudeAgents: path9.join(
+    claude: path11.join(repoRoot, pathDefinitions.generated.claudeSkillsRoot),
+    claudeAgents: path11.join(
       repoRoot,
       pathDefinitions.generated.claudeAgentsRoot
     ),
-    codex: path9.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
-    codexAgents: path9.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
-    cursor: path9.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot)
+    codex: path11.join(repoRoot, pathDefinitions.generated.codexSkillsRoot),
+    codexAgents: path11.join(repoRoot, pathDefinitions.generated.codexAgentsRoot),
+    cursor: path11.join(repoRoot, pathDefinitions.generated.cursorSkillsRoot)
   };
-  const codexConfigPath = path9.join(
+  const codexConfigPath = path11.join(
     repoRoot,
     pathDefinitions.generated.codexConfigFile
   );
@@ -1749,8 +1960,8 @@ async function main() {
     checkMode,
     changedPaths
   });
-  const contentRoot = path9.join(repoRoot, pathDefinitions.canonical.contentRoot);
-  const templatesContentRoot = path9.join(
+  const contentRoot = path11.join(repoRoot, pathDefinitions.canonical.contentRoot);
+  const templatesContentRoot = path11.join(
     repoRoot,
     pathDefinitions.canonical.templatesContentRoot
   );
@@ -1816,16 +2027,28 @@ async function main() {
     );
   }
   await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
-  const literalGuardRoots = [
+  const skillContentRoots = [
     targetRoots.claude,
     targetRoots.claudeAgents,
     targetRoots.codex,
     targetRoots.cursor,
     targetRoots.codexAgents,
-    path9.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
-    path9.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
-    path9.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor)
+    path11.join(repoRoot, pathDefinitions.generated.platformContentCopies.claude),
+    path11.join(repoRoot, pathDefinitions.generated.platformContentCopies.codex),
+    path11.join(repoRoot, pathDefinitions.generated.platformContentCopies.cursor)
   ];
+  const literalGuardRoots = skillContentRoots;
+  const leftoverTokenGuardRoots = skillContentRoots;
+  const bomViolations = await runBomGuard(repoRoot);
+  if (bomViolations.length > 0) {
+    for (const violation of bomViolations) {
+      console.error(`bom-guard: ${violation.relativePath}: UTF-8 BOM detected`);
+    }
+    console.error(
+      `bom-guard: ${bomViolations.length} canonical source file(s) begin with a UTF-8 BOM. Re-save as UTF-8 without BOM.`
+    );
+    process.exit(1);
+  }
   const literalViolations = await runLiteralGuard(repoRoot, literalGuardRoots);
   if (literalViolations.length > 0) {
     for (const violation of literalViolations) {
@@ -1840,7 +2063,7 @@ async function main() {
   }
   const leftoverTokenViolations = await runLeftoverTokenGuard(
     repoRoot,
-    literalGuardRoots
+    leftoverTokenGuardRoots
   );
   if (leftoverTokenViolations.length > 0) {
     for (const violation of leftoverTokenViolations) {
@@ -1858,7 +2081,7 @@ async function main() {
     if (changedPaths.length > 0) {
       console.error("prism:check failed. These files are out of sync:");
       for (const changedPath of changedPaths) {
-        const displayPath = path9.isAbsolute(changedPath) ? path9.relative(repoRoot, changedPath) : changedPath;
+        const displayPath = path11.isAbsolute(changedPath) ? path11.relative(repoRoot, changedPath) : changedPath;
         console.error(` - ${displayPath}`);
       }
       process.exit(1);
@@ -1883,10 +2106,10 @@ async function main() {
   }
   console.log(`prism:build completed. Updated ${changedPaths.length} file(s):`);
   for (const changedPath of changedPaths) {
-    console.log(` - ${path9.relative(repoRoot, changedPath)}`);
+    console.log(` - ${path11.relative(repoRoot, changedPath)}`);
   }
 }
-var invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === path9.resolve(process.argv[1]);
+var invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === path11.resolve(process.argv[1]);
 if (invokedDirectly) {
   main().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
@@ -1895,11 +2118,11 @@ if (invokedDirectly) {
 }
 
 // scripts/ai-skills/verify-manifest-coverage.ts
-import fs8 from "node:fs/promises";
-import path10 from "node:path";
+import fs10 from "node:fs/promises";
+import path12 from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
-var scriptDirectory2 = path10.dirname(fileURLToPath2(import.meta.url));
-var repoRoot2 = process.env.PRISM_REPO_ROOT ? path10.resolve(process.env.PRISM_REPO_ROOT) : path10.resolve(scriptDirectory2, "../..");
+var scriptDirectory2 = path12.dirname(fileURLToPath2(import.meta.url));
+var repoRoot2 = process.env.PRISM_REPO_ROOT ? path12.resolve(process.env.PRISM_REPO_ROOT) : path12.resolve(scriptDirectory2, "../..");
 var SKILLS_ECOSYSTEM_DOC = "_toolkit/skills-ecosystem.md";
 var PERSONA_SCOPES = [
   {
@@ -1986,13 +2209,13 @@ function findMissingCoverage(result) {
   return failures;
 }
 async function main2() {
-  const manifestPath = path10.join(
+  const manifestPath = path12.join(
     repoRoot2,
     ".prism",
     "architect",
     "manifest.json"
   );
-  const raw = await fs8.readFile(manifestPath, "utf8");
+  const raw = await fs10.readFile(manifestPath, "utf8");
   const manifest = JSON.parse(raw);
   const result = {};
   for (const persona of PERSONA_SCOPES) {
@@ -2008,7 +2231,7 @@ async function main2() {
     process.exit(1);
   }
 }
-var invokedDirectly2 = process.argv[1] && fileURLToPath2(import.meta.url) === path10.resolve(process.argv[1]);
+var invokedDirectly2 = process.argv[1] && fileURLToPath2(import.meta.url) === path12.resolve(process.argv[1]);
 if (invokedDirectly2) {
   main2().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
@@ -2052,13 +2275,13 @@ function classifyPath(relativePath) {
 var SYNC_MANIFEST_FILENAME = ".sync-manifest.json";
 async function listPrismOwnedRelativePaths(prismContentRoot) {
   const entries = await listRelativeDirectoryEntries(prismContentRoot);
-  return entries.filter((entry) => entry.kind === "file").map((entry) => entry.relativePath.split(path11.sep).join("/")).filter((relativePath) => classifyPath(relativePath) === "prism").sort((a, b) => a.localeCompare(b));
+  return entries.filter((entry) => entry.kind === "file").map((entry) => entry.relativePath.split(path13.sep).join("/")).filter((relativePath) => classifyPath(relativePath) === "prism").sort((a, b) => a.localeCompare(b));
 }
 async function generateSyncManifest(prismContentRoot, options) {
   const relativePaths = await listPrismOwnedRelativePaths(prismContentRoot);
   const files = {};
   for (const relativePath of relativePaths) {
-    const absolutePath = path11.join(prismContentRoot, relativePath);
+    const absolutePath = path13.join(prismContentRoot, relativePath);
     files[relativePath] = { contentHash: await hashFile(absolutePath) };
   }
   return {
@@ -2069,7 +2292,7 @@ async function generateSyncManifest(prismContentRoot, options) {
   };
 }
 async function loadSyncManifest(consumerContentRoot) {
-  const manifestPath = path11.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+  const manifestPath = path13.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
   const raw = await readFileIfExists(manifestPath);
   if (raw === null) {
     return null;
@@ -2077,7 +2300,7 @@ async function loadSyncManifest(consumerContentRoot) {
   return JSON.parse(raw);
 }
 async function writeSyncManifest(prismContentRoot, manifest, checkMode2, changedPaths2) {
-  const manifestPath = path11.join(prismContentRoot, SYNC_MANIFEST_FILENAME);
+  const manifestPath = path13.join(prismContentRoot, SYNC_MANIFEST_FILENAME);
   const serialized = `${JSON.stringify(manifest, null, "	")}
 `;
   const previous = await readFileIfExists(manifestPath);
@@ -2088,13 +2311,13 @@ async function writeSyncManifest(prismContentRoot, manifest, checkMode2, changed
   if (checkMode2) {
     return;
   }
-  await fs9.writeFile(manifestPath, serialized, "utf8");
+  await fs11.writeFile(manifestPath, serialized, "utf8");
 }
 
 // scripts/ai-skills/update.ts
-import fs10 from "node:fs/promises";
+import fs12 from "node:fs/promises";
 import { readFileSync } from "node:fs";
-import path12 from "node:path";
+import path14 from "node:path";
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 async function hashFileIfExists(filePath) {
   if (!await pathExists(filePath)) {
@@ -2102,8 +2325,7 @@ async function hashFileIfExists(filePath) {
   }
   return hashFile(filePath);
 }
-async function backupConsumerFile(absolutePath) {
-  const sourceHash = await hashFile(absolutePath);
+async function resolveBackupPath(absolutePath, sourceHash) {
   let candidate = `${absolutePath}.bak`;
   let suffix = 0;
   while (await pathExists(candidate)) {
@@ -2113,48 +2335,63 @@ async function backupConsumerFile(absolutePath) {
     suffix += 1;
     candidate = `${absolutePath}.bak.${suffix}`;
   }
-  await fs10.copyFile(absolutePath, candidate);
   return candidate;
 }
-async function writeIncoming(incomingAbsolute, consumerAbsolute) {
-  await fs10.mkdir(path12.dirname(consumerAbsolute), { recursive: true });
-  await fs10.copyFile(incomingAbsolute, consumerAbsolute);
+async function backupConsumerFile(absolutePath, dryRun) {
+  const sourceHash = await hashFile(absolutePath);
+  const candidate = await resolveBackupPath(absolutePath, sourceHash);
+  if (dryRun || await pathExists(candidate)) {
+    return candidate;
+  }
+  await fs12.copyFile(absolutePath, candidate);
+  return candidate;
 }
-async function applyIncomingFile(relativePath, prismContentRoot, consumerContentRoot, recordedHash) {
-  const incomingAbsolute = path12.join(prismContentRoot, relativePath);
-  const consumerAbsolute = path12.join(consumerContentRoot, relativePath);
+async function writeIncoming(incomingAbsolute, consumerAbsolute, dryRun) {
+  if (dryRun) {
+    return;
+  }
+  await fs12.mkdir(path14.dirname(consumerAbsolute), { recursive: true });
+  await fs12.copyFile(incomingAbsolute, consumerAbsolute);
+}
+async function applyIncomingFile(relativePath, prismContentRoot, consumerContentRoot, recordedHash, dryRun) {
+  const incomingAbsolute = path14.join(prismContentRoot, relativePath);
+  const consumerAbsolute = path14.join(consumerContentRoot, relativePath);
   const incomingHash = await hashFile(incomingAbsolute);
   const consumerHash = await hashFileIfExists(consumerAbsolute);
   if (consumerHash === null) {
-    await writeIncoming(incomingAbsolute, consumerAbsolute);
+    await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
     return { relativePath, action: "written" };
   }
   if (consumerHash === incomingHash) {
     return { relativePath, action: "no-op" };
   }
   if (recordedHash !== null && consumerHash === recordedHash) {
-    await writeIncoming(incomingAbsolute, consumerAbsolute);
+    await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
     return { relativePath, action: "overwritten" };
   }
-  const backupPath = await backupConsumerFile(consumerAbsolute);
-  await writeIncoming(incomingAbsolute, consumerAbsolute);
+  const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
+  await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
   return { relativePath, action: "backed-up", backupPath };
 }
-async function applyDeletedFile(relativePath, consumerContentRoot, recordedHash) {
-  const consumerAbsolute = path12.join(consumerContentRoot, relativePath);
+async function applyDeletedFile(relativePath, consumerContentRoot, recordedHash, dryRun) {
+  const consumerAbsolute = path14.join(consumerContentRoot, relativePath);
   const consumerHash = await hashFileIfExists(consumerAbsolute);
   if (consumerHash === null) {
     return { relativePath, action: "no-op" };
   }
   if (consumerHash === recordedHash) {
-    await fs10.rm(consumerAbsolute);
+    if (!dryRun) {
+      await fs12.rm(consumerAbsolute);
+    }
     return { relativePath, action: "removed" };
   }
-  const backupPath = await backupConsumerFile(consumerAbsolute);
-  await fs10.rm(consumerAbsolute);
+  const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
+  if (!dryRun) {
+    await fs12.rm(consumerAbsolute);
+  }
   return { relativePath, action: "removed-with-backup", backupPath };
 }
-async function applyFilePass(prismContentRoot, consumerContentRoot, preloadedManifest) {
+async function applyFilePass(prismContentRoot, consumerContentRoot, preloadedManifest, dryRun = false) {
   const incomingRelativePaths = await listPrismOwnedRelativePaths(prismContentRoot);
   const incomingSet = new Set(incomingRelativePaths);
   const consumerManifest = preloadedManifest !== void 0 ? preloadedManifest : await loadSyncManifest(consumerContentRoot);
@@ -2176,7 +2413,8 @@ async function applyFilePass(prismContentRoot, consumerContentRoot, preloadedMan
         relativePath,
         prismContentRoot,
         consumerContentRoot,
-        recordedHashes.get(relativePath) ?? null
+        recordedHashes.get(relativePath) ?? null,
+        dryRun
       )
     );
   }
@@ -2188,31 +2426,34 @@ async function applyFilePass(prismContentRoot, consumerContentRoot, preloadedMan
       continue;
     }
     outcomes.push(
-      await applyDeletedFile(relativePath, consumerContentRoot, recordedHash)
+      await applyDeletedFile(relativePath, consumerContentRoot, recordedHash, dryRun)
     );
   }
-  await rewriteConsumerManifest(
+  const versionDelta = dryRun ? await previewVersionDelta(prismContentRoot, consumerManifest) : await rewriteConsumerManifest(
     prismContentRoot,
     consumerContentRoot,
     consumerManifest
   );
   const backups = outcomes.filter((outcome) => outcome.backupPath !== void 0).map((outcome) => outcome.backupPath);
-  return { outcomes, backups };
+  return { outcomes, backups, versionDelta };
 }
 async function runUpdate(options) {
   const {
     prismRepoRoot,
     consumerRepoRoot,
     prismContentRoot,
-    consumerContentRoot
+    consumerContentRoot,
+    dryRun = false
   } = options;
+  assertInsideGitRepo(consumerRepoRoot);
+  validateConsumerConfigAgainstSchema(consumerRepoRoot, prismRepoRoot);
   const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
   const consumerPathDefinitions = await loadPathDefinitions(consumerRepoRoot);
   const platformDirs = buildPlatformDirs(
     consumerRepoRoot,
     consumerPathDefinitions
   );
-  const overlayContentRoot = path12.join(consumerContentRoot, OVERLAY_SUBPATH);
+  const overlayContentRoot = path14.join(consumerContentRoot, OVERLAY_SUBPATH);
   const consumerManifest = await loadSyncManifest(consumerContentRoot);
   const pendingDeletionCount = consumerManifest ? Object.keys(consumerManifest.files).filter(
     (p) => classifyPath(p) === "prism"
@@ -2221,55 +2462,69 @@ async function runUpdate(options) {
   const summary = await applyFilePass(
     prismContentRoot,
     consumerContentRoot,
-    consumerManifest
+    consumerManifest,
+    dryRun
   );
   await refreshPlatformDirs(
     consumerContentRoot,
     overlayContentRoot,
     platformDirs,
-    tokenMap
+    tokenMap,
+    dryRun
   );
   await refreshPlatformSkills(
     prismRepoRoot,
     consumerRepoRoot,
     consumerPathDefinitions,
-    tokenMap
+    tokenMap,
+    dryRun
   );
   return summary;
 }
+function computeVersionDelta(sourceManifest, previousConsumerManifest) {
+  const current = sourceManifest?.prismVersion ?? previousConsumerManifest?.prismVersion ?? "0.0.0";
+  const previous = previousConsumerManifest?.prismVersion ?? null;
+  return { previous, current, changed: previous !== null && previous !== current };
+}
 async function rewriteConsumerManifest(prismContentRoot, consumerContentRoot, previousConsumerManifest) {
   const sourceManifest = await loadSyncManifest(prismContentRoot);
+  const versionDelta = computeVersionDelta(sourceManifest, previousConsumerManifest);
   const generated = await generateSyncManifest(prismContentRoot, {
-    prismVersion: sourceManifest?.prismVersion ?? previousConsumerManifest?.prismVersion ?? "0.0.0",
+    prismVersion: versionDelta.current,
     sourceCommit: sourceManifest?.sourceCommit ?? "unknown",
     generatedAt: (/* @__PURE__ */ new Date()).toISOString()
   });
-  const manifestPath = path12.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+  const manifestPath = path14.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
   const serialized = `${JSON.stringify(generated, null, "	")}
 `;
-  await fs10.writeFile(manifestPath, serialized, "utf8");
+  await fs12.writeFile(manifestPath, serialized, "utf8");
+  return versionDelta;
+}
+async function previewVersionDelta(prismContentRoot, previousConsumerManifest) {
+  const sourceManifest = await loadSyncManifest(prismContentRoot);
+  return computeVersionDelta(sourceManifest, previousConsumerManifest);
 }
 function resolveConsumerSkillTargetRoots(consumerRepoRoot, pathDefinitions) {
   const { generated } = pathDefinitions;
   return {
     targetRoots: {
-      claude: path12.join(consumerRepoRoot, generated.claudeSkillsRoot),
-      claudeAgents: path12.join(consumerRepoRoot, generated.claudeAgentsRoot),
-      codex: path12.join(consumerRepoRoot, generated.codexSkillsRoot),
-      codexAgents: path12.join(consumerRepoRoot, generated.codexAgentsRoot),
-      cursor: path12.join(consumerRepoRoot, generated.cursorSkillsRoot)
+      claude: path14.join(consumerRepoRoot, generated.claudeSkillsRoot),
+      claudeAgents: path14.join(consumerRepoRoot, generated.claudeAgentsRoot),
+      codex: path14.join(consumerRepoRoot, generated.codexSkillsRoot),
+      codexAgents: path14.join(consumerRepoRoot, generated.codexAgentsRoot),
+      cursor: path14.join(consumerRepoRoot, generated.cursorSkillsRoot)
     },
-    codexConfigPath: path12.join(consumerRepoRoot, generated.codexConfigFile)
+    codexConfigPath: path14.join(consumerRepoRoot, generated.codexConfigFile)
   };
 }
-async function refreshPlatformSkills(prismRepoRoot, consumerRepoRoot, consumerPathDefinitions, tokenMap) {
-  const sourceSkillsRoot = path12.join(prismRepoRoot, ".ai-skills", "skills");
+async function refreshPlatformSkills(prismRepoRoot, consumerRepoRoot, consumerPathDefinitions, tokenMap, dryRun) {
+  const sourceSkillsRoot = path14.join(prismRepoRoot, ".ai-skills", "skills");
   if (!await pathExists(sourceSkillsRoot)) {
     throw new Error(
       `PRISM source has no skill directory at ${sourceSkillsRoot}.`
     );
   }
-  const rolesPath = path12.join(
+  const rolesPath = path14.join(
     prismRepoRoot,
     ".ai-skills",
     "definitions",
@@ -2307,9 +2562,12 @@ async function refreshPlatformSkills(prismRepoRoot, consumerRepoRoot, consumerPa
       claudeAgents: true,
       codexConfig: true
     },
-    checkMode: false,
+    checkMode: dryRun,
     changedPaths: changedPaths2
   });
+  if (dryRun) {
+    return;
+  }
   const leftoverTokenViolations = await runLeftoverTokenGuard(consumerRepoRoot, [
     targetRoots.claude,
     targetRoots.claudeAgents,
@@ -2326,11 +2584,11 @@ ${detail}`
   }
 }
 var OVERLAY_SUBPATH = "custom";
-async function refreshPlatformDirs(consumerContentRoot, overlayContentRoot, platformDirs, tokenMap) {
+async function refreshPlatformDirs(consumerContentRoot, overlayContentRoot, platformDirs, tokenMap, dryRun) {
   await syncAllPlatformContentCopies(
     consumerContentRoot,
     platformDirs,
-    false,
+    dryRun,
     [],
     tokenMap
   );
@@ -2338,7 +2596,7 @@ async function refreshPlatformDirs(consumerContentRoot, overlayContentRoot, plat
     await syncAllPlatformContentCopies(
       overlayContentRoot,
       platformDirs,
-      false,
+      dryRun,
       [],
       tokenMap,
       OVERLAY_SUBPATH
@@ -2347,9 +2605,9 @@ async function refreshPlatformDirs(consumerContentRoot, overlayContentRoot, plat
 }
 function findPrismPackageRoot(startFile) {
   const EXPECTED_NAME = "@huntermcgrew/prism";
-  let dir = path12.dirname(startFile);
+  let dir = path14.dirname(startFile);
   while (true) {
-    const pkgPath = path12.join(dir, "package.json");
+    const pkgPath = path14.join(dir, "package.json");
     try {
       const raw = readFileSync(pkgPath, "utf8");
       const pkg = JSON.parse(raw);
@@ -2358,7 +2616,7 @@ function findPrismPackageRoot(startFile) {
       }
     } catch {
     }
-    const parent = path12.dirname(dir);
+    const parent = path14.dirname(dir);
     if (parent === dir) {
       throw new Error(
         `findPrismPackageRoot: reached filesystem root without finding a package.json named "${EXPECTED_NAME}" \u2014 started from ${startFile}`
@@ -2374,15 +2632,15 @@ function resolveSelfPrismSource() {
 function resolvePrismSource(argv, consumerRepoRoot) {
   const flagIndex = argv.indexOf("--prism-source");
   if (flagIndex !== -1 && argv[flagIndex + 1]) {
-    return path12.resolve(argv[flagIndex + 1]);
+    return path14.resolve(argv[flagIndex + 1]);
   }
   const inlineFlag = argv.find((arg) => arg.startsWith("--prism-source="));
   if (inlineFlag) {
-    return path12.resolve(inlineFlag.slice("--prism-source=".length));
+    return path14.resolve(inlineFlag.slice("--prism-source=".length));
   }
   const configured = loadConfig(consumerRepoRoot).prismSource;
   if (typeof configured === "string" && configured.length > 0) {
-    return path12.resolve(consumerRepoRoot, configured);
+    return path14.resolve(consumerRepoRoot, configured);
   }
   return resolveSelfPrismSource();
 }
@@ -2407,27 +2665,35 @@ async function runUpdateCli() {
       'prism:update needs a PRISM source. Pass --prism-source <path-to-prism-repo>, or add a "prismSource" field to .ai-skills/config.json pointing at your local PRISM checkout.'
     );
   }
-  if (path12.resolve(prismRepoRoot) === path12.resolve(consumerRepoRoot)) {
+  if (path14.resolve(prismRepoRoot) === path14.resolve(consumerRepoRoot)) {
     throw new Error(
       "prism:update refuses to run when the source is the consumer itself. That is prism:build \u2014 run `pnpm prism:build` instead."
     );
   }
-  const prismContentRoot = path12.join(prismRepoRoot, ".prism");
-  const consumerContentRoot = path12.join(consumerRepoRoot, ".prism");
+  const prismContentRoot = path14.join(prismRepoRoot, ".prism");
+  const consumerContentRoot = path14.join(consumerRepoRoot, ".prism");
   if (!await pathExists(prismContentRoot)) {
     throw new Error(
       `PRISM source has no .prism/ directory at ${prismContentRoot}.`
     );
   }
+  const dryRun = parseDryRunFlag(argv);
   const summary = await runUpdate({
     prismRepoRoot,
     consumerRepoRoot,
     prismContentRoot,
-    consumerContentRoot
+    consumerContentRoot,
+    dryRun
   });
-  reportSummary(summary);
+  reportSummary(summary, dryRun);
 }
-function reportSummary(summary) {
+function formatVersionDeltaLine(delta) {
+  if (!delta.changed || delta.previous === null) {
+    return null;
+  }
+  return `PRISM ${delta.previous} -> ${delta.current} \u2014 see CHANGELOG.md for what changed.`;
+}
+function reportSummary(summary, dryRun = false) {
   const counts = summary.outcomes.reduce(
     (acc, outcome) => {
       acc[outcome.action] = (acc[outcome.action] ?? 0) + 1;
@@ -2436,17 +2702,23 @@ function reportSummary(summary) {
     {}
   );
   const parts = Object.entries(counts).map(([action, count]) => `${count} ${action}`).join(", ");
-  console.log(`prism:update complete \u2014 ${parts || "no changes"}.`);
+  console.log(
+    dryRun ? `prism:update (dry run) \u2014 would apply ${parts || "no changes"}.` : `prism:update complete \u2014 ${parts || "no changes"}.`
+  );
+  const deltaLine = formatVersionDeltaLine(summary.versionDelta);
+  if (deltaLine !== null) {
+    console.log(deltaLine);
+  }
   if (summary.backups.length > 0) {
     console.log(
-      `Preserved ${summary.backups.length} diverged file(s) as .bak:`
+      dryRun ? `Would preserve ${summary.backups.length} diverged file(s) as .bak:` : `Preserved ${summary.backups.length} diverged file(s) as .bak:`
     );
     for (const backup of summary.backups) {
       console.log(`  ${backup}`);
     }
   }
 }
-var isMain = process.argv[1] && fileURLToPath3(import.meta.url) === path12.resolve(process.argv[1]);
+var isMain = process.argv[1] && fileURLToPath3(import.meta.url) === path14.resolve(process.argv[1]);
 if (isMain) {
   runUpdateCli().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
@@ -2455,30 +2727,44 @@ if (isMain) {
 }
 
 // scripts/ai-skills/adopt.ts
-async function seedConsumerContentRoot(installSeedRoot, consumerContentRoot) {
+async function seedConsumerContentRoot(installSeedRoot, consumerContentRoot, dryRun = false) {
   const written = [];
   const skipped = [];
-  await walkAndSeed(installSeedRoot, installSeedRoot, consumerContentRoot, written, skipped);
+  await walkAndSeed(installSeedRoot, installSeedRoot, consumerContentRoot, written, skipped, dryRun);
   return { written, skipped };
 }
-async function walkAndSeed(seedRoot, currentDir, consumerContentRoot, written, skipped) {
-  const entries = await fs11.readdir(currentDir, { withFileTypes: true });
+async function walkAndSeed(seedRoot, currentDir, consumerContentRoot, written, skipped, dryRun) {
+  const entries = await fs13.readdir(currentDir, { withFileTypes: true });
   for (const entry of entries) {
-    const seedAbsolute = path13.join(currentDir, entry.name);
-    const relativePath = path13.relative(seedRoot, seedAbsolute).split(path13.sep).join("/");
-    const consumerAbsolute = path13.join(consumerContentRoot, relativePath);
+    const seedAbsolute = path15.join(currentDir, entry.name);
+    const relativePath = path15.relative(seedRoot, seedAbsolute).split(path15.sep).join("/");
+    const consumerAbsolute = path15.join(consumerContentRoot, relativePath);
     if (entry.isDirectory()) {
-      await walkAndSeed(seedRoot, seedAbsolute, consumerContentRoot, written, skipped);
+      await walkAndSeed(seedRoot, seedAbsolute, consumerContentRoot, written, skipped, dryRun);
     } else if (entry.isFile()) {
       if (await pathExists(consumerAbsolute)) {
         skipped.push(relativePath);
       } else {
-        await ensureDirectory(path13.dirname(consumerAbsolute));
-        await fs11.copyFile(seedAbsolute, consumerAbsolute);
+        if (!dryRun) {
+          await ensureDirectory(path15.dirname(consumerAbsolute));
+          await fs13.copyFile(seedAbsolute, consumerAbsolute);
+        }
         written.push(relativePath);
       }
     }
   }
+}
+async function collectRootFileNotices(consumerRepoRoot) {
+  const agentsMdPath = path15.join(consumerRepoRoot, "AGENTS.md");
+  const agentsMdExists = await pathExists(agentsMdPath);
+  if (!agentsMdExists) {
+    return [
+      "prism adopt: no AGENTS.md found at repo root \u2014 PRISM's always-on rules are not reaching Codex-based agents (Codex auto-loads only AGENTS.md). Claude-based agents are unaffected (they load .prism/rules/ directly). See docs/adopting-into-existing-repos.md to add an AGENTS.md by hand."
+    ];
+  }
+  return [
+    "prism adopt: existing AGENTS.md left untouched \u2014 run pnpm prism:build to inject PRISM's generated Tier-1 rules block into it, then review the marked block. See docs/adopting-into-existing-repos.md."
+  ];
 }
 async function assertConsumerIsEstablished(consumerContentRoot) {
   const manifest = await loadSyncManifest(consumerContentRoot);
@@ -2489,14 +2775,14 @@ async function assertConsumerIsEstablished(consumerContentRoot) {
   }
 }
 async function runAdopt(options) {
-  const { prismSourceRoot, consumerRepoRoot } = options;
-  const installSeedRoot = path13.join(prismSourceRoot, "templates", "install", ".prism");
-  const consumerContentRoot = path13.join(consumerRepoRoot, ".prism");
-  const prismContentRoot = path13.join(prismSourceRoot, ".prism");
-  const configPath = path13.join(consumerRepoRoot, ".ai-skills", "config.json");
+  const { prismSourceRoot, consumerRepoRoot, dryRun = false, seedAgentsMd = false } = options;
+  const installSeedRoot = path15.join(prismSourceRoot, "templates", "install", ".prism");
+  const consumerContentRoot = path15.join(consumerRepoRoot, ".prism");
+  const prismContentRoot = path15.join(prismSourceRoot, ".prism");
+  const configPath = path15.join(consumerRepoRoot, ".ai-skills", "config.json");
   let configExists;
   try {
-    await fs11.access(configPath);
+    await fs13.access(configPath);
     configExists = true;
   } catch {
     configExists = false;
@@ -2506,19 +2792,30 @@ async function runAdopt(options) {
       "prism adopt: no .ai-skills/config.json found. Run 'npx @huntermcgrew/prism init' first to create it, then re-run adopt."
     );
   }
+  assertInsideGitRepo(consumerRepoRoot);
+  validateConsumerConfigAgainstSchema(consumerRepoRoot, prismSourceRoot);
   await assertConsumerIsEstablished(consumerContentRoot);
   const pathsProvisioned = await ensureConsumerPathDefinitions(
     prismSourceRoot,
-    consumerRepoRoot
+    consumerRepoRoot,
+    dryRun
   );
-  const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot);
+  const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot, dryRun);
   const update = await runUpdate({
     prismRepoRoot: prismSourceRoot,
     consumerRepoRoot,
     prismContentRoot,
-    consumerContentRoot
+    consumerContentRoot,
+    dryRun
   });
-  return { pathsProvisioned, seed, update };
+  const rootFileNotices = await collectRootFileNotices(consumerRepoRoot);
+  const agentsMdPath = path15.join(consumerRepoRoot, "AGENTS.md");
+  const agentsMdAbsent = !await pathExists(agentsMdPath);
+  const agentsMdSeeded = seedAgentsMd && agentsMdAbsent;
+  if (agentsMdSeeded && !dryRun) {
+    await fs13.writeFile(agentsMdPath, renderSeededAgentsMd(), "utf8");
+  }
+  return { pathsProvisioned, seed, update, rootFileNotices, agentsMdSeeded };
 }
 async function runAdoptCli() {
   const argv = process.argv.slice(2);
@@ -2533,22 +2830,32 @@ async function runAdoptCli() {
       'prism:adopt needs a PRISM source. Pass --prism-source <path-to-prism-repo>, or add a "prismSource" field to .ai-skills/config.json pointing at your local PRISM checkout.'
     );
   }
-  const summary = await runAdopt({ prismSourceRoot: prismRepoRoot, consumerRepoRoot });
-  reportSummary2(summary);
+  const dryRun = parseDryRunFlag(argv);
+  const seedAgentsMd = parseSeedAgentsMdFlag(argv);
+  const summary = await runAdopt({
+    prismSourceRoot: prismRepoRoot,
+    consumerRepoRoot,
+    dryRun,
+    seedAgentsMd
+  });
+  reportSummary2(summary, dryRun);
 }
-function reportSummary2(summary) {
-  const { pathsProvisioned, seed, update } = summary;
+function reportSummary2(summary, dryRun = false) {
+  const { pathsProvisioned, seed, update, rootFileNotices, agentsMdSeeded } = summary;
+  const prefix = dryRun ? "prism:adopt (dry run)" : "prism:adopt";
   if (pathsProvisioned === "written") {
     console.log(
-      "prism:adopt provisioned .ai-skills/definitions/paths.json (was absent or incomplete)."
+      dryRun ? `${prefix} would provision .ai-skills/definitions/paths.json (absent or incomplete).` : `${prefix} provisioned .ai-skills/definitions/paths.json (was absent or incomplete).`
     );
   }
   if (seed.written.length > 0) {
-    console.log(`prism:adopt seeded ${seed.written.length} file(s) from install surface.`);
+    console.log(
+      dryRun ? `${prefix} would seed ${seed.written.length} file(s) from install surface.` : `${prefix} seeded ${seed.written.length} file(s) from install surface.`
+    );
   }
   if (seed.skipped.length > 0) {
     console.log(
-      `prism:adopt skipped ${seed.skipped.length} existing file(s) during seed.`
+      `${prefix} skipped ${seed.skipped.length} existing file(s) during seed.`
     );
   }
   const counts = update.outcomes.reduce(
@@ -2559,19 +2866,638 @@ function reportSummary2(summary) {
     {}
   );
   const parts = Object.entries(counts).map(([action, count]) => `${count} ${action}`).join(", ");
-  console.log(`prism:adopt sync complete \u2014 ${parts || "no changes"}.`);
+  console.log(
+    dryRun ? `${prefix} sync would apply ${parts || "no changes"}.` : `${prefix} sync complete \u2014 ${parts || "no changes"}.`
+  );
+  const deltaLine = formatVersionDeltaLine(update.versionDelta);
+  if (deltaLine !== null) {
+    console.log(deltaLine);
+  }
   if (update.backups.length > 0) {
     console.log(
-      `Preserved ${update.backups.length} diverged file(s) as .bak:`
+      dryRun ? `Would preserve ${update.backups.length} diverged file(s) as .bak:` : `Preserved ${update.backups.length} diverged file(s) as .bak:`
     );
     for (const backup of update.backups) {
       console.log(`  ${backup}`);
     }
   }
+  for (const notice of rootFileNotices) {
+    console.log(notice);
+  }
+  if (agentsMdSeeded) {
+    console.log(
+      dryRun ? `${prefix} would seed a minimal AGENTS.md \u2014 run pnpm prism:build to fill its Tier-1 rules block.` : `${prefix} seeded a minimal AGENTS.md \u2014 run pnpm prism:build to fill its Tier-1 rules block.`
+    );
+  }
 }
-var isMain2 = process.argv[1] && fileURLToPath4(import.meta.url) === path13.resolve(process.argv[1]);
+var isMain2 = process.argv[1] && fileURLToPath4(import.meta.url) === path15.resolve(process.argv[1]);
 if (isMain2) {
   runAdoptCli().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
+
+// scripts/ai-skills/doctor.ts
+import path16 from "node:path";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
+var NPM_REGISTRY_URL = "https://registry.npmjs.org/@huntermcgrew/prism";
+var NPM_FETCH_TIMEOUT_MS = 3e3;
+function resolvePrismSourceOrFinding(argv, consumerRepoRoot) {
+  try {
+    const resolved = resolvePrismSource(argv, consumerRepoRoot);
+    if (resolved !== null) {
+      return { prismSourceRoot: resolved, finding: null };
+    }
+  } catch (error) {
+    return {
+      prismSourceRoot: resolveSelfPrismSource(),
+      finding: {
+        check: "config",
+        severity: "error",
+        message: error instanceof Error ? error.message : String(error)
+      }
+    };
+  }
+  return {
+    prismSourceRoot: resolveSelfPrismSource(),
+    finding: {
+      check: "config",
+      severity: "error",
+      message: 'prism doctor needs a PRISM source. Pass --prism-source <path-to-prism-repo>, or add a "prismSource" field to .ai-skills/config.json pointing at your local PRISM checkout.'
+    }
+  };
+}
+async function checkConfigSchema(consumerRepoRoot, prismSourceRoot) {
+  try {
+    validateConsumerConfigAgainstSchema(consumerRepoRoot, prismSourceRoot);
+    return [];
+  } catch (error) {
+    return [
+      {
+        check: "config",
+        severity: "error",
+        message: error instanceof Error ? error.message : String(error)
+      }
+    ];
+  }
+}
+function checkGitRepo(consumerRepoRoot) {
+  try {
+    assertInsideGitRepo(consumerRepoRoot);
+    return [];
+  } catch (error) {
+    return [
+      {
+        check: "git-repo",
+        severity: "error",
+        message: error instanceof Error ? error.message : String(error)
+      }
+    ];
+  }
+}
+async function findBackupSiblings(absolutePath) {
+  const siblings = [];
+  const base = `${absolutePath}.bak`;
+  if (await pathExists(base)) {
+    siblings.push(base);
+  }
+  let suffix = 1;
+  while (await pathExists(`${base}.${suffix}`)) {
+    siblings.push(`${base}.${suffix}`);
+    suffix += 1;
+  }
+  return siblings;
+}
+async function checkSyncManifest(consumerContentRoot) {
+  const manifest = await loadSyncManifest(consumerContentRoot);
+  if (manifest === null) {
+    return {
+      findings: [
+        {
+          check: "sync-manifest",
+          severity: "info",
+          message: `No ${SYNC_MANIFEST_FILENAME} found \u2014 this repo has not run \`prism adopt\` yet, or predates the sync manifest.`
+        }
+      ],
+      syncState: { manifest: null }
+    };
+  }
+  let prismOwnedCount = 0;
+  let consumerOwnedCount = 0;
+  const divergedFiles = [];
+  const missingFiles = [];
+  for (const [relativePath, entry] of Object.entries(manifest.files)) {
+    const ownership = classifyPath(relativePath);
+    if (ownership === "consumer") {
+      consumerOwnedCount += 1;
+      continue;
+    }
+    if (ownership !== "prism") {
+      continue;
+    }
+    prismOwnedCount += 1;
+    const absolutePath = path16.join(consumerContentRoot, relativePath);
+    if (!await pathExists(absolutePath)) {
+      missingFiles.push(relativePath);
+      continue;
+    }
+    const currentHash = await hashFile(absolutePath);
+    if (currentHash !== entry.contentHash) {
+      divergedFiles.push({
+        relativePath,
+        backups: await findBackupSiblings(absolutePath)
+      });
+    }
+  }
+  const findings = [];
+  if (missingFiles.length > 0) {
+    findings.push({
+      check: "sync-manifest",
+      severity: "error",
+      message: `${missingFiles.length} PRISM-owned file(s) recorded in the manifest are missing on disk: ${missingFiles.join(", ")}`
+    });
+  }
+  if (divergedFiles.length > 0) {
+    findings.push({
+      check: "sync-manifest",
+      severity: "warning",
+      message: `${divergedFiles.length} PRISM-owned file(s) have diverged from the recorded PRISM base: ${divergedFiles.map((f) => f.relativePath).join(", ")}`
+    });
+  }
+  return {
+    findings,
+    syncState: {
+      manifest: { prismOwnedCount, consumerOwnedCount, divergedFiles, missingFiles }
+    }
+  };
+}
+async function fetchLatestNpmVersion(url = NPM_REGISTRY_URL, timeoutMs = NPM_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      return null;
+    }
+    const body = await response.json();
+    return body["dist-tags"]?.latest ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+function readInstalledVersion(pkgRaw) {
+  if (pkgRaw === null) {
+    return "unknown";
+  }
+  try {
+    const pkg = JSON.parse(pkgRaw);
+    return pkg.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+async function checkVersion(prismSourceRoot, fetcher) {
+  const pkgRaw = await readFileIfExists(path16.join(prismSourceRoot, "package.json"));
+  const installed = readInstalledVersion(pkgRaw);
+  const latest = await fetcher(NPM_REGISTRY_URL, NPM_FETCH_TIMEOUT_MS);
+  const outOfDate = latest !== null && latest !== installed;
+  const findings = [];
+  if (latest === null) {
+    findings.push({
+      check: "version",
+      severity: "info",
+      message: `Installed version ${installed}; latest-on-npm check unavailable (offline, unpublished, or registry unreachable).`
+    });
+  } else if (outOfDate) {
+    findings.push({
+      check: "version",
+      severity: "warning",
+      message: `Installed version ${installed} is behind the latest published version ${latest}.`
+    });
+  }
+  return { findings, version: { installed, latest, outOfDate } };
+}
+async function runDoctor(options) {
+  const {
+    consumerRepoRoot,
+    prismSourceRoot,
+    npmVersionFetcher = fetchLatestNpmVersion,
+    additionalFindings = []
+  } = options;
+  const consumerContentRoot = path16.join(consumerRepoRoot, ".prism");
+  const findings = [...additionalFindings];
+  findings.push(...await checkConfigSchema(consumerRepoRoot, prismSourceRoot));
+  findings.push(...checkGitRepo(consumerRepoRoot));
+  const syncResult = await checkSyncManifest(consumerContentRoot);
+  findings.push(...syncResult.findings);
+  const versionResult = await checkVersion(prismSourceRoot, npmVersionFetcher);
+  findings.push(...versionResult.findings);
+  return {
+    findings,
+    syncState: syncResult.syncState,
+    version: versionResult.version,
+    healthy: !findings.some((f) => f.severity === "error")
+  };
+}
+var SEVERITY_LABEL = {
+  error: "ERROR",
+  warning: "WARN",
+  info: "INFO"
+};
+function formatDoctorReport(report) {
+  const lines = [];
+  if (report.syncState.manifest !== null) {
+    const { prismOwnedCount, consumerOwnedCount } = report.syncState.manifest;
+    lines.push(
+      `Sync state: ${prismOwnedCount} PRISM-owned file(s), ${consumerOwnedCount} consumer-owned file(s) recorded.`
+    );
+  }
+  lines.push(
+    report.version.latest !== null ? `Version: ${report.version.installed} installed, ${report.version.latest} latest on npm.` : `Version: ${report.version.installed} installed, latest-on-npm unavailable.`
+  );
+  if (report.findings.length === 0) {
+    lines.push("No issues found.");
+  } else {
+    for (const finding of report.findings) {
+      lines.push(`[${SEVERITY_LABEL[finding.severity]}] ${finding.check}: ${finding.message}`);
+    }
+  }
+  lines.push(report.healthy ? "prism doctor: healthy." : "prism doctor: unhealthy \u2014 see findings above.");
+  return lines.join("\n");
+}
+async function runDoctorCli() {
+  const argv = process.argv.slice(2);
+  const consumerRepoRoot = resolveConsumerRoot({
+    explicitConsumer: parseConsumerFlag(argv),
+    cwd: process.cwd(),
+    selfPrismRoot: resolveSelfPrismSource()
+  });
+  const { prismSourceRoot, finding: resolutionFinding } = resolvePrismSourceOrFinding(
+    argv,
+    consumerRepoRoot
+  );
+  const report = await runDoctor({
+    consumerRepoRoot,
+    prismSourceRoot,
+    additionalFindings: resolutionFinding !== null ? [resolutionFinding] : []
+  });
+  console.log(formatDoctorReport(report));
+  if (!report.healthy) {
+    process.exitCode = 1;
+  }
+}
+var isMain3 = process.argv[1] && fileURLToPath5(import.meta.url) === path16.resolve(process.argv[1]);
+if (isMain3) {
+  runDoctorCli().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
+
+// scripts/ai-skills/eject.ts
+import fs14 from "node:fs/promises";
+import path17 from "node:path";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
+var PRISM_SKILL_PREFIX = "prism-";
+var DELETE_PATH_ACTIONS = /* @__PURE__ */ new Set(["no-op", "removed", "removed-with-backup"]);
+function isDeletePathAction(action) {
+  return DELETE_PATH_ACTIONS.has(action);
+}
+async function runFileRemovalPass(manifest, consumerContentRoot, previewOnly) {
+  const fileOutcomes = [];
+  const preservedNotices = [];
+  let consumerContentNoticeAdded = false;
+  for (const [relativePath, entry] of Object.entries(manifest.files)) {
+    const ownership = classifyPath(relativePath);
+    if (ownership !== "prism") {
+      fileOutcomes.push({ relativePath, action: "preserved", ownership });
+      if (ownership === "consumer" && !consumerContentNoticeAdded) {
+        consumerContentNoticeAdded = true;
+        preservedNotices.push(
+          "Preserved consumer-owned content: plans/, lessons.md, custom/, flat architect docs, flat spec/adrs docs."
+        );
+      }
+      continue;
+    }
+    const outcome = await applyDeletedFile(
+      relativePath,
+      consumerContentRoot,
+      entry.contentHash,
+      previewOnly
+    );
+    if (!isDeletePathAction(outcome.action)) {
+      throw new Error(
+        `eject: applyDeletedFile returned unexpected action "${outcome.action}" for ${relativePath} \u2014 expected a delete-path outcome.`
+      );
+    }
+    fileOutcomes.push({ relativePath, action: outcome.action, backupPath: outcome.backupPath, ownership });
+  }
+  return { fileOutcomes, preservedNotices };
+}
+async function runSkillRemovalPass(consumerRepoRoot, pathDefinitions, previewOnly) {
+  const { targetRoots, codexConfigPath } = resolveConsumerSkillTargetRoots(
+    consumerRepoRoot,
+    pathDefinitions
+  );
+  const outcomes = [];
+  await collectSkillDirOutcomes(targetRoots.claude, previewOnly, outcomes);
+  await collectSkillDirOutcomes(targetRoots.codex, previewOnly, outcomes);
+  await collectSkillDirOutcomes(targetRoots.cursor, previewOnly, outcomes);
+  await collectAgentFileOutcomes(
+    targetRoots.codexAgents,
+    ".toml",
+    GENERATED_HEADER_LINE,
+    previewOnly,
+    outcomes
+  );
+  await collectAgentFileOutcomes(
+    targetRoots.claudeAgents,
+    ".md",
+    GENERATED_MARKDOWN_HEADER_LINE,
+    previewOnly,
+    outcomes
+  );
+  await collectCodexConfigOutcome(codexConfigPath, previewOnly, outcomes);
+  return {
+    outcomes,
+    targetRoots: [
+      targetRoots.claude,
+      targetRoots.codex,
+      targetRoots.cursor,
+      targetRoots.codexAgents,
+      targetRoots.claudeAgents
+    ]
+  };
+}
+async function collectCodexConfigOutcome(codexConfigPath, previewOnly, outcomes) {
+  const content = await readFileIfExists(codexConfigPath);
+  if (content === null) {
+    return;
+  }
+  if (!content.includes(GENERATED_HEADER_LINE)) {
+    outcomes.push({ path: codexConfigPath, action: "skipped-no-marker" });
+    return;
+  }
+  outcomes.push({ path: codexConfigPath, action: "removed" });
+  if (!previewOnly) {
+    await fs14.rm(codexConfigPath);
+  }
+}
+async function collectSkillDirOutcomes(outputRoot, previewOnly, outcomes) {
+  if (!await pathExists(outputRoot)) {
+    return;
+  }
+  const entries = await fs14.readdir(outputRoot, { withFileTypes: true });
+  const keepIds = /* @__PURE__ */ new Set();
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith(".")) {
+      continue;
+    }
+    const entryPath = path17.join(outputRoot, entry.name);
+    if (!entry.name.startsWith(PRISM_SKILL_PREFIX)) {
+      keepIds.add(entry.name);
+      outcomes.push({ path: entryPath, action: "skipped-not-prism" });
+      continue;
+    }
+    const markerPath = path17.join(entryPath, MANAGED_MARKER);
+    if (!await pathExists(markerPath)) {
+      keepIds.add(entry.name);
+      outcomes.push({ path: entryPath, action: "skipped-no-marker" });
+      continue;
+    }
+    outcomes.push({ path: entryPath, action: "removed" });
+  }
+  const changedPaths2 = [];
+  await removeDeletedManagedSkills(outputRoot, keepIds, previewOnly, changedPaths2);
+}
+async function collectAgentFileOutcomes(outputRoot, extension, headerLine, previewOnly, outcomes) {
+  if (!await pathExists(outputRoot)) {
+    return;
+  }
+  const entries = await fs14.readdir(outputRoot, { withFileTypes: true });
+  const keepIds = /* @__PURE__ */ new Set();
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(extension) || entry.name.startsWith(".")) {
+      continue;
+    }
+    const skillId = entry.name.slice(0, -extension.length);
+    if (!entry.name.startsWith(PRISM_SKILL_PREFIX)) {
+      keepIds.add(skillId);
+      continue;
+    }
+    const entryPath = path17.join(outputRoot, entry.name);
+    const content = await readFileIfExists(entryPath) ?? "";
+    if (!content.includes(headerLine)) {
+      keepIds.add(skillId);
+      outcomes.push({ path: entryPath, action: "skipped-no-marker" });
+      continue;
+    }
+    outcomes.push({ path: entryPath, action: "removed" });
+  }
+  const changedPaths2 = [];
+  await removeDeletedManagedAgentFiles(outputRoot, keepIds, extension, headerLine, previewOnly, changedPaths2);
+}
+async function pruneEmptyDirs(root, previewOnly, virtuallyRemovedFiles) {
+  if (!await pathExists(root)) {
+    return [];
+  }
+  const removed = [];
+  async function walk2(dir) {
+    const entries = await fs14.readdir(dir, { withFileTypes: true });
+    let hasRemainingEntry = false;
+    for (const entry of entries) {
+      const entryPath = path17.join(dir, entry.name);
+      if (!entry.isDirectory()) {
+        if (!virtuallyRemovedFiles.has(entryPath)) {
+          hasRemainingEntry = true;
+        }
+        continue;
+      }
+      const childIsNowEmpty = await walk2(entryPath);
+      if (childIsNowEmpty) {
+        removed.push(entryPath);
+        if (!previewOnly) {
+          await fs14.rmdir(entryPath);
+        }
+      } else {
+        hasRemainingEntry = true;
+      }
+    }
+    return !hasRemainingEntry;
+  }
+  await walk2(root);
+  return removed;
+}
+async function pruneEmptySkillRoot(root, previewOnly, virtuallyRemovedEntries) {
+  if (!await pathExists(root)) {
+    return null;
+  }
+  const entries = await fs14.readdir(root);
+  const remainingEntries = entries.filter(
+    (entryName) => !virtuallyRemovedEntries.has(path17.join(root, entryName))
+  );
+  if (remainingEntries.length > 0) {
+    return null;
+  }
+  if (!previewOnly) {
+    await fs14.rmdir(root);
+  }
+  return root;
+}
+async function removeSeededAgentsMd(consumerRepoRoot, previewOnly) {
+  const agentsMdPath = path17.join(consumerRepoRoot, "AGENTS.md");
+  const content = await readFileIfExists(agentsMdPath);
+  if (content === null || !content.includes(AGENTS_MD_SEEDED_MARKER)) {
+    return null;
+  }
+  if (!previewOnly) {
+    await fs14.rm(agentsMdPath);
+  }
+  return {
+    removed: true,
+    notice: previewOnly ? "Would remove PRISM-seeded AGENTS.md (carries the prism:seeded-agents-md marker)." : "Removed PRISM-seeded AGENTS.md (carried the prism:seeded-agents-md marker)."
+  };
+}
+async function collectRootFileNotices2(consumerRepoRoot) {
+  const notices = [];
+  const agentsMdPath = path17.join(consumerRepoRoot, "AGENTS.md");
+  const agentsMd = await readFileIfExists(agentsMdPath);
+  if (agentsMd !== null && agentsMd.includes(AGENTS_MD_BLOCK_BEGIN)) {
+    notices.push(
+      `AGENTS.md contains a PRISM-generated block \u2014 delete everything between "${AGENTS_MD_BLOCK_BEGIN}" and "${AGENTS_MD_BLOCK_END}" to remove it by hand.`
+    );
+  }
+  const claudeMdPath = path17.join(consumerRepoRoot, "CLAUDE.md");
+  if (await pathExists(claudeMdPath)) {
+    notices.push(
+      "CLAUDE.md is present but was not created by PRISM \u2014 review manually before deleting."
+    );
+  }
+  return notices;
+}
+async function runEject(options) {
+  const { consumerRepoRoot, consumerContentRoot, pathDefinitions, confirmed, dryRun } = options;
+  assertInsideGitRepo(consumerRepoRoot);
+  const manifest = await loadSyncManifest(consumerContentRoot);
+  if (manifest === null) {
+    return {
+      fileOutcomes: [],
+      skillOutcomes: [],
+      manifestRemoved: false,
+      emptyDirsRemoved: [],
+      preservedNotices: [`No ${SYNC_MANIFEST_FILENAME} found \u2014 nothing to eject.`],
+      confirmed,
+      dryRun
+    };
+  }
+  const previewOnly = !confirmed || dryRun;
+  const { fileOutcomes, preservedNotices } = await runFileRemovalPass(
+    manifest,
+    consumerContentRoot,
+    previewOnly
+  );
+  const { outcomes: skillOutcomes, targetRoots: skillTargetRoots } = await runSkillRemovalPass(
+    consumerRepoRoot,
+    pathDefinitions,
+    previewOnly
+  );
+  const virtuallyRemovedFiles = new Set(
+    fileOutcomes.filter((outcome) => outcome.action === "removed" || outcome.action === "removed-with-backup").map((outcome) => path17.join(consumerContentRoot, outcome.relativePath))
+  );
+  const emptyDirsRemoved = await pruneEmptyDirs(consumerContentRoot, previewOnly, virtuallyRemovedFiles);
+  const virtuallyRemovedSkillEntries = new Set(
+    skillOutcomes.filter((outcome) => outcome.action === "removed").map((outcome) => outcome.path)
+  );
+  const uniqueSkillTargetRoots = [...new Set(skillTargetRoots)];
+  for (const skillRoot of uniqueSkillTargetRoots) {
+    const prunedRoot = await pruneEmptySkillRoot(skillRoot, previewOnly, virtuallyRemovedSkillEntries);
+    if (prunedRoot !== null) {
+      emptyDirsRemoved.push(prunedRoot);
+    }
+  }
+  const manifestPath = path17.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+  const manifestRemoved = await pathExists(manifestPath);
+  if (manifestRemoved && !previewOnly) {
+    await fs14.rm(manifestPath);
+  }
+  const seededAgentsMdResult = await removeSeededAgentsMd(consumerRepoRoot, previewOnly);
+  const rootFileNotices = await collectRootFileNotices2(consumerRepoRoot);
+  if (seededAgentsMdResult !== null) {
+    rootFileNotices.unshift(seededAgentsMdResult.notice);
+  }
+  return {
+    fileOutcomes,
+    skillOutcomes,
+    manifestRemoved,
+    emptyDirsRemoved,
+    preservedNotices: [...preservedNotices, ...rootFileNotices],
+    confirmed,
+    dryRun
+  };
+}
+function formatEjectReport(report) {
+  const lines = [];
+  const previewOnly = !report.confirmed || report.dryRun;
+  const headerMode = report.dryRun ? "dry run" : !report.confirmed ? "preview \u2014 no --yes" : null;
+  lines.push(headerMode !== null ? `prism eject (${headerMode})` : "prism eject");
+  const removed = report.fileOutcomes.filter((o) => o.action === "removed");
+  const removedWithBackup = report.fileOutcomes.filter((o) => o.action === "removed-with-backup");
+  const preserved = report.fileOutcomes.filter((o) => o.action === "preserved");
+  const skillsRemoved = report.skillOutcomes.filter((o) => o.action === "removed");
+  const skillsSkipped = report.skillOutcomes.filter((o) => o.action !== "removed");
+  lines.push(`${removed.length} PRISM-owned file(s) removed.`);
+  lines.push(`${removedWithBackup.length} PRISM-owned file(s) removed-with-backup.`);
+  if (removedWithBackup.length > 0) {
+    for (const outcome of removedWithBackup) {
+      lines.push(`  ${outcome.backupPath}`);
+    }
+  }
+  lines.push(`${preserved.length} consumer-owned/unknown file(s) preserved.`);
+  lines.push(`${skillsRemoved.length} skill(s)/agent(s) removed.`);
+  lines.push(`${skillsSkipped.length} skill(s)/agent(s) skipped.`);
+  for (const outcome of skillsSkipped) {
+    lines.push(`  ${outcome.path} (${outcome.action})`);
+  }
+  lines.push(`${report.emptyDirsRemoved.length} empty director(y/ies) removed.`);
+  lines.push(`Manifest removed: ${report.manifestRemoved ? "yes" : "no"}.`);
+  if (report.preservedNotices.length > 0) {
+    lines.push("");
+    for (const notice of report.preservedNotices) {
+      lines.push(notice);
+    }
+  }
+  lines.push("");
+  lines.push(
+    previewOnly ? "Re-run with --yes to perform the eject." : `prism eject complete \u2014 PRISM removed. Preserved ${preserved.length} consumer file(s) and ${removedWithBackup.length} .bak snapshot(s).`
+  );
+  return lines.join("\n");
+}
+async function runEjectCli() {
+  const argv = process.argv.slice(2);
+  const consumerRepoRoot = resolveConsumerRoot({
+    explicitConsumer: parseConsumerFlag(argv),
+    cwd: process.cwd(),
+    selfPrismRoot: resolveSelfPrismSource()
+  });
+  const consumerContentRoot = path17.join(consumerRepoRoot, ".prism");
+  const confirmed = parseConfirmFlag(argv);
+  const dryRun = parseDryRunFlag(argv);
+  const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+  const report = await runEject({
+    consumerRepoRoot,
+    consumerContentRoot,
+    pathDefinitions,
+    confirmed,
+    dryRun
+  });
+  console.log(formatEjectReport(report));
+}
+var isMain4 = process.argv[1] && fileURLToPath6(import.meta.url) === path17.resolve(process.argv[1]);
+if (isMain4) {
+  runEjectCli().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   });
@@ -2580,12 +3506,12 @@ if (isMain2) {
 // scripts/ai-skills/init.ts
 import readline from "node:readline/promises";
 import process2 from "node:process";
-import fs14 from "node:fs/promises";
-import path16 from "node:path";
+import fs17 from "node:fs/promises";
+import path20 from "node:path";
 
 // scripts/ai-skills/lib/stack-detect.ts
-import fs12 from "node:fs/promises";
-import path14 from "node:path";
+import fs15 from "node:fs/promises";
+import path18 from "node:path";
 var CONFIDENCE_RANK = {
   high: 0,
   medium: 1,
@@ -2616,9 +3542,9 @@ async function detectStack(repoRoot3) {
   };
 }
 async function probeFile(repoRoot3, relativePath, inspector) {
-  const filePath = path14.join(repoRoot3, relativePath);
+  const filePath = path18.join(repoRoot3, relativePath);
   try {
-    await fs12.access(filePath);
+    await fs15.access(filePath);
   } catch {
     return emptyResult();
   }
@@ -2652,9 +3578,9 @@ function mergeResults(results) {
         existing.confidence,
         lang.confidence
       );
-      for (const path17 of lang.evidence) {
-        if (!existing.evidence.includes(path17)) {
-          existing.evidence.push(path17);
+      for (const path21 of lang.evidence) {
+        if (!existing.evidence.includes(path21)) {
+          existing.evidence.push(path21);
         }
       }
     }
@@ -2672,9 +3598,9 @@ function mergeResults(results) {
         existing.confidence,
         fw.confidence
       );
-      for (const path17 of fw.evidence) {
-        if (!existing.evidence.includes(path17)) {
-          existing.evidence.push(path17);
+      for (const path21 of fw.evidence) {
+        if (!existing.evidence.includes(path21)) {
+          existing.evidence.push(path21);
         }
       }
     }
@@ -2701,13 +3627,13 @@ var JS_FRAMEWORK_MAP = {
   "@nestjs/core": "nestjs"
 };
 async function inspectPackageJson(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   const pkg = JSON.parse(raw);
   const deps = collectDependencyNames(pkg);
-  const tsconfigPath = path14.join(path14.dirname(filePath), "tsconfig.json");
+  const tsconfigPath = path18.join(path18.dirname(filePath), "tsconfig.json");
   let hasTsconfig = false;
   try {
-    await fs12.access(tsconfigPath);
+    await fs15.access(tsconfigPath);
     hasTsconfig = true;
   } catch {
     hasTsconfig = false;
@@ -2761,7 +3687,7 @@ var PHP_FRAMEWORK_MAP = {
   "symfony/framework-bundle": "symfony"
 };
 async function inspectComposerJson(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   const composer = JSON.parse(raw);
   const requires = /* @__PURE__ */ new Set();
   for (const map of [composer.require, composer["require-dev"]]) {
@@ -2797,9 +3723,9 @@ async function inspectPython(repoRoot3) {
   let foundPath = null;
   let contents = null;
   for (const candidate of candidates) {
-    const candidatePath = path14.join(repoRoot3, candidate);
+    const candidatePath = path18.join(repoRoot3, candidate);
     try {
-      contents = await fs12.readFile(candidatePath, "utf8");
+      contents = await fs15.readFile(candidatePath, "utf8");
       foundPath = candidatePath;
       break;
     } catch {
@@ -2850,7 +3776,7 @@ function extractPythonDependencyToken(line) {
   return null;
 }
 async function inspectGoMod(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   if (!/^module\s+/m.test(raw)) {
     return emptyResult();
   }
@@ -2866,7 +3792,7 @@ var RUST_FRAMEWORK_MAP = {
   warp: "warp"
 };
 async function inspectCargoToml(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   const languages = [
     { name: "rust", confidence: "high", evidence: [filePath] }
   ];
@@ -2900,7 +3826,7 @@ var RUBY_FRAMEWORK_MAP = {
   sinatra: "sinatra"
 };
 async function inspectGemfile(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   const languages = [
     { name: "ruby", confidence: "high", evidence: [filePath] }
   ];
@@ -2923,7 +3849,7 @@ async function inspectGemfile(filePath) {
   return { languages, frameworks };
 }
 async function inspectMixExs(filePath) {
-  const raw = await fs12.readFile(filePath, "utf8");
+  const raw = await fs15.readFile(filePath, "utf8");
   const languages = [
     { name: "elixir", confidence: "high", evidence: [filePath] }
   ];
@@ -2942,9 +3868,9 @@ async function inspectPomXmlGradle(repoRoot3) {
   const foundPaths = [];
   const sources = [];
   for (const candidate of candidates) {
-    const candidatePath = path14.join(repoRoot3, candidate);
+    const candidatePath = path18.join(repoRoot3, candidate);
     try {
-      const contents = await fs12.readFile(candidatePath, "utf8");
+      const contents = await fs15.readFile(candidatePath, "utf8");
       foundPaths.push(candidatePath);
       sources.push({ path: candidatePath, contents });
     } catch {
@@ -2975,8 +3901,20 @@ async function inspectPomXmlGradle(repoRoot3) {
 }
 
 // scripts/ai-skills/lib/onboarding-config.ts
-import fs13 from "node:fs/promises";
-import path15 from "node:path";
+import fs16 from "node:fs/promises";
+import path19 from "node:path";
+var ORDERED_TOP_LEVEL_KEYS = [
+  "org",
+  "project",
+  "ticketPrefix",
+  "ticketSystem",
+  "github",
+  "defaultBranch",
+  "techStack",
+  "rules",
+  "slackChannel",
+  "documentation"
+];
 var TECH_STACK_ENUM = /* @__PURE__ */ new Set([
   "typescript",
   "javascript",
@@ -3058,7 +3996,7 @@ function validateOnDiskConfig(config) {
     if (typeof value !== "string" || value.length === 0) {
       throw new OnboardingConfigValidationError(
         key,
-        `required field is missing or empty (got ${describeType2(value)})`
+        `required field is missing or empty (got ${describeType3(value)})`
       );
     }
   }
@@ -3104,33 +4042,48 @@ function validateOnDiskConfig(config) {
 async function writeOnboardingConfig(repoRoot3, config, options = {}) {
   const onDisk = toOnDiskConfig(config, options);
   validateOnDiskConfig(onDisk);
-  const targetDir = path15.join(repoRoot3, ".ai-skills");
-  const targetPath = path15.join(targetDir, "config.json");
-  const tmpPath = path15.join(targetDir, "config.json.tmp");
-  await fs13.mkdir(targetDir, { recursive: true });
-  const serialized = serializeConfig(onDisk);
-  await fs13.writeFile(tmpPath, serialized, "utf8");
+  const targetDir = path19.join(repoRoot3, ".ai-skills");
+  const targetPath = path19.join(targetDir, "config.json");
+  const tmpPath = path19.join(targetDir, "config.json.tmp");
+  await fs16.mkdir(targetDir, { recursive: true });
+  const unknownFields = await readUnknownFields(targetPath);
+  const serialized = serializeConfig(onDisk, unknownFields);
+  await fs16.writeFile(tmpPath, serialized, "utf8");
   try {
-    await fs13.rename(tmpPath, targetPath);
+    await fs16.rename(tmpPath, targetPath);
   } catch (error) {
-    await fs13.rm(tmpPath, { force: true });
+    await fs16.rm(tmpPath, { force: true });
     throw error;
   }
   return { path: targetPath, schemaValidated: true };
 }
-function serializeConfig(config) {
-  const orderedTopLevel = [
-    "org",
-    "project",
-    "ticketPrefix",
-    "ticketSystem",
-    "github",
-    "defaultBranch",
-    "techStack",
-    "rules",
-    "slackChannel",
-    "documentation"
-  ];
+async function readUnknownFields(targetPath) {
+  let raw;
+  try {
+    raw = await fs16.readFile(targetPath, "utf8");
+  } catch {
+    return {};
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+  const knownKeys = new Set(ORDERED_TOP_LEVEL_KEYS);
+  const unknown = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!knownKeys.has(key)) {
+      unknown[key] = value;
+    }
+  }
+  return unknown;
+}
+function serializeConfig(config, unknownFields = {}) {
+  const orderedTopLevel = ORDERED_TOP_LEVEL_KEYS;
   const orderedTicketSystem = [
     "kind",
     "workspace",
@@ -3203,10 +4156,13 @@ function serializeConfig(config) {
     }
     renderedTopLevel[key] = value;
   }
+  for (const key of Object.keys(unknownFields).sort()) {
+    renderedTopLevel[key] = unknownFields[key];
+  }
   return `${JSON.stringify(renderedTopLevel, null, "	")}
 `;
 }
-function describeType2(value) {
+function describeType3(value) {
   if (value === null) {
     return "null";
   }
@@ -3219,10 +4175,10 @@ function describeType2(value) {
 // scripts/ai-skills/init.ts
 async function runInit(options) {
   const { consumerRepoRoot, answers } = options;
-  const configPath = path16.join(consumerRepoRoot, ".ai-skills", "config.json");
+  const configPath = path20.join(consumerRepoRoot, ".ai-skills", "config.json");
   let configExists;
   try {
-    await fs14.access(configPath);
+    await fs17.access(configPath);
     configExists = true;
   } catch {
     configExists = false;
@@ -3397,6 +4353,8 @@ Usage:
   prism init     Write .ai-skills/config.json so this repo can adopt PRISM (run before adopt)
   prism adopt    Seed .prism/ and project the persona roster into this repo (first run)
   prism update   Pull PRISM's latest canonical content into this repo (steady-state)
+  prism doctor   Report install health \u2014 config, git repo, sync state, version
+  prism eject    Remove PRISM from this repo (requires --yes; --dry-run to preview)
 
 Run from your consumer repo root. PRISM source is auto-derived from the linked
 PRISM checkout; pass --prism-source <path> to override.
@@ -3415,6 +4373,12 @@ async function main3() {
       break;
     case "update":
       await runUpdateCli();
+      break;
+    case "doctor":
+      await runDoctorCli();
+      break;
+    case "eject":
+      await runEjectCli();
       break;
     case "--help":
     case "-h":

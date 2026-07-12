@@ -32,7 +32,8 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "strikes": [ { "issueKey": "string", "count": 2, "history": ["ISO-8601"] } ],
       "failureCount": 0,
       "escalation": { "axis": "replan | model | human", "reason": "blast-radius | string", "raisedAt": "ISO-8601" },
-      "lastVerdict": "done | needs-fix | blocked | needs-replan | needs-human",
+      "lastVerdict": "done | needs-fix | blocked | needs-replan | needs-stronger-model | needs-human",
+      "verification": { "command": "string", "exitCode": 0, "diffStat": "string", "ratifiedAt": "ISO-8601" },
       "signals": [
         {
           "kind": "found-bug | found-followup-work | observation",
@@ -72,7 +73,8 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 - `autonomyPolicy` is set once at intake (launch / internal / hobby, reusing Parker's stakes-calibration vocabulary). It is the human-set ceiling — a persona may escalate above it (`needs-human` under any policy) but never auto-clear below it.
 - `runId` points at the active Workflow run while it is running and is `null` between segments; the plan stays the source of truth regardless.
 - `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded. `escalation.reason` is typed `"blast-radius"` for decision-box escalations; plain string for other escalation axes. A same-scope-vs-split scope-fit call is never escalated — Nora resolves it inside her four-signal gate.
-- `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal.
+- `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal. `needs-stronger-model` is the worker's own capability call (per `lib/report-back.md`), distinct from `needs-replan` (a plan defect).
+- `verification` is a nullable object written at ratification — absent until a write-lane `done` is ratified (`step-05-route.md` § Deterministic ratification). It is the audit record the step-10 report reads, never a routing input.
 - `worktree` is `null` for a single-lane (pipeline) run and a checkout path for a fleet lane under worktree isolation.
 - `team`, `dependsOn`, and `type` are driven as of Phase C: `team` groups lanes for scheduling/reporting/discovered-work routing; `dependsOn` is a flat `laneId[]` DAG enforced at dispatch eligibility; `type: "integration" | null` marks a lane as an integration lane (`null` = ordinary lane). Phase A/B runs with null `team` / empty `dependsOn` / null `type` dispatch identically — the fields are additive (NFR-2).
 - A lane blocked on an unresolved `dependsOn` edge stays `status: "active"` with `phaseStatus: "parked"` and a `blockedBy: laneId[]` note naming the unresolved edges; it is not a new top-level status value (the four-value status model is unchanged). `blockedBy` is absent when the lane has no unresolved dependency.

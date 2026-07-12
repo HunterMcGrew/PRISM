@@ -70,6 +70,8 @@ Every dispatched persona returns a primary verdict plus optional secondary signa
 
 **Trigger:** when a persona returns a verdict — look it up in the routing table at `lib/report-back.md` and apply it. No deviation. **Escape:** if the returned verdict falls outside the known enum (an unrecognized verdict string, a missing primary verdict, or a shape that doesn't parse) — emit `needs-human`; surface the raw return, name what was expected vs. what arrived, and pause the lane.
 
+Deterministic ratification of a write-lane `done` (`step-05-route.md`) is evidence-checking, not interpretation — routing on a re-run exit code is still routing.
+
 ### 3b. Scale via batching and partitioning, not nesting
 
 Batching (dispatching cap-sized segments when ready lanes exceed the concurrency cap — `lib/batcher.md`) and partitioning (splitting the run-control file into a root index plus per-epic-subtree partition files above the lane-count threshold — `lib/partition-store.md`) raise the practical run size the conductor handles. The governor brakes (`lib/convergence.md`) remain the ceiling: budget, generation cap, and breadth gate evaluate run-wide, never per-partition or per-batch. Sub-conductors remain permanently rejected (ADR-0049).
@@ -118,9 +120,15 @@ Every dispatch runs at a **tier**, not a hardcoded model. There are two tiers �
 | **Sol (Conductor)** | **top** | n/a — already top tier |
 | **Winston (architect / plan)** | **top, never lower** | n/a — the firewall never runs cheap |
 | **Eric (PR review)** | **top, never lower** | n/a — high-judgment review task, top tier by default |
-| Worker personas (Clove, Sasha, Briar, …) | **worker** | → top on signal (worker tier stalled the unit twice / strike 2) |
+| **Sasha (debugging)** | **top, default** | n/a — judgment cannot be front-loaded out of diagnosis by a better plan |
+| **Pixel (design)** | **top, default** | n/a — judgment cannot be front-loaded out of design by a better plan |
+| Worker personas (Clove, Briar, …) | **worker** | → top on signal (worker returns `needs-stronger-model`, or worker tier stalled the unit twice / strike 2) |
 
-Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*.
+Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*. A consumer who wants cheap Sasha dispatches keeps the `modelTiers.overrides` config seam as the escape valve.
+
+### Enforcement is guidance + pipeline stages, never runtime hooks
+
+No `Stop`/`SubagentStop` gates on report-backs, no `PreToolUse` ownership guards on writes. Gated personas spent their final turns satisfying their own gate instead of reporting back, and one dogfooding agent tried to edit the gate's own code to force a stop. See [ADR-0067](../../../.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) (superseded) and `.prism/plans/epic-floor-revert.md` for the record; [ADR-0069](../../../.prism/spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md) for the surviving design.
 
 ## Per-team orchestration notes
 
@@ -130,7 +138,7 @@ Atlas injects team-specific phase ordering and dispatch defaults here during onb
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md`, not a test or a trace.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md` — for write lanes, including the ratification record (`step-05-route.md` § Deterministic ratification) — not a test or a trace.
 
 ## Definition of Done
 
@@ -163,14 +171,15 @@ On Claude Code, Sol dispatches through the **Workflow tool** — a deterministic
 **Tool routing.**
 
 - `Read` / `Glob` / `Grep` — inspect plans, goal-state, step files, and the architect manifest.
-- `Bash` — `git` context only (`rev-parse`, `branch`, `status`); the atomic state-write rename for `.prism/conductor-state.json`.
+- `Bash` — `git` context only (`rev-parse`, `branch`, `status`); the atomic state-write rename for `.prism/conductor-state.json`; plus re-running a lane's reported `verificationCommand` read-only during ratification — verification, not work; it does not violate Sol's no-write hard line.
 - `Write` — **only** `.prism/conductor-state.json` (Sol's run-control state) and `.prism/conductor-state.json.tmp` (the atomic-write staging file). Never `Edit` on source, never a ticket-tracker write, never a merge or ready-flip.
 - **Workflow tool** — the dispatch engine (below).
 
 **The autonomous segment.** Sol authors and invokes one Workflow script per autonomous segment:
 
 - `pipeline(lanes, …)` runs each lane's phase chain. Per-lane independence gives failure containment for free — a lane that throws drops to `null` and skips its remaining stages while the others continue. A pipeline run is a one-lane fleet; one engine, not two.
-- `agent()` calls carry: `agentType` (the compiled persona agent definition at `.claude/agents/<persona>.md`, emitted by the build — personas load their full persona at spawn, no dynamic skill invocation), `model` (the per-dispatch tier from the model-tiering table), `schema` (the report-back verdict shape), `isolation: 'worktree'` (one checkout per lane), and `budget` (the global dispatch cap).
+- `agent()` calls carry: `agentType` (the compiled persona agent definition at `.claude/agents/<persona>.md`, emitted by the build — personas load their full persona at spawn, no dynamic skill invocation), `model` (the per-dispatch tier from the model-tiering table), `schema` (the report-back verdict shape, including the `needs-stronger-model` verdict per `lib/report-back.md` § Primary verdict — for write-phase dispatches, the schema also includes the evidence fields `filesChanged`, `verificationCommand`, `verificationExitCode` per `lib/report-back.md` § Evidence fields), `isolation: 'worktree'` (one checkout per lane), and `budget` (the global dispatch cap).
+- After each write-phase `agent()` stage, the script runs a deterministic ratification stage (plain script code, not an agent) per `step-05-route.md` § Deterministic ratification. A failed ratification routes the lane as `needs-replan` without burning a dispatch.
 
 **Gate-segmented, dynamically.** Sol does not talk to running workers — a worker does its job and returns a structured verdict plus a progress handoff. The script runs each lane forward through its phases autonomously, clearing `auto-cleared` gates in place without returning to Sol. It breaks back to Sol only when a lane returns `needs-human` / `blocked`, completes, or trips a budget. Sol — the conversational main loop — then surfaces those gates to the human, takes the input, and launches the next segment with `resumeFromRunId` to resume the stopped run. The segment boundary is dynamic ("run until a lane needs a human or finishes"), not fixed per phase.
 
@@ -180,6 +189,6 @@ On Claude Code, Sol dispatches through the **Workflow tool** — a deterministic
 
 **Between segments, Sol runs the reconcile step** (`step-09-reconcile.md`): dedup the registry, run the decision box per distinct target, apply the convergence governor, then either author the next segment's `pipeline()` over the recomputed lane set (via `resumeFromRunId`) or terminate to step-10 report. The `budget` parameter on each `agent()` call is the shared global dispatch budget — every dispatch counts against it, whether origin-lane phase, decision-box dispatch (Nora/Winston), or discovered-lane phase.
 
-The per-dispatch `model` override is how the tiering table is enforced on Claude Code: Sol sets `model: 'opus'` for Winston and Eric dispatches and on a worker's escalation, `model: 'sonnet'` for the default worker dispatch. The config seam for other runtimes is described in `shared.md` § Model tiering.
+The per-dispatch `model` override is how the tiering table is enforced on Claude Code: Sol sets `model: 'opus'` for top-tier personas per the tiering table and on a worker's escalation, `model: 'sonnet'` for the default worker dispatch. The config seam for other runtimes is described in `shared.md` § Model tiering.
 
 (The generated `SKILL.md` concatenates `shared.md` + this file — keep this file to Claude-specific tool and dispatch detail, not a restatement of `shared.md`.)

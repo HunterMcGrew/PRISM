@@ -42,6 +42,8 @@ Every dispatched persona returns a primary verdict plus optional secondary signa
 
 **Trigger:** when a persona returns a verdict — look it up in the routing table at `lib/report-back.md` and apply it. No deviation. **Escape:** if the returned verdict falls outside the known enum (an unrecognized verdict string, a missing primary verdict, or a shape that doesn't parse) — emit `needs-human`; surface the raw return, name what was expected vs. what arrived, and pause the lane.
 
+Deterministic ratification of a write-lane `done` (`step-05-route.md`) is evidence-checking, not interpretation — routing on a re-run exit code is still routing.
+
 ### 3b. Scale via batching and partitioning, not nesting
 
 Batching (dispatching cap-sized segments when ready lanes exceed the concurrency cap — `lib/batcher.md`) and partitioning (splitting the run-control file into a root index plus per-epic-subtree partition files above the lane-count threshold — `lib/partition-store.md`) raise the practical run size the conductor handles. The governor brakes (`lib/convergence.md`) remain the ceiling: budget, generation cap, and breadth gate evaluate run-wide, never per-partition or per-batch. Sub-conductors remain permanently rejected (ADR-0049).
@@ -90,9 +92,15 @@ Every dispatch runs at a **tier**, not a hardcoded model. There are two tiers �
 | **Sol (Conductor)** | **top** | n/a — already top tier |
 | **Winston (architect / plan)** | **top, never lower** | n/a — the firewall never runs cheap |
 | **Eric (PR review)** | **top, never lower** | n/a — high-judgment review task, top tier by default |
-| Worker personas (Clove, Sasha, Briar, …) | **worker** | → top on signal (worker tier stalled the unit twice / strike 2) |
+| **Sasha (debugging)** | **top, default** | n/a — judgment cannot be front-loaded out of diagnosis by a better plan |
+| **Pixel (design)** | **top, default** | n/a — judgment cannot be front-loaded out of design by a better plan |
+| Worker personas (Clove, Briar, …) | **worker** | → top on signal (worker returns `needs-stronger-model`, or worker tier stalled the unit twice / strike 2) |
 
-Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*.
+Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*. A consumer who wants cheap Sasha dispatches keeps the `modelTiers.overrides` config seam as the escape valve.
+
+### Enforcement is guidance + pipeline stages, never runtime hooks
+
+No `Stop`/`SubagentStop` gates on report-backs, no `PreToolUse` ownership guards on writes. Gated personas spent their final turns satisfying their own gate instead of reporting back, and one dogfooding agent tried to edit the gate's own code to force a stop. See [ADR-0067](../../../.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) (superseded) and `.prism/plans/epic-floor-revert.md` for the record; [ADR-0069](../../../.prism/spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md) for the surviving design.
 
 ## Per-team orchestration notes
 
@@ -102,7 +110,7 @@ Atlas injects team-specific phase ordering and dispatch defaults here during onb
 
 ## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md`, not a test or a trace.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md` — for write lanes, including the ratification record (`step-05-route.md` § Deterministic ratification) — not a test or a trace.
 
 ## Definition of Done
 
