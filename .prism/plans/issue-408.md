@@ -1,5 +1,8 @@
 # Plan: sol-deterministic-verification
 
+> Closed: 2026-07-12
+> Retro: declined — ticket-grain lightweight charter check run inline at close (Winston); all 10 AC verified against the shipped diff (`origin/main...9318efa`), no divergence, no refuted decisions, no separate retro report.
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/408
@@ -79,12 +82,18 @@ All edits are conductor spec surfaces. Run `pnpm prism:build` after canonical-so
   - **Alternatives considered:** full parity (hardcode `internal`). Rejected: a new team adopting PRISM legitimately starts at `launch`; the dial threads through the decision box, gate registry, and goal-state schema, so deletion is a wide blast radius for negative value.
   - **Chosen approach:** keep the dial untouched; port only the trust-hardening pieces.
   - **Implementation guidance:** task 6 explicitly verifies no `launch`/`hobby` vocabulary is removed.
+  - → no promotion needed (port-scoping decision specific to this backport; the dial's own design already lives in its skill surfaces, unchanged by this work).
 - **Ratification is a pipeline stage, never a hook.** ADR-0067's goal survives; its seam does not. The Stop-hook floor sat on the report-back channel and made agents fight their own gate (`epic-floor-revert.md`). Promoted to ADR-0069 (task 8), added to `seed-curation.json` excluded list per ADR-0064 (PRISM ships no ADR files). → promoted to ADR-0069.
 - **The model-escalation axis becomes two-trigger, one-target:** worker-returned `needs-stronger-model` (self-judgment) + Sol's strike-2 count. The doer's verdict picks the axis; Sol never re-diagnoses. A lane already at `top` parks instead of looping.
+  - → promoted to ADR-0069 (the `needs-stronger-model` axis is a decision clause; also codified in `step-06-escalate.md` and `lib/report-back.md`).
 - **Evidence fields apply to write lanes only.** Read-lanes (review, plan, QA) produce no diff and no verification command — ratifying them is theater. The gate covers provable claims; quality stays with the review gauntlet (ADR-0067's Briar-ceiling caveat still binds: no review-quality gate, it's impossible by construction).
+  - → promoted to ADR-0069 (Consequences: "Evidence fields apply to write lanes only"; codified in `lib/report-back.md` § Evidence fields).
 - **Naive exit-0 ratification is accepted for v1; baseline reconciliation is the named upgrade path.** A flaky verification command can bounce an innocent lane to `needs-replan`. Deferred until dogfooding shows it bites — recorded in ADR-0069 Consequences so the mitigation isn't re-derived.
+  - → promoted to ADR-0069 (Consequences: the accepted-for-v1 negative and its named upgrade path).
 - **Sasha and Pixel default to `top` tier (portable refinement adopted — user may veto task 9).** Diagnosis and design are judgment tasks the plan can't front-load; the `modelTiers.overrides` config seam is the consumer escape valve either way.
+  - → no promotion needed (codified in the canonical tiering table, `shared.md` § Model tiering; the veto point is flagged open in Review Issues for the human at merge).
 - **Sol re-running a verification command is verification, not work.** The no-write hard line binds writes; a read-only build/test re-run creates no artifact. The `claude.md` Bash tool-routing line is amended so the contract and the procedure agree (Structural Concern #1 from evaluate).
+  - → no promotion needed (codified in the canonical conductor surfaces `claude.md` Bash tool-routing line and `shared.md` § How Sol thinks #3).
 
 ---
 
@@ -92,6 +101,7 @@ All edits are conductor spec surfaces. Run `pnpm prism:build` after canonical-so
 
 - 2026-07-12 [main]: Plan created — port the portable-roster Sol trust-hardening design (needs-stronger-model verdict, evidence fields, deterministic ratification, no-hooks note) back into prism-conductor; dial kept, tiers refined. Winston evaluate + plan session.
 - 2026-07-12 [huntermcgrew/sol-deterministic-verification]: Implemented all 10 tasks — `needs-stronger-model` verdict + evidence fields in `lib/report-back.md`; deterministic ratification in `step-05-route.md`; two-trigger model axis in `step-06-escalate.md`; evidence-schema + ratification-stage wiring in `claude.md`; no-hooks anti-pattern note + tiering-table Sasha/Pixel top-default rows in `shared.md`; `verification` object + enum extension in `lib/goal-state.md`; wrote ADR-0069 (added to seed-curation excluded list per ADR-0064 — new ADRs default to mirrored unless excluded). `pnpm prism:build && pnpm prism:crossref-lint && pnpm prism:test` all pass; SKILL.md read-through found no contradictions.
+- 2026-07-12 [huntermcgrew/sol-deterministic-verification]: Plan closed on the final PR branch (pre-merge, PR #409, reviewed clean). Reflect phase (ticket-grain lightweight) verified all 10 AC against the shipped diff — no divergence, no refuted decisions; ADR-0069 is the durable promotion, all Decision entries carry verdicts.
 
 ---
 
@@ -148,10 +158,10 @@ Two Minor observations recorded for visibility (neither blocks PR readiness):
 
 ## PR Readiness
 
-- [x] No critical or major issues — Briar self-review clean, 2026-07-12
-- [ ] No stray debug artifacts — untracked `.prism/conductor/sol-deterministic-verification.md` found in working tree (see Review Issues)
-- [x] All verification commands pass — `pnpm prism:build && pnpm prism:crossref-lint && pnpm prism:test` all green (Sol re-ran independently)
-- [ ] PR description up to date — PR not yet opened; Sol drives the review chain before shipping
-- [x] Lasting decisions promoted (ADR-0069) — written and added to `seed-curation.json` excluded list
+- [x] No critical or major issues — Briar self-review clean + Eric PR review (0/0/2, handled), 2026-07-12
+- [x] No stray debug artifacts in the diff — untracked `.prism/conductor/sol-deterministic-verification.md` (Sol's run log) left out of the commit; excluded from `git add`, not swept in (see Review Issues, minor/open for the human)
+- [x] All verification commands pass — `pnpm prism:build && pnpm prism:crossref-lint && pnpm prism:test` all green
+- [x] PR description up to date — PR #409 open, reviewed clean
+- [x] Lasting decisions promoted (ADR-0069) — written and added to `seed-curation.json` excluded list; all Decision entries carry verdicts
 
-**Last updated:** 2026-07-12 (Briar self-review)
+**Last updated:** 2026-07-12 (Winston — plan close)
