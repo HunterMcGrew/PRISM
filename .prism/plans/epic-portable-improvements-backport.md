@@ -9,7 +9,7 @@ https://github.com/HunterMcGrew/PRISM/issues/404
 
 ## Goal
 
-Back-port the quality improvements proven in the portable skill roster (`~/Downloads/portable-skills/`) into PRISM's canonical skill sources — the improvements only, none of the portability layer.
+Back-port the quality improvements proven in the portable skill roster (maintained locally, outside this repo) into PRISM's canonical skill sources — the improvements only, none of the portability layer.
 
 ---
 
@@ -103,7 +103,7 @@ Repo map / `.repo-map.md` / first-run interview; `_shared/core.md` pointer block
 
 ## Per-persona re-anchor trigger spec
 
-Source: each portable skill's "Persona notes on the shared core" block (`grep "Re-anchor triggers for" ~/Downloads/portable-skills/skills/*/SKILL.md` prints the full table). Mapping: winston=prism-architect, sasha=prism-debugger, clove=prism-code-dev, briar=prism-code-review-self, eric=prism-code-review-pr, eli=prism-documentation, nora=prism-ticket-start, mira=prism-user-stories, parker=prism-prd, pixel=prism-design, reese=prism-qa-test-plan, sage=prism-changelog, lilac=prism-standup-summary, iris=prism-retro, theo=prism-doc-walker, ren=prism-refactor-scout, zoe=prism-surface-audit, sol=prism-conductor, vera=prism-founder, kora=prism-market-research, ellis=prism-finance, charlie=prism-marketing, quinn=prism-sales, tess=prism-data, remy=prism-customer-success, penny=prism-recruiting, lex=prism-legal.
+Source: each local roster skill's "Persona notes on the shared core" block — the per-skill SKILL.md files' "Re-anchor triggers for" tables. Mapping: winston=prism-architect, sasha=prism-debugger, clove=prism-code-dev, briar=prism-code-review-self, eric=prism-code-review-pr, eli=prism-documentation, nora=prism-ticket-start, mira=prism-user-stories, parker=prism-prd, pixel=prism-design, reese=prism-qa-test-plan, sage=prism-changelog, lilac=prism-standup-summary, iris=prism-retro, theo=prism-doc-walker, ren=prism-refactor-scout, zoe=prism-surface-audit, sol=prism-conductor, vera=prism-founder, kora=prism-market-research, ellis=prism-finance, charlie=prism-marketing, quinn=prism-sales, tess=prism-data, remy=prism-customer-success, penny=prism-recruiting, lex=prism-legal.
 
 ---
 

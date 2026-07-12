@@ -14,7 +14,20 @@ Exactly one per dispatch. It routes the lane.
 | `needs-fix` | A review rung found issues it recorded in `## Review Issues`; they're fixable in-loop. | Briar or Eric returned findings — route to the implementer, re-review, stay in-phase. |
 | `blocked` | The persona can't proceed — a dependency, an environment failure, or a missing input. | Clove can't build because an upstream lane hasn't landed. |
 | `needs-replan` | The plan is the problem — vague tasks, a wrong decision, a gap. | Clove reports the plan left implementation judgment calls open. |
+| `needs-stronger-model` | The persona judges the task exceeds its dispatched tier — an execution-capability call, not a plan defect, not a human call. | Clove reports the task is within the plan's spec but beyond the worker tier's ability to execute correctly. |
 | `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `launch` policy; an `OPEN —` decision; a review finding that needs a human call (disagreement → step-06). |
+
+A bigger model does not fix a vague plan. If the worker had to guess because the plan was ambiguous, the verdict is `needs-replan` (→ Winston), not `needs-stronger-model`.
+
+## Evidence fields (write lanes)
+
+Any lane that wrote files reports, alongside its verdict: `filesChanged: [paths]`, `verificationCommand: <exact command run>`, `verificationExitCode: <int>`.
+
+Evidence fields turn "I ran the tests" into a falsifiable claim the ratification stage re-checks.
+
+A `done` from a write-lane is **proposed, not accepted** — it advances only after deterministic ratification (`step-05-route.md` § Deterministic ratification).
+
+In fleet mode these are schema fields on the `agent()` report-back shape (`claude.md` § The autonomous segment). Read-lanes (review, plan, QA-plan) are exempt — no files, nothing to ratify.
 
 ## Secondary signals
 
@@ -60,6 +73,7 @@ On a `needs-human` resolution, the human's answer is durable product content. Th
 | primary `done` | advance `currentPhase` |
 | primary `needs-fix` | dispatch the implementer (Clove) for the `## Review Issues`, then re-dispatch the same reviewer; lane stays in the review phase (the gauntlet loop, bounded by the step-07 pass budget + three-strike rule) |
 | primary `needs-replan` / `blocked` | route to Winston (`escalation.axis: replan`) |
+| primary `needs-stronger-model` | re-dispatch the same lane, same persona, at `top` tier (`escalation.axis: model`); log the escalation. A lane already at `top` skips the escalation and parks at the gate (`needs-human`) with both attempts summarized. |
 | primary `needs-human` | pause; append to `pendingHumanReport` |
 | signal `found-bug` | route to Sasha |
 | signal `found-followup-work` | route to Nora (scope-fit + DoR) |
