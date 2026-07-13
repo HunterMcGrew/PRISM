@@ -19,7 +19,12 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { applyFilePass, assertSourceIsPlausible, runUpdate } from "./update";
+import {
+	applyFilePass,
+	assertSourceIsPlausible,
+	resolvePrismContentRoot,
+	runUpdate,
+} from "./update";
 import { hashContent } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
@@ -645,6 +650,84 @@ test("runUpdate copies content and projects the persona roster", async () => {
 	);
 });
 
+// --- content sources from the install seed, not the raw dogfooding tree (bug #2) ---
+
+test("resolvePrismContentRoot resolves to the genericized install seed", () => {
+	assert.equal(
+		resolvePrismContentRoot("/repo"),
+		path.join("/repo", "templates", "install", ".prism")
+	);
+});
+
+test("runUpdate sources canonical content from the install seed, not the raw dogfooding tree", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			// Raw dogfooding tree and seed both carry the same relative path with
+			// different content — the caller resolves prismContentRoot via
+			// resolvePrismContentRoot, mirroring runAdoptCli/runUpdateCli.
+			await writeFile(prismContentRoot, "rules/dogfooding-check.md", "# Raw content\n");
+			const seedContentRoot = resolvePrismContentRoot(prismRepoRoot);
+			await writeFile(seedContentRoot, "rules/dogfooding-check.md", "# Seed content\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot: seedContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/dogfooding-check.md"),
+				"# Seed content\n",
+				"consumer receives the seed content when the caller resolves the seam"
+			);
+		}
+	);
+});
+
+test("runUpdate records the resolved package.json version in the consumer manifest, not 0.0.0", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(
+				prismRepoRoot,
+				"package.json",
+				`${JSON.stringify({ name: "@huntermcgrew/prism", version: "0.7.0" }, null, "\t")}\n`
+			);
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const raw = await readFile(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+			const manifest = JSON.parse(raw) as SyncManifest;
+			assert.equal(
+				manifest.prismVersion,
+				"0.7.0",
+				"manifest records the version resolved from package.json, not the 0.0.0 fallback"
+			);
+		}
+	);
+});
+
+test("applyFilePass called without versionMetadata still produces a valid summary (back-compat)", async () => {
+	await withTempRoots(async ({ prismContentRoot, consumerContentRoot }) => {
+		await writeFile(prismContentRoot, "rules/a.md", "# A\n");
+
+		const summary = await applyFilePass(prismContentRoot, consumerContentRoot);
+
+		assert.equal(outcomeFor(summary, "rules/a.md").action, "written");
+		assert.deepEqual(summary.versionDelta, {
+			previous: null,
+			current: "0.0.0",
+			changed: false,
+		});
+	});
+});
+
 // --- --dry-run tests (issue #376) ---
 
 test("runUpdate --dry-run writes nothing but returns the full summary", async () => {
@@ -726,7 +809,14 @@ test("runUpdate --dry-run reports the same version delta a real run would record
 	await withTempRepoRoots(
 		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
 			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
-			await writeSourceManifestVersion(prismContentRoot, "0.7.0");
+			// runUpdate resolves prismVersion from the PRISM source's package.json
+			// (resolvePrismVersion), not from the (possibly absent) source manifest —
+			// see plan Decision "Version metadata from package.json".
+			await writeFile(
+				prismRepoRoot,
+				"package.json",
+				`${JSON.stringify({ name: "@huntermcgrew/prism", version: "0.7.0" }, null, "\t")}\n`
+			);
 			await writeConsumerManifest(consumerContentRoot, {}, "0.6.0");
 
 			const summary = await runUpdate({

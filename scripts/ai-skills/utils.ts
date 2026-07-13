@@ -449,6 +449,51 @@ export async function ensureConsumerPathDefinitions(
 }
 
 /**
+ * Resolves the path definitions a run builds platform dirs from, tolerating a
+ * fresh consumer under `--dry-run`. A real run always has a provisioned
+ * consumer `paths.json` (`ensureConsumerPathDefinitions` wrote it); `--dry-run`
+ * skips that write (compute-don't-write), so when the consumer file is absent
+ * or structurally incomplete this falls back to the PRISM package's own
+ * `paths.json` — the exact file a real adopt would have provisioned —
+ * preserving preview fidelity instead of crashing. A real run with a
+ * missing/incomplete file still defers to the strict loader so its throw
+ * semantics are unchanged.
+ */
+export async function resolveRunPathDefinitions(
+	prismSourceRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<PathDefinitions> {
+	const consumerRaw = await readFileIfExists(
+		path.join(consumerRepoRoot, ".ai-skills", "definitions", "paths.json")
+	);
+	if (consumerRaw !== null) {
+		try {
+			const parsed = JSON.parse(consumerRaw);
+			if (isPathDefinitionsComplete(parsed)) {
+				return parsed;
+			}
+		} catch {
+			// Unparseable — fall through to the dry-run fallback / strict loader.
+		}
+	}
+
+	if (dryRun) {
+		const packageRaw = await readFileIfExists(
+			path.join(prismSourceRoot, ".ai-skills", "definitions", "paths.json")
+		);
+		if (packageRaw !== null) {
+			const parsed = JSON.parse(packageRaw);
+			if (isPathDefinitionsComplete(parsed)) {
+				return parsed;
+			}
+		}
+	}
+
+	return loadPathDefinitions(consumerRepoRoot);
+}
+
+/**
  * Builds the platform-dir list from a repo root and its path definitions.
  *
  * Both `prism:build` and `prism:update` need the same three platform dirs

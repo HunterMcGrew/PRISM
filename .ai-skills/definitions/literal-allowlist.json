@@ -259,6 +259,10 @@
 		{
 			"path": ".cursor/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
 			"reason": "platform-copy mirror of ADR-0065"
+		},
+		{
+			"path": "templates/install/.prism/architect/onboarding.md",
+			"reason": "provenance citation (PRISM-256/PRISM-250) in an architect doc; genericization tracked as follow-up — see plan bug-adopt-missing-schema"
 		}
 	]
 }

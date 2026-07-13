@@ -26,7 +26,11 @@ import {
 	AGENTS_MD_BLOCK_END,
 	AGENTS_MD_SEEDED_MARKER,
 } from "./agents-md-block";
-import { ensureConsumerPathDefinitions, hashContent } from "./utils";
+import {
+	ensureConsumerPathDefinitions,
+	hashContent,
+	listRelativeDirectoryEntries,
+} from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 
 /** Initializes a git repo at `dir` with deterministic, side-effect-free config. */
@@ -324,13 +328,15 @@ test("runAdopt produces a .sync-manifest.json after the first pass", async () =>
 	await withTempRoots(
 		async ({
 			prismSourceRoot,
-			prismContentRoot,
+			installSeedRoot,
 			consumerRepoRoot,
 			consumerContentRoot,
 		}) => {
-			// Seed the PRISM source .prism/ with a PRISM-owned file so runUpdate has
-			// something to apply and rewriteConsumerManifest can record it.
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			// Seed the PRISM install surface with a PRISM-owned file so runUpdate has
+			// something to apply and rewriteConsumerManifest can record it. runUpdate
+			// now sources canonical content from the install seed, not the raw
+			// dogfooding .prism/ tree — see resolvePrismContentRoot.
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
@@ -355,8 +361,8 @@ test("runAdopt produces a .sync-manifest.json after the first pass", async () =>
 
 test("runAdopt projects the persona roster into the consumer", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			await runAdopt({ prismSourceRoot, consumerRepoRoot });
@@ -394,12 +400,12 @@ test("no-manifest byte-identical consumer file is a no-op, not a .bak", async ()
 	await withTempRoots(
 		async ({
 			prismSourceRoot,
-			prismContentRoot,
+			installSeedRoot,
 			consumerRepoRoot,
 			consumerContentRoot,
 		}) => {
 			// Consumer already has the file at the exact same bytes as PRISM ships.
-			await writeFile(prismContentRoot, "rules/current.md", "# identical\n");
+			await writeFile(installSeedRoot, "rules/current.md", "# identical\n");
 			await writeFile(consumerContentRoot, "rules/current.md", "# identical\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
@@ -424,13 +430,13 @@ test("diverged consumer file is preserved as .bak during runAdopt", async () => 
 	await withTempRoots(
 		async ({
 			prismSourceRoot,
-			prismContentRoot,
+			installSeedRoot,
 			consumerRepoRoot,
 			consumerContentRoot,
 		}) => {
 			// PRISM ships an updated version; consumer has a hand-edited copy.
 			// No manifest exists (first-contact scenario).
-			await writeFile(prismContentRoot, "rules/rule.md", "# PRISM version\n");
+			await writeFile(installSeedRoot, "rules/rule.md", "# PRISM version\n");
 			await writeFile(consumerContentRoot, "rules/rule.md", "# Hand-edited\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
@@ -549,8 +555,8 @@ test("runAdopt throws when a .sync-manifest.json already exists", async () => {
 
 test("runAdopt provisions an absent paths.json and completes (Mode A)", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			// Mode A: remove the consumer paths.json that scaffolding wrote, simulating
 			// a cold consumer that ran prism init (config only) but has no paths.json.
@@ -591,8 +597,8 @@ test("runAdopt provisions an absent paths.json and completes (Mode A)", async ()
 
 test("runAdopt repairs an incomplete paths.json and completes (Mode B)", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			// Mode B: overwrite with the structurally incomplete shape — generated block
 			// present but missing platformContentCopies, which crashes the platform refresh.
@@ -633,8 +639,8 @@ test("runAdopt repairs an incomplete paths.json and completes (Mode B)", async (
 
 test("runAdopt leaves a complete consumer paths.json untouched (no clobber)", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			// A complete consumer file with a customized (but structurally valid) value.
 			const customized = {
@@ -671,20 +677,22 @@ test("runAdopt --dry-run writes nothing but returns the full summary", async () 
 	await withTempRoots(
 		async ({
 			prismSourceRoot,
-			prismContentRoot,
 			installSeedRoot,
 			consumerRepoRoot,
 			consumerContentRoot,
 		}) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
-			await writeFile(installSeedRoot, "rules/seed-only.md", "# Seed\n");
+			// Phase A (seed) and phase B (runUpdate) now source from the same
+			// install seed, so a single absent file is reported by both: phase A's
+			// dry-run preview (seed.written) and phase B's dry-run preview
+			// (update.outcomes "written") — neither actually persists.
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true });
 
-			assert.deepEqual(summary.seed.written, ["rules/seed-only.md"]);
+			assert.deepEqual(summary.seed.written, ["rules/some-rule.md"]);
 			assert.equal(
-				await fileExists(consumerContentRoot, "rules/seed-only.md"),
+				await fileExists(consumerContentRoot, "rules/some-rule.md"),
 				false,
 				"dry-run must not write the seed file"
 			);
@@ -717,11 +725,11 @@ test("runAdopt --dry-run reports a diverged file as backed-up without writing a 
 	await withTempRoots(
 		async ({
 			prismSourceRoot,
-			prismContentRoot,
+			installSeedRoot,
 			consumerRepoRoot,
 			consumerContentRoot,
 		}) => {
-			await writeFile(prismContentRoot, "rules/rule.md", "# PRISM version\n");
+			await writeFile(installSeedRoot, "rules/rule.md", "# PRISM version\n");
 			await writeFile(consumerContentRoot, "rules/rule.md", "# Hand-edited\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
@@ -836,8 +844,8 @@ test("runAdopt refuses a config.json with an unrecognized techStack entry", asyn
 
 test("runAdopt reports the absent-AGENTS.md notice and no CLAUDE.md notice when neither file exists", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
@@ -866,8 +874,8 @@ test("runAdopt reports the absent-AGENTS.md notice and no CLAUDE.md notice when 
 
 test("runAdopt reports the present-AGENTS.md notice and no CLAUDE.md notice when both files exist", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			await writeFile(consumerRepoRoot, "AGENTS.md", "# AGENTS\n");
 			await writeFile(consumerRepoRoot, "CLAUDE.md", "# CLAUDE.md\n");
@@ -900,8 +908,8 @@ test("runAdopt reports the present-AGENTS.md notice and no CLAUDE.md notice when
 
 test("runAdopt seeds a minimal AGENTS.md when absent and the opt-in flag is given", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot, consumerContentRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({
@@ -933,8 +941,8 @@ test("runAdopt seeds a minimal AGENTS.md when absent and the opt-in flag is give
 
 test("runAdopt does not seed AGENTS.md when absent and the opt-in flag is omitted", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({ prismSourceRoot, consumerRepoRoot });
@@ -955,8 +963,8 @@ test("runAdopt does not seed AGENTS.md when absent and the opt-in flag is omitte
 
 test("runAdopt never overwrites an existing AGENTS.md even with the opt-in flag given", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 			const consumerAuthored = "# My AGENTS.md\nCustom consumer content.\n";
 			await writeFile(consumerRepoRoot, "AGENTS.md", consumerAuthored);
@@ -979,8 +987,8 @@ test("runAdopt never overwrites an existing AGENTS.md even with the opt-in flag 
 
 test("runAdopt --dry-run computes the seed outcome but writes nothing", async () => {
 	await withTempRoots(
-		async ({ prismSourceRoot, prismContentRoot, consumerRepoRoot }) => {
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
 
 			const summary = await runAdopt({
@@ -999,6 +1007,98 @@ test("runAdopt --dry-run computes the seed outcome but writes nothing", async ()
 				await fileExists(consumerRepoRoot, "AGENTS.md"),
 				false,
 				"dry-run must not write AGENTS.md"
+			);
+		}
+	);
+});
+
+// --- content sources from the install seed, not the raw dogfooding tree (bug #2) ---
+
+test("runAdopt sources canonical content from the install seed, not the raw dogfooding tree", async () => {
+	await withTempRoots(
+		async ({
+			prismSourceRoot,
+			prismContentRoot,
+			installSeedRoot,
+			consumerRepoRoot,
+			consumerContentRoot,
+		}) => {
+			// The raw dogfooding tree carries PRISM-internal literals; the seed is the
+			// genericized version consumers must receive. Both source the same
+			// relative path so a regression back to the raw tree would surface here.
+			await writeFile(
+				prismContentRoot,
+				"rules/dogfooding-check.md",
+				"# Raw rule citing THR-1881 and PRISM-1234\n"
+			);
+			await writeFile(
+				installSeedRoot,
+				"rules/dogfooding-check.md",
+				"# Genericized rule\n"
+			);
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.equal(
+				await readFile(consumerContentRoot, "rules/dogfooding-check.md"),
+				"# Genericized rule\n",
+				"consumer receives the seed content, not the raw dogfooding content"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/dogfooding-check.md.bak"),
+				false,
+				"a fresh adopt produces no .bak — phase A and phase B source the same seed"
+			);
+
+			const entries = await listRelativeDirectoryEntries(consumerContentRoot);
+			for (const entry of entries) {
+				if (entry.kind !== "file") {
+					continue;
+				}
+				const content = await readFile(consumerContentRoot, entry.relativePath);
+				assert.doesNotMatch(
+					content,
+					/(THR-[0-9]+|PRISM-[0-9]+)/,
+					`no dogfooding literal expected in ${entry.relativePath}`
+				);
+			}
+		}
+	);
+});
+
+// --- dry-run tolerates a fresh consumer's absent/incomplete paths.json (bug #3) ---
+
+test("runAdopt --dry-run completes on a fresh consumer with no paths.json", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			// Fresh consumer: prism init ran (config.json exists) but paths.json does
+			// not — the exact state ensureConsumerPathDefinitions's dry-run write-skip
+			// leaves behind (see resolveRunPathDefinitions).
+			await fs.rm(path.join(consumerRepoRoot, ".ai-skills/definitions/paths.json"));
+
+			await assert.doesNotReject(() =>
+				runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true })
+			);
+		}
+	);
+});
+
+test("runAdopt --dry-run completes when paths.json omits generated.platformContentCopies", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/definitions/paths.json",
+				`${JSON.stringify(STALE_CONSUMER_PATHS_JSON, null, "\t")}\n`
+			);
+
+			await assert.doesNotReject(() =>
+				runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true })
 			);
 		}
 	);

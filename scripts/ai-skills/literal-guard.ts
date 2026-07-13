@@ -34,6 +34,17 @@ const LITERAL_GUARD_PATTERN =
  */
 const LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
 
+/**
+ * Dogfooding literals that must never reach a consumer's `.prism/`. The de-
+ * thriving set (`Thrive`/`TracTru`/`THR-`/`thrive.`) plus PRISM's own ticket
+ * refs (`PRISM-NNN`) and the migration meta-reference (`de-thriving`). `Sol`,
+ * `Iris`, `ADR-NNNN` are deliberately absent — they are legitimate framework
+ * content that ships to consumers. Scans the install seed, the tree consumers
+ * receive verbatim; allowlisted files (legitimate provenance) are exempt.
+ */
+const SEED_DOGFOODING_PATTERN =
+	/(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+|PRISM-[0-9]+|de-thriving)/;
+
 export interface LiteralGuardViolation {
 	relativePath: string;
 	line: number;
@@ -235,4 +246,16 @@ export async function runLeftoverTokenGuard(
 	platformRoots: string[]
 ): Promise<LiteralGuardViolation[]> {
 	return scanPlatformRoots(repoRoot, platformRoots, LEFTOVER_TOKEN_PATTERN);
+}
+
+/**
+ * Scans the install seed (`templates/install/.prism`) for dogfooding literals
+ * that would reach a consumer's `.prism/` verbatim. Reuses the allowlist-aware
+ * scan engine; one violation per matching line.
+ */
+export async function runConsumerSeedLiteralGuard(
+	repoRoot: string,
+	seedRoot: string
+): Promise<LiteralGuardViolation[]> {
+	return scanPlatformRoots(repoRoot, [seedRoot], SEED_DOGFOODING_PATTERN);
 }
