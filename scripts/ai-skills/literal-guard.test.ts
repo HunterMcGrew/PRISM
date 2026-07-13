@@ -142,6 +142,20 @@ test("seed literal guard flags the de-thriving meta-reference", async () => {
 	});
 });
 
+test("seed literal guard allows legitimate framework references (Sol, Iris, ADR-NNNN)", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(
+			platformRoot,
+			"architect/foo.md",
+			"Sol dispatches Iris per ADR-0047.\n"
+		);
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 0);
+	});
+});
+
 test("seed literal guard exempts an allowlisted file", async () => {
 	await withTempRoot(async (repoRoot, platformRoot) => {
 		await writeOutput(platformRoot, "architect/onboarding.md", "See PRISM-256 for context.\n");

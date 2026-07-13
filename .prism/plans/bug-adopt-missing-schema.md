@@ -312,6 +312,7 @@ Grouped under Clove. Each task names the file, the exact change, verification, a
 - 2026-07-12 [main]: Verified bug #3 (Confirmed/High) — `adopt --dry-run` on a fresh consumer crashes because the provision write is skipped (utils.ts:443) while `runUpdate` reads consumer paths.json unconditionally (update.ts:409); relayed "silent preview gap" refuted — it's a crash. Corroborated bug #2 direction (Confirmed/High, code-path only) — adopt phase B sources canonical from `<prismSourceRoot>/.prism` (dogfooding, adopt.ts:184) not `templates/install/.prism`, overwriting phase-A seed. Both warrant 0.7.2 fix tasks; no fixes written, bug #2 design left to Winston.
 - 2026-07-12 [main] (Winston): Designed the consolidated 0.7.2 fix and authored `## Implementation Tasks` + `## Decisions` + `## Acceptance Criteria`. Key finding beyond Sasha's trace: bug #2 is a shared-sourcing flaw — `update.ts:841` has the same raw-`.prism/` hardcode as `adopt.ts:184`, so the fix routes both through one `resolvePrismContentRoot` seam at the install seed and sources version metadata from `package.json` (seed ships no manifest). Follow-up: genericize the `PRISM-256/250` provenance line in `templates/install/.prism/architect/onboarding.md` (allowlisted for now).
 - 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove): Implemented all 15 tasks — published `config.schema.json` + `verify-pack-parity` gate (commit `f84bdab`), and the `resolvePrismContentRoot` seam + package.json-sourced version metadata + seed-literal canary + `resolveRunPathDefinitions` dry-run fallback (commit `2b486f2`). Combined bugs #2 and #3 into one commit rather than bug-per-commit — `update.ts` interleaves both fixes in adjacent regions, and a hand-split patch risked a non-compiling intermediate commit. `pnpm run prism:check` is green (502 tests, all gates); all live canary/parity verifications (schema-present, schema-missing-fails, THR-9999-injection-fails, Sol/Iris/ADR-NNNN-survive) confirmed by hand.
+- 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove): Folded in Eric's two PR-review Minors — added a seed-guard canary negative test locking in the `Sol`/`Iris`/`ADR-NNNN` exclusion, and extracted `readCompletePathDefinitionsIfPresent` in `utils.ts` so all three paths.json read sites (including the previously-unguarded package-file parse in `resolveRunPathDefinitions`) share one guarded read-parse-completeness helper. Added a regression test for the newly-guarded malformed-package-file path. `pnpm run prism:check` green (504 tests, all gates).
 
 ## Sessions
 
@@ -319,6 +320,8 @@ Grouped under Clove. Each task names the file, the exact change, verification, a
 - 2026-07-12 [main] open: Intent — verify bug #3 (dry-run paths.json sequencing) and corroborate the direction of bug #2 (adopt sources canonical from dogfooding tree) at the code level for Winston/Clove; Bounds — two evidence-graded verdicts in this plan, no fixes, no bug #2 fix design (Winston's lane), plan is the only file written; Approach — static control-flow trace via symbols not line numbers, no instrumentation · close: scope held — both confirmed by trace; bug #3 mechanism refined (crash, not silent preview); bug #2 corroborated code-path-only (fs proof lives in consumer repo)
 - 2026-07-12 [main] (Winston) open: Intent — design minimal correct fixes for the three confirmed 0.7.2 packaging bugs + parity/canary gates and author Clove-executable tasks; Bounds — plan gets Decisions + to-bar Tasks + AC, no code/commit, Debugged Issues untouched; Approach — one content-root seam at the install seed, version from package.json, reuse existing scan engine for the seed canary · close: scope held — plan-only writes; confirmed bug #2 is shared across adopt+update and designed the fix at both sites; version-metadata sourcing solved via package.json; one-PR call made
 - 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove) open: Intent — implement Winston's 15 tasks and ship a draft PR; Bounds — all tasks green under `prism:check`, plan updated, draft PR open, no `.prism/lessons.md`/`.prism/conductor/` in the commit; Approach — execute tasks in sequence, verify against real source before each edit · close: scope held — all 15 tasks implemented; one plan-defect fix applied inline (task 12's exact script content lacked the `isMain` guard every other CLI script in this codebase uses, so importing it for a unit test shelled out to `npm pack` as a side effect — added the guard, matching the established pattern); one keystroke-level deviation (task 11's "loadPathDefinitions may stay imported" assumption didn't hold post-edit — removed the now-unused import); commit-per-bug became commit-per-bug-cluster (bugs #2+#3 combined) because `update.ts` interleaves both fixes and a hand-split patch risked a broken intermediate commit — flagged in Decisions/History, not silently done
+- 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Briar) open: Intent — self-review the branch before PR review, dispatched by Sol; Bounds — chat-only findings plus plan writes to `## Review Issues`/`## PR Readiness`, no code changes, no GitHub posts; Approach — full diff read against the plan's Decisions, source-level trace of the seam/canary/dry-run-fallback logic, targeted re-run of the four touched test suites plus type-check and the pack-parity gate standalone · close: scope held — verified the shared `resolvePrismContentRoot` seam has no other hardcoded raw-`.prism` call sites left, confirmed the seed canary pattern matches the seed tree with only the allowlisted hit, confirmed `isMain` guard and the `loadPathDefinitions` import removal both correct, re-ran 76/76 tests across `adopt.test.ts`/`update.test.ts`/`literal-guard.test.ts`/`verify-pack-parity.test.ts` clean plus `prism:check-types` clean plus the pack-parity gate standalone clean; one open Minor (duplicated paths.json completeness-check logic across two utils.ts functions) recorded, non-blocking
+- 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove) open: Intent — fold Eric's two non-blocking PR-review Minors into draft PR #410 before re-review, dispatched by Sol; Bounds — both findings fixed, only source/test/plan files staged (lessons.md and conductor/ left untouched), new commit (not amend) pushed to the existing PR branch which stays draft; Approach — add the seed-guard negative test first (isolated, no shared-code risk), then extract the shared paths.json helper and route all three read sites through it, verify with the four affected suites plus full `prism:check` · close: scope held — both Minors fixed with tests, `pnpm run prism:check` green (504 tests, all gates), no other files touched
 
 ## Debugged Issues
 
@@ -383,6 +386,24 @@ Grouped under Clove. Each task names the file, the exact change, verification, a
 - **Missing evidence:** consumer-side byte-level diff proof (lives in the todo-app repo; corroborated the code path only).
 - **Ticket:** `N/A`
 
+## Review Issues
+
+### Canary negative-test gap: seed guard's legitimate-content exclusion unlocked
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/literal-guard.ts` (`SEED_DOGFOODING_PATTERN`), tested by `scripts/ai-skills/literal-guard.test.ts`.
+- **Problem:** `SEED_DOGFOODING_PATTERN` deliberately excludes legitimate framework content (`Sol`, `Iris`, `ADR-NNNN`) while catching real dogfooding literals. No regression test locked in that exclusion, so a future pattern edit could silently start flagging legitimate content with nothing to catch it.
+- **Fixed in:** Eric PR review fold-in (Sol dispatch) — added `"seed literal guard allows legitimate framework references (Sol, Iris, ADR-NNNN)"` to `literal-guard.test.ts`, asserting `runConsumerSeedLiteralGuard` returns zero violations for a fixture containing `Sol`, `Iris`, and `ADR-0047`.
+
+### Duplicated paths.json read/parse/completeness-check logic
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/utils.ts:462` (`resolveRunPathDefinitions`), duplicating the same read-raw → `JSON.parse` → `isPathDefinitionsComplete` sequence already in `ensureConsumerPathDefinitions` (`utils.ts:406`) — and doing it twice within itself (once for the consumer file, once for the package fallback).
+- **Problem:** the same three-step "read the file if it exists, parse it, check `isPathDefinitionsComplete`" block appears three times across the two functions (consumer-file check in `ensureConsumerPathDefinitions`, consumer-file check in `resolveRunPathDefinitions`, package-file check in `resolveRunPathDefinitions`). Logic is correct in all three call sites (verified by trace and by the passing dry-run fixture tests), so this is a readability/DRY observation, not a correctness bug — but a future change to the completeness check or the fallback ordering now has to land in three places to stay consistent. Eric's PR review also flagged that the package-file parse (~`utils.ts:486`) lacked the `try/catch` guarding the consumer-file parse (~`utils.ts:472`), so a malformed package `paths.json` would throw unguarded.
+- **Fixed in:** Eric PR review fold-in (Sol dispatch) — extracted `readCompletePathDefinitionsIfPresent(filePath)` in `utils.ts` (read + parse-with-try/catch + completeness check) and routed both `ensureConsumerPathDefinitions` and `resolveRunPathDefinitions` (both its consumer and package reads) through it. A malformed `paths.json` at any of the three sites is now uniformly treated as absent/incomplete instead of throwing. Added `"runAdopt --dry-run treats a malformed PRISM package paths.json as absent, not an unguarded crash"` to `adopt.test.ts` covering the newly-guarded package-file path.
+
 ## Acceptance Criteria
 
 Written for a tester with a terminal and a throwaway repo, verifying against the 0.7.2 package (or a local checkout). "Adopt output" means the `.prism/` directory a consumer receives.
@@ -408,12 +429,14 @@ Written for a tester with a terminal and a throwaway repo, verifying against the
 ## PR Readiness
 
 - [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as`
+- [x] Types correct — no `any`, no unsafe `as` (the `JSON.parse(...) as T` casts in `verify-pack-parity.ts` match the established codebase pattern for trusted-source JSON — see `build.ts`, `sync-manifest.ts`, `verify-manifest-coverage.ts`)
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (16 new/updated test cases across `adopt.test.ts`, `update.test.ts`, `literal-guard.test.ts`, `verify-pack-parity.test.ts`)
+- [x] Tests written for new logic and edge cases (18 new/updated test cases across `adopt.test.ts`, `update.test.ts`, `literal-guard.test.ts`, `verify-pack-parity.test.ts` after the Eric fold-in; full `prism:check` — 504 tests, all gates green)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-07-12 (`pnpm run prism:check`, 502 tests, all gates green)
-- [ ] PR description up to date (pending PR creation)
+- [x] Build passes — last run: 2026-07-12 (`pnpm run prism:check`, 504 tests, all gates green, re-run after folding in Eric's two Minors)
+- [x] PR description up to date (PR #410 body verified current — Summary/What/Why/How/Notes all reflect current scope, including both mechanical deviations)
 - [ ] Lasting decisions promoted to architect context (deferred to plan close per `branch-plan.md` § Before Closing — not yet closing this plan)
+
+Both previously-open Minors are now fixed (see `## Review Issues`) — no open review issues remain.
 
 **Last updated:** 2026-07-12

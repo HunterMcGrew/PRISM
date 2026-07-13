@@ -1104,6 +1104,37 @@ test("runAdopt --dry-run completes when paths.json omits generated.platformConte
 	);
 });
 
+test("runAdopt --dry-run treats a malformed PRISM package paths.json as absent, not an unguarded crash", async () => {
+	await withTempRoots(
+		async ({ prismSourceRoot, installSeedRoot, consumerRepoRoot }) => {
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+			// Fresh consumer (no paths.json) plus a corrupt PRISM package copy — the
+			// dry-run fallback in resolveRunPathDefinitions must guard this parse the
+			// same way it guards the consumer-file parse, falling through to the
+			// strict loader's clear error instead of an unguarded JSON.parse throw.
+			await fs.rm(path.join(consumerRepoRoot, ".ai-skills/definitions/paths.json"));
+			await writeFile(
+				prismSourceRoot,
+				".ai-skills/definitions/paths.json",
+				"{ not valid json"
+			);
+
+			await assert.rejects(
+				() => runAdopt({ prismSourceRoot, consumerRepoRoot, dryRun: true }),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("Missing path definitions"),
+						`expected the strict-loader fallback message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+		}
+	);
+});
+
 // --- git-repo check tests (issue #376) ---
 
 test("runAdopt fails fast when the consumer directory is not inside a git repository", async () => {

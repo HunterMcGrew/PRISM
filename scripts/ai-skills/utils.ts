@@ -388,6 +388,34 @@ export function isPathDefinitionsComplete(value: unknown): value is PathDefiniti
 }
 
 /**
+ * Reads a `paths.json` file if it exists, returning the parsed value only when
+ * it is structurally complete. Returns null when the file is absent,
+ * unparseable, or incomplete — every caller treats those three cases
+ * identically (fall through to whatever the caller's next source is), so the
+ * read-parse-validate sequence lives here once instead of being duplicated at
+ * each call site with inconsistent error handling.
+ */
+async function readCompletePathDefinitionsIfPresent(
+	filePath: string
+): Promise<PathDefinitions | null> {
+	const raw = await readFileIfExists(filePath);
+	if (raw === null) {
+		return null;
+	}
+
+	try {
+		const parsed = JSON.parse(raw);
+		if (isPathDefinitionsComplete(parsed)) {
+			return parsed;
+		}
+	} catch {
+		// Unparseable — treat the same as absent.
+	}
+
+	return null;
+}
+
+/**
  * Ensures the consumer has a structurally complete
  * `.ai-skills/definitions/paths.json` before prism:update reads it. Writes the
  * PRISM package's own paths.json when the consumer's is absent OR structurally
@@ -414,16 +442,8 @@ export async function ensureConsumerPathDefinitions(
 		"definitions",
 		"paths.json"
 	);
-	const existing = await readFileIfExists(consumerPathsFile);
-
-	if (existing !== null) {
-		try {
-			if (isPathDefinitionsComplete(JSON.parse(existing))) {
-				return "ok";
-			}
-		} catch {
-			// Unparseable — fall through to provision the package copy.
-		}
+	if ((await readCompletePathDefinitionsIfPresent(consumerPathsFile)) !== null) {
+		return "ok";
 	}
 
 	const packagePathsFile = path.join(
@@ -464,29 +484,19 @@ export async function resolveRunPathDefinitions(
 	consumerRepoRoot: string,
 	dryRun: boolean
 ): Promise<PathDefinitions> {
-	const consumerRaw = await readFileIfExists(
+	const consumerComplete = await readCompletePathDefinitionsIfPresent(
 		path.join(consumerRepoRoot, ".ai-skills", "definitions", "paths.json")
 	);
-	if (consumerRaw !== null) {
-		try {
-			const parsed = JSON.parse(consumerRaw);
-			if (isPathDefinitionsComplete(parsed)) {
-				return parsed;
-			}
-		} catch {
-			// Unparseable — fall through to the dry-run fallback / strict loader.
-		}
+	if (consumerComplete !== null) {
+		return consumerComplete;
 	}
 
 	if (dryRun) {
-		const packageRaw = await readFileIfExists(
+		const packageComplete = await readCompletePathDefinitionsIfPresent(
 			path.join(prismSourceRoot, ".ai-skills", "definitions", "paths.json")
 		);
-		if (packageRaw !== null) {
-			const parsed = JSON.parse(packageRaw);
-			if (isPathDefinitionsComplete(parsed)) {
-				return parsed;
-			}
+		if (packageComplete !== null) {
+			return packageComplete;
 		}
 	}
 
