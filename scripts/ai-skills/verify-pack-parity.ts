@@ -52,7 +52,11 @@ export function findMissingRuntimeReadPaths(
 }
 
 async function main(): Promise<void> {
-	const { stdout } = await execFileAsync("npm", ["pack", "--dry-run", "--json"]);
+	// Windows resolves `npm` to `npm.cmd`, which execFile cannot spawn directly
+	// (no shell involved) — shell: true routes through cmd.exe there while
+	// staying a plain execFile on macOS/Linux. Args are a static literal array,
+	// not user input, so shell interpolation has no injection surface here.
+	const { stdout } = await execFileAsync("npm", ["pack", "--dry-run", "--json"], { shell: true });
 	const parsed = JSON.parse(stdout) as { files: { path: string }[] }[];
 	const packedList = [...new Set(parsed.flatMap((entry) => entry.files.map((f) => f.path)))];
 
