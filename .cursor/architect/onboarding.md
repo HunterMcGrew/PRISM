@@ -46,4 +46,4 @@ Mode detection is instruction-driven prose in `shared.md`, not a `detectMode()` 
 
 ---
 
-_Source: PRISM-256 (Atlas detects `init`-written config) — see `.prism/plans/prism-256.md` for the resolution and alternatives weighed. The `init` cold-bootstrap CLI that creates the third file-state shipped in PRISM-250 (`prism init`)._
+_Atlas detecting an `init`-written config — rather than requiring an explicit bootstrap marker — was a deliberate design choice, weighed against alternatives before settling on the config-present/state-absent file signature described above._
