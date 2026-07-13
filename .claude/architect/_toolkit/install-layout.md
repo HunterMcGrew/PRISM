@@ -75,6 +75,16 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 **Enforcement:** Seed drift is enforced by `checkSeedDrift()` in `scripts/ai-skills/build.ts`; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 
+## Consumer content sources through one seam
+
+Both `prism:adopt`'s canonical pass and every `prism:update` pull PRISM-owned content from the genericized install seed at `templates/install/.prism`, never PRISM's own raw `.prism/` dogfooding tree. The single seam is `resolvePrismContentRoot(prismSourceRoot)` in `scripts/ai-skills/update.ts`, called at both `adopt.ts` (phase B, via `runUpdate`) and `update.ts`'s `runUpdateCli`. Two call sites that must resolve identically is what makes this a real seam rather than an inlined constant — centralizing it prevents the two entry points from drifting apart.
+
+The invariant exists because the raw `.prism/` tree carries PRISM-internal literals — de-thriving references, `THR-`/`PRISM-NNN` ticket citations, dogfooding plans — that must never reach a consumer. Token substitution can't strip them (it rewrites only configured template tokens like `PRISM`, not prose ticket refs), so the seed — already curated and build-verified — is the only correct source. The class of bug this closes: a prior split where `update.ts` sourced from raw `.prism/` while adopt seeded from the install seed let adopt phase B overwrite the correct seed content with dogfooding literals on every consumer adopt (plan `bug-adopt-missing-schema`, bug #2).
+
+Because the install seed intentionally ships no `.sync-manifest.json`, version metadata for the consumer manifest resolves from `package.json` (`resolvePrismVersion`) plus a git-or-`"unknown"` commit — not from any shipped manifest — threaded as an optional `VersionMetadata` so unit-test callers keep a manifest-reading fallback.
+
+**Seed dogfooding-literal canary.** `runConsumerSeedLiteralGuard` (`scripts/ai-skills/literal-guard.ts`) scans the install seed at build time and fails `pnpm prism:build`/`prism:check` on any non-allowlisted dogfooding literal. The authoritative pattern is `SEED_DOGFOODING_PATTERN` in that file — origin-project references, PRISM's own `PRISM-NNN` ticket citations, and the de-thriving migration marker. `Sol`, `Iris`, and `ADR-NNNN` are deliberately **not** matched: they are legitimate framework content that ships to consumers. Asserting on the seed is deterministic precisely because the seed is what a consumer receives verbatim. Legitimate provenance lines are exempted per-file in `.ai-skills/definitions/literal-allowlist.json` (today: `templates/install/.prism/architect/onboarding.md`, whose PRISM-256/PRISM-250 citation is tracked for genericization).
+
 ## First-contact adoption: `prism init` then `prism adopt`
 
 A cold consumer — a repo that has never had PRISM — needs to run two commands before the agent-driven onboarding begins:
@@ -190,6 +200,10 @@ Platforms without managed content are treated as opt-out, not drift. The signal 
 Relative links (`../` and `./`) are deliberately skipped. Canonical content carries relative links authored to resolve in the consumer's installed platform tree — where `rules/` and `skills/` are siblings under the platform dir — which is a different directory layout from the partial `.prism/` monorepo tree. Verifying them from the monorepo root would produce false failures by design, so they are excluded.
 
 A green crossref-lint run therefore means the repo-root-absolute class resolves cleanly — not that every prose cross-reference resolves. When a doc carries relative links, verify them against the consumer install surface (`templates/install/.prism/`) rather than the canonical tree.
+
+## Packaging-parity gate
+
+Every file the CLI reads from `prismSourceRoot` at runtime must be present in the published tarball. `scripts/ai-skills/verify-pack-parity.ts` — wired into `pnpm prism:check` as `prism:verify-pack`, which `prepublishOnly` runs transitively — asserts that each entry in its hand-maintained `RUNTIME_READ_PATHS` list appears in `npm pack --dry-run --json` output, failing with a named-file message otherwise. Unit tests structurally cannot catch this class: they read the source tree, never the tarball. That gap is how `.ai-skills/config.schema.json` shipped git-tracked but omitted from `package.json` `files` in 0.7.1, breaking `adopt`/`doctor`/`update` in the published package while `init` (which never reads the schema) survived (plan `bug-adopt-missing-schema`, bug #1). When a new runtime read of a packaged file is added, add its path to `RUNTIME_READ_PATHS` — the tradeoff for a list that a static scanner can't yet derive.
 
 ## Where to look
 

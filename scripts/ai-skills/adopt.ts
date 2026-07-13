@@ -30,6 +30,7 @@ import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validat
 import { loadSyncManifest } from "./sync-manifest";
 import {
 	formatVersionDeltaLine,
+	resolvePrismContentRoot,
 	resolvePrismSource,
 	resolveSelfPrismSource,
 	runUpdate,
@@ -181,7 +182,7 @@ export async function runAdopt(options: {
 
 	const installSeedRoot = path.join(prismSourceRoot, "templates", "install", ".prism");
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
-	const prismContentRoot = path.join(prismSourceRoot, ".prism");
+	const prismContentRoot = resolvePrismContentRoot(prismSourceRoot);
 
 	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
 	let configExists: boolean;

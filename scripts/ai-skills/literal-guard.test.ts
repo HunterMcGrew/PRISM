@@ -16,7 +16,11 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { runLeftoverTokenGuard, runLiteralGuard } from "./literal-guard";
+import {
+	runConsumerSeedLiteralGuard,
+	runLeftoverTokenGuard,
+	runLiteralGuard,
+} from "./literal-guard";
 
 async function withTempRoot(
 	body: (repoRoot: string, platformRoot: string) => Promise<void>
@@ -100,6 +104,81 @@ test("leftover-token guard passes on a fully substituted output", async () => {
 		);
 
 		const violations = await runLeftoverTokenGuard(repoRoot, [platformRoot]);
+
+		assert.equal(violations.length, 0);
+	});
+});
+
+test("seed literal guard flags a PRISM ticket reference", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(platformRoot, "architect/foo.md", "See PRISM-1234 for context.\n");
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "PRISM-1234");
+	});
+});
+
+test("seed literal guard flags a THR ticket reference", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(platformRoot, "architect/foo.md", "Originating incident: THR-1.\n");
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "THR-1");
+	});
+});
+
+test("seed literal guard flags the de-thriving meta-reference", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(platformRoot, "architect/foo.md", "Part of the de-thriving migration.\n");
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "de-thriving");
+	});
+});
+
+test("seed literal guard allows legitimate framework references (Sol, Iris, ADR-NNNN)", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(
+			platformRoot,
+			"architect/foo.md",
+			"Sol dispatches Iris per ADR-0047.\n"
+		);
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 0);
+	});
+});
+
+test("seed literal guard exempts an allowlisted file", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(platformRoot, "architect/onboarding.md", "See PRISM-256 for context.\n");
+		await fs.mkdir(path.join(repoRoot, ".ai-skills", "definitions"), {
+			recursive: true,
+		});
+		await fs.writeFile(
+			path.join(repoRoot, ".ai-skills", "definitions", "literal-allowlist.json"),
+			JSON.stringify({
+				files: [
+					{
+						path: path
+							.relative(repoRoot, path.join(platformRoot, "architect/onboarding.md"))
+							.split(path.sep)
+							.join("/"),
+						reason: "test fixture",
+					},
+				],
+			}),
+			"utf8"
+		);
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
 
 		assert.equal(violations.length, 0);
 	});

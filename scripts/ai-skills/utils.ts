@@ -388,6 +388,34 @@ export function isPathDefinitionsComplete(value: unknown): value is PathDefiniti
 }
 
 /**
+ * Reads a `paths.json` file if it exists, returning the parsed value only when
+ * it is structurally complete. Returns null when the file is absent,
+ * unparseable, or incomplete — every caller treats those three cases
+ * identically (fall through to whatever the caller's next source is), so the
+ * read-parse-validate sequence lives here once instead of being duplicated at
+ * each call site with inconsistent error handling.
+ */
+async function readCompletePathDefinitionsIfPresent(
+	filePath: string
+): Promise<PathDefinitions | null> {
+	const raw = await readFileIfExists(filePath);
+	if (raw === null) {
+		return null;
+	}
+
+	try {
+		const parsed = JSON.parse(raw);
+		if (isPathDefinitionsComplete(parsed)) {
+			return parsed;
+		}
+	} catch {
+		// Unparseable — treat the same as absent.
+	}
+
+	return null;
+}
+
+/**
  * Ensures the consumer has a structurally complete
  * `.ai-skills/definitions/paths.json` before prism:update reads it. Writes the
  * PRISM package's own paths.json when the consumer's is absent OR structurally
@@ -414,16 +442,8 @@ export async function ensureConsumerPathDefinitions(
 		"definitions",
 		"paths.json"
 	);
-	const existing = await readFileIfExists(consumerPathsFile);
-
-	if (existing !== null) {
-		try {
-			if (isPathDefinitionsComplete(JSON.parse(existing))) {
-				return "ok";
-			}
-		} catch {
-			// Unparseable — fall through to provision the package copy.
-		}
+	if ((await readCompletePathDefinitionsIfPresent(consumerPathsFile)) !== null) {
+		return "ok";
 	}
 
 	const packagePathsFile = path.join(
@@ -446,6 +466,41 @@ export async function ensureConsumerPathDefinitions(
 	}
 
 	return "written";
+}
+
+/**
+ * Resolves the path definitions a run builds platform dirs from, tolerating a
+ * fresh consumer under `--dry-run`. A real run always has a provisioned
+ * consumer `paths.json` (`ensureConsumerPathDefinitions` wrote it); `--dry-run`
+ * skips that write (compute-don't-write), so when the consumer file is absent
+ * or structurally incomplete this falls back to the PRISM package's own
+ * `paths.json` — the exact file a real adopt would have provisioned —
+ * preserving preview fidelity instead of crashing. A real run with a
+ * missing/incomplete file still defers to the strict loader so its throw
+ * semantics are unchanged.
+ */
+export async function resolveRunPathDefinitions(
+	prismSourceRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<PathDefinitions> {
+	const consumerComplete = await readCompletePathDefinitionsIfPresent(
+		path.join(consumerRepoRoot, ".ai-skills", "definitions", "paths.json")
+	);
+	if (consumerComplete !== null) {
+		return consumerComplete;
+	}
+
+	if (dryRun) {
+		const packageComplete = await readCompletePathDefinitionsIfPresent(
+			path.join(prismSourceRoot, ".ai-skills", "definitions", "paths.json")
+		);
+		if (packageComplete !== null) {
+			return packageComplete;
+		}
+	}
+
+	return loadPathDefinitions(consumerRepoRoot);
 }
 
 /**

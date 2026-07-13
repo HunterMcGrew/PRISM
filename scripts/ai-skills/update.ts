@@ -22,7 +22,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { syncAllPlatformContentCopies } from "./build";
+import {
+	resolvePrismVersion,
+	resolveSourceCommit,
+	syncAllPlatformContentCopies,
+} from "./build";
 import {
 	buildRoleMap,
 	generatePlatformSkills,
@@ -48,10 +52,10 @@ import {
 import {
 	buildPlatformDirs,
 	hashFile,
-	loadPathDefinitions,
 	type PathDefinitions,
 	pathExists,
 	readFileIfExists,
+	resolveRunPathDefinitions,
 } from "./utils";
 
 /** What happened to a single file during the update pass. */
@@ -80,6 +84,14 @@ export interface VersionDelta {
 	previous: string | null;
 	current: string;
 	changed: boolean;
+}
+
+/** Version/commit labels for the consumer manifest, resolved from the PRISM
+ * package (`package.json` version, git-or-`unknown` commit) rather than any
+ * shipped manifest — see plan Decision "Version metadata from package.json". */
+export interface VersionMetadata {
+	prismVersion: string;
+	sourceCommit: string;
 }
 
 export interface UpdateSummary {
@@ -298,7 +310,8 @@ export async function applyFilePass(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	preloadedManifest?: SyncManifest | null,
-	dryRun = false
+	dryRun = false,
+	versionMetadata?: VersionMetadata
 ): Promise<UpdateSummary> {
 	const incomingRelativePaths =
 		await listPrismOwnedRelativePaths(prismContentRoot);
@@ -350,11 +363,12 @@ export async function applyFilePass(
 	}
 
 	const versionDelta = dryRun
-		? await previewVersionDelta(prismContentRoot, consumerManifest)
+		? await previewVersionDelta(prismContentRoot, consumerManifest, versionMetadata)
 		: await rewriteConsumerManifest(
 				prismContentRoot,
 				consumerContentRoot,
-				consumerManifest
+				consumerManifest,
+				versionMetadata
 			);
 
 	const backups = outcomes
@@ -406,7 +420,11 @@ export async function runUpdate(
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
 	// with nothing written.
 	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
-	const consumerPathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+	const consumerPathDefinitions = await resolveRunPathDefinitions(
+		prismRepoRoot,
+		consumerRepoRoot,
+		dryRun
+	);
 	const platformDirs = buildPlatformDirs(
 		consumerRepoRoot,
 		consumerPathDefinitions
@@ -427,11 +445,17 @@ export async function runUpdate(
 
 	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
 
+	const versionMetadata: VersionMetadata = {
+		prismVersion: await resolvePrismVersion(prismRepoRoot),
+		sourceCommit: await resolveSourceCommit(prismRepoRoot),
+	};
+
 	const summary = await applyFilePass(
 		prismContentRoot,
 		consumerContentRoot,
 		consumerManifest,
-		dryRun
+		dryRun,
+		versionMetadata
 	);
 
 	await refreshPlatformDirs(
@@ -455,44 +479,59 @@ export async function runUpdate(
 
 /**
  * Compares the consumer's previously recorded `prismVersion` against the
- * version the incoming PRISM source manifest carries, resolving the same
- * `"0.0.0"` fallback `rewriteConsumerManifest` writes when the source ships
- * no manifest at all. `previous: null` on first-adopt (no prior manifest) —
- * there is nothing to delta against yet, so `changed` is `false` in that case
- * even though a version is being recorded for the first time.
+ * resolved current PRISM version. `previous: null` on first-adopt (no prior
+ * manifest) — there is nothing to delta against yet, so `changed` is `false`
+ * in that case even though a version is being recorded for the first time.
  */
 function computeVersionDelta(
-	sourceManifest: SyncManifest | null,
+	currentVersion: string,
 	previousConsumerManifest: SyncManifest | null
 ): VersionDelta {
-	const current =
-		sourceManifest?.prismVersion ??
-		previousConsumerManifest?.prismVersion ??
-		"0.0.0";
+	const current = currentVersion;
 	const previous = previousConsumerManifest?.prismVersion ?? null;
 
 	return { previous, current, changed: previous !== null && previous !== current };
 }
 
 /**
+ * Resolves `VersionMetadata` from the source's own `.sync-manifest.json` when
+ * a caller doesn't supply one — used only by unit-test callers of
+ * `applyFilePass` that omit the metadata argument. The install seed ships no
+ * manifest, so `runUpdate` always resolves metadata from `package.json` and
+ * passes it through explicitly; this fallback keeps the bare-fixture test seam
+ * working. See plan Decision "Version metadata from package.json".
+ */
+async function deriveMetadataFromSourceManifest(
+	prismContentRoot: string
+): Promise<VersionMetadata> {
+	const sm = await loadSyncManifest(prismContentRoot);
+	return {
+		prismVersion: sm?.prismVersion ?? "0.0.0",
+		sourceCommit: sm?.sourceCommit ?? "unknown",
+	};
+}
+
+/**
  * Rewrites `.prism/.sync-manifest.json` in the consumer repo to the PRISM
- * source's current base hashes. Version/commit metadata is carried from the
- * PRISM source manifest when it ships one, falling back to a freshly generated
- * manifest's values otherwise. Returns the version delta so callers (`prism
- * update`'s summary, `prism adopt`'s first-run report) can surface it without
- * re-reading either manifest.
+ * source's current base hashes. Version/commit metadata comes from the
+ * resolved `versionMetadata` (package.json version, git-or-`unknown` commit),
+ * falling back to the source's own manifest for callers that omit it. Returns
+ * the version delta so callers (`prism update`'s summary, `prism adopt`'s
+ * first-run report) can surface it without re-reading either manifest.
  */
 async function rewriteConsumerManifest(
 	prismContentRoot: string,
 	consumerContentRoot: string,
-	previousConsumerManifest: SyncManifest | null
+	previousConsumerManifest: SyncManifest | null,
+	versionMetadata?: VersionMetadata
 ): Promise<VersionDelta> {
-	const sourceManifest = await loadSyncManifest(prismContentRoot);
-	const versionDelta = computeVersionDelta(sourceManifest, previousConsumerManifest);
+	const metadata =
+		versionMetadata ?? (await deriveMetadataFromSourceManifest(prismContentRoot));
+	const versionDelta = computeVersionDelta(metadata.prismVersion, previousConsumerManifest);
 
 	const generated = await generateSyncManifest(prismContentRoot, {
 		prismVersion: versionDelta.current,
-		sourceCommit: sourceManifest?.sourceCommit ?? "unknown",
+		sourceCommit: metadata.sourceCommit,
 		generatedAt: new Date().toISOString(),
 	});
 
@@ -509,11 +548,13 @@ async function rewriteConsumerManifest(
  */
 async function previewVersionDelta(
 	prismContentRoot: string,
-	previousConsumerManifest: SyncManifest | null
+	previousConsumerManifest: SyncManifest | null,
+	versionMetadata?: VersionMetadata
 ): Promise<VersionDelta> {
-	const sourceManifest = await loadSyncManifest(prismContentRoot);
+	const metadata =
+		versionMetadata ?? (await deriveMetadataFromSourceManifest(prismContentRoot));
 
-	return computeVersionDelta(sourceManifest, previousConsumerManifest);
+	return computeVersionDelta(metadata.prismVersion, previousConsumerManifest);
 }
 
 /**
@@ -794,6 +835,18 @@ export function resolvePrismSource(
 }
 
 /**
+ * Resolves the tree a consumer pulls canonical PRISM-owned content from: the
+ * genericized install seed at `templates/install/.prism`, never PRISM's own
+ * raw `.prism/` dogfooding tree. Both `prism:adopt` and `prism:update` source
+ * consumer content through this one seam so they can never drift onto the raw
+ * tree — which leaks PRISM-internal literals and dogfooding plans into the
+ * consumer. See plan Decision "Consumer content sources from the install seed".
+ */
+export function resolvePrismContentRoot(prismSourceRoot: string): string {
+	return path.join(prismSourceRoot, "templates", "install", ".prism");
+}
+
+/**
  * Guards against applying updates from a source that looks empty or mispointed.
  *
  * A valid PRISM source always contains PRISM-owned files under its `.prism/`
@@ -838,12 +891,12 @@ export async function runUpdateCli(): Promise<void> {
 		);
 	}
 
-	const prismContentRoot = path.join(prismRepoRoot, ".prism");
+	const prismContentRoot = resolvePrismContentRoot(prismRepoRoot);
 	const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
 
 	if (!(await pathExists(prismContentRoot))) {
 		throw new Error(
-			`PRISM source has no .prism/ directory at ${prismContentRoot}.`
+			`PRISM install seed missing at ${prismContentRoot} — run pnpm prism:build in the PRISM source to generate it.`
 		);
 	}
 

@@ -28,7 +28,11 @@ import {
 } from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
 import { runBomGuard } from "./bom-guard";
-import { runLeftoverTokenGuard, runLiteralGuard } from "./literal-guard";
+import {
+	runConsumerSeedLiteralGuard,
+	runLeftoverTokenGuard,
+	runLiteralGuard,
+} from "./literal-guard";
 import { runPathGuard } from "./path-guard";
 import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
 import {
@@ -726,7 +730,7 @@ const execFileAsync = promisify(execFile);
  * `"0.0.0"` when the field is missing so manifest generation never throws on a
  * malformed package file.
  */
-async function resolvePrismVersion(repoRootArg: string): Promise<string> {
+export async function resolvePrismVersion(repoRootArg: string): Promise<string> {
 	const packageJsonPath = path.join(repoRootArg, "package.json");
 	const raw = await readFileIfExists(packageJsonPath);
 	if (raw === null) {
@@ -746,7 +750,7 @@ async function resolvePrismVersion(repoRootArg: string): Promise<string> {
  * `"unknown"` when git is unavailable or the repo root is not a git checkout
  * (e.g. a tarball install) so the manifest still generates.
  */
-async function resolveSourceCommit(repoRootArg: string): Promise<string> {
+export async function resolveSourceCommit(repoRootArg: string): Promise<string> {
 	try {
 		const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
 			cwd: repoRootArg,
@@ -910,6 +914,24 @@ async function main(): Promise<void> {
 			changedPaths,
 			unclassifiedMirrored
 		);
+	}
+
+	if (await pathExists(templatesContentRoot)) {
+		const seedViolations = await runConsumerSeedLiteralGuard(
+			repoRoot,
+			templatesContentRoot
+		);
+		if (seedViolations.length > 0) {
+			for (const violation of seedViolations) {
+				console.error(
+					`seed-literal-guard: ${violation.relativePath}:${violation.line}: ${violation.match}`
+				);
+			}
+			console.error(
+				`seed-literal-guard: ${seedViolations.length} dogfooding literal(s) in the install seed — consumers receive this content verbatim. Genericize the canonical source, or allowlist the file in .ai-skills/definitions/literal-allowlist.json.`
+			);
+			process.exit(1);
+		}
 	}
 
 	await syncAgentsMdTier1Block(repoRoot, checkMode, changedPaths, tokenMap);
