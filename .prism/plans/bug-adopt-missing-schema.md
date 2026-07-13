@@ -317,6 +317,7 @@ Grouped under Clove. Each task names the file, the exact change, verification, a
 - 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove): Implemented all 15 tasks — published `config.schema.json` + `verify-pack-parity` gate (commit `f84bdab`), and the `resolvePrismContentRoot` seam + package.json-sourced version metadata + seed-literal canary + `resolveRunPathDefinitions` dry-run fallback (commit `2b486f2`). Combined bugs #2 and #3 into one commit rather than bug-per-commit — `update.ts` interleaves both fixes in adjacent regions, and a hand-split patch risked a non-compiling intermediate commit. `pnpm run prism:check` is green (502 tests, all gates); all live canary/parity verifications (schema-present, schema-missing-fails, THR-9999-injection-fails, Sol/Iris/ADR-NNNN-survive) confirmed by hand.
 - 2026-07-12 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Clove): Folded in Eric's two PR-review Minors — added a seed-guard canary negative test locking in the `Sol`/`Iris`/`ADR-NNNN` exclusion, and extracted `readCompletePathDefinitionsIfPresent` in `utils.ts` so all three paths.json read sites (including the previously-unguarded package-file parse in `resolveRunPathDefinitions`) share one guarded read-parse-completeness helper. Added a regression test for the newly-guarded malformed-package-file path. `pnpm run prism:check` green (504 tests, all gates).
 - 2026-07-13 [huntermcgrew/adopt-packaging-fixes-0.7.2] (Winston): Pre-merge plan-close ceremony on PR #410. Light ticket-grain charter-fidelity reflect passed — plan intent + all 10 AC match the shipped diff, no refuted decisions. Promoted three durable packaging invariants (content-root seam, seed-literal canary, packaging-parity gate) to `.prism/architect/_toolkit/install-layout.md`; all six Decisions carry verdicts; plan closed.
+- 2026-07-12 [huntermcgrew/prism-followup-windows-verify-pack-spawn] (Clove): Post-merge CI regression — `windows-latest` red on every push after #410 merged, `spawn npm ENOENT` in `verify-pack-parity.ts`'s raw `execFile("npm", ...)` (no shell resolves `npm.cmd` on Windows). Fixed with `{ shell: true }`; see Debugged Issues. Local `pnpm run prism:check` green on macOS; Windows correctness pending the fix PR's own `windows-latest` CI run.
 - 2026-07-13 [huntermcgrew/prism-followup-genericize-onboarding-provenance] (Eli): Resolved the follow-up flagged in the prior entry — genericized the provenance footnote in `.prism/architect/onboarding.md`, propagated via `pnpm prism:build`, and removed the `templates/install/.prism/architect/onboarding.md` literal-allowlist carve-out. `pnpm prism:check` green with the seed dogfooding-literal guard passing unallowlisted. PR #411 (draft), post-merge follow-up per `.prism/rules/followup-scope.md` — no new ticket.
 
 ## Sessions
@@ -391,6 +392,26 @@ Grouped under Clove. Each task names the file, the exact change, verification, a
 - **Suggested tests:** owned by Winston's design; at minimum a pack/adopt assertion that no dogfooding literal (`THR-NNNN`, `PRISM-NNN`, `de-thriving`, `Thrive`, `Sol`/`Iris` internal refs) appears in a consumer `.prism/` after adopt.
 - **Missing evidence:** consumer-side byte-level diff proof (lives in the todo-app repo; corroborated the code path only).
 - **Ticket:** `N/A`
+
+### `prism:verify-pack` fails on Windows CI: `spawn npm ENOENT`
+
+- **Status:** `fixed`
+- **Fixed in:** follow-up PR to #410 (0.7.2) — `execFileAsync("npm", [...], { shell: true })` in `verify-pack-parity.ts`.
+- **Severity:** High (blocks `windows-latest` CI on every push to `main`; blocks the 0.7.2 npm publish gate)
+- **Confidence:** `High` (Confirmed root cause + deterministic repro from the CI log)
+- **Environment:** GitHub Actions `windows-latest` runner only; `ubuntu-latest` and local macOS both green.
+- **File:** `scripts/ai-skills/verify-pack-parity.ts:55` (`main`, added by the same 0.7.2 PR — `f84bdab`/#410 — that introduced this gate).
+- **Root cause:** `[Confirmed]` — `execFile("npm", [...])` spawns the `npm` executable directly, with no shell in between. On Windows, `npm` on `PATH` resolves to `npm.cmd`, and `execFile` (unlike `exec` or `spawn` with `shell: true`) does not go through a shell to resolve `.cmd`/`.bat` extensions — Node's own `child_process` docs and CVE-2024-27980 cover exactly this gap. The direct spawn fails before npm ever runs.
+- **Steps to Reproduce:**
+  1. On `windows-latest` (or any Windows host), run `pnpm run prism:verify-pack`.
+  2. Observe `spawn npm ENOENT` followed by `ELIFECYCLE Command failed with exit code 1`.
+  3. Confirmed from CI run `29218155999` (`prism-check (windows-latest)`, job conclusion `failure`) — log line `2026-07-13T01:49:18.5034327Z spawn npm ENOENT`; sibling job `prism-check (ubuntu-latest)` in the same run passed.
+- **Expected behavior:** `verify-pack-parity` shells out to `npm pack --dry-run --json` and asserts packaging parity, on every platform CI runs.
+- **Actual behavior:** the spawn itself throws on Windows before `npm` is ever invoked; all 504 unit tests and every other `prism:check` gate stayed green because only this one dev script performs a raw `npm` spawn.
+- **Recommended fix:** pass `{ shell: true }` to the `execFileAsync("npm", ...)` call. The args array is a static literal (`["pack", "--dry-run", "--json"]`), not user input, so routing through a shell has no injection surface. Verified equivalent alternative (`npm.cmd` on `win32`, `npm` elsewhere, no `shell: true`) was considered but not used — `shell: true` is simpler and matches Node's own documented guidance for spawning platform executables named without an extension.
+- **Suggested tests:** none added — `verify-pack-parity.test.ts` already documents (see its file header) that `main()`'s live `npm pack` spawn is exercised indirectly by running `pnpm run prism:verify-pack` in CI, not by a unit test; a unit test would have to mock `child_process` to simulate the Windows `ENOENT` path, which tests the mock's behavior rather than the real cross-platform spawn resolution. The `windows-latest` CI job re-running this fix PR is the real regression guard, and it now guards the case that broke.
+- **Missing evidence:** none — root cause reproduced deterministically from the CI log; the fix's Windows correctness is proven by the fix PR's own `windows-latest` CI run (cannot be verified from a macOS/Linux dev host).
+- **Ticket:** `N/A` — follow-up PR off `main`, no new ticket, per `.prism/rules/followup-scope.md`.
 
 ## Review Issues
 
