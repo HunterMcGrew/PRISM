@@ -309,3 +309,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-10 (portable-improvements-backport, Sol close dispatch) — Sol dispatched Winston's plan-close with "don't run `pnpm prism:build`, architect docs aren't generated." Wrong: `.prism/architect/` is a `COPIED_CONTENT_AREAS` path, so promoting a decision into an architect doc leaves three stale platform mirrors that fail CI. Winston caught it and built anyway.
 
 **How to apply:** When Sol (or any persona) dispatches a plan-close that promotes a decision into `.prism/architect/`, treat architect docs as generated content — the dispatch calls for `pnpm prism:build` + `pnpm prism:check`, same as a skill/rule edit. Only plan files, lessons, and retros under `.prism/` are genuinely build-free.
+
+## A file the CLI reads at runtime from the package must be in package.json `files`, or the published tarball omits it
+
+**Why:** 2026-07-12 (bug-adopt-missing-schema) — `.ai-skills/config.schema.json` was never in the `files` allowlist, so `npx @huntermcgrew/prism adopt`/`doctor`/`update` threw "Missing config schema" against the published package. Unit tests passed because they resolve the schema from the source tree, never from a packed tarball — the publish surface and the runtime file-read set drifted with no gate enforcing parity.
+
+**How to apply:** When wiring a runtime read of a file resolved from the package root (`prismSourceRoot`, `__dirname`-relative, etc.), add that file to package.json `files` in the same change. Verify the publish surface with `npm pack --dry-run --json`, not just green unit tests — a packaging-parity check belongs in `prepublishOnly`.
+
+## A pr-review `needs-fix` whose remedy embeds an architecture decision routes to Winston first, not straight to Clove
+
+**Why:** 2026-07-17 (PRISM-413 eval-layer, Sol conducted run) — Eric returned `needs-fix` on a dangling-reference Major (the verdict-contract taxonomy lived in the plan while shipped files pointed at it) and proposed relocating it into `report-back.md`. Sol verified the finding, then found Eric's own remedy would dangle identically — `.prism/skills/` ships to zero consumer installs (not in package.json `files` or `templates/install/`). The real fix required choosing a *shipped* authoritative home, which is an architecture decision, not a mechanical edit. Routing straight to Clove would have produced a fix that still dangled in every consumer install.
+
+**How to apply:** When a reviewer's `needs-fix` remedy assumes a fact Sol can falsify, or the fix requires choosing where a shared/shipped contract lives, route to Winston to decide + re-plan before dispatching the implementer. `needs-fix → Clove` holds for mechanical fixes; a fix carrying a design tradeoff is a `needs-replan`-flavored detour through the architect first. Sol still only routes the verdict — it doesn't decide the architecture — but it picks the owning persona for the remedy, and cross-agent-handoff-accountability means verifying the proposed remedy actually resolves the finding before dispatching it.
