@@ -8,7 +8,7 @@ Assemble the report and write it to `.prism/retros/`. **Iris is read-only on the
 
 ## Grain switch on report shape
 
-**At `per-pr` grain**, the report is the compact fidelity note: header + charter-coverage table + any fidelity gap, no dialogue section, no promotion cautions or lesson candidates sections (step-05 didn't produce them at this grain). Filename: `.prism/retros/<epic-slug>/<ticket-id>.md` when the ticket belongs to a known epic (so the epic-grain retro can glob its children), or `.prism/retros/per-pr/<ticket-id>.md` for a standalone ticket with no parent epic.
+**At `per-pr` grain**, the report is the compact fidelity note: header + charter-coverage table + any fidelity gap, no dialogue section, no lesson candidates section (step-05 didn't produce one at this grain). Include a `## Promotion cautions` section only when step-05's `promotionCautions` array is non-empty — the common case is no section at all, since a per-pr `refutesDecision` tag is the exception, not the rule. Filename: `.prism/retros/<epic-slug>/<ticket-id>.md` when the ticket belongs to a known epic (so the epic-grain retro can glob its children), or `.prism/retros/per-pr/<ticket-id>.md` for a standalone ticket with no parent epic.
 
 **At `epic` grain**, the full report as designed below, with the ingested per-PR fidelity notes cited under `### Per-ticket fidelity` in Citations.
 
@@ -90,6 +90,10 @@ Assemble the report and write it to `.prism/retros/`. **Iris is read-only on the
    ## Fidelity gap
 
    <any divergence between what was said and what shipped, or "none — shipped as planned">
+
+   ## Promotion cautions
+
+   <only present when step-05's promotionCautions array is non-empty — a Decision this ticket's execution record refuted, with citing evidence>
 
    ## Citations
 

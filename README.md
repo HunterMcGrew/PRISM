@@ -8,7 +8,7 @@ PRISM gives AI tools a set of named personas — specialists with defined roles,
 
 **What you get:**
 
-- **Named personas across the dev lifecycle** — architect (Winston), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), debugger (Sasha), doc writer (Eli), ticket writer (Nora), QA planner (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
+- **Named personas across the dev lifecycle** — architect (Winston), implementer (Clove), self-reviewer (Briar), PR reviewer (Eric), debugger (Sasha), doc writer (Eli), ticket writer (Nora), QA planner & AC verifier (Reese), and more. Each has a defined scope, defined inputs, and a definition of done.
 - **Multi-platform skill sync** — one canonical skill source (`.ai-skills/`) builds to Claude Code, Codex, and Cursor. `pnpm prism:build` regenerates all platform outputs; `pnpm prism:check` catches drift on CI.
 - **Drop-in adoption for existing repos** — `npx @huntermcgrew/prism adopt` seeds `.prism/` and projects the persona roster into any codebase. A local-checkout path is also available for air-gapped environments and contributors.
 - **Sol — the multi-agent conductor** — orchestrates the full dev lifecycle for a stated goal: dispatches personas in sequence, pauses at human gates, and runs parallel lanes when blast radius doesn't overlap.
