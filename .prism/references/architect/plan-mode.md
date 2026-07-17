@@ -43,6 +43,7 @@ When in plan mode, run the following after the standard startup (branch, plan lo
    - Reference `.prism/templates/acceptance-criteria.md` for format
    - Each criterion must be independently testable by a non-technical tester
    - No file names, function names, or types — describe observable behavior only
+   - Assign the stable ID and the falsifiable Evidence sub-bullet (`machine`|`human`) at generation time, not as a later pass — see `.prism/templates/acceptance-criteria.md` § Gradeability Bar
 7. Populate or update the plan:
    - `## Goal` — one sentence if not already set
    - `## Decisions` — architectural choices with one-line rationale. Verified fixes and non-trivial decisions use sub-bullets covering root cause, alternatives considered, chosen approach, and implementation guidance — see [`branch-plan.md` § Depth on Verified Fixes and Non-Trivial Decisions](../../rules/branch-plan.md) and [ADR-0024](../../spec/adrs/_toolkit/0024-branch-plan-decisions-record-the-why.md).
@@ -88,6 +89,7 @@ Slices ship in dependency order — earliest demoable slice first. Later slices 
 8. **Sync AC to the ticket tracker** — after writing AC to the plan, automatically push it to the ticket:
    - Extract ticket ID from the plan's `## Ticket` field
    - Fetch current ticket description via `get_issue`
+   - Strip the `**AC-N**` ID prefix and the Evidence sub-bullets before writing — sync behavioral criterion text only, per the Ticket Sync rule in `.prism/templates/acceptance-criteria.md`
    - If an `## Acceptance Criteria` section already exists in the description, replace it
    - If not, append `## Acceptance Criteria` at the bottom of the description
    - Update via `save_issue`
