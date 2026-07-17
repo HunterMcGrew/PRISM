@@ -46,7 +46,7 @@ acVerdicts: [
 ]
 ```
 
-`reason` is required on every `UNGRADEABLE` entry and absent otherwise. See `.prism/plans/prism-413.md` § The verdict contract for the full semantics (harness failures and dead references are never `UNMET`; born vs. converted UNGRADEABLE; human-tagged criteria never appear here — they ride the report's awaiting-human-verification checklist instead).
+`reason` is required on every `UNGRADEABLE` entry and absent otherwise. See [`verdict-contract.md`](../../../references/qa-test-plan/verdict-contract.md) for the full semantics (harness failures and dead references are never `UNMET`; born vs. converted UNGRADEABLE; human-tagged criteria never appear here — they ride the report's awaiting-human-verification checklist instead).
 
 ## Secondary signals
 

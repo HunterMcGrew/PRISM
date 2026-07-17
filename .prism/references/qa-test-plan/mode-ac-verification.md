@@ -4,7 +4,7 @@
 
 Attribution: this mode belongs to the `prism-qa-test-plan` skill (Reese).
 
-Triggered when Mode Detection lands on a plan path carrying an `## Acceptance Criteria` section with no open PR yet, or by explicit prompt words like "verify the AC," "grade the AC." Unlike the other four modes, this one doesn't produce a tester-facing checklist — it produces a graded verdict report, an independent judge grading finished work against the plan's own AC per the verdict contract in `.prism/plans/prism-413.md` § The verdict contract.
+Triggered when Mode Detection lands on a plan path carrying an `## Acceptance Criteria` section with no open PR yet, or by explicit prompt words like "verify the AC," "grade the AC." Unlike the other four modes, this one doesn't produce a tester-facing checklist — it produces a graded verdict report, an independent judge grading finished work against the plan's own AC per the verdict contract in [`verdict-contract.md`](./verdict-contract.md).
 
 ## 1. Resolve the diff
 
@@ -22,7 +22,7 @@ Go criterion by criterion, in ID order (AC-1, AC-2, …). For each, follow its E
 
 ## 3. Render verdicts
 
-Grade each criterion `MET`, `UNMET`, or `UNGRADEABLE` per the verdict contract (`.prism/plans/prism-413.md` § The verdict contract). Key rules, restated for the walking procedure:
+Grade each criterion `MET`, `UNMET`, or `UNGRADEABLE` per the verdict contract ([`verdict-contract.md`](./verdict-contract.md), authoritative). Key rules, restated here as an inline cheat-sheet for the walking procedure:
 
 - **Harness failure ≠ UNMET.** A command that errors, can't run in the worktree, or disagrees with itself across two runs is UNGRADEABLE(`harness`) with the error captured — never UNMET.
 - **Dead references** — an Evidence source naming a command or path that no longer resolves — are UNGRADEABLE(`dead-reference`).

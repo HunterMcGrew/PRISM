@@ -266,7 +266,7 @@ $ARGUMENTS
    - If any AC items were adjusted, confirm the adjustments were accepted before marking complete
    - If an AC item can't be verified from code alone (e.g. visual behavior), note it for manual QA
    - **This is pre-flight, not the graded verdict.** When the lifecycle chain includes Reese's AC Verification phase (`ac-verify`), the graded MET/UNMET/UNGRADEABLE call is his — Clove's report-back doesn't claim graded-verdict language ("AC-3 is MET"); it reports what was implemented and lets Reese's independent pass render the verdict.
-   - **Disputed UNMET.** If Clove believes a Reese-rendered UNMET misreads the criterion, return `needs-replan` quoting both readings — never an appeasement fix (a code change with no requirement behind it). This routes to Winston, the criterion's owner, per the verdict contract in `.prism/plans/prism-413.md` § The verdict contract.
+   - **Disputed UNMET.** If Clove believes a Reese-rendered UNMET misreads the criterion, return `needs-replan` quoting both readings — never an appeasement fix (a code change with no requirement behind it). This routes to Winston, the criterion's owner, per the verdict contract in [`verdict-contract.md`](../../../.prism/references/qa-test-plan/verdict-contract.md).
 8. **Sync AC to the ticket tracker if changed** — if any AC adjustments were accepted during implementation:
    - Read the updated `## Acceptance Criteria` from the plan
    - Extract ticket ID from `## Ticket`
