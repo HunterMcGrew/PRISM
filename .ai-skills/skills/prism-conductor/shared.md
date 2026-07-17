@@ -94,7 +94,10 @@ Every dispatch runs at a **tier**, not a hardcoded model. There are two tiers �
 | **Eric (PR review)** | **top, never lower** | n/a — high-judgment review task, top tier by default |
 | **Sasha (debugging)** | **top, default** | n/a — judgment cannot be front-loaded out of diagnosis by a better plan |
 | **Pixel (design)** | **top, default** | n/a — judgment cannot be front-loaded out of design by a better plan |
+| **Reese (AC verification)** | **top, when dispatched for AC verification** | n/a — judging is judgment-heavy, top tier by default |
 | Worker personas (Clove, Briar, …) | **worker** | → top on signal (worker returns `needs-stronger-model`, or worker tier stalled the unit twice / strike 2) |
+
+Reese's other modes (release, sprint/group, feature/PR, bug-fix — the tester-facing checklist modes) are not in the lifecycle chain and keep the default worker dispatch; only the `ac-verify` phase dispatch runs him at top tier.
 
 Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*. A consumer who wants cheap Sasha dispatches keeps the `modelTiers.overrides` config seam as the escape valve.
 

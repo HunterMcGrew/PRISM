@@ -4,7 +4,7 @@
 
 Attribution: these mechanics belong to the `prism-qa-test-plan` skill (Reese).
 
-These apply across all four modes. Each mode reference points here instead of duplicating the mechanics.
+These apply across the checklist-producing modes (Release, Sprint / Group, Feature / PR, Bug-fix Verification). Each of those mode references points here instead of duplicating the mechanics. **AC Verification mode is the exception** — it doesn't produce a checklist, so it skips this file entirely: no ticket mapping, no sign-off block, no subject-line template. It saves its report to `.prism/qa/` and reports back directly per `mode-ac-verification.md`.
 
 ## Map tickets
 
@@ -73,9 +73,11 @@ If the user asks:
 
 ## Subject-line templates by mode
 
-Reese runs four modes, and the commit subject template branches per mode. Use the template for the mode you just ran:
+The commit subject template branches per checklist-producing mode. Use the template for the mode you just ran:
 
 - **Release:** `chore: Add QA checklist for <base> → <head>` (or `PRISM-NNNN:` variant when tied to a ticket)
 - **Sprint / Group:** `chore: Add QA checklist for PRs #X, #Y, #Z` (or `chore: Add QA checklist for <range-slug>`)
 - **Feature / PR:** `chore: Add QA checklist for PR #<number>` — and if a PRISM-NNNN is in the PR title, prefer `PRISM-NNNN: Add QA checklist for PR #<number>`
 - **Bug-fix Verification:** `PRISM-NNNN: Add bug-fix verification plan for PR #<number>`
+
+**AC Verification mode has no entry here** — it has no commit at all. Its deliverable is the saved report plus a plan `## History` pointer and a report-back verdict, per `mode-ac-verification.md` § 9. There is nothing to push.

@@ -14,7 +14,7 @@ On a fresh run, lay down at least one lane (one per independently-shippable unit
 
 ## Phase mapping
 
-The conductor loop runs over each lane's `currentPhase`: this step owns intake and resume; step-02 drives `prd → stories → design → plan`; step-03 is `plan-readiness`; step-04 drives `implement → self-review → pr-review → qa → docs`. The `self-review` and `pr-review` phases each run the review-loop gauntlet — they loop on `needs-fix` until a clean pass rather than advancing on a single pass (step-04 § The review phase is the gauntlet).
+The conductor loop runs over each lane's `currentPhase`: this step owns intake and resume; step-02 drives `prd → stories → design → plan`; step-03 is `plan-readiness`; step-04 drives `implement → ac-verify → self-review → pr-review → qa → docs`. The `self-review` and `pr-review` phases each run the review-loop gauntlet — they loop on `needs-fix` until a clean pass rather than advancing on a single pass (step-04 § The review phase is the gauntlet).
 
 ## Exit condition
 

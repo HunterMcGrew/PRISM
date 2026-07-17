@@ -1,0 +1,16 @@
+# PRISM — The Verdict Contract
+
+> _The authoritative semantics for AC-verification verdicts and their `reason` codes — consumed by Reese (grading), Clove (dispute), Sol's report-back (shape + routing), and Iris (ingestion)._
+
+The `acVerdicts` JSON *shape*, the `reason` enum literal values, and Sol's routing predicates live in `.prism/skills/prism-conductor/lib/report-back.md` § acVerdicts / § Routing table — this doc owns what the verdicts and reasons *mean*, not their wire shape or routing. That file is dev-repo-internal and does not ship to a consumer install, which is why the *semantics* — needed by shipped consumers like Reese's mode procedure and Clove's dispute rule — live here instead.
+
+## Verdict-state taxonomy
+
+1. **Harness failure ≠ UNMET.** An evidence command that errors, can't run in the worktree, or disagrees with itself across two runs (flake) is UNGRADEABLE(`harness`) with the error captured — never UNMET. A signal that can't run is not a failing signal.
+2. **Dead references.** An evidence source naming a command or path that no longer resolves is UNGRADEABLE(`dead-reference`).
+3. **Human-only criteria are not AC defects.** Visual, timing, or feel-based criteria get tagged `machine` or `human` on their Evidence sub-bullet at authoring (Winston's job). Reese grades the machine set and emits the human set as a mini-checklist attached to the report — each criterion routed to the verifier that can actually verify it.
+4. **Born vs converted UNGRADEABLE.** *Born* (vague, unfalsifiable, or missing evidence) is recorded as a `## Review Issues` open entry; the lane **advances** on the gradeable set. *Converted* (a criterion that survived two Reese⇄Clove fix cycles without resolving) routes to `needs-replan` (→ Winston for criterion rewrite) — a twice-failed criterion must not ride the side-finding channel past review and the merge gate as a cosmetic note.
+5. **Born-UNGRADEABLE does not ride `found-followup-work`.** It's a defect in the *current* plan's AC, owned by Winston to sharpen — not new-ticket work, which is Nora's route. It rides a `## Review Issues` open entry (durable bus), plus an optional `observation` secondary signal.
+6. **UNGRADEABLE(`requires-human`)** is emitted in the report's awaiting-human-verification mini-checklist, surfaced at the human merge gate. Never graded, never silently dropped.
+7. **Disputed UNMET.** When the doer (Clove) believes a rendered UNMET misreads the criterion, she returns `needs-replan` quoting both readings — never an appeasement fix (a code change with no requirement behind it). This routes to Winston, the criterion's owner, via the step-06 disagreement fast-path; Winston sharpens the criterion or evidence source, and Reese re-grades against the corrected version. Two competent readers reaching opposite verdicts is, by this contract's own standard, an ambiguous criterion.
+8. **No per-criterion confidence grades.** A confidence dial is the partial-credit escape hatch binary grading exists to remove. Evidence is *typed* instead (`executed` re-runnable > `inspected` file-state > `demonstrated` self-reported) — the type ratio is itself a signal, and wall-to-wall `demonstrated` METs is the rubber-stamp tell.

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 2,
+  "currentStep": null,
+  "stepsCompleted": [
+    "step-01-detect-target",
+    "step-02-gather-evidence",
+    "step-05-action-items",
+    "step-06-save-report"
+  ],
+  "retroTarget": {
+    "kind": "per-pr",
+    "planPath": ".prism/plans/prism-413.md",
+    "ticketId": "prism-413",
+    "pr": 414,
+    "branch": "huntermcgrew/prism-413-eval-layer"
+  },
+  "grain": "per-pr",
+  "evidence": {
+    "census": {
+      "history": 12,
+      "decisions": 21,
+      "debugged": 0,
+      "review": 4,
+      "prThreads": 3,
+      "ciRuns": 2,
+      "mergedPrs": 0
+    },
+    "divergences": [
+      {
+        "refutesDecision": true,
+        "decision": "Per-criterion verdicts are binary — taxonomy promoted to report-back.md",
+        "refutedBy": "Eric PR #414 Major finding (issue-comment + report-back.md:49 line comment): report-back.md's home .prism/skills/ ships to zero consumer installs; the taxonomy homed there is unreachable by shipped consumer pointers. Corrected mid-run via Sub-group F to a shipped reference."
+      }
+    ],
+    "charterCoverage": [
+      { "item": 1, "answerable": true, "sources": ["ac-verification", "decisions", "merged-diff"], "gap": null },
+      { "item": 2, "answerable": true, "sources": ["review", "pr-thread"], "gap": null },
+      { "item": 3, "answerable": true, "sources": ["review", "pr-thread"], "gap": null },
+      { "item": 4, "answerable": true, "sources": ["review", "pr-thread"], "gap": null },
+      { "item": 5, "answerable": true, "sources": ["decisions", "pr-thread"], "gap": null },
+      { "item": 6, "answerable": true, "sources": ["ci", "ac-verification"], "gap": "final-child CI approximated by PR #414 check-runs (pre-merge, not yet main-CI)" }
+    ]
+  },
+  "actionItems": [
+    {
+      "action": "Decide whether the install-relative-link-gate / crossref-lint should flag inline-code-prose citations to non-shipping paths (the class that let the dangling `prism-413.md` plan-pointer slip past on Eric's first pass — caught only because it was inline-code prose, not a markdown link).",
+      "proposedOwner": "Winston"
+    }
+  ],
+  "promotionCautions": [
+    {
+      "decision": "Per-criterion verdicts are binary; UNGRADEABLE carries a required reason — original verdict: taxonomy → promoted to report-back.md",
+      "refutedBy": "PR #414 execution record refuted the report-back.md promotion target: `.prism/skills/` ships to no consumer install (verified absent from npm `files` + `templates/install/`). Corrected home is `.prism/references/qa-test-plan/verdict-contract.md` (semantics), with report-back.md keeping only the `acVerdicts` shape + routing. Sub-group F made the correction live. Promote CORRECTED, not the original report-back.md target."
+    }
+  ],
+  "reportPath": ".prism/retros/per-pr/prism-413.md",
+  "status": "complete"
+}
