@@ -25,7 +25,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "unit": "ticket id or feature slug",
       "planPath": ".prism/plans/<id>.md",
       "worktree": "path or null",
-      "currentPhase": "prd | stories | design | plan | plan-readiness | implement | self-review | pr-review | qa | docs | done",
+      "currentPhase": "prd | stories | design | plan | plan-readiness | implement | ac-verify | self-review | pr-review | qa | docs | done",
       "phaseStatus": "running | awaiting-gate | parked | done",
       "status": "active | parked | blocked | done",
       "models": { "winston": "opus", "eric": "opus", "clove": "sonnet" },

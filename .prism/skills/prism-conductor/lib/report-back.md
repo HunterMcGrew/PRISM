@@ -29,6 +29,25 @@ A `done` from a write-lane is **proposed, not accepted** — it advances only af
 
 In fleet mode these are schema fields on the `agent()` report-back shape (`claude.md` § The autonomous segment). Read-lanes (review, plan, QA-plan) are exempt — no files, nothing to ratify.
 
+### `acVerdicts` (review lanes — Reese's AC-verification dispatch)
+
+The review-lane sibling of the write-lane evidence fields above. This is the **only** place the `acVerdicts` schema is quoted — every other file that needs it points here instead of re-enumerating the fields.
+
+```
+acVerdicts: [
+  {
+    id: string,               // stable criterion ID, e.g. "AC-1"
+    criterion: string,        // criterion text verbatim
+    verdict: "MET" | "UNMET" | "UNGRADEABLE",
+    evidenceType: "executed" | "inspected" | "demonstrated",
+    evidence: string,         // the citation — command + exit code, file:line, or observed behavior
+    reason?: "ac-defect" | "harness" | "dead-reference" | "requires-human" | "converted"  // required when verdict is UNGRADEABLE
+  }
+]
+```
+
+`reason` is required on every `UNGRADEABLE` entry and absent otherwise. See `.prism/plans/prism-413.md` § The verdict contract for the full semantics (harness failures and dead references are never `UNMET`; born vs. converted UNGRADEABLE; human-tagged criteria never appear here — they ride the report's awaiting-human-verification checklist instead).
+
 ## Secondary signals
 
 Optional, zero-or-more per dispatch. Each routes **independently** of the primary verdict — a dispatch can be `done` *and* carry a `found-followup-work` signal. Each signal has a `kind`, a `note`, and a routing target.
@@ -46,6 +65,8 @@ The split exists because one enum value can't carry both routes — the dry run 
 Before emitting either signal, a worker runs the two-question local-frame pre-filter in `followup-scope.md § Worker emit pre-filter (Sol-run-time)`. In-frame + trivial → fix inline, emit nothing; everything else → emit with a structured `target`. Tiebreaker: **over-emit < under-emit**.
 
 A `found-bug` / `found-followup-work` signal emitted inside a Sol run carries the emitting lane's `team` value through reconcile and the decision box; a resulting lane inherits it (FR-7) — see `lib/decision-box.md § Step A`. The team tag is never stripped.
+
+**Born-UNGRADEABLE does not ride `found-followup-work`.** A criterion Reese grades UNGRADEABLE(`ac-defect` | `dead-reference` | `harness`) on its first pass is recorded as an open `## Review Issues` entry, not routed to Nora — `found-followup-work` is Nora's scope-fit + DoR gate, and a vague or dead AC criterion is a defect in the *current* plan's AC, owned by Winston, not new-ticket work. The lane advances on the gradeable set; Winston's closing-ceremony loose-thread check and Zoe's per-plan audit age the open entry. An `observation` signal may additionally surface it in the end-of-run report.
 
 ## Gate dispositions
 
@@ -75,6 +96,9 @@ On a `needs-human` resolution, the human's answer is durable product content. Th
 | primary `needs-replan` / `blocked` | route to Winston (`escalation.axis: replan`) |
 | primary `needs-stronger-model` | re-dispatch the same lane, same persona, at `top` tier (`escalation.axis: model`); log the escalation. A lane already at `top` skips the escalation and parks at the gate (`needs-human`) with both attempts summarized. |
 | primary `needs-human` | pause; append to `pendingHumanReport` |
+| Reese AC-verification primary `done` | advance `currentPhase` (all machine criteria MET; born-UNGRADEABLE side-findings permitted) |
+| Reese AC-verification primary `needs-fix` | dispatch the implementer (Clove) for the `## Review Issues` UNMET entries, then re-dispatch Reese; same gauntlet loop as any review-rung `needs-fix` — Sol never re-judges an individual criterion, the `acVerdicts` field and `## Review Issues` open entries tell Clove which criteria to fix |
+| Reese AC-verification primary `needs-replan` / `blocked` | route to Winston (all criteria UNGRADEABLE, a criterion converted after two fix cycles, or no `## Acceptance Criteria` section at all) |
 | signal `found-bug` | route to Sasha |
 | signal `found-followup-work` | route to Nora (scope-fit + DoR) |
 | signal `observation` | record only |
