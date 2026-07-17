@@ -301,7 +301,7 @@ Source: BMAD's Advanced Elicitation / Party Mode / Continue menu pattern. Absorb
 Prescriptive and concrete — which files, which patterns (cite codebase examples), what to avoid, sequencing.
 
 ### Acceptance Criteria
-Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-behavioral. Reference `.prism/templates/acceptance-criteria.md` for format. Written for non-technical testers — no file names, function names, or types.
+Gherkin `Given / When / Then` for behavioral criteria, plain checklist for non-behavioral. Reference `.prism/templates/acceptance-criteria.md` for format. Written for non-technical testers — no file names, function names, or types. Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged `machine` or `human` (the gradeability bar) — cite the template, don't restate the format.
 
 ### Open Questions
 Anything needing a decision before implementation. Omit if none.
@@ -378,6 +378,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Devil's Advocate section included — all 4 questions (Risks, Tradeoffs, Why anyway, Watch for) with genuine critique, not generic placeholders
 - [ ] Risk assessment included with concrete scenarios, not generic warnings
 - [ ] Acceptance Criteria included (Gherkin for behavioral, plain checklist for non-behavioral)
+- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
 - [ ] Design-aware flag raised if feature has UI implications and no mock
 - [ ] Design Decision Log bullets ready to paste into the plan's `## Decisions`
 - [ ] Architect context files flagged for update if approach is adopted
@@ -390,6 +391,7 @@ The updated plan is the deliverable; the `## Implementation Tasks`, `## Decision
 - [ ] Opening Orientation Battery answered (Intent / Ambiguity / Bounds / Approach) before any plan work
 - [ ] `## Implementation Tasks` populated with ordered, concrete tasks
 - [ ] `## Acceptance Criteria` generated from user stories and goal
+- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
 - [ ] AC synced to the ticket tracker
 - [ ] `## Goal` and `## Decisions` updated in plan
 - [ ] Epic detection evaluated (>5 tasks crossing system boundaries)

@@ -230,6 +230,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
      - The plan's `## Acceptance Criteria` section (if present)
      - The plan's `## Decisions` section (intentional constraints — do not flag these as bugs)
      - The architect context docs matched via manifest
+     - The AC-verification report at `.prism/qa/ac-verification-<ticket-id>.md`, when the plan's `## History` carries a pointer to one — Reese's graded verdicts are an input to sample against (see § Spec axis below), not a re-derivation source
      - **No access to** the standards files — Spec is about whether the code does what the ticket says, not about how it's styled.
 
    Spawn both subagents in **one parallel batch** so they run concurrently. Wait for both responses before assembling the summary.
@@ -322,6 +323,8 @@ Whether the code does what the ticket says, against the branch plan and architec
 - **Architect context constraints** — the architect docs loaded via manifest describe patterns and conventions this PR must compose with. Code that breaks a documented pattern without a Decision entry explaining the deviation gets flagged. The Decision-entry-with-reason path is the legitimate override — silent deviation is what gets flagged.
 
 The Spec subagent does **not** evaluate the rules themselves (that's Standards). It evaluates the diff's alignment with the ticket contract.
+
+**Sampling Reese's AC-verification report, when one exists.** Eric doesn't re-grade every criterion — he's the checker of the checker. Sample `demonstrated`-class METs first (self-reported evidence is where rubber-stamping hides), then re-execute `executed`-class citations directly — the report already carries the command, exit code, and output line, so re-running is cheap. **A flipped MET in the sample triggers a full re-grade at top tier, not a point fix** — a flipped MET is evidence the judge was miscalibrated, a Bayesian update on every other MET in the same report, not an isolated defect. Eric is the only checker of the checker: Sol re-runs Clove's commands during ratification, but takes Reese's evidence as self-report.
 
 ### Missing spec handling
 

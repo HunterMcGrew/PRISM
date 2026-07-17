@@ -50,6 +50,36 @@ When several behavioral criteria share the same starting state — a logged-in u
 
 ---
 
+## Gradeability Bar
+
+Every criterion carries a stable ID and a falsifiable Evidence sub-bullet — this is what lets an independent verifier (Reese's AC Verification mode) grade a criterion without asking the author what it means.
+
+**Stable ID:** prefix each `- [ ]` with `**AC-N**` (AC-1, AC-2…), assigned at authoring. The ID stays fixed across reordering — targeted re-checks and disputes need a key that survives AC edits.
+
+**Evidence sub-bullet:** every criterion carries one, tagged `machine` or `human`:
+
+```
+- [ ] **AC-N** Given [precondition], When [action], Then [outcome]
+  - Evidence (machine|human): <procedure> → <expected observation> · UNMET looks like: <failure signature>
+```
+
+**Falsifiability rules:**
+
+1. **Falsifiable, not merely runnable.** Name the exact command, inspection, or behavior; the expected observation ("exit 0 and output includes `12 passed`", not "run the tests"); and the failure signature. If you can't name what UNMET looks like, the criterion isn't gradeable.
+2. **Absence-evidence needs a positive control.** "Grep for X returns nothing" pairs with a positive hit that proves the probe works — otherwise a broken grep and a passing grep look identical.
+3. **Behavioral criteria get behavioral evidence** — a run or a probe. `inspected` file-state evidence is for non-behavioral constraints only.
+4. **Two-verifiers standard.** Could two independent verifiers follow this with no author context and reach the same verdict? If not, rewrite it.
+5. The criterion text stays tester-facing (existing rule above); the Evidence sub-bullet is verifier-facing and may be technical.
+
+**Example:**
+
+```
+- [ ] **AC-1** Given a user is on the homepage, When they click the mega menu trigger, Then the mega menu panel opens with keyboard focus on the first item
+  - Evidence (machine): open the homepage, click the trigger, inspect focus → `document.activeElement` is the first menu item · UNMET looks like: focus stays on the trigger or lands elsewhere
+```
+
+---
+
 ## Non-behavioral — Plain Checklist
 
 Use a plain checklist for constraints that aren't user interactions: performance budgets, accessibility compliance, code quality gates.
@@ -87,3 +117,5 @@ When an agent discovers during implementation that an AC item can't be met as wr
 ## Ticket Sync
 
 AC must be synced to the ticket under `## Acceptance Criteria` at the bottom of the description. Winston syncs automatically after plan mode. Clove and Briar sync whenever AC changes. Nora can sync on demand.
+
+**Strip-to-tracker rule:** when syncing, strip the `**AC-N**` ID prefix and the Evidence sub-bullets — sync behavioral criterion text only. IDs and Evidence sub-bullets live in the plan for the verifier; the ticket AC is stakeholder-facing and doesn't need either.

@@ -213,6 +213,8 @@ Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, pla
 
 **Destination:** `.prism/archived/plans/<plan-file-name>`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not seeded as a placeholder.
 
+**Co-archive AC-verification reports.** When recommending a closed plan for archive, also flag any `.prism/qa/ac-verification-<ticket-id>.md` report tied to it in the same recommendation — the report class is born with the plan, so this is the cheapest moment to give it a lifecycle too. No new machinery needed for UNGRADEABLE aging: the plan-side `## Review Issues` open entries are already aged by Winston's closing-ceremony loose-thread check and this same per-plan audit.
+
 **State tracking:** after the user confirms each move, Zoe records the move in `archived.plans[]` in `.prism/audit-state.json` with `{ "plan": "<plan-file-name>", "closed_at": "<ISO 8601>" }`.
 
 ## Open-question Decision variant

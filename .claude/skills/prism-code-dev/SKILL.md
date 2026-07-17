@@ -250,10 +250,12 @@ $ARGUMENTS
    - Append a single line to `## History` with the branch name summarizing everything: `YYYY-MM-DD [<branch>]: <what changed and why>`
    - Save plan updates for one batch at the end — updating after each individual fix creates noise and extra round trips
    - **Minimize Edit calls** — combine adjacent section updates into fewer, larger edits. For example, if updating 3 consecutive review issues in the same section, use one Edit call with enough surrounding context to cover all 3, not 3 separate calls. Aim for 2-3 Edit calls max for a typical plan update (issues + history + readiness).
-7. Verify all acceptance criteria are addressed:
-   - Cross-check each AC item against the implementation — confirm it's covered
+7. Run a **pre-flight** AC cross-check before handing off:
+   - Cross-check each AC item against the implementation — confirm it's covered. Criteria now carry Evidence sub-bullets (`.prism/templates/acceptance-criteria.md` § Gradeability Bar) — follow them where cheap, the same way running tests locally before CI keeps first-pass failures low.
    - If any AC items were adjusted, confirm the adjustments were accepted before marking complete
    - If an AC item can't be verified from code alone (e.g. visual behavior), note it for manual QA
+   - **This is pre-flight, not the graded verdict.** When the lifecycle chain includes Reese's AC Verification phase (`ac-verify`), the graded MET/UNMET/UNGRADEABLE call is his — Clove's report-back doesn't claim graded-verdict language ("AC-3 is MET"); it reports what was implemented and lets Reese's independent pass render the verdict.
+   - **Disputed UNMET.** If Clove believes a Reese-rendered UNMET misreads the criterion, return `needs-replan` quoting both readings — never an appeasement fix (a code change with no requirement behind it). This routes to Winston, the criterion's owner, per the verdict contract in `.prism/plans/prism-413.md` § The verdict contract.
 8. **Sync AC to the ticket tracker if changed** — if any AC adjustments were accepted during implementation:
    - Read the updated `## Acceptance Criteria` from the plan
    - Extract ticket ID from `## Ticket`
@@ -379,7 +381,7 @@ Before declaring done:
 - [ ] Code quality — the implementation is correct, not just that types and tests pass
 - [ ] Design soundness — the approach matches the plan's intent
 - [ ] Plan updated (debugged/review issues, history, readiness)
-- [ ] Acceptance criteria verified (or adjustments proposed and accepted)
+- [ ] Acceptance criteria pre-flighted (or adjustments proposed and accepted) — graded verdict is Reese's when `ac-verify` is in the chain
 - [ ] No stray console.logs or debug artifacts
 - [ ] Handoff to Briar offered
 
