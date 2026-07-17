@@ -171,24 +171,36 @@ E4. **Coherence read** of every touched file (template, Winston shared + plan-mo
 
 *(Dogfooding the format this plan introduces — the plan wouldn't survive its own gate without stable IDs + falsifiable Evidence sub-bullets.)*
 
+This plan has no `## User Stories` section, so per `.prism/rules/acceptance-criteria.md` § AC citation discipline each item is cited `(REQ-N)` against the specific verdict-contract clause or Decision that stated it, not a user story.
+
+### Source requirements (REQ list)
+
+- **REQ-1** — `## The verdict contract` bullet 1 (`acVerdicts` shape) plus Task B1 (report path, SHA-pinned header, plan `## History` pointer).
+- **REQ-2** — `## The verdict contract` bullet 2 ("Reese's primary verdict maps to PRISM's review-rung enum" — ≥1 UNMET → `needs-fix`).
+- **REQ-3** — `## The verdict contract` bullets 2 and 4 ("no `## Acceptance Criteria` section at all → `blocked`"; "all criteria UNGRADEABLE → `needs-replan`"; Verdict-state taxonomy's named-reason requirement).
+- **REQ-4** — `## The verdict contract` bullet 4, "Human-only criteria" sub-bullet (machine/human tag at authoring; human set emitted as a mini-checklist, excluded from machine grading).
+- **REQ-5** — `## Decisions` → "Contract shapes have one owner" (the `acVerdicts` schema is quoted in `report-back.md` only).
+- **REQ-6** — `## Decisions` → "Build-mirror parity is a first-class task" (canonical-source edits must pass `pnpm prism:check`).
+- **REQ-7** — `## Goal` ("closes the gap between deterministic ratification... and freeform review") plus Task D4 (Iris ingests the AC-verification report as charter-item-1 evidence rather than re-deriving fidelity).
+
 ### Behavioral
 
-- [ ] **AC-1** Given a plan whose criteria carry ID'd, falsifiable Evidence sub-bullets and a branch diff, When Reese runs AC Verification, Then a report exists at `.prism/qa/ac-verification-<ticket-id>.md` with a SHA-pinned header and per-criterion typed-evidence verdicts, and a pointer line is appended to the plan `## History`.
+- [ ] **AC-1** Given a plan whose criteria carry ID'd, falsifiable Evidence sub-bullets and a branch diff, When Reese runs AC Verification, Then a report exists at `.prism/qa/ac-verification-<ticket-id>.md` with a SHA-pinned header and per-criterion typed-evidence verdicts, and a pointer line is appended to the plan `## History`. (REQ-1)
   - Evidence (machine): Task E3 fixture run (1)–(4) → `test -f .prism/qa/ac-verification-*.md` exits 0; report header contains the branch SHA (`git rev-parse HEAD`); plan `## History` gains the pointer line · UNMET looks like: no report file, missing SHA in header, or no plan pointer line.
-- [ ] **AC-2** Given the fixture's deliberately failing criterion, When the mode grades it, Then it returns UNMET with quoted expected-vs-observed evidence — not MET, not UNGRADEABLE — and Reese's report-back primary verdict is `needs-fix`.
+- [ ] **AC-2** Given the fixture's deliberately failing criterion, When the mode grades it, Then it returns UNMET with quoted expected-vs-observed evidence — not MET, not UNGRADEABLE — and Reese's report-back primary verdict is `needs-fix`. (REQ-2)
   - Evidence (machine): Task E3 fixture (2) → the report verdict table row shows UNMET with the fixture's known delta; report-back primary verdict is `needs-fix` · UNMET looks like: MET on the failing criterion (rubber stamp), missing expected-vs-observed, or a `done` report-back despite an UNMET.
-- [ ] **AC-3** Given a criterion whose Evidence line is missing or unfalsifiable, When graded, Then the verdict is UNGRADEABLE with a named reason; and given a plan whose every criterion is UNGRADEABLE, Then the report-back primary verdict is `needs-replan`, not `done`.
+- [ ] **AC-3** Given a criterion whose Evidence line is missing or unfalsifiable, When graded, Then the verdict is UNGRADEABLE with a named reason; and given a plan whose every criterion is UNGRADEABLE, Then the report-back primary verdict is `needs-replan`, not `done`. (REQ-3)
   - Evidence (machine): Task E3 fixture (3) → UNGRADEABLE(reason) in the table; the all-UNGRADEABLE toy plan (5) → report-back `needs-replan` · UNMET looks like: `done` returned with zero criteria verified.
-- [ ] **AC-4** Given a human-tagged criterion in the fixture, When the mode completes, Then the criterion appears in the report's awaiting-human-verification checklist and is absent from the machine MET/UNMET/UNGRADEABLE counts.
+- [ ] **AC-4** Given a human-tagged criterion in the fixture, When the mode completes, Then the criterion appears in the report's awaiting-human-verification checklist and is absent from the machine MET/UNMET/UNGRADEABLE counts. (REQ-4)
   - Evidence (machine): Task E3 fixture (4) → grep the report for the criterion under the awaiting-human section; confirm it is not in the machine verdict totals · UNMET looks like: a machine verdict rendered on a human-tagged criterion, or the criterion missing from the report entirely.
 
 ### Non-behavioral
 
-- [ ] **AC-5** Given the full edit set, When the consistency greps and the parity build run, Then all Task E1 checks pass and `acVerdicts` schema fields are quoted in `lib/report-back.md` only.
+- [ ] **AC-5** Given the full edit set, When the consistency greps and the parity build run, Then all Task E1 checks pass and `acVerdicts` schema fields are quoted in `lib/report-back.md` only. (REQ-5)
   - Evidence (machine): Task E1 grep battery (counts/exit codes as specified) + `grep -rl "acVerdicts" .prism/skills .ai-skills/skills` shows the schema block in report-back.md only, pointers elsewhere · UNMET looks like: any grep count off, or a second file quoting the schema fields.
-- [ ] **AC-6** Given the canonical-source edits, When `pnpm prism:check` runs, Then it passes (build --check, types, tests, manifest, crossref-lint, verify-pack) with no hand-edited mirror drift and no body-line-cap failure.
+- [ ] **AC-6** Given the canonical-source edits, When `pnpm prism:check` runs, Then it passes (build --check, types, tests, manifest, crossref-lint, verify-pack) with no hand-edited mirror drift and no body-line-cap failure. (REQ-6)
   - Evidence (machine): `pnpm prism:check` → exit 0 · UNMET looks like: any sub-check fails, a `.claude/skills/*/SKILL.md` or `.codex/agents/*.toml` mirror diverges from its `.ai-skills/` source, or `Body for '<skillId>' is N lines (max 500)`.
-- [ ] **AC-7** Given a completed AC-verification run inside a Sol lifecycle, When the run closes, Then Iris ingests the `.prism/qa/` report as charter-item-1 evidence rather than re-deriving fidelity independently.
+- [ ] **AC-7** Given a completed AC-verification run inside a Sol lifecycle, When the run closes, Then Iris ingests the `.prism/qa/` report as charter-item-1 evidence rather than re-deriving fidelity independently. (REQ-7)
   - Evidence (human): trace one conducted run end-to-end and confirm the Iris retro report cites the AC-verification report path from the plan pointer (no independent re-derivation of "did we do what we said") · UNMET looks like: the retro re-computes AC fidelity with no reference to the `.prism/qa/` report.
 
 ### AC Sync Log
@@ -205,6 +217,9 @@ E4. **Coherence read** of every touched file (template, Winston shared + plan-mo
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer — Sol-dispatched Nora ticket-setup segment] open: Intent — create the ticket and branch for the eval-layer implementation run, resolving the single-ticket-grain OPEN decision per Hunter's override; Bounds — GitHub issue #413 + branch + plan rename/banner/Ticket-field/AC-sync only, no implementation, no touching the pre-existing dirty files (lessons.md, dist/cli.js, .prism/conductor/); Approach — confirm tracker is GitHub Issues (not Linear) via `gh`, create the issue from the plan's Goal, cut the branch off `origin/main`, rename the plan, strip-sync AC manually since Task A1 isn't codified yet. · close: scope held — issue #413 created and assigned, branch cut clean off `origin/main` carrying the plan file, plan renamed to `prism-413.md` with Ticket/banners/OPEN-decision/Task-0/AC-Sync-Log updated; dirty files (lessons.md, dist/cli.js, conductor/) untouched; no implementation started. Verdict `done`.
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer — Sol-dispatched Clove implementation segment] open: Intent — implement sub-groups A–E of the eval-layer plan (gradeability bar, Reese's AC Verification mode, Sol chain/routing/tier wiring, five consumer edits, verify/build/parity); Bounds — edit only canonical sources per the plan's canonical-vs-mirror discipline, commit per sub-group, push but do not open the PR, skip E3 (Sol runs it as the ac-verify dogfood), leave the pre-existing dirty files (lessons.md, dist/cli.js, .prism/conductor/) untouched; Approach — follow the task list in strict A→B→C→D→E order since B consumes A's format, read every target file before editing, run the E1/E2/E4 verification gate before reporting back. · close: scope held — all edits landed on canonical sources only (mirrors regenerated by `pnpm prism:build`, never hand-edited); two documented deviations from the literal task list (D4's step-05/step-06 extension, step-01-init.md's chain-string fix at E4), both recorded as Decisions and reported to Sol as `found-followup-work`-adjacent notes rather than silent scope creep; five sub-group commits pushed, PR not opened; dirty pre-existing files untouched. `pnpm prism:check` exits 0. Verdict `done`.
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer — Sol-dispatched Reese ac-verify segment] open: Intent — grade AC-1..AC-7 as an independent judge by executing the new AC Verification mode against the branch diff (dogfood of the mode this branch shipped); Bounds — read-only on tracked files during grading, save report to `.prism/qa/`, append plan History, commit report + History only, no PR, leave the pre-existing dirty files untouched; Approach — resolve diff via `origin/main..HEAD`, build two off-tree Task E3 fixtures, run the mode against them capturing real command output, grade AC-1..AC-4 off the fixture run / AC-5 off the grep battery / AC-6 off `pnpm prism:check` / AC-7 to the human checklist, delete fixtures, verify tree-clean, then write+commit. · close: scope held — only `.prism/qa/ac-verification-prism-413.md` and this plan's History/Sessions touched; fixtures lived off-tree in scratchpad and were deleted; `git status` after grading was byte-identical to before (read-only discipline held); 6 MET / 0 UNMET / 0 UNGRADEABLE, AC-7 to human gate; fixture-(2) integrity check genuinely graded UNMET; evidence-type ratio 4 executed / 2 inspected / 0 demonstrated. Verdict `done`.
+- 2026-07-17 [huntermcgrew/prism-413-eval-layer — Sol-dispatched Clove review-fix segment] open: Intent — fix the three Briar self-review findings (missing `## History` heading, stale "four modes" in shared-mechanics.md, uncited AC-1..AC-7); Bounds — plan file + `shared-mechanics.md` (+ regenerated mirrors) only, no touching the pre-existing dirty files; Approach — restore the `## History` heading and move History-shaped entries out of `## Sessions`, reword shared-mechanics.md count-free and reconcile AC-Verification's exemption from its mechanics, cite AC-1..AC-7 as `(REQ-N)` against the verdict contract / Decisions, then rebuild. · close: scope held — only the plan file and `shared-mechanics.md` (+ its four regenerated mirrors) touched; dirty pre-existing files untouched; all three findings fixed and marked `fixed` in `## Review Issues`; `pnpm prism:build` (504/504 tests) and `pnpm prism:check` both exit 0 post-fix. Verdict `done`.
+
+## History
 
 - 2026-07-16 [main]: Plan created as the PRISM twin of the locked portable eval-layer design (`~/worklogs/portable-skills/plans/eval-layer.md`). Verdict contract inherited verbatim; insertion points re-mapped to PRISM's `.prism/skills/prism-conductor/{step,lib}` conductor, seven-signal `lib/report-back.md`, `.ai-skills/` canonical sources + build mirrors, and `.prism/references/qa-test-plan/` mode externalization. Seven PRISM-forced decisions recorded (native `needs-fix` routing, born-UNGRADEABLE ≠ found-followup-work, step-file explosion, report-back.md shape owner, build parity, new `ac-verify` phase, Iris chain no-op). AC dogfooded (AC-1…AC-7 with machine/human Evidence sub-bullets).
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer]: Created GitHub issue #413, cut the branch off `origin/main`, renamed the plan from `eval-layer.md` to `prism-413.md`, resolved the ticket-grain OPEN decision to single-ticket per Hunter's override, and synced stripped AC-1..AC-7 to the ticket.
@@ -214,3 +229,48 @@ E4. **Coherence read** of every touched file (template, Winston shared + plan-mo
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer]: Sub-group D — five consumer edits: Nora strips AC-N/Evidence on sync, Eric samples Reese's report instead of re-grading, Clove's AC cross-check demotes to pre-flight with a disputed-UNMET rule, Iris ingests the AC-verification report and emits per-pr promotion cautions (extended into step-05/step-06 beyond the plan's named file — see Decision), Zoe co-archives QA reports, README's Reese descriptor updated.
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer]: Sub-group E — E1 consistency greps all pass (zero "four modes" hits, `acVerdicts` schema quoted only in report-back.md, strip-rule and consumer edits present); E4 coherence read caught a third chain-string site (`step-01-init.md`) C2 missed, fixed inline — see Decision. `pnpm prism:build` (504/504 tests), `pnpm prism:verify-pack` (5/5 runtime-read paths), and `pnpm prism:check` (build --check, tests, manifest coverage, crossref-lint, install gates, verify-pack) all exit 0 after the fix. Mirrors regenerated cleanly across `.claude/`, `.codex/`, `.cursor/`, and the install seed. Skipped E3 per dispatch instructions — Sol runs it as the `ac-verify` dogfood.
 - 2026-07-17 [huntermcgrew/prism-413-eval-layer]: Reese ran AC Verification (dogfood, `ac-verify` phase) at SHA 1dc1975 — report `.prism/qa/ac-verification-prism-413.md`; 6 MET / 0 UNMET / 0 UNGRADEABLE (AC-7 awaits human merge gate). Task E3 fixtures confirmed MET/UNMET/UNGRADEABLE/human-checklist behaviors and the all-UNGRADEABLE→`needs-replan` path; fixture-(2) integrity check genuinely graded UNMET. Primary verdict `done`.
+- 2026-07-17 [huntermcgrew/prism-413-eval-layer]: Fixed all three Briar self-review findings — restored the `## History` heading and moved the eight History-shaped entries out of `## Sessions`; reworded `shared-mechanics.md:7,76` count-free and reconciled AC Verification's exemption from ticket-mapping/sign-off/subject-line mechanics; cited AC-1..AC-7 as `(REQ-N)` against a new Source requirements list. `pnpm prism:check` exits 0 post-fix.
+
+---
+
+## Review Issues
+
+### Stale "four modes" count survives in shared-mechanics.md
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/references/qa-test-plan/shared-mechanics.md:7` and `:76` (plus its four build mirrors: `.claude/`, `.codex/`, `.cursor/`, `templates/install/.prism/`)
+- **Problem:** Task B2 reworded "four modes" to count-free phrasing in `.ai-skills/skills/prism-qa-test-plan/shared.md`, but the sweep scope (E1's grep is `.ai-skills/skills/prism-qa-test-plan/` only) never reached the sibling reference `shared-mechanics.md`, which still reads "These apply across all four modes. Each mode reference points here..." (line 7) and "Reese runs four modes, and the commit subject template branches per mode" (line 76). Reese now runs five modes, and AC Verification explicitly does *not* point here — `shared.md`'s own Post-Delivery Closing diff says "AC Verification mode does not follow this flow." The count claim and the "each mode reference points here" claim are both now false for the fifth mode, exactly the drift B2's task wording said it wanted to prevent ("so a sixth mode never repeats this").
+- **Fixed in:** reworded line 7 to "the checklist-producing modes (Release, Sprint / Group, Feature / PR, Bug-fix Verification)" with an explicit "AC Verification mode is the exception" sentence naming what it skips (ticket mapping, sign-off block, subject-line template) and where its own flow lives (`mode-ac-verification.md`). Reworded line 76's lead-in to "The commit subject template branches per checklist-producing mode" (dropped "Reese runs four modes") and appended a line after the four templates: "AC Verification mode has no entry here — it has no commit at all... nothing to push." Mirrors regenerated via `pnpm prism:build`; `mode-ac-verification.md:7`'s "the other four modes" left as-is per Briar's note (it's counting the other four checklist modes from AC Verification's own point of view, which is still accurate).
+
+### Plan is missing a `## History` heading
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/plans/prism-413.md` (end of file, after `## Sessions`)
+- **Problem:** History-shaped entries ("2026-07-16 [main]: Plan created as the PRISM twin...", the Sub-group A–E entries, the Reese ac-verify entry) run directly under the `## Sessions` heading with only a blank-line separator — there is no `## History` heading anywhere in the file (confirmed: `grep -n "^##" prism-413.md` returns no History match). Multiple Sessions-log entries explicitly say they appended to "plan History" (e.g. the Reese segment: "commit report + History only") as if a distinct section exists. This matters beyond cosmetics: task B1 step 9 has Reese "append one line to the plan's `## History`" as the pointer Iris later reads (D4: "When the plan's `## History` carries a pointer to `.prism/qa/ac-verification-<ticket-id>.md`..."). If any consumer does a heading-scoped read for `## History` rather than a full-file grep, the pointer is invisible — directly undermining the plan-as-content-bus mechanism this PR ships.
+- **Fixed in:** added the `## History` heading between the last `## Sessions` entry and the "2026-07-16 [main]: Plan created..." line; all eight History-shaped entries now sit under it. `grep -n "^## " prism-413.md` confirms the heading order matches `branch-plan.md`'s template (Sessions, then History, then Review Issues, then PR Readiness).
+
+### AC-1 through AC-7 lack source citations
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/plans/prism-413.md:176-192`
+- **Problem:** `.claude/rules/acceptance-criteria.md` § AC citation discipline requires every AC item to carry a parenthetical citation — `(US-N)`, `(Debug-N)`, or `(REQ-N)` — tracing it to a user story, a debugged issue, or a stated requirement. None of AC-1 through AC-7 carry one. The rule explicitly says uncited items are "flagged in self-review as Minor and routed back for sourcing."
+- **Fixed in:** added a `### Source requirements (REQ list)` subsection under `## Acceptance Criteria` mapping REQ-1 through REQ-7 to specific `## The verdict contract` clauses and `## Decisions`/`## Goal` bullets, then appended the matching `(REQ-N)` citation to the end of each AC-1..AC-7 top-level line.
+
+---
+
+## PR Readiness
+
+- [x] No critical issues (0 open — 2 major + 1 minor all `fixed`, see `## Review Issues`)
+- [x] No major issues — both fixed (stale "four modes" refs in `shared-mechanics.md`; missing `## History` heading)
+- [x] Types correct — N/A, no code in this diff
+- [x] No stray console.logs or debug artifacts
+- [ ] Tests written for new logic and edge cases — N/A (skill-spec change); covered instead by Task E3 fixture smoke test (Reese ac-verify dogfood, 2026-07-17): MET/UNMET/UNGRADEABLE/human-checklist paths and all-UNGRADEABLE→`needs-replan` all exercised
+- [x] All debugged issues resolved (no `open` entries in `## Debugged Issues` — section not populated, no debugging occurred)
+- [x] Build passes — last run 2026-07-17 (post-review-fix), `pnpm prism:check` exit 0 (build --check, types, test, manifest, crossref-lint, verify-pack); `pnpm prism:build` 504/504 tests; `pnpm prism:verify-pack` 5/5 runtime-read paths
+- [ ] PR description up to date — no PR open yet
+- [x] Lasting decisions promoted to architect context — N/A, plan not yet closed (promotion happens at close per `branch-plan.md` § Before Closing)
+
+**Last updated:** 2026-07-17
