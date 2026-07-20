@@ -58,6 +58,7 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — seed the branch and plan for the ratified Mira PRD-decomposition lane per Winston's evaluation; Bounds — file the issue, create the branch, transpose tasks/AC verbatim into a new plan file, commit only the plan; no implementation in this session; Approach — dupe-search, branch from origin/main, write plan, single-file commit. · close: scope held
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — implement tasks 1-6 exactly as Winston's plan specifies (Path A extension, new prd-decompose.md reference, frontmatter/ecosystem-doc updates, BOM strip), no relitigating the ratified design; Bounds — touch only the files named in the plan tasks, zero edits to Winston's or Nora's skill bodies, no new mode; Approach — apply each task's exact old_string/new_string per the detail bar, regenerate via prism:build, verify via prism:test, two commits (implementation, then BOM strip per the assignment). · close: scope held — touched exactly the files named across tasks 1-6 plus their generated mirrors; no drift into Winston, Nora, or the sibling routing lane.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — self-review PR #423 against the design constraints (no mode, zero Winston/Nora body edits, no branch-plan template edit) and independently verify AC-6/AC-7 and Clove's manual-QA framing for AC-1–AC-5; Bounds — read-only review, findings go to the plan, never to GitHub; Approach — diff against main in the correct worktree, re-run build/test/lint independently rather than trusting the plan's claims, byte-scan for the BOM, grep for existing PRD fixtures to check the honesty-flag framing. · close: scope held — one Minor finding written to `## Review Issues`; no critical or major issues; verdict done.
 
 ---
 
@@ -66,6 +67,7 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Created plan from Winston's ratified evaluation (`.prism/plans/eval-mira-prd-decompose.md`); tasks and AC transposed verbatim, no re-derivation.
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Implemented tasks 1-5 — Path A now names a finalized PRD or epic id as first-class input with a deterministic trigger into new `.prism/references/user-stories/prd-decompose.md`; added `### Story Map` artifact row + Parker handoff note to `skills-ecosystem.md`; regenerated via `pnpm prism:build` (365-line generated SKILL.md, well under the 500 cap; 408-char frontmatter description, under the 1000 cap); `pnpm prism:test` passes 504/504.
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Fixed AC-7 — stripped the planted BOM (`ef bb bf` + `# BOM planted for sanity check`) from `.ai-skills/skills/prism-prd/shared.md` and rebuilt; confirmed byte-clean across `.claude/agents/prism-prd.md`, `.claude/skills/prism-prd/SKILL.md`, `.cursor/skills/prism-prd/SKILL.md`, and a repo-wide BOM grep found no other occurrences.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Briar self-review — independently reproduced AC-6/AC-7 (build+test 504/504, crossref-lint clean, byte scan clean), confirmed all design constraints held, and flagged one Minor: the AC Adjustments note overstates the fixture barrier for AC-1–AC-5 (finalized PRDs already exist at `.prism/prds/sol-*.md`).
 
 ---
 
@@ -77,7 +79,17 @@ None yet.
 
 ## Review Issues
 
-None yet.
+### AC Adjustments pre-flight note overstates the fixture barrier
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-419.md:108` (`## Acceptance Criteria > AC Adjustments`)
+- **Problem:** The pre-flight note says AC-1 through AC-5 "can't be exercised from code alone without a real PRD/epic fixture" without naming that finalized fixtures already exist — `.prism/prds/sol-conductor-phase-b-hierarchy.md`, `sol-conductor-phase-c-teams.md`, `sol-conductor-phase-d-scale.md`, and `sol-product-lead-conductor.md` all carry `status: finalized` today. The genuine barrier is that Mira is an LLM-invoked skill, not a subroutine Clove's tooling can call and capture output from — but the note reads as if no usable input exists yet, which would send whoever runs the live-fixture pass (Reese or manual QA) looking to author one from scratch.
+- **Suggested fix:** Reword the note to name the ready-to-use finalized PRDs directly (e.g. "run against the existing finalized PRD at `.prism/prds/sol-product-lead-conductor.md`") so AC-1, AC-3, AC-4, and AC-5 can be exercised immediately. AC-2 still needs a draft/reviewed-status PRD, which genuinely doesn't exist yet — that half of the note stands as-is.
+
+### No issues found — 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]
+
+All design constraints independently verified clean: zero edits to `prism-architect`/`prism-ticket-start` bodies, zero `branch-plan.md` template edit, no mode-selection language introduced. AC-6 and AC-7 independently reproduced (`pnpm prism:build` + `pnpm prism:test` → 504/504; `pnpm prism:crossref-lint` → clean; repo-wide byte scan for `ef bb bf` → none found; generated SKILL.md 365 lines; frontmatter description 408 chars). Every citation in the new `.prism/references/user-stories/prd-decompose.md` (relative paths and section headers) resolves. Clove's AC-1–AC-5 manual-QA framing is directionally correct — one Minor accuracy gap flagged above.
 
 ---
 
