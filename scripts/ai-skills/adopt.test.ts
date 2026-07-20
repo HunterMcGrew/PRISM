@@ -89,6 +89,15 @@ async function withTempRoots(
 		path.join(prismSourceRoot, ".ai-skills", "config.schema.json")
 	);
 
+	// Most callers exercise `runAdopt` mechanics unrelated to `load:` semantics
+	// (seed writes, manifest creation, dry-run, config validation) with bare-body
+	// rule fixtures that predate the `load:` mechanism — without silencing here,
+	// `scanConsumerRuleLoad`'s now-unconditional scan (PRISM-417 review fix, via
+	// `runAdopt`'s `runUpdate` call) would print a `missing a valid load:` warning
+	// on every one of those runs, burying genuine warnings in noise. No test in
+	// this file asserts on warnings, so no capture/opt-in wiring is needed.
+	const originalWarn = console.warn;
+	console.warn = () => {};
 	try {
 		await body({
 			prismSourceRoot,
@@ -98,6 +107,7 @@ async function withTempRoots(
 			consumerContentRoot,
 		});
 	} finally {
+		console.warn = originalWarn;
 		await fs.rm(tempRoot, { force: true, recursive: true });
 	}
 }
