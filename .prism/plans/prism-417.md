@@ -41,6 +41,12 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 8. **Atlas:** in `.ai-skills/skills/prism-onboarding/` (shared.md + the question-flow reference), the rule-generation step assigns `load:` per generated rule (stack-scoped rules default `paths`; single-stack framework guidance and the security baseline default `always` — confirmed with the user in the flow), and onboarding's closing build/refresh step regenerates the AGENTS block.
 9. **Verify:** `pnpm prism:check` green; cold-session smoke check that `pr-description.md` no longer loads at session start and is read at the Clove shipping trigger; local mutation test — remove `load:` from one rule, observe the build fail naming it.
 
+### Clove (review fixes — Winston adjudication, 2026-07-20)
+
+10. **Hoist warning emission out of the AGENTS refresh:** in `scripts/ai-skills/update.ts`, scan the consumer's `.prism/rules/` once in `runUpdate` (alongside or before `refreshPlatformDirs`, which classifies the same files for platform copies) and print the per-file warnings via the existing `console.warn` block regardless of AGENTS.md/marker-pair presence; `refreshConsumerAgentsMdBlock` keeps its early-return for the refresh itself and reuses the shared scan rather than owning it. Update the `console.warn` header text ("treated as always-on") to match the amended classification from task 11. Tests: `update.test.ts` fixture with no AGENTS.md asserting the named warning still prints.
+11. **Honor `paths:` in warn-mode degrade:** in `scripts/ai-skills/rule-load.ts` `parseRuleLoad`, the missing/invalid branch in `"warn"` mode returns `load: hasPaths ? "paths" : "always"` (warning retained in both cases; append the effective classification to the warning message so the consumer sees what happened). Tests: undeclared rule with `paths:` stays path-scoped on every platform surface + warns; undeclared rule without `paths:` stays always-on + warns — in `update.test.ts` and `doctor.test.ts`.
+12. **Eric's four Minors as written** (locations in his PR #421 review comments): the ADR-0070 and ADR-0035 spec corrections; the `rule-dialect.ts` regex order-independence fix for the dead `load:` key leaking into Cursor output when frontmatter key order is swapped, plus a key-order-swapped test case; and the wrong-file JSDoc citation repeated across the files in `scripts/ai-skills/lib/rule-generators/` (Briar's third Review Issue names the correct target: `.prism/references/onboarding/question-flow.md § Generated-rule load confirmation`). Verify: `pnpm prism:check` green.
+
 **Briar / Eric (review focus)** — canonical-vs-generated ownership on every touched file, consumer-update safety (marker-pair containment), and that no reclassification silently changes any platform's effective load set except the two intended (`pr-description.md` out; nothing in).
 
 ---
@@ -63,6 +69,12 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
   - → no promotion needed (the citation grep + skill-routing.md's existing authorship rule already establish this; no new durable doc needed).
 - **Atlas's "confirmed with the user in the flow" (task 8) implemented by extending the existing "Confirmation before write" step** in `question-flow.md`, not by adding a new per-file question set. A generated stack can produce five-plus rule files (multiple languages, multiple frameworks, security); asking a separate yes/no per file would stack Hick's-Law cost onto every onboarding run. The existing confirm-before-write summary already lists the assembled config for one accept/amend/abort decision — the generated rules' `load:` classifications ride the same summary and the same gate.
   - → no promotion needed (the extension is the implementation; `question-flow.md` is the durable doc).
+- **Winston adjudication of Eric's PR #421 review (2026-07-20): fix-pass-with-plan-amendment.** Eric's `blocked` verdict is over-called — every finding has a named fix and the one judgment call is adjudicated below with a reversible default. The mechanism (`load:` enum, build hard-fail, consumer seam) is unchanged; no redesign. Routed to Clove (tasks 10–12).
+  - **Root cause of the Major sits in the plan, not just the code.** Task 6 placed warning emission inside the consumer-seam (AGENTS-refresh) task, and the implementation followed it literally — so the sole warning source sits behind `refreshConsumerAgentsMdBlock`'s marker-pair early-return, and a consumer with no AGENTS.md updates silently. The ratified guarantee is about the consumer's *context* — platform rule copies included — not the AGENTS block.
+  - **Restated behavior (the design intent, decoupled):** warning emission is a property of consumer-rule classification during `prism update` and runs unconditionally; the AGENTS-block refresh remains conditional on the marker pair. `refreshConsumerAgentsMdBlock` stops being the warning source of record.
+  - **Amendment to the recorded legacy-rule default — warn-mode honors `paths:`.** `parseRuleLoad` in `"warn"` mode currently degrades any undeclared rule to `always`, even when its frontmatter carries `paths:` (`hasPaths` is computed but unused in that branch) — widening legacy path-scoped rules (a real class: Atlas-generated stack rules) to always-on. That contradicts the ratified default's own stated premise ("behavior-preserving; no silent change to the load set in either direction"): `paths:` presence *was* the pre-`load:` discriminator, an affirmative consumer scoping decision, and discarding it changes behavior. Amended warn-mode: degrade to `paths` when `paths:` is present, `always` otherwise; warn in both cases. **Flag for Hunter's confirmation on waking** — a one-line revert restores literal widening if that's the preference; the amended reading is the default path meanwhile.
+  - **AC #4 corrected and unchecked** — its evidence covered only the marker-present case; replacement text in `### AC Adjustments`.
+  - → no promotion needed (review adjudication; the fixed code, its tests, and ADR-0070 are the durable record).
 
 ---
 
@@ -70,6 +82,8 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — file the ticket, create the branch, and seed the plan for Winston's ratified Lane 2 explicit-load-declaration work; Bounds — ticket setup only, no code changes, no touching lane 1 or the branch-plan-slim follow-up; Approach — transpose Winston's already-detailed tasks and AC verbatim, record the ratified undeclared-consumer-rule default as a Decision. · close: scope held
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — implement tasks 2–9 (Clove's lane) plus the absorbed task 1 (ADR), landing the mechanism + migration in one commit and the `pr-description.md` reclassification in a second, per the eval doc's review-readability guidance; Bounds — issue #417 only, no branch-plan.md slim (#418), no lane 1 (routing completeness); Approach — build a shared `rule-load.ts` validator (fail-mode for canonical, warn-mode for consumer-facing callers) so the classifier, both platform dialects, and the platform-copy exclusion all read one source of truth. · close: scope held — all 9 Clove tasks landed; `pnpm prism:check` green; mutation test confirmed the hard-fail; PR-body-authoring persona list corrected against the actual tree (see Decisions) rather than followed verbatim from the eval doc.
+- 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — self-review the branch, verifying the hard-fail is real, the consumer-warn path never silently drops a rule, the two partially-verified ACs are honestly bounded, and the PR-body-authoring persona correction holds; Bounds — review only, findings to plan and chat, no GitHub posts, no code fixes; Approach — read the mechanism+migration and reclassification commits separately, trace the hard-fail and warn paths through the actual source rather than trusting the plan's narrative, independently re-grep the persona-citation claim. · close: scope held — 3 Minor findings (AC-6 evidence overstatement, ADR-0070 four-vs-two-persona self-contradiction, wrong-file JSDoc citation in 3 Atlas generators); hard-fail and no-silent-drop requirements both confirmed by direct source trace, not just test-reading; persona correction independently reconfirmed via tree-wide grep.
+- 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — adjudicate Eric's PR #421 review verdict (enum said blocked, prose said implementation fixes) and rule per finding; Bounds — plan writes only, no code, no relitigating verified-sound findings, no redesign of the ratified mechanism; Approach — independently trace the warning path and warn-mode classifier through the branch source, then rule fix-pass / amend / replan per finding. · close: scope held — ruled fix-pass-with-plan-amendment; found one sub-defect Eric under-called (warn-mode ignores `hasPaths`, widening undeclared path-scoped rules) and amended the recorded default with a flag for Hunter's wake-up confirmation.
 
 ---
 
@@ -77,6 +91,7 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration]: Nora created the ticket (#417), branched from `origin/main`, and seeded this plan from Winston's ratified architecture evaluation.
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration]: Landed the `load:` mechanism + migration (all 29 canonical rules and seed twins) in one commit, then `pr-description.md`'s reclassification to `load: skill` in a second — new shared `scripts/ai-skills/rule-load.ts`, classifier/dialect/build/update/doctor changes, Atlas rule-generator `load:` assignment, ADR-0070. `pnpm prism:check` green on both commits; mutation test (strip `load:` from `core-principles.md`) confirmed the named hard-fail.
+- 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration]: Winston adjudicated Eric's PR #421 review — fix-pass-with-plan-amendment; added review-fix tasks 10–12 (unconditional warning emission, warn-mode `paths:` preservation, Eric's four Minors), reworded and unchecked AC `#4`; see Decisions.
 
 ---
 
@@ -88,7 +103,29 @@ None yet.
 
 ## Review Issues
 
-None yet.
+### AC-6 evidence overstates atlas-dogfood.test.ts coverage
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-417.md:110` (AC-6 evidence line); actual gap in `scripts/ai-skills/atlas-dogfood.test.ts`
+- **Problem:** AC-6's evidence line claims "`rule-generators.test.ts` and `atlas-dogfood.test.ts` confirm generated files carry the correct `load:` frontmatter." `atlas-dogfood.test.ts` has zero assertions on `load:` content (verified: `grep -n "load:" scripts/ai-skills/atlas-dogfood.test.ts` returns nothing) — its four tests cover stack detection, file existence, security.md section content, and idempotency, none of which touch the `load:` key. Only `rule-generators.test.ts` (lines 108–109, 221, 248, 384) actually asserts `load:` frontmatter. The underlying claim (generated rules carry correct `load:`) is still true and independently verified, but the AC's cited evidence trail is inaccurate — a future reader (Iris's retro, an auditor) trusting this citation would believe broader coverage exists than does.
+- **Suggested fix:** Narrow AC-6's evidence line to cite only `rule-generators.test.ts`, or add a `load:` assertion to one `atlas-dogfood.test.ts` case so the citation becomes true.
+
+### ADR-0070 internally contradicts itself on the PR-body-authoring persona count
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0070-explicit-rule-load-declaration.md:24`
+- **Problem:** "The four personas with a genuine PR-body-authoring moment (Clove's shipping flow, Winston's plan-mode PR-body sync)" — names two personas but says "four." This is a leftover from the eval doc's earlier four-persona list (Clove, Briar, Eric, Winston) that the plan's own Decisions section (line 62) correctly narrowed to two after verifying only Clove's `shared.md` carried citations. The ADR text wasn't updated to match the corrected finding it's supposed to record.
+- **Suggested fix:** Change "four personas" to "two personas" (or drop the count and just name them, per `writing-voice.md § Count rules, not numbers`).
+
+### Atlas rule-generator JSDoc cites the wrong file for the load: confirmation step
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/lib/rule-generators/code-standards.ts:14`, `framework-guidelines.ts:15`, `security.ts:14`
+- **Problem:** All three JSDoc comments cite "`.ai-skills/skills/prism-onboarding/shared.md` § Generated-rule load confirmation" as the source of the "confirmed with the user in the flow" step. That section doesn't exist in `shared.md` — it's actually in `question-flow.md` (confirmed present at line 100 of `.prism/references/onboarding/question-flow.md` and its platform copies; `shared.md` only generically points to `question-flow.md` for "the confirmation-before-write flow"). A reader following the citation from any of the three generators lands on the wrong file.
+- **Suggested fix:** Update all three citations to `.prism/references/onboarding/question-flow.md § Generated-rule load confirmation`.
 
 ---
 
@@ -102,8 +139,8 @@ None yet.
   - Evidence: `machine` — `agents-md-block.test.ts`, `rule-dialect.test.ts`, `content-copy.test.ts` assertions + structural check: `.claude/`, `.codex/`, `.cursor/` rules dirs carry no `pr-description.md`/`.mdc` copy after build.
 - [x] Given a consumer repo with a PRISM-managed AGENTS marker pair and a rules directory that changed since the last fill, When `prism update` runs, Then the marker-pair block is regenerated from the consumer's rules and content outside the markers is byte-identical to before. (REQ-2, consumer evidence)
   - Evidence: `machine` — `update.test.ts`: "runUpdate refreshes the consumer AGENTS.md Tier-1 block..." + "runUpdate leaves a consumer AGENTS.md with no marker pair untouched" (outside-markers equality via exact original-content match).
-- [x] Given a consumer-owned rule without `load:`, When `prism update` or `prism doctor` runs, Then the file is named in a warning with the remedy, and the effective load set does not change silently. (ratified default)
-  - Evidence: `machine` — `update.test.ts` "runUpdate treats a consumer rule missing load: as always-on and warns..."; `doctor.test.ts` "runDoctor warns on a consumer rule missing load:...".
+- [ ] Given a consumer-owned rule without `load:`, When `prism update` runs — whether or not the consumer has an AGENTS.md with the PRISM marker pair — or `prism doctor` runs, Then the file is named in a warning with the remedy, and its effective load classification is unchanged from the pre-`load:` discriminator (`paths:` present stays path-scoped; otherwise always-on). (ratified default, as amended in `## Decisions` 2026-07-20)
+  - Evidence: `machine` — `update.test.ts`: marker-pair-present case, no-AGENTS.md case, and an undeclared-rule-with-`paths:` case, each asserting the named warning and the preserved classification; `doctor.test.ts` "runDoctor warns on a consumer rule missing load:...". Unchecked until the no-AGENTS.md and `paths:`-preservation cases exist (prior evidence covered only the marker-present, no-`paths:` case).
 - [ ] Given a session that is not authoring or syncing a PR body, When always-on context loads, Then `pr-description.md` is absent; Given Clove reaches the shipping step, When the trigger fires, Then the rule is read before the PR body is written. (REQ-2)
   - Evidence: `human` — **partially verified, not fully.** Structural half confirmed: `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` carry no `pr-description.md` copy after build (grep/ls check on disk). Positive-case loader evidence: this session's own start injected the full body of every then-frontmatter-less rule as a system-reminder — direct proof presence in `.claude/rules/` triggers auto-load. What was **not** done: a literal fresh cold session with `pr-description.md` now absent, confirming the negative (absence prevents injection) — that requires starting a genuinely new session, which isn't possible from mid-session. Leaving unchecked pending a human cold-session spot check; the design doesn't depend on this either way per ADR-0070's Neutral consequence (skill rules are never copied to the platform surface at all, so there's nothing for an unconfirmed loader behavior to still load).
 - [ ] Given Atlas generates a stack rule during onboarding, When the file is written, Then it carries a `load:` declaration chosen in the question flow, and onboarding ends with a fresh AGENTS block. (consumer evidence)
@@ -115,7 +152,7 @@ None beyond the above.
 
 ### AC Adjustments
 
-None yet.
+- 2026-07-20 (Winston, PR #421 review adjudication): AC #4 reworded and unchecked. Old text asserted warning + no-silent-change generically; its checked evidence covered only the marker-pair-present, no-`paths:` case. New text makes the marker-absent path explicit and pins "no silent change" to the pre-`load:` discriminator (`paths:` present stays path-scoped), matching the amended warn-mode classification in `## Decisions`.
 
 ### AC Sync Log
 
