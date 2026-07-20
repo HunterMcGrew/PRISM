@@ -180,6 +180,7 @@ export const CROSSREF_FILE_ALLOWLIST: ReadonlySet<string> = new Set<string>([
 	".prism/templates/business-strategy.md::.prism/business/strategy.md",
 	"templates/install/.prism/templates/business-strategy.md::.prism/business/strategy.md",
 	".prism/architect/_toolkit/skills-ecosystem.md::.prism/business/strategy.md",
+	"templates/install/.prism/architect/_toolkit/skills-ecosystem.md::.prism/business/strategy.md",
 ]);
 
 // ---------------------------------------------------------------------------

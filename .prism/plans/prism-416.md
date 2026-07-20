@@ -65,6 +65,8 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
   - → no promotion needed (the fix is the roster row itself; nothing further to codify).
 - **`crossref-lint.ts`'s `CROSSREF_FILE_ALLOWLIST` gained one entry** (`.prism/architect/_toolkit/skills-ecosystem.md::.prism/business/strategy.md`) for the same reason the existing four pairs are there: `.prism/business/strategy.md` is a lazy artifact (Vera creates it on first write; never seeded in the monorepo tree), and the new Business personas section references it in prose the same way `business-layer.md` and the business-strategy template already do.
   - → no promotion needed (allowlist entry is the durable record; pattern already established).
+- **Review-fix: install seed twin of `skills-ecosystem.md` synced with the Business personas section, Lilac's Ticket-flow row, and the three-axes-to-four-axes rewrite** (Briar's Major finding). Content copied verbatim from canonical since none of the new prose contained org/repo tokens, "Linear," or bare `ADR-NNNN` refs needing genericization; the four-axes intro paragraph follows the seed's established pattern of stripping ADR-citation clauses (matches how the seed already omits them for the cadence/orchestration axes). The new Business personas section references `.prism/business/strategy.md`, so `crossref-lint.ts`'s `CROSSREF_FILE_ALLOWLIST` gained the paired `templates/install/...` entry alongside the canonical one added under task 6 — same lazy-artifact reasoning, completing the pairing pattern the other four allowlist entries already follow. `routing-coverage.test.ts`'s roster assertion was split into a helper (`assertEcosystemRosterAgreesWithRoles`) run against both the canonical and seed-twin paths, mirroring how the first two tests already parity-check both surfaces — mutation-tested by swapping `**Lilac**` for `**NotLilac**` in the seed twin and confirming the new test reds, then reverted.
+  - → no promotion needed (fix restores parity with an already-established pattern; nothing new to codify).
 
 ---
 
@@ -72,6 +74,7 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 
 - 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness] open: Intent — file the ticket, create the branch, and seed the plan for Winston's ratified Lane 1 routing-completeness work; Bounds — ticket setup only, no code changes, no touching lane 2 or the branch-plan-slim follow-up; Approach — transpose Winston's already-detailed tasks and AC verbatim, record the ratified routing-policy table as a Decision. · close: scope held
 - 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness] open: Intent — implement Winston's Lane 1 routing-completeness tasks 2-8 (routing field, rule rewrites, seed-twin sync, ecosystem roster, parity gate); Bounds — tasks 2-8 only, no lane 2, no prism-prd BOM fix, no auto-picking the flagged Parker/skills-ecosystem.md tension without recording the reasoning; Approach — execute tasks in order, verify with the named commands after each content change. · close: scope held — touched two files outside the named task list (`crossref-lint.ts` allowlist, three test fixtures needing a `routing` value) but both were direct, necessary consequences of tasks 3 and 6, not independent scope; documented as Decisions. Found and flagged (not fixed) a real out-of-scope gap in `migrate-skill.ts`'s roles.json writer.
+- 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness] open: Intent — fix Briar's one Major self-review finding (install seed twin of `skills-ecosystem.md` never synced with the Business personas section/Lilac row/four-axes rewrite); Bounds — that finding only, no scope expansion, no issue #418, review fix as a separate commit; Approach — sync the seed twin following its established curation pattern, extend the roster gate to check it, verify with `pnpm run prism:check`. · close: scope held — one incidental `crossref-lint.ts` allowlist entry needed to keep the new seed-twin content resolvable, same pairing pattern the plan already documents for the canonical entry.
 
 ---
 
@@ -79,6 +82,7 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 
 - 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness]: Nora created the ticket (#416), branched from `origin/main`, and seeded this plan from Winston's ratified architecture evaluation.
 - 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness]: Implemented tasks 2-8 — added `routing` to all 31 `roles.json` entries, extended `buildRoleMap` validation, rewrote `skill-routing.md` (canonical + seed twin, closing the Linear-literal drift), added a Business personas roster and Lilac's row to `skills-ecosystem.md`, and added `routing-coverage.test.ts`. Fixed three test fixtures (`generate-skills.test.ts`, `adopt.test.ts`, `update.test.ts`) that needed a `routing` value once `buildRoleMap` started enforcing it, and one `crossref-lint.ts` allowlist entry for the new business-layer prose reference. `pnpm prism:check` green; mutation test confirmed the gate fails naming an unrouted id.
+- 2026-07-20 [huntermcgrew/prism-416-skill-routing-completeness]: Fixed Briar's Major review finding — synced the install seed twin of `skills-ecosystem.md` with the Business personas section, Lilac's row, and the four-axes rewrite; extended `routing-coverage.test.ts`'s roster assertion to also check the seed twin; added the paired `crossref-lint.ts` allowlist entry the new seed-twin content needs. `pnpm prism:check` green; mutation-tested the new seed-twin assertion (swap Lilac's name, observe red, revert).
 
 ---
 
@@ -90,7 +94,13 @@ None yet.
 
 ## Review Issues
 
-None yet.
+### Install seed twin of `skills-ecosystem.md` was not synced with the Business personas section
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/_toolkit/skills-ecosystem.md`
+- **Problem:** Task 6 added the `### Business personas` section (9 rows), Lilac's ticket-flow row, and the "three axes" → "four axes" rewrite to the canonical `.prism/architect/_toolkit/skills-ecosystem.md` and its generated mirrors (`.claude`, `.codex`, `.cursor`), but never to the curated install seed twin at `templates/install/.prism/architect/_toolkit/skills-ecosystem.md`. Verified on the branch: the seed twin still reads "three axes," has zero occurrences of "Business personas," and zero occurrences of "Lilac." `skills-ecosystem.md` is listed as `curated` in `seed-curation.json` (same class as `skill-routing.md` before this PR) — `pnpm prism:build`'s seed-drift check only verifies curated files *exist*, never their content, so nothing catches this silently. `routing-coverage.test.ts`'s third assertion ("skills-ecosystem.md roster includes every persona in roles.json") only reads the canonical path (`.prism/architect/_toolkit/skills-ecosystem.md`), not the seed twin — unlike assertions (a)-(c), which the test explicitly re-runs against both files. Net effect: a fresh consumer running `npx @huntermcgrew/prism adopt` gets a roster doc — the file every skill session loads via the `"**"` manifest wildcard — that has never heard of Vera, Kora, Ellis, Charlie, Quinn, Tess, Remy, Penny, Lex, or Lilac, even though that same consumer's `skill-routing.md` seed twin (which *was* synced, per task 5) will bare-agent-route all of them. This is exactly defect instance 4 from `eval-routing-and-rule-load.md`'s own root-cause framing ("`skills-ecosystem.md` roster vs. `roles.json` — 9 personas behind") — fixed for canonical, left open for the seed twin that new consumers actually receive.
+- **Suggested fix:** Sync `templates/install/.prism/architect/_toolkit/skills-ecosystem.md` to canonical's new content the same way task 5 synced `skill-routing.md`'s seed twin (genericized/tokenized per the file's existing curation pattern — org/repo tokens, "tracker" not "Linear", no bare `ADR-NNNN`). Then extend `routing-coverage.test.ts`'s third test to also assert against the seed twin path, mirroring how the first two tests already do — otherwise this same gap can silently reopen on the next roster change.
 
 ---
 
@@ -133,13 +143,13 @@ None yet.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] No critical or major issues — Briar's Major fixed (install seed twin of `skills-ecosystem.md` now synced, see `## Review Issues`)
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — `routing-coverage.test.ts`, independently mutation-tested in both directions (unrouted persona, ghost route, and now the seed-twin roster gap) across review and review-fix passes
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-20 (`pnpm run prism:check` green after review fix)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (if applicable) — n/a, all Decisions carry `no promotion needed` verdicts
 
 **Last updated:** 2026-07-20

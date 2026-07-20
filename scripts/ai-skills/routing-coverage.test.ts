@@ -143,15 +143,10 @@ test("install seed twin: routing table and named-invocation sections agree with 
 	);
 });
 
-test("skills-ecosystem.md roster includes every persona in roles.json", async () => {
-	const roles = await loadRoles();
-	const ecosystemPath = path.join(
-		repoRoot,
-		".prism",
-		"architect",
-		"_toolkit",
-		"skills-ecosystem.md"
-	);
+async function assertEcosystemRosterAgreesWithRoles(
+	ecosystemPath: string,
+	roles: RoleEntry[]
+): Promise<void> {
 	const raw = await fs.readFile(ecosystemPath, "utf8");
 	for (const role of roles) {
 		if (!role.persona) {
@@ -159,7 +154,37 @@ test("skills-ecosystem.md roster includes every persona in roles.json", async ()
 		}
 		assert.ok(
 			raw.includes(`**${role.persona}**`),
-			`skills-ecosystem.md: persona '${role.persona}' (${role.id}) is missing from the roster`
+			`${ecosystemPath}: persona '${role.persona}' (${role.id}) is missing from the roster`
 		);
 	}
+}
+
+test("skills-ecosystem.md roster includes every persona in roles.json", async () => {
+	const roles = await loadRoles();
+	await assertEcosystemRosterAgreesWithRoles(
+		path.join(
+			repoRoot,
+			".prism",
+			"architect",
+			"_toolkit",
+			"skills-ecosystem.md"
+		),
+		roles
+	);
+});
+
+test("install seed twin: skills-ecosystem.md roster includes every persona in roles.json", async () => {
+	const roles = await loadRoles();
+	await assertEcosystemRosterAgreesWithRoles(
+		path.join(
+			repoRoot,
+			"templates",
+			"install",
+			".prism",
+			"architect",
+			"_toolkit",
+			"skills-ecosystem.md"
+		),
+		roles
+	);
 });
