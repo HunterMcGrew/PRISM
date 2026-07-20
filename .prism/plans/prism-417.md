@@ -57,18 +57,26 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
   - → no promotion needed (behavior is the implementation; no separate durable doc needed beyond this record and the ADR from task 1).
 - **`branch-plan.md` slim is filed as a separate follow-up (#418), not folded into this lane.** Blocked on this issue's `load: skill` mechanism landing; kept separate to avoid multiplying this lane's touched-skill surface. See `.prism/plans/eval-routing-and-rule-load.md` § Lane Split.
   - → no promotion needed (tracked via the ticket dependency itself).
+- **Winston's task 1 (write the ADR) absorbed into this same session** rather than routed to a separate Winston dispatch — no Winston session ran for this issue, and the mechanism tasks (3, 4) need the ADR number to cite in JSDoc. Documented per `branch-plan.md`'s cross-lane absorption option. Wrote ADR-0070 (next free number after 0069); amended ADR-0035's References; also corrected ADR-0035's now-stale Tier-1 example list (it named `pr-description.md`, which this ticket moves to Tier-3) — a plain factual correction to an enumeration, not a rewrite of the historical Decision.
+  - → no promotion needed (the ADR itself is the durable artifact).
+- **Task 5's PR-body-authoring persona list corrected against the actual tree.** The eval doc's Recommendation section named Clove, Briar, Eric, and Winston as already citing `pr-description.md`. Verified via `grep -rn "pr-description" .ai-skills/skills/*/shared.md`: only Clove's `shared.md` had citations (2, both converted to imperative triggers). Winston's genuine PR-body-sync duty (documented in `pr-description.md`'s own "Two enforcement moments") lives in `plan-mode.md` (a reference Winston's `shared.md` triggers into), not `shared.md` itself — that citation was passive prose, converted to an imperative trigger in both the canonical and seed twin. Briar and Eric read PR descriptions to understand author intent but never author or sync PR bodies (confirmed against `skill-routing.md § Authors ship, reviewers review`) — no trigger added for either; adding one would be dead weight per `skill-authoring.md`'s disclosure gate.
+  - → no promotion needed (the citation grep + skill-routing.md's existing authorship rule already establish this; no new durable doc needed).
+- **Atlas's "confirmed with the user in the flow" (task 8) implemented by extending the existing "Confirmation before write" step** in `question-flow.md`, not by adding a new per-file question set. A generated stack can produce five-plus rule files (multiple languages, multiple frameworks, security); asking a separate yes/no per file would stack Hick's-Law cost onto every onboarding run. The existing confirm-before-write summary already lists the assembled config for one accept/amend/abort decision — the generated rules' `load:` classifications ride the same summary and the same gate.
+  - → no promotion needed (the extension is the implementation; `question-flow.md` is the durable doc).
 
 ---
 
 ## Sessions
 
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — file the ticket, create the branch, and seed the plan for Winston's ratified Lane 2 explicit-load-declaration work; Bounds — ticket setup only, no code changes, no touching lane 1 or the branch-plan-slim follow-up; Approach — transpose Winston's already-detailed tasks and AC verbatim, record the ratified undeclared-consumer-rule default as a Decision. · close: scope held
+- 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — implement tasks 2–9 (Clove's lane) plus the absorbed task 1 (ADR), landing the mechanism + migration in one commit and the `pr-description.md` reclassification in a second, per the eval doc's review-readability guidance; Bounds — issue #417 only, no branch-plan.md slim (#418), no lane 1 (routing completeness); Approach — build a shared `rule-load.ts` validator (fail-mode for canonical, warn-mode for consumer-facing callers) so the classifier, both platform dialects, and the platform-copy exclusion all read one source of truth. · close: scope held — all 9 Clove tasks landed; `pnpm prism:check` green; mutation test confirmed the hard-fail; PR-body-authoring persona list corrected against the actual tree (see Decisions) rather than followed verbatim from the eval doc.
 
 ---
 
 ## History
 
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration]: Nora created the ticket (#417), branched from `origin/main`, and seeded this plan from Winston's ratified architecture evaluation.
+- 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration]: Landed the `load:` mechanism + migration (all 29 canonical rules and seed twins) in one commit, then `pr-description.md`'s reclassification to `load: skill` in a second — new shared `scripts/ai-skills/rule-load.ts`, classifier/dialect/build/update/doctor changes, Atlas rule-generator `load:` assignment, ADR-0070. `pnpm prism:check` green on both commits; mutation test (strip `load:` from `core-principles.md`) confirmed the named hard-fail.
 
 ---
 
@@ -88,18 +96,18 @@ None yet.
 
 ### Behavioral
 
-- [ ] Given a canonical rule file without a `load:` declaration, When `pnpm prism:build` runs, Then the build fails naming the file. (REQ-2)
-  - Evidence: `machine` — mutation run: strip `load:` from one rule, observe named failure, revert.
-- [ ] Given all canonical rules carry `load:`, When the build runs, Then the AGENTS block, `.claude/rules/`, and `.cursor/rules/` contain exactly the `load: always` set (plus `paths` rules in their path-scoped form), and no `load: skill` rule appears on any always-on platform surface. (REQ-2)
-  - Evidence: `machine` — build assertions + `grep -L`/diff checks in tests.
-- [ ] Given a consumer repo with a PRISM-managed AGENTS marker pair and a rules directory that changed since the last fill, When `prism update` runs, Then the marker-pair block is regenerated from the consumer's rules and content outside the markers is byte-identical to before. (REQ-2, consumer evidence)
-  - Evidence: `machine` — `update.test.ts` fixture asserting block refresh + outside-markers equality.
-- [ ] Given a consumer-owned rule without `load:`, When `prism update` or `prism doctor` runs, Then the file is named in a warning with the remedy, and the effective load set does not change silently. (ratified default)
-  - Evidence: `machine` — CLI test asserting the warning text and unchanged classification.
+- [x] Given a canonical rule file without a `load:` declaration, When `pnpm prism:build` runs, Then the build fails naming the file. (REQ-2)
+  - Evidence: `machine` — mutation run: stripped `load:` from `core-principles.md`, build failed with `core-principles.md: missing or invalid \`load:\` frontmatter declaration...`, reverted; `pnpm prism:build` green after revert.
+- [x] Given all canonical rules carry `load:`, When the build runs, Then the AGENTS block, `.claude/rules/`, and `.cursor/rules/` contain exactly the `load: always` set (plus `paths` rules in their path-scoped form), and no `load: skill` rule appears on any always-on platform surface. (REQ-2)
+  - Evidence: `machine` — `agents-md-block.test.ts`, `rule-dialect.test.ts`, `content-copy.test.ts` assertions + structural check: `.claude/`, `.codex/`, `.cursor/` rules dirs carry no `pr-description.md`/`.mdc` copy after build.
+- [x] Given a consumer repo with a PRISM-managed AGENTS marker pair and a rules directory that changed since the last fill, When `prism update` runs, Then the marker-pair block is regenerated from the consumer's rules and content outside the markers is byte-identical to before. (REQ-2, consumer evidence)
+  - Evidence: `machine` — `update.test.ts`: "runUpdate refreshes the consumer AGENTS.md Tier-1 block..." + "runUpdate leaves a consumer AGENTS.md with no marker pair untouched" (outside-markers equality via exact original-content match).
+- [x] Given a consumer-owned rule without `load:`, When `prism update` or `prism doctor` runs, Then the file is named in a warning with the remedy, and the effective load set does not change silently. (ratified default)
+  - Evidence: `machine` — `update.test.ts` "runUpdate treats a consumer rule missing load: as always-on and warns..."; `doctor.test.ts` "runDoctor warns on a consumer rule missing load:...".
 - [ ] Given a session that is not authoring or syncing a PR body, When always-on context loads, Then `pr-description.md` is absent; Given Clove reaches the shipping step, When the trigger fires, Then the rule is read before the PR body is written. (REQ-2)
-  - Evidence: `human` — cold-session smoke check on both halves.
+  - Evidence: `human` — **partially verified, not fully.** Structural half confirmed: `.claude/rules/`, `.codex/rules/`, `.cursor/rules/` carry no `pr-description.md` copy after build (grep/ls check on disk). Positive-case loader evidence: this session's own start injected the full body of every then-frontmatter-less rule as a system-reminder — direct proof presence in `.claude/rules/` triggers auto-load. What was **not** done: a literal fresh cold session with `pr-description.md` now absent, confirming the negative (absence prevents injection) — that requires starting a genuinely new session, which isn't possible from mid-session. Leaving unchecked pending a human cold-session spot check; the design doesn't depend on this either way per ADR-0070's Neutral consequence (skill rules are never copied to the platform surface at all, so there's nothing for an unconfirmed loader behavior to still load).
 - [ ] Given Atlas generates a stack rule during onboarding, When the file is written, Then it carries a `load:` declaration chosen in the question flow, and onboarding ends with a fresh AGENTS block. (consumer evidence)
-  - Evidence: `human` — scripted onboarding dry-run transcript showing the declaration decision and the closing refresh.
+  - Evidence: `human` — **machine half covered, human half not run.** `rule-generators.test.ts` and `atlas-dogfood.test.ts` confirm generated files carry the correct `load:` frontmatter end-to-end through the real generator functions. Not run: a live interactive Atlas onboarding transcript exercising the confirmation-before-write step's new generated-rule summary and the closing `pnpm prism:build` refresh — that requires a live onboarding session against a target repo, out of scope for this implementation pass.
 
 ### Non-behavioral
 
@@ -125,13 +133,13 @@ None yet.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-20 (`pnpm prism:check` green on both commits)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Lasting decisions promoted to architect context (if applicable) — ADR-0070 is the durable artifact; no separate architect-doc promotion needed (see `## Decisions` verdicts above)
 
 **Last updated:** 2026-07-20
