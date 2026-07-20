@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # PR Description
 
 ## PR Title

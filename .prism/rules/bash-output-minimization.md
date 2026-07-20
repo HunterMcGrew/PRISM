@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Bash Output Minimization
 
 ## Purpose

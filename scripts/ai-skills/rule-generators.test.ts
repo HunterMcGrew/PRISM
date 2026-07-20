@@ -68,6 +68,15 @@ async function readIfExists(filePath: string): Promise<string | null> {
 	}
 }
 
+/**
+ * Strips a leading `---\n...\n---\n\n` frontmatter block, if present, so
+ * assertions written against the heading/body can operate the same way
+ * whether or not `load:` frontmatter precedes it.
+ */
+function stripFrontmatter(content: string): string {
+	return content.replace(/^---\n[\s\S]*?\n---\n\n/, "");
+}
+
 // ---------------------------------------------------------------------------
 // code-standards generator
 // ---------------------------------------------------------------------------
@@ -94,12 +103,19 @@ test("code-standards: generates per-language file with applicability declaration
 	);
 
 	const contents = await fs.readFile(results[0].path, "utf8");
-	assert.ok(
-		contents.startsWith("# TypeScript Code Standards\n"),
-		"file should open with a TypeScript heading"
+	assert.match(
+		contents,
+		/^---\nload: paths\npaths:\n {2}- "\*\*\/\*\.ts"\n {2}- "\*\*\/\*\.tsx"\n---\n\n/,
+		"file should open with load: paths frontmatter scoped to TypeScript's extensions"
 	);
 
-	const lines = contents.split("\n");
+	const body = stripFrontmatter(contents);
+	assert.ok(
+		body.startsWith("# TypeScript Code Standards\n"),
+		"body should open with a TypeScript heading"
+	);
+
+	const lines = body.split("\n");
 	const firstNonHeadingLine = lines.slice(1).find((line) => line.trim().length > 0);
 	assert.equal(
 		firstNonHeadingLine,
@@ -199,9 +215,10 @@ test("code-standards: force flag overwrites existing file", async (t) => {
 
 	const after = await fs.readFile(target, "utf8");
 	assert.ok(
-		after.startsWith("# Go Code Standards\n"),
+		stripFrontmatter(after).startsWith("# Go Code Standards\n"),
 		"force should overwrite with the generated heading"
 	);
+	assert.match(after, /^---\nload: paths\npaths:\n {2}- "\*\*\/\*\.go"\n---\n\n/);
 	assert.ok(
 		!after.includes("Old hand-edited"),
 		"old contents must be gone after force"
@@ -228,7 +245,8 @@ test("security: writes the file with universal section by default", async (t) =>
 	assert.equal(results[0].path, rulePath(repoRoot, "security.md"));
 
 	const contents = await fs.readFile(results[0].path, "utf8");
-	assert.ok(contents.startsWith("# Security\n"));
+	assert.match(contents, /^---\nload: always\n---\n\n/);
+	assert.ok(stripFrontmatter(contents).startsWith("# Security\n"));
 	assert.ok(contents.includes("## Universal"), "universal section always emits");
 	assert.ok(
 		!contents.includes("## TypeScript and JavaScript"),
@@ -310,7 +328,7 @@ test("security: force flag overwrites existing file", async (t) => {
 	assert.equal(results[0].reason, REASONS.forced);
 
 	const after = await fs.readFile(target, "utf8");
-	assert.ok(after.startsWith("# Security\n"));
+	assert.ok(stripFrontmatter(after).startsWith("# Security\n"));
 	assert.ok(after.includes("## TypeScript and JavaScript"));
 });
 
@@ -325,8 +343,9 @@ test("security: applicability declaration follows the heading", async (t) => {
 
 	const results = await generateSecurity(config, repoRoot);
 	const contents = await fs.readFile(results[0].path, "utf8");
+	const body = stripFrontmatter(contents);
 
-	const lines = contents.split("\n");
+	const lines = body.split("\n");
 	const firstNonHeadingLine = lines.slice(1).find((line) => line.trim().length > 0);
 	assert.ok(
 		firstNonHeadingLine?.startsWith("These rules apply when"),
@@ -362,7 +381,10 @@ test("framework-guidelines: generates one file per known framework", async (t) =
 		assert.equal(result.reason, REASONS.created);
 
 		const contents = await fs.readFile(result.path, "utf8");
-		const lines = contents.split("\n");
+		assert.match(contents, /^---\nload: always\n---\n\n/);
+
+		const body = stripFrontmatter(contents);
+		const lines = body.split("\n");
 		const firstNonHeadingLine = lines.slice(1).find((line) => line.trim().length > 0);
 		assert.ok(
 			firstNonHeadingLine?.startsWith("These rules apply when"),
@@ -444,7 +466,7 @@ test("framework-guidelines: force flag overwrites existing file", async (t) => {
 	assert.equal(results[0].reason, REASONS.forced);
 
 	const after = await fs.readFile(target, "utf8");
-	assert.ok(after.startsWith("# Rails Guidelines\n"));
+	assert.ok(stripFrontmatter(after).startsWith("# Rails Guidelines\n"));
 });
 
 // ---------------------------------------------------------------------------

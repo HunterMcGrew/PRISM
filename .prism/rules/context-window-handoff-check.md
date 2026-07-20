@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Context Window Handoff Check
 
 ## Purpose

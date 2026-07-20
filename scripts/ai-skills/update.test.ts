@@ -19,6 +19,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
 import {
 	applyFilePass,
 	assertSourceIsPlausible,
@@ -646,6 +647,167 @@ test("runUpdate copies content and projects the persona roster", async () => {
 				false,
 				"no leftover token survives in the projected roster"
 			);
+		}
+	);
+});
+
+// --- consumer AGENTS.md Tier-1 marker-pair refresh (PRISM-417) ---
+
+test("runUpdate refreshes the consumer AGENTS.md Tier-1 block from the consumer's own rules", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerRepoRoot,
+				"AGENTS.md",
+				[
+					"# Agent Behavior Rules",
+					"",
+					AGENTS_MD_BLOCK_BEGIN,
+					"",
+					"stale content from a previous fill",
+					"",
+					AGENTS_MD_BLOCK_END,
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				consumerContentRoot,
+				"rules/always.md",
+				"---\nload: always\n---\n\n# Always Rule\n"
+			);
+			await writeFile(
+				consumerContentRoot,
+				"rules/paths.md",
+				'---\nload: paths\npaths:\n  - "**/*.tsx"\n---\n\n# Paths Rule\n'
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const agentsMd = await readFile(consumerRepoRoot, "AGENTS.md");
+			assert.match(agentsMd, /# Always Rule/);
+			assert.doesNotMatch(agentsMd, /# Paths Rule/, "load: paths rule excluded from the block");
+			assert.doesNotMatch(agentsMd, /stale content from a previous fill/);
+			assert.equal(summary.agentsMdRefresh.refreshed, true);
+			assert.deepEqual(summary.agentsMdRefresh.warnings, []);
+		}
+	);
+});
+
+test("runUpdate leaves a consumer AGENTS.md with no marker pair untouched", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			const original = "# Agent Behavior Rules\n\nHand-authored, no PRISM markers.\n";
+			await writeFile(consumerRepoRoot, "AGENTS.md", original);
+			await writeFile(
+				consumerContentRoot,
+				"rules/always.md",
+				"---\nload: always\n---\n\n# Always Rule\n"
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(await readFile(consumerRepoRoot, "AGENTS.md"), original);
+			assert.equal(summary.agentsMdRefresh.refreshed, false);
+			assert.deepEqual(summary.agentsMdRefresh.warnings, []);
+		}
+	);
+});
+
+test("runUpdate treats a consumer rule missing load: as always-on and warns, never excludes it", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerRepoRoot,
+				"AGENTS.md",
+				[
+					"# Agent Behavior Rules",
+					"",
+					AGENTS_MD_BLOCK_BEGIN,
+					"",
+					AGENTS_MD_BLOCK_END,
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				consumerContentRoot,
+				"rules/legacy.md",
+				"# Legacy Rule\n\nPredates the load: mechanism.\n"
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const agentsMd = await readFile(consumerRepoRoot, "AGENTS.md");
+			assert.match(
+				agentsMd,
+				/# Legacy Rule/,
+				"undeclared rule is included (treated as always), never silently dropped"
+			);
+			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
+			assert.match(summary.agentsMdRefresh.warnings[0], /legacy\.md/);
+			assert.match(summary.agentsMdRefresh.warnings[0], /load:/);
+		}
+	);
+});
+
+test("runUpdate --dry-run does not write the consumer AGENTS.md block", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			const original = [
+				"# Agent Behavior Rules",
+				"",
+				AGENTS_MD_BLOCK_BEGIN,
+				"",
+				AGENTS_MD_BLOCK_END,
+				"",
+			].join("\n");
+			await writeFile(consumerRepoRoot, "AGENTS.md", original);
+			await writeFile(
+				consumerContentRoot,
+				"rules/always.md",
+				"---\nload: always\n---\n\n# Always Rule\n"
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			assert.equal(await readFile(consumerRepoRoot, "AGENTS.md"), original);
+			assert.equal(summary.agentsMdRefresh.refreshed, true, "dry-run still reports what would change");
 		}
 	);
 });

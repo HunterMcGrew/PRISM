@@ -126,7 +126,7 @@ test("overlay rule is dialect-translated into .cursor/rules/custom/*.mdc", async
 		await writeOverlayRule(
 			roots,
 			"scoped.md",
-			'---\npaths:\n  - "**/*.tsx"\n---\n\n# Scoped overlay rule\n'
+			'---\nload: paths\npaths:\n  - "**/*.tsx"\n---\n\n# Scoped overlay rule\n'
 		);
 
 		await runOverlayPass(roots);
@@ -138,6 +138,27 @@ test("overlay rule is dialect-translated into .cursor/rules/custom/*.mdc", async
 
 		const verbatimMd = path.join(roots.cursorDir, "rules", "custom", "scoped.md");
 		assert.equal(await exists(verbatimMd), false, "no verbatim .md alongside the .mdc");
+	});
+});
+
+test("a legacy overlay rule with paths: but no load: declaration defaults to always-on in Cursor (ratified legacy default)", async () => {
+	await withOverlayRoots(async (roots) => {
+		await writeOverlayRule(
+			roots,
+			"legacy-scoped.md",
+			'---\npaths:\n  - "**/*.tsx"\n---\n\n# Legacy scoped overlay rule\n'
+		);
+
+		await runOverlayPass(roots);
+
+		const mdcPath = path.join(roots.cursorDir, "rules", "custom", "legacy-scoped.mdc");
+		const mdc = await fs.readFile(mdcPath, "utf8");
+		assert.match(
+			mdc,
+			/alwaysApply: true/,
+			"no load: declaration means always-on, even though paths: is present — load: is the sole discriminator now"
+		);
+		assert.doesNotMatch(mdc, /globs:/);
 	});
 });
 

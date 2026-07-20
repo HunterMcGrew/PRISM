@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Self-Improvement Loop
 
 ## Purpose

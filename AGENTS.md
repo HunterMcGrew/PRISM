@@ -39,6 +39,10 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` â€” 
 
 <!-- source: .prism/rules/autonomous-bug-fixing.md -->
 
+---
+load: always
+---
+
 # Autonomous Bug Fixing
 
 ## Purpose
@@ -55,6 +59,10 @@ When given a bug report, just fix it. Point at logs, errors, or failing tests â€
 ---
 
 <!-- source: .prism/rules/bash-output-minimization.md -->
+
+---
+load: always
+---
 
 # Bash Output Minimization
 
@@ -83,6 +91,10 @@ Keep output visible for:
 ---
 
 <!-- source: .prism/rules/branch-plan.md -->
+
+---
+load: always
+---
 
 # Plan Rule
 
@@ -528,6 +540,10 @@ When updating the plan:
 
 <!-- source: .prism/rules/code-comments.md -->
 
+---
+load: always
+---
+
 # Code Comments
 
 ## JSDoc
@@ -687,6 +703,10 @@ When reviewing a comment on new or modified code, mentally delete it. Is the cod
 
 <!-- source: .prism/rules/code-standards.md -->
 
+---
+load: always
+---
+
 # Code Standards
 
 Universal standards that apply to all code in this repository. Language-specific rules live in dedicated files (see the dedicated standards section at the bottom â€” opt-in based on the team's stack).
@@ -789,6 +809,10 @@ When the onboarding flow lands, an opt-in step asks: "Do you already have engine
 
 <!-- source: .prism/rules/context-reuse.md -->
 
+---
+load: always
+---
+
 # Context Reuse Within a Session
 
 ## Purpose
@@ -829,6 +853,10 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 <!-- source: .prism/rules/context-window-handoff-check.md -->
 
+---
+load: always
+---
+
 # Context Window Handoff Check
 
 ## Purpose
@@ -865,6 +893,10 @@ Every persona runs this check at the end of a skill session before recommending 
 
 <!-- source: .prism/rules/core-principles.md -->
 
+---
+load: always
+---
+
 # Core Principles
 
 ## Purpose
@@ -884,6 +916,10 @@ Two principles govern every change: keep it simple, and find the root cause.
 ---
 
 <!-- source: .prism/rules/cross-agent-handoff-accountability.md -->
+
+---
+load: always
+---
 
 # Cross-Agent Handoff Accountability
 
@@ -909,6 +945,10 @@ Every persona that applies a fix or acts on a diagnosis originated by another ag
 
 <!-- source: .prism/rules/demand-elegance.md -->
 
+---
+load: always
+---
+
 # Demand Elegance
 
 ## Purpose
@@ -926,6 +966,10 @@ For non-trivial changes, pause and ask "is there a more elegant way?" If a fix f
 ---
 
 <!-- source: .prism/rules/followup-scope.md -->
+
+---
+load: always
+---
 
 # Follow-up Scope
 
@@ -1027,6 +1071,10 @@ Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the
 ---
 
 <!-- source: .prism/rules/git-conventions.md -->
+
+---
+load: always
+---
 
 # Git Conventions
 
@@ -1155,6 +1203,10 @@ Never rebase a shared branch. Rewriting commits that exist in someone else's che
 
 <!-- source: .prism/rules/lazy-artifacts.md -->
 
+---
+load: always
+---
+
 # Lazy Artifacts
 
 ## Purpose
@@ -1201,6 +1253,10 @@ Briar and Eric flag any install-template addition that ships empty as Minor in r
 
 <!-- source: .prism/rules/plan-before-building.md -->
 
+---
+load: always
+---
+
 # Plan Before Building
 
 ## Purpose
@@ -1219,6 +1275,10 @@ For any non-trivial task â€” 3 or more steps, or a real architectural decision â
 ---
 
 <!-- source: .prism/rules/pr-description.md -->
+
+---
+load: always
+---
 
 # PR Description
 
@@ -1308,6 +1368,10 @@ Leave all UI-related items unchecked if there are no UI changes.
 
 <!-- source: .prism/rules/pre-compaction-checkpoint.md -->
 
+---
+load: always
+---
+
 # Pre-Compaction Checkpoint
 
 ## Purpose
@@ -1334,6 +1398,10 @@ Every persona running a session long enough to approach the compaction threshold
 
 <!-- source: .prism/rules/self-improvement-loop.md -->
 
+---
+load: always
+---
+
 # Self-Improvement Loop
 
 ## Purpose
@@ -1351,6 +1419,10 @@ After a correction from the user, capture the pattern in `.prism/lessons.md`. Re
 ---
 
 <!-- source: .prism/rules/session-orientation.md -->
+
+---
+load: always
+---
 
 # Session Orientation
 
@@ -1403,6 +1475,10 @@ Every persona skill loads this rule and runs both batteries. Utility skills and 
 ---
 
 <!-- source: .prism/rules/skill-routing.md -->
+
+---
+load: always
+---
 
 # Skill Auto-Routing
 
@@ -1464,6 +1540,10 @@ Once implementation or authoring is complete, the authoring persona owns the ful
 
 <!-- source: .prism/rules/subagent-strategy.md -->
 
+---
+load: always
+---
+
 # Subagent Strategy
 
 ## Purpose
@@ -1482,6 +1562,10 @@ Keep the main context window clean by offloading research, exploration, and para
 
 <!-- source: .prism/rules/verification-before-done.md -->
 
+---
+load: always
+---
+
 # Verification Before Done
 
 ## Purpose
@@ -1499,6 +1583,10 @@ Prove a task works before marking it complete. Run tests, check logs, demonstrat
 ---
 
 <!-- source: .prism/rules/writing-voice.md -->
+
+---
+load: always
+---
 
 # Writing Voice
 

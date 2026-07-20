@@ -21,12 +21,14 @@
  * of a single command that reports everything wrong at once. Each check is
  * independently wrapped so one failure doesn't prevent the others from running.
  */
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { classifyPath } from "./ownership";
+import { parseRuleLoad } from "./rule-load";
 import { resolvePrismSource, resolveSelfPrismSource } from "./update";
 import { loadSyncManifest, SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 import { hashFile, pathExists, readFileIfExists } from "./utils";
@@ -36,7 +38,7 @@ const NPM_FETCH_TIMEOUT_MS = 3000;
 
 /** A single named health finding. `check` identifies which section produced it. */
 export interface DoctorFinding {
-	check: "config" | "git-repo" | "sync-manifest" | "version";
+	check: "config" | "git-repo" | "sync-manifest" | "version" | "rule-load";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -273,6 +275,42 @@ async function checkSyncManifest(consumerContentRoot: string): Promise<{
 	};
 }
 
+/**
+ * Reports every consumer rule under `.prism/rules/` missing a valid `load:`
+ * declaration. Reuses `parseRuleLoad`'s `"warn"` mode — the returned warning
+ * already carries the file name and the one-line remedy, so `doctor` nags on
+ * every run until the rule declares `load:`, matching the ratified
+ * legacy-rule default (`prism update`/`doctor` treat the rule as `always`
+ * rather than excluding it, but they no longer do so silently). Returns no
+ * findings when `.prism/rules/` is absent — a pre-adopt repo has nothing to
+ * check yet.
+ */
+async function checkRuleLoadDeclarations(
+	consumerContentRoot: string
+): Promise<DoctorFinding[]> {
+	const rulesDir = path.join(consumerContentRoot, "rules");
+	if (!(await pathExists(rulesDir))) {
+		return [];
+	}
+
+	const entries = await fs.readdir(rulesDir);
+	const findings: DoctorFinding[] = [];
+
+	for (const name of entries.filter((e) => e.endsWith(".md")).sort()) {
+		const content = await readFileIfExists(path.join(rulesDir, name));
+		if (content === null) {
+			continue;
+		}
+
+		const { warning } = parseRuleLoad(content, name, "warn");
+		if (warning !== null) {
+			findings.push({ check: "rule-load", severity: "warning", message: warning });
+		}
+	}
+
+	return findings;
+}
+
 /** Fetcher shape `checkVersion` depends on — lets tests inject a stub instead of hitting the network. */
 export type NpmVersionFetcher = (url: string, timeoutMs: number) => Promise<string | null>;
 
@@ -395,6 +433,8 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 
 	const syncResult = await checkSyncManifest(consumerContentRoot);
 	findings.push(...syncResult.findings);
+
+	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 
 	const versionResult = await checkVersion(prismSourceRoot, npmVersionFetcher);
 	findings.push(...versionResult.findings);

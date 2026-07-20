@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Cross-Agent Handoff Accountability
 
 ## Purpose

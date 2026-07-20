@@ -23,6 +23,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+	collectTier1RuleBodies,
+	hasTier1BlockMarkers,
+	renderTier1Block,
+	replaceTier1Block,
+} from "./agents-md-block";
+import {
 	resolvePrismVersion,
 	resolveSourceCommit,
 	syncAllPlatformContentCopies,
@@ -94,10 +100,34 @@ export interface VersionMetadata {
 	sourceCommit: string;
 }
 
+/** Outcome of the consumer AGENTS.md Tier-1 marker-pair block refresh. */
+export interface AgentsMdRefreshOutcome {
+	/** True when the marker pair existed and its content changed. */
+	refreshed: boolean;
+	/**
+	 * One entry per consumer-owned rule missing a valid `load:` declaration —
+	 * the ratified legacy-rule default: treated as `always`, never silently
+	 * excluded. Empty when every consumer rule declares `load:`.
+	 */
+	warnings: string[];
+}
+
 export interface UpdateSummary {
 	outcomes: FileOutcome[];
 	backups: string[];
 	versionDelta: VersionDelta;
+}
+
+/**
+ * `runUpdate`'s return shape — `UpdateSummary` (the `applyFilePass` file-pass
+ * result) plus the consumer AGENTS.md refresh outcome. Kept as an extension
+ * rather than folding `agentsMdRefresh` into `UpdateSummary` itself: the file
+ * pass and the AGENTS.md refresh are different concerns (per-file
+ * classification vs. a single marker-pair block), and `applyFilePass` is
+ * tested and called directly without ever touching AGENTS.md.
+ */
+export interface RunUpdateSummary extends UpdateSummary {
+	agentsMdRefresh: AgentsMdRefreshOutcome;
 }
 
 export interface RunUpdateOptions {
@@ -401,10 +431,17 @@ export async function applyFilePass(
  * `dryRun` passes through to `applyFilePass` and to the platform refresh
  * steps' own `checkMode` (they already support a read-only preview for drift
  * detection) — every write in the whole `runUpdate` pipeline is guarded.
+ *
+ * After the platform-skill refresh, `refreshConsumerAgentsMdBlock` re-renders
+ * the consumer AGENTS.md Tier-1 marker-pair block from the consumer's own
+ * `.prism/rules/` — the classifier hard-fails on a missing `load:` for
+ * PRISM's own build, but a consumer's rules directory may still carry legacy
+ * rules that predate this mechanism, so this pass runs in `"warn"` mode
+ * instead (see `refreshConsumerAgentsMdBlock`).
  */
 export async function runUpdate(
 	options: RunUpdateOptions
-): Promise<UpdateSummary> {
+): Promise<RunUpdateSummary> {
 	const {
 		prismRepoRoot,
 		consumerRepoRoot,
@@ -474,7 +511,67 @@ export async function runUpdate(
 		dryRun
 	);
 
-	return summary;
+	const agentsMdRefresh = await refreshConsumerAgentsMdBlock(
+		consumerRepoRoot,
+		consumerContentRoot,
+		tokenMap,
+		dryRun
+	);
+
+	if (agentsMdRefresh.warnings.length > 0) {
+		console.warn(
+			`prism:update: ${agentsMdRefresh.warnings.length} consumer rule(s) missing a valid \`load:\` declaration — treated as always-on:`
+		);
+		for (const warning of agentsMdRefresh.warnings) {
+			console.warn(`  ${warning}`);
+		}
+	}
+
+	return { ...summary, agentsMdRefresh };
+}
+
+/**
+ * Regenerates the consumer AGENTS.md Tier-1 marker-pair block from the
+ * consumer's own `.prism/rules/`, using `collectTier1RuleBodies` in `"warn"`
+ * mode so a consumer-owned rule missing `load:` is treated as `always` and
+ * reported, never silently dropped (the ratified legacy-rule default).
+ *
+ * Skips entirely — no read of `.prism/rules/`, no write — when AGENTS.md is
+ * absent or carries no marker pair. `prism update` never creates or
+ * restructures a consumer AGENTS.md; seeding one (with an empty marker pair)
+ * stays `prism adopt --seed-agents-md`'s job.
+ */
+async function refreshConsumerAgentsMdBlock(
+	consumerRepoRoot: string,
+	consumerContentRoot: string,
+	tokenMap: Map<string, string>,
+	dryRun: boolean
+): Promise<AgentsMdRefreshOutcome> {
+	const agentsPath = path.join(consumerRepoRoot, "AGENTS.md");
+	const current = await readFileIfExists(agentsPath);
+	if (current === null || !hasTier1BlockMarkers(current)) {
+		return { refreshed: false, warnings: [] };
+	}
+
+	const warnings: string[] = [];
+	const rules = await collectTier1RuleBodies(
+		path.join(consumerContentRoot, "rules"),
+		tokenMap,
+		"warn",
+		warnings
+	);
+	const block = renderTier1Block(rules);
+	const next = replaceTier1Block(current, block);
+
+	if (next === current) {
+		return { refreshed: false, warnings };
+	}
+
+	if (!dryRun) {
+		await fs.writeFile(agentsPath, next, "utf8");
+	}
+
+	return { refreshed: true, warnings };
 }
 
 /**
