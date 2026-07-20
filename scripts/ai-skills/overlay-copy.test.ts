@@ -141,7 +141,7 @@ test("overlay rule is dialect-translated into .cursor/rules/custom/*.mdc", async
 	});
 });
 
-test("a legacy overlay rule with paths: but no load: declaration defaults to always-on in Cursor (ratified legacy default)", async () => {
+test("a legacy overlay rule with paths: but no load: declaration stays path-scoped in Cursor (amended ratified legacy default)", async () => {
 	await withOverlayRoots(async (roots) => {
 		await writeOverlayRule(
 			roots,
@@ -155,10 +155,10 @@ test("a legacy overlay rule with paths: but no load: declaration defaults to alw
 		const mdc = await fs.readFile(mdcPath, "utf8");
 		assert.match(
 			mdc,
-			/alwaysApply: true/,
-			"no load: declaration means always-on, even though paths: is present — load: is the sole discriminator now"
+			/globs:/,
+			"a missing load: preserves the pre-load: paths: scoping instead of widening to always-on"
 		);
-		assert.doesNotMatch(mdc, /globs:/);
+		assert.doesNotMatch(mdc, /alwaysApply: true/);
 	});
 });
 

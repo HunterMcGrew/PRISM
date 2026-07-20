@@ -106,8 +106,11 @@ export interface AgentsMdRefreshOutcome {
 	refreshed: boolean;
 	/**
 	 * One entry per consumer-owned rule missing a valid `load:` declaration —
-	 * the ratified legacy-rule default: treated as `always`, never silently
-	 * excluded. Empty when every consumer rule declares `load:`.
+	 * the ratified legacy-rule default: never silently excluded, classified per
+	 * the pre-`load:` `paths:` scoping. Mirrors `scanConsumerRuleLoad`'s
+	 * warnings regardless of whether the AGENTS.md marker pair exists, so this
+	 * field stays accurate for a consumer with no AGENTS.md at all. Empty when
+	 * every consumer rule declares `load:`.
 	 */
 	warnings: string[];
 }
@@ -432,12 +435,16 @@ export async function applyFilePass(
  * steps' own `checkMode` (they already support a read-only preview for drift
  * detection) — every write in the whole `runUpdate` pipeline is guarded.
  *
- * After the platform-skill refresh, `refreshConsumerAgentsMdBlock` re-renders
- * the consumer AGENTS.md Tier-1 marker-pair block from the consumer's own
- * `.prism/rules/` — the classifier hard-fails on a missing `load:` for
- * PRISM's own build, but a consumer's rules directory may still carry legacy
- * rules that predate this mechanism, so this pass runs in `"warn"` mode
- * instead (see `refreshConsumerAgentsMdBlock`).
+ * `scanConsumerRuleLoad` classifies the consumer's `.prism/rules/` once, in
+ * `"warn"` mode — the classifier hard-fails on a missing `load:` for PRISM's
+ * own build, but a consumer's rules directory may still carry legacy rules
+ * that predate this mechanism. The per-file warnings print unconditionally,
+ * before the AGENTS.md refresh and independent of whether the consumer has
+ * an AGENTS.md at all — the ratified guarantee is about the consumer's
+ * context (platform rule copies included), not just the AGENTS block, so a
+ * consumer with no AGENTS.md still gets warned about an undeclared rule.
+ * `refreshConsumerAgentsMdBlock` reuses the same scan's rules to render the
+ * block rather than re-reading `.prism/rules/` itself.
  */
 export async function runUpdate(
 	options: RunUpdateOptions
@@ -503,6 +510,17 @@ export async function runUpdate(
 		dryRun
 	);
 
+	const ruleLoadScan = await scanConsumerRuleLoad(consumerContentRoot, tokenMap);
+
+	if (ruleLoadScan.warnings.length > 0) {
+		console.warn(
+			`prism:update: ${ruleLoadScan.warnings.length} consumer rule(s) missing a valid \`load:\` declaration — see each warning below for the preserved classification:`
+		);
+		for (const warning of ruleLoadScan.warnings) {
+			console.warn(`  ${warning}`);
+		}
+	}
+
 	await refreshPlatformSkills(
 		prismRepoRoot,
 		consumerRepoRoot,
@@ -511,67 +529,92 @@ export async function runUpdate(
 		dryRun
 	);
 
-	const agentsMdRefresh = await refreshConsumerAgentsMdBlock(
+	const { refreshed } = await refreshConsumerAgentsMdBlock(
 		consumerRepoRoot,
-		consumerContentRoot,
-		tokenMap,
+		ruleLoadScan.rules,
 		dryRun
 	);
 
-	if (agentsMdRefresh.warnings.length > 0) {
-		console.warn(
-			`prism:update: ${agentsMdRefresh.warnings.length} consumer rule(s) missing a valid \`load:\` declaration — treated as always-on:`
-		);
-		for (const warning of agentsMdRefresh.warnings) {
-			console.warn(`  ${warning}`);
-		}
-	}
+	const agentsMdRefresh: AgentsMdRefreshOutcome = {
+		refreshed,
+		warnings: ruleLoadScan.warnings,
+	};
 
 	return { ...summary, agentsMdRefresh };
 }
 
+/** Rules and per-file `load:` warnings collected by `scanConsumerRuleLoad`. */
+export interface ConsumerRuleLoadScan {
+	/** Rules declaring (or, in "warn" mode, defaulting to) `load: always`. */
+	rules: { name: string; body: string }[];
+	/**
+	 * One entry per consumer-owned rule missing a valid `load:` declaration,
+	 * naming the file, the remedy, and the effective classification it was
+	 * given (`always` or `paths`, per the pre-`load:` `paths:` scoping).
+	 */
+	warnings: string[];
+}
+
 /**
- * Regenerates the consumer AGENTS.md Tier-1 marker-pair block from the
- * consumer's own `.prism/rules/`, using `collectTier1RuleBodies` in `"warn"`
- * mode so a consumer-owned rule missing `load:` is treated as `always` and
- * reported, never silently dropped (the ratified legacy-rule default).
+ * Scans the consumer's `.prism/rules/` once, classifying every rule's
+ * `load:` declaration via `collectTier1RuleBodies` in `"warn"` mode. Shared
+ * by `runUpdate`'s unconditional warning print and the AGENTS.md Tier-1
+ * block refresh, so the two never read the same directory twice or risk
+ * disagreeing about which rules are undeclared.
  *
- * Skips entirely — no read of `.prism/rules/`, no write — when AGENTS.md is
- * absent or carries no marker pair. `prism update` never creates or
- * restructures a consumer AGENTS.md; seeding one (with an empty marker pair)
- * stays `prism adopt --seed-agents-md`'s job.
+ * Returns an empty scan when `.prism/rules/` does not exist yet — an update
+ * running before the consumer has any rules directory has nothing to scan.
  */
-async function refreshConsumerAgentsMdBlock(
-	consumerRepoRoot: string,
+async function scanConsumerRuleLoad(
 	consumerContentRoot: string,
-	tokenMap: Map<string, string>,
-	dryRun: boolean
-): Promise<AgentsMdRefreshOutcome> {
-	const agentsPath = path.join(consumerRepoRoot, "AGENTS.md");
-	const current = await readFileIfExists(agentsPath);
-	if (current === null || !hasTier1BlockMarkers(current)) {
-		return { refreshed: false, warnings: [] };
+	tokenMap: Map<string, string>
+): Promise<ConsumerRuleLoadScan> {
+	const rulesDir = path.join(consumerContentRoot, "rules");
+	if (!(await pathExists(rulesDir))) {
+		return { rules: [], warnings: [] };
 	}
 
 	const warnings: string[] = [];
-	const rules = await collectTier1RuleBodies(
-		path.join(consumerContentRoot, "rules"),
-		tokenMap,
-		"warn",
-		warnings
-	);
+	const rules = await collectTier1RuleBodies(rulesDir, tokenMap, "warn", warnings);
+
+	return { rules, warnings };
+}
+
+/**
+ * Regenerates the consumer AGENTS.md Tier-1 marker-pair block from `rules` —
+ * the same `scanConsumerRuleLoad` result `runUpdate` already collected and
+ * warned on, not a fresh read of `.prism/rules/`.
+ *
+ * Skips entirely — no write — when AGENTS.md is absent or carries no marker
+ * pair. `prism update` never creates or restructures a consumer AGENTS.md;
+ * seeding one (with an empty marker pair) stays `prism adopt
+ * --seed-agents-md`'s job. Warning emission is not this function's concern —
+ * it's a property of `scanConsumerRuleLoad`, which runs and warns
+ * unconditionally in `runUpdate` regardless of what this function returns.
+ */
+async function refreshConsumerAgentsMdBlock(
+	consumerRepoRoot: string,
+	rules: { name: string; body: string }[],
+	dryRun: boolean
+): Promise<{ refreshed: boolean }> {
+	const agentsPath = path.join(consumerRepoRoot, "AGENTS.md");
+	const current = await readFileIfExists(agentsPath);
+	if (current === null || !hasTier1BlockMarkers(current)) {
+		return { refreshed: false };
+	}
+
 	const block = renderTier1Block(rules);
 	const next = replaceTier1Block(current, block);
 
 	if (next === current) {
-		return { refreshed: false, warnings };
+		return { refreshed: false };
 	}
 
 	if (!dryRun) {
 		await fs.writeFile(agentsPath, next, "utf8");
 	}
 
-	return { refreshed: true, warnings };
+	return { refreshed: true };
 }
 
 /**

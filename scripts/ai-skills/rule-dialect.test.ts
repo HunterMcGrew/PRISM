@@ -30,6 +30,24 @@ Body content.
 	assert.match(out, /# Accessibility/);
 });
 
+test("cursor dialect strips load: even when it is the last frontmatter key, not just the first", () => {
+	const canonical = `---
+paths:
+  - "**/*.tsx"
+load: paths
+---
+
+# Accessibility
+
+Body content.
+`;
+	const out = cursorRuleDialect.transformContent("rules", canonical);
+
+	assert.doesNotMatch(out, /load:/, "load: must not leak into Cursor output regardless of key order");
+	assert.match(out, /globs:\n\s*- "\*\*\/\*\.tsx"/, "paths: is still rewritten to globs:");
+	assert.match(out, /# Accessibility/);
+});
+
 test("cursor dialect gives a load: always rule alwaysApply: true", () => {
 	const canonical = "---\nload: always\n---\n\n# Writing Voice\n\nBody content.\n";
 	const out = cursorRuleDialect.transformContent("rules", canonical);

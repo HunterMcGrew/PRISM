@@ -651,6 +651,26 @@ test("runUpdate copies content and projects the persona roster", async () => {
 	);
 });
 
+/**
+ * Captures `console.warn` calls made during `body`, restoring the original
+ * afterward regardless of whether `body` throws.
+ */
+async function withCapturedWarnings<T>(
+	body: () => Promise<T>
+): Promise<{ result: T; warnings: string[] }> {
+	const warnings: string[] = [];
+	const originalWarn = console.warn;
+	console.warn = (message?: unknown) => {
+		warnings.push(String(message));
+	};
+	try {
+		const result = await body();
+		return { result, warnings };
+	} finally {
+		console.warn = originalWarn;
+	}
+}
+
 // --- consumer AGENTS.md Tier-1 marker-pair refresh (PRISM-417) ---
 
 test("runUpdate refreshes the consumer AGENTS.md Tier-1 block from the consumer's own rules", async () => {
@@ -706,7 +726,11 @@ test("runUpdate refreshes the consumer AGENTS.md Tier-1 block from the consumer'
 test("runUpdate leaves a consumer AGENTS.md with no marker pair untouched", async () => {
 	await withTempRepoRoots(
 		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
-			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
 			const original = "# Agent Behavior Rules\n\nHand-authored, no PRISM markers.\n";
 			await writeFile(consumerRepoRoot, "AGENTS.md", original);
 			await writeFile(
@@ -808,6 +832,96 @@ test("runUpdate --dry-run does not write the consumer AGENTS.md block", async ()
 
 			assert.equal(await readFile(consumerRepoRoot, "AGENTS.md"), original);
 			assert.equal(summary.agentsMdRefresh.refreshed, true, "dry-run still reports what would change");
+		}
+	);
+});
+
+// --- unconditional warning emission + paths: preservation (PRISM-417 review fixes) ---
+
+test("runUpdate warns on an undeclared consumer rule even when there is no AGENTS.md at all", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerContentRoot,
+				"rules/legacy.md",
+				"# Legacy Rule\n\nPredates the load: mechanism.\n"
+			);
+
+			const { result: summary, warnings } = await withCapturedWarnings(() =>
+				runUpdate({
+					prismRepoRoot,
+					consumerRepoRoot,
+					prismContentRoot,
+					consumerContentRoot,
+				})
+			);
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, "AGENTS.md"),
+				false,
+				"no AGENTS.md was created — the consumer seam never seeds one"
+			);
+			assert.equal(summary.agentsMdRefresh.refreshed, false);
+			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
+			assert.ok(
+				warnings.some((w) => w.includes("legacy.md") && w.includes("load:")),
+				`expected a printed warning naming legacy.md, got: ${JSON.stringify(warnings)}`
+			);
+		}
+	);
+});
+
+test("runUpdate preserves paths: scoping for an undeclared rule instead of widening it to always-on", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerRepoRoot,
+				"AGENTS.md",
+				[
+					"# Agent Behavior Rules",
+					"",
+					AGENTS_MD_BLOCK_BEGIN,
+					"",
+					AGENTS_MD_BLOCK_END,
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				consumerContentRoot,
+				"rules/legacy-paths.md",
+				'---\npaths:\n  - "**/*.tsx"\n---\n\n# Legacy Paths Rule\n'
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const agentsMd = await readFile(consumerRepoRoot, "AGENTS.md");
+			assert.doesNotMatch(
+				agentsMd,
+				/# Legacy Paths Rule/,
+				"undeclared rule with paths: stays path-scoped — not inlined into the always-on AGENTS.md block"
+			);
+			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
+			assert.match(summary.agentsMdRefresh.warnings[0], /legacy-paths\.md/);
+			assert.match(
+				summary.agentsMdRefresh.warnings[0],
+				/load: paths/,
+				"the warning states the preserved paths classification, not a blanket always-on claim"
+			);
 		}
 	);
 });

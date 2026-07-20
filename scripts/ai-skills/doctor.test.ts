@@ -352,6 +352,33 @@ test("runDoctor warns on a consumer rule missing load: with the file name and re
 	});
 });
 
+test("runDoctor warns on a consumer rule missing load: but carrying paths:, preserving path-scoped classification", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			consumerContentRoot,
+			"rules/undeclared-paths.md",
+			'---\npaths:\n  - "**/*.tsx"\n---\n\n# Undeclared Paths Rule\n'
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a missing load: is a warning, not an error");
+		const finding = report.findings.find((f) => f.check === "rule-load");
+		assert.ok(finding, "expected a rule-load finding");
+		assert.match(finding?.message ?? "", /undeclared-paths\.md/);
+		assert.match(
+			finding?.message ?? "",
+			/load: paths/,
+			"the paths: scoping is preserved, not widened to always-on"
+		);
+	});
+});
+
 test("runDoctor reports no rule-load finding for a rule that declares load:", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");

@@ -11,8 +11,9 @@
  * `paths:` glob matching the language's file extensions (ADR-0070) — a
  * language rule is inherently stack-scoped, so it defaults to path-scoped
  * load rather than always-on. This is the default Atlas proposes during the
- * question flow, not a silent final answer; see `.ai-skills/skills/prism-onboarding/shared.md`
- * § Generated-rule load confirmation.
+ * question flow, not a silent final answer; see
+ * `.prism/references/onboarding/question-flow.md` § Generated-rule load
+ * confirmation.
  *
  * Skip-if-exists is the default posture: when the target file already exists,
  * the generator returns `{ written: false, reason: REASONS.exists }` without

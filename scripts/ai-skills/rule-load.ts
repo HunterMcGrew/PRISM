@@ -18,11 +18,14 @@
  *
  * A consumer-owned rule that predates this mechanism may still have no
  * `load:` at all. `mode: "warn"` (used by `prism update`/`prism doctor`)
- * never throws on that case — it treats the rule as `always` and returns a
- * warning naming the file and the remedy, so nothing silently drops out of a
- * consumer's context mid-upgrade (the ratified legacy-rule default). `mode:
- * "fail"` (used by PRISM's own `pnpm prism:build`) throws instead, because
- * every canonical rule is expected to declare `load:` explicitly.
+ * never throws on that case — it degrades to the pre-`load:` discriminator
+ * (`paths:` present → `load: "paths"`; absent → `load: "always"`) and returns
+ * a warning naming the file, the remedy, and the effective classification, so
+ * nothing silently drops out of a consumer's context mid-upgrade and a
+ * legacy path-scoped rule doesn't silently widen to always-on either (the
+ * ratified legacy-rule default, amended per ADR-0070). `mode: "fail"` (used
+ * by PRISM's own `pnpm prism:build`) throws instead, because every canonical
+ * rule is expected to declare `load:` explicitly.
  *
  * Single-sourced here rather than duplicated per module: `agents-md-block.ts`,
  * `rule-dialect.ts`, and `build.ts` all need the same fail-vs-warn semantics,
@@ -82,7 +85,12 @@ export function parseRuleLoad(
 		if (mode === "fail") {
 			throw new Error(message);
 		}
-		return { load: "always", warning: message };
+
+		const effectiveLoad: RuleLoad = hasPaths ? "paths" : "always";
+		return {
+			load: effectiveLoad,
+			warning: `${message} Treated as \`load: ${effectiveLoad}\` for this run, preserving the pre-\`load:\` \`paths:\` scoping.`,
+		};
 	}
 
 	if (loadValue === "paths" && !hasPaths) {

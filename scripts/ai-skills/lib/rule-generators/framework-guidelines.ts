@@ -12,7 +12,7 @@
  * would under-load it on every session that doesn't happen to touch a
  * matching glob. This is the default Atlas proposes during the question
  * flow, not a silent final answer; see
- * `.ai-skills/skills/prism-onboarding/shared.md` § Generated-rule load
+ * `.prism/references/onboarding/question-flow.md` § Generated-rule load
  * confirmation.
  *
  * Skip-if-exists posture and `force: true` override match the

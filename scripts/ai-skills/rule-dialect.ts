@@ -68,7 +68,7 @@ export const verbatimRuleDialect: RuleDialect = {
  * applies by stripping all frontmatter).
  */
 function rewritePathsToGlobs(frontmatter: string): string {
-	return frontmatter.replace(/^load:.*\n/m, "").replace(/^paths:/m, "globs:");
+	return frontmatter.replace(/^load:.*(\n|$)/m, "").replace(/^paths:/m, "globs:");
 }
 
 /**
