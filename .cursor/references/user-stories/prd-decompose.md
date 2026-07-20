@@ -23,7 +23,7 @@ Read the PRD's `## User journeys`, `## Scope`, and `## Requirements` sections (P
 
 ## Output shape
 
-Write to the epic plan at `.prism/plans/epic-<id-or-slug>.md` (per `../../rules/branch-plan.md` naming — use the epic id when one exists, the PRD slug when it doesn't). Create the plan lazily if it doesn't exist yet, per `../plan-lookup.md` step 6 — the same plan-creation path every skill uses when no plan is found. If the resolved target is a ticket-grain plan (`prism-NNNN.md`), the input was misclassified — stop and re-run the skill body's Path A existence check rather than writing.
+Write to the epic plan at `.prism/plans/epic-<id-or-slug>.md` (per `../../rules/branch-plan.md` naming — use the epic id when one exists, the PRD slug when it doesn't). Create the plan lazily if it doesn't exist yet, using the plan template at `../../rules/branch-plan.md § Plan File Template`. If the resolved target is a ticket-grain plan (`prism-NNNN.md`), the input was misclassified — stop and re-run the skill body's Path A existence check rather than writing.
 
 Write two things into the epic plan:
 
