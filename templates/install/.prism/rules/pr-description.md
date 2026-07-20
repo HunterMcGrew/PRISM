@@ -1,5 +1,5 @@
 ---
-load: always
+load: skill
 ---
 
 # PR Description
