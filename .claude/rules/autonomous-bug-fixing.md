@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Autonomous Bug Fixing
 
 ## Purpose

@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Plan Rule
 
 ## Purpose

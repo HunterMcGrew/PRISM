@@ -1,4 +1,5 @@
 ---
+load: paths
 paths:
   - ".prism/plans/**/*.md"
 ---

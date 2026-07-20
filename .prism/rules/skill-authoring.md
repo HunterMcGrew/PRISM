@@ -1,4 +1,5 @@
 ---
+load: paths
 paths:
   - ".ai-skills/skills/**"
   - ".prism/references/**"

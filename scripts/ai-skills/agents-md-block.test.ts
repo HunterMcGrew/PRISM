@@ -1,11 +1,14 @@
 /**
  * Regression suite for the AGENTS.md Tier-1 rule-body generator. Pins:
- *   - which rules are collected (no-frontmatter only; paths:-bearing excluded)
+ *   - which rules are collected (`load: always` only; `load: paths`/`load: skill` excluded)
+ *   - the build hard-fail on a missing or invalid `load:` declaration ("fail" mode)
+ *   - the warn-and-include-as-always fallback for undeclared consumer rules ("warn" mode)
  *   - alphabetical ordering of the collected set
  *   - token substitution (${TICKET_PREFIX} → configured value; no literal placeholders survive)
  *   - begin/end markers and source comments in the rendered block
  *   - idempotent replace (second call produces the same output as the first)
  *   - insertion point when no markers exist yet (after Behavioral norms table)
+ *   - marker-pair detection (`hasTier1BlockMarkers`)
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -18,6 +21,7 @@ import {
 	AGENTS_MD_BLOCK_END,
 	AGENTS_MD_SEEDED_MARKER,
 	collectTier1RuleBodies,
+	hasTier1BlockMarkers,
 	renderSeededAgentsMd,
 	renderTier1Block,
 	replaceTier1Block,
@@ -36,17 +40,22 @@ async function withTempRulesDir(
 	}
 }
 
-test("collectTier1RuleBodies includes no-paths rules and excludes paths-bearing rules", async () => {
+test("collectTier1RuleBodies includes load: always rules and excludes load: paths and load: skill", async () => {
 	await withTempRulesDir(
 		async (dir) => {
 			await fs.writeFile(
 				path.join(dir, "tier1.md"),
-				"# Tier 1 Rule\n\nAlways loaded.\n",
+				"---\nload: always\n---\n\n# Tier 1 Rule\n\nAlways loaded.\n",
 				"utf8"
 			);
 			await fs.writeFile(
 				path.join(dir, "tier2.md"),
-				'---\npaths:\n  - "**/*.tsx"\n---\n\n# Tier 2 Rule\n\nPath-gated.\n',
+				'---\nload: paths\npaths:\n  - "**/*.tsx"\n---\n\n# Tier 2 Rule\n\nPath-gated.\n',
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(dir, "tier3.md"),
+				"---\nload: skill\n---\n\n# Tier 3 Rule\n\nSkill-triggered.\n",
 				"utf8"
 			);
 		},
@@ -62,8 +71,8 @@ test("collectTier1RuleBodies includes no-paths rules and excludes paths-bearing 
 test("collectTier1RuleBodies returns rules in alphabetical order", async () => {
 	await withTempRulesDir(
 		async (dir) => {
-			await fs.writeFile(path.join(dir, "b.md"), "# B Rule\n", "utf8");
-			await fs.writeFile(path.join(dir, "a.md"), "# A Rule\n", "utf8");
+			await fs.writeFile(path.join(dir, "b.md"), "---\nload: always\n---\n\n# B Rule\n", "utf8");
+			await fs.writeFile(path.join(dir, "a.md"), "---\nload: always\n---\n\n# A Rule\n", "utf8");
 		},
 		async (dir) => {
 			const rules = await collectTier1RuleBodies(dir);
@@ -71,6 +80,68 @@ test("collectTier1RuleBodies returns rules in alphabetical order", async () => {
 				rules.map((r) => r.name),
 				["a.md", "b.md"]
 			);
+		}
+	);
+});
+
+test("collectTier1RuleBodies throws in fail mode (the default) naming a rule with no load: declaration", async () => {
+	await withTempRulesDir(
+		async (dir) => {
+			await fs.writeFile(path.join(dir, "undeclared.md"), "# No frontmatter at all\n", "utf8");
+		},
+		async (dir) => {
+			await assert.rejects(collectTier1RuleBodies(dir), /undeclared\.md/);
+		}
+	);
+});
+
+test("collectTier1RuleBodies throws in fail mode on an invalid load: value", async () => {
+	await withTempRulesDir(
+		async (dir) => {
+			await fs.writeFile(
+				path.join(dir, "bogus.md"),
+				"---\nload: sometimes\n---\n\n# Bogus\n",
+				"utf8"
+			);
+		},
+		async (dir) => {
+			await assert.rejects(collectTier1RuleBodies(dir), /bogus\.md/);
+		}
+	);
+});
+
+test("collectTier1RuleBodies in warn mode treats a missing load: as always and reports a warning instead of throwing", async () => {
+	await withTempRulesDir(
+		async (dir) => {
+			await fs.writeFile(path.join(dir, "legacy.md"), "# Legacy Rule\n\nNo load: key.\n", "utf8");
+		},
+		async (dir) => {
+			const warnings: string[] = [];
+			const rules = await collectTier1RuleBodies(dir, undefined, "warn", warnings);
+
+			assert.equal(rules.length, 1, "undeclared rule is included, treated as always");
+			assert.equal(rules[0].name, "legacy.md");
+			assert.equal(warnings.length, 1);
+			assert.match(warnings[0], /legacy\.md/);
+			assert.match(warnings[0], /load:/);
+		}
+	);
+});
+
+test("collectTier1RuleBodies in warn mode does not warn for a validly declared rule", async () => {
+	await withTempRulesDir(
+		async (dir) => {
+			await fs.writeFile(
+				path.join(dir, "declared.md"),
+				"---\nload: always\n---\n\n# Declared\n",
+				"utf8"
+			);
+		},
+		async (dir) => {
+			const warnings: string[] = [];
+			await collectTier1RuleBodies(dir, undefined, "warn", warnings);
+
+			assert.deepEqual(warnings, []);
 		}
 	);
 });
@@ -108,7 +179,7 @@ test("collectTier1RuleBodies substitutes tokens when tokenMap is provided", asyn
 		async (dir) => {
 			await fs.writeFile(
 				path.join(dir, "tier1.md"),
-				"# Rule\n\nSee ${TICKET_PREFIX}-1234 for context.\n",
+				"---\nload: always\n---\n\n# Rule\n\nSee ${TICKET_PREFIX}-1234 for context.\n",
 				"utf8"
 			);
 		},
@@ -162,6 +233,14 @@ test("renderSeededAgentsMd carries the provenance marker and an empty Tier-1 mar
 		seeded.includes(`${AGENTS_MD_BLOCK_BEGIN}\n\n${AGENTS_MD_BLOCK_END}`),
 		"the marker pair must be empty so replaceTier1Block's marker-match path fills it"
 	);
+});
+
+test("hasTier1BlockMarkers is true only when the begin/end marker pair is present", () => {
+	const withMarkers = `# Agent Behavior Rules\n\n${AGENTS_MD_BLOCK_BEGIN}\n\nbody\n\n${AGENTS_MD_BLOCK_END}\n`;
+	const withoutMarkers = "# Agent Behavior Rules\n\nNo markers here.\n";
+
+	assert.equal(hasTier1BlockMarkers(withMarkers), true);
+	assert.equal(hasTier1BlockMarkers(withoutMarkers), false);
 });
 
 test("replaceTier1Block fills the seeded stub's empty marker pair via the marker-match path, not the insert-fallback path", () => {

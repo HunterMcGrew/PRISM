@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Skill Auto-Routing
 
 ## Purpose

@@ -300,7 +300,7 @@ test("cursor dialect emits .mdc rule copies with globs:/alwaysApply: frontmatter
 			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
 			await fs.writeFile(
 				path.join(contentRoot, "rules", "scoped.md"),
-				'---\npaths:\n  - "**/*.tsx"\n---\n\n# Scoped rule\n',
+				'---\nload: paths\npaths:\n  - "**/*.tsx"\n---\n\n# Scoped rule\n',
 				"utf8"
 			);
 			await fs.writeFile(
@@ -386,6 +386,104 @@ test("cursor dialect cleanup removes a stale .md copy once .mdc is emitted", asy
 			assert.equal(staleExists, false, "stale .md copy removed");
 			assert.ok(
 				changedPaths.includes(path.join(platformDir, "rules", "alpha.md"))
+			);
+		}
+	);
+});
+
+test("copyContentToPlatformDir excludes a load: skill rule from the platform copy entirely", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "skill-only.md"),
+				"---\nload: skill\n---\n\n# Skill-only rule\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "always.md"),
+				"---\nload: always\n---\n\n# Always rule\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths, new Map());
+
+			let skillOnlyExists = true;
+			try {
+				await fs.access(path.join(platformDir, "rules", "skill-only.md"));
+			} catch {
+				skillOnlyExists = false;
+			}
+			assert.equal(skillOnlyExists, false, "load: skill rule never reaches the platform copy");
+
+			const alwaysCopied = await fs.readFile(
+				path.join(platformDir, "rules", "always.md"),
+				"utf8"
+			);
+			assert.match(alwaysCopied, /# Always rule/);
+		}
+	);
+});
+
+test("copyContentToPlatformDir copies a rule missing load: (legacy consumer rule) — never silently drops it", async () => {
+	await withTempRoots(
+		async (contentRoot) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "legacy.md"),
+				"# Legacy rule\n\nNo load: key.\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await copyContentToPlatformDir(contentRoot, platformDir, false, changedPaths, new Map());
+
+			const copied = await fs.readFile(path.join(platformDir, "rules", "legacy.md"), "utf8");
+			assert.match(copied, /# Legacy rule/);
+		}
+	);
+});
+
+test("removeDeletedManagedContent sweeps a stale platform copy once its source is reclassified to load: skill", async () => {
+	await withTempRoots(
+		async (contentRoot, platformDir) => {
+			await fs.mkdir(path.join(contentRoot, "rules"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "reclassified.md"),
+				"---\nload: always\n---\n\n# Reclassified rule\n",
+				"utf8"
+			);
+			const initial: string[] = [];
+			await copyContentToPlatformDir(contentRoot, platformDir, false, initial, new Map());
+
+			// The rule is reclassified to load: skill after the platform copy already
+			// exists — its source file survives, only its declared load: changes.
+			await fs.writeFile(
+				path.join(contentRoot, "rules", "reclassified.md"),
+				"---\nload: skill\n---\n\n# Reclassified rule\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, platformDir) => {
+			const changedPaths: string[] = [];
+			await removeDeletedManagedContent(contentRoot, platformDir, false, changedPaths);
+
+			let staleExists = true;
+			try {
+				await fs.access(path.join(platformDir, "rules", "reclassified.md"));
+			} catch {
+				staleExists = false;
+			}
+			assert.equal(
+				staleExists,
+				false,
+				"stale copy removed even though the canonical source still exists"
+			);
+			assert.ok(
+				changedPaths.includes(path.join(platformDir, "rules", "reclassified.md"))
 			);
 		}
 	);

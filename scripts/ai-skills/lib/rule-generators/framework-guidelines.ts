@@ -6,6 +6,15 @@
  * opens with an applicability declaration per ADR-0029 so the agent scopes
  * the rules itself; skills do not reference these files by name.
  *
+ * Every generated file carries `load: always` frontmatter (ADR-0070) — a
+ * detected framework is, in practice, the single framework the whole repo is
+ * built on, so path-scoping it the way `code-standards.ts` scopes a language
+ * would under-load it on every session that doesn't happen to touch a
+ * matching glob. This is the default Atlas proposes during the question
+ * flow, not a silent final answer; see
+ * `.prism/references/onboarding/question-flow.md` § Generated-rule load
+ * confirmation.
+ *
  * Skip-if-exists posture and `force: true` override match the
  * code-standards generator. Frameworks not in `FRAMEWORK_TEMPLATES` are
  * silently ignored — Atlas's stack detection can surface frameworks (e.g.
@@ -140,7 +149,7 @@ async function writeRuleFile(
 
 function renderRuleContent(template: FrameworkTemplate): string {
 	const heading = `# ${template.displayName} Guidelines`;
-	return `${heading}\n\n${template.applicability}\n\n${template.body.trimEnd()}\n`;
+	return `---\nload: always\n---\n\n${heading}\n\n${template.applicability}\n\n${template.body.trimEnd()}\n`;
 }
 
 async function pathExists(targetPath: string): Promise<boolean> {

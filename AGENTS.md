@@ -39,6 +39,10 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 
 <!-- source: .prism/rules/autonomous-bug-fixing.md -->
 
+---
+load: always
+---
+
 # Autonomous Bug Fixing
 
 ## Purpose
@@ -55,6 +59,10 @@ When given a bug report, just fix it. Point at logs, errors, or failing tests �
 ---
 
 <!-- source: .prism/rules/bash-output-minimization.md -->
+
+---
+load: always
+---
 
 # Bash Output Minimization
 
@@ -83,6 +91,10 @@ Keep output visible for:
 ---
 
 <!-- source: .prism/rules/branch-plan.md -->
+
+---
+load: always
+---
 
 # Plan Rule
 
@@ -528,6 +540,10 @@ When updating the plan:
 
 <!-- source: .prism/rules/code-comments.md -->
 
+---
+load: always
+---
+
 # Code Comments
 
 ## JSDoc
@@ -687,6 +703,10 @@ When reviewing a comment on new or modified code, mentally delete it. Is the cod
 
 <!-- source: .prism/rules/code-standards.md -->
 
+---
+load: always
+---
+
 # Code Standards
 
 Universal standards that apply to all code in this repository. Language-specific rules live in dedicated files (see the dedicated standards section at the bottom — opt-in based on the team's stack).
@@ -789,6 +809,10 @@ When the onboarding flow lands, an opt-in step asks: "Do you already have engine
 
 <!-- source: .prism/rules/context-reuse.md -->
 
+---
+load: always
+---
+
 # Context Reuse Within a Session
 
 ## Purpose
@@ -829,6 +853,10 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 <!-- source: .prism/rules/context-window-handoff-check.md -->
 
+---
+load: always
+---
+
 # Context Window Handoff Check
 
 ## Purpose
@@ -865,6 +893,10 @@ Every persona runs this check at the end of a skill session before recommending 
 
 <!-- source: .prism/rules/core-principles.md -->
 
+---
+load: always
+---
+
 # Core Principles
 
 ## Purpose
@@ -884,6 +916,10 @@ Two principles govern every change: keep it simple, and find the root cause.
 ---
 
 <!-- source: .prism/rules/cross-agent-handoff-accountability.md -->
+
+---
+load: always
+---
 
 # Cross-Agent Handoff Accountability
 
@@ -909,6 +945,10 @@ Every persona that applies a fix or acts on a diagnosis originated by another ag
 
 <!-- source: .prism/rules/demand-elegance.md -->
 
+---
+load: always
+---
+
 # Demand Elegance
 
 ## Purpose
@@ -926,6 +966,10 @@ For non-trivial changes, pause and ask "is there a more elegant way?" If a fix f
 ---
 
 <!-- source: .prism/rules/followup-scope.md -->
+
+---
+load: always
+---
 
 # Follow-up Scope
 
@@ -1027,6 +1071,10 @@ Reconciliation for stubs is **surface-not-rewire**: when the fix lane lands, the
 ---
 
 <!-- source: .prism/rules/git-conventions.md -->
+
+---
+load: always
+---
 
 # Git Conventions
 
@@ -1155,6 +1203,10 @@ Never rebase a shared branch. Rewriting commits that exist in someone else's che
 
 <!-- source: .prism/rules/lazy-artifacts.md -->
 
+---
+load: always
+---
+
 # Lazy Artifacts
 
 ## Purpose
@@ -1201,6 +1253,10 @@ Briar and Eric flag any install-template addition that ships empty as Minor in r
 
 <!-- source: .prism/rules/plan-before-building.md -->
 
+---
+load: always
+---
+
 # Plan Before Building
 
 ## Purpose
@@ -1218,95 +1274,11 @@ For any non-trivial task — 3 or more steps, or a real architectural decision �
 
 ---
 
-<!-- source: .prism/rules/pr-description.md -->
-
-# PR Description
-
-## PR Title
-
-- Format: `PRISM-NNNN: <description>` for the primary implementation PR
-- Follow-up PRs (cleanup, review fixes, architecture updates after the main PR has merged): `PRISM-NNNN followup: <description>`
-
-## What goes in the PR body
-
-The PR description carries reasoning the diff can't show. File-level change details live in the GitHub diff; acceptance criteria live in the ticket tracker and the branch plan. The PR body should never duplicate either.
-
-## Structure
-
-The canonical shape lives in `.prism/templates/pr-description.md`. Sections in order:
-
-- `## Summary` — a BLUF scaled to the PR's size: one line for a small PR, a lead line plus a few bullets for a large one. The reviewer should know what they're walking into before the first heading scroll.
-- `## What did you do?` — concrete description of the change
-- `## Why did you do it?` — motivation or problem
-- `## How did you achieve it?` — approach, key decisions; skippable on trivial changes
-- `## Screenshots` — UI PRs only; delete the heading when not applicable
-- `## Notes` — edge cases, follow-ups, reviewer callouts, deployment notes; delete the heading when there's nothing to add
-- `## Ticket` — PRISM-#### or ticket URL
-- `## Type of Change` and the pre-submit checklist — preserved from the base GitHub template
-
-**Why this order:** scanners read top-down. Summary orients. What / Why / How delivers narrative in the order a reviewer thinks — "what did you change, why did you change it, how did you change it." Don't reshuffle without a reason.
-
-**Why optionality is placeholder text, not branching:** templates stay linear and scannable. `[Skip this section if the change is self-evident from the diff.]` teaches contributors what's expected and signals that empty sections are acceptable when honest.
-
-## AC lives in the ticket tracker, not the PR body
-
-Acceptance criteria live in the ticket and the branch plan. The PR's `## Ticket` link points reviewers to the authoritative AC. Duplicating AC into the PR body creates a third copy that drifts the moment any of the three are edited.
-
-## File changes live in the diff, not the PR body
-
-Do not add a `## Changes` section listing files. The GitHub diff — file count, tree, per-file line counts, inline content — is the authoritative record of what changed. A prose inventory duplicates it and goes stale the moment a late commit lands. If a specific file change needs narrative context, put that context in `## How did you achieve it?` or `## Notes`.
-
-## Intentional divergence from `.github/pull_request_template.md`
-
-The GitHub template stays minimal on purpose. A PR body using this richer structure is a signal — the skill generated it. A PR body matching the sparse GitHub template is a signal too — the PR was opened cold without running the skill. Reviewers can use this as a tell.
-
-**Why:** the divergence is load-bearing. Future agents: do not "helpfully" sync the two files. If `.github/pull_request_template.md` grows sections to match this template, the signal disappears.
-
-## Writing mechanics
-
-When updating an existing PR description:
-
-- Use the GitHub REST API (`gh api repos/{owner}/{repo}/pulls/{number} -X PATCH -F body=@file.md`) instead of `gh pr edit --body` — the latter hits a GraphQL Projects Classic deprecation error
-- Alternatively, write the body to a temporary file and use `gh pr edit --body-file /tmp/pr-body.md` — this also prevents bash from escaping backticks and breaking markdown formatting
-- Preserve any existing screenshot section (`## Screenshots`, `## Before/After`, or similar) — do not delete or overwrite screenshots that were previously added
-- Do not delete the base template footer (`## Ticket`, `## Type of Change`, and the pre-submit checklist)
-- Escape bare `#N` references when they aren't real PR/issue links. GitHub autolinks `#N` in PR bodies to PR/issue N in this repo. When referencing internal items — plan step numbers, comment numbers, list positions — wrap them in backticks: write `` `#3` ``, not `#3`. The same rule applies to commit message bodies — see `git-conventions.md` § Body
-
-## Keeping the PR in sync with scope
-
-The PR body describes current scope — what's shipping right now — not the scope at PR-open time. This matters because PRISM squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. A stale body at merge time means a stale record forever.
-
-**Why:** branches evolve during implementation. Follow-up commits from review feedback, drive-by scope expansions, deferred work splits, and mid-implementation approach shifts all drift the body away from reality if nobody's updating it. The team's existing sync patterns — Winston auto-syncing AC to the tracker, plan `## History` appending without prompting — show the precedent: when the trigger is confident, the sync happens.
-
-**Two enforcement moments:**
-
-- **Winston** — after modifying `## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria` in the plan, if an open PR exists for the current branch, rewrite the agent-owned sections of the PR body to reflect the new scope. Silent. Mentioned in the closing message (one line: "PR #N body synced to reflect plan changes").
-- **Clove** — in the shipping flow, when pushing to a branch with an existing PR and the plan's `## History` has new entries past the last PR-body write, rewrite the agent-owned sections before push. Silent. Mentioned in the two-path closing.
-
-**Section ownership:**
-
-- **Agent-owned** — the narrative sections generated from `.prism/templates/pr-description.md` (Summary, What did you do?, Why did you do it?, How did you achieve it?, Ticket, Type of Change, pre-submit checklist). Auto-sync rewrites these.
-- **User-owned** — `## Screenshots`, `## Notes`, and any section the agent didn't originate (reviewer callouts, deployment notes, ad-hoc context). The agent may seed initial content in Screenshots and Notes at first body creation, but never rewrites them on subsequent syncs — once the template places the heading, the content belongs to the user. Auto-sync preserves these verbatim. The screenshot-preservation bullet in Writing mechanics above is a specific case of this general rule.
-
-**Why "seed once, never rewrite":** the agent can't tell whether a Notes section was user-edited without tracking edit history it doesn't have. "Seed once, never rewrite" is the behavioral rule that keeps section ownership decidable without that tracking.
-
-**Session-scoped opt-out:** if the user says "don't touch the PR body" during a session, honor it for the rest of that session. No per-push prompting — prompting every push is the friction this invariant is designed to avoid.
-
-**First PR body creation is unchanged.** Auto-sync applies to subsequent updates. The Clove PR-open flow still authors the first body once at PR creation.
-
-## Pre-submit checklist
-
-Check only the items you can confirm:
-
-- `Git conflicts have been resolved` — if the branch is clean
-- `You have removed all console.logs, unnecessary comments, and/or whitespace` — if confirmed
-- `You've evaluated whether the code you are adding or editing is using best practices` — if the fix is surgical and well-tested
-
-Leave all UI-related items unchecked if there are no UI changes.
+<!-- source: .prism/rules/pre-compaction-checkpoint.md -->
 
 ---
-
-<!-- source: .prism/rules/pre-compaction-checkpoint.md -->
+load: always
+---
 
 # Pre-Compaction Checkpoint
 
@@ -1334,6 +1306,10 @@ Every persona running a session long enough to approach the compaction threshold
 
 <!-- source: .prism/rules/self-improvement-loop.md -->
 
+---
+load: always
+---
+
 # Self-Improvement Loop
 
 ## Purpose
@@ -1351,6 +1327,10 @@ After a correction from the user, capture the pattern in `.prism/lessons.md`. Re
 ---
 
 <!-- source: .prism/rules/session-orientation.md -->
+
+---
+load: always
+---
 
 # Session Orientation
 
@@ -1403,6 +1383,10 @@ Every persona skill loads this rule and runs both batteries. Utility skills and 
 ---
 
 <!-- source: .prism/rules/skill-routing.md -->
+
+---
+load: always
+---
 
 # Skill Auto-Routing
 
@@ -1487,6 +1471,10 @@ Once implementation or authoring is complete, the authoring persona owns the ful
 
 <!-- source: .prism/rules/subagent-strategy.md -->
 
+---
+load: always
+---
+
 # Subagent Strategy
 
 ## Purpose
@@ -1505,6 +1493,10 @@ Keep the main context window clean by offloading research, exploration, and para
 
 <!-- source: .prism/rules/verification-before-done.md -->
 
+---
+load: always
+---
+
 # Verification Before Done
 
 ## Purpose
@@ -1522,6 +1514,10 @@ Prove a task works before marking it complete. Run tests, check logs, demonstrat
 ---
 
 <!-- source: .prism/rules/writing-voice.md -->
+
+---
+load: always
+---
 
 # Writing Voice
 

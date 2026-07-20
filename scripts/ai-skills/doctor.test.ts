@@ -149,8 +149,9 @@ test("runDoctor reports healthy for a valid config, a git repo, and no manifest 
 test("runDoctor reports healthy with no findings at all when the manifest is fully in sync", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
-		await writeFile(consumerContentRoot, "rules/a.md", "# A\n");
-		await writeConsumerManifest(consumerContentRoot, { "rules/a.md": "# A\n" });
+		const ruleContent = "---\nload: always\n---\n\n# A\n";
+		await writeFile(consumerContentRoot, "rules/a.md", ruleContent);
+		await writeConsumerManifest(consumerContentRoot, { "rules/a.md": ruleContent });
 
 		const report = await runDoctor({
 			consumerRepoRoot,
@@ -159,6 +160,11 @@ test("runDoctor reports healthy with no findings at all when the manifest is ful
 		});
 
 		assert.equal(report.healthy, true);
+		assert.equal(
+			report.findings.some((f) => f.check === "rule-load"),
+			false,
+			"a declared load: draws no rule-load finding"
+		);
 		assert.equal(report.syncState.manifest?.prismOwnedCount, 1);
 		assert.equal(report.syncState.manifest?.divergedFiles.length, 0);
 		assert.equal(report.syncState.manifest?.missingFiles.length, 0);
@@ -321,6 +327,114 @@ test("runDoctor reports diverged files with their .bak siblings and missing file
 		const errorFinding = report.findings.find((f) => f.check === "sync-manifest" && f.severity === "error");
 		assert.ok(errorFinding, "expected an error finding for the missing file");
 		assert.ok(errorFinding?.message.includes("rules/missing.md"));
+	});
+});
+
+// --- rule-load declarations (PRISM-417) ---
+
+test("runDoctor warns on a consumer rule missing load: with the file name and remedy, but stays healthy", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(consumerContentRoot, "rules/undeclared.md", "# Undeclared\n\nNo load: key.\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a missing load: is a warning, not an error");
+		const finding = report.findings.find((f) => f.check === "rule-load");
+		assert.ok(finding, "expected a rule-load finding");
+		assert.equal(finding?.severity, "warning");
+		assert.match(finding?.message ?? "", /undeclared\.md/);
+		assert.match(finding?.message ?? "", /load:/);
+	});
+});
+
+test("runDoctor warns on a consumer rule missing load: but carrying paths:, preserving path-scoped classification", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			consumerContentRoot,
+			"rules/undeclared-paths.md",
+			'---\npaths:\n  - "**/*.tsx"\n---\n\n# Undeclared Paths Rule\n'
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a missing load: is a warning, not an error");
+		const finding = report.findings.find((f) => f.check === "rule-load");
+		assert.ok(finding, "expected a rule-load finding");
+		assert.match(finding?.message ?? "", /undeclared-paths\.md/);
+		assert.match(
+			finding?.message ?? "",
+			/load: paths/,
+			"the paths: scoping is preserved, not widened to always-on"
+		);
+	});
+});
+
+test("runDoctor reports no rule-load finding for a rule that declares load:", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			consumerContentRoot,
+			"rules/declared.md",
+			"---\nload: paths\npaths:\n  - \"**/*.ts\"\n---\n\n# Declared\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(
+			report.findings.some((f) => f.check === "rule-load"),
+			false
+		);
+	});
+});
+
+test("runDoctor warns on an overlay rule missing load:, labeled custom/ so it isn't confused with a base rule", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			consumerContentRoot,
+			"custom/rules/team.md",
+			"# Team overlay rule\n\nNo load: key.\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a missing load: is a warning, not an error");
+		const finding = report.findings.find((f) => f.check === "rule-load");
+		assert.ok(finding, "expected a rule-load finding for the overlay rule");
+		assert.match(finding?.message ?? "", /custom\/team\.md/);
+	});
+});
+
+test("runDoctor reports no rule-load findings when .prism/rules/ does not exist yet", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(
+			report.findings.some((f) => f.check === "rule-load"),
+			false
+		);
 	});
 });
 

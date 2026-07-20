@@ -34,6 +34,7 @@ import {
 	runLiteralGuard,
 } from "./literal-guard";
 import { runPathGuard } from "./path-guard";
+import { isSkillLoadRuleFile, validateCanonicalRuleLoadDeclarations } from "./rule-load";
 import { generateSyncManifest, writeSyncManifest } from "./sync-manifest";
 import {
 	codexRuleDialect,
@@ -117,6 +118,9 @@ const COPIED_CONTENT_AREAS = [
 ] as const;
 const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
 
+/** The `COPIED_CONTENT_AREAS` entry whose files carry `load:` frontmatter semantics. */
+const RULES_AREA_NAME = "rules";
+
 /**
  * Copies all managed content areas from `contentRoot` into `platformDir`,
  * applying token substitution and dialect transformation per file.
@@ -124,6 +128,14 @@ const COPIED_LOOSE_FILES = ["SPEC.md"] as const;
  * `targetSubpath` controls where within each area dir the output lands:
  * `""` (default) writes directly into `<platformDir>/<area>/` (base pass);
  * `"custom"` writes into `<platformDir>/<area>/custom/` (overlay pass).
+ *
+ * Within the `rules` area, a file declaring `load: skill` is skipped entirely
+ * — Tier-3 rules never reach any platform's always-on rules surface; they
+ * exist only under the canonical (or consumer) `.prism/rules/`. The check
+ * reads `load:` in `"warn"` mode so a legacy rule with no declaration copies
+ * as before rather than being silently dropped (the ratified consumer-facing
+ * default), regardless of which caller (PRISM's own build or a consumer's
+ * `prism update`) is running this pass.
  */
 export async function copyContentToPlatformDir(
 	contentRoot: string,
@@ -147,6 +159,9 @@ export async function copyContentToPlatformDir(
 				continue;
 			}
 			const sourcePath = path.join(sourceArea, entry.relativePath);
+			if (area === RULES_AREA_NAME && (await isSkillLoadRuleFile(sourcePath))) {
+				continue;
+			}
 			const targetRelativePath = dialect.mapTargetRelativePath(
 				area,
 				entry.relativePath
@@ -428,7 +443,14 @@ export async function removeDeletedManagedContent(
 			const sourceMapsBack =
 				dialect.mapTargetRelativePath(area, sourceRelativePath) ===
 				entry.relativePath;
-			if (sourceExists && sourceMapsBack) {
+			// A rule reclassified to `load: skill` keeps its canonical source file
+			// but must stop appearing on every platform's always-on surface — treat
+			// it the same as a deleted source so the stale copy is swept.
+			const sourceIsSkillRule =
+				sourceExists &&
+				area === RULES_AREA_NAME &&
+				(await isSkillLoadRuleFile(sourcePath));
+			if (sourceExists && sourceMapsBack && !sourceIsSkillRule) {
 				continue;
 			}
 			const targetPath = path.join(targetArea, entry.relativePath);
@@ -881,6 +903,17 @@ async function main(): Promise<void> {
 	}
 
 	if (await pathExists(contentRoot)) {
+		// Validates every canonical rule's `load:` declaration before any platform
+		// copy is written — unconditionally, independent of whether AGENTS.md
+		// exists (syncAgentsMdTier1Block's own validation only fires when it does,
+		// which is not a strong enough guarantee to gate the platform-copy path).
+		// A missing or invalid declaration throws here, naming the file, and the
+		// build fails before any copy work happens.
+		const rulesDir = path.join(contentRoot, "rules");
+		if (await pathExists(rulesDir)) {
+			await validateCanonicalRuleLoadDeclarations(rulesDir);
+		}
+
 		const platformDirs = buildPlatformDirs(repoRoot, pathDefinitions);
 		await syncAllPlatformContentCopies(
 			contentRoot,

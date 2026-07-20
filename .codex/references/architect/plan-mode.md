@@ -103,7 +103,7 @@ Slices ship in dependency order — earliest demoable slice first. Later slices 
    gh pr list --head <branch> --json number -q '.[0].number'
    ```
 
-   If a PR number comes back, rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../../rules/pr-description.md) and [ADR-0020](../../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the invariant and section-ownership boundary.
+   If a PR number comes back, read [`.prism/rules/pr-description.md`](../../rules/pr-description.md) § Keeping the PR in sync with scope and follow it — it no longer loads by default — to rewrite the agent-owned sections of the PR body to reflect the new scope, preserving user-owned sections verbatim. Silent — no prompt. Mention it in the closing message: "PR #<pr-number> body synced to reflect the plan changes." Skip if the user opted out of PR body sync for the session. See [ADR-0020](../../spec/adrs/_toolkit/0020-pr-body-reflects-current-scope.md) for the invariant and section-ownership boundary.
 
    Use the GitHub REST API method documented in the PR description rule for the actual update (avoids the `gh pr edit --body` GraphQL deprecation error).
 

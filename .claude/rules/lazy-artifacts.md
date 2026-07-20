@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Lazy Artifacts
 
 ## Purpose

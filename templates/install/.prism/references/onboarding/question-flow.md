@@ -96,3 +96,7 @@ Atlas scans the **union** of auto-detected locations and user-supplied paths con
 ## Confirmation before write
 
 Once every question is answered, Atlas surfaces the full assembled config as a readable summary and asks "Write this config?" The user can accept, change a field (loop back to that question only), or abort. Atlas does not write `.ai-skills/config.json` without explicit user acceptance.
+
+**Generated-rule load confirmation.** The same summary lists every rule the generation step is about to write, with its assigned `load:` classification: `code-standards-<lang>.md` files default `load: paths` with the language's own glob; `<framework>-guidelines.md` and `security.md` default `load: always`. The user can accept the defaults or override any file's classification before Atlas writes it — this is the "confirmed with the user in the flow" step the generator's own JSDoc references. Overriding a default here means Atlas writes the file with the corrected `load:` value directly; there is no separate re-generation step.
+
+Frameworks and languages differ in scoping fit: a language rule scopes cleanly to its own extension glob, but a detected framework is, in practice, the single framework the whole repo runs on — path-scoping it under-loads it on sessions that don't happen to touch a matching glob, so it defaults to always-on instead. The security baseline is universal by definition and always defaults to always-on.

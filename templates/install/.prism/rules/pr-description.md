@@ -1,3 +1,7 @@
+---
+load: skill
+---
+
 # PR Description
 
 ## PR Title

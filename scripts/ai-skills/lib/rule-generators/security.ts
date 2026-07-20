@@ -7,6 +7,13 @@
  * dependency hygiene, and input-validation discipline apply to every stack.
  * The per-stack sections are appended only when their gate fires.
  *
+ * Carries `load: always` frontmatter (ADR-0070) — the security baseline
+ * applies regardless of which file is being touched, so it is always-on by
+ * default rather than path-scoped. This is the default Atlas proposes during
+ * the question flow, not a silent final answer; see
+ * `.prism/references/onboarding/question-flow.md` § Generated-rule load
+ * confirmation.
+ *
  * Skip-if-exists is the default posture (matches the code-standards
  * generator); `force: true` overwrites. Each section opens with its own
  * sub-applicability declaration so an agent reading the composed file can
@@ -27,6 +34,7 @@ import {
 } from "./types";
 import type { OnboardingConfig } from "../onboarding-types";
 
+const FRONTMATTER = "---\nload: always\n---";
 const HEADING = "# Security";
 const APPLICABILITY =
 	"These rules apply when writing or reviewing code that handles user input, secrets, authentication, authorization, or external data in this repository.";
@@ -77,7 +85,15 @@ function renderSecurityContent(
 	const langNames = new Set(languages.map((l) => l.name));
 	const fwNames = new Set(frameworks.map((f) => f.name));
 
-	const sections: string[] = [HEADING, "", APPLICABILITY, "", universalSection()];
+	const sections: string[] = [
+		FRONTMATTER,
+		"",
+		HEADING,
+		"",
+		APPLICABILITY,
+		"",
+		universalSection(),
+	];
 
 	if (langNames.has("typescript") || langNames.has("javascript")) {
 		sections.push("", typescriptJavascriptSection());

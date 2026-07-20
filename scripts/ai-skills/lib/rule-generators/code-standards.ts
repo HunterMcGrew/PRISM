@@ -7,6 +7,14 @@
  * agent can scope the rules itself — skills do not have to reference the file
  * by name.
  *
+ * Every generated file also carries `load: paths` frontmatter with a
+ * `paths:` glob matching the language's file extensions (ADR-0070) — a
+ * language rule is inherently stack-scoped, so it defaults to path-scoped
+ * load rather than always-on. This is the default Atlas proposes during the
+ * question flow, not a silent final answer; see
+ * `.prism/references/onboarding/question-flow.md` § Generated-rule load
+ * confirmation.
+ *
  * Skip-if-exists is the default posture: when the target file already exists,
  * the generator returns `{ written: false, reason: REASONS.exists }` without
  * touching disk. The `force: true` option overrides — overwriting is opt-in
@@ -33,6 +41,8 @@ type SupportedLanguage = Exclude<DetectedLanguage["name"], "unknown">;
 interface LanguageTemplate {
 	slug: string;
 	displayName: string;
+	/** Glob patterns for `load: paths` frontmatter — this language's file extensions. */
+	paths: string[];
 	applicability: string;
 	body: string;
 }
@@ -41,6 +51,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	typescript: {
 		slug: "typescript",
 		displayName: "TypeScript",
+		paths: ["**/*.ts", "**/*.tsx"],
 		applicability:
 			"These rules apply when writing or reviewing TypeScript code in this repository.",
 		body: typescriptBody(),
@@ -48,6 +59,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	javascript: {
 		slug: "javascript",
 		displayName: "JavaScript",
+		paths: ["**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"],
 		applicability:
 			"These rules apply when writing or reviewing JavaScript code in this repository.",
 		body: javascriptBody(),
@@ -55,6 +67,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	php: {
 		slug: "php",
 		displayName: "PHP",
+		paths: ["**/*.php"],
 		applicability:
 			"These rules apply when writing or reviewing PHP code in this repository.",
 		body: phpBody(),
@@ -62,6 +75,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	python: {
 		slug: "python",
 		displayName: "Python",
+		paths: ["**/*.py"],
 		applicability:
 			"These rules apply when writing or reviewing Python code in this repository.",
 		body: pythonBody(),
@@ -69,6 +83,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	go: {
 		slug: "go",
 		displayName: "Go",
+		paths: ["**/*.go"],
 		applicability:
 			"These rules apply when writing or reviewing Go code in this repository.",
 		body: goBody(),
@@ -76,6 +91,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	rust: {
 		slug: "rust",
 		displayName: "Rust",
+		paths: ["**/*.rs"],
 		applicability:
 			"These rules apply when writing or reviewing Rust code in this repository.",
 		body: rustBody(),
@@ -83,6 +99,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	ruby: {
 		slug: "ruby",
 		displayName: "Ruby",
+		paths: ["**/*.rb"],
 		applicability:
 			"These rules apply when writing or reviewing Ruby code in this repository.",
 		body: rubyBody(),
@@ -90,6 +107,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	elixir: {
 		slug: "elixir",
 		displayName: "Elixir",
+		paths: ["**/*.ex", "**/*.exs"],
 		applicability:
 			"These rules apply when writing or reviewing Elixir code in this repository.",
 		body: elixirBody(),
@@ -97,6 +115,7 @@ const LANGUAGE_TEMPLATES: Record<SupportedLanguage, LanguageTemplate> = {
 	java: {
 		slug: "java",
 		displayName: "Java",
+		paths: ["**/*.java"],
 		applicability:
 			"These rules apply when writing or reviewing Java code in this repository.",
 		body: javaBody(),
@@ -165,8 +184,12 @@ async function writeRuleFile(
 }
 
 function renderRuleContent(template: LanguageTemplate): string {
+	const frontmatter = ["---", "load: paths", "paths:"]
+		.concat(template.paths.map((glob) => `  - "${glob}"`))
+		.concat(["---"])
+		.join("\n");
 	const heading = `# ${template.displayName} Code Standards`;
-	return `${heading}\n\n${template.applicability}\n\n${template.body.trimEnd()}\n`;
+	return `${frontmatter}\n\n${heading}\n\n${template.applicability}\n\n${template.body.trimEnd()}\n`;
 }
 
 async function pathExists(targetPath: string): Promise<boolean> {

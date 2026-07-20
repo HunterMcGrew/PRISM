@@ -1,3 +1,7 @@
+---
+load: always
+---
+
 # Git Conventions
 
 ## Commit Messages

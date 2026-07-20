@@ -133,7 +133,7 @@ Before appending to `## History`, scan the draft. If it runs past three sentence
 
 ### 11. Per-push body sync, not per-session
 
-Before `git push`, scan the commit you're about to push: does it add scope past what the current PR body describes? If yes, sync the body first — see `shipping-flow.md` step 5 and `pr-description.md` § Keeping the PR in sync with scope. The flow is per-push, not per-session — fix-up commits, sync regenerations, and `lessons.md` appends all trigger it. Originating incident: THR-1881 — three commits on the branch, only the first ran the PR body sync; Briar caught the stale body in self-review.
+Before `git push`, scan the commit you're about to push: does it add scope past what the current PR body describes? If yes, read [`pr-description.md`](../../../.prism/rules/pr-description.md) § Keeping the PR in sync with scope and follow it to sync the body — see also `shipping-flow.md` step 5. The flow is per-push, not per-session — fix-up commits, sync regenerations, and `lessons.md` appends all trigger it. Originating incident: THR-1881 — three commits on the branch, only the first ran the PR body sync; Briar caught the stale body in self-review.
 
 ## Implementation Standards
 
@@ -315,7 +315,7 @@ This follows the same mid-ticket pattern as Clove → Sasha → Clove for bugs. 
 ## PR Description Guidelines
 
 > Only update the PR description when the user explicitly asks, or after the AI asks and the user confirms.
-> Follow the `pr-description` rule for formatting, checklist usage, and GitHub API method.
+> When opening or syncing a PR body, read [`pr-description.md`](../../../.prism/rules/pr-description.md) and follow it for formatting, checklist usage, and GitHub API method — it no longer loads by default.
 
 ## Test Coverage
 
