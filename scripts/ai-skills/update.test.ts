@@ -730,7 +730,7 @@ test("runUpdate refreshes the consumer AGENTS.md Tier-1 block from the consumer'
 			assert.doesNotMatch(agentsMd, /# Paths Rule/, "load: paths rule excluded from the block");
 			assert.doesNotMatch(agentsMd, /stale content from a previous fill/);
 			assert.equal(summary.agentsMdRefresh.refreshed, true);
-			assert.deepEqual(summary.agentsMdRefresh.warnings, []);
+			assert.deepEqual(summary.ruleLoadWarnings, []);
 		}
 	);
 });
@@ -760,7 +760,7 @@ test("runUpdate leaves a consumer AGENTS.md with no marker pair untouched", asyn
 
 			assert.equal(await readFile(consumerRepoRoot, "AGENTS.md"), original);
 			assert.equal(summary.agentsMdRefresh.refreshed, false);
-			assert.deepEqual(summary.agentsMdRefresh.warnings, []);
+			assert.deepEqual(summary.ruleLoadWarnings, []);
 		}
 	);
 });
@@ -804,9 +804,9 @@ test("runUpdate treats a consumer rule missing load: as always-on and warns, nev
 				/# Legacy Rule/,
 				"undeclared rule is included (treated as always), never silently dropped"
 			);
-			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
-			assert.match(summary.agentsMdRefresh.warnings[0], /legacy\.md/);
-			assert.match(summary.agentsMdRefresh.warnings[0], /load:/);
+			assert.equal(summary.ruleLoadWarnings.length, 1);
+			assert.match(summary.ruleLoadWarnings[0], /legacy\.md/);
+			assert.match(summary.ruleLoadWarnings[0], /load:/);
 		}
 	);
 });
@@ -879,7 +879,7 @@ test("runUpdate warns on an undeclared consumer rule even when there is no AGENT
 				"no AGENTS.md was created — the consumer seam never seeds one"
 			);
 			assert.equal(summary.agentsMdRefresh.refreshed, false);
-			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
+			assert.equal(summary.ruleLoadWarnings.length, 1);
 			assert.ok(
 				warnings.some((w) => w.includes("legacy.md") && w.includes("load:")),
 				`expected a printed warning naming legacy.md, got: ${JSON.stringify(warnings)}`
@@ -927,10 +927,10 @@ test("runUpdate preserves paths: scoping for an undeclared rule instead of widen
 				/# Legacy Paths Rule/,
 				"undeclared rule with paths: stays path-scoped — not inlined into the always-on AGENTS.md block"
 			);
-			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
-			assert.match(summary.agentsMdRefresh.warnings[0], /legacy-paths\.md/);
+			assert.equal(summary.ruleLoadWarnings.length, 1);
+			assert.match(summary.ruleLoadWarnings[0], /legacy-paths\.md/);
 			assert.match(
-				summary.agentsMdRefresh.warnings[0],
+				summary.ruleLoadWarnings[0],
 				/load: paths/,
 				"the warning states the preserved paths classification, not a blanket always-on claim"
 			);
@@ -945,6 +945,18 @@ test("runUpdate warns on an undeclared rule in the .prism/custom overlay, labele
 				prismContentRoot,
 				"rules/shipped.md",
 				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerRepoRoot,
+				"AGENTS.md",
+				[
+					"# Agent Behavior Rules",
+					"",
+					AGENTS_MD_BLOCK_BEGIN,
+					"",
+					AGENTS_MD_BLOCK_END,
+					"",
+				].join("\n")
 			);
 			await writeFile(
 				consumerContentRoot,
@@ -962,14 +974,26 @@ test("runUpdate warns on an undeclared rule in the .prism/custom overlay, labele
 			);
 
 			assert.equal(
-				summary.agentsMdRefresh.warnings.length,
+				summary.ruleLoadWarnings.length,
 				1,
 				"the overlay rule is warned on even though it never feeds the AGENTS.md block"
 			);
-			assert.match(summary.agentsMdRefresh.warnings[0], /custom\/team\.md/);
+			assert.match(summary.ruleLoadWarnings[0], /custom\/team\.md/);
 			assert.ok(
 				warnings.some((w) => w.includes("custom/team.md") && w.includes("load:")),
 				`expected a printed warning naming custom/team.md, got: ${JSON.stringify(warnings)}`
+			);
+
+			const agentsMd = await readFile(consumerRepoRoot, "AGENTS.md");
+			assert.match(
+				agentsMd,
+				/# Shipped rule/,
+				"the base always-on rule still renders into the block"
+			);
+			assert.doesNotMatch(
+				agentsMd,
+				/# Team overlay rule/,
+				"the overlay rule is classified for the warning but never inlined into AGENTS.md — Tier-1 inlining is a base-rules-only concern"
 			);
 		}
 	);
@@ -996,10 +1020,10 @@ test("runUpdate preserves paths: scoping for an undeclared overlay rule instead 
 				consumerContentRoot,
 			});
 
-			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
-			assert.match(summary.agentsMdRefresh.warnings[0], /custom\/legacy-paths\.md/);
+			assert.equal(summary.ruleLoadWarnings.length, 1);
+			assert.match(summary.ruleLoadWarnings[0], /custom\/legacy-paths\.md/);
 			assert.match(
-				summary.agentsMdRefresh.warnings[0],
+				summary.ruleLoadWarnings[0],
 				/load: paths/,
 				"the warning states the preserved paths classification, not a blanket always-on claim"
 			);

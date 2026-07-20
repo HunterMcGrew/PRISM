@@ -104,15 +104,6 @@ export interface VersionMetadata {
 export interface AgentsMdRefreshOutcome {
 	/** True when the marker pair existed and its content changed. */
 	refreshed: boolean;
-	/**
-	 * One entry per consumer-owned rule missing a valid `load:` declaration —
-	 * the ratified legacy-rule default: never silently excluded, classified per
-	 * the pre-`load:` `paths:` scoping. Mirrors `scanConsumerRuleLoad`'s
-	 * warnings regardless of whether the AGENTS.md marker pair exists, so this
-	 * field stays accurate for a consumer with no AGENTS.md at all. Empty when
-	 * every consumer rule declares `load:`.
-	 */
-	warnings: string[];
 }
 
 export interface UpdateSummary {
@@ -123,14 +114,24 @@ export interface UpdateSummary {
 
 /**
  * `runUpdate`'s return shape — `UpdateSummary` (the `applyFilePass` file-pass
- * result) plus the consumer AGENTS.md refresh outcome. Kept as an extension
- * rather than folding `agentsMdRefresh` into `UpdateSummary` itself: the file
- * pass and the AGENTS.md refresh are different concerns (per-file
- * classification vs. a single marker-pair block), and `applyFilePass` is
- * tested and called directly without ever touching AGENTS.md.
+ * result) plus the consumer AGENTS.md refresh outcome and the `load:`
+ * warning stream. Kept as an extension rather than folding these into
+ * `UpdateSummary` itself: the file pass, the AGENTS.md refresh, and rule-load
+ * classification are different concerns (per-file classification vs. a
+ * single marker-pair block vs. a warning stream that covers base and overlay
+ * rules alike), and `applyFilePass` is tested and called directly without
+ * ever touching AGENTS.md or `.prism/rules/`.
+ *
+ * `ruleLoadWarnings` is a sibling of `agentsMdRefresh`, not a field on it —
+ * it carries every undeclared-`load:` warning `scanConsumerRuleLoad` found
+ * across both the base `.prism/rules/` and the `.prism/custom` overlay, and
+ * the overlay by design never feeds the AGENTS.md block (see
+ * `scanConsumerRuleLoad`'s doc). Nesting it under `agentsMdRefresh` would
+ * misstate that relationship.
  */
 export interface RunUpdateSummary extends UpdateSummary {
 	agentsMdRefresh: AgentsMdRefreshOutcome;
+	ruleLoadWarnings: string[];
 }
 
 export interface RunUpdateOptions {
@@ -544,12 +545,9 @@ export async function runUpdate(
 		dryRun
 	);
 
-	const agentsMdRefresh: AgentsMdRefreshOutcome = {
-		refreshed,
-		warnings: ruleLoadScan.warnings,
-	};
+	const agentsMdRefresh: AgentsMdRefreshOutcome = { refreshed };
 
-	return { ...summary, agentsMdRefresh };
+	return { ...summary, agentsMdRefresh, ruleLoadWarnings: ruleLoadScan.warnings };
 }
 
 /** Rules and per-file `load:` warnings collected by `scanConsumerRuleLoad`. */

@@ -90,9 +90,12 @@ export function parseRuleLoad(
 		}
 
 		const effectiveLoad: RuleLoad = hasPaths ? "paths" : "always";
+		const scopingNote = hasPaths
+			? ", preserving the pre-`load:` `paths:` scoping"
+			: "";
 		return {
 			load: effectiveLoad,
-			warning: `${message} Treated as \`load: ${effectiveLoad}\` for this run, preserving the pre-\`load:\` \`paths:\` scoping.`,
+			warning: `${message} Treated as \`load: ${effectiveLoad}\` for this run${scopingNote}.`,
 		};
 	}
 
@@ -105,7 +108,10 @@ export function parseRuleLoad(
 		// No paths: list to scope by, so there is nothing to preserve — always-on
 		// is the only sensible degrade here (unlike the mismatch branch below,
 		// which has a declared value worth keeping).
-		return { load: "always", warning: message };
+		return {
+			load: "always",
+			warning: `${message} Treated as \`load: always\` for this run.`,
+		};
 	}
 
 	if (loadValue !== "paths" && hasPaths) {
@@ -114,7 +120,10 @@ export function parseRuleLoad(
 			throw new Error(message);
 		}
 
-		return { load: loadValue as RuleLoad, warning: message };
+		return {
+			load: loadValue as RuleLoad,
+			warning: `${message} Treated as \`load: ${loadValue}\` for this run, honoring the explicit declaration over the leftover \`paths:\` list.`,
+		};
 	}
 
 	return { load: loadValue as RuleLoad, warning: null };
