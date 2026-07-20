@@ -1,0 +1,9 @@
+# This repo is not a real pnpm workspace, but CI pins pnpm v9 (see .github/workflows/prism-check.yml)
+# and pnpm v9's `pnpm store path` call fails with "packages field missing or empty" if this file
+# exists without a packages key — even when nothing else here depends on it. See PR #249.
+packages:
+  - "."
+
+# pnpm v10.26+ stopped reading package.json's "pnpm" field; build-script approval now lives here.
+allowBuilds:
+  esbuild: true
