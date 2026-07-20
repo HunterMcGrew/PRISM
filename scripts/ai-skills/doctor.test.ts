@@ -401,6 +401,28 @@ test("runDoctor reports no rule-load finding for a rule that declares load:", as
 	});
 });
 
+test("runDoctor warns on an overlay rule missing load:, labeled custom/ so it isn't confused with a base rule", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			consumerContentRoot,
+			"custom/rules/team.md",
+			"# Team overlay rule\n\nNo load: key.\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a missing load: is a warning, not an error");
+		const finding = report.findings.find((f) => f.check === "rule-load");
+		assert.ok(finding, "expected a rule-load finding for the overlay rule");
+		assert.match(finding?.message ?? "", /custom\/team\.md/);
+	});
+});
+
 test("runDoctor reports no rule-load findings when .prism/rules/ does not exist yet", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		const report = await runDoctor({

@@ -72,22 +72,31 @@ export function renderSeededAgentsMd(): string {
  * handled, per `parseRuleLoad`'s two modes: `"fail"` (the default, used by
  * PRISM's own `pnpm prism:build`) throws, naming the offending file — every
  * canonical rule is expected to declare `load:` explicitly. `"warn"` (used by
- * `prism update`'s consumer-side AGENTS.md refresh) treats the rule as
- * `always` and pushes a warning naming the file and the remedy into
- * `warningsArg` instead of throwing, per the ratified legacy-rule default —
- * nothing silently drops out of a consumer's context mid-upgrade.
+ * `prism update`'s consumer-side AGENTS.md refresh) degrades the rule to the
+ * pre-`load:` discriminator (`paths:` present → path-scoped, absent →
+ * always-on) and pushes a warning naming the file, the remedy, and the
+ * preserved classification into `warningsArg` instead of throwing, per the
+ * ratified legacy-rule default — nothing silently drops out of a consumer's
+ * context mid-upgrade.
  *
  * When `tokenMap` is provided, token substitution (`${TOKEN}` → value) is
  * applied to each rule body before it is returned — matching how the
  * platform-copy path in `build.ts` substitutes via `copyContentFileWithSubstitution`.
  * Without substitution, literal `${TICKET_PREFIX}` placeholders appear in the
  * generated AGENTS.md block instead of the configured value (e.g. `PRISM-`).
+ *
+ * `fileLabelPrefix` prepends onto the file name passed to `parseRuleLoad`'s
+ * `fileLabel`, so a caller scanning more than one rules directory (e.g.
+ * `prism update`'s base + `.prism/custom` overlay scan) can distinguish a
+ * warning about `custom/team.md` from a same-named base rule `team.md`
+ * without `collectTier1RuleBodies` itself knowing about the overlay concept.
  */
 export async function collectTier1RuleBodies(
 	rulesDir: string,
 	tokenMap?: Map<string, string>,
 	onUndeclaredLoad: "fail" | "warn" = "fail",
-	warningsArg: string[] = []
+	warningsArg: string[] = [],
+	fileLabelPrefix = ""
 ): Promise<{ name: string; body: string }[]> {
 	const entries = await fs.readdir(rulesDir);
 	const mdFiles = entries.filter((e) => e.endsWith(".md")).sort();
@@ -96,7 +105,11 @@ export async function collectTier1RuleBodies(
 
 	for (const name of mdFiles) {
 		const content = await fs.readFile(path.join(rulesDir, name), "utf8");
-		const { load, warning } = parseRuleLoad(content, name, onUndeclaredLoad);
+		const { load, warning } = parseRuleLoad(
+			content,
+			`${fileLabelPrefix}${name}`,
+			onUndeclaredLoad
+		);
 
 		if (warning !== null) {
 			warningsArg.push(warning);

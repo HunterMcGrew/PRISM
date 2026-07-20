@@ -435,16 +435,21 @@ export async function applyFilePass(
  * steps' own `checkMode` (they already support a read-only preview for drift
  * detection) — every write in the whole `runUpdate` pipeline is guarded.
  *
- * `scanConsumerRuleLoad` classifies the consumer's `.prism/rules/` once, in
- * `"warn"` mode — the classifier hard-fails on a missing `load:` for PRISM's
- * own build, but a consumer's rules directory may still carry legacy rules
- * that predate this mechanism. The per-file warnings print unconditionally,
+ * `scanConsumerRuleLoad` classifies the consumer's `.prism/rules/` and its
+ * `.prism/custom/rules/` overlay once, in `"warn"` mode — the classifier
+ * hard-fails on a missing `load:` for PRISM's own build, but a consumer's
+ * rules directories may still carry legacy rules that predate this
+ * mechanism, and the overlay is entirely consumer-authored so it holds the
+ * bulk of any legacy population. The per-file warnings print unconditionally,
  * before the AGENTS.md refresh and independent of whether the consumer has
  * an AGENTS.md at all — the ratified guarantee is about the consumer's
- * context (platform rule copies included), not just the AGENTS block, so a
- * consumer with no AGENTS.md still gets warned about an undeclared rule.
- * `refreshConsumerAgentsMdBlock` reuses the same scan's rules to render the
- * block rather than re-reading `.prism/rules/` itself.
+ * context (platform rule copies included, base and overlay alike), not just
+ * the AGENTS block, so a consumer with no AGENTS.md still gets warned about
+ * an undeclared rule in either directory. `refreshConsumerAgentsMdBlock`
+ * reuses the scan's base-rules result to render the block rather than
+ * re-reading `.prism/rules/` itself — the overlay never feeds the AGENTS.md
+ * block (Tier-1 inlining is a canonical/base-rules concern only), only the
+ * warning stream.
  */
 export async function runUpdate(
 	options: RunUpdateOptions
@@ -510,7 +515,11 @@ export async function runUpdate(
 		dryRun
 	);
 
-	const ruleLoadScan = await scanConsumerRuleLoad(consumerContentRoot, tokenMap);
+	const ruleLoadScan = await scanConsumerRuleLoad(
+		consumerContentRoot,
+		overlayContentRoot,
+		tokenMap
+	);
 
 	if (ruleLoadScan.warnings.length > 0) {
 		console.warn(
@@ -545,37 +554,66 @@ export async function runUpdate(
 
 /** Rules and per-file `load:` warnings collected by `scanConsumerRuleLoad`. */
 export interface ConsumerRuleLoadScan {
-	/** Rules declaring (or, in "warn" mode, defaulting to) `load: always`. */
+	/**
+	 * Base-rules (`.prism/rules/`) entries declaring (or, in "warn" mode,
+	 * defaulting to) `load: always`. The overlay never contributes here — see
+	 * `scanConsumerRuleLoad`'s doc for why.
+	 */
 	rules: { name: string; body: string }[];
 	/**
-	 * One entry per consumer-owned rule missing a valid `load:` declaration,
-	 * naming the file, the remedy, and the effective classification it was
-	 * given (`always` or `paths`, per the pre-`load:` `paths:` scoping).
+	 * One entry per consumer-owned rule missing a valid `load:` declaration —
+	 * base and overlay alike — naming the file, the remedy, and the effective
+	 * classification it was given (`always` or `paths`, per the pre-`load:`
+	 * `paths:` scoping). Overlay entries are prefixed `custom/` so a warning
+	 * naming `custom/team.md` is never confused with a base rule of the same
+	 * filename.
 	 */
 	warnings: string[];
 }
 
 /**
- * Scans the consumer's `.prism/rules/` once, classifying every rule's
- * `load:` declaration via `collectTier1RuleBodies` in `"warn"` mode. Shared
- * by `runUpdate`'s unconditional warning print and the AGENTS.md Tier-1
- * block refresh, so the two never read the same directory twice or risk
- * disagreeing about which rules are undeclared.
+ * Scans the consumer's `.prism/rules/` and its `.prism/custom/rules/` overlay
+ * once each, classifying every rule's `load:` declaration via
+ * `collectTier1RuleBodies` in `"warn"` mode. Shared by `runUpdate`'s
+ * unconditional warning print and the AGENTS.md Tier-1 block refresh, so the
+ * two never read the base directory twice or risk disagreeing about which
+ * base rules are undeclared.
  *
- * Returns an empty scan when `.prism/rules/` does not exist yet — an update
- * running before the consumer has any rules directory has nothing to scan.
+ * Only the base scan's `rules` result feeds the AGENTS.md block — Tier-1
+ * inlining is a canonical/base-rules concern (per `agents-md-block.ts`'s own
+ * doc), and the overlay has no AGENTS.md surface of its own to inline into.
+ * The overlay scan exists purely to surface warnings: `.prism/custom/` is
+ * entirely consumer-authored, so it holds the real population of legacy
+ * undeclared rules, and skipping it would leave the ratified "never silently
+ * reclassified" guarantee uncovered for the one directory most likely to
+ * carry pre-`load:` files.
+ *
+ * Either directory being absent scans as empty rather than erroring — an
+ * update running before the consumer has a rules directory, or one with no
+ * overlay at all, has nothing to scan there.
  */
 async function scanConsumerRuleLoad(
 	consumerContentRoot: string,
+	overlayContentRoot: string,
 	tokenMap: Map<string, string>
 ): Promise<ConsumerRuleLoadScan> {
 	const rulesDir = path.join(consumerContentRoot, "rules");
-	if (!(await pathExists(rulesDir))) {
-		return { rules: [], warnings: [] };
-	}
+	const overlayRulesDir = path.join(overlayContentRoot, "rules");
 
 	const warnings: string[] = [];
-	const rules = await collectTier1RuleBodies(rulesDir, tokenMap, "warn", warnings);
+	const rules = (await pathExists(rulesDir))
+		? await collectTier1RuleBodies(rulesDir, tokenMap, "warn", warnings)
+		: [];
+
+	if (await pathExists(overlayRulesDir)) {
+		await collectTier1RuleBodies(
+			overlayRulesDir,
+			tokenMap,
+			"warn",
+			warnings,
+			`${OVERLAY_SUBPATH}/`
+		);
+	}
 
 	return { rules, warnings };
 }
@@ -834,8 +872,14 @@ async function refreshPlatformSkills(
 	}
 }
 
-/** Subdir name for the `.prism/custom` overlay's source and platform output. */
-const OVERLAY_SUBPATH = "custom";
+/**
+ * Subdir name for the `.prism/custom` overlay's source and platform output.
+ *
+ * Exported so `doctor.ts`'s `checkRuleLoadDeclarations` resolves the same
+ * overlay rules directory `scanConsumerRuleLoad` does, rather than
+ * hardcoding `"custom"` a second time and risking the two drifting apart.
+ */
+export const OVERLAY_SUBPATH = "custom";
 
 /**
  * Refreshes the consumer's platform dirs after `.prism/` is updated. The token

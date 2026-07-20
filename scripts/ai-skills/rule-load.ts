@@ -65,8 +65,11 @@ export interface ParsedRuleLoad {
  * Parses the `load:` key from a rule's frontmatter and cross-checks it
  * against `paths:` presence (each requires the other). In `"fail"` mode
  * (the default), a missing or invalid declaration throws, naming `fileLabel`.
- * In `"warn"` mode, the same problems degrade to `load: "always"` plus a
- * `warning` string carrying the file name and the one-line remedy, so a
+ * In `"warn"` mode, a missing/invalid declaration degrades to the pre-`load:`
+ * discriminator (`paths:` present → `load: "paths"`, absent → `load:
+ * "always"`); a present-but-mismatched declaration (e.g. `load: skill` with a
+ * leftover `paths:` list) keeps the declared value. Either way the return
+ * carries a `warning` string with the file name and the one-line remedy, so a
  * consumer-facing caller (`prism update`, `prism doctor`) never crashes on a
  * legacy rule.
  */
@@ -98,6 +101,10 @@ export function parseRuleLoad(
 		if (mode === "fail") {
 			throw new Error(message);
 		}
+
+		// No paths: list to scope by, so there is nothing to preserve — always-on
+		// is the only sensible degrade here (unlike the mismatch branch below,
+		// which has a declared value worth keeping).
 		return { load: "always", warning: message };
 	}
 
@@ -106,7 +113,8 @@ export function parseRuleLoad(
 		if (mode === "fail") {
 			throw new Error(message);
 		}
-		return { load: "always", warning: message };
+
+		return { load: loadValue as RuleLoad, warning: message };
 	}
 
 	return { load: loadValue as RuleLoad, warning: null };
@@ -135,10 +143,10 @@ export async function validateCanonicalRuleLoadDeclarations(
 
 /**
  * Reads a rule file and reports whether it declares `load: skill`, using
- * `"warn"` mode so a missing declaration never throws (it degrades to
- * `always`, which is never `skill`). Used by the platform-copy path to
- * exclude Tier-3 rules from every always-on platform surface while leaving
- * them in place canonically.
+ * `"warn"` mode so a missing declaration never throws (it degrades to the
+ * pre-`load:` discriminator — `paths` or `always` — neither of which is
+ * `skill`). Used by the platform-copy path to exclude Tier-3 rules from
+ * every always-on platform surface while leaving them in place canonically.
  */
 export async function isSkillLoadRuleFile(filePath: string): Promise<boolean> {
 	const content = await fs.readFile(filePath, "utf8");

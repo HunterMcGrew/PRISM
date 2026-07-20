@@ -590,6 +590,17 @@ async function withTempRepoRoots(
 		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
 	);
 
+	// Most callers exercise `runUpdate` mechanics unrelated to `load:` semantics
+	// (version metadata, dry-run, dogfooding-source-root, persona-roster copy)
+	// with bare-body rule fixtures that predate the `load:` mechanism — without
+	// silencing here, `scanConsumerRuleLoad`'s now-unconditional scan (PRISM-417
+	// review fix) would print a `missing a valid load:` warning on every one of
+	// those runs, burying genuine warnings in noise. Tests that assert on
+	// warnings opt back in via `withCapturedWarnings`, which overrides and
+	// restores `console.warn` around its own call and composes correctly with
+	// this outer silencer regardless of nesting order.
+	const originalWarn = console.warn;
+	console.warn = () => {};
 	try {
 		await body({
 			prismRepoRoot,
@@ -598,6 +609,7 @@ async function withTempRepoRoots(
 			consumerContentRoot,
 		});
 	} finally {
+		console.warn = originalWarn;
 		await fs.rm(tempRoot, { force: true, recursive: true });
 	}
 }
@@ -917,6 +929,75 @@ test("runUpdate preserves paths: scoping for an undeclared rule instead of widen
 			);
 			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
 			assert.match(summary.agentsMdRefresh.warnings[0], /legacy-paths\.md/);
+			assert.match(
+				summary.agentsMdRefresh.warnings[0],
+				/load: paths/,
+				"the warning states the preserved paths classification, not a blanket always-on claim"
+			);
+		}
+	);
+});
+
+test("runUpdate warns on an undeclared rule in the .prism/custom overlay, labeled custom/ so it isn't confused with a base rule", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerContentRoot,
+				"custom/rules/team.md",
+				"# Team overlay rule\n\nNo load: key.\n"
+			);
+
+			const { result: summary, warnings } = await withCapturedWarnings(() =>
+				runUpdate({
+					prismRepoRoot,
+					consumerRepoRoot,
+					prismContentRoot,
+					consumerContentRoot,
+				})
+			);
+
+			assert.equal(
+				summary.agentsMdRefresh.warnings.length,
+				1,
+				"the overlay rule is warned on even though it never feeds the AGENTS.md block"
+			);
+			assert.match(summary.agentsMdRefresh.warnings[0], /custom\/team\.md/);
+			assert.ok(
+				warnings.some((w) => w.includes("custom/team.md") && w.includes("load:")),
+				`expected a printed warning naming custom/team.md, got: ${JSON.stringify(warnings)}`
+			);
+		}
+	);
+});
+
+test("runUpdate preserves paths: scoping for an undeclared overlay rule instead of widening it to always-on", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(
+				prismContentRoot,
+				"rules/shipped.md",
+				"---\nload: always\n---\n\n# Shipped rule\n"
+			);
+			await writeFile(
+				consumerContentRoot,
+				"custom/rules/legacy-paths.md",
+				'---\npaths:\n  - "**/*.tsx"\n---\n\n# Legacy Paths Overlay Rule\n'
+			);
+
+			const summary = await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(summary.agentsMdRefresh.warnings.length, 1);
+			assert.match(summary.agentsMdRefresh.warnings[0], /custom\/legacy-paths\.md/);
 			assert.match(
 				summary.agentsMdRefresh.warnings[0],
 				/load: paths/,

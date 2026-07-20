@@ -15,9 +15,11 @@
  * `load: skill` rules never reach this module — the platform-copy path in
  * `build.ts` excludes them before any dialect transform runs (they exist only
  * canonically), so every rule these functions see is `load: always` or
- * `load: paths`. Both dialects fall back to always-on when a rule carries no
- * recognizable `load:` at all (a legacy consumer rule predating this
- * mechanism) — matching the ratified default consumer-facing callers apply.
+ * `load: paths`. When a rule carries no recognizable `load:` at all (a legacy
+ * consumer rule predating this mechanism), both dialects degrade to the
+ * pre-`load:` discriminator — `paths:` present stays path-scoped, absent
+ * falls back to always-on — matching the ratified default consumer-facing
+ * callers apply.
  *
  * This module rewrites the `rules` area per platform:
  * - Cursor: `load: paths` + its `paths:` list → `globs:`; everything else
@@ -73,11 +75,12 @@ function rewritePathsToGlobs(frontmatter: string): string {
 
 /**
  * Derives the Cursor frontmatter from the rule's `load:` declaration: `load:
- * paths` rewrites its `paths:` list to `globs:`; every other case (`load:
- * always`, or no recognizable declaration at all) becomes `alwaysApply:
- * true`. Reads `load:` in `"warn"` mode so a legacy consumer rule with no
- * declaration degrades to always-on instead of throwing mid-copy — the same
- * ratified default `prism update`/`prism doctor` apply elsewhere.
+ * paths` rewrites its `paths:` list to `globs:`; every other case becomes
+ * `alwaysApply: true`. Reads `load:` in `"warn"` mode so a legacy consumer
+ * rule with no declaration degrades to the pre-`load:` discriminator instead
+ * of throwing mid-copy — `paths:` present resolves to `load: "paths"` here
+ * too, preserving path-scoping — the same ratified default `prism
+ * update`/`prism doctor` apply elsewhere.
  */
 function buildCursorFrontmatter(content: string, frontmatter: string | null): string {
 	const { load } = parseRuleLoad(content, "<rule>", "warn");
