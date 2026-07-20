@@ -100,6 +100,7 @@ Transposed verbatim from `.prism/plans/eval-routing-and-rule-load.md` § Propose
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — round-3 PR #421 delta re-review of `647c1d7`, confirming the round-2 Major (uncovered `.prism/custom` overlay lane) is genuinely closed, the fix introduced nothing new, and canonical-vs-generated ownership holds; Bounds — diff-only against `eda8120`, PR comments and plan writes, no source changes, no approval; Approach — trace both callers' overlay path resolution to a shared constant rather than trusting the claim, mutation-test each new test to prove it reds on regression, probe `parseRuleLoad`'s warn-mode branches directly, and run the full suite plus `build.ts --check` in an isolated worktree. · close: scope held — Major confirmed closed (3/3 new tests red under mutation; both callers verified to resolve the same overlay path via `OVERLAY_SUBPATH`); 528 tests green, generated surfaces in sync, typecheck clean; `adopt.test.ts` deferral confirmed correct by measurement (14 lines there vs 0 in `update.test.ts`); 3 new Minors found, all implementation-level with named fixes, routed to Clove.
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — fix Eric's three round-3 PR #421 Minors (no Majors): the overlay-never-feeds-AGENTS.md invariant was mutation-confirmed untested, `parseRuleLoad`'s warn-mode disclosure was inconsistent across its three degrade branches, and `AgentsMdRefreshOutcome.warnings` was misnamed for carrying overlay warnings it structurally can't act on; Bounds — the three named Minors only, no relitigating prior fix-passes, no redesign of the `load:` mechanism; Approach — seed an AGENTS.md marker pair into the existing overlay test and assert the block excludes the overlay body (re-ran Eric's mutation to confirm it now reds), append a "Treated as `load: X`" sentence to every warn-mode branch with the paths-preservation clause conditional on `hasPaths`, and split `ruleLoadWarnings` out onto `RunUpdateSummary` as a sibling of `agentsMdRefresh` rather than a field on it. · close: scope held — all 3 Minors fixed, `pnpm prism:check` green across 528 tests (no new tests needed for the disclosure/rename fixes — existing assertions on the warning substring and field shape already exercise them); mutation-reconfirmed the overlay invariant by reapplying Eric's exact mutation and observing the new assertions red, then restoring.
 - 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] open: Intent — final delta self-review of `acb3520` against the round-3 baseline, independently confirming all three of Eric's round-3 Minors are genuinely fixed and the mid-commit merge reconciliation with origin's `1c459c5` lost nothing; Bounds — diff-only against `647c1d7`, chat + plan findings only, no source changes shipped (one mutation applied and reverted for verification), no approval, no merge; Approach — reapply Eric's exact mutation myself rather than trust Clove's claim, grep for stale references to the renamed `agentsMdRefresh.warnings` field across every `runUpdate` caller, run `pnpm run prism:check-types` and the full `pnpm run prism:test` suite fresh, and diff the plan's `1c459c5`→`acb3520` reconciliation for conflict markers or duplicate headings. · close: scope held — mutation reproduced and confirmed red (leaked `# Team overlay rule` into the AGENTS.md block), then confirmed green again on revert with a clean `git status`; no stale `agentsMdRefresh.warnings` references anywhere in the tree, all 12 test call sites and the two non-test `runUpdate` callers (`adopt.ts`, `update.ts`'s own CLI) confirmed compatible; `parseRuleLoad`'s three degrade branches now consistently disclose their classification with the scoping clause correctly conditional on `hasPaths`; plan reconciliation clean — no conflict markers, single heading per Review Issues entry, Eric's canonical file:line citations preserved and marked `fixed`; 528/528 tests green, typecheck clean. Zero new findings.
+- 2026-07-20 [huntermcgrew/prism-426-adopt-test-warn-noise] open: Intent — self-review Clove's PRISM-417 follow-up (PR #431, issue #426) silencing `adopt.test.ts`'s `load:` warning noise; Bounds — review only, chat + plan findings, no GitHub posts, no code changes; Approach — diff against `origin/main` (not stale local `main`), independently re-run counts and full suite in the existing worktree rather than trust the reported numbers, adversarially check the `finally`-restore ordering and cross-test leak risk. · close: scope held — independently reconfirmed 14→0 occurrences and 533/533 pass unchanged; typecheck and crossref-lint both green; one Minor found (missing `## Sessions` battery entry for this follow-up's own implementation session, see Review Issues); no critical or major issues.
 
 ---
 
@@ -244,6 +245,16 @@ None yet.
 
 No issues found — 2026-07-20 [huntermcgrew/prism-417-explicit-rule-load-declaration] (final delta re-review of `acb3520`; all three of Eric's round-3 Minors independently confirmed fixed, mutation reproduced myself, no stale field references, merge reconciliation clean)
 
+### Follow-up session (PR #431 / issue #426) has no `## Sessions` battery entry
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-417.md` (`## Sessions`)
+- **Problem:** Clove's warn-noise follow-up (branch `huntermcgrew/prism-426-adopt-test-warn-noise`, commits `d63192d`/`0852877`) added a `## History` line but no opening/closing orientation-battery entry to `## Sessions`, breaking the Battery Persistence chain `session-orientation.md` expects for that session.
+- **Suggested fix:** Append the missing `open:`/`close:` line retroactively, or accept the gap as a one-off since the branch already shipped — either way, not worth blocking the PR over.
+
+Briar self-review — 2026-07-20 [huntermcgrew/prism-426-adopt-test-warn-noise]: independently reproduced the fix on `origin/main` (1ba8c68) via the existing worktree; `npx tsx --test scripts/ai-skills/adopt.test.ts` → 31/31 pass, 0 occurrences of "missing a valid `load:`" (down from 14, confirmed before/after via the branch/base diff); full `pnpm run prism:test` → 534 tests, 533 pass, 1 pre-existing environment-conditional skip, 0 occurrences; `pnpm run prism:check-types` and `pnpm run prism:crossref-lint` both green. Verified the `finally` restores `console.warn` before `tempRoot` cleanup regardless of whether `body()` throws, confirmed zero other `console.*` references in the file (nothing silently loses an assertion), and confirmed `adopt.test.ts` runs its tests sequentially (no `concurrency` flag) so no cross-test leak risk exists. One Minor found (see above); no critical or major issues.
+
 ---
 
 ## Acceptance Criteria
@@ -297,5 +308,15 @@ None yet.
 - [x] Briar final delta re-review of `acb3520` — clean, zero new findings; mutation independently reproduced (red on regression, green on revert), no stale field references, plan merge reconciliation confirmed intact
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (if applicable) — ADR-0070 is the durable artifact; no separate architect-doc promotion needed (see `## Decisions` verdicts above)
+
+**Follow-up PR #431 (issue #426, branch `huntermcgrew/prism-426-adopt-test-warn-noise`) readiness — Briar self-review, 2026-07-20:**
+
+- [x] No critical or major issues
+- [x] Tests — 533/533 pass, unchanged; "missing a valid `load:`" occurrences confirmed 14 → 0
+- [x] Types correct — `pnpm run prism:check-types` green
+- [x] Lint — `pnpm run prism:crossref-lint` green
+- [x] No stray console.logs or debug artifacts
+- [x] PR description up to date — correctly framed as a no-new-ticket follow-up per `followup-scope.md`
+- [ ] `## Sessions` battery entry for this follow-up's own implementation session — missing, see Review Issues (Minor, non-blocking)
 
 **Last updated:** 2026-07-20
