@@ -100,7 +100,9 @@ function optionsFor(
 		sourceSkillsRoot: roots.sourceSkillsRoot,
 		targetRoots: roots.targetRoots,
 		codexConfigPath: roots.codexConfigPath,
-		roleMap: buildRoleMap({ skills: roleIds }),
+		roleMap: buildRoleMap({
+			skills: roleIds.map((role) => ({ ...role, routing: "auto" as const })),
+		}),
 		tokenMap: deriveTokenMap(FOREIGN_CONFIG),
 		optedIn: ALL_OPTED_IN,
 		checkMode,

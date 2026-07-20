@@ -2,127 +2,158 @@
 	"skills": [
 		{
 			"id": "prism-architect",
-			"persona": "Winston"
+			"persona": "Winston",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-onboarding",
-			"persona": "Atlas"
+			"persona": "Atlas",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-changelog",
-			"persona": "Sage"
+			"persona": "Sage",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-code-dev",
-			"persona": "Clove"
+			"persona": "Clove",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-code-review-pr",
-			"persona": "Eric"
+			"persona": "Eric",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-code-review-self",
-			"persona": "Briar"
+			"persona": "Briar",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-debugger",
-			"persona": "Sasha"
+			"persona": "Sasha",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-retro",
-			"persona": "Iris"
+			"persona": "Iris",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-documentation",
-			"persona": "Eli"
+			"persona": "Eli",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-design",
-			"persona": "Pixel"
+			"persona": "Pixel",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-prd",
-			"persona": "Parker"
+			"persona": "Parker",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-qa-test-plan",
-			"persona": "Reese"
+			"persona": "Reese",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-refactor-scout",
-			"persona": "Ren"
+			"persona": "Ren",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-standup-summary",
-			"persona": "Lilac"
+			"persona": "Lilac",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-doc-walker",
-			"persona": "Theo"
+			"persona": "Theo",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-ticket-start",
-			"persona": "Nora"
+			"persona": "Nora",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-user-stories",
-			"persona": "Mira"
+			"persona": "Mira",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-surface-audit",
-			"persona": "Zoe"
+			"persona": "Zoe",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-conductor",
-			"persona": "Sol"
+			"persona": "Sol",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-founder",
-			"persona": "Vera"
+			"persona": "Vera",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-market-research",
-			"persona": "Kora"
+			"persona": "Kora",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-finance",
-			"persona": "Ellis"
+			"persona": "Ellis",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-marketing",
-			"persona": "Charlie"
+			"persona": "Charlie",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-sales",
-			"persona": "Quinn"
+			"persona": "Quinn",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-data",
-			"persona": "Tess"
+			"persona": "Tess",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-customer-success",
-			"persona": "Remy"
+			"persona": "Remy",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-recruiting",
-			"persona": "Penny"
+			"persona": "Penny",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-legal",
-			"persona": "Lex"
+			"persona": "Lex",
+			"routing": "auto"
 		},
 		{
 			"id": "prism-handoff",
-			"type": "utility"
+			"type": "utility",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-review-loop",
-			"type": "utility"
+			"type": "utility",
+			"routing": "named-only"
 		},
 		{
 			"id": "prism-skill-forge",
-			"type": "utility"
+			"type": "utility",
+			"routing": "named-only"
 		}
 	]
 }

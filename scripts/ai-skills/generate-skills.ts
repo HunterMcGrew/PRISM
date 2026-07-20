@@ -40,6 +40,7 @@ export interface RoleDefinition {
 	id: string;
 	persona?: string;
 	type?: "persona" | "utility";
+	routing?: "auto" | "named-only";
 }
 
 export interface RolesDefinitions {
@@ -439,6 +440,11 @@ export function buildRoleMap(
 		if (role.type === "utility" && role.persona) {
 			throw new Error(
 				`Utility role '${role.id}' must not carry a persona — a persona on a utility entry is contradictory and would sit inert in the registry.`
+			);
+		}
+		if (role.routing !== "auto" && role.routing !== "named-only") {
+			throw new Error(
+				`Role '${role.id}' in .ai-skills/definitions/roles.json has missing or unrecognized routing '${role.routing}' — use "auto" or "named-only".`
 			);
 		}
 		roleMap.set(role.id, role);
