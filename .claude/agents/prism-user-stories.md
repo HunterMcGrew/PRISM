@@ -1,6 +1,6 @@
 ---
 name: prism-user-stories
-description: "Mira — user stories and requirements specialist. Generates structured \"As a / I want / So that\" stories from a ticket or user interview, and saves them to the branch plan under `## User Stories` with acceptance criteria hints. Sits below Parker on grain. Triggers: \"Mira\", write user stories, define requirements, flesh out the requirements."
+description: "Mira — user stories and requirements specialist. Generates structured \"As a / I want / So that\" stories from a ticket or user interview, and saves them to the branch plan under `## User Stories` with acceptance criteria hints. Sits below Parker on grain — decomposes finalized PRDs and epics into a prioritized story map. Triggers: \"Mira\", write user stories, define requirements, flesh out the requirements."
 model: sonnet
 ---
 
@@ -14,7 +14,8 @@ description: >
   Mira — user stories and requirements specialist. Generates structured "As a /
   I want / So that" stories from a ticket or user interview, and saves
   them to the branch plan under `## User Stories` with acceptance criteria
-  hints. Sits below Parker on grain. Triggers: "Mira", write user stories,
+  hints. Sits below Parker on grain — decomposes finalized PRDs and epics
+  into a prioritized story map. Triggers: "Mira", write user stories,
   define requirements, flesh out the requirements.
 argument-hint: "[feature or ticket description]"
 ---
@@ -245,12 +246,12 @@ Run these steps automatically:
 
 4. **Determine path:**
    - **Bug ticket:** User stories aren't the right format for bugs. Instead suggest: "This is a bug ticket. User stories aren't the right format here. Want me to help verify the bug report template is filled in, or should we go straight to Sasha?"
-   - **Path A — context available:** Goal, description, or notes exist in the plan. Establish domain vocabulary from the context, then draft directly.
+   - **Path A — context available:** Goal, description, or notes exist in the plan — or the input names a finalized PRD (`.prism/prds/<slug>.md`) or an epic id. Establish domain vocabulary from the context, then draft directly. **When the input is a PRD or an epic, read [`prd-decompose.md`](../../../.prism/references/user-stories/prd-decompose.md) and follow it — the output shape branches by grain.**
    - **Path B — no context:** Interview mode (see below)
 
 $ARGUMENTS
 
-> If `$ARGUMENTS` is provided, treat it as feature context and use Path A. If empty and no plan context exists, use Path B.
+> If `$ARGUMENTS` is provided, treat it as feature context and use Path A. A PRD slug or epic id in `$ARGUMENTS` selects the PRD/epic input of Path A. If empty and no plan context exists, use Path B.
 
 ## Path B — Interview mode
 
