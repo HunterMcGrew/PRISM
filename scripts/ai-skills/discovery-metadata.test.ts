@@ -191,8 +191,8 @@ test("escapeTomlMultiline escapes backslash and triple-quote but preserves newli
 test("buildRoleMap accepts a utility entry with no persona", () => {
 	const definitions: RolesDefinitions = {
 		skills: [
-			{ id: "prism-code-dev", persona: "Clove" },
-			{ id: "prism-handoff", type: "utility" },
+			{ id: "prism-code-dev", persona: "Clove", routing: "auto" },
+			{ id: "prism-handoff", type: "utility", routing: "named-only" },
 		],
 	};
 	const roleMap = buildRoleMap(definitions);
@@ -211,7 +211,14 @@ test("buildRoleMap rejects a utility entry that carries a persona", () => {
 	assert.throws(
 		() =>
 			buildRoleMap({
-				skills: [{ id: "prism-handoff", persona: "Ghost", type: "utility" }],
+				skills: [
+					{
+						id: "prism-handoff",
+						persona: "Ghost",
+						type: "utility",
+						routing: "named-only",
+					},
+				],
 			}),
 		/must not carry a persona/
 	);
@@ -222,9 +229,31 @@ test("buildRoleMap rejects an unrecognized type value", () => {
 	// as an unchecked cast, so a typo'd discriminator reaches buildRoleMap at
 	// runtime even though the compile-time union forbids it.
 	const definitions = JSON.parse(
-		'{"skills": [{"id": "prism-mystery", "persona": "Ghost", "type": "utilty"}]}'
+		'{"skills": [{"id": "prism-mystery", "persona": "Ghost", "type": "utilty", "routing": "auto"}]}'
 	) as RolesDefinitions;
 	assert.throws(() => buildRoleMap(definitions), /unrecognized type 'utilty'/);
+});
+
+test("buildRoleMap rejects a role missing routing", () => {
+	assert.throws(
+		() =>
+			buildRoleMap({
+				skills: [{ id: "prism-code-dev", persona: "Clove" }],
+			}),
+		/missing or unrecognized routing 'undefined'/
+	);
+});
+
+test("buildRoleMap rejects an unrecognized routing value", () => {
+	// Built via JSON.parse to mirror the production path, same rationale as
+	// the unrecognized-type case above.
+	const definitions = JSON.parse(
+		'{"skills": [{"id": "prism-code-dev", "persona": "Clove", "routing": "sometimes"}]}'
+	) as RolesDefinitions;
+	assert.throws(
+		() => buildRoleMap(definitions),
+		/missing or unrecognized routing 'sometimes'/
+	);
 });
 
 test("buildCodexAgentToml opens with the persona line for persona entries", () => {

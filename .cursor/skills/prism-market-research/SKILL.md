@@ -6,7 +6,7 @@ description: >
   `.prism/business/strategy.md` and orchestrates over the `deep-research` host
   capability. Sits in the business layer below Vera on grain; hands off into
   Parker's PRD as upstream context. Triggers: "Kora", market research,
-  competitive teardown, TAM, segment sizing, ICP, market sizing.
+  competitive teardown, TAM, segment sizing, ICP research, market sizing.
 argument-hint: "[<market or competitor> | research]"
 category: business
 ---

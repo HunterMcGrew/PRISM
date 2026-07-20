@@ -586,7 +586,7 @@ async function withTempRepoRoots(
 	await writeFile(
 		prismRepoRoot,
 		".ai-skills/definitions/roles.json",
-		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample", routing: "auto" }] }, null, "\t")}\n`
 	);
 
 	try {

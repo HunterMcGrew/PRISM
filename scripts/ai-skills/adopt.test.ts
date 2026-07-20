@@ -226,7 +226,7 @@ async function scaffoldConsumerAndSkills(roots: {
 	await writeFile(
 		roots.prismSourceRoot,
 		".ai-skills/definitions/roles.json",
-		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample" }] }, null, "\t")}\n`
+		`${JSON.stringify({ skills: [{ id: "prism-sample", persona: "Sample", routing: "auto" }] }, null, "\t")}\n`
 	);
 	// The provisioner copies from prismSourceRoot/.ai-skills/definitions/paths.json
 	// — write the package's copy so ensureConsumerPathDefinitions has a source to
