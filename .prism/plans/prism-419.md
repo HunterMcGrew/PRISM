@@ -57,12 +57,15 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 ## Sessions
 
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — seed the branch and plan for the ratified Mira PRD-decomposition lane per Winston's evaluation; Bounds — file the issue, create the branch, transpose tasks/AC verbatim into a new plan file, commit only the plan; no implementation in this session; Approach — dupe-search, branch from origin/main, write plan, single-file commit. · close: scope held
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — implement tasks 1-6 exactly as Winston's plan specifies (Path A extension, new prd-decompose.md reference, frontmatter/ecosystem-doc updates, BOM strip), no relitigating the ratified design; Bounds — touch only the files named in the plan tasks, zero edits to Winston's or Nora's skill bodies, no new mode; Approach — apply each task's exact old_string/new_string per the detail bar, regenerate via prism:build, verify via prism:test, two commits (implementation, then BOM strip per the assignment). · close: scope held — touched exactly the files named across tasks 1-6 plus their generated mirrors; no drift into Winston, Nora, or the sibling routing lane.
 
 ---
 
 ## History
 
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Created plan from Winston's ratified evaluation (`.prism/plans/eval-mira-prd-decompose.md`); tasks and AC transposed verbatim, no re-derivation.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Implemented tasks 1-5 — Path A now names a finalized PRD or epic id as first-class input with a deterministic trigger into new `.prism/references/user-stories/prd-decompose.md`; added `### Story Map` artifact row + Parker handoff note to `skills-ecosystem.md`; regenerated via `pnpm prism:build` (365-line generated SKILL.md, well under the 500 cap; 408-char frontmatter description, under the 1000 cap); `pnpm prism:test` passes 504/504.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Fixed AC-7 — stripped the planted BOM (`ef bb bf` + `# BOM planted for sanity check`) from `.ai-skills/skills/prism-prd/shared.md` and rebuilt; confirmed byte-clean across `.claude/agents/prism-prd.md`, `.claude/skills/prism-prd/SKILL.md`, `.cursor/skills/prism-prd/SKILL.md`, and a repo-wide BOM grep found no other occurrences.
 
 ---
 
@@ -102,6 +105,8 @@ None yet.
 
 ### AC Adjustments
 
+**Pre-flight note (Clove, not a graded verdict):** AC-6 and AC-7 verified directly — `pnpm prism:build` and `pnpm prism:test` both pass (504/504), generated `prism-user-stories/SKILL.md` is 365 lines (≤500), frontmatter description is 408 chars (≤1000), and a byte-level scan confirms no `ef bb bf` or `# BOM planted for sanity check` anywhere in the tree. AC-1 through AC-5 need a live run against an actual finalized PRD (AC-1, AC-2), a Winston plan-mode pass on a mapped epic (AC-3), a Nora create-path pass against a candidate-ticket marker (AC-4), and a spot-check of story text (AC-5) — none of these can be exercised from code alone without a real PRD/epic fixture, so they're implemented-per-spec but unexercised. Flagging for manual QA / a follow-up scripted run rather than claiming graded coverage.
+
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
@@ -120,13 +125,13 @@ None yet.
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` (content-only change; no TypeScript touched)
+- [x] No stray console.logs or debug artifacts
+- [ ] Tests written for new logic and edge cases (content-only reference doc; no new test-bearing logic — AC-1 through AC-5 need a live-run scripted test per the pre-flight note above)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-20 (`pnpm prism:build` + `pnpm prism:test`, 504/504)
+- [ ] PR description up to date (not yet opened)
+- [ ] Lasting decisions promoted to architect context (Winston task 7, at plan close)
 
 **Last updated:** 2026-07-20
