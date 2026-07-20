@@ -60,6 +60,12 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 
 12. **Regenerate, verify, request re-review** — run `pnpm prism:build`, then `pnpm prism:test`; confirm `.claude/skills/prism-user-stories/SKILL.md` regenerates with tasks 8–9 and stays ≤ 500 lines; run `pnpm prism:crossref-lint`. Sequence: after tasks 8–11. Then re-request Eric on PR `#423`.
 
+### Clove (review fixes — Eric PR `#423` round 2; classifier completion, no semantics change)
+
+13. **Derive `<input>` from `$ARGUMENTS` before the existence check** — `.ai-skills/skills/prism-user-stories/shared.md`, Startup step 4 (Determine path). Insert a derivation clause ahead of the ordered existence check: lowercase `$ARGUMENTS`, strip leading filler tokens (`decompose`, `the`) and trailing filler tokens (`prd`, `epic`) case-insensitively (repeated until none remain) plus surrounding quotes/punctuation, and use the remaining token as `<input>`. Content-only. Verification: rebuild + test.
+14. **Skip plan-lookup step 6 when the classifier resolves** — same file, Startup step 2 (Plan lookup). Add a sub-bullet: run step 4's existence check against `$ARGUMENTS` before plan-lookup step 6 fires; if it resolves as a PRD or an epic, skip step 6 — the decompose flow resolves its own target and step 6 would otherwise prompt for a ticket or create a spurious ticket-grain plan before classification runs. Content-only. Verification: rebuild + test.
+15. **Fix the re-inherited plan-lookup citation** — `.prism/references/user-stories/prd-decompose.md § Input resolution`, the "Epic id" bullet. Replace the `../plan-lookup.md` call with a direct read of `.prism/plans/epic-<input>.md` — the file Path A's existence check (task 13) already resolved. Content-only. Verification: rebuild + test + crossref-lint.
+
 ### Winston (plan close, when this ticket lands)
 
 7. Promote the decision "PRD decomposition is a Path A input extension, not a mode; story map lives as `### Story Map` under `## User Stories` in epic plans" to `skills-ecosystem.md` context (largely done by task 4; verify at close per the Decision verdict gate). Also execute the deferred promotion on the citation-form Decision (fold into `.prism/rules/skill-authoring.md § Externalization mechanics`).
@@ -88,6 +94,12 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
   - In `.prism/references/`, cite the owning skill's own body as `the skill body § <section>` and another skill's body as ``the `<skill-id>` skill body § <section>`` — prose, no path, no link. Consumer installs ship no `.ai-skills/skills/`, and the generated body path differs per platform (`.claude/`, `.codex/`, `.cursor/`), so no single path resolves everywhere; the executing model always has its own body in context, and a sibling skill is loadable by id. Bare `shared.md § N` citations are the same defect in shorter clothes — same fix.
   - Sibling references and `.prism/` rules/templates keep the relative-link convention (skill-authoring § Externalization mechanics) — those ship in `templates/install/` and resolve; Eric verified all four in this PR.
   - → promotion deferred to plan close: fold the skill-body citation form into `.prism/rules/skill-authoring.md § Externalization mechanics` (cross-skill authoring rule; this dispatch commits the plan file only per the lane's scope).
+- **The classifier's `<input>` is derived from `$ARGUMENTS`, not read raw; plan-lookup step 6 is guarded until classification runs.** (Round 2 fixes completing Winston's "two LLMs produce identical classifications" bar; no change to the classifier's ratified semantics.)
+  - **Root cause:** the existence check never said how `<input>` comes out of a natural-language `$ARGUMENTS` — "decompose the sol-product-lead-conductor PRD" (AC-1's own invocation form) reads as the raw string, misses both filesystem checks, and trips the explicit-name loud-stop; `PRISM-1524` misses the lowercase-named `epic-prism-1524.md` on a case-sensitive filesystem. Separately, Startup step 2 (Plan lookup) ran plan-lookup's step 6 (ask-then-create) before step 4's classifier ever ran, so AC-1's own precondition ("no plan exists for it") drove Mira into asking for a ticket or creating a spurious ticket-grain plan.
+  - **Chosen approach:** derive `<input>` by lowercasing `$ARGUMENTS` and stripping leading (`decompose`, `the`) / trailing (`prd`, `epic`) filler tokens plus surrounding punctuation, repeated until none remain — deterministic string stripping, not phrase-matching. Guard Plan lookup step 2 with a forward reference to step 4's existence check: if it resolves as a PRD or an epic, skip plan-lookup step 6. `prd-decompose.md`'s "Epic id" bullet now reads `.prism/plans/epic-<input>.md` directly instead of re-running `../plan-lookup.md`, closing the last place the pre-classifier id-extraction fuzz could re-enter post-classification.
+  - **Alternatives considered:** phrase-matching for the derivation ("decompose", "PRD" as keywords with positional rules) — rejected, same non-determinism risk the classifier itself was built to avoid; reordering Startup so step 4 runs textually before step 2 — rejected, would restructure the numbered step list Nora/Mira share the shape of; a guard clause achieves the same effect without renumbering.
+  - **Implementation guidance:** task 13 (derivation), task 14 (plan-lookup guard), task 15 (Epic id citation fix). Verified against both of Winston's named failure cases (AC-1's own phrasing; `PRISM-1524`'s lowercase mismatch).
+  - → no promotion needed (skill-behavior rule; Mira's body, edited by tasks 13–14, is itself the durable surface — same rationale as the round-1 detection-rule Decision above).
 
 ---
 
@@ -98,6 +110,8 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — self-review PR #423 against the design constraints (no mode, zero Winston/Nora body edits, no branch-plan template edit) and independently verify AC-6/AC-7 and Clove's manual-QA framing for AC-1–AC-5; Bounds — read-only review, findings go to the plan, never to GitHub; Approach — diff against main in the correct worktree, re-run build/test/lint independently rather than trusting the plan's claims, byte-scan for the BOM, grep for existing PRD fixtures to check the honesty-flag framing. · close: scope held — one Minor finding written to `## Review Issues`; no critical or major issues; verdict done.
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — rule on Eric's round-1 needs-replan (detection rule, silent-wrong-plan save, citation form) and encode the ruling as Decisions + review-fix tasks; Bounds — plan file only, no code or reference edits, zero Winston/Nora body scope; Approach — adopt Eric's existence check with three amendments, grain-branch Mira's own save step, one prose citation rule, tasks 8–12 at the detail bar. · close: scope held — plan file is the only edit; all fixes routed to Clove as exact-string tasks.
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — execute tasks 8–12 exactly as Winston's ruling specifies (detection rule in the Path A bullet, grain-branched save step, seven prd-decompose.md citation-form edits, plan-text Minor fixes, regenerate/verify); Bounds — touch only the files named in tasks 8–11 plus their generated mirrors via rebuild, zero Winston/Nora body edits, no relitigating the ruling; Approach — apply each task's exact old_string/new_string, one local-frame wording fix on the doubled "skill body" citation produced by task 10's literal line-3 replacement, rebuild, test, crossref-lint. · close: scope held — diff touches exactly `shared.md`, `prd-decompose.md` (+ generated mirrors across `.claude/`, `.codex/`, `.cursor/`, `templates/install/`), and the plan file; `pnpm prism:build` + `pnpm prism:test` 504/504, `pnpm prism:crossref-lint` clean, generated SKILL.md 365 lines (≤500).
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — delta re-review of commit `39d1706` against Eric's PR `#423` round-1 findings, diffing what changed since the round-1 self-review rather than re-reviewing from scratch; Bounds — read-only, findings go to the plan, never to GitHub; verify the fix matches Winston's ruling (three amendments), not Eric's original formulation; Approach — diff the fix commit against the plan's tasks 8–11, independently re-run build/test/crossref-lint in the matching worktree, cross-check every one of Eric's four round-1 findings (1 Major, 3 Minors) against the current file state and the actual GitHub review-comment text. · close: scope held — zero new issues found; all four round-1 findings confirmed genuinely fixed, not moved; verdict done.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose] open: Intent — complete the classifier to Winston's own stated bar ("two LLMs produce identical classifications") per Eric's round-2 findings, without changing its ratified semantics; Bounds — touch only `shared.md`'s Startup steps 2 and 4 plus `prd-decompose.md`'s Epic id bullet, zero Winston/Nora body edits, no relitigating the classifier's three amendments from round 1; Approach — add a deterministic `<input>` derivation clause (lowercase + strip filler tokens) ahead of the existence check, guard plan-lookup step 6 behind step 4's classifier, fix the re-inherited plan-lookup citation, rebuild, run full `pnpm run prism:check`. · close: scope held — diff touches exactly `shared.md`, `prd-decompose.md`, the plan file, and their generated mirrors; `pnpm run prism:check` green (504/504 tests, crossref-lint/install-adr-gate/install-relative-link-gate/verify-pack-parity all clean), generated SKILL.md 366 lines (≤500); verdict done.
 
 ---
 
@@ -109,6 +123,8 @@ Transposed verbatim from `.prism/plans/eval-mira-prd-decompose.md` § Proposed I
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Briar self-review — independently reproduced AC-6/AC-7 (build+test 504/504, crossref-lint clean, byte scan clean), confirmed all design constraints held, and flagged one Minor: the AC Adjustments note overstates the fixture barrier for AC-1–AC-5 (finalized PRDs already exist at `.prism/prds/sol-*.md`).
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Winston ruling on Eric's PR `#423` round-1 needs-replan — adopted the existence-check detection rule with three amendments, grain-branched Mira's save step (zero-Winston/Nora constraint holds), and set the prose citation form; see the three new Decisions and tasks 8–12. Added AC-8 for the classifier's loud-failure branch.
 - 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Implemented tasks 8–11 — Path A's Determine-path bullet now carries the ordered existence check plus the loud-failure clause, the save step is grain-branched (feature-context → ticket plan, PRD/epic → epic plan), all seven `prd-decompose.md` citations moved to the skill-body prose form (Winston's citation-form ruling), and the plan's AC Adjustments note now names the four ready-to-use finalized PRDs and narrows the BOM claim to `prism-prd` surfaces. Regenerated via `pnpm prism:build`, verified via `pnpm prism:test` (504/504) and `pnpm prism:crossref-lint` (clean).
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Briar delta re-review of commit `39d1706` — independently reverified all four of Eric's PR `#423` round-1 findings against Winston's ruling and the actual fix; zero new issues introduced. See `## Review Issues`.
+- 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]: Implemented tasks 13–15 (Eric PR `#423` round 2, two Majors + one Minor) — added a deterministic `<input>` derivation step ahead of the existence check (lowercase + strip filler tokens), guarded Startup step 2's plan-lookup step 6 behind step 4's classifier, and replaced `prd-decompose.md`'s re-inherited `../plan-lookup.md` call with a direct `epic-<input>.md` read. Regenerated via `pnpm prism:build` and verified via `pnpm run prism:check` (504/504 tests, crossref-lint clean, generated SKILL.md 366 lines).
 
 ---
 
@@ -131,6 +147,41 @@ None yet.
 ### No issues found — 2026-07-20 [huntermcgrew/prism-419-mira-prd-decompose]
 
 All design constraints independently verified clean: zero edits to `prism-architect`/`prism-ticket-start` bodies, zero `branch-plan.md` template edit, no mode-selection language introduced. AC-6 and AC-7 independently reproduced (`pnpm prism:build` + `pnpm prism:test` → 504/504; `pnpm prism:crossref-lint` → clean; repo-wide byte scan for `ef bb bf` → none found; generated SKILL.md 365 lines; frontmatter description 408 chars). Every citation in the new `.prism/references/user-stories/prd-decompose.md` (relative paths and section headers) resolves. Clove's AC-1–AC-5 manual-QA framing is directionally correct — one Minor accuracy gap flagged above.
+
+### No issues found — delta re-review of commit `39d1706` (Eric PR `#423` round-1 fixes)
+
+All four of Eric's round-1 findings independently reverified against the fix commit and Winston's ruling (not Eric's original formulation) — none moved or papered over:
+
+- **Major (detection rule + silent-wrong-plan save), both halves fixed.** The Path A Determine-path bullet now carries a direct filesystem-existence classifier — `.prism/prds/<input>.md` exists → PRD, `.prism/plans/epic-<input>.md` exists → epic, both → PRD-first with the existing epic plan as append target, neither → feature context — matching Winston's amendment (i) exactly (not "plan lookup resolved an epic-*.md," which would have inherited plan-lookup's undefined bare-slug id-extraction). The explicit-name-mismatch loud-failure clause (amendment iii) is present verbatim. The save step ("After drafting" step 4) is grain-branched: feature-context input still targets `<ticket-id>.md`; PRD/epic input targets the epic plan per `prd-decompose.md § Output shape`, which now also carries the ticket-grain write guard from task 10.
+- **Minor — `.ai-skills/skills/` citations don't resolve in a consumer install: fixed.** All three flagged citations (`prd-decompose.md:14,17,30`) now read as prose (`the prism-prd skill body § PRD output shape`, `the skill body § Story format`) with no filesystem path.
+- **Minor — bare `shared.md § N` citations have no target: fixed.** Lines 3, 18, and 21 now read `the skill body § <section>` — no `shared.md` token remains anywhere in the file. Verified line 3 specifically for the doubled-phrase risk Clove flagged in the commit message (`stay in the skill body (the skill body § ...)` from a literal task-10 replacement) — the shipped text reads `stay in the skill body (§ Determine path)`, correctly tightened, no doubling.
+- **Minor — plan pre-flight note over-claims the BOM scan: fixed.** `## Acceptance Criteria > AC Adjustments` now reads "in `prism-prd` sources or generated surfaces" instead of "anywhere in the tree," and independently re-confirmed: a repo-wide BOM byte-scan in the matching worktree still finds `ef bb bf` only in `.prism/lessons.md` (pre-existing, unrelated, exactly as the narrowed sentence claims).
+
+Independently re-ran the verification chain in worktree `wf_20910795-84f-3` (commit `39d1706`) rather than trusting the plan's or the commit message's claims: `pnpm prism:build` + `pnpm prism:test` → 504/504; `pnpm prism:crossref-lint` → passed (crossref-lint, install-adr-gate, install-relative-link-gate all clean); generated `prism-user-stories/SKILL.md` → 365 lines (≤500 cap); frontmatter description → 408 chars (≤1000 cap, matches Clove's figure — Eric's independent 413-char measurement in his round-1 review was a whitespace-normalization artifact on his side, both comfortably under cap). No regressions found in the fix commit — the diff touches exactly the files task 8–11 name, plus their generated mirrors.
+
+### `<input>` never derived from `$ARGUMENTS`
+
+- **Severity:** `major`
+- **Status:** `fixed` — task 13. Derivation clause inserted ahead of the ordered existence check in the Path A bullet.
+- **File:** `.ai-skills/skills/prism-user-stories/shared.md` (Startup step 4, Determine path)
+- **Problem:** The existence check named `.prism/prds/<input>.md` and `epic-<input>.md` but never defined how `<input>` comes out of a natural-language `$ARGUMENTS`. "Decompose the sol-product-lead-conductor PRD" (AC-1's own second invocation form) resolved neither path against the raw string and tripped the explicit-name loud-stop; `PRISM-1524` missed the lowercase-named `epic-prism-1524.md` on a case-sensitive filesystem, silently falling to feature-context drafting.
+- **Suggested fix:** Add a deterministic derivation step — lowercase `$ARGUMENTS`, strip leading/trailing filler tokens (`decompose`, `the`, `prd`, `epic`) and surrounding punctuation — before running the existence check. See Decisions § "The classifier's `<input>` is derived from `$ARGUMENTS`…".
+
+### Plan lookup runs before classification
+
+- **Severity:** `major`
+- **Status:** `fixed` — task 14. Startup step 2 now guards plan-lookup step 6 with a forward reference to step 4's existence check.
+- **File:** `.ai-skills/skills/prism-user-stories/shared.md` (Startup step 2, Plan lookup)
+- **Problem:** Plan lookup (step 2) ran plan-lookup's step 6 ("ask the user which ticket this work is for, then create one") before step 4's classifier ever ran. AC-1's own precondition — a finalized PRD exists and no plan exists for it — drove Mira straight into step 6: a wrong prompt, or a spurious ticket-grain plan, before classification could route the input correctly.
+- **Suggested fix:** Guard step 2 — run step 4's existence check against `$ARGUMENTS` before plan-lookup step 6 fires; skip step 6 when it resolves as a PRD or epic. See Decisions § "The classifier's `<input>` is derived…".
+
+### `prd-decompose.md`'s Epic id bullet re-inherits plan-lookup's id-extraction fuzz
+
+- **Severity:** `minor`
+- **Status:** `fixed` — task 15. The "Epic id" bullet now reads `.prism/plans/epic-<input>.md` directly.
+- **File:** `.prism/references/user-stories/prd-decompose.md` § Input resolution
+- **Problem:** The "Epic id" bullet still said "run `../plan-lookup.md` against the epic id" — re-inheriting, post-classification, exactly the id-extraction fuzz the round-1 classifier fix excised. Where both `<id>.md` and `epic-<id>.md` exist, plan-lookup could resolve the wrong (ticket-grain) plan and the decompose would read its `## Goal`/`## User Stories` before the write guard ever caught the bad write.
+- **Suggested fix:** Replace the plan-lookup call with a direct read of the file Path A's check already resolved.
 
 ---
 
@@ -180,13 +231,13 @@ All design constraints independently verified clean: zero edits to `prism-archit
 
 Living checklist — updated every time `code-review-self` runs. Reflects current state.
 
-- [x] No critical or major issues
+- [x] No critical or major issues (Eric's round-1 Major and round-2 two Majors — detection rule, silent-wrong-plan save, `<input>` derivation, plan-lookup sequencing — all fixed; see `## Review Issues`)
 - [x] Types correct — no `any`, no unsafe `as` (content-only change; no TypeScript touched)
 - [x] No stray console.logs or debug artifacts
 - [ ] Tests written for new logic and edge cases (content-only reference doc; no new test-bearing logic — AC-1 through AC-5 need a live-run scripted test per the pre-flight note above)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-07-20 (`pnpm prism:build` + `pnpm prism:test`, 504/504)
-- [ ] PR description up to date (not yet opened)
+- [x] Build passes — last run: 2026-07-20 (`pnpm run prism:check` — 504/504 tests, crossref-lint/install-adr-gate/install-relative-link-gate/verify-pack-parity all clean — after tasks 13–15)
+- [ ] PR description up to date (round-2 fixes not yet synced to the agent-owned body sections — Clove's sync step per `pr-description.md` on this push)
 - [ ] Lasting decisions promoted to architect context (Winston task 7, at plan close)
 
 **Last updated:** 2026-07-20

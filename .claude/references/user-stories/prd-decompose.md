@@ -7,7 +7,7 @@
 - **PRD slug** — read `.prism/prds/<slug>.md`. Check the frontmatter `status` field:
   - `status: finalized` — proceed to Decompose. If the epic plan for this PRD already exists (a prior decompose run), append to it — don't recreate it or duplicate stories already present in its `## User Stories`.
   - `status: draft` or `status: reviewed` — flag the non-finalized status and stop: "This PRD is still `<status>` — decomposing now risks locking stories against requirements that haven't stabilized yet. Want me to proceed anyway, or wait until it's finalized?" Proceed only on explicit override.
-- **Epic id** — run `../plan-lookup.md` against the epic id. If an epic plan already exists, treat its `## Goal` and any existing `## User Stories` as the input context instead of a PRD file — append to, don't recreate.
+- **Epic id** — read `.prism/plans/epic-<input>.md` directly — the file the skill body's Path A existence check already resolved. Treat its `## Goal` and any existing `## User Stories` as the input context instead of a PRD file — append to, don't recreate.
 
 ## Decompose
 
