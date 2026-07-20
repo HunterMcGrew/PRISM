@@ -4,9 +4,11 @@
  * Asserts that `.ai-skills/definitions/roles.json`'s `routing` field and the
  * prose routing surfaces agree in both directions:
  *   - every `routing: "auto"` id appears exactly once in the canonical rule's
- *     routing table (and the install seed twin's)
+ *     routing table (and the install seed twin's), and 0 times in the
+ *     named-invocation or utility section
  *   - every `routing: "named-only"` id appears in the rule's named-invocation
- *     or utility section (and the seed twin's)
+ *     or utility section (and the seed twin's), and 0 times in the routing
+ *     table or onboarding-intent section
  *   - every `prism-*` id referenced anywhere in the rule exists in
  *     `roles.json` — no ghost routes
  *   - every persona in `roles.json` appears in `skills-ecosystem.md`'s roster
@@ -103,10 +105,20 @@ async function assertRoutingRuleAgreesWithRoles(
 				1,
 				`${rulePath}: expected '${role.id}' to appear exactly once in the routing table or the onboarding-intent section, found ${occurrences}`
 			);
+			assert.ok(
+				!namedOnlyIds.has(role.id),
+				`${rulePath}: '${role.id}' is routing: "auto" but also appears in the Named-invocation personas or Utility skills section — an auto persona already routes on name via its own frontmatter, so a dual listing is drift, not intent`
+			);
 		} else if (role.routing === "named-only") {
 			assert.ok(
 				namedOnlyIds.has(role.id),
 				`${rulePath}: expected '${role.id}' to appear in the Named-invocation personas or Utility skills section`
+			);
+			const occurrences = autoIdsInScope.filter((id) => id === role.id).length;
+			assert.equal(
+				occurrences,
+				0,
+				`${rulePath}: '${role.id}' is routing: "named-only" but also appears in the routing table or the onboarding-intent section, found ${occurrences}`
 			);
 		}
 	}

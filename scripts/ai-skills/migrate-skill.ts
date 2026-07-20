@@ -565,14 +565,18 @@ export async function main(): Promise<void> {
 	// --- Roles.json delta ---
 	const rolesContent = await readFileIfExists(rolesPath);
 	const rolesData: {
-		skills: Array<{ id: string; persona?: string; type?: string }>;
-	} = rolesContent ? (JSON.parse(rolesContent) as { skills: Array<{ id: string; persona?: string; type?: string }> }) : { skills: [] };
+		skills: Array<{ id: string; persona?: string; type?: string; routing?: string }>;
+	} = rolesContent ? (JSON.parse(rolesContent) as { skills: Array<{ id: string; persona?: string; type?: string; routing?: string }> }) : { skills: [] };
 
 	const existingEntry = rolesData.skills.find((s) => s.id === normalizedId);
-	const newRolesEntry: { id: string; persona?: string; type?: string } =
+	// New entries default to routing: "named-only" — ambient-intent routing must be an
+	// affirmative decision, not membership-by-omission. Flip to "auto" only when the same
+	// change adds the persona's routing-table row in skill-routing.md; the routing-coverage
+	// gate enforces that the flip and the row land together.
+	const newRolesEntry: { id: string; persona?: string; type?: string; routing?: string } =
 		personaName
-			? { id: normalizedId, persona: personaName }
-			: { id: normalizedId, type: "utility" };
+			? { id: normalizedId, persona: personaName, routing: "named-only" }
+			: { id: normalizedId, type: "utility", routing: "named-only" };
 
 	// --- Dry run output ---
 	if (dryRun) {

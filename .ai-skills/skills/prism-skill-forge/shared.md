@@ -112,9 +112,17 @@ Write under `.ai-skills/skills/<id>/`:
 
 Add an entry to `.ai-skills/definitions/roles.json` under `skills`:
 
-- **Persona:** `{ "id": "<id>", "persona": "<Name>" }`
-- **Utility:** `{ "id": "<id>", "type": "utility" }` — note: no `persona` key;
-  `buildRoleMap` throws if a utility entry carries a persona.
+- **Persona:** `{ "id": "<id>", "persona": "<Name>", "routing": "named-only" }`
+- **Utility:** `{ "id": "<id>", "type": "utility", "routing": "named-only" }` —
+  note: no `persona` key; `buildRoleMap` throws if a utility entry carries a
+  persona.
+
+Every new entry starts `routing: "named-only"` — ambient-intent routing must
+be an affirmative decision, not membership-by-omission. Flip the persona to
+`"auto"` only in the same change that adds its row to
+`.prism/rules/skill-routing.md`'s routing table; the routing-coverage gate
+(`scripts/ai-skills/routing-coverage.test.ts`) enforces that the flip and the
+row land together.
 
 ### Step 5 — Build and verify
 
