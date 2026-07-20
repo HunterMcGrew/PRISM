@@ -117,21 +117,21 @@ If a version ships with a bug, publish a patch release instead. If a version shi
 
 The immutability constraint is the main reason the leak audit ritual exists. One clean publish costs you five minutes; one leaked publish is permanent.
 
-## `package.json` `pnpm.onlyBuiltDependencies` and build script approvals
+## `pnpm-workspace.yaml` `allowBuilds` and build script approvals
 
-`package.json` carries a `pnpm.onlyBuiltDependencies` list that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
+`pnpm-workspace.yaml` carries an `allowBuilds` list that explicitly permits esbuild's build script to run on install. pnpm blocks `postinstall` and build scripts by default as a security measure.
 
-When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `onlyBuiltDependencies` in `package.json`:
+When a future devDependency ships a build or postinstall script, pnpm will silently skip its build unless it's listed here. If a new dependency stops working after install and the package should have run a build step, add its package name to `allowBuilds` in `pnpm-workspace.yaml`:
 
-```json
-"pnpm": {
-  "onlyBuiltDependencies": ["esbuild", "your-new-package"]
-}
+```yaml
+allowBuilds:
+  esbuild: true
+  your-new-package: true
 ```
 
 This is a pnpm-specific concern — npm install runs build scripts by default and doesn't need this configuration.
 
-Note: pnpm v11+ ignores the `pnpm` field in `package.json` and emits a warning — this is harmless locally since esbuild is already installed. The field is read by pnpm v9 (the version pinned in CI), which uses it to approve esbuild's build on cold installs.
+`pnpm-workspace.yaml` also carries a `packages: ["."]` field even though this repo isn't a real workspace — CI pins pnpm v9 (`.github/workflows/prism-check.yml`), and v9's `pnpm store path` call fails with "packages field missing or empty" if the file exists without that key. See `.prism/plans/prism-248.md` for the original CI break and `.prism/plans/issue-422.md` for the migration off `package.json`'s `pnpm` field, which pnpm v10.26+ stopped reading.
 
 ## Related pages
 
