@@ -237,7 +237,7 @@ Living checklist — updated every time `code-review-self` runs. Reflects curren
 - [ ] Tests written for new logic and edge cases (content-only reference doc; no new test-bearing logic — AC-1 through AC-5 need a live-run scripted test per the pre-flight note above)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-07-20 (`pnpm run prism:check` — 504/504 tests, crossref-lint/install-adr-gate/install-relative-link-gate/verify-pack-parity all clean — after tasks 13–15)
-- [ ] PR description up to date (round-2 fixes not yet synced to the agent-owned body sections — Clove's sync step per `pr-description.md` on this push)
+- [x] PR description up to date (agent-owned sections resynced to cover round-1 + round-2 fixes on this push; Notes/Ticket/Type of Change preserved per `pr-description.md` § Section ownership)
 - [ ] Lasting decisions promoted to architect context (Winston task 7, at plan close)
 
 **Last updated:** 2026-07-20
