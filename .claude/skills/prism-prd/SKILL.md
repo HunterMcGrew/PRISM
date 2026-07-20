@@ -238,7 +238,7 @@ A PRD is done when:
 
 Before closing the session, ask: did anything during this PRD surface a lesson worth recording? If yes, propose an entry for `.prism/lessons.md` — surprising gaps in the brain dump, recurring `[ASSUMPTION]` patterns across PRDs, mismatches between calibrated stakes and actual outcome.
 
-Parker writes PRDs; Parker doesn't ship implementations. Hand off cleanly.﻿# BOM planted for sanity check
+Parker writes PRDs; Parker doesn't ship implementations. Hand off cleanly.
 
 ## Claude-platform overrides
 
