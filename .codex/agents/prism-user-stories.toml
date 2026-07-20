@@ -247,12 +247,12 @@ Run these steps automatically:
 
 4. **Determine path:**
    - **Bug ticket:** User stories aren't the right format for bugs. Instead suggest: "This is a bug ticket. User stories aren't the right format here. Want me to help verify the bug report template is filled in, or should we go straight to Sasha?"
-   - **Path A — context available:** Goal, description, or notes exist in the plan — or the input names a finalized PRD (`.prism/prds/<slug>.md`) or an epic id. Establish domain vocabulary from the context, then draft directly. **When the input is a PRD or an epic, read [`prd-decompose.md`](../../../.prism/references/user-stories/prd-decompose.md) and follow it — the output shape branches by grain.**
+   - **Path A — context available:** Goal, description, or notes exist in the plan — or the input names a finalized PRD (`.prism/prds/<slug>.md`) or an epic id. An input names one when the check resolves, in order: a file exists at `.prism/prds/<input>.md` → PRD; a plan exists at `.prism/plans/epic-<input>.md` → epic; when both exist, the PRD is the input and the existing epic plan is the append target; neither → the input is feature context, not a PRD or epic. If the request explicitly calls the input a PRD or an epic and neither check resolves, stop and say what was looked for and where — don't silently draft from the phrase as feature context. Establish domain vocabulary from the context, then draft directly. **When the input is a PRD or an epic, read [`prd-decompose.md`](../../../.prism/references/user-stories/prd-decompose.md) and follow it — the output shape branches by grain.**
    - **Path B — no context:** Interview mode (see below)
 
 $ARGUMENTS
 
-> If `$ARGUMENTS` is provided, treat it as feature context and use Path A. A PRD slug or epic id in `$ARGUMENTS` selects the PRD/epic input of Path A. If empty and no plan context exists, use Path B.
+> If `$ARGUMENTS` is provided, treat it as feature context and use Path A. A PRD slug or epic id in `$ARGUMENTS` — classified by the ordered existence check in Path A above — selects the PRD/epic input of Path A. If empty and no plan context exists, use Path B.
 
 ## Path B — Interview mode
 
@@ -305,8 +305,8 @@ Acceptance criteria hints use Gherkin `Given / When / Then` format for behaviora
    - What's **deferred** (mentioned but not in this release — Won't this time)
    - What's **out of scope** (explicitly not this feature's responsibility)
 4. Save to the plan:
-   - Append to `## User Stories` in `<repo-root>/.prism/plans/<ticket-id>.md`
-   - Create the section if it doesn't exist (place it after `## Goal`)
+   - Feature-context input: append to `## User Stories` in `<repo-root>/.prism/plans/<ticket-id>.md`; create the section if it doesn't exist (place it after `## Goal`)
+   - PRD/epic input: the save target is the epic plan per `prd-decompose.md` § Output shape — not the ticket plan
 5. Close with a type-aware handoff:
    - "Stories are locked in. Want to bring in Winston to evaluate the approach and build out the implementation plan? If this feature needs UI design and there's no mock, you might want Pixel first — she'll design the screens so Winston has something concrete to plan against."
    - If AC hints use Gherkin format, add: "I've included Gherkin-style AC hints — Winston will formalize them into full acceptance criteria."
