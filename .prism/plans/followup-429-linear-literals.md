@@ -117,12 +117,14 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — plan the tracker-neutral sweep of the install surface before the 0.8.0 publish; Bounds — write this plan file only, no code, no branch, no tracker writes, parked staleness question stays parked; Approach — verify the issue's file inventory against the tree, split by mirror class, add the existing seed guard as the recurrence gate · close: scope held
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — implement all 14 plan tasks (sweep the four curated seed twins, fix three canonical nits, extend the literal guard, allowlist the three legitimate-Linear files, regenerate mirrors and bundle); Bounds — plan's task list only, no touch to `checkSeedDrift`/`seed-curation.json`; Approach — follow task sequence A→E exactly, verify each group's grep before moving on · close: scope held
 
 ---
 
 ## History
 
 - 2026-07-21 [main]: Plan created — enumerated the install-surface `Linear` literals against the tree, split them into curated-seed drift / canonical-side nits / legitimate-Linear allowlist entries, and scoped the recurrence guard; see Decision: "Scope is the four curated seed twins, not the eleven files the issue names."
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Implemented all 14 tasks — swept the four curated seed twins to zero `Linear` literals, fixed the three canonical-side nits (`writing-voice.md`, `pattern-vocabulary.md`, `closeout.md`), added `Linear` to `SEED_DOGFOODING_PATTERN`, allowlisted the three legitimate-Linear files, added the guard test pair, dropped `Linear` from `AGENTS.md.tmpl`. Regenerated mirrors (`pnpm prism:build`, idempotent on a second run) and the CLI bundle (`pnpm prism:bundle`, stable on rebuild). `pnpm prism:check` exits 0.
 
 ---
 

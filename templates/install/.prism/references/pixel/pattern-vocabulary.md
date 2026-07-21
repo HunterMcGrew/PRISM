@@ -73,7 +73,7 @@ The impulse to use a modal is almost always wrong. Decision framework:
 - **Functional vs decorative** — functional animation conveys state change (collapse, expand, slide in) or spatial relationship (where did this come from). Decorative animation is noise. Every animation should answer "what does this teach the user?"
 - **`prefers-reduced-motion`** — respect this always. Disable non-essential animation; reduce essential animation to opacity transitions for users who set this flag. This is an accessibility baseline, not a nice-to-have.
 - **Duration** — micro-interactions: 100-200ms. Transitions: 200-400ms. Page-level: 300-500ms. Over 500ms feels sluggish.
-- **Easing** — ease-out for entering elements (fast start, gentle landing). ease-in for exits. Linear for progress indicators only.
+- **Easing** — ease-out for entering elements (fast start, gentle landing). ease-in for exits. Use linear easing for progress indicators only.
 
 ## Micro-interactions & Affordances
 

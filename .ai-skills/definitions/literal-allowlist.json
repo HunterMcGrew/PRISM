@@ -259,6 +259,18 @@
 		{
 			"path": ".cursor/spec/adrs/_toolkit/0065-rule-delivery-taxonomy.md",
 			"reason": "platform-copy mirror of ADR-0065"
+		},
+		{
+			"path": "templates/install/.prism/references/operational-gotchas.md",
+			"reason": "Linear MCP sanitizer gotchas are tracker-specific facts, useful verbatim to Linear consumers"
+		},
+		{
+			"path": "templates/install/.prism/references/onboarding/question-flow.md",
+			"reason": "the onboarding question offers Linear as one of the supported ticket systems"
+		},
+		{
+			"path": "templates/install/.prism/architect/onboarding.md",
+			"reason": "documents the Linear team-key gate that only fires for Linear installs"
 		}
 	]
 }

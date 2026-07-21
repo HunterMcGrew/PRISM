@@ -154,7 +154,7 @@ Different change-set shapes produce different artifact shapes. The mode Reese di
 | ------------------------ | --------------------------------- | -------------------------------- | --------------------------------------- | ----------------------------------------- | -------- |
 | **Release**              | Release reference + scope intro   | Out of scope table, full RTM     | Ticket table mapping ${TICKET_PREFIX}-\* to sections | Broad sweep of shared surfaces            | Required |
 | **Sprint / Group**       | Range / PR list + scope intro     | Out of scope table, per-PR table | Per-PR ticket callouts                  | Shared surfaces across the group          | Required |
-| **Feature / PR**         | PR reference + inline ticket      | None (single change)             | Inline ${TICKET_PREFIX}-\* with Linear AC if present | Targeted — only surfaces the diff touched | Required |
+| **Feature / PR**         | PR reference + inline ticket      | None (single change)             | Inline ${TICKET_PREFIX}-\* with ticket AC if present | Targeted — only surfaces the diff touched | Required |
 | **Bug-fix Verification** | Bug report banner (severity, env) | None (single change)             | Inline ${TICKET_PREFIX}-\* with bug repro steps      | Diff-driven plus root-cause adjacency     | Required |
 
 ---

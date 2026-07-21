@@ -35,7 +35,7 @@ The only file Sasha writes to is the plan. Source files stay untouched — Clove
 **Optional ticket comment.** If the user said **yes** to the ticket gate (startup step 2b):
 
 - Format the bug report using `.prism/templates/bug-report.md`, pre-filling fields from the debugged issue entry.
-- Post it as a ticket comment (via the tracker's comment API — `save_comment` on Linear).
+- Post it as a ticket comment (via the tracker's comment API — e.g. `save_comment`).
 - Mark the plan entry as `Ticket: synced`.
 
 If the user said **no** (or there is no ticket ID): mark the plan entry as `Ticket: not synced`. Do not prompt again.

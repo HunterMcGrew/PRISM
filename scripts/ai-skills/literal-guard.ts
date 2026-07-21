@@ -39,11 +39,14 @@ const LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
  * thriving set (`Thrive`/`TracTru`/`THR-`/`thrive.`) plus PRISM's own ticket
  * refs (`PRISM-NNN`) and the migration meta-reference (`de-thriving`). `Sol`,
  * `Iris`, `ADR-NNNN` are deliberately absent — they are legitimate framework
- * content that ships to consumers. Scans the install seed, the tree consumers
- * receive verbatim; allowlisted files (legitimate provenance) are exempt.
+ * content that ships to consumers. `Linear` is included because the install
+ * seed must stay tracker-neutral; files that legitimately name Linear (the
+ * onboarding tracker choice, Linear-specific gotchas) are carried on the
+ * allowlist instead. Scans the install seed, the tree consumers receive
+ * verbatim; allowlisted files (legitimate provenance) are exempt.
  */
 const SEED_DOGFOODING_PATTERN =
-	/(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+|PRISM-[0-9]+|de-thriving)/;
+	/(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+|PRISM-[0-9]+|de-thriving|\bLinear\b)/;
 
 export interface LiteralGuardViolation {
 	relativePath: string;
