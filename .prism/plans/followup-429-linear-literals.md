@@ -118,6 +118,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 
 - 2026-07-21 [main] open: Intent — plan the tracker-neutral sweep of the install surface before the 0.8.0 publish; Bounds — write this plan file only, no code, no branch, no tracker writes, parked staleness question stays parked; Approach — verify the issue's file inventory against the tree, split by mirror class, add the existing seed guard as the recurrence gate · close: scope held
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — implement all 14 plan tasks (sweep the four curated seed twins, fix three canonical nits, extend the literal guard, allowlist the three legitimate-Linear files, regenerate mirrors and bundle); Bounds — plan's task list only, no touch to `checkSeedDrift`/`seed-curation.json`; Approach — follow task sequence A→E exactly, verify each group's grep before moving on · close: scope held — all 14 tasks landed as specified, `pnpm prism:check` exits 0, AC-7 (parked staleness question) confirmed untouched
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — self-review the branch for types, logic, tests, build, and mirror/seed-drift hygiene; Bounds — plan-only edits, no source changes, no PR edits; Approach — diff against `main`, verify every seed-twin edit against the plan's literal instructions, run `pnpm prism:check` plus bundle/build idempotency checks against the branch's actual commit · close: scope held — one Minor wording-drift finding recorded (skills-ecosystem.md L216 seed vs. canonical phrasing), no critical/major issues, all machine-checkable AC pass
 
 ---
 
@@ -168,7 +169,13 @@ None.
 
 ## Review Issues
 
-None yet.
+### Seed twin uses shorter phrasing than canonical for the AC-sync-target table cell
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/skills-ecosystem.md:216`
+- **Problem:** The seed's plan-section-ownership row reads `` `## Acceptance Criteria` → tracker ``, but canonical (`.prism/architect/_toolkit/skills-ecosystem.md:223`, untouched by this branch) reads `` `## Acceptance Criteria` → the ticket tracker ``. Task 1's L216 bullet specified the shorter text directly, which doesn't match the general "take the replacement text verbatim from canonical's wording" instruction it sits under. Since this file is curated (build only checks it exists, never re-mirrors it), the two copies will stay out of sync on this cell indefinitely unless hand-fixed. No functional impact — AC-1's grep still passes and the meaning is unchanged.
+- **Suggested fix:** change `→ tracker` to `→ the ticket tracker` on that line to match canonical exactly.
 
 ---
 
@@ -180,13 +187,13 @@ None.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: —
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (seed-guard Linear + lowercase-easing pair)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-21 (`pnpm prism:check` exits 0; `prism:build` and `prism:bundle` idempotent)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (if applicable — plan not yet closed)
 
 **Last updated:** 2026-07-21
