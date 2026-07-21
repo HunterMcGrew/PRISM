@@ -213,7 +213,7 @@ Each plan section has designated readers and writers. This prevents conflicts an
 | `## Decisions`                    | Winston                                                                | All                                         |
 | `## Implementation Tasks`         | Winston                                                                | Clove                                       |
 | `## Acceptance Criteria`          | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
-| `## Acceptance Criteria` → tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
+| `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
 | AC Sync Log                       | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
 | `## Design`                       | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
 | `## History`                      | All (append-only)                                                      | All                                         |

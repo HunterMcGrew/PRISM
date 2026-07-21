@@ -119,6 +119,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 - 2026-07-21 [main] open: Intent — plan the tracker-neutral sweep of the install surface before the 0.8.0 publish; Bounds — write this plan file only, no code, no branch, no tracker writes, parked staleness question stays parked; Approach — verify the issue's file inventory against the tree, split by mirror class, add the existing seed guard as the recurrence gate · close: scope held
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — implement all 14 plan tasks (sweep the four curated seed twins, fix three canonical nits, extend the literal guard, allowlist the three legitimate-Linear files, regenerate mirrors and bundle); Bounds — plan's task list only, no touch to `checkSeedDrift`/`seed-curation.json`; Approach — follow task sequence A→E exactly, verify each group's grep before moving on · close: scope held — all 14 tasks landed as specified, `pnpm prism:check` exits 0, AC-7 (parked staleness question) confirmed untouched
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — self-review the branch for types, logic, tests, build, and mirror/seed-drift hygiene; Bounds — plan-only edits, no source changes, no PR edits; Approach — diff against `main`, verify every seed-twin edit against the plan's literal instructions, run `pnpm prism:check` plus bundle/build idempotency checks against the branch's actual commit · close: scope held — one Minor wording-drift finding recorded (skills-ecosystem.md L216 seed vs. canonical phrasing), no critical/major issues, all machine-checkable AC pass
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — fix Briar's one open Minor review finding (seed vs. canonical wording drift at skills-ecosystem.md:216) and re-verify; Bounds — the single named finding only, no other source edits, no re-litigating the AC-1 scope; Approach — hand-edit the curated seed cell to match canonical verbatim, re-run `pnpm prism:check`, mark the finding fixed · close: scope held — one-line wording fix applied, `pnpm prism:check` exits 0, no other files touched
 
 ---
 
@@ -126,6 +127,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 
 - 2026-07-21 [main]: Plan created — enumerated the install-surface `Linear` literals against the tree, split them into curated-seed drift / canonical-side nits / legitimate-Linear allowlist entries, and scoped the recurrence guard; see Decision: "Scope is the four curated seed twins, not the eleven files the issue names."
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Implemented all 14 tasks — swept the four curated seed twins to zero `Linear` literals, fixed the three canonical-side nits (`writing-voice.md`, `pattern-vocabulary.md`, `closeout.md`), added `Linear` to `SEED_DOGFOODING_PATTERN`, allowlisted the three legitimate-Linear files, added the guard test pair, dropped `Linear` from `AGENTS.md.tmpl`. Regenerated mirrors (`pnpm prism:build`, idempotent on a second run) and the CLI bundle (`pnpm prism:bundle`, stable on rebuild). `pnpm prism:check` exits 0.
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Fixed Briar's Minor review finding — `templates/install/.prism/architect/_toolkit/skills-ecosystem.md:216` now reads `` `## Acceptance Criteria` → the ticket tracker `` to match canonical verbatim. `pnpm prism:check` re-run exits 0.
 
 ---
 
@@ -172,10 +174,11 @@ None.
 ### Seed twin uses shorter phrasing than canonical for the AC-sync-target table cell
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/architect/_toolkit/skills-ecosystem.md:216`
 - **Problem:** The seed's plan-section-ownership row reads `` `## Acceptance Criteria` → tracker ``, but canonical (`.prism/architect/_toolkit/skills-ecosystem.md:223`, untouched by this branch) reads `` `## Acceptance Criteria` → the ticket tracker ``. Task 1's L216 bullet specified the shorter text directly, which doesn't match the general "take the replacement text verbatim from canonical's wording" instruction it sits under. Since this file is curated (build only checks it exists, never re-mirrors it), the two copies will stay out of sync on this cell indefinitely unless hand-fixed. No functional impact — AC-1's grep still passes and the meaning is unchanged.
 - **Suggested fix:** change `→ tracker` to `→ the ticket tracker` on that line to match canonical exactly.
+- **Fixed in:** [huntermcgrew/prism-429-linear-literals] — changed the L216 cell to `` `## Acceptance Criteria` → the ticket tracker `` verbatim. `pnpm prism:check` re-run exits 0; `grep -c Linear` on the file still returns 0.
 
 ---
 
@@ -193,6 +196,7 @@ None.
 - [x] Tests written for new logic and edge cases (seed-guard Linear + lowercase-easing pair)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-07-21 (`pnpm prism:check` exits 0; `prism:build` and `prism:bundle` idempotent)
+- [x] All review issues resolved (no `open` entries)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable — plan not yet closed)
 
