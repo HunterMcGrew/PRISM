@@ -1,5 +1,8 @@
 # Plan: followup-429-linear-literals
 
+> Closed: 2026-07-21
+> Retro: ticket-grain lightweight fidelity check passed — plan AC ↔ merged diff match (AC-1 grep clean on all five swept files, AC-7 parked question untouched), `prism-check` green on both platforms, self-review reached a pass-2 zero-findings state; no Iris dispatch at this grain.
+
 ## Ticket
 
 [#429 — templates/install/ seed twins still carry hardcoded Linear literals](https://github.com/HunterMcGrew/PRISM/issues/429)
@@ -106,11 +109,17 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
   - **Alternatives considered:** (a) sweep all eleven files to zero `Linear`; (b) sweep only the four and leave the rest.
   - **Chosen approach:** sweep the four as seed-twin drift, fix three canonical-side wording nits separately (tasks 5–7), and allowlist the three files where `Linear` is a true statement about a supported tracker. Blanket-genericizing the operational-gotchas file would delete real, useful, Linear-specific guidance from Linear consumers to satisfy a string count.
   - **Implementation guidance:** the seed twins carry deliberate curation edits beyond the Linear wording (ADR cross-references stripped to satisfy the install-adr-gate in `crossref-lint.ts`, PRISM-self-references removed). Copy canonical's replacement *phrase*, not canonical's *line*.
+  - → no promotion needed (ticket-tactical scoping of this specific sweep — the mirror-class split is derived from the tree at plan time, not a durable rule).
 - **Add `Linear` to the existing seed literal guard rather than leaving the done condition to a one-time eyeball.** `runConsumerSeedLiteralGuard` already scans `templates/install/.prism` on every `prism:build` and already has an allowlist with per-file reasons. Extending its pattern is roughly fifteen lines and converts the acceptance criterion from "someone grepped once" into a permanent CI gate. Considered and rejected: leaving the guard out to keep the ticket purely mechanical — rejected because a sweep with no gate re-rots the next time canonical moves and a curated seed doesn't follow, which is precisely how this ticket came to exist.
+  - → promoted to `.prism/architect/_toolkit/install-layout.md` § Seed dogfooding-literal canary — the guard's matched-set now names hardcoded tracker literals (`Linear`) alongside origin-project and PRISM-ticket literals, with the word-bounded/case-sensitive behavior and the allowlist-as-source-of-truth. This is a going-forward property of the seed guard, not a one-ticket fact.
 - **The guard change does not touch the parked staleness-signal question.** That question is whether *byte-parity* is the right drift signal for curated seeds, given they diverge from canonical by design. The literal guard is content-based, not parity-based: it asserts a property of the seed's own text without any reference to canonical. Adding a forbidden literal neither answers nor forecloses the parity question.
+  - → no promotion needed (scope-boundary clarification for this ticket; the parked parity question is tracked separately and stays parked).
 - **The literal guard's scope stops at `templates/install/.prism`, so `AGENTS.md.tmpl` is swept by hand.** `build.ts` calls `runConsumerSeedLiteralGuard(repoRoot, templatesContentRoot)` with the `.prism` subtree only; the guard's scan engine walks directory roots, so adding a single loose file is not a one-line change. Widening it is real follow-up work, not part of this sweep — recorded as a signal.
+  - → no promotion needed (names a known guard-coverage gap, not a design to codify; surfaced as follow-up work for a future ticket that widens the guard to loose seed files like `AGENTS.md.tmpl`).
 - **`pattern-vocabulary.md` is fixed by lowercasing, not by allowlisting.** `Linear for progress indicators only` is the CSS timing function. Allowlisting the whole file would exempt it from every future tracker-literal check for a reason that has nothing to do with ticketing; `Use linear easing for progress indicators only` reads better and removes the collision at the source.
+  - → no promotion needed (ticket-tactical fix rationale; the general word-bounded/case-sensitive behavior that makes lowercase `linear` pass is captured in the promoted install-layout.md text).
 - **Every generated mirror is regenerated with `pnpm prism:build` and never hand-edited.** This sweep touches a tier-1 rule (`writing-voice.md`), two `references/` files, and a bundled script, so the build regenerates `templates/install/.prism/` mirrors for the non-curated files, the `.claude/` / `.codex/` / `.cursor/` platform copies, and the tier-1 block inside `AGENTS.md`. `dist/cli.js` is tracked and is regenerated with `pnpm prism:bundle`.
+  - → no promotion needed (already codified in `.prism/architect/_toolkit/install-layout.md` — the `writeSeedMirror()` / curated-copy model and the never-hand-edit-mirrors rule are established there; this entry restates the established convention).
 
 ---
 
@@ -121,6 +130,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — self-review the branch for types, logic, tests, build, and mirror/seed-drift hygiene; Bounds — plan-only edits, no source changes, no PR edits; Approach — diff against `main`, verify every seed-twin edit against the plan's literal instructions, run `pnpm prism:check` plus bundle/build idempotency checks against the branch's actual commit · close: scope held — one Minor wording-drift finding recorded (skills-ecosystem.md L216 seed vs. canonical phrasing), no critical/major issues, all machine-checkable AC pass
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — fix Briar's one open Minor review finding (seed vs. canonical wording drift at skills-ecosystem.md:216) and re-verify; Bounds — the single named finding only, no other source edits, no re-litigating the AC-1 scope; Approach — hand-edit the curated seed cell to match canonical verbatim, re-run `pnpm prism:check`, mark the finding fixed · close: scope held — one-line wording fix applied, `pnpm prism:check` exits 0, no other files touched
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — pass 2 self-review, confirm the ddd5cea fix resolved the only pass-1 finding and no new issue was introduced; Bounds — diff-only re-review against all 14 tasks and AC-1–7, no source edits, plan-only commit; Approach — re-verify the L216 cell against canonical byte-for-byte, re-run `pnpm prism:check`, confirm a second `pnpm prism:build`/`pnpm prism:bundle` produce no diff, re-run every AC's grep · close: scope held — zero findings, fix confirmed correct, all AC re-verified by direct command
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — run the plan close ceremony on the final PR branch (reflect, promote decisions, verdict gate, mark closed); Bounds — plan bookkeeping plus the one promotion edit to `install-layout.md`, no source/behavior changes, no merge, no draft flip; Approach — ticket-grain fidelity check (AC ↔ diff, CI, self-review), promote the recurrence guard, `prism:build` to remirror the promotion, `prism:check` green before push · close: scope held — one architect-doc promotion landed, mirrors regenerated, `prism:check` exits 0, plan marked closed
 
 ---
 
@@ -129,6 +139,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 - 2026-07-21 [main]: Plan created — enumerated the install-surface `Linear` literals against the tree, split them into curated-seed drift / canonical-side nits / legitimate-Linear allowlist entries, and scoped the recurrence guard; see Decision: "Scope is the four curated seed twins, not the eleven files the issue names."
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Implemented all 14 tasks — swept the four curated seed twins to zero `Linear` literals, fixed the three canonical-side nits (`writing-voice.md`, `pattern-vocabulary.md`, `closeout.md`), added `Linear` to `SEED_DOGFOODING_PATTERN`, allowlisted the three legitimate-Linear files, added the guard test pair, dropped `Linear` from `AGENTS.md.tmpl`. Regenerated mirrors (`pnpm prism:build`, idempotent on a second run) and the CLI bundle (`pnpm prism:bundle`, stable on rebuild). `pnpm prism:check` exits 0.
 - 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Fixed Briar's Minor review finding — `templates/install/.prism/architect/_toolkit/skills-ecosystem.md:216` now reads `` `## Acceptance Criteria` → the ticket tracker `` to match canonical verbatim. `pnpm prism:check` re-run exits 0.
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals]: Plan closed on the final PR branch (#433). Reflect (ticket grain) passed — AC ↔ merged diff match, `prism-check` green on both platforms, self-review pass-2 clean. Promoted the recurrence guard to `install-layout.md` § Seed dogfooding-literal canary (tracker literals now part of the documented matched-set); remaining Decisions carry `no promotion needed` verdicts. `pnpm prism:check` exits 0 after remirroring.
 
 ---
 
@@ -201,6 +212,6 @@ None.
 - [x] Build passes — last run: 2026-07-21 (`pnpm prism:check` exits 0; `prism:build` and `prism:bundle` idempotent)
 - [x] All review issues resolved (no `open` entries)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable — plan not yet closed)
+- [x] Lasting decisions promoted to architect context — recurrence guard promoted to `install-layout.md` § Seed dogfooding-literal canary at close
 
 **Last updated:** 2026-07-21
