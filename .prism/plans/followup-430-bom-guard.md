@@ -168,6 +168,7 @@ None. `grep` across the repo found no doc, rule, or architect-context file descr
 - 2026-07-21 [main] open: Intent — plan the whole-buffer widening of `bom-guard.ts` plus trailing-BOM fixtures before the next npm publish; Bounds — write this plan file only, no code, no branch, no tracker writes; Approach — read the guard, its tests, and its one consumer, then specify exact edits · close: scope held
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — implement the plan's whole-buffer BOM scan, offset reporting, and trailing/mid-file/multi-occurrence test fixtures exactly as specified; Bounds — the three named files only (`bom-guard.ts`, `build.ts` lines 987–996, `bom-guard.test.ts`), no scope beyond the plan's four tasks; Approach — apply each edit verbatim against the plan's exact replacements, verify after each task per the plan's sequencing · close: scope held
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — self-review the branch's diff against this plan (types, logic, tests, build); Bounds — read-only review, record findings in this plan, no code changes; Approach — diff-only read of the three changed files, manually trace the offset-scan loop against the new test fixtures, run typecheck/test/full-gate in an isolated worktree at the branch tip · close: scope held — types, tests (537/537, 1 pre-existing skip), and `pnpm run prism:check` all pass clean on the branch tip; no findings
+- 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — fix Eric's two PR #432 Minors (redundant loop bound, hardcoded test offsets) exactly as he proposed; Bounds — `bom-guard.ts`'s scan loop and the three new test fixtures in `bom-guard.test.ts` only, no scope beyond the two findings; Approach — apply Eric's suggested diffs verbatim, re-run the full gate · close: scope held — both Minors fixed per Eric's proposed diffs, `pnpm run prism:check-types`, the bom-guard test file (10/10), and `pnpm run prism:check` (full gate) all exit 0
 
 ---
 
@@ -176,6 +177,7 @@ None. `grep` across the repo found no doc, rule, or architect-context file descr
 - 2026-07-21 [main]: Winston wrote the implementation plan for issue #430 (whole-buffer BOM scan + offset reporting + trailing/mid-file/multi-occurrence fixtures). No code written.
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Implemented all four plan tasks — widened `bom-guard.ts` to a whole-buffer `indexOf` scan with `byteOffsets: number[]` on `BomGuardViolation`, updated `build.ts`'s error output to print offsets, and added trailing/mid-file/multi-occurrence test fixtures plus a tightened offset assertion on the existing leading-BOM test. `pnpm run prism:check` exits 0 with no violations on the live tree.
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Briar self-reviewed the branch — clean pass, no findings. Verified independently in an isolated worktree at the branch tip: `pnpm run prism:check-types`, `pnpm run prism:test` (537/537, 1 pre-existing skip), and `pnpm run prism:check` (full gate) all exit 0.
+- 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Fixed Eric's two PR #432 Minors — simplified the BOM scan loop to a single `indexOf` exit condition, and derived the three new test fixtures' expected byte offsets from prefix/body buffer lengths instead of hardcoded numbers. `pnpm run prism:check` exits 0.
 
 ---
 
@@ -188,6 +190,22 @@ None.
 ## Review Issues
 
 No issues found — 2026-07-21
+
+### Redundant loop bound in the BOM scan
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/bom-guard.ts:70-76`
+- **Problem:** the `while` loop carried two exit conditions (`searchFrom <= contents.length - UTF8_BOM.length` and `indexOf` returning `-1`) where `indexOf` already covers both cases, leaving a spare bound that could drift from the `searchFrom` advance.
+- **Suggested fix:** drop the length bound; loop on `indexOf`'s `-1` alone, per Eric's PR #432 review comment.
+
+### Hardcoded byte offsets in new BOM test fixtures
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/bom-guard.test.ts:170-199`
+- **Problem:** the trailing-BOM, mid-file-BOM, and multi-occurrence tests asserted on hardcoded byte offsets (`31`, `7`, `[0, 8]`) pinned to string literals a few lines above; editing the literal would fail the assertion with an offset mismatch instead of a legible signal.
+- **Suggested fix:** derive each expected offset from the prefix/body buffer's `.length`, per Eric's PR #432 review comment and the plan's own task 3c note anticipating this.
 
 ---
 

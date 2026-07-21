@@ -68,17 +68,11 @@ async function walk(
 
 		const contents = await fs.readFile(entryPath);
 		const byteOffsets: number[] = [];
-		let searchFrom = 0;
+		let found = contents.indexOf(UTF8_BOM);
 
-		while (searchFrom <= contents.length - UTF8_BOM.length) {
-			const found = contents.indexOf(UTF8_BOM, searchFrom);
-
-			if (found === -1) {
-				break;
-			}
-
+		while (found !== -1) {
 			byteOffsets.push(found);
-			searchFrom = found + UTF8_BOM.length;
+			found = contents.indexOf(UTF8_BOM, found + UTF8_BOM.length);
 		}
 
 		if (byteOffsets.length > 0) {

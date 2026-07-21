@@ -160,48 +160,40 @@ test("bom guard reports all BOM-bearing files, not just the first", async () => 
 
 test("bom guard flags a markdown file with a trailing UTF-8 BOM", async () => {
 	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
-		const bomContent = Buffer.concat([
-			Buffer.from("<!-- AUTO-GENERATED -->\nHello.\n", "utf8"),
-			UTF8_BOM,
-		]);
+		const prefix = Buffer.from("<!-- AUTO-GENERATED -->\nHello.\n", "utf8");
+		const bomContent = Buffer.concat([prefix, UTF8_BOM]);
 		await writeSource(aiSkillsRoot, "skills/prism-x/shared.md", bomContent);
 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 1);
 		assert.match(violations[0].relativePath, /shared\.md$/);
-		assert.deepEqual(violations[0].byteOffsets, [31]);
+		assert.deepEqual(violations[0].byteOffsets, [prefix.length]);
 	});
 });
 
 test("bom guard flags a UTF-8 BOM embedded mid-file", async () => {
 	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
-		const bomContent = Buffer.concat([
-			Buffer.from('{"a":1,', "utf8"),
-			UTF8_BOM,
-			Buffer.from('"b":2}\n', "utf8"),
-		]);
+		const prefix = Buffer.from('{"a":1,', "utf8");
+		const bomContent = Buffer.concat([prefix, UTF8_BOM, Buffer.from('"b":2}\n', "utf8")]);
 		await writeSource(aiSkillsRoot, "definitions/example.json", bomContent);
 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 1);
-		assert.deepEqual(violations[0].byteOffsets, [7]);
+		assert.deepEqual(violations[0].byteOffsets, [prefix.length]);
 	});
 });
 
 test("bom guard reports every BOM occurrence in a single file", async () => {
 	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
-		const bomContent = Buffer.concat([
-			UTF8_BOM,
-			Buffer.from("body\n", "utf8"),
-			UTF8_BOM,
-		]);
+		const body = Buffer.from("body\n", "utf8");
+		const bomContent = Buffer.concat([UTF8_BOM, body, UTF8_BOM]);
 		await writeSource(aiSkillsRoot, "skills/prism-x/shared.md", bomContent);
 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 1);
-		assert.deepEqual(violations[0].byteOffsets, [0, 8]);
+		assert.deepEqual(violations[0].byteOffsets, [0, UTF8_BOM.length + body.length]);
 	});
 });
