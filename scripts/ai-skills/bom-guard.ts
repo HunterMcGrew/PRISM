@@ -1,10 +1,12 @@
 /**
- * Build-time UTF-8 BOM guard: fails when any canonical source file begins
- * with a UTF-8 BOM (0xEF 0xBB 0xBF). Catches the recurring defect where an
- * editor saves a canonical `.ai-skills/**` file as "UTF-8 with BOM", which
- * corrupts the `<!-- atlas:specializes-in -->` anchor substitution on the
- * four core personas and breaks direct Unix shebang execution on generated
- * hooks (the kernel sees `\xEF\xBB\xBF#!`, not `#!`).
+ * Build-time UTF-8 BOM guard: fails when any canonical source file contains
+ * a UTF-8 BOM (0xEF 0xBB 0xBF) at any byte offset. Catches the recurring
+ * defect where an editor saves a canonical `.ai-skills/**` file as "UTF-8
+ * with BOM", which corrupts the `<!-- atlas:specializes-in -->` anchor
+ * substitution on the four core personas and breaks direct Unix shebang
+ * execution on generated hooks (the kernel sees `\xEF\xBB\xBF#!`, not `#!`).
+ * A trailing or embedded BOM is as damaging as a leading one and shipped to
+ * npm in 0.7.3 under the older leading-bytes-only check — see issue #430.
  *
  * Scope is canonical source files only — `.ai-skills` tree (`.md`, `.mjs`, `.json`).
  * Generated platform outputs (.claude/, .cursor/, .codex/, templates/) are
@@ -19,6 +21,8 @@ const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 
 export interface BomGuardViolation {
 	relativePath: string;
+	/** Byte offsets of every UTF-8 BOM occurrence in the file, ascending. Offset 0 is a leading BOM. */
+	byteOffsets: number[];
 }
 
 const CANONICAL_SOURCE_EXTENSIONS = new Set([".md", ".mjs", ".json"]);
@@ -62,27 +66,29 @@ async function walk(
 			continue;
 		}
 
-		const handle = await fs.open(entryPath, "r");
+		const contents = await fs.readFile(entryPath);
+		const byteOffsets: number[] = [];
+		let found = contents.indexOf(UTF8_BOM);
 
-		try {
-			const headerBuf = Buffer.alloc(3);
-			await handle.read(headerBuf, 0, 3, 0);
+		while (found !== -1) {
+			byteOffsets.push(found);
+			found = contents.indexOf(UTF8_BOM, found + UTF8_BOM.length);
+		}
 
-			if (headerBuf.equals(UTF8_BOM)) {
-				violations.push({
-					relativePath: path.relative(repoRoot, entryPath).split(path.sep).join("/"),
-				});
-			}
-		} finally {
-			await handle.close();
+		if (byteOffsets.length > 0) {
+			violations.push({
+				relativePath: path.relative(repoRoot, entryPath).split(path.sep).join("/"),
+				byteOffsets,
+			});
 		}
 	}
 }
 
 /**
  * Scans all `.md`, `.mjs`, and `.json` files under `.ai-skills/` for a
- * leading UTF-8 BOM. Returns one violation per affected file. An empty array
- * means the canonical surface is BOM-free.
+ * UTF-8 BOM at any byte offset. Returns one violation per affected file,
+ * carrying every occurrence's offset. An empty array means the canonical
+ * surface is BOM-free.
  */
 export async function runBomGuard(repoRoot: string): Promise<BomGuardViolation[]> {
 	const aiSkillsRoot = path.join(repoRoot, ".ai-skills");
