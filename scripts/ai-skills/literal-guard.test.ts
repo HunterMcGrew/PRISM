@@ -142,12 +142,23 @@ test("seed literal guard flags the de-thriving meta-reference", async () => {
 	});
 });
 
+test("seed literal guard flags a hardcoded Linear literal", async () => {
+	await withTempRoot(async (repoRoot, platformRoot) => {
+		await writeOutput(platformRoot, "architect/foo.md", "Synced AC to Linear ticket.\n");
+
+		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);
+
+		assert.equal(violations.length, 1);
+		assert.equal(violations[0].match, "Linear");
+	});
+});
+
 test("seed literal guard allows legitimate framework references (Sol, Iris, ADR-NNNN)", async () => {
 	await withTempRoot(async (repoRoot, platformRoot) => {
 		await writeOutput(
 			platformRoot,
 			"architect/foo.md",
-			"Sol dispatches Iris per ADR-0047.\n"
+			"Sol dispatches Iris per ADR-0047. Use linear easing for progress indicators only.\n"
 		);
 
 		const violations = await runConsumerSeedLiteralGuard(repoRoot, platformRoot);

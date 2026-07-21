@@ -903,7 +903,7 @@ import fs7 from "node:fs/promises";
 import path9 from "node:path";
 var LITERAL_GUARD_PATTERN = /(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+)/;
 var LEFTOVER_TOKEN_PATTERN = /\$\{[A-Z][A-Z0-9_]*\}/;
-var SEED_DOGFOODING_PATTERN = /(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+|PRISM-[0-9]+|de-thriving)/;
+var SEED_DOGFOODING_PATTERN = /(Thrive|tractru|TracTru\/thrive|THR-[0-9A-Z#*\\]+|thrive\.[a-zA-Z]+|PRISM-[0-9]+|de-thriving|\bLinear\b)/;
 async function listFilesRecursively(rootPath, currentPath = rootPath) {
   const out = [];
   const entries = await fs7.readdir(currentPath, { withFileTypes: true });
