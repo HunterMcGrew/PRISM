@@ -117,7 +117,7 @@ None. The sweep changes agent-facing spec prose, not user-facing feature docs, a
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — plan the tracker-neutral sweep of the install surface before the 0.8.0 publish; Bounds — write this plan file only, no code, no branch, no tracker writes, parked staleness question stays parked; Approach — verify the issue's file inventory against the tree, split by mirror class, add the existing seed guard as the recurrence gate · close: scope held
-- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — implement all 14 plan tasks (sweep the four curated seed twins, fix three canonical nits, extend the literal guard, allowlist the three legitimate-Linear files, regenerate mirrors and bundle); Bounds — plan's task list only, no touch to `checkSeedDrift`/`seed-curation.json`; Approach — follow task sequence A→E exactly, verify each group's grep before moving on · close: scope held
+- 2026-07-21 [huntermcgrew/prism-429-linear-literals] open: Intent — implement all 14 plan tasks (sweep the four curated seed twins, fix three canonical nits, extend the literal guard, allowlist the three legitimate-Linear files, regenerate mirrors and bundle); Bounds — plan's task list only, no touch to `checkSeedDrift`/`seed-curation.json`; Approach — follow task sequence A→E exactly, verify each group's grep before moving on · close: scope held — all 14 tasks landed as specified, `pnpm prism:check` exits 0, AC-7 (parked staleness question) confirmed untouched
 
 ---
 
