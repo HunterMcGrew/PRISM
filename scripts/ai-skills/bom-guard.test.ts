@@ -1,8 +1,8 @@
 /**
  * Regression suite for the build-time UTF-8 BOM guard.
  *
- * `runBomGuard` scans the `.ai-skills` tree (`.md`, `.mjs`, `.json`) for files that begin
- * with a UTF-8 BOM (0xEF 0xBB 0xBF). BOM-bearing canonical sources break the
+ * `runBomGuard` scans the `.ai-skills` tree (`.md`, `.mjs`, `.json`) for files containing
+ * a UTF-8 BOM (0xEF 0xBB 0xBF) at any byte offset. BOM-bearing canonical sources break the
  * `<!-- atlas:specializes-in -->` anchor substitution and corrupt `.mjs` shebangs
  * on Unix. The guard converts this recurring manual Eric catch into a build-time failure.
  */
@@ -54,6 +54,7 @@ test("bom guard flags a markdown file with a leading UTF-8 BOM", async () => {
 
 		assert.equal(violations.length, 1);
 		assert.match(violations[0].relativePath, /shared\.md$/);
+		assert.deepEqual(violations[0].byteOffsets, [0]);
 	});
 });
 
@@ -154,5 +155,53 @@ test("bom guard reports all BOM-bearing files, not just the first", async () => 
 		const violations = await runBomGuard(repoRoot);
 
 		assert.equal(violations.length, 2);
+	});
+});
+
+test("bom guard flags a markdown file with a trailing UTF-8 BOM", async () => {
+	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
+		const bomContent = Buffer.concat([
+			Buffer.from("<!-- AUTO-GENERATED -->\nHello.\n", "utf8"),
+			UTF8_BOM,
+		]);
+		await writeSource(aiSkillsRoot, "skills/prism-x/shared.md", bomContent);
+
+		const violations = await runBomGuard(repoRoot);
+
+		assert.equal(violations.length, 1);
+		assert.match(violations[0].relativePath, /shared\.md$/);
+		assert.deepEqual(violations[0].byteOffsets, [31]);
+	});
+});
+
+test("bom guard flags a UTF-8 BOM embedded mid-file", async () => {
+	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
+		const bomContent = Buffer.concat([
+			Buffer.from('{"a":1,', "utf8"),
+			UTF8_BOM,
+			Buffer.from('"b":2}\n', "utf8"),
+		]);
+		await writeSource(aiSkillsRoot, "definitions/example.json", bomContent);
+
+		const violations = await runBomGuard(repoRoot);
+
+		assert.equal(violations.length, 1);
+		assert.deepEqual(violations[0].byteOffsets, [7]);
+	});
+});
+
+test("bom guard reports every BOM occurrence in a single file", async () => {
+	await withTempRepo(async (repoRoot, aiSkillsRoot) => {
+		const bomContent = Buffer.concat([
+			UTF8_BOM,
+			Buffer.from("body\n", "utf8"),
+			UTF8_BOM,
+		]);
+		await writeSource(aiSkillsRoot, "skills/prism-x/shared.md", bomContent);
+
+		const violations = await runBomGuard(repoRoot);
+
+		assert.equal(violations.length, 1);
+		assert.deepEqual(violations[0].byteOffsets, [0, 8]);
 	});
 });

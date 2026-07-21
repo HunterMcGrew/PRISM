@@ -987,10 +987,12 @@ async function main(): Promise<void> {
 	const bomViolations = await runBomGuard(repoRoot);
 	if (bomViolations.length > 0) {
 		for (const violation of bomViolations) {
-			console.error(`bom-guard: ${violation.relativePath}: UTF-8 BOM detected`);
+			console.error(
+				`bom-guard: ${violation.relativePath}: UTF-8 BOM detected at byte offset(s) ${violation.byteOffsets.join(", ")}`
+			);
 		}
 		console.error(
-			`bom-guard: ${bomViolations.length} canonical source file(s) begin with a UTF-8 BOM. Re-save as UTF-8 without BOM.`
+			`bom-guard: ${bomViolations.length} canonical source file(s) contain a UTF-8 BOM. Re-save as UTF-8 without BOM.`
 		);
 		process.exit(1);
 	}
