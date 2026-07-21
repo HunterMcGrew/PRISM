@@ -1,5 +1,8 @@
 # Plan: followup-430-bom-guard
 
+> Closed: 2026-07-21
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline at close (AC-1 through AC-7 all hold against branch tip `6d75996`, CI green on ubuntu and windows, Briar clean and Eric clean on round 2), so no separate Iris report was warranted.
+
 ## Ticket
 
 GitHub issue [#430](https://github.com/HunterMcGrew/PRISM/issues/430) — "bom-guard.ts only checks leading bytes — blind to trailing-BOM contamination class"
@@ -169,6 +172,7 @@ None. `grep` across the repo found no doc, rule, or architect-context file descr
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — implement the plan's whole-buffer BOM scan, offset reporting, and trailing/mid-file/multi-occurrence test fixtures exactly as specified; Bounds — the three named files only (`bom-guard.ts`, `build.ts` lines 987–996, `bom-guard.test.ts`), no scope beyond the plan's four tasks; Approach — apply each edit verbatim against the plan's exact replacements, verify after each task per the plan's sequencing · close: scope held
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — self-review the branch's diff against this plan (types, logic, tests, build); Bounds — read-only review, record findings in this plan, no code changes; Approach — diff-only read of the three changed files, manually trace the offset-scan loop against the new test fixtures, run typecheck/test/full-gate in an isolated worktree at the branch tip · close: scope held — types, tests (537/537, 1 pre-existing skip), and `pnpm run prism:check` all pass clean on the branch tip; no findings
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — fix Eric's two PR #432 Minors (redundant loop bound, hardcoded test offsets) exactly as he proposed; Bounds — `bom-guard.ts`'s scan loop and the three new test fixtures in `bom-guard.test.ts` only, no scope beyond the two findings; Approach — apply Eric's suggested diffs verbatim, re-run the full gate · close: scope held — both Minors fixed per Eric's proposed diffs, `pnpm run prism:check-types`, the bom-guard test file (10/10), and `pnpm run prism:check` (full gate) all exit 0
+- 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer] open: Intent — run the plan close ceremony on the final PR branch (reflect, promote, verdict gate, mark closed); Bounds — this plan file only, no source or architect edits unless a Decision genuinely warrants promotion, no merge and no draft flip; Approach — verify AC against the branch tip and CI rather than trusting checkboxes, grep the durable surface for any stale scan-window claim, then write the close · close: scope held — plan file was the only edit; no promotion warranted, so no architect doc moved and no `pnpm prism:build` run was needed
 
 ---
 
@@ -178,6 +182,7 @@ None. `grep` across the repo found no doc, rule, or architect-context file descr
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Implemented all four plan tasks — widened `bom-guard.ts` to a whole-buffer `indexOf` scan with `byteOffsets: number[]` on `BomGuardViolation`, updated `build.ts`'s error output to print offsets, and added trailing/mid-file/multi-occurrence test fixtures plus a tightened offset assertion on the existing leading-BOM test. `pnpm run prism:check` exits 0 with no violations on the live tree.
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Briar self-reviewed the branch — clean pass, no findings. Verified independently in an isolated worktree at the branch tip: `pnpm run prism:check-types`, `pnpm run prism:test` (537/537, 1 pre-existing skip), and `pnpm run prism:check` (full gate) all exit 0.
 - 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Fixed Eric's two PR #432 Minors — simplified the BOM scan loop to a single `indexOf` exit condition, and derived the three new test fixtures' expected byte offsets from prefix/body buffer lengths instead of hardcoded numbers. `pnpm run prism:check` exits 0.
+- 2026-07-21 [huntermcgrew/prism-430-bom-guard-whole-buffer]: Winston ran the plan close on the final PR branch — charter-fidelity check passed (all seven AC hold against tip `6d75996`, CI green both platforms, both review rungs clean), and no Decision warranted promotion since no architect doc, rule, or ADR describes the guard's scan window. Shipped code diverges from task 1b's literal loop text because Eric's Minor simplified it after the fact; the deviation is recorded under `## Review Issues` and the shipped shape is the better one.
 
 ---
 
