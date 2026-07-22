@@ -200,6 +200,7 @@ Ordered; each names file, change, verification. Gated behind #427+#428 tasks 11�
 - 2026-07-22 [huntermcgrew/prism-completeness-check]: Implemented all five Clove tasks — `phaseLog` added to `lib/goal-state.md`'s v2 lane schema, the conscious-skip authoring note added to `step-04-dispatch.md`, the close-time completeness check added to `step-05-route.md`, the phase-coverage-gap report line added to `step-10-report.md`, and the drift-guard gate test added at `scripts/ai-skills/phase-completeness-gate.test.ts`. `pnpm prism:check` passes; no `.claude/` mirror churn (all edits are under the unmirrored `.prism/skills/prism-conductor/**`). See Decisions for one prose reconciliation the task list didn't anticipate.
 - 2026-07-22 [huntermcgrew/prism-completeness-check]: Reese AC-verification first pass — machine 2 MET / 0 UNMET / 0 UNGRADEABLE (AC-RC-3, AC-RC-5); AC-RC-1/2/4 human-tagged, awaiting doc-inspection sign-off at the merge gate. Report: `.prism/qa/ac-verification-eval-runtime-completeness-check.md`.
 - 2026-07-22 [huntermcgrew/prism-completeness-check]: Briar first-pass self-review — mechanical gates all green (`prism:check-types`, `prism:crossref-lint`, `prism:test` 551/551, `prism:build`/`prism:check` with no `.claude/` mirror churn), all five task-level verification greps confirmed, all citations (step-07-budgets.md, § Mutate protocol, § Tree dispatch) resolve. One Minor finding: `phaseLog`'s phase enum has no parity test against step-04's canonical chain. See `## Review Issues` and `## PR Readiness`.
+- 2026-07-22 [huntermcgrew/prism-completeness-check]: Fixed Briar's one open Minor — added a `phaseLog`-vs-canonical-chain `deepEqual` test to `phase-chain-parity.test.ts`, verified it fails naming the missing phase when `qa` is dropped from the schema enum (the 2026-07-21 defect signature), then restored. `pnpm prism:check` exits 0, no mirror churn.
 
 ## Review Issues
 
@@ -208,10 +209,11 @@ Add entries here via the code-review-self or code-review-pr skills. Briar (self-
 ### phaseLog's phase enum has no parity test against the canonical six-phase chain
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/lib/goal-state.md:37`
 - **Problem:** `phaseLog[].phase`'s six-value enum (`implement | ac-verify | self-review | pr-review | qa | docs`) is hand-typed to match step-04's canonical chain, but unlike `currentPhase` — whose enum `phase-chain-parity.test.ts` asserts is a contiguous, same-order subsequence of that same chain — nothing asserts `phaseLog`'s enum stays in sync if the six-phase chain ever changes. Today the two lists match exactly; a future edit to one could silently leave the other stale, with no test catching it — the exact defect class this whole ticket exists to guard against, just one level down (the schema doc, not the routing prose).
 - **Suggested fix:** add one assertion to `phase-chain-parity.test.ts` (or `phase-completeness-gate.test.ts`) comparing `phaseLog`'s phase enum values against step-04's canonical chain, mirroring the existing `currentPhase` parity check. Non-blocking — safe as a same-scope follow-up PR per `followup-scope.md` (same file family, same defect class, small).
+- **Fixed in:** added `lib/goal-state.md: phaseLog's phase enum matches the canonical lane phase chain exactly` to `phase-chain-parity.test.ts`, parsing the fenced phase-chain block from `step-04-dispatch.md` and asserting a `deepEqual` against `phaseLog`'s embedded phase enum in `lib/goal-state.md`. Verified the assertion is load-bearing by temporarily dropping `qa` from the schema's enum (the exact 2026-07-21 wave-1 defect signature) — the new test failed naming the missing phase; restored and re-ran clean. `pnpm prism:check` exits 0 (552 tests, 551 pass, 1 pre-existing unrelated skip); no `.claude/` mirror churn.
 
 ## PR Readiness
 
@@ -220,9 +222,9 @@ Living checklist — updated every time `code-review-self` runs.
 - [x] No critical or major issues
 - [x] Types correct — `pnpm run prism:check-types` clean (build-script scope only; the `.prism/` markdown surface carries no TypeScript)
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — new gate test covers the step-05/step-10 two-tier split (AC-RC-3/AC-RC-5 MET per Reese's AC-verification pass); one Minor gap open above (`phaseLog` enum has no parity test)
+- [x] Tests written for new logic and edge cases — new gate test covers the step-05/step-10 two-tier split (AC-RC-3/AC-RC-5 MET per Reese's AC-verification pass); the one open Minor (`phaseLog` enum parity) is now fixed
 - [x] All debugged issues resolved (no `open` entries) — this plan has no `## Debugged Issues` section; none were opened during implementation
-- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:build` clean, `pnpm run prism:check` exit 0, `git status --short` empty after both — no `.claude/` mirror churn)
+- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:check` exit 0 after the fix, 552 tests/551 pass/1 pre-existing skip; no `.claude/` mirror churn)
 - [x] PR description up to date — PR #437 body accurately reflects the five-item diff and cites the plan's Devil's Advocate section
 - [x] Lasting decisions promoted to architect context (if applicable) — n/a this pass (ticket not closing); all four `## Decisions` entries already carry verdict sub-bullets
 
