@@ -1,5 +1,8 @@
 # Plan: followup-port-2197-surface-decisions
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/followup-port-2197-surface-decisions.md
+
 ## Ticket
 
 Upstream source: `https://github.com/TracTru/thrive/pull/2197` — "surface user decisions unmissably" (thrive THR-2053). Open upstream, not merged; ported into PRISM on its own.
@@ -68,6 +71,26 @@ No documentation, design, or test-authoring tasks — this change is content-onl
 - **Bullet is unbolded to match its siblings.** Upstream's list uses `**Bold lead-in.**`; PRISM's `**How to apply:**` list in this section does not. Match the local file. Considered: bolding for prominence — rejected, it would make one bullet in a six-bullet list read as more important than the rest for a purely inherited reason.
   - → no promotion needed (style match, self-evident from the diff)
 
+- **Correction: `.cursor/rules/writing-voice.mdc` does exist and is a fifth generated mirror.** Task 3's plan text said "no cursor mirror of this file exists; do not create one" — that premise was wrong. `pnpm prism:build` updated the file (it pre-existed on `origin/main`, content-identical rule prose); nothing was hand-created or hand-edited. AC-3's verification command still checks only the four named mirrors and still returns `4`, so this doesn't fail any acceptance criterion — it's a correction to the plan's stated premise, not a scope change.
+  - → no promotion needed (build-script behavior already correct; the plan's premise was the only thing wrong)
+
+---
+
+## Review Issues
+
+### Bare `#2197` in the PR title and body autolinks within this repo instead of the upstream one
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** PR #438 title and body (not a source file)
+- **Problem:** The PR title (`PRISM: Port thrive #2197 — Surface the ask, don't bury it (writing-voice)`) and body (`Ports thrive PR #2197 (THR-2053, open upstream, not merged)...`) use a bare `#2197` for the upstream `TracTru/thrive` PR. GitHub autolinks bare `#N` to same-repo issues/PRs — PRISM has no issue/PR #2197 today, so the link 404s now and will silently point at an unrelated real PRISM PR once the repo's counter reaches it, and the PR title becomes the permanent squash-merge commit subject on `main` (git-conventions.md § Merge Strategy). It also departs from this repo's own precedent for ticketless ports: `chore: Backport Thrive PR 2039 structural-leverage review concepts` and `chore: Backport Thrive PR 2028 shipping-flow agent hygiene` both spelled out "PR NNNN" (no `#`) and used the `chore:` prefix git-conventions.md § Commit Messages reserves for work with no `PRISM-NNNN` ticket — exactly this port's situation.
+- **Suggested fix:** `gh pr edit 438 --title "chore: Port thrive PR 2197 — Surface the ask, don't bury it (writing-voice)"`, and replace the body's bare `#2197` with `PR 2197` (or `TracTru/thrive#2197`), matching the Backport-commit precedent.
+- **Fixed in:** PR #438 metadata only (no repo file touched, no source commit). `gh pr edit` failed on an unrelated Projects-classic GraphQL error, so the edit went through `gh api repos/HunterMcGrew/PRISM/pulls/438 -X PATCH` instead. Title trimmed to 61 chars to fit git-conventions.md's 72-char subject cap (the PR title becomes the squash-merge commit subject) — dropped the `(writing-voice)` parenthetical rather than the `chore:` prefix or the `Surface the ask, don't bury it` bullet name, since the prefix fixes the ticketless-chore convention match and the bullet name is the load-bearing content; final title: `chore: Port thrive PR 2197 — Surface the ask, don't bury it`. Body's `PR #2197` → `PR 2197`. Verified post-edit: `gh pr view 438 --json body -q .body | grep -c "#2197"` → `0`.
+
+No issues found — 2026-07-22 (pass 2) [huntermcgrew/prism-port-2197-surface-decisions]
+
+Independently re-verified the fix above (not trusting the recorded "Fixed in" note at face value): `gh pr view 438` shows title `chore: Port thrive PR 2197 — Surface the ask, don't bury it` (61 chars, under the 72-char cap) and zero bare `#2197` occurrences across title + body. Confirmed via `git show --stat` on the two post-pass-1 commits (Reese's AC-verification report, Clove's fix) that neither touched any source file — only the plan and the new QA report — so pass 1's independent verification of the rule content, all five mirrors, and `pnpm prism:check` still holds at the current tip. Re-ran `pnpm prism:check` myself at the current tip: exit 0.
+
 ---
 
 ## Acceptance Criteria
@@ -88,7 +111,7 @@ No documentation, design, or test-authoring tasks — this change is content-onl
 - [ ] **AC-5** — No generated mirror is hand-edited; every mirror change comes from `pnpm prism:build`.
   - Evidence (`machine`): `pnpm prism:check` exits `0` (its build-drift and seed-parity stages fail on any hand-edited mirror).
 - [ ] **AC-6** — The change is confined to rule prose; no script, schema, or skill body is modified.
-  - Evidence (`machine`): `git diff --name-only origin/main...HEAD` lists only `.prism/rules/writing-voice.md`, its four generated mirrors, and this plan file.
+  - Evidence (`machine`): every path in `git diff --name-only origin/main...HEAD` is either the `writing-voice` rule (the canonical `.prism/rules/writing-voice.md` or one of its generated mirrors) or this port's own paper trail under `.prism/plans/` and `.prism/qa/` (plus the retro under `.prism/retros/`) — no script, schema, or skill-body path appears.
 
 ### AC Adjustments
 
@@ -102,20 +125,34 @@ No documentation, design, or test-authoring tasks — this change is content-onl
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — port thrive PR #2197's "surface the ask" convention into PRISM's canonical `writing-voice.md`; Bounds — plan file only, no code, no branch, no commit; the port itself is one rule edit plus a regenerate; Approach — verify the canonical/generated split first (the brief had it inverted), adapt upstream wording to PRISM's differently-worded Why paragraph and unbolded bullet style, carry the popup-fatigue guard into the rule text rather than only into the plan. · close: scope held
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — implement the plan's 4 tasks (edit canonical rule, regenerate mirrors, pass `prism:check`) and ship a draft PR; Bounds — `.prism/rules/writing-voice.md` + its generated mirrors + this plan file only; Approach — two Edit calls on the canonical file, `pnpm prism:build`, `pnpm prism:check`, verify plan's grep checks, commit, push, open draft PR. · close: scope held — one plan-premise correction recorded (see Decisions: `.cursor` mirror), no scope drift
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — grade the plan's 6 AC against the branch diff with typed evidence (Reese AC-verification, first pass); Bounds — read-only grading plus plan/report write-back on the branch, no source touched; Approach — walk AC by ID against the branch ref (`git show`/`git diff`), run `prism:check` in a throwaway deps-provisioned checkout of the branch tip for AC-5. · close: scope held — 5 machine AC MET, AC-4 awaiting-human, one observation to sharpen AC-6's stale mirror count
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — self-review the branch (first pass) against the plan, confirming the ported rule text and the `prism:check` gate before PR review; Bounds — review-only, no source edits, plan-only commit; Approach — diff-read via `git show`/`git diff` against the remote branch ref (target branch already checked out in a sibling worktree), independently re-ran `pnpm prism:check` in a throwaway detached worktree at the branch tip rather than trusting the implementer's and Reese's reports at face value. · close: scope held — one Minor finding recorded (PR title/body bare `#2197`), routed needs-fix
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — fix Briar's one open Review Issue (PR #438's bare `#2197` in title/body) and confirm the repo is still clean; Bounds — PR metadata only, no source files, no new plan-file scope; Approach — edit title/body via `gh` (fell back to `gh api` PATCH after `gh pr edit` errored on an unrelated Projects-classic GraphQL call), re-run `pnpm prism:check`, mark the finding fixed. · close: scope held
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — self-review pass 2: confirm Clove's fix for pass 1's Minor actually landed, and that nothing regressed since; Bounds — read-only verification plus a plan-only review record, no source edits; Approach — independently re-check the PR title/body via `gh pr view` rather than trusting the plan's "Fixed in" note, `git show --stat` the two post-pass-1 commits to confirm no source file was touched, re-run `pnpm prism:check` at the true current tip. · close: scope held — zero new findings, pass 1's Minor confirmed fixed
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — build a tester-facing manual QA Pass/Fail checklist for PR #438 (Feature/PR mode — no bug label, no PRISM-NNNN ticket) now that it's passed AC-verification and both review rungs; Bounds — new checklist file under `.prism/qa/` plus this plan's Sessions/History only, no source edits; Approach — read the plan's 6 AC and the branch diff, then execute every scenario myself against a detached checkout of the branch tip before shipping the checklist. · close: scope held — zero failures found executing my own checklist; folded in one accuracy fix (rewrote the checklist's AC-6 Pass condition to the actual 8-file diff instead of the plan's stale 6-file count)
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — run the plan-close ceremony (reflect on Iris's retro, promote lasting Decisions, verdict gate, mark closed) on the final PR branch; Bounds — plan file plus committing Iris's retro into the branch tree, no source/rule/mirror edits, no merge, no draft-state change; Approach — consume the retro (no promotion cautions), apply its one action item (AC-6 count-free reword), add Closed/Retro markers, run `pnpm prism:check`, commit and push. · close: scope held — no Decisions needed promotion, AC-6 reworded count-free, retro committed to ride PR #438
 
 ---
 
 ## History
 
 - 2026-07-21 [main]: Plan created for the #2197 port. Confirmed `.prism/rules/writing-voice.md` is canonical (`paths.json` `canonical.contentRoot`) and that `AGENTS.md`, `.claude/rules/`, `.codex/rules/`, and `templates/install/.prism/rules/` are all regenerated by `pnpm prism:build`. Adapted the upstream bullet to PRISM's local wording and style; no blocking design decision found.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Implemented tasks 1–4 — added the "Surface the ask, don't bury it" bullet and Why-sentence to `.prism/rules/writing-voice.md`, ran `pnpm prism:build` to regenerate mirrors, ran `pnpm prism:check` (exit 0). All plan verification greps passed; see Decisions for a correction to the `.cursor` mirror premise.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Reese AC-verification (first pass) — report at `.prism/qa/ac-verification-followup-port-2197-surface-decisions.md`; 5 MET · 0 UNMET · 0 UNGRADEABLE · 1 awaiting-human (AC-4). AC-6 MET with an observation to sharpen its stale "four mirrors" count at close.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Briar self-review (first pass) — independently re-ran `pnpm prism:check` at the branch tip (exit 0, corroborates Reese's AC-5 and the implementer's report) and confirmed both edited sentences match the plan's task text verbatim across all 5 generated mirrors. One Minor finding recorded: the PR title/body's bare `#2197` autolinks within this repo instead of the upstream thrive PR.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Fixed Briar's Minor — PR #438 title changed to `chore: Port thrive PR 2197 — Surface the ask, don't bury it` and body's `PR #2197` changed to `PR 2197`, via `gh api` PATCH (no source files touched). Re-ran `pnpm prism:check` (exit 0).
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Briar self-review (pass 2) — independently confirmed the `#2197` fix via `gh pr view` (title 61 chars, zero bare `#2197` in title+body) and confirmed no source file changed since pass 1. Zero new findings; `pnpm prism:check` exit 0.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Reese QA checklist — added `.prism/qa/pr-438-qa-checklist.md` (Feature/PR mode; 6 AC scenarios plus content, behavioral-spot-check, mirror-parity, regression, and edge-case sections). Independently re-executed every mechanical scenario against the branch tip before shipping — all Pass, `pnpm prism:check` exit 0. AC-6's stated file list (six files) is stale against the actual diff (eight, including the fifth `.cursor` mirror and the AC-verification report); the checklist's own AC-6 item is written against the accurate eight-file list instead.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Plan closed (Winston) — consumed Iris's per-pr retro (6/6 charter, no promotion cautions, all Decisions held), reworded AC-6 evidence count-free per the retro's action item, and committed the retro report so it rides the final PR.
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] `pnpm prism:check` passes — last run: (not yet run)
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] `pnpm prism:check` passes — last run: 2026-07-22
+- [x] PR description up to date — https://github.com/HunterMcGrew/PRISM/pull/438
+- [x] Lasting decisions promoted to architect context (if applicable) — none to promote; every Decision carries `→ no promotion needed`, confirmed at close (Iris retro: no promotion cautions)
 
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22
