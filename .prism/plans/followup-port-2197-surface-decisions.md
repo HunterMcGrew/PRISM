@@ -120,7 +120,7 @@ No documentation, design, or test-authoring tasks — this change is content-onl
 
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-07-22
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] PR description up to date — https://github.com/HunterMcGrew/PRISM/pull/438
+- [ ] Lasting decisions promoted to architect context (if applicable) — pending plan close; every Decision in this plan carries `→ no promotion needed`
 
 **Last updated:** 2026-07-22
