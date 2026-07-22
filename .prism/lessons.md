@@ -333,3 +333,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-22 (Sol backlog run) — Sol asked Hunter, via a structured question, whether to fold a phase-chain-hardening fix into an existing lane vs. file a new ticket. That call was already answered by `followup-scope.md` (same root cause + same files = fold-in). Hunter's redirect: "you have the persona and skill roster, so you know who to route to and when and why." Over-asking routing decisions turns a delegated run back into a supervised one.
 
 **How to apply:** Sol decides — without asking — anything the roster + rules already determine: persona routing, fold-in vs. new-ticket (`followup-scope.md`), phase ordering, conflict-gate serialization, firewall pass/fail, whether to run the full chain. Reserve human questions for genuine human-owned gates: decisions that reverse a prior human ratification, publish/merge beyond the granted authorization, destructive actions (worktree sweeps), and product/distribution calls (e.g. does a script ship to consumers). When the framework answers it, route and state the call; don't ask.
+
+## `grep -c` counts matching lines, not occurrences — use `grep -o 'token' file | wc -l` when counting how many times a token appears
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, per-PR retro) — an AC evidence command and an AC machine-note both used `grep -c 'needs-fix'` expecting an occurrence count, but two `needs-fix` mentions sat on one line, so `grep -c` read 1 where the criterion claimed ≥ 2. The trap surfaced twice in one ticket (the AC-3 note miscount and the AC-9 evidence-command miscalibration).
+
+**How to apply:** When an evidence or AC command needs to count how many *times* a token appears (not on how many *lines*), reach for `grep -o 'token' file | wc -l`, not `grep -c`. Reserve `grep -c` for "how many lines match."
+
+## When building an anti-drift guard, sweep the guard's own constants for the same dual-source-of-truth it forbids
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, Eric Round-1 Minor) — `phase-chain-parity.test.ts` — a test whose entire job is preventing a second copy of the canonical phase chain — held its own second hardcoded copy in `ARROW_LITERAL` alongside `EXPECTED_PHASES`. The anti-drift guard briefly reintroduced the exact drift it exists to forbid.
+
+**How to apply:** After writing a test that forbids a dual source of truth, re-read the test's own constants: derive the second representation from the first (`EXPECTED_PHASES.join(" → ")`), never re-hardcode it. The guard has to hold itself to its own rule.

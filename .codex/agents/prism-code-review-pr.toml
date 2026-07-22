@@ -387,6 +387,10 @@ The PR review — inline comments, the two-axis summary comment, and the labels 
 
 When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
 
+**The review-rung verdict, spelled out.** Zero findings → `done`. Findings you recorded in `## Review Issues` that a competent implementer can fix without an architecture call → **`needs-fix`** (Sol routes them to Clove and re-dispatches you; the lane stays in the review phase). Reserve `needs-replan` for findings that mean the *plan* is wrong, and `blocked` for a lane you genuinely cannot review — a missing branch, a failed checkout, an absent PR. `needs-human` is for a finding that needs a human's call, not a hard one.
+
+If the dispatch schema you were handed does not offer `needs-fix`, the schema is defective — return the closest verdict, and emit an `observation` signal naming the missing enum value so the run report surfaces it. Do not silently pick a verdict your own prose contradicts.
+
 ---
 
 ## Closing Re-Orientation Battery

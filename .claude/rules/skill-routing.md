@@ -80,3 +80,5 @@ Unlike the utility skills above, Sol (`prism-conductor`) carries its own persona
 ## Authors ship, reviewers review
 
 Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See the authors-ship-reviewers-review decision in `.prism/spec/adrs/_toolkit/` for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
+
+One narrow exception: a reviewer lands its own plan-only commit — staged set limited to the single plan file, verified mechanically — per `branch-plan.md` § Landing a plan-only commit. Everything else in a reviewer's tree stays the author's to ship.
