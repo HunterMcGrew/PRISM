@@ -1,5 +1,8 @@
 # Plan: followup-port-2197-surface-decisions
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/followup-port-2197-surface-decisions.md
+
 ## Ticket
 
 Upstream source: `https://github.com/TracTru/thrive/pull/2197` — "surface user decisions unmissably" (thrive THR-2053). Open upstream, not merged; ported into PRISM on its own.
@@ -108,7 +111,7 @@ Independently re-verified the fix above (not trusting the recorded "Fixed in" no
 - [ ] **AC-5** — No generated mirror is hand-edited; every mirror change comes from `pnpm prism:build`.
   - Evidence (`machine`): `pnpm prism:check` exits `0` (its build-drift and seed-parity stages fail on any hand-edited mirror).
 - [ ] **AC-6** — The change is confined to rule prose; no script, schema, or skill body is modified.
-  - Evidence (`machine`): `git diff --name-only origin/main...HEAD` lists only `.prism/rules/writing-voice.md`, its four generated mirrors, and this plan file.
+  - Evidence (`machine`): every path in `git diff --name-only origin/main...HEAD` is either the `writing-voice` rule (the canonical `.prism/rules/writing-voice.md` or one of its generated mirrors) or this port's own paper trail under `.prism/plans/` and `.prism/qa/` (plus the retro under `.prism/retros/`) — no script, schema, or skill-body path appears.
 
 ### AC Adjustments
 
@@ -128,6 +131,7 @@ Independently re-verified the fix above (not trusting the recorded "Fixed in" no
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — fix Briar's one open Review Issue (PR #438's bare `#2197` in title/body) and confirm the repo is still clean; Bounds — PR metadata only, no source files, no new plan-file scope; Approach — edit title/body via `gh` (fell back to `gh api` PATCH after `gh pr edit` errored on an unrelated Projects-classic GraphQL call), re-run `pnpm prism:check`, mark the finding fixed. · close: scope held
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — self-review pass 2: confirm Clove's fix for pass 1's Minor actually landed, and that nothing regressed since; Bounds — read-only verification plus a plan-only review record, no source edits; Approach — independently re-check the PR title/body via `gh pr view` rather than trusting the plan's "Fixed in" note, `git show --stat` the two post-pass-1 commits to confirm no source file was touched, re-run `pnpm prism:check` at the true current tip. · close: scope held — zero new findings, pass 1's Minor confirmed fixed
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — build a tester-facing manual QA Pass/Fail checklist for PR #438 (Feature/PR mode — no bug label, no PRISM-NNNN ticket) now that it's passed AC-verification and both review rungs; Bounds — new checklist file under `.prism/qa/` plus this plan's Sessions/History only, no source edits; Approach — read the plan's 6 AC and the branch diff, then execute every scenario myself against a detached checkout of the branch tip before shipping the checklist. · close: scope held — zero failures found executing my own checklist; folded in one accuracy fix (rewrote the checklist's AC-6 Pass condition to the actual 8-file diff instead of the plan's stale 6-file count)
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions] open: Intent — run the plan-close ceremony (reflect on Iris's retro, promote lasting Decisions, verdict gate, mark closed) on the final PR branch; Bounds — plan file plus committing Iris's retro into the branch tree, no source/rule/mirror edits, no merge, no draft-state change; Approach — consume the retro (no promotion cautions), apply its one action item (AC-6 count-free reword), add Closed/Retro markers, run `pnpm prism:check`, commit and push. · close: scope held — no Decisions needed promotion, AC-6 reworded count-free, retro committed to ride PR #438
 
 ---
 
@@ -140,6 +144,7 @@ Independently re-verified the fix above (not trusting the recorded "Fixed in" no
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Fixed Briar's Minor — PR #438 title changed to `chore: Port thrive PR 2197 — Surface the ask, don't bury it` and body's `PR #2197` changed to `PR 2197`, via `gh api` PATCH (no source files touched). Re-ran `pnpm prism:check` (exit 0).
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Briar self-review (pass 2) — independently confirmed the `#2197` fix via `gh pr view` (title 61 chars, zero bare `#2197` in title+body) and confirmed no source file changed since pass 1. Zero new findings; `pnpm prism:check` exit 0.
 - 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Reese QA checklist — added `.prism/qa/pr-438-qa-checklist.md` (Feature/PR mode; 6 AC scenarios plus content, behavioral-spot-check, mirror-parity, regression, and edge-case sections). Independently re-executed every mechanical scenario against the branch tip before shipping — all Pass, `pnpm prism:check` exit 0. AC-6's stated file list (six files) is stale against the actual diff (eight, including the fifth `.cursor` mirror and the AC-verification report); the checklist's own AC-6 item is written against the accurate eight-file list instead.
+- 2026-07-22 [huntermcgrew/prism-port-2197-surface-decisions]: Plan closed (Winston) — consumed Iris's per-pr retro (6/6 charter, no promotion cautions, all Decisions held), reworded AC-6 evidence count-free per the retro's action item, and committed the retro report so it rides the final PR.
 
 ---
 
@@ -148,6 +153,6 @@ Independently re-verified the fix above (not trusting the recorded "Fixed in" no
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-07-22
 - [x] PR description up to date — https://github.com/HunterMcGrew/PRISM/pull/438
-- [ ] Lasting decisions promoted to architect context (if applicable) — pending plan close; every Decision in this plan carries `→ no promotion needed`
+- [x] Lasting decisions promoted to architect context (if applicable) — none to promote; every Decision carries `→ no promotion needed`, confirmed at close (Iris retro: no promotion cautions)
 
 **Last updated:** 2026-07-22
