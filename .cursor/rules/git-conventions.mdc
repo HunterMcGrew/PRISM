@@ -118,6 +118,12 @@ Never rebase a shared branch. Rewriting commits that exist in someone else's che
 
 ---
 
+## Worktrees
+
+Entering and removing worktrees has its own conventions — an entry decision tree and a three-way removal-safety predicate that a plain ancestry check gets wrong under squash-merge. See [`.prism/rules/worktree-git.md`](./worktree-git.md).
+
+---
+
 ## Force Push Policy
 
 - **Never** force-push to `main` or `master`

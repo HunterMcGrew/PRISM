@@ -291,12 +291,15 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — produce a Clove-ready port plan for thrive#2196 with the rule-placement design call made and reasoned; Bounds — write only `.prism/plans/followup-port-2196-worktree-lifecycle.md`, no code, no branch, no git mutation, no tracker; Approach — read the upstream diff in full, then ground every mapping against PRISM's actual build/tier/test machinery rather than assuming shape parity with thrive · close: scope held
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — implement all 12 tasks of the port exactly as sequenced; Bounds — only the files the plan names, no hand-edited mirrors, `pnpm prism:check` exit 0 before push; Approach — execute tasks 1–11 in order (task 10's check depends on task 3's manifest routes), then task 12, verifying each task's stated command before moving on · close: scope held — one deviation from the plan's literal task 8 wording (no "Specializes-in list" bullet structure exists in Zoe's shared.md; extended the opening paragraph instead, same intent) and one fix beyond the plan (a markdown link to the repo-local classifier script broke the install-relative-link-gate on the seed-mirrored copy; changed to a plain code-span reference, consistent with every other architect-doc reference to `scripts/ai-skills/`).
 
 ---
 
 ## History
 
 - 2026-07-21 [main]: Planned the port of thrive#2196 (worktree lifecycle) into PRISM. Made the delegated rule-placement call — a new Tier-3 `worktree-git.md` rather than either offered option, since `load: skill` removes the always-on budget objection entirely; see Decision. Two further calls followed from grounding in PRISM's machinery rather than thrive's: the classifier ports to TypeScript (windows-latest CI cannot run a bash suite through the existing test runner) and Zoe gains a named lane rather than a numbered Mode 4.
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Implemented all 12 tasks — `worktree-git.md` rule, `worktree-classify.ts` + 10-case test suite, Zoe's worktree hygiene lane + Procedure E, `audit-workflow.md` § Worktree hygiene, manifests, `docs/personas.md`. `pnpm prism:check` exits 0 with all six steps green.
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Ran the task-11 live dry-run against all 80 non-main worktrees — 11 GREEN, 35 RED, 34 YELLOW, 0 unreadable. Hand spot-checked one GREEN (`PRISM-skill-improvements`: clean tree, upstream in sync) and one RED (an `agent-*` worktree: three tracked modifications) against the classifier's verdicts — both agreed. No 0-of-N GREEN pathology; no escalation warranted.
 
 ---
 
@@ -314,13 +317,13 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — 10 cases in `worktree-classify.test.ts`, all passing
+- [x] All debugged issues resolved (no `open` entries) — none recorded
+- [x] Build passes — last run: 2026-07-22, `pnpm prism:check` exit 0 (all six steps)
+- [ ] PR description up to date — pending PR open
+- [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md` § Before Closing; this is a self-contained port, not yet closed
 
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22

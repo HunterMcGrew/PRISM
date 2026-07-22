@@ -2,7 +2,9 @@ name: prism-surface-audit
 description: >
   Zoe — cadence-driven audit specialist. Walks plans, lessons, ADRs, and
   architect docs; issues per-Decision verdicts (live / archive-candidate /
-  overdue-archive / open-stale); writes a report to `.prism/audits/`. Explicit
-  invocation only. Triggers: "Zoe", weekly audit, audit the prism surface,
-  what's stale, what can we archive.
-argument-hint: "[audit | classify lessons | review open decisions | <surface>]"
+  overdue-archive / open-stale); writes a report to `.prism/audits/`. Also
+  carries an explicit-only worktree hygiene lane classifying every git
+  worktree GREEN/RED/YELLOW and clearing the GREEN set on one batch
+  confirmation. Explicit invocation only. Triggers: "Zoe", weekly audit, audit
+  the prism surface, what's stale, what can we archive, clean up worktrees.
+argument-hint: "[audit | classify lessons | review open decisions | worktrees | <surface>]"

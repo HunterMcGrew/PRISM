@@ -759,6 +759,8 @@ When removing or renaming a concept — a function, type, config key, rule secti
 
 **Why:** a removal that leaves dangling references ships a claim that the concept still exists, and every later reader pays for the confusion. Diff-bounded review can't catch it either — the unfixed file never appears in the diff — so the author's tree-wide search is the only gate that sees the whole repo (the reviewer-side check lives in `.prism/references/review-frameworks.md` § Structural Scan Items).
 
+A changed *behavior* has the same reach as a rename but no token to grep. When a fix changes a documented predicate — a safety condition, a validation rule, a state-transition guard — the prose describing it elsewhere shares no symbol with the code, so no search surfaces it, and the drift stays invisible until a reader acts on the stale description. Reconcile every prose home of the predicate in the same review pass as the code change, especially always-on docs whose readers can reintroduce by hand the exact bug the code just closed. This is distinct from mirror sync: `pnpm prism:build` keeps a rule's mirrors byte-identical to their source but cannot detect that the source's *meaning* drifted from the code it specifies. thrive#2196 is the concrete case: a worktree classifier's GREEN predicate was hardened to a commit-containment check while the rule describing it still read the looser pre-fix version, live for a full review pass until PR review caught the mismatch.
+
 ## Whitespace
 
 Use blank lines to separate logical units and improve scannability. Remove double blank lines and trailing whitespace.
@@ -1205,6 +1207,12 @@ Refresh a branch from `main` by merging — `git merge origin/main`. Merge never
 One trap earns a rebase instead: **the squash-already-upstream trap**. After a PR from your branch squash-merges, `main` carries a single commit with your changes while your branch still holds the individual commits. Merging `main` back in replays your own changes against their squashed copy — every subsequent edit to the same lines becomes a conflict with yourself. When continuing work on a branch whose PR already squash-merged, rebase the unmerged remainder onto `origin/main` (the already-merged commits drop out as empty) — or start a fresh branch from `origin/main`. This trap is live here because PRs squash-merge (§ Merge Strategy).
 
 Never rebase a shared branch. Rewriting commits that exist in someone else's checkout forks the branch's identity, and reconciling afterward requires the force-push damage § Force Push Policy exists to prevent.
+
+---
+
+## Worktrees
+
+Entering and removing worktrees has its own conventions — an entry decision tree and a three-way removal-safety predicate that a plain ancestry check gets wrong under squash-merge. See [`.prism/rules/worktree-git.md`](./worktree-git.md).
 
 ---
 

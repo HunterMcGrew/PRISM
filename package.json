@@ -47,6 +47,7 @@
 		"prism:update": "tsx scripts/ai-skills/update.ts",
 		"prism:verify-manifest": "tsx scripts/ai-skills/verify-manifest-coverage.ts",
 		"prism:verify-pack": "tsx scripts/ai-skills/verify-pack-parity.ts",
+		"prism:worktree-classify": "tsx scripts/ai-skills/worktree-classify.ts",
 		"prepare": "pnpm run prism:bundle",
 		"prepack": "pnpm run prism:bundle",
 		"prepublishOnly": "pnpm run prism:bundle && pnpm run prism:build && pnpm run prism:check"
