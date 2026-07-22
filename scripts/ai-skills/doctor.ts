@@ -23,10 +23,10 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
+import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
 import { parseRuleLoad } from "./rule-load";
 import { OVERLAY_SUBPATH, resolvePrismSource, resolveSelfPrismSource } from "./update";
@@ -536,9 +536,7 @@ export async function runDoctorCli(): Promise<void> {
 	}
 }
 
-const isMain =
-	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (isMain) {
+if (isDirectCliEntry("doctor")) {
 	runDoctorCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);
