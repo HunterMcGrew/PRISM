@@ -18,6 +18,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
+import { extractSection } from "./lib/markdown-section";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
 
@@ -46,19 +48,6 @@ const GOAL_STATE_PATH = path.join(
 	"lib",
 	"goal-state.md"
 );
-
-/** Mirrors the section-boundary helper in `verdict-enum-parity.test.ts` / `routing-coverage.test.ts`. */
-function extractSection(markdown: string, heading: string): string {
-	const lines = markdown.split("\n");
-	const startIndex = lines.findIndex((line) => line.trim() === heading);
-	if (startIndex === -1) {
-		throw new Error(`Section '${heading}' not found`);
-	}
-	const rest = lines.slice(startIndex + 1);
-	const endOffset = rest.findIndex((line) => line.startsWith("## "));
-	const sectionLines = endOffset === -1 ? rest : rest.slice(0, endOffset);
-	return sectionLines.join("\n");
-}
 
 interface PhaseLine {
 	phase: string;

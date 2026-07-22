@@ -16,6 +16,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
+import { extractSection } from "./lib/markdown-section";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
 
@@ -44,24 +46,6 @@ const CLAUDE_MD_PATH = path.join(
 	"claude.md"
 );
 const CONDUCTOR_DOC_PATH = path.join(repoRoot, "docs", "ai-skills", "conductor.md");
-
-/**
- * Extracts the lines between a top-level `## heading` and the next top-level
- * `## ` heading (or end of file). Mirrors the boundary logic in
- * `routing-coverage.test.ts` — the routing rule and this doc both nest
- * headings one level deep past `## `, so the boundary is unambiguous.
- */
-function extractSection(markdown: string, heading: string): string {
-	const lines = markdown.split("\n");
-	const startIndex = lines.findIndex((line) => line.trim() === heading);
-	if (startIndex === -1) {
-		throw new Error(`Section '${heading}' not found`);
-	}
-	const rest = lines.slice(startIndex + 1);
-	const endOffset = rest.findIndex((line) => line.startsWith("## "));
-	const sectionLines = endOffset === -1 ? rest : rest.slice(0, endOffset);
-	return sectionLines.join("\n");
-}
 
 /** Extracts the first-column backticked value from each `| \`x\` | ... |` table row. */
 function extractTableFirstColumnValues(text: string): string[] {

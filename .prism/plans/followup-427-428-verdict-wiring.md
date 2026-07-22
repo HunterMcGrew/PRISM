@@ -372,6 +372,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 - 2026-07-22 [main] open: Intent — fold phase-chain hardening (the #427 defect class applied to the lane phase chain that a wave-1 run silently truncated) into this lane; Bounds — this plan file only, no code, no build, no tracker writes; Approach — a canonical copy-target block in step-04 + citations + a parity test for v1, runtime completeness check deferred with reasoning · close: scope held — v1 = copy-target + parity test (tasks 11–13); completeness check deferred as scoped follow-up (needs a goal-state schema addition)
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — implement all 15 tasks (Sol dispatch); Bounds — files named in the plan only, `pnpm prism:check` must exit 0 before push; Approach — execute in stated sequence, then build+check+ship · close: scope held — all 15 tasks landed, both parity tests confirmed load-bearing, `pnpm prism:check` exits 0
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — first-pass self-review of the branch (Sol dispatch) against this plan, covering types, logic, a11y, tests, and build; Bounds — review only, land a plan-only commit if findings need recording, no code changes, no PR-body edits, no GitHub comments; Approach — read the full branch diff (30 files, 1188 lines) in three passes (mirror/canonical spec text; conductor lib/step files + the two new parity tests; the QA artifact), independently re-run `pnpm prism:check` in an isolated detached worktree, cross-check Reese's AC-verify citations against source · close: scope held — 2 Minor findings recorded (a wrong grep count in Reese's AC-3 machine note; a duplicated `extractSection` helper now copy-pasted across 3 test files), `pnpm prism:check` independently reconfirmed exit 0 with both new parity tests' assertions passing, verdict needs-fix
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — fix Briar's 2 open Minor findings (Sol dispatch); Bounds — the 2 named findings only, no other code changes, `pnpm prism:check` must exit 0 before push; Approach — correct the AC-3 grep-count citation, extract the duplicated `extractSection` helper into `scripts/ai-skills/lib/markdown-section.ts` and import it from all three call sites · close: scope held — both findings fixed, `pnpm prism:check` exits 0 (546/547, 1 pre-existing skip)
 
 ---
 
@@ -383,6 +384,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Clove implemented all 15 tasks under a Sol dispatch — the canonical dispatch-schema block and its parity test (#427), the reviewer `needs-fix` wiring, Briar's plan-landing procedure and Sol's deterministic landing check (#428), and the phase-chain copy-target + parity test (fold-in). Both new parity tests (`verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`) confirmed load-bearing by temporarily deleting their target value and observing a named failure, then restored. `pnpm prism:build` and `pnpm prism:check` both exit 0; no unexpected mirror churn under `.claude/skills/prism-conductor/`.
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Reese ran AC Verification (Sol dispatch, first pass) at `da3a6a2` — 9 machine criteria MET, 0 UNMET, 0 UNGRADEABLE; 4 human-tagged criteria (AC-3/4/5/10) routed to the awaiting-human checklist. Report at `.prism/qa/ac-verification-followup-427-428-verdict-wiring.md`. One observation: AC-9's `grep -c 'needs-fix' … ≥ 2` evidence command reads 1 (both mentions share line 44; `grep -o` = 2) — criterion substance MET via the parity test, evidence command flagged to Winston to sharpen.
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Briar ran first-pass self-review (Sol dispatch) at `4fe4635`. Independently re-ran `pnpm prism:check` in an isolated detached worktree (exit 0, all 547 tests including both new parity tests' subtests green) and cross-verified Reese's AC-verify citations against source. Recorded 2 Minor findings — see Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Clove fixed Briar's 2 open Minor findings (Sol dispatch). Corrected the AC-3 grep-count citation in the QA artifact (4/5 → 2/2, independently re-verified) and extracted the duplicated `extractSection` helper into `scripts/ai-skills/lib/markdown-section.ts`, imported from all three parity/coverage test files. `pnpm prism:check` re-run clean (exit 0, 546/547, 1 pre-existing skip). See Review Issues.
 
 ---
 
@@ -397,18 +399,20 @@ None — no debugger session ran on this work.
 ### AC-3 machine note cites the wrong `needs-fix` grep count
 
 - **Severity:** minor
-- **Status:** open
+- **Status:** fixed
 - **File:** `.prism/qa/ac-verification-followup-427-428-verdict-wiring.md:136`
 - **Problem:** The AC-3 "Machine note" states `grep -c 'needs-fix'` returns 4 for `prism-code-review-pr/shared.md` and 5 for `prism-code-review-self/shared.md`. The actual count is 2 for both files — each has exactly two lines containing `needs-fix`, both inside the same "review-rung verdict" paragraph pair added by this branch. Re-verified independently in the isolated worktree. The substantive AC-3 check (the four-verdict distinction is stated in place) is correct; only the parenthetical number is wrong.
 - **Suggested fix:** Correct the parenthetical to the actual counts (2 and 2), or drop the count and cite the `grep -n` line numbers already used elsewhere in the report.
+- **Fixed in:** corrected the parenthetical to "returns 2 for the pr file and 2 for the self file" — independently re-verified with `grep -c 'needs-fix' .ai-skills/skills/prism-code-review-pr/shared.md .ai-skills/skills/prism-code-review-self/shared.md` (2, 2) before editing.
 
 ### `extractSection` markdown-boundary helper duplicated across three test files
 
 - **Severity:** minor
-- **Status:** open
+- **Status:** fixed
 - **File:** `scripts/ai-skills/verdict-enum-parity.test.ts:54`, `scripts/ai-skills/phase-chain-parity.test.ts:51` (byte-for-byte copy of the pre-existing `scripts/ai-skills/routing-coverage.test.ts:52`)
 - **Problem:** Both new parity tests copy-paste the identical 11-line `extractSection` function already defined in `routing-coverage.test.ts` — each file's own comment even says it "mirrors" the original. Three concrete use cases now exist, past this repo's own threshold for earning extraction (`.claude/rules/demand-elegance.md`; the "three concrete use cases earn an abstraction" reasoning cited elsewhere in this branch's own `implementation-task-detail.md`). Identical parsing logic in three places drifts silently if the section-boundary contract ever changes (e.g. a nested-heading edge case) — a fix applied to one copy and missed in the other two reintroduces the bug in an untested path.
 - **Suggested fix:** Extract `extractSection` into a small shared test-helper module (e.g. `scripts/ai-skills/test-helpers.ts`) and import it from all three files.
+- **Fixed in:** extracted to `scripts/ai-skills/lib/markdown-section.ts` — `scripts/ai-skills/lib/` is the repo's existing convention for shared non-test modules (other suites already import from `./lib/<name>`), so the helper landed there rather than at a new top-level `test-helpers.ts`. All three test files (`routing-coverage.test.ts`, `verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`) now import `extractSection` from it; no local definition remains. `run-tests.ts` only globs `*.test.ts`, so the new `lib/` file is not picked up as a test.
 
 ---
 
@@ -481,12 +485,12 @@ None identified.
 
 ## PR Readiness
 
-- [x] No critical or major issues — 2 open Minor findings only, see Review Issues
-- [x] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` only)
+- [x] No critical or major issues — 0 open findings, both prior Minors fixed, see Review Issues
+- [x] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`, and the new `scripts/ai-skills/lib/markdown-section.ts`)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` present and proven load-bearing per AC-6 and AC-13
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — `pnpm prism:build` then `pnpm prism:check`, last run: 2026-07-22 (independently re-run by Briar in an isolated worktree, exit 0)
+- [x] Build passes — `pnpm prism:build` then `pnpm prism:check`, last run: 2026-07-22 (Clove, isolated detached worktree, exit 0, 546/547, 1 pre-existing skip)
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (if applicable) — all `## Decisions` entries carry an explicit verdict sub-bullet
 
