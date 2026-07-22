@@ -192,9 +192,38 @@ Ordered; each names file, change, verification. Gated behind #427+#428 tasks 11�
 
 - 2026-07-22 [main] open: Intent — worth-it verdict on the deferred runtime completeness check, honoring Hunter's over-gating concern; Bounds — this eval file only, no code/build/tracker; Approach — verify candidate against goal-state/step-05/step-07/step-10, split design on surface-vs-park · close: scope held — verdict WORTH IT BUT LIGHTER; surfacing is load-bearing and false-park-free, hard park limited to no-legitimate-skip phases; own ticket after #427+#428 tasks 11–13
 - 2026-07-22 [huntermcgrew/prism-completeness-check] open: Intent — implement the lighter design's five Clove tasks (phaseLog schema, conscious-skip authoring note, close-time completeness check, phase-coverage report line, gate test) exactly as specced; Bounds — the five named files only, no schema/behavior invention beyond what the tasks state; Approach — verify #427+#428 tasks 11–13 landed (they had, since the eval was written), then apply each task in file order · close: scope held — touched only the five named files plus the plan; the one line reconciled beyond the literal task text (step-04's stale "docs is the only skip" sentence) was inside the local frame of task 2's own section and is recorded as a Decision, not silent drift.
+- 2026-07-22 [huntermcgrew/prism-completeness-check] open: Intent — first-pass self-review of the branch diff against this plan (types, logic, tests, build; confirm no mirror hand-edit and no seed drift); Bounds — review only, land a plan-only commit, never ship or merge; Approach — single full-depth pass (diff is 154 lines, well under the 400-line cliff), verify every task-level check plus the mechanical gates, then an adversarial read of the two-tier design and its test coverage · close: scope held — one Minor test-coverage gap found (below), everything else confirmed clean; the dispatched review worktree wasn't actually on this branch (a sibling worktree had it checked out clean), so review checked out the branch there via `--ignore-other-worktrees` rather than leaving it stranded on a throwaway branch — a scope-neutral tooling detail, not a finding.
 
 ## History
 
 - 2026-07-22 [main]: Winston evaluated the deferred runtime phase-completeness check under a Sol dispatch. Verdict WORTH IT BUT LIGHTER — build `phaseLog` + close-time check, but as surface-plus-narrow-repair: hard-park only `implement`/`self-review`/`pr-review` (no legitimate skip), surface `ac-verify`/`qa`/`docs` gaps to the operator instead of parking, because those are content-gated and a rigid gate would false-park spec/docs/refactor lanes. Own ticket after #427+#428 tasks 11–13; AC and tasks at the detail bar recorded here. See Decisions.
 - 2026-07-22 [huntermcgrew/prism-completeness-check]: Implemented all five Clove tasks — `phaseLog` added to `lib/goal-state.md`'s v2 lane schema, the conscious-skip authoring note added to `step-04-dispatch.md`, the close-time completeness check added to `step-05-route.md`, the phase-coverage-gap report line added to `step-10-report.md`, and the drift-guard gate test added at `scripts/ai-skills/phase-completeness-gate.test.ts`. `pnpm prism:check` passes; no `.claude/` mirror churn (all edits are under the unmirrored `.prism/skills/prism-conductor/**`). See Decisions for one prose reconciliation the task list didn't anticipate.
 - 2026-07-22 [huntermcgrew/prism-completeness-check]: Reese AC-verification first pass — machine 2 MET / 0 UNMET / 0 UNGRADEABLE (AC-RC-3, AC-RC-5); AC-RC-1/2/4 human-tagged, awaiting doc-inspection sign-off at the merge gate. Report: `.prism/qa/ac-verification-eval-runtime-completeness-check.md`.
+- 2026-07-22 [huntermcgrew/prism-completeness-check]: Briar first-pass self-review — mechanical gates all green (`prism:check-types`, `prism:crossref-lint`, `prism:test` 551/551, `prism:build`/`prism:check` with no `.claude/` mirror churn), all five task-level verification greps confirmed, all citations (step-07-budgets.md, § Mutate protocol, § Tree dispatch) resolve. One Minor finding: `phaseLog`'s phase enum has no parity test against step-04's canonical chain. See `## Review Issues` and `## PR Readiness`.
+
+## Review Issues
+
+Add entries here via the code-review-self or code-review-pr skills. Briar (self-review) writes here on every run — structured entries when issues are found, and a single `No issues found — <date>` line on a clean pass. Iris reads it as self-review evidence for charter items 4/5.
+
+### phaseLog's phase enum has no parity test against the canonical six-phase chain
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/lib/goal-state.md:37`
+- **Problem:** `phaseLog[].phase`'s six-value enum (`implement | ac-verify | self-review | pr-review | qa | docs`) is hand-typed to match step-04's canonical chain, but unlike `currentPhase` — whose enum `phase-chain-parity.test.ts` asserts is a contiguous, same-order subsequence of that same chain — nothing asserts `phaseLog`'s enum stays in sync if the six-phase chain ever changes. Today the two lists match exactly; a future edit to one could silently leave the other stale, with no test catching it — the exact defect class this whole ticket exists to guard against, just one level down (the schema doc, not the routing prose).
+- **Suggested fix:** add one assertion to `phase-chain-parity.test.ts` (or `phase-completeness-gate.test.ts`) comparing `phaseLog`'s phase enum values against step-04's canonical chain, mirroring the existing `currentPhase` parity check. Non-blocking — safe as a same-scope follow-up PR per `followup-scope.md` (same file family, same defect class, small).
+
+## PR Readiness
+
+Living checklist — updated every time `code-review-self` runs.
+
+- [x] No critical or major issues
+- [x] Types correct — `pnpm run prism:check-types` clean (build-script scope only; the `.prism/` markdown surface carries no TypeScript)
+- [x] No stray console.logs or debug artifacts
+- [ ] Tests written for new logic and edge cases — new gate test covers the step-05/step-10 two-tier split (AC-RC-3/AC-RC-5 MET per Reese's AC-verification pass); one Minor gap open above (`phaseLog` enum has no parity test)
+- [x] All debugged issues resolved (no `open` entries) — this plan has no `## Debugged Issues` section; none were opened during implementation
+- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:build` clean, `pnpm run prism:check` exit 0, `git status --short` empty after both — no `.claude/` mirror churn)
+- [x] PR description up to date — PR #437 body accurately reflects the five-item diff and cites the plan's Devil's Advocate section
+- [x] Lasting decisions promoted to architect context (if applicable) — n/a this pass (ticket not closing); all four `## Decisions` entries already carry verdict sub-bullets
+
+**Last updated:** 2026-07-22
