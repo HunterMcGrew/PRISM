@@ -23,9 +23,14 @@ test("returns true for the standalone dev entry path (tsx adopt.ts)", () => {
 	assert.equal(isDirectCliEntry("adopt"), true);
 });
 
-test("strips only the final extension from a multi-dot basename", () => {
+test("strips the .ts extension from a hyphenated basename", () => {
 	process.argv[1] = "/repo/scripts/ai-skills/verify-manifest-coverage.ts";
 	assert.equal(isDirectCliEntry("verify-manifest-coverage"), true);
+});
+
+test("strips only the final extension from a genuine multi-dot basename", () => {
+	process.argv[1] = "/repo/scripts/ai-skills/foo.config.ts";
+	assert.equal(isDirectCliEntry("foo.config"), true);
 });
 
 test("returns false for every subcommand name when argv[1] is the bundle entry", () => {
