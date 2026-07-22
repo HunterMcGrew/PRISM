@@ -1611,11 +1611,12 @@ When a plainer word carries the same meaning, use it. When a technical term is l
 
 Lead with the answer. When the reader asked a question, the first sentence answers it; when they asked for work, the first thing is the result. Support follows the answer — don't build up to it through context the reader has to hold open.
 
-**Why:** every sentence before the answer is cognitive load the reader carries while waiting to learn whether the rest matters. Menus of options, caveat sandwiches, and trailing offer-stacks each push a decision back onto the reader that the writer was better positioned to make.
+**Why:** every sentence before the answer is cognitive load the reader carries while waiting to learn whether the rest matters. Menus of options, caveat sandwiches, and trailing offer-stacks each push a decision back onto the reader that the writer was better positioned to make. An ask-back buried at the end of a long update pushes the same decision back onto the reader by placement rather than by content — they have to hunt for the one line that needs their action.
 
 **How to apply:**
 
 - Point, don't menu. When you have a recommendation, make it — "do X, because Y" beats three options with neutral trade-off prose. Reserve option lists for calls that are genuinely the reader's.
+- Surface the ask, don't bury it. When a message needs a decision back before you can proceed, make that ask impossible to miss — don't leave it trailing in prose at the bottom of a long update. Reach for `AskUserQuestion` (or the host's structured-question tool): it renders the choice in a distinct, selectable UI the reader can't scroll past. Reserve it for genuine decisions the user owns that change what you do next — not a generic "can I proceed?" checkpoint, which trades one friction for another. When the ask doesn't fit discrete options — a free-form answer, no user present, or the tool isn't available — fall back to a single clearly-marked block as the last thing in the message. This governs the *ask-back*, not the answer: leading with the answer decides where the *conclusion* goes. In a status or orchestration update the board legitimately leads and the ask follows the context — this keeps that following ask from vanishing into the wall of text above it.
 - No caveat sandwiches. Qualify once, where the qualification matters — not before and after every claim.
 - Be opinionated when you have an opinion. Hedged prose reads as false modesty or real uncertainty; if it's real uncertainty, name what would resolve it instead of hedging around it.
 - Name the tangent instead of following it. "X is also worth a look — separate thread" keeps the answer on the asked question.
