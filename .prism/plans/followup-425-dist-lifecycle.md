@@ -237,6 +237,7 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 - 2026-07-21 [main] open: Intent — turn the ratified option 2 for #425 into an executable plan; Bounds — write this plan file only, no code, no branch, no tracker writes; Approach — take the evaluation's recorded blast radius as the task spine, verify each surface against source, front-load exact edits · close: scope held
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — implement all nine tasks (untrack + gitignore `dist/`, add `prepare`/`prepack`, extend the pack-parity gate, amend ADR-0063, update the two docs, regenerate mirrors, `prism:check` green); Bounds — done when `pnpm prism:check` exits 0 and the plan's own verification commands pass, no runtime source changes per the plan's Decisions; Approach — execute tasks 1–9 in the plan's own sequence, absorbing Eli's tasks 7–8 since they're small verbatim-text edits already fully specified · close: scope held, plus one in-frame fix (see Decisions) and one found-bug (see Debugged Issues)
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — self-review the branch against this plan before Eric's PR review; Bounds — done when types/logic/tests/build are reviewed and findings land in `## Review Issues`, no source edits; Approach — independently re-execute every AC's evidence command in a fresh detached checkout rather than trust Clove's recorded results, per cross-agent-handoff-accountability.md · close: scope held — two Minor findings (see Review Issues), no code touched
 
 ---
 
@@ -280,6 +281,22 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 ## Review Issues
 
+### `.gitignore` has a double blank line after the new `/dist/` block
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.gitignore:23-24`
+- **Problem:** task 2's inserted block ends with its own trailing blank line, and the file already had a blank line before the next section (`# Theo state files...`) — the two combine into a double blank line, which `code-standards.md § Whitespace` says to remove.
+- **Suggested fix:** delete one of the two blank lines between `/dist/` and `# Theo state files`.
+
+### AC-1's evidence line claims exit 0, but the documented pre-existing bug means it doesn't
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/followup-425-dist-lifecycle.md` (AC-1, and the `Bundled dist/cli.js runs multiple subcommands' main()` Debugged Issue)
+- **Problem:** independently reproduced — `node dist/cli.js --help` from this branch's fresh install exits 1 with `prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state.` on stderr, not exit 0. This is the already-documented pre-existing bug (confirmed not introduced by this ticket), but AC-1's evidence protocol as written still asserts exit 0, and `## AC Adjustments` is empty — a reader scanning the AC table has no signal that this criterion won't pass until the bundler bug is fixed.
+- **Suggested fix:** add an `## AC Adjustments` entry noting AC-1's exit-0 clause is blocked on the open Debugged Issue, or soften AC-1's evidence text to drop the exit-0 requirement until that bug has its own follow-up ticket.
+
 ---
 
 ## Cleanup Items
@@ -288,12 +305,12 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
+- [x] No critical or major issues (two Minor findings — see Review Issues)
+- [x] Types correct — no `any`, no unsafe `as` (the one pre-existing `as` in `verify-pack-parity.ts` predates this diff, unchanged)
+- [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (n/a — see `## Decisions`, no new logic; the `verify-pack-parity.ts` stdout-slice fix is covered by existing unit tests exercising `findMissingRuntimeReadPaths` plus the live `prism:verify-pack` run)
 - [ ] All debugged issues resolved (one `open` — pre-existing bundling bug, out of scope, see Debugged Issues)
-- [x] Build passes — last run: 2026-07-22 (`pnpm prism:check` exit 0)
+- [x] Build passes — last run: 2026-07-22, independently re-run by Briar (`pnpm prism:check` exit 0, 538 tests: 537 pass/1 skip; AC-1–5 evidence commands re-executed directly, see Review session in `## Sessions`)
 - [ ] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0063 amendment is task 6)
 
