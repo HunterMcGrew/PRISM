@@ -193,7 +193,7 @@ Never write directly to the canonical path — a partial write corrupts resumabi
 
 ## Mutate protocol
 
-Read → mutate the in-memory copy → atomic write back. Always update `lastUpdated`. Batch multiple mutations within one step into a single read-mutate-write cycle. Read at every dispatch boundary; write at every phase transition.
+Read → mutate the in-memory copy → atomic write back. Always update `lastUpdated`. Batch multiple mutations within one step into a single read-mutate-write cycle. Read at every dispatch boundary; write at every phase transition (appending the lane's `phaseLog` entry — `step-04-dispatch.md` § Canonical lane phase chain).
 
 ## Resume detection
 
