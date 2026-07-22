@@ -1,5 +1,8 @@
 # Plan: followup-425-dist-lifecycle
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/prism-425.md
+
 ## Ticket
 
 GitHub issue [#425](https://github.com/HunterMcGrew/PRISM/issues/425) — `dist/cli.js` is stale on `main` and no CI gate catches esbuild-bundle drift.
@@ -16,20 +19,28 @@ Delete the `dist/cli.js` drift class by making the bundle build-time-materialize
   - **Root cause of #425:** the bundle is a machine-generated artifact tracked in git with nothing proving it matches source. Committing a fresh copy without a gate recreates the drift on the next unguarded change.
   - **Chosen approach:** remove the artifact from git entirely. The drift class stops existing rather than being gated, and the global-link consumer path gets fresher instead of staying as fresh as the last forced commit.
   - **Implementation guidance:** no runtime source changes. `findPrismPackageRoot` / `resolveSelfPrismSource` walk to `package.json`, not to `dist/` — all three ADR-0063 invariants survive untouched.
+  - → promoted to ADR-0063 (the build-time-materialization architecture is codified in the task-6 amendment shipped in this PR; the option-1-vs-2 selection itself is ticket-local).
 
 - **`esbuild: "^0.28.1"` (caret) stays as-is; it is moot under option 2.** Bundle determinism was load-bearing only for option 1, which byte-compares a committed bundle against a fresh build. Option 2 never compares bundles — it builds one and ships it — so a caret range that drifts under a deliberate unpinned install changes nothing this plan depends on. Recorded because it is the fallback's precondition: **if option 2 is ever rolled back to option 1, pin esbuild exactly in `package.json` first**, or the drift gate inherits a real (if narrow) flake source that `--frozen-lockfile` masks in CI but a local `pnpm update` would expose.
+  - → no promotion needed (fallback precondition — load-bearing only if option 2 is ever rolled back to option 1; stays in the closed plan as that record).
 
 - **`git rm --cached dist/cli.js` is the removal mechanism, never `git rm` or a delete.** `--cached` untracks the file while leaving the working-tree copy byte-identical on disk. This is what satisfies issue #425's working-tree constraint ("the human may have an uncommitted, locally-modified `dist/cli.js`; do not touch, stash, or overwrite it") — the local copy survives the change untouched, and from then on it is simply an ignored build output.
+  - → no promotion needed (implementation tactic for this ticket's untrack step; the `--cached` mechanism is self-evident from the diff).
 
 - **`prepack` duplicating `prepublishOnly`'s bundle step is accepted cost.** `npm publish` runs both, so the bundle builds twice on publish. This mirrors the already-documented ADR-0063 consequence that `prepublishOnly` runs `prism:test` twice: the cost lands on a rare manual operation, and the guarantee (no tarball can ever contain a stale or absent bundle, including from a bare `npm pack`) is worth more than the second esbuild run.
+  - → promoted to ADR-0063 (the `prepare`/`prepack`/`prepublishOnly` lifecycle is codified in the task-6 amendment; the twice-builds cost-acceptance is the ticket-local reasoning behind it).
 
 - **Bundle *existence* at pack time is guaranteed by `prepare`, not by `prepack` firing during `npm pack --dry-run`.** `prism:verify-pack` shells out to `npm pack --dry-run --json`; whether npm runs `prepack` on a dry run is version-dependent and not something this plan relies on. `prepare` has already materialized `dist/cli.js` at `pnpm install` time in every environment that runs `prism:check` (local and CI), so the parity gate sees the file either way. Task 5 records which behavior actually occurs so a future reader isn't left guessing.
+  - → promoted to ADR-0063 (the "`prepare` materializes the bundle at install" invariant is codified in the task-6 amendment; the npm-pack-dry-run nuance is ticket-local, recorded in History and the execution-added Decision below).
 
 - **No new unit test for the parity entry.** `findMissingRuntimeReadPaths` is a pure set-difference already covered by `scripts/ai-skills/verify-pack-parity.test.ts` for both `file` and `prefix` kinds. The new `dist/cli.js` entry is data, not logic — a test asserting the list contains a specific literal would test the constant against itself.
+  - → no promotion needed (test-scoping decision specific to this ticket's data-not-logic parity entry).
 
 - **Generated mirrors are never hand-edited.** ADR-0063 exists canonically at `.prism/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md`; the `.claude/`, `.codex/`, and `.cursor/` copies under `spec/adrs/_toolkit/` are generated mirrors. Edit the canonical file only and regenerate with `pnpm prism:build` — never hand-edit a mirror. `pnpm prism:check` fails on out-of-sync generated output, which is the gate that catches a missed regeneration.
+  - → no promotion needed (already codified in ADR-0063 and the repo-wide mirror-generation rules; restated here as an implementation guardrail).
 
 - **`prism:doctor` staleness warning is out of scope.** The evaluation floated warning a contributor who pulled without reinstalling that their local bundle is stale. That is a separate, additive change with its own design questions (how does doctor know "stale" without the source hash it deliberately no longer compares?) and it is not needed for #425's done condition.
+  - → no promotion needed (scoping decision — the deferred `prism:doctor` warning has its own design questions and no bearing on #425's done condition).
 
 ---
 
@@ -240,6 +251,7 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 - 2026-07-21 [main] open: Intent — turn the ratified option 2 for #425 into an executable plan; Bounds — write this plan file only, no code, no branch, no tracker writes; Approach — take the evaluation's recorded blast radius as the task spine, verify each surface against source, front-load exact edits · close: scope held
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — implement all nine tasks (untrack + gitignore `dist/`, add `prepare`/`prepack`, extend the pack-parity gate, amend ADR-0063, update the two docs, regenerate mirrors, `prism:check` green); Bounds — done when `pnpm prism:check` exits 0 and the plan's own verification commands pass, no runtime source changes per the plan's Decisions; Approach — execute tasks 1–9 in the plan's own sequence, absorbing Eli's tasks 7–8 since they're small verbatim-text edits already fully specified · close: scope held, plus one in-frame fix (see Decisions) and one found-bug (see Debugged Issues)
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — self-review the branch against this plan before Eric's PR review; Bounds — done when types/logic/tests/build are reviewed and findings land in `## Review Issues`, no source edits; Approach — independently re-execute every AC's evidence command in a fresh detached checkout rather than trust Clove's recorded results, per cross-agent-handoff-accountability.md · close: scope held — two Minor findings (see Review Issues), no code touched
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — run the plan close ceremony (reflect on Iris's retro, promote lasting Decisions, verdict gate, mark closed); Bounds — edit this plan + commit Iris's retro onto the branch only, no code, no merge, no draft-flip; Approach — consume the retro, record Decision verdicts pointing at the already-shipped ADR-0063 promotion, add the Closed/Retro markers · close: scope held
 
 ---
 
@@ -248,6 +260,7 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 - 2026-07-21 [main]: Winston wrote this plan from the ratified option 2 in `.prism/plans/eval-backlog-triage.md` § Question 1. Nine tasks across Clove and Eli; the esbuild caret range is recorded as moot under option 2 and load-bearing only for the option 1 fallback. No code written.
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Implemented all nine tasks — `dist/cli.js` untracked and gitignored, `prepare`/`prepack` added, `verify-pack-parity.ts` extended (6 runtime-read paths) and fixed for prepack/prepare stdout pollution, ADR-0063 amended, both docs updated, mirrors regenerated, `pnpm prism:check` exits 0. Task 5's own npm-pack-fires-prepack question is answered: it fires **both** `prepare` and `prepack` (each logging `dist/cli.js built.` once), see Decisions for the fix this required. One pre-existing bug found and left unfixed — see Debugged Issues.
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Fixed Briar's two Minor self-review findings — removed the double blank line in `.gitignore`, and added an `## AC Adjustments` entry documenting that AC-1's exit-0 clause is blocked on the open pre-existing multi-`main()` bug.
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Winston ran the plan close — consumed Iris's per-PR retro (6/6 charter items, no promotion cautions), recorded verdicts on all Decisions, marked the plan Closed. ADR-0063's task-6 amendment is the sole promotion; the multi-`main()` bundling bug stays `open` with a separately-scoped follow-up ticket recommended.
 
 ---
 
