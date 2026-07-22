@@ -236,16 +236,45 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — turn the ratified option 2 for #425 into an executable plan; Bounds — write this plan file only, no code, no branch, no tracker writes; Approach — take the evaluation's recorded blast radius as the task spine, verify each surface against source, front-load exact edits · close: scope held
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle] open: Intent — implement all nine tasks (untrack + gitignore `dist/`, add `prepare`/`prepack`, extend the pack-parity gate, amend ADR-0063, update the two docs, regenerate mirrors, `prism:check` green); Bounds — done when `pnpm prism:check` exits 0 and the plan's own verification commands pass, no runtime source changes per the plan's Decisions; Approach — execute tasks 1–9 in the plan's own sequence, absorbing Eli's tasks 7–8 since they're small verbatim-text edits already fully specified · close: scope held, plus one in-frame fix (see Decisions) and one found-bug (see Debugged Issues)
 
 ---
 
 ## History
 
 - 2026-07-21 [main]: Winston wrote this plan from the ratified option 2 in `.prism/plans/eval-backlog-triage.md` § Question 1. Nine tasks across Clove and Eli; the esbuild caret range is recorded as moot under option 2 and load-bearing only for the option 1 fallback. No code written.
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Implemented all nine tasks — `dist/cli.js` untracked and gitignored, `prepare`/`prepack` added, `verify-pack-parity.ts` extended (6 runtime-read paths) and fixed for prepack/prepare stdout pollution, ADR-0063 amended, both docs updated, mirrors regenerated, `pnpm prism:check` exits 0. Task 5's own npm-pack-fires-prepack question is answered: it fires **both** `prepare` and `prepack` (each logging `dist/cli.js built.` once), see Decisions for the fix this required. One pre-existing bug found and left unfixed — see Debugged Issues.
+
+---
+
+## Decisions
+
+- **`npm pack --dry-run --json`'s `stdout` capture in `verify-pack-parity.ts` now slices from the JSON's opening `[`.** Task 3's new `prepack` script fires during `npm pack --dry-run` (confirming task 5's open question — and so does `prepare`, both firing, each printing `dist/cli.js built.`), and their child-process stdout lands ahead of npm's own JSON on the same captured stream, breaking `JSON.parse`. `--ignore-scripts` was tried first and rejected — npm 10.9.8 does not honor it for `prepare` on `pack`/`publish` (confirmed by direct test: the `prepare` script still ran and printed to stdout with the flag set). Slicing from `stdout.indexOf("[")` is robust because npm's `--json` output is always the trailing well-formed block; the noise lines never contain `[`. In-frame fix — same file and function already being edited for task 5.
+  - → no promotion needed (implementation-tactical fix to a script's stdout-parsing robustness; doesn't generalize beyond this one gate)
 
 ---
 
 ## Debugged Issues
+
+### Bundled `dist/cli.js` runs multiple subcommands' `main()` on any invocation
+
+- **Status:** `open`
+- **Severity:** High
+- **Confidence:** `High` (Confirmed root cause + deterministic repro, reproduces on both the freshly-built bundle and `main`'s own previously-committed stale bundle)
+- **Environment:** any invocation of the compiled `dist/cli.js` — reproduced via `node dist/cli.js --help` from a genuinely fresh `git clone` (not worktree-specific)
+- **File:** `scripts/ai-skills/bundle.ts` (esbuild config); `scripts/ai-skills/adopt.ts`, `doctor.ts`, `eject.ts`, `update.ts` (the affected entry guards)
+- **Root cause:** `[Confirmed]` esbuild's ESM bundle mode collapses `import.meta.url` to the single output file's URL for every source module folded into `dist/cli.js`. Each of `adopt.ts`/`doctor.ts`/`eject.ts`/`update.ts` guards its own `main()` with `process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])` — a pattern that correctly isolates "am I the invoked file?" when each runs as its own `tsx` script, but once bundled, every guard evaluates against the same `import.meta.url` (the bundle's own path) and the same `process.argv[1]` (`dist/cli.js`), so all of them fire simultaneously regardless of which subcommand — or `--help` — was actually requested.
+- **Steps to Reproduce:**
+  1. From a clean clone of this branch, run `pnpm install` then `node dist/cli.js --help`.
+  2. Observe the correct USAGE banner on stdout, followed by a stderr error from an unrelated subcommand's `main()` (e.g. `runUpdateCli`'s "not nested inside another git repository" or `loadPathDefinitions`'s "Missing path definitions") and a non-zero exit code.
+- **Expected behavior:** `node dist/cli.js --help` exits 0, printing only the usage banner.
+- **Actual behavior:** exits 1; which extra subcommand's error surfaces is state-dependent (varies with repo-root resolution and file presence), because multiple `main()` functions race.
+- **Refuted hypotheses:**
+  - Nested-worktree-specific path confusion — refuted by reproducing from a genuinely fresh `git clone` at a normal filesystem location, not inside `.claude/worktrees/`.
+  - Introduced by this ticket's changes — refuted by copying `main`'s own previously-committed (stale) `dist/cli.js` to an isolated location and reproducing the same class of failure there.
+- **Recommended fix:** not attempted — out of scope for #425 per this plan's Decision "no runtime source changes," and it touches shared utilities (`bundle.ts` plus four CLI entry-point files) with a wide blast radius per `.prism/rules/autonomous-bug-fixing.md`'s "stop and explain" exception. A plausible direction: replace the `import.meta.url`-based guards with an explicit subcommand check keyed off `process.argv[2]` (matching `cli.ts`'s own dispatch pattern), since the bundle already routes subcommands through `cli.ts`'s `switch`.
+- **Suggested tests:** an integration test that runs the compiled `dist/cli.js` (not the `tsx`-run source) with `--help` and each subcommand name, asserting exit 0 and no unrelated stderr output — the class of bug unit tests against the source tree structurally cannot catch, same rationale as `verify-pack-parity.ts`'s own doc comment.
+- **Ticket:** `not synced` — recommend filing as a new, separately-scoped follow-up per `.prism/rules/followup-scope.md` (different persona class — debugging/architecture, not this ticket's packaging-lifecycle scope).
 
 ---
 
@@ -262,10 +291,10 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 - [ ] No critical or major issues
 - [ ] Types correct — no `any`, no unsafe `as`
 - [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (n/a — see `## Decisions`, no new logic)
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: —
+- [x] Tests written for new logic and edge cases (n/a — see `## Decisions`, no new logic; the `verify-pack-parity.ts` stdout-slice fix is covered by existing unit tests exercising `findMissingRuntimeReadPaths` plus the live `prism:verify-pack` run)
+- [ ] All debugged issues resolved (one `open` — pre-existing bundling bug, out of scope, see Debugged Issues)
+- [x] Build passes — last run: 2026-07-22 (`pnpm prism:check` exit 0)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (ADR-0063 amendment is task 6)
+- [x] Lasting decisions promoted to architect context (ADR-0063 amendment is task 6)
 
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22

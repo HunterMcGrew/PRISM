@@ -98,6 +98,8 @@ pnpm install
 pnpm link --global
 ```
 
+**`pnpm install` is what builds the binary.** The compiled `dist/cli.js` is not checked into the repo — a `prepare` script builds it during install. A fresh clone therefore has no `prism` binary until `pnpm install` has run, and `pnpm link --global` before that will link a bin that doesn't exist yet. Run the two commands in the order above.
+
 Then from any consumer repo:
 
 ```bash
@@ -108,7 +110,9 @@ prism update
 
 **PATH setup required.** `pnpm link --global` puts the binary into pnpm's global bin directory. If you've never used pnpm globals before, that directory may not be on your PATH. Run `pnpm setup` first to add it, then restart your shell. You'll know it worked when `which prism` returns a path inside pnpm's global dir.
 
-When you pull a newer PRISM commit, run `pnpm install` in the clone again — the global link picks up the change automatically, no re-link needed.
+When you pull a newer PRISM commit, run `pnpm install` in the clone again — this rebuilds `dist/cli.js` from the pulled source, and the global link picks up the change automatically, no re-link needed. Skipping the reinstall leaves the linked binary running the bundle from your last install.
+
+**Installing PRISM as a git-URL dependency is not supported.** The three supported paths are npm/npx, a vendored checkout, and this global link. A git-URL install would depend on your package manager running PRISM's `prepare` script with devDependencies present, which pnpm 10 does not do reliably. Use `npx @huntermcgrew/prism` instead.
 
 ### `--consumer` flag (checkout beside the repo)
 

@@ -49,7 +49,7 @@ PRISM follows semver. Patch releases fix bugs without changing the consumer-faci
 pnpm run prism:check
 ```
 
-`prism:check` validates the full persona roster and canonical content. A broken or stale roster must never publish — this is enforced automatically by `prepublishOnly`, which runs `prism:bundle` (the esbuild/dist step), `prism:build`, and `prism:check` before packing, but confirm it passes now so you're not surprised at publish time.
+`prism:check` validates the full persona roster and canonical content. A broken or stale roster must never publish — this is enforced automatically by `prepublishOnly`, which runs `prism:bundle` (the esbuild/dist step), `prism:build`, and `prism:check` before packing — and `prepack` runs `prism:bundle` independently, so even a bare `npm pack` cannot produce a tarball without a freshly built bundle, but confirm it passes now so you're not surprised at publish time.
 
 ### Step 3 — Run the leak audit
 
@@ -74,7 +74,7 @@ The grep must print `CLEAN — no operational tree in tarball`. If it prints `LE
 
 Open `/tmp/prism-tarball-contents.txt` and read through it. Confirm:
 
-- `dist/cli.js` is present (the compiled binary)
+- `dist/cli.js` is present (the compiled binary — untracked in git, built fresh by `prepack`/`prepublishOnly`, so a missing entry here means the build step failed, not that someone forgot to commit it)
 - `.prism/rules/`, `.prism/architect/`, `.prism/spec/`, `.prism/references/`, `.prism/templates/`, `.prism/SPEC.md` are present
 - `.prism/.sync-manifest.json` is present
 - `templates/install/` is present — including `templates/install/.claude/settings.json`
