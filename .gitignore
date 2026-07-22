@@ -14,6 +14,12 @@ node_modules/
 # Per-user local overrides — ignored.
 .claude/settings.local.json
 
+# The esbuild bundle is build-time-materialized, not tracked. `prepare` builds it at
+# install, `prepack` before any tarball, and `prepublishOnly` before publish; npm
+# `files` ships it regardless of this ignore — the same mechanism that already ships
+# the gitignored `.prism/.sync-manifest.json`. See ADR-0063 and issue #425: a tracked
+# machine-generated bundle with no drift gate is a silent-staleness surface.
+/dist/
 
 # Theo state files — operational; gitignored per ADR-0040 + Theo state schema
 .prism/theo-state.json

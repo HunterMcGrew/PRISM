@@ -26,6 +26,7 @@ export interface RuntimeReadPath {
 /** Each entry is a path (file) or path prefix (directory) the CLI reads from
  * the package root at runtime. Comment names the runtime reader. */
 const RUNTIME_READ_PATHS: RuntimeReadPath[] = [
+	{ path: "dist/cli.js", reader: "package.json bin \"prism\" — the published entry point", kind: "file" },
 	{ path: ".ai-skills/config.schema.json", reader: "config-schema-validate.ts loadConfigSchema", kind: "file" },
 	{ path: ".ai-skills/definitions/paths.json", reader: "utils.ts ensureConsumerPathDefinitions / resolveRunPathDefinitions", kind: "file" },
 	{ path: ".ai-skills/definitions/roles.json", reader: "update.ts refreshPlatformSkills", kind: "file" },
@@ -57,7 +58,12 @@ async function main(): Promise<void> {
 	// staying a plain execFile on macOS/Linux. Args are a static literal array,
 	// not user input, so shell interpolation has no injection surface here.
 	const { stdout } = await execFileAsync("npm", ["pack", "--dry-run", "--json"], { shell: true });
-	const parsed = JSON.parse(stdout) as { files: { path: string }[] }[];
+	// npm runs `prepare` and `prepack` before packing, and their stdout (e.g.
+	// "dist/cli.js built.") lands ahead of npm's own JSON on the same stream —
+	// `--ignore-scripts` does not suppress this for `npm pack` on npm 10. The
+	// JSON array is always the trailing well-formed block, so slice from its
+	// opening bracket rather than parsing the raw capture.
+	const parsed = JSON.parse(stdout.slice(stdout.indexOf("["))) as { files: { path: string }[] }[];
 	const packedList = [...new Set(parsed.flatMap((entry) => entry.files.map((f) => f.path)))];
 
 	const missing = findMissingRuntimeReadPaths(packedList, RUNTIME_READ_PATHS);
