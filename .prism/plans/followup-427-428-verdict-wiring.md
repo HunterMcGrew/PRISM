@@ -24,7 +24,7 @@ Not applicable — no UI surface.
 
 ## Implementation Tasks
 
-Every task names its file, its exact change, its verification command, and its position in sequence. Tasks 1–5 and 12 close #427; tasks 6–10 close #428; task 11 is the shared mirror/verify step and runs last.
+Every task names its file, its exact change, its verification command, and its position in sequence. Tasks 1–5 and 15 close #427; tasks 6–10 close #428; tasks 11–13 add phase-chain hardening (the #427 defect class applied to the lane phase chain); task 14 is the shared mirror/verify step and runs last.
 
 **Surface map (read before editing — the canonical vs. mirror split is not uniform):**
 
@@ -184,7 +184,7 @@ Also update § `## Definition of Done` (line 335): after `...is the final act be
 
 Verify: `grep -n 'diff --cached --name-only' .ai-skills/skills/prism-code-review-self/shared.md` returns one hit; `grep -n 'Land the plan commit' .ai-skills/skills/prism-code-review-self/shared.md` returns one hit.
 
-**9. Add Sol's deterministic post-review landing check (conductor lib + step-05).** Part of the #428 cluster; sequenced after task 8 (it ratifies the landing procedure task 8 establishes); independent of tasks 1–5 and 10–12.
+**9. Add Sol's deterministic post-review landing check (conductor lib + step-05).** Part of the #428 cluster; sequenced after task 8 (it ratifies the landing procedure task 8 establishes); independent of tasks 1–5 and 10–15.
 
 This is the "Sol makes sure nothing gets left behind" half of #428. Briar lands her own plan-only commit (task 8); inside a Sol run, Sol deterministically verifies it landed and re-dispatches the reviewer if it did not. Sol's role is **read-only** — it never commits, pushes, or writes the plan. The check reuses the write-lane ratification pattern (`git diff --stat` → verification re-run) in a read-only form: instead of re-running a command, Sol compares the plan blob SHA on the branch before and after the review dispatch.
 
@@ -202,7 +202,7 @@ Read-lanes (review, plan, QA-plan) write no source files, so the write-lane rati
 
 Both files are under `.prism/skills/prism-conductor/**` — canonical and unmirrored (surface map above), so this task produces no mirror churn.
 
-Verify: `grep -n 'review lane that writes plan content' .prism/skills/prism-conductor/step-05-route.md` returns one hit and `grep -n 'landing check' .prism/skills/prism-conductor/lib/report-back.md` returns one hit; after task 11's `pnpm prism:build`, `git status --short` shows no `.claude/skills/prism-conductor/` paths.
+Verify: `grep -n 'review lane that writes plan content' .prism/skills/prism-conductor/step-05-route.md` returns one hit and `grep -n 'landing check' .prism/skills/prism-conductor/lib/report-back.md` returns one hit; after task 14's `pnpm prism:build`, `git status --short` shows no `.claude/skills/prism-conductor/` paths.
 
 **10. Confirm no contradiction in Briar's handoff prose.**
 
@@ -210,7 +210,65 @@ File: `.ai-skills/skills/prism-code-review-self/shared.md`, lines 399–410 (the
 
 Verify: `pnpm prism:check` passes (includes `prism:crossref-lint`, which resolves the new cross-file links).
 
-**11. Regenerate mirrors and run the full gate.**
+**11. Add the canonical lane phase chain block to `step-04-dispatch.md`.**
+
+The phase-chain analogue of task 1's `## Canonical dispatch schema` — the same #427 defect class (run-time reconstruction of a canonical structure) on the sibling structure (the ordered lane phase chain, not the verdict enum). The 2026-07-21 wave-1 run authored a build segment that ran `implement → self-review → pr-review → close`, silently dropping both Reese phases (`ac-verify` and `qa`); nothing caught it. A copy-target removes the run-time reconstruction step that dropped them.
+
+File: `.prism/skills/prism-conductor/step-04-dispatch.md`. Two changes.
+
+First, insert a new `## Canonical lane phase chain` section immediately **after** the opening section (after the `codex.md` / `cursor.md` runtime-equivalents paragraph, currently line 11) and **before** `## Per-team dispatch ordering` (currently line 13). Section body, verbatim:
+
+~~~markdown
+## Canonical lane phase chain
+
+This is the **only** place the autonomous build-segment phase chain is enumerated. A Sol authoring a `pipeline()` segment copies this ordered list into the segment's stage chain — it never reconstructs the chain from memory or from prose. A reconstructed chain silently drops a phase, and a dropped phase closes the lane anyway with no signal: the 2026-07-21 wave-1 run authored `implement → self-review → pr-review → close`, dropping both Reese phases, and nothing caught it.
+
+```
+implement    → Clove   write lane; ratified per step-05 § Deterministic ratification
+ac-verify    → Reese   AC Verification mode; read lane; loops on needs-fix (→ Clove → re-Reese) per report-back § Routing table
+self-review  → Briar   gauntlet — runs the review-loop ladder, loops to clean (§ The review phase is the gauntlet)
+pr-review    → Eric    gauntlet — runs the review-loop ladder, loops to clean (§ The review phase is the gauntlet)
+qa           → Reese   tester-facing checklist mode; read lane
+docs         → Eli     write lane; content-gated (runs when the lane produced something to document)
+```
+
+**`ac-verify` and `qa` are two distinct Reese phases — never collapse them into one.** They are different Reese modes disambiguated by input shape (no PR yet at `ac-verify`; a PR exists at `qa`), and they sit on opposite sides of the review gauntlet (§ The review phase is the gauntlet). Collapsing "Reese" into a single phase is exactly the reconstruction error that dropped `qa` in the wave-1 run.
+
+**Copy the chain; do not author it.** Narrowing the chain to the phases a lane "obviously" needs is the failure mode this block exists to prevent — the chain is the same six phases for every leaf lane, and `docs` is the only phase a lane legitimately skips (nothing to document). This is the phase-chain twin of the § Canonical dispatch schema rule in `lib/report-back.md`: copy the literal, never retype it.
+
+This block is the ordered **build**-segment sub-chain. The full lifecycle enum (`prd → … → done`, spanning the step-02 decompose chain and step-03 plan-readiness) lives in `lib/goal-state.md`'s `currentPhase` field; the six phases here are the contiguous build-segment slice of it. An in-repo parity test (`scripts/ai-skills/phase-chain-parity.test.ts`) asserts the block and the enum never drift.
+~~~
+
+Second, replace the opening-line prose chain (currently line 3): the fragment `drives the lanes through `implement → ac-verify → self-review → pr-review → qa → docs`` becomes `drives the lanes through the phase chain enumerated in § Canonical lane phase chain (below) — copy that block, never reconstruct the chain`. Leave the rest of line 3 (the `claude.md` citation and the `agent()` field list) untouched.
+
+Content-only edit — this file is canonical and unmirrored (surface map), so no build effect and no mirror churn.
+
+Verify: `grep -c 'Canonical lane phase chain' .prism/skills/prism-conductor/step-04-dispatch.md` returns `≥ 2` (the section heading + the opening-line citation), and `grep -c 'implement → ac-verify → self-review → pr-review → qa → docs' .prism/skills/prism-conductor/step-04-dispatch.md` returns `0` (the arrow-literal is gone; the block uses the newline-list form).
+
+**12. Convert the phase-chain enumeration in `step-01-init.md` to a citation.**
+
+Removes the second drift site. Runs after task 11 (it cites the section task 11 creates); independent of tasks 1–10 and 13–15.
+
+File: `.prism/skills/prism-conductor/step-01-init.md`, § Phase mapping (currently line 17). The sentence currently ends `...step-04 drives `implement → ac-verify → self-review → pr-review → qa → docs`.` Replace the arrow-literal fragment `implement → ac-verify → self-review → pr-review → qa → docs` with `the build phase chain (`step-04-dispatch.md` § Canonical lane phase chain)`, so the clause reads `...step-04 drives the build phase chain (`step-04-dispatch.md` § Canonical lane phase chain).` Leave the rest of § Phase mapping (the `prd → … → plan` / `plan-readiness` phases and the gauntlet-loop sentence) unchanged.
+
+Content-only edit — canonical and unmirrored, no build effect.
+
+Verify: `grep -c 'implement → ac-verify → self-review → pr-review → qa → docs' .prism/skills/prism-conductor/step-01-init.md` returns `0`, and `grep -c 'Canonical lane phase chain' .prism/skills/prism-conductor/step-01-init.md` returns `1`.
+
+**13. Add the phase-chain parity test.**
+
+New file: `scripts/ai-skills/phase-chain-parity.test.ts`. Filename-glob discovery (`scripts/ai-skills/run-tests.ts`, per task 5's note), so no registration step. Model the header and `repoRoot` resolution on `scripts/ai-skills/routing-coverage.test.ts:20-27`. This is the drift-guard twin of `verdict-enum-parity.test.ts` (task 5); keep it a separate file so its failure messages name the phase chain specifically. Runs after tasks 11 and 12 (it asserts against the block they create and cite); independent of tasks 1–10.
+
+Read `.prism/skills/prism-conductor/step-04-dispatch.md` and `.prism/skills/prism-conductor/lib/goal-state.md` once each and assert:
+
+- **a.** The `## Canonical lane phase chain` fenced block's leading tokens (the first whitespace-delimited token of each non-empty line inside the ``` block), in order, are exactly `["implement","ac-verify","self-review","pr-review","qa","docs"]`.
+- **b.** Those six phases appear as a **contiguous, same-order subsequence** of the `currentPhase` enum in `lib/goal-state.md` (the pipe-delimited value of the `"currentPhase"` schema field). Fail with a message naming any phase present in the block but missing from the enum, or out of order.
+- **c.** Every phase line in the block names a dispatching persona (the text after the phase token is non-empty), and both `ac-verify` and `qa` map to **Reese** — the specific pairing the wave-1 drop violated. Fail naming any phase whose persona is missing, and fail if `ac-verify` and `qa` do not both map to Reese.
+- **d.** Neither `step-04-dispatch.md`'s opening section nor `step-01-init.md` re-enumerates the chain as the arrow-literal `implement → ac-verify → self-review → pr-review → qa → docs` — that literal appears **zero** times in both files (the chain lives only in the block, as the newline list). This is the phase-chain analogue of task 5 assertion (d).
+
+Verify: `pnpm prism:test` passes. Then confirm the test is load-bearing — temporarily delete the `qa` line from the block, re-run, see assertion (a)/(b) fail naming `qa`, and restore.
+
+**14. Regenerate mirrors and run the full gate.**
 
 Run, in order:
 
@@ -224,7 +282,7 @@ pnpm prism:check
 
 ### Eli (documentation)
 
-**12. Fix the truncated verdict enum in the consumer conductor doc.** Runs after task 1 (it cites the new section); independent of tasks 2–11.
+**15. Fix the truncated verdict enum in the consumer conductor doc.** Runs after task 1 (it cites the new section); independent of tasks 2–14.
 
 File: `docs/ai-skills/conductor.md`, line 44. The sentence currently reads `...returns one *primary verdict* (`done` · `blocked` · `needs-replan` · `needs-human`) that routes the lane...` — a **four**-value enum, missing both `needs-fix` and `needs-stronger-model`. This is the same reconstruct-from-memory failure as the dispatch schemas, on the consumer-facing surface: a reader who learns the enum here learns it wrong.
 
@@ -284,7 +342,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
   - **Root cause of the confusion:** the original issue's premise — "the enum has no value for implementation-level blocking findings" — is moot, because `needs-fix` has always existed (`report-back.md:14`). That is the grain of truth in "it's done": the *value* exists. But this plan reframed #427 to schema-**hardening**, and that work is entirely unbuilt in the tree right now (verified this session, not inferred): `report-back.md` has no `## Canonical dispatch schema` copy-target block; `.ai-skills/skills/prism-conductor/claude.md:15` still carries the reconstruction-inviting prose (`grep -c 'needs-fix'` → 0); `docs/ai-skills/conductor.md` still enumerates a truncated four-value enum, `done · blocked · needs-replan · needs-human`, missing both `needs-fix` and `needs-stronger-model` (`grep -c 'needs-fix'` → 0).
   - **Alternatives considered:** (a) close #427 as done because the enum value exists; (b) build the hardening.
   - **Chosen approach:** build. "It's been done" is false against the tree — three drift sites are still wrong at this moment. Deletion test on the copy-target block (task 1): if removed, every future Sol reconstructs the dispatch schema from the prose-plus-table form, which is exactly the run-time reconstruction that dropped `needs-fix` in the 2026-07-20 run — a failure no static check can catch, because Sol authors the schema at run time. The block is the only thing that removes the reconstruction step, so it earns its place. The recurrence (three independent wrong sites in one session) is the evidence the hardening matters, not gold-plating.
-  - **Implementation guidance:** tasks 1–5 and 12 stand exactly as scoped; Question A changes no task. What closes #427 is landing those tasks, not a status flip.
+  - **Implementation guidance:** tasks 1–5 and 15 stand exactly as scoped; Question A changes no task. What closes #427 is landing those tasks, not a status flip.
   - → no promotion needed (the reconsideration is ticket-scoped; the durable content is the `report-back.md` § Canonical dispatch schema block that task 1 produces).
 
 - **Reopened #428 under Hunter's "Sol makes sure nothing gets left behind" framing — option (a): Briar lands, and Sol deterministically ratifies the landing (Question B).**
@@ -295,12 +353,23 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
   - **Implementation guidance:** new **task 9** edits `step-05-route.md` § Deterministic ratification (adds the review-lane landing check) and `report-back.md:30` (amends the now-partially-false "read-lanes are exempt — no files" claim). Both files are canonical and unmirrored, so the check adds no mirror churn — AC-8 still holds. The check is persona-agnostic by construction (a blob-SHA diff), so it covers Briar self-review and Reese AC-verify uniformly without per-persona code; Eric is out of scope because his findings land on the PR, not the plan.
   - → promoted to `.prism/skills/prism-conductor/step-05-route.md` § Deterministic ratification.
 
+- **Phase-chain hardening folded into this lane — copy-target + parity test in v1; runtime completeness check deferred (tasks 11–13).**
+  - **Root cause:** Sol hand-authors the lane phase chain at run time when it writes each build segment's `pipeline()` stage list. The chain was documented only in prose (`step-04-dispatch.md:3`, `step-01-init.md:17`) plus a full-lifecycle `currentPhase` enum in `lib/goal-state.md` — no copy-target. The 2026-07-21 wave-1 run reconstructed the chain from that prose-plus-context and dropped both Reese phases (`ac-verify`, `qa`), running `implement → self-review → pr-review → close`; the lane closed with AC verification and QA silently skipped and nothing caught it. This is the identical defect class as #427 (run-time reconstruction of a canonical structure) on the sibling structure (the phase chain, not the verdict enum), in the same file family — so it folds into this lane per `followup-scope.md` (same subject-matter thread, files in the same diff, reviewable as one focused change).
+  - **Alternatives considered:** (a) copy-target only (tasks 11–12) — the canonical block plus the two prose drift sites converted to citations. (b) copy-target + in-repo parity test (tasks 11–13) — (a) plus `phase-chain-parity.test.ts` guarding the block against drift with the `currentPhase` enum. (c) copy-target + parity test + a runtime completeness check — (b) plus a deterministic Sol-side gate where goal-state records phase traversal and a leaf lane cannot advance to `currentPhase: done` unless it traversed every required build phase.
+  - **Chosen approach:** (b) for v1; the runtime completeness check from (c) is deferred as a scoped follow-up.
+    - **(b) over (a):** the parity test is the drift-guard half of the copy-target — the exact pairing task 5 established for the #427 verdict block, one test file at the same rigor, so it ships with the copy-target as one unit. Like task 5, it guards **in-repo** drift only; it cannot see a hand-typed runtime segment, because Sol authors the chain at run time and no static check observes it.
+    - **(c) deferred, not rejected:** the completeness check is the only mechanism that catches the *actual runtime drop*. The copy-target is a discipline lever — a stronger one than prose, but still a lever — and this session proved a discipline layer can fail: Sol dropped the Reese phases despite `step-04` already carrying full prose describing the chain, a dedicated `ac-verify` section, and a gauntlet section. So the completeness check genuinely closes the acute hole the copy-target only narrows. It is deferred because it needs a `lib/goal-state.md` schema addition (an append-only `phaseLog` per lane), a new route/close-time gate, repair-vs-park routing, its own test, and the required-phase-set semantics (which phases are unconditional vs. content-gated like `docs`) — a distinct runtime-behavior change with its own review surface that tips out of this spec-hardening fold-in. Task 9 (the #428 Sol-side landing check) is precedent that this codebase builds exactly such deterministic Sol-side ratification checks — but task 9 reached its check with **no schema change** (it reads an external plan-blob SHA), whereas phase traversal is not externally recorded; that schema addition is the line that makes the completeness check its own ticket rather than a fold-in.
+  - **Honest limit:** after this ticket a silently-dropped phase is *less likely* (Sol copies instead of reconstructing) and *impossible to introduce as in-repo drift* (the parity test), but not yet *impossible to close on at run time* — that last guarantee is the deferred completeness check. Emitted as follow-up work, not silently absorbed.
+  - **Where the block lives — `step-04-dispatch.md`, not `lib/`.** Alternatives: a new `lib/phase-chain.md`, or `lib/report-back.md` beside the verdict block. Rejected: the phase chain's copy-target is bound to step-04's authoring act (step-04 authors the `pipeline()` segment; its opening line was already the prose chain), whereas the verdict block lives in `lib/report-back.md` because verdicts are a cross-step routing contract read by step-05. A `lib/` file would over-abstract a step-04-local concern and add an indirection hop for the one step that copies it.
+  - → promoted to `.prism/skills/prism-conductor/step-04-dispatch.md` § Canonical lane phase chain (the durable surface is the conductor step doc; no separate architect-doc promotion needed). The deferred completeness check is tracked as follow-up work, not promoted.
+
 ---
 
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — merge #427 and #428 into one implementable plan that makes the dispatch schema uncopyable-wrong and gives Briar's plan commits a landing path; Bounds — write `.prism/plans/followup-427-428-verdict-wiring.md` only, no code, no branch, no commit, no tracker writes; Approach — one copy-target schema block plus a parity test for #427, a role-stated rule plus a file-set-scoped procedure for #428 · close: scope held
 - 2026-07-22 [main] open: Intent — reconcile the merged plan against two operator challenges (is #427 done? should Sol ensure Briar's plan-writes land?); Bounds — this plan file only, no code, no build, no tracker writes; Approach — verify both premises against the tree, then adjust tasks/decisions/AC · close: scope held — Question A confirmed unbuilt (three drift sites still live), Question B resolved to option (a) adding one conductor task
+- 2026-07-22 [main] open: Intent — fold phase-chain hardening (the #427 defect class applied to the lane phase chain that a wave-1 run silently truncated) into this lane; Bounds — this plan file only, no code, no build, no tracker writes; Approach — a canonical copy-target block in step-04 + citations + a parity test for v1, runtime completeness check deferred with reasoning · close: scope held — v1 = copy-target + parity test (tasks 11–13); completeness check deferred as scoped follow-up (needs a goal-state schema addition)
 
 ---
 
@@ -308,6 +377,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 
 - 2026-07-21 [main]: Winston merged issues #427 and #428 into this plan under a Sol dispatch. Corrected #427's filed premise — `needs-fix` already existed in the verdict enum; the defect was hand-authored dispatch schemas truncating it — and scoped the remaining work to a single copy-verbatim schema block, reviewer-side wiring, and a parity test. See Decisions.
 - 2026-07-22 [main]: Winston reconciled the plan against two operator challenges under a Sol dispatch. Question A — verified against the tree that the hardening is unbuilt (three drift sites still live), so #427 is not closeable; tasks unchanged. Question B — resolved to option (a): Briar still lands her own plan commit, and new task 9 adds a read-only Sol-side deterministic landing check, closing the silent-push-failure hole the prior verdict left open. See Decisions.
+- 2026-07-22 [main]: Winston folded phase-chain hardening into the lane under a Sol dispatch — the same defect class as #427 (run-time reconstruction of a canonical structure) on the lane phase chain a wave-1 run silently truncated (dropped both Reese phases, `ac-verify` and `qa`). Added tasks 11–13 (canonical block in step-04 + two citation conversions + a parity test), AC-11–13, and a Decision; renumbered the mirror gate to 14 and the Eli task to 15. Deferred the runtime completeness check as a scoped follow-up. See Decisions.
 
 ---
 
@@ -353,6 +423,15 @@ Verified by the developer. Every criterion carries a stable ID and a falsifiable
 - [ ] **AC-9** — Given a reader learning the report-back contract from the consumer docs, When they read the primary-verdict enumeration in `docs/ai-skills/conductor.md`, Then it lists all six verdicts including `needs-fix`, and no other enumeration in that file lists a strict subset.
   - Evidence (`machine`): `pnpm prism:test` passes, including `verdict-enum-parity.test.ts` assertion (d) extended to `docs/ai-skills/conductor.md`; and `grep -c 'needs-fix' docs/ai-skills/conductor.md` returns `≥ 2`.
 
+- [ ] **AC-11** — Given a Sol authoring a build segment, When it reaches the `pipeline()` stage chain, Then the ordered chain it copies is a single named literal block (`step-04-dispatch.md` § Canonical lane phase chain) naming all six phases with their dispatching personas, and no prose re-enumeration of the chain survives in step-04's opening or step-01's phase mapping.
+  - Evidence (`machine`): `grep -c 'implement → ac-verify → self-review → pr-review → qa → docs' .prism/skills/prism-conductor/step-04-dispatch.md .prism/skills/prism-conductor/step-01-init.md` returns `0` for both files, and `grep -c 'Canonical lane phase chain' .prism/skills/prism-conductor/step-04-dispatch.md` returns `≥ 2`.
+
+- [ ] **AC-12** — Given the canonical lane phase chain block, When its phase list is compared against the `currentPhase` enum in `lib/goal-state.md`, Then the six build phases are a contiguous same-order subsequence of the enum, and both `ac-verify` and `qa` are present as distinct Reese phases.
+  - Evidence (`machine`): `pnpm prism:test` passes, including `phase-chain-parity.test.ts` assertions (a), (b), and (c).
+
+- [ ] **AC-13** — Given the phase chain block is edited to drop a phase, When the test suite runs, Then it fails with a message naming the missing phase.
+  - Evidence (`machine`): temporarily remove the `qa` line from the block, run `pnpm prism:test`, observe assertion (a)/(b) fail naming `qa`, restore the block, re-run and observe green.
+
 ### Non-behavioral
 
 - [ ] **AC-7** — All generated mirrors are regenerated by `pnpm prism:build`; no mirror file under `.claude/`, `.cursor/`, or `templates/install/.prism/` is hand-edited in this change.
@@ -371,6 +450,7 @@ None.
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-07-21 | Winston | Authored AC from merged #427/#428 | created | not synced (dispatch bounds forbid tracker writes) |
 | 2026-07-22 | Winston | Added AC-10 for the Sol-side deterministic landing check (Question B reconciliation) | updated | not synced (dispatch bounds forbid tracker writes) |
+| 2026-07-22 | Winston | Added AC-11–13 for phase-chain hardening (copy-target + parity test) | updated | not synced (dispatch bounds forbid tracker writes) |
 
 ---
 
@@ -383,12 +463,12 @@ None identified.
 ## PR Readiness
 
 - [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts` only)
+- [ ] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` only)
 - [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — `verdict-enum-parity.test.ts` present and proven load-bearing per AC-6
+- [ ] Tests written for new logic and edge cases — `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` present and proven load-bearing per AC-6 and AC-13
 - [ ] All debugged issues resolved (no `open` entries)
 - [ ] Build passes — `pnpm prism:build` then `pnpm prism:check`, last run: not yet
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
-**Last updated:** 2026-07-21
+**Last updated:** 2026-07-22
