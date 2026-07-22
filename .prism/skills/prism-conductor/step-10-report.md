@@ -9,6 +9,7 @@ Cover, per lane:
 - **What's parked and why** — lanes stopped on a budget or an escalation, with the reason that parked them.
 - **What's awaiting the human** — drain `pendingHumanReport` into the report. Fleet `needs-human` pauses arrive here already batched from step-08.
 - **Auto-cleared gates** — every gate a persona auto-cleared under the autonomy policy, with its stakes reasoning, so autonomy stays on-the-loop, never dark.
+- **Phase-coverage gaps** — any content-gated phase (`ac-verify`/`qa`/`docs`) a leaf lane skipped without a recorded reason in `phaseLog`, surfaced for operator adjudication — distinct from a hard-required omission, which already parked the lane at `needs-human` (`step-05-route.md` § Deterministic ratification).
 
 Cover for the run as a whole:
 
