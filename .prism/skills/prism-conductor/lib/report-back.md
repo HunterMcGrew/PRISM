@@ -1,6 +1,6 @@
 # Conductor report-back contract — verdicts, signals, gate dispositions
 
-Reference doc for what a dispatched persona returns to Sol and how Sol routes it. Step files (`step-05-route.md` especially) cite this doc instead of restating the table.
+Reference doc for what a dispatched persona returns to Sol and how Sol routes it. Step files (`step-05-route.md` especially) cite this doc instead of restating the table. The literal schema a dispatch copies is in § Canonical dispatch schema — copy it, never retype it.
 
 Every dispatched persona does two things when it finishes: it writes its work to the branch plan (the durable content bus — Briar to `## Review Issues`, Sasha to `## Debugged Issues`, Winston to `## Implementation Tasks` / `## Decisions`), **and** it returns a structured report-back to Sol. The report-back is the run-control channel; it carries no work content, only the verdict and signals Sol routes on. Sol's routing is deterministic — it applies the table and never interprets the work behind a verdict.
 
@@ -27,7 +27,7 @@ Evidence fields turn "I ran the tests" into a falsifiable claim the ratification
 
 A `done` from a write-lane is **proposed, not accepted** — it advances only after deterministic ratification (`step-05-route.md` § Deterministic ratification).
 
-In fleet mode these are schema fields on the `agent()` report-back shape (`claude.md` § The autonomous segment). Read-lanes (review, plan, QA-plan) are exempt — no files, nothing to ratify.
+In fleet mode these are schema fields on the `agent()` report-back shape (`claude.md` § The autonomous segment). Read-lanes (review, plan, QA-plan) write no source files, so the write-lane ratification (diff + verification re-run) does not apply. One carve-out: review lanes that write plan content — Briar self-review and Reese AC-verify — land a plan-only commit per [`branch-plan.md`](../../../rules/branch-plan.md) § Landing a plan-only commit and get a lightweight **landing check** instead: Sol confirms the plan blob changed on the branch, and re-dispatches the reviewer if it did not (`step-05-route.md` § Deterministic ratification).
 
 ### `acVerdicts` (review lanes — Reese's AC-verification dispatch)
 
@@ -47,6 +47,46 @@ acVerdicts: [
 ```
 
 `reason` is required on every `UNGRADEABLE` entry and absent otherwise. See [`verdict-contract.md`](../../../references/qa-test-plan/verdict-contract.md) for the full semantics (harness failures and dead references are never `UNMET`; born vs. converted UNGRADEABLE; human-tagged criteria never appear here — they ride the report's awaiting-human-verification checklist instead).
+
+## Canonical dispatch schema
+
+This is the **only** place the dispatch report-back schema is written down. A Sol authoring an autonomous segment copies this block verbatim into the `agent()` / Workflow `schema` field. Never retype the enum from memory and never abbreviate it to "the verdicts that apply to this lane" — a truncated enum silently forbids a persona from returning the correct verdict, and the persona has no way to signal that the schema, not its own judgment, was the constraint.
+
+```
+{
+  verdict: "done" | "needs-fix" | "blocked" | "needs-replan" | "needs-stronger-model" | "needs-human",
+  summary: string,
+  signals?: [
+    {
+      kind: "found-bug" | "found-followup-work" | "observation",
+      note: string,
+      target?: { file?: string, symbol?: string, scopeSlug?: string, errorSignature?: string }
+    }
+  ],
+  gateDisposition?: "auto-cleared" | "needs-human" | "blocked" | "none",
+
+  // write lanes only — see § Evidence fields (write lanes)
+  filesChanged?: string[],
+  verificationCommand?: string,
+  verificationExitCode?: number,
+
+  // Reese's ac-verify dispatch only — see § `acVerdicts`
+  acVerdicts?: [
+    {
+      id: string,
+      criterion: string,
+      verdict: "MET" | "UNMET" | "UNGRADEABLE",
+      evidenceType: "executed" | "inspected" | "demonstrated",
+      evidence: string,
+      reason?: "ac-defect" | "harness" | "dead-reference" | "requires-human" | "converted"
+    }
+  ]
+}
+```
+
+**Every dispatch carries the full six-value `verdict` enum**, including read-lane and review-lane dispatches. The optional fields are what vary by lane type; the enum never does. A review rung that cannot return `needs-fix` is forced to overstate (`needs-replan` / `blocked`) or understate (`done`) its findings — the exact defect that cost two adjudication rounds in the 2026-07-20 run.
+
+**Why one literal block, not prose.** The prose form ("the report-back verdict shape, including the `needs-stronger-model` verdict") invited reconstruction: an authoring Sol read the named example, retyped a five-value set from memory, and dropped `needs-fix`. A copy-target removes the reconstruction step entirely.
 
 ## Secondary signals
 

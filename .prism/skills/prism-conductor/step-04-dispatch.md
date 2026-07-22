@@ -1,6 +1,8 @@
 # Step 04 — Dispatch
 
-Author and invoke the autonomous Workflow segment that drives the lanes through `implement → ac-verify → self-review → pr-review → qa → docs`. Cite `claude.md` § The autonomous segment for the Claude Code mechanism rather than restating it: `pipeline(lanes, …)` for the per-lane phase chains, `agent()` calls carrying `agentType` (the compiled persona def at `.claude/agents/<persona>.md`), `model` (the per-dispatch tier from the model-tiering table), `schema` (the report-back verdict shape), `isolation: 'worktree'` (one checkout per lane), and `budget` (the global dispatch cap).
+Author and invoke the autonomous Workflow segment that drives the lanes through the phase chain enumerated in § Canonical lane phase chain (below) — copy that block, never reconstruct the chain. Cite `claude.md` § The autonomous segment for the Claude Code mechanism rather than restating it: `pipeline(lanes, …)` for the per-lane phase chains, `agent()` calls carrying `agentType` (the compiled persona def at `.claude/agents/<persona>.md`), `model` (the per-dispatch tier from the model-tiering table), `schema` (the report-back verdict shape), `isolation: 'worktree'` (one checkout per lane), and `budget` (the global dispatch cap).
+
+**Copy the schema; do not author it.** The `schema` field on every `agent()` call is the literal block at `lib/report-back.md` § Canonical dispatch schema, copied verbatim. Do not narrow the `verdict` enum to the values a lane "should" need — the enum is the same six values on every dispatch, and a lane-narrowed enum makes the correct verdict unreturnable rather than merely unlikely. This is the 2026-07-20 defect: hand-authored segment schemas hardcoded a five-value enum without `needs-fix`, so Eric returned `needs-replan` on PR #420 and `blocked` on PR #421 while his own prose said the findings were clear-cut implementation fixes for Clove.
 
 `ac-verify` dispatches Reese in AC Verification mode after deterministic ratification (which checks the work *ran*) and before the review loop (AC verification checks it *did what was asked* — an UNMET caught here costs one Clove dispatch, not Briar + Eric twice). This is a **new** phase distinct from the existing post-review `qa` phase (Reese's tester-facing checklist mode) — the two are different Reese modes, disambiguated by input shape (no PR yet at `ac-verify`; a PR exists at `qa`).
 
@@ -9,6 +11,25 @@ The segment runs each lane forward autonomously and **clears `auto-cleared` gate
 Sol does not talk to running workers. It reads the returned verdicts when the segment ends and records them in goal-state (`lastVerdict`, `signals`, the gate disposition) per the mutate protocol in `.prism/skills/prism-conductor/lib/goal-state.md`. Set the per-dispatch `model` off each lane's `models` map — the top-tier model for top-tier personas per the tiering table and for any worker that escalated, the worker-tier model for the default worker dispatch. When a run carries a `teamConfig[]` array, Sol also checks whether the dispatched lane's `team` matches any `teamConfig[].team` entry; when a match exists and `modelTier` is non-null, that value overrides the default tier for this lane's dispatch. The per-team model tier is the override when set; the run-wide default applies otherwise. See `lib/goal-state.md` § Field notes for the `teamConfig[]` schema.
 
 The runtime equivalents for other adapters (`@openai/codex-sdk`, `@cursor/sdk`, or a sequential `prism-handoff` fallback) live in `codex.md` / `cursor.md`.
+
+## Canonical lane phase chain
+
+This is the **only** place the autonomous build-segment phase chain is enumerated. A Sol authoring a `pipeline()` segment copies this ordered list into the segment's stage chain — it never reconstructs the chain from memory or from prose. A reconstructed chain silently drops a phase, and a dropped phase closes the lane anyway with no signal: the 2026-07-21 wave-1 run authored `implement → self-review → pr-review → close`, dropping both Reese phases, and nothing caught it.
+
+```
+implement    → Clove   write lane; ratified per step-05 § Deterministic ratification
+ac-verify    → Reese   AC Verification mode; read lane; loops on needs-fix (→ Clove → re-Reese) per report-back § Routing table
+self-review  → Briar   gauntlet — runs the review-loop ladder, loops to clean (§ The review phase is the gauntlet)
+pr-review    → Eric    gauntlet — runs the review-loop ladder, loops to clean (§ The review phase is the gauntlet)
+qa           → Reese   tester-facing checklist mode; read lane
+docs         → Eli     write lane; content-gated (runs when the lane produced something to document)
+```
+
+**`ac-verify` and `qa` are two distinct Reese phases — never collapse them into one.** They are different Reese modes disambiguated by input shape (no PR yet at `ac-verify`; a PR exists at `qa`), and they sit on opposite sides of the review gauntlet (§ The review phase is the gauntlet). Collapsing "Reese" into a single phase is exactly the reconstruction error that dropped `qa` in the wave-1 run.
+
+**Copy the chain; do not author it.** Narrowing the chain to the phases a lane "obviously" needs is the failure mode this block exists to prevent — the chain is the same six phases for every leaf lane, and `docs` is the only phase a lane legitimately skips (nothing to document). This is the phase-chain twin of the § Canonical dispatch schema rule in `lib/report-back.md`: copy the literal, never retype it.
+
+This block is the ordered **build**-segment sub-chain. The full lifecycle enum (`prd → … → done`, spanning the step-02 decompose chain and step-03 plan-readiness) lives in `lib/goal-state.md`'s `currentPhase` field; the six phases here are the contiguous build-segment slice of it. An in-repo parity test (`scripts/ai-skills/phase-chain-parity.test.ts`) asserts the block and the enum never drift.
 
 ## Per-team dispatch ordering
 
