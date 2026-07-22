@@ -351,3 +351,15 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix, PR #436 review) — a reviewer suggested `lib/cli-entry.test.ts` for coverage of `lib/cli-entry.ts`. `run-tests.ts` discovers `*.test.ts` with a non-recursive `readdirSync` on `scripts/ai-skills/` only, so a test placed under `lib/` would never run under `pnpm prism:test` — silently, with no error. Every existing `lib/*` module's test (`tokens.test.ts` for `lib/tokens.ts`, `stack-detect.test.ts` for `lib/stack-detect.ts`) already lives at the top level for the same reason; caught by checking `run-tests.ts`'s discovery logic before trusting the suggested path.
 
 **How to apply:** When adding a test for any `scripts/ai-skills/lib/*.ts` module, place the `*.test.ts` file directly under `scripts/ai-skills/`, importing from `./lib/<module>`. Verify against `run-tests.ts`'s actual discovery mechanism before placing a test file anywhere non-obvious, rather than trusting a suggested path at face value.
+
+## `grep -c` counts matching lines, not occurrences — use `grep -o 'token' file | wc -l` when counting how many times a token appears
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, per-PR retro) — an AC evidence command and an AC machine-note both used `grep -c 'needs-fix'` expecting an occurrence count, but two `needs-fix` mentions sat on one line, so `grep -c` read 1 where the criterion claimed ≥ 2. The trap surfaced twice in one ticket (the AC-3 note miscount and the AC-9 evidence-command miscalibration).
+
+**How to apply:** When an evidence or AC command needs to count how many *times* a token appears (not on how many *lines*), reach for `grep -o 'token' file | wc -l`, not `grep -c`. Reserve `grep -c` for "how many lines match."
+
+## When building an anti-drift guard, sweep the guard's own constants for the same dual-source-of-truth it forbids
+
+**Why:** 2026-07-22 (followup-427-428-verdict-wiring, Eric Round-1 Minor) — `phase-chain-parity.test.ts` — a test whose entire job is preventing a second copy of the canonical phase chain — held its own second hardcoded copy in `ARROW_LITERAL` alongside `EXPECTED_PHASES`. The anti-drift guard briefly reintroduced the exact drift it exists to forbid.
+
+**How to apply:** After writing a test that forbids a dual source of truth, re-read the test's own constants: derive the second representation from the first (`EXPECTED_PHASES.join(" → ")`), never re-hardcode it. The guard has to hold itself to its own rule.

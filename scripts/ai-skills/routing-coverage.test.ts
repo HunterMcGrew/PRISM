@@ -23,6 +23,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
+import { extractSection } from "./lib/markdown-section";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
 
@@ -42,23 +44,6 @@ async function loadRoles(): Promise<RoleEntry[]> {
 	);
 	const raw = await fs.readFile(rolesPath, "utf8");
 	return (JSON.parse(raw) as { skills: RoleEntry[] }).skills;
-}
-
-/**
- * Extracts the lines between a top-level `## heading` and the next top-level
- * `## ` heading (or end of file). The routing rule only nests headings one
- * level deep past `## `, so this boundary is unambiguous.
- */
-function extractSection(markdown: string, heading: string): string {
-	const lines = markdown.split("\n");
-	const startIndex = lines.findIndex((line) => line.trim() === heading);
-	if (startIndex === -1) {
-		throw new Error(`Section '${heading}' not found`);
-	}
-	const rest = lines.slice(startIndex + 1);
-	const endOffset = rest.findIndex((line) => line.startsWith("## "));
-	const sectionLines = endOffset === -1 ? rest : rest.slice(0, endOffset);
-	return sectionLines.join("\n");
 }
 
 function extractBacktickedSkillIds(text: string): string[] {

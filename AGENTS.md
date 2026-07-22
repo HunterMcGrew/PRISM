@@ -258,6 +258,22 @@ For each ticket or epic:
 
 ---
 
+## Landing a plan-only commit
+
+A persona that writes plan content but does not own the branch's code lane — a reviewer, a diagnostician — lands its own plan-file commit: stage the plan file alone, commit it, push it. This is a narrow, machine-checkable exception to "authors ship, reviewers review" (`skill-routing.md` § Authors ship, reviewers review), and it is scoped by the *file set*, not by judgment: if the staged set contains anything other than the one plan file, the exception does not apply and the persona stops.
+
+**Why:** a review record that exists only in a torn-down worktree is not a durable plan entry — it defeats `## Review Issues` and `## PR Readiness` as the ticket's working memory. In the 2026-07-20 run a reviewer's plan write was stranded three times (twice committed-but-unpushed, once uncommitted in a worktree) and needed manual conductor recovery each time. Making the conductor the lander was considered and rejected: it re-institutionalizes exactly the manual recovery that failed three times, and it leaves standalone (non-conducted) reviewer sessions with no landing path at all.
+
+**How to apply:**
+
+- Stage only the plan file: `git add <plan-path>`.
+- Verify the staged set before committing: `git diff --cached --name-only` must print exactly that one path. Anything else — abort, leave the tree alone, and report the unexpected paths in chat.
+- Commit with `chore: <persona> plan record for <ticket-id>` per `git-conventions.md` § Commit Messages.
+- Push. From a worktree, use the full-ref form — `git push origin HEAD:refs/heads/<branch>` — per `worktree-mode.md` § Push from detached HEAD; a plain `git push origin HEAD` fails from detached HEAD.
+- The exception covers the plan file only. It never extends to source, docs, config, or lockfiles — those stay the author's lane.
+
+---
+
 # Before Closing
 
 Run the close on the ticket's **final PR branch** — after implementation is done and reviews have passed, before that PR merges. The promotion edits and the close marker then ride the final PR instead of requiring a standalone close-out PR after merge.
@@ -1466,6 +1482,8 @@ Unlike the utility skills above, Sol (`prism-conductor`) carries its own persona
 ## Authors ship, reviewers review
 
 Once implementation or authoring is complete, the authoring persona owns the full shipping step — commit, push, and open the PR — without a prompt before pushing. Clove ships for code. Eli ships for docs. Sage and Reese ship their own artifact PRs (release PRs themselves are still owned by the team lead, not Sage or Reese). Briar and Eric review but never ship — when a user asks a reviewer to create a PR, route back to the author persona instead. This keeps the review adversarial edge intact and avoids the iteration-loop ambiguity that would otherwise build up. See the authors-ship-reviewers-review decision in `.prism/spec/adrs/_toolkit/` for the decision and its tradeoffs; the framework behind it lives in `.prism/plans/4.7-skill-audit-strategy.md` (Round 10).
+
+One narrow exception: a reviewer lands its own plan-only commit — staged set limited to the single plan file, verified mechanically — per `branch-plan.md` § Landing a plan-only commit. Everything else in a reviewer's tree stays the author's to ship.
 
 ---
 

@@ -1,5 +1,8 @@
 # Plan: followup-427-428-verdict-wiring
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/followup-427-428-verdict-wiring.md
+
 ## Ticket
 
 GitHub issues [#427](https://github.com/HunterMcGrew/PRISM/issues/427) and [#428](https://github.com/HunterMcGrew/PRISM/issues/428) — merged into one lane per `.prism/plans/eval-backlog-triage.md` § "#427 + #428 — do both, as one ticket".
@@ -370,6 +373,11 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 - 2026-07-21 [main] open: Intent — merge #427 and #428 into one implementable plan that makes the dispatch schema uncopyable-wrong and gives Briar's plan commits a landing path; Bounds — write `.prism/plans/followup-427-428-verdict-wiring.md` only, no code, no branch, no commit, no tracker writes; Approach — one copy-target schema block plus a parity test for #427, a role-stated rule plus a file-set-scoped procedure for #428 · close: scope held
 - 2026-07-22 [main] open: Intent — reconcile the merged plan against two operator challenges (is #427 done? should Sol ensure Briar's plan-writes land?); Bounds — this plan file only, no code, no build, no tracker writes; Approach — verify both premises against the tree, then adjust tasks/decisions/AC · close: scope held — Question A confirmed unbuilt (three drift sites still live), Question B resolved to option (a) adding one conductor task
 - 2026-07-22 [main] open: Intent — fold phase-chain hardening (the #427 defect class applied to the lane phase chain that a wave-1 run silently truncated) into this lane; Bounds — this plan file only, no code, no build, no tracker writes; Approach — a canonical copy-target block in step-04 + citations + a parity test for v1, runtime completeness check deferred with reasoning · close: scope held — v1 = copy-target + parity test (tasks 11–13); completeness check deferred as scoped follow-up (needs a goal-state schema addition)
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — implement all 15 tasks (Sol dispatch); Bounds — files named in the plan only, `pnpm prism:check` must exit 0 before push; Approach — execute in stated sequence, then build+check+ship · close: scope held — all 15 tasks landed, both parity tests confirmed load-bearing, `pnpm prism:check` exits 0
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — first-pass self-review of the branch (Sol dispatch) against this plan, covering types, logic, a11y, tests, and build; Bounds — review only, land a plan-only commit if findings need recording, no code changes, no PR-body edits, no GitHub comments; Approach — read the full branch diff (30 files, 1188 lines) in three passes (mirror/canonical spec text; conductor lib/step files + the two new parity tests; the QA artifact), independently re-run `pnpm prism:check` in an isolated detached worktree, cross-check Reese's AC-verify citations against source · close: scope held — 2 Minor findings recorded (a wrong grep count in Reese's AC-3 machine note; a duplicated `extractSection` helper now copy-pasted across 3 test files), `pnpm prism:check` independently reconfirmed exit 0 with both new parity tests' assertions passing, verdict needs-fix
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — fix Briar's 2 open Minor findings (Sol dispatch); Bounds — the 2 named findings only, no other code changes, `pnpm prism:check` must exit 0 before push; Approach — correct the AC-3 grep-count citation, extract the duplicated `extractSection` helper into `scripts/ai-skills/lib/markdown-section.ts` and import it from all three call sites · close: scope held — both findings fixed, `pnpm prism:check` exits 0 (546/547, 1 pre-existing skip)
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — second-pass self-review (Sol dispatch) verifying the fix commit for both Pass-1 Minor findings, plus a fresh independent gate run; Bounds — review only, land a plan-only commit, no code changes, no PR-body edits, no GitHub comments; Approach — diff-read the fix commit, independently re-verify the corrected grep counts and the extraction (no stray definitions, correct imports, glob-safe), re-read both parity test files in full, independently re-run `pnpm prism:check`, confirm no mirror hand-edits · close: scope held — both findings confirmed fixed, no new issues found, `pnpm prism:check` exits 0 (547/547, 0 skip — improved on the prior 546/547 report)
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] open: Intent — fix Eric's one PR-review Minor finding (Sol dispatch) on `phase-chain-parity.test.ts`'s hardcoded `ARROW_LITERAL`; Bounds — the named finding only, no other code changes, `pnpm prism:check` must exit 0 before push; Approach — derive `ARROW_LITERAL` from `EXPECTED_PHASES.join(" → ")` instead of a second hardcoded string · close: scope held — finding fixed, `pnpm prism:check` exits 0 (547/547, 1 pre-existing skip)
 
 ---
 
@@ -378,6 +386,13 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 - 2026-07-21 [main]: Winston merged issues #427 and #428 into this plan under a Sol dispatch. Corrected #427's filed premise — `needs-fix` already existed in the verdict enum; the defect was hand-authored dispatch schemas truncating it — and scoped the remaining work to a single copy-verbatim schema block, reviewer-side wiring, and a parity test. See Decisions.
 - 2026-07-22 [main]: Winston reconciled the plan against two operator challenges under a Sol dispatch. Question A — verified against the tree that the hardening is unbuilt (three drift sites still live), so #427 is not closeable; tasks unchanged. Question B — resolved to option (a): Briar still lands her own plan commit, and new task 9 adds a read-only Sol-side deterministic landing check, closing the silent-push-failure hole the prior verdict left open. See Decisions.
 - 2026-07-22 [main]: Winston folded phase-chain hardening into the lane under a Sol dispatch — the same defect class as #427 (run-time reconstruction of a canonical structure) on the lane phase chain a wave-1 run silently truncated (dropped both Reese phases, `ac-verify` and `qa`). Added tasks 11–13 (canonical block in step-04 + two citation conversions + a parity test), AC-11–13, and a Decision; renumbered the mirror gate to 14 and the Eli task to 15. Deferred the runtime completeness check as a scoped follow-up. See Decisions.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Clove implemented all 15 tasks under a Sol dispatch — the canonical dispatch-schema block and its parity test (#427), the reviewer `needs-fix` wiring, Briar's plan-landing procedure and Sol's deterministic landing check (#428), and the phase-chain copy-target + parity test (fold-in). Both new parity tests (`verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`) confirmed load-bearing by temporarily deleting their target value and observing a named failure, then restored. `pnpm prism:build` and `pnpm prism:check` both exit 0; no unexpected mirror churn under `.claude/skills/prism-conductor/`.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Reese ran AC Verification (Sol dispatch, first pass) at `da3a6a2` — 9 machine criteria MET, 0 UNMET, 0 UNGRADEABLE; 4 human-tagged criteria (AC-3/4/5/10) routed to the awaiting-human checklist. Report at `.prism/qa/ac-verification-followup-427-428-verdict-wiring.md`. One observation: AC-9's `grep -c 'needs-fix' … ≥ 2` evidence command reads 1 (both mentions share line 44; `grep -o` = 2) — criterion substance MET via the parity test, evidence command flagged to Winston to sharpen.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Briar ran first-pass self-review (Sol dispatch) at `4fe4635`. Independently re-ran `pnpm prism:check` in an isolated detached worktree (exit 0, all 547 tests including both new parity tests' subtests green) and cross-verified Reese's AC-verify citations against source. Recorded 2 Minor findings — see Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Clove fixed Briar's 2 open Minor findings (Sol dispatch). Corrected the AC-3 grep-count citation in the QA artifact (4/5 → 2/2, independently re-verified) and extracted the duplicated `extractSection` helper into `scripts/ai-skills/lib/markdown-section.ts`, imported from all three parity/coverage test files. `pnpm prism:check` re-run clean (exit 0, 546/547, 1 pre-existing skip). See Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Briar ran second-pass self-review (Sol dispatch) at `265e733`. Independently re-verified both fixes (grep counts 2/2 confirmed; `extractSection` has no remaining local definitions, all three call sites import from `lib/markdown-section.ts`, glob-safe). Re-ran `pnpm prism:build` and `pnpm prism:check` independently — both exit 0, 547/547 tests pass, 0 skipped (an improvement on the previously reported 546/547). Confirmed no mirror hand-edits (`git status --short` clean after build) and re-checked AC-3/4/5/10 human-tagged criteria text in place. 0 new findings — see Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Eric PR-reviewed #435 (Sol dispatch) and returned one Minor — `ARROW_LITERAL` at `phase-chain-parity.test.ts:27` re-hardcoded the canonical phase chain instead of deriving it from `EXPECTED_PHASES`, inside the suite built to forbid second copies. Clove fixed it by deriving `ARROW_LITERAL` from `EXPECTED_PHASES.join(" → ")`; `pnpm prism:check` re-run clean (exit 0, 547/547, 1 pre-existing skip). See Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Winston ran the plan close ceremony on the final PR branch under a Sol dispatch — consumed Iris's per-PR retro (full charter coverage, no Decision refuted, zero promotion cautions), confirmed all ten `## Decisions` carry explicit verdict sub-bullets, and promoted nothing new (every lasting Decision self-promotes to the conductor spec surfaces this branch already shipped). Discharged Iris's one action item by sharpening AC-9's evidence command (`grep -c` → `grep -o … | wc -l`) and appended her two lesson candidates to `.prism/lessons.md`. Marked closed and brought Iris's retro report onto the branch at `.prism/retros/per-pr/followup-427-428-verdict-wiring.md`.
 
 ---
 
@@ -389,7 +404,34 @@ None — no debugger session ran on this work.
 
 ## Review Issues
 
-None yet.
+### AC-3 machine note cites the wrong `needs-fix` grep count
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/qa/ac-verification-followup-427-428-verdict-wiring.md:136`
+- **Problem:** The AC-3 "Machine note" states `grep -c 'needs-fix'` returns 4 for `prism-code-review-pr/shared.md` and 5 for `prism-code-review-self/shared.md`. The actual count is 2 for both files — each has exactly two lines containing `needs-fix`, both inside the same "review-rung verdict" paragraph pair added by this branch. Re-verified independently in the isolated worktree. The substantive AC-3 check (the four-verdict distinction is stated in place) is correct; only the parenthetical number is wrong.
+- **Suggested fix:** Correct the parenthetical to the actual counts (2 and 2), or drop the count and cite the `grep -n` line numbers already used elsewhere in the report.
+- **Fixed in:** corrected the parenthetical to "returns 2 for the pr file and 2 for the self file" — independently re-verified with `grep -c 'needs-fix' .ai-skills/skills/prism-code-review-pr/shared.md .ai-skills/skills/prism-code-review-self/shared.md` (2, 2) before editing.
+
+### `extractSection` markdown-boundary helper duplicated across three test files
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/verdict-enum-parity.test.ts:54`, `scripts/ai-skills/phase-chain-parity.test.ts:51` (byte-for-byte copy of the pre-existing `scripts/ai-skills/routing-coverage.test.ts:52`)
+- **Problem:** Both new parity tests copy-paste the identical 11-line `extractSection` function already defined in `routing-coverage.test.ts` — each file's own comment even says it "mirrors" the original. Three concrete use cases now exist, past this repo's own threshold for earning extraction (`.claude/rules/demand-elegance.md`; the "three concrete use cases earn an abstraction" reasoning cited elsewhere in this branch's own `implementation-task-detail.md`). Identical parsing logic in three places drifts silently if the section-boundary contract ever changes (e.g. a nested-heading edge case) — a fix applied to one copy and missed in the other two reintroduces the bug in an untested path.
+- **Suggested fix:** Extract `extractSection` into a small shared test-helper module (e.g. `scripts/ai-skills/test-helpers.ts`) and import it from all three files.
+- **Fixed in:** extracted to `scripts/ai-skills/lib/markdown-section.ts` — `scripts/ai-skills/lib/` is the repo's existing convention for shared non-test modules (other suites already import from `./lib/<name>`), so the helper landed there rather than at a new top-level `test-helpers.ts`. All three test files (`routing-coverage.test.ts`, `verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`) now import `extractSection` from it; no local definition remains. `run-tests.ts` only globs `*.test.ts`, so the new `lib/` file is not picked up as a test.
+
+No issues found — 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring] (second pass)
+
+### `ARROW_LITERAL` re-hardcodes the canonical phase chain instead of deriving it from `EXPECTED_PHASES`
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/phase-chain-parity.test.ts:27`
+- **Problem:** `ARROW_LITERAL` re-enumerates the six build-segment phases as a second hardcoded string, inside the very suite built to forbid second copies of the canonical chain — if `EXPECTED_PHASES` (line 26) changes without a matching edit to `ARROW_LITERAL`, test 4 silently guards a stale string instead of the current chain.
+- **Suggested fix:** derive `ARROW_LITERAL` from `EXPECTED_PHASES.join(" → ")`.
+- **Fixed in:** replaced the hardcoded string literal with `EXPECTED_PHASES.join(" → ")`. Independently confirmed the join produces the identical string, and `pnpm prism:check` re-run clean (exit 0, 547/547, 1 pre-existing skip).
 
 ---
 
@@ -421,7 +463,7 @@ Verified by the developer. Every criterion carries a stable ID and a falsifiable
   - Evidence (`machine`): temporarily remove `needs-fix` from the schema block, run `pnpm prism:test`, observe assertion (b) fail naming `needs-fix`, restore the block, re-run and observe green.
 
 - [ ] **AC-9** — Given a reader learning the report-back contract from the consumer docs, When they read the primary-verdict enumeration in `docs/ai-skills/conductor.md`, Then it lists all six verdicts including `needs-fix`, and no other enumeration in that file lists a strict subset.
-  - Evidence (`machine`): `pnpm prism:test` passes, including `verdict-enum-parity.test.ts` assertion (d) extended to `docs/ai-skills/conductor.md`; and `grep -c 'needs-fix' docs/ai-skills/conductor.md` returns `≥ 2`.
+  - Evidence (`machine`): `pnpm prism:test` passes, including `verdict-enum-parity.test.ts` assertion (d) extended to `docs/ai-skills/conductor.md`; and `grep -o 'needs-fix' docs/ai-skills/conductor.md | wc -l` returns `≥ 2` (occurrence count, not `grep -c`'s line count — both mentions share one line).
 
 - [ ] **AC-11** — Given a Sol authoring a build segment, When it reaches the `pipeline()` stage chain, Then the ordered chain it copies is a single named literal block (`step-04-dispatch.md` § Canonical lane phase chain) naming all six phases with their dispatching personas, and no prose re-enumeration of the chain survives in step-04's opening or step-01's phase mapping.
   - Evidence (`machine`): `grep -c 'implement → ac-verify → self-review → pr-review → qa → docs' .prism/skills/prism-conductor/step-04-dispatch.md .prism/skills/prism-conductor/step-01-init.md` returns `0` for both files, and `grep -c 'Canonical lane phase chain' .prism/skills/prism-conductor/step-04-dispatch.md` returns `≥ 2`.
@@ -462,13 +504,13 @@ None identified.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` only)
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` present and proven load-bearing per AC-6 and AC-13
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — `pnpm prism:build` then `pnpm prism:check`, last run: not yet
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues — 0 open findings, both prior Minors fixed, see Review Issues
+- [x] Types correct — no `any`, no unsafe `as` (applies to `verdict-enum-parity.test.ts`, `phase-chain-parity.test.ts`, and the new `scripts/ai-skills/lib/markdown-section.ts`)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — `verdict-enum-parity.test.ts` and `phase-chain-parity.test.ts` present and proven load-bearing per AC-6 and AC-13
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:build` then `pnpm prism:check`, last run: 2026-07-22 (Briar, second-pass independent re-run, exit 0, 547/547, 0 skip)
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (if applicable) — all `## Decisions` entries carry an explicit verdict sub-bullet
 
 **Last updated:** 2026-07-22
