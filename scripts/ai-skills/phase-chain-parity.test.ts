@@ -24,7 +24,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, "../..");
 
 const EXPECTED_PHASES = ["implement", "ac-verify", "self-review", "pr-review", "qa", "docs"];
-const ARROW_LITERAL = "implement → ac-verify → self-review → pr-review → qa → docs";
+const ARROW_LITERAL = EXPECTED_PHASES.join(" → ");
 
 const STEP_04_PATH = path.join(
 	repoRoot,
