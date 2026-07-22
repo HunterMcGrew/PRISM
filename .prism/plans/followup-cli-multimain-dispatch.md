@@ -38,6 +38,7 @@ Stop `dist/cli.js` from running every subcommand's `main()` on any invocation: r
   - **Confirmed no further gap:** swept every file transitively reachable from `cli.ts` (via `update.ts` → `build.ts` → `bom-guard.ts`/`path-guard.ts`/`rule-load.ts`/`sync-manifest.ts`/`lib/tokens.ts`, and `ownership.ts` → `verify-manifest-coverage.ts`) for the guard pattern; `verify-pack-parity.ts` and `crossref-lint.ts` are confirmed not reachable from `cli.ts` and correctly stay unconverted. A rebuilt bundle has zero remaining occurrences of the old guard pattern (`grep -c "resolve(process.argv[1])" dist/cli.js` → 0).
   - **Fix:** same `isDirectCliEntry` swap as the four planned files — `isDirectCliEntry("build")` in `build.ts`, `isDirectCliEntry("verify-manifest-coverage")` in `verify-manifest-coverage.ts`. Neither touches `resolveSelfPrismSource` or the esbuild config; both preserve their standalone dev path (`pnpm prism:build`, `pnpm prism:verify-manifest`) unchanged — verified by running both after the fix.
   - **Not `needs-replan`:** the correct fix is the same mechanically-verified pattern already applied four times in this session, doesn't touch either "leave alone" constraint, and is required for the plan's own AC-1/AC-2 to pass at all — re-planning would cost a full round trip to re-arrive at an already-verified, unambiguous fix.
+  - **A ninth file also carries the guard family: `migrate-skill.ts`.** It spreads the pattern across a dynamic import (`(await import("node:url")).fileURLToPath(import.meta.url) === path.resolve(process.argv[1])`), so a single-line literal sweep misses it. Only its own test imports it, so it's correctly excluded from `cli.ts`'s bundle graph — a future re-run of the sweep should count nine guard-carriers, not eight.
   - → no promotion needed (ticket-tactical fix; the general lesson — "check transitive imports, not just direct ones, when classifying a file as unreachable from a bundle entry point" — is a candidate for a lessons.md entry, not an architect doc).
 
 - **Test fixture bug found and fixed: `os.tmpdir()` defeats the guard comparison on macOS.** The compiled-bundle test (task 7) initially built into `os.tmpdir()` directly and all three tests passed even against a deliberately-reverted guard — a false negative.
@@ -283,6 +284,7 @@ All tasks `[AFK]`. Task 1 blocks tasks 2–5 (they import the helper). Tasks 2�
 
 - 2026-07-22 [main]: Winston wrote this plan from Sol's dispatched diagnosis (multi-main bundle bug). Confirmed the four bundled guard-carriers (adopt/doctor/eject/update) against source, found `resolveSelfPrismSource` relies on the same `import.meta.url` collapse (fix must stay at the guard level), and refined the `argv[2]` direction to an `isDirectCliEntry` basename helper to avoid a double-run on the matched subcommand. Eight tasks, all Clove; no code written.
 - 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch]: Implemented all eight tasks — new `lib/cli-entry.ts` helper, six guard swaps (the planned four plus `build.ts`/`verify-manifest-coverage.ts`, found transitively bundled), `bundle.ts`'s `buildBundle` export, and `cli-bundle.test.ts`. See Decisions for the two mid-implementation findings (scope correction, test-fixture fix). `pnpm run prism:check` exits 0; 541/541 tests pass; a freshly built `dist/cli.js --help` prints only the usage banner with 0 stderr bytes and exit 0.
+- 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch]: Addressed Eric's PR `#436` review — added `cli-entry.test.ts` locking `isDirectCliEntry`'s true branch and extension-stripping edges (proved it catches a regression by breaking the true branch and confirming 2/5 tests fail, then restoring); noted `migrate-skill.ts` as a ninth guard-family file in the Scope correction Decision. `pnpm run prism:check` exits 0; 546/546 tests pass.
 
 ---
 
@@ -313,7 +315,16 @@ All tasks `[AFK]`. Task 1 blocks tasks 2–5 (they import the helper). Tasks 2�
 
 ## Review Issues
 
-No issues found — 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch]
+No issues found — 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch] (Briar self-review)
+
+### `isDirectCliEntry` true branch and extension-stripping edges lack test coverage
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/lib/cli-entry.ts:19`
+- **Problem:** `isDirectCliEntry` is load-bearing across six call sites, but only its false branch had automated coverage — `cli-bundle.test.ts`'s bundle entry basename is always `cli`, so the true branch and the extension-stripping edge (multi-dot basename, no-extension symlink, `undefined` argv[1]) were unverified.
+- **Suggested fix:** Add a dedicated unit test locking the true branch and the extension-stripping edges directly (Eric, PR `#436`).
+- **Fixed in:** `scripts/ai-skills/cli-entry.test.ts` — five tests covering the true branch (`adopt.ts`), the multi-dot basename edge (`verify-manifest-coverage.ts`), the bundle/symlink false-branch cases, and the `undefined` argv[1] case. Placed at the top level, not under `lib/` — `run-tests.ts` discovers `*.test.ts` via a non-recursive `readdirSync` on `scripts/ai-skills/`, so a `lib/cli-entry.test.ts` file would never run under `prism:test`; every existing `lib/*` module's test already lives at the top level for the same reason (`tokens.test.ts`, `stack-detect.test.ts`).
 
 ---
 
@@ -326,9 +337,9 @@ No issues found — 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch]
 - [x] No critical or major issues (Briar self-review, 2026-07-22 — clean pass, no findings; see `## Review Issues`)
 - [x] Types correct — no `any`, no unsafe `as` (`pnpm run prism:check-types` clean; independently rerun by Briar on a detached checkout of the branch tip)
 - [x] No stray console.logs or debug artifacts (`git status` clean on the branch tip; the six converted guards and the two new files carry no debug output)
-- [x] Tests written for new logic and edge cases (`cli-bundle.test.ts` — the compiled-bundle regression guard; independently reran, all 3 pass alongside 538 existing)
+- [x] Tests written for new logic and edge cases (`cli-bundle.test.ts` — the compiled-bundle regression guard; `cli-entry.test.ts` — the unit-level true-branch/edge coverage Eric flagged; 546/546 pass)
 - [x] All debugged issues resolved (Debug-1 `fixed`; independently confirmed 0 remaining `resolve(process.argv[1])` occurrences in a freshly built `dist/cli.js`)
-- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:check` exit 0, independently rerun by Briar; also manually ran `node dist/cli.js --help`/bare/unknown-subcommand against a fresh bundle — matches AC-1/2/3)
+- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:check` exit 0, rerun after addressing Eric's review; also manually ran `node dist/cli.js --help` against a fresh bundle — 0 stderr bytes, exit 0)
 - [x] PR description up to date (PR `#436` summary and test plan match the plan's `## Decisions` and `## Debugged Issues`)
 - [ ] Lasting decisions promoted to architect context (if applicable — evaluate the `isDirectCliEntry` / bundle-entry-guard pattern at close; not yet closed)
 
