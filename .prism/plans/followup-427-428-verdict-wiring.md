@@ -24,7 +24,7 @@ Not applicable — no UI surface.
 
 ## Implementation Tasks
 
-Every task names its file, its exact change, its verification command, and its position in sequence. Tasks 1–5 close #427; tasks 6–9 close #428; task 10 is the shared mirror/verify step and runs last.
+Every task names its file, its exact change, its verification command, and its position in sequence. Tasks 1–5 and 12 close #427; tasks 6–10 close #428; task 11 is the shared mirror/verify step and runs last.
 
 **Surface map (read before editing — the canonical vs. mirror split is not uniform):**
 
@@ -184,13 +184,33 @@ Also update § `## Definition of Done` (line 335): after `...is the final act be
 
 Verify: `grep -n 'diff --cached --name-only' .ai-skills/skills/prism-code-review-self/shared.md` returns one hit; `grep -n 'Land the plan commit' .ai-skills/skills/prism-code-review-self/shared.md` returns one hit.
 
-**9. Confirm no contradiction in Briar's handoff prose.**
+**9. Add Sol's deterministic post-review landing check (conductor lib + step-05).** Part of the #428 cluster; sequenced after task 8 (it ratifies the landing procedure task 8 establishes); independent of tasks 1–5 and 10–12.
+
+This is the "Sol makes sure nothing gets left behind" half of #428. Briar lands her own plan-only commit (task 8); inside a Sol run, Sol deterministically verifies it landed and re-dispatches the reviewer if it did not. Sol's role is **read-only** — it never commits, pushes, or writes the plan. The check reuses the write-lane ratification pattern (`git diff --stat` → verification re-run) in a read-only form: instead of re-running a command, Sol compares the plan blob SHA on the branch before and after the review dispatch.
+
+File A: `.prism/skills/prism-conductor/step-05-route.md`, § `### Deterministic ratification`. Insert a new paragraph immediately **after** the paragraph beginning `Before routing a write-lane `done`:` (the one ending `...**never trust the reported exit code**.`) and **before** the `Doer ≠ checker:` paragraph:
+
+~~~markdown
+Before routing a **review lane that writes plan content** (Briar self-review, Reese AC-verify — not Eric, whose findings land on the PR, not the plan): capture the plan blob SHA on the branch at dispatch time (`git rev-parse origin/<branch>:<plan-path>`, or note the file absent), and re-read it after the lane returns. An **unchanged** plan blob behind any review verdict means the reviewer's plan write did not land on the branch — re-dispatch the same reviewer to re-land (bounded by the step-07 strike budget); a landing failure that survives the budget parks the lane at `needs-human` with the reviewer's reported local commit SHA in `pendingHumanReport`. This is read-only evidence-checking, not plan-writing: Sol confirms *that* the write landed, never *what* it says — the same How-Sol-thinks-#3 invariant the write-lane `git diff --stat` check guards. Briar's own procedure (`branch-plan.md` § Landing a plan-only commit) owns the commit, the file-set safety check, and the push; Sol owns only the landing verification, so the file-set judgment that makes the carve-out safe never migrates to the orchestrator.
+~~~
+
+File B: `.prism/skills/prism-conductor/lib/report-back.md`, line 30. The sentence `Read-lanes (review, plan, QA-plan) are exempt — no files, nothing to ratify.` is now partially false — review lanes that write the plan land a plan-only commit. Replace that one sentence with:
+
+~~~markdown
+Read-lanes (review, plan, QA-plan) write no source files, so the write-lane ratification (diff + verification re-run) does not apply. One carve-out: review lanes that write plan content — Briar self-review and Reese AC-verify — land a plan-only commit per [`branch-plan.md`](../../../rules/branch-plan.md) § Landing a plan-only commit and get a lightweight **landing check** instead: Sol confirms the plan blob changed on the branch, and re-dispatches the reviewer if it did not (`step-05-route.md` § Deterministic ratification).
+~~~
+
+Both files are under `.prism/skills/prism-conductor/**` — canonical and unmirrored (surface map above), so this task produces no mirror churn.
+
+Verify: `grep -n 'review lane that writes plan content' .prism/skills/prism-conductor/step-05-route.md` returns one hit and `grep -n 'landing check' .prism/skills/prism-conductor/lib/report-back.md` returns one hit; after task 11's `pnpm prism:build`, `git status --short` shows no `.claude/skills/prism-conductor/` paths.
+
+**10. Confirm no contradiction in Briar's handoff prose.**
 
 File: `.ai-skills/skills/prism-code-review-self/shared.md`, lines 399–410 (the "no PR yet → hand back to Clove/Eli to ship" block, and the `This preserves the "authors ship, reviewers review" separation` sentence at line 410). Read both after task 8 lands. If line 410's sentence reads as forbidding *any* Briar push, append to it: `The plan-only commit in § After completing the review item 7 is the one carve-out — it lands the review record, not the author's work.` Make no other change to that block; PR creation stays out of Briar's lane.
 
 Verify: `pnpm prism:check` passes (includes `prism:crossref-lint`, which resolves the new cross-file links).
 
-**10. Regenerate mirrors and run the full gate.**
+**11. Regenerate mirrors and run the full gate.**
 
 Run, in order:
 
@@ -204,7 +224,7 @@ pnpm prism:check
 
 ### Eli (documentation)
 
-**11. Fix the truncated verdict enum in the consumer conductor doc.** Runs after task 1 (it cites the new section); independent of tasks 2–10.
+**12. Fix the truncated verdict enum in the consumer conductor doc.** Runs after task 1 (it cites the new section); independent of tasks 2–11.
 
 File: `docs/ai-skills/conductor.md`, line 44. The sentence currently reads `...returns one *primary verdict* (`done` · `blocked` · `needs-replan` · `needs-human`) that routes the lane...` — a **four**-value enum, missing both `needs-fix` and `needs-stronger-model`. This is the same reconstruct-from-memory failure as the dispatch schemas, on the consumer-facing surface: a reader who learns the enum here learns it wrong.
 
@@ -240,6 +260,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
   - **Alternatives considered:** Sol takes responsibility for landing reviewer plan commits.
   - **Chosen approach:** Briar lands it. Making Sol the lander re-institutionalizes the manual recovery that already failed three times, and it leaves standalone (non-conducted) Briar sessions with no landing path — Briar runs outside Sol far more often than inside it.
   - **Implementation guidance:** the exception is scoped by *file set*, not judgment — `git diff --cached --name-only` must print exactly the plan path or the persona aborts. That is what makes it a safe carve-out rather than a hole in the ship/review separation.
+  - **Revisited 2026-07-22 (Hunter's "Sol makes sure nothing gets left behind" challenge):** the core holds — Briar still lands, Sol is still not the lander — but the verdict was *incomplete*, not wrong. It left a hole a deterministic Sol-side check now closes; see the reopened-#428 decision below.
   - → promoted to `.prism/rules/branch-plan.md` § Landing a plan-only commit.
 
 - **The `branch-plan.md` rule is written by role; only Briar's spec implements it this ticket.**
@@ -259,17 +280,34 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
   - **Stakes reasoning:** the change is spec-and-docs plus one new test file. No runtime code, no public API, no shared type, no consumer-observable behavior. The blast radius is `.prism/rules/`, `.prism/skills/prism-conductor/`, `.ai-skills/skills/`, one `scripts/ai-skills/*.test.ts`, and their generated mirrors — all reversible by revert with no migration. Both directional calls (`needs-fix` already exists → wiring not vocabulary; Briar lands her own plan commit → not Sol) were already made and reasoned in `.prism/plans/eval-backlog-triage.md`, so this plan implements a prior ruling rather than making a fresh one. Nothing here is the operator's call.
   - → no promotion needed (gate disposition is run-scoped, not a durable system decision).
 
+- **Hunter's "#427 has been done" challenge — verified against the tree, the hardening is unbuilt; #427 is not closeable (Question A).**
+  - **Root cause of the confusion:** the original issue's premise — "the enum has no value for implementation-level blocking findings" — is moot, because `needs-fix` has always existed (`report-back.md:14`). That is the grain of truth in "it's done": the *value* exists. But this plan reframed #427 to schema-**hardening**, and that work is entirely unbuilt in the tree right now (verified this session, not inferred): `report-back.md` has no `## Canonical dispatch schema` copy-target block; `.ai-skills/skills/prism-conductor/claude.md:15` still carries the reconstruction-inviting prose (`grep -c 'needs-fix'` → 0); `docs/ai-skills/conductor.md` still enumerates a truncated four-value enum, `done · blocked · needs-replan · needs-human`, missing both `needs-fix` and `needs-stronger-model` (`grep -c 'needs-fix'` → 0).
+  - **Alternatives considered:** (a) close #427 as done because the enum value exists; (b) build the hardening.
+  - **Chosen approach:** build. "It's been done" is false against the tree — three drift sites are still wrong at this moment. Deletion test on the copy-target block (task 1): if removed, every future Sol reconstructs the dispatch schema from the prose-plus-table form, which is exactly the run-time reconstruction that dropped `needs-fix` in the 2026-07-20 run — a failure no static check can catch, because Sol authors the schema at run time. The block is the only thing that removes the reconstruction step, so it earns its place. The recurrence (three independent wrong sites in one session) is the evidence the hardening matters, not gold-plating.
+  - **Implementation guidance:** tasks 1–5 and 12 stand exactly as scoped; Question A changes no task. What closes #427 is landing those tasks, not a status flip.
+  - → no promotion needed (the reconsideration is ticket-scoped; the durable content is the `report-back.md` § Canonical dispatch schema block that task 1 produces).
+
+- **Reopened #428 under Hunter's "Sol makes sure nothing gets left behind" framing — option (a): Briar lands, and Sol deterministically ratifies the landing (Question B).**
+  - **Root cause:** the prior verdict (Briar lands alone) is correct but *incomplete*. Inside a Sol run, if Briar's push fails silently — auth, network, a wrong detached-HEAD ref — nothing catches it and the lost-at-teardown failure recurs one level up. Task 8 already tells Briar to report the local commit SHA on push failure, but in a Sol run that report needed a router and had none. Hunter's framing spotted exactly this hole.
+  - **Correcting Hunter's premise, partially:** #428 is *not* "only relevant when Sol is orchestrating." The severe lost-at-teardown form is worktree-specific (the Sol case, `isolation: 'worktree'`), but a standalone Briar on a shared checkout still leaves the write *uncommitted* — a handoff hazard per `git-conventions.md` § When to Commit. So Briar must land her own commit in **both** cases; only the Sol case has an orchestrator available to check it, which is why the check is Sol-side-only and Briar's landing procedure is universal.
+  - **Alternatives considered:** (b) make Sol/the ratification stage the lander — rejected again, on a firmer basis than "three failed manual recoveries": doing so migrates the file-set safety check (staged set must be exactly the plan path or abort) out of Briar's deterministic procedure and into the orchestrator, re-creating the judgment step the carve-out was designed to eliminate, and it still strands standalone Briar. (c) prior verdict unchanged — rejected because it leaves the silent-push-failure hole open.
+  - **Chosen approach:** option (a). Briar always lands her own plan-only commit (tasks 6/7/8/10 unchanged); inside a Sol run, Sol runs a **read-only** deterministic landing check — the plan blob SHA on the branch must differ from the pre-dispatch baseline; if unchanged, the reviewer's write did not land → re-dispatch the reviewer to re-land (strike-budget-bounded), park at `needs-human` if it survives. This escapes the "manual recovery that failed three times" objection cleanly because it is a *deterministic* check — the exact ratification pattern Sol already runs on write lanes (`git diff --stat`) — not manual worktree inspection plus hand-push. Sol never commits, pushes, or writes the plan; it confirms *that* the write landed, never *what* it says.
+  - **Implementation guidance:** new **task 9** edits `step-05-route.md` § Deterministic ratification (adds the review-lane landing check) and `report-back.md:30` (amends the now-partially-false "read-lanes are exempt — no files" claim). Both files are canonical and unmirrored, so the check adds no mirror churn — AC-8 still holds. The check is persona-agnostic by construction (a blob-SHA diff), so it covers Briar self-review and Reese AC-verify uniformly without per-persona code; Eric is out of scope because his findings land on the PR, not the plan.
+  - → promoted to `.prism/skills/prism-conductor/step-05-route.md` § Deterministic ratification.
+
 ---
 
 ## Sessions
 
 - 2026-07-21 [main] open: Intent — merge #427 and #428 into one implementable plan that makes the dispatch schema uncopyable-wrong and gives Briar's plan commits a landing path; Bounds — write `.prism/plans/followup-427-428-verdict-wiring.md` only, no code, no branch, no commit, no tracker writes; Approach — one copy-target schema block plus a parity test for #427, a role-stated rule plus a file-set-scoped procedure for #428 · close: scope held
+- 2026-07-22 [main] open: Intent — reconcile the merged plan against two operator challenges (is #427 done? should Sol ensure Briar's plan-writes land?); Bounds — this plan file only, no code, no build, no tracker writes; Approach — verify both premises against the tree, then adjust tasks/decisions/AC · close: scope held — Question A confirmed unbuilt (three drift sites still live), Question B resolved to option (a) adding one conductor task
 
 ---
 
 ## History
 
 - 2026-07-21 [main]: Winston merged issues #427 and #428 into this plan under a Sol dispatch. Corrected #427's filed premise — `needs-fix` already existed in the verdict enum; the defect was hand-authored dispatch schemas truncating it — and scoped the remaining work to a single copy-verbatim schema block, reviewer-side wiring, and a parity test. See Decisions.
+- 2026-07-22 [main]: Winston reconciled the plan against two operator challenges under a Sol dispatch. Question A — verified against the tree that the hardening is unbuilt (three drift sites still live), so #427 is not closeable; tasks unchanged. Question B — resolved to option (a): Briar still lands her own plan commit, and new task 9 adds a read-only Sol-side deterministic landing check, closing the silent-push-failure hole the prior verdict left open. See Decisions.
 
 ---
 
@@ -306,6 +344,9 @@ Verified by the developer. Every criterion carries a stable ID and a falsifiable
 - [ ] **AC-5** — Given a reader following "authors ship, reviewers review" in `skill-routing.md`, When they reach the reviewer-push question, Then the rule points them at the scoped exception rather than reading as a blanket prohibition.
   - Evidence (`human`): read `.prism/rules/skill-routing.md` § Authors ship, reviewers review and `.prism/rules/branch-plan.md` § Landing a plan-only commit back to back; confirm no contradiction.
 
+- [ ] **AC-10** — Given a plan-writing review lane (Briar self-review or Reese AC-verify) dispatched inside a Sol run, When the lane returns and Sol ratifies before routing, Then Sol confirms the plan blob changed on the branch and re-dispatches the reviewer if it did not — read-only, never committing or writing the plan itself.
+  - Evidence (`human`): read `.prism/skills/prism-conductor/step-05-route.md` § Deterministic ratification and `.prism/skills/prism-conductor/lib/report-back.md` line 30; confirm the review-lane landing check (blob-SHA-unchanged → re-dispatch, strike-budget-bounded, park at `needs-human`) is specified in step-05 and cross-referenced from report-back.md, and that Eric is excluded (findings land on the PR, not the plan).
+
 - [ ] **AC-6** — Given the verdict enum block is edited to drop a value, When the test suite runs, Then it fails with a message naming the missing value.
   - Evidence (`machine`): temporarily remove `needs-fix` from the schema block, run `pnpm prism:test`, observe assertion (b) fail naming `needs-fix`, restore the block, re-run and observe green.
 
@@ -329,6 +370,7 @@ None.
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-07-21 | Winston | Authored AC from merged #427/#428 | created | not synced (dispatch bounds forbid tracker writes) |
+| 2026-07-22 | Winston | Added AC-10 for the Sol-side deterministic landing check (Question B reconciliation) | updated | not synced (dispatch bounds forbid tracker writes) |
 
 ---
 
