@@ -275,6 +275,7 @@ All tasks `[AFK]`. Task 1 blocks tasks 2–5 (they import the helper). Tasks 2�
 
 - 2026-07-22 [main] open: Intent — turn Sol's already-diagnosed multi-main bundle bug into an executable fix plan (evaluate + plan, no code); Bounds — write this plan file only, no branch, no code, no `prism:build`; Approach — verify the diagnosis against source, refine the `argv[2]` fix direction to bundle-safe entry-basename detection, front-load exact per-file edits · close: scope held
 - 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch] open: Intent — implement the 8-task plan (isDirectCliEntry helper, four guard swaps, bundle.ts refactor, compiled-bundle test, full verification); Bounds — done means all tasks pass `pnpm prism:check`, esbuild config and `resolveSelfPrismSource` untouched; Approach — execute tasks in the plan's stated sequence, verify each guard swap with a type-check before moving on · close: drifted — found two more files (`build.ts`, `verify-manifest-coverage.ts`) transitively bundled with the same guard bug; fixed both (same mechanical pattern, same two constraints respected) since the plan's own AC-1/AC-2 could not pass without it; also fixed a test-fixture bug (macOS `/var` symlink defeating the guard comparison in `os.tmpdir()`) discovered while proving the new test catches a real regression
+- 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch] open: Intent — self-review the branch (types, logic, tests, build) and land a plan-only commit recording the findings; Bounds — plan file only, no source edits, no shipping; Approach — independently rerun `prism:check-types`/`prism:test`/`prism:bundle`/`prism:check` rather than trust the implementer's reported results, then adversarially probe `isDirectCliEntry` and the two scope-correction files · close: scope held — reran every verification command from a detached checkout of the branch tip (7ca9755), confirmed 0 remaining collapsed-guard occurrences in a fresh `dist/cli.js`, manually exercised `--help`/bare/unknown-subcommand, and found no findings
 
 ---
 
@@ -312,6 +313,8 @@ All tasks `[AFK]`. Task 1 blocks tasks 2–5 (they import the helper). Tasks 2�
 
 ## Review Issues
 
+No issues found — 2026-07-22 [huntermcgrew/prism-cli-multimain-dispatch]
+
 ---
 
 ## Cleanup Items
@@ -320,13 +323,13 @@ All tasks `[AFK]`. Task 1 blocks tasks 2–5 (they import the helper). Tasks 2�
 
 ## PR Readiness
 
-- [x] No critical or major issues (self-implementation; no self-review run yet — see handoff note)
-- [x] Types correct — no `any`, no unsafe `as` (`pnpm run prism:check-types` clean throughout)
-- [x] No stray console.logs or debug artifacts (temporary debug files created during investigation were removed before commit; `git status` confirms only the 9 intended files)
-- [x] Tests written for new logic and edge cases (`cli-bundle.test.ts` — the compiled-bundle regression guard; verified to catch a real regression, not just pass trivially)
-- [x] All debugged issues resolved (Debug-1 flipped to `fixed`)
-- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:check` exit 0)
-- [ ] PR description up to date
+- [x] No critical or major issues (Briar self-review, 2026-07-22 — clean pass, no findings; see `## Review Issues`)
+- [x] Types correct — no `any`, no unsafe `as` (`pnpm run prism:check-types` clean; independently rerun by Briar on a detached checkout of the branch tip)
+- [x] No stray console.logs or debug artifacts (`git status` clean on the branch tip; the six converted guards and the two new files carry no debug output)
+- [x] Tests written for new logic and edge cases (`cli-bundle.test.ts` — the compiled-bundle regression guard; independently reran, all 3 pass alongside 538 existing)
+- [x] All debugged issues resolved (Debug-1 `fixed`; independently confirmed 0 remaining `resolve(process.argv[1])` occurrences in a freshly built `dist/cli.js`)
+- [x] Build passes — last run: 2026-07-22 (`pnpm run prism:check` exit 0, independently rerun by Briar; also manually ran `node dist/cli.js --help`/bare/unknown-subcommand against a fresh bundle — matches AC-1/2/3)
+- [x] PR description up to date (PR `#436` summary and test plan match the plan's `## Decisions` and `## Debugged Issues`)
 - [ ] Lasting decisions promoted to architect context (if applicable — evaluate the `isDirectCliEntry` / bundle-entry-guard pattern at close; not yet closed)
 
 **Last updated:** 2026-07-22
