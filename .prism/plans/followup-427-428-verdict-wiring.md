@@ -1,5 +1,8 @@
 # Plan: followup-427-428-verdict-wiring
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/followup-427-428-verdict-wiring.md
+
 ## Ticket
 
 GitHub issues [#427](https://github.com/HunterMcGrew/PRISM/issues/427) and [#428](https://github.com/HunterMcGrew/PRISM/issues/428) — merged into one lane per `.prism/plans/eval-backlog-triage.md` § "#427 + #428 — do both, as one ticket".
@@ -389,6 +392,7 @@ Extend task 5's assertion (d) to cover this file: assert `docs/ai-skills/conduct
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Clove fixed Briar's 2 open Minor findings (Sol dispatch). Corrected the AC-3 grep-count citation in the QA artifact (4/5 → 2/2, independently re-verified) and extracted the duplicated `extractSection` helper into `scripts/ai-skills/lib/markdown-section.ts`, imported from all three parity/coverage test files. `pnpm prism:check` re-run clean (exit 0, 546/547, 1 pre-existing skip). See Review Issues.
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Briar ran second-pass self-review (Sol dispatch) at `265e733`. Independently re-verified both fixes (grep counts 2/2 confirmed; `extractSection` has no remaining local definitions, all three call sites import from `lib/markdown-section.ts`, glob-safe). Re-ran `pnpm prism:build` and `pnpm prism:check` independently — both exit 0, 547/547 tests pass, 0 skipped (an improvement on the previously reported 546/547). Confirmed no mirror hand-edits (`git status --short` clean after build) and re-checked AC-3/4/5/10 human-tagged criteria text in place. 0 new findings — see Review Issues.
 - 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Eric PR-reviewed #435 (Sol dispatch) and returned one Minor — `ARROW_LITERAL` at `phase-chain-parity.test.ts:27` re-hardcoded the canonical phase chain instead of deriving it from `EXPECTED_PHASES`, inside the suite built to forbid second copies. Clove fixed it by deriving `ARROW_LITERAL` from `EXPECTED_PHASES.join(" → ")`; `pnpm prism:check` re-run clean (exit 0, 547/547, 1 pre-existing skip). See Review Issues.
+- 2026-07-22 [huntermcgrew/prism-427-428-verdict-wiring]: Winston ran the plan close ceremony on the final PR branch under a Sol dispatch — consumed Iris's per-PR retro (full charter coverage, no Decision refuted, zero promotion cautions), confirmed all ten `## Decisions` carry explicit verdict sub-bullets, and promoted nothing new (every lasting Decision self-promotes to the conductor spec surfaces this branch already shipped). Discharged Iris's one action item by sharpening AC-9's evidence command (`grep -c` → `grep -o … | wc -l`) and appended her two lesson candidates to `.prism/lessons.md`. Marked closed and brought Iris's retro report onto the branch at `.prism/retros/per-pr/followup-427-428-verdict-wiring.md`.
 
 ---
 
@@ -459,7 +463,7 @@ Verified by the developer. Every criterion carries a stable ID and a falsifiable
   - Evidence (`machine`): temporarily remove `needs-fix` from the schema block, run `pnpm prism:test`, observe assertion (b) fail naming `needs-fix`, restore the block, re-run and observe green.
 
 - [ ] **AC-9** — Given a reader learning the report-back contract from the consumer docs, When they read the primary-verdict enumeration in `docs/ai-skills/conductor.md`, Then it lists all six verdicts including `needs-fix`, and no other enumeration in that file lists a strict subset.
-  - Evidence (`machine`): `pnpm prism:test` passes, including `verdict-enum-parity.test.ts` assertion (d) extended to `docs/ai-skills/conductor.md`; and `grep -c 'needs-fix' docs/ai-skills/conductor.md` returns `≥ 2`.
+  - Evidence (`machine`): `pnpm prism:test` passes, including `verdict-enum-parity.test.ts` assertion (d) extended to `docs/ai-skills/conductor.md`; and `grep -o 'needs-fix' docs/ai-skills/conductor.md | wc -l` returns `≥ 2` (occurrence count, not `grep -c`'s line count — both mentions share one line).
 
 - [ ] **AC-11** — Given a Sol authoring a build segment, When it reaches the `pipeline()` stage chain, Then the ordered chain it copies is a single named literal block (`step-04-dispatch.md` § Canonical lane phase chain) naming all six phases with their dispatching personas, and no prose re-enumeration of the chain survives in step-04's opening or step-01's phase mapping.
   - Evidence (`machine`): `grep -c 'implement → ac-verify → self-review → pr-review → qa → docs' .prism/skills/prism-conductor/step-04-dispatch.md .prism/skills/prism-conductor/step-01-init.md` returns `0` for both files, and `grep -c 'Canonical lane phase chain' .prism/skills/prism-conductor/step-04-dispatch.md` returns `≥ 2`.
