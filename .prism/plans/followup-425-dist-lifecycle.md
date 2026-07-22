@@ -226,6 +226,8 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 ### AC Adjustments
 
+- **AC-1's exit-0 clause is blocked on the open Debugged Issue "Bundled `dist/cli.js` runs multiple subcommands' `main()` on any invocation."** `node dist/cli.js --help` from a fresh install currently exits 1 (an unrelated subcommand's `main()` fires alongside `--help`'s), not the exit 0 the evidence protocol specifies. Confirmed pre-existing and not introduced by this ticket (see Debugged Issues). AC-1's other clauses — `dist/cli.js` exists and the usage banner prints — hold as written; the exit-0 clause will pass once that follow-up bug is fixed.
+
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
@@ -245,6 +247,7 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 - 2026-07-21 [main]: Winston wrote this plan from the ratified option 2 in `.prism/plans/eval-backlog-triage.md` § Question 1. Nine tasks across Clove and Eli; the esbuild caret range is recorded as moot under option 2 and load-bearing only for the option 1 fallback. No code written.
 - 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Implemented all nine tasks — `dist/cli.js` untracked and gitignored, `prepare`/`prepack` added, `verify-pack-parity.ts` extended (6 runtime-read paths) and fixed for prepack/prepare stdout pollution, ADR-0063 amended, both docs updated, mirrors regenerated, `pnpm prism:check` exits 0. Task 5's own npm-pack-fires-prepack question is answered: it fires **both** `prepare` and `prepack` (each logging `dist/cli.js built.` once), see Decisions for the fix this required. One pre-existing bug found and left unfixed — see Debugged Issues.
+- 2026-07-22 [huntermcgrew/prism-425-dist-lifecycle]: Fixed Briar's two Minor self-review findings — removed the double blank line in `.gitignore`, and added an `## AC Adjustments` entry documenting that AC-1's exit-0 clause is blocked on the open pre-existing multi-`main()` bug.
 
 ---
 
@@ -284,18 +287,20 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 ### `.gitignore` has a double blank line after the new `/dist/` block
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.gitignore:23-24`
 - **Problem:** task 2's inserted block ends with its own trailing blank line, and the file already had a blank line before the next section (`# Theo state files...`) — the two combine into a double blank line, which `code-standards.md § Whitespace` says to remove.
 - **Suggested fix:** delete one of the two blank lines between `/dist/` and `# Theo state files`.
+- **Fixed in:** [huntermcgrew/prism-425-dist-lifecycle] — removed the extra blank line.
 
 ### AC-1's evidence line claims exit 0, but the documented pre-existing bug means it doesn't
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/followup-425-dist-lifecycle.md` (AC-1, and the `Bundled dist/cli.js runs multiple subcommands' main()` Debugged Issue)
 - **Problem:** independently reproduced — `node dist/cli.js --help` from this branch's fresh install exits 1 with `prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state.` on stderr, not exit 0. This is the already-documented pre-existing bug (confirmed not introduced by this ticket), but AC-1's evidence protocol as written still asserts exit 0, and `## AC Adjustments` is empty — a reader scanning the AC table has no signal that this criterion won't pass until the bundler bug is fixed.
 - **Suggested fix:** add an `## AC Adjustments` entry noting AC-1's exit-0 clause is blocked on the open Debugged Issue, or soften AC-1's evidence text to drop the exit-0 requirement until that bug has its own follow-up ticket.
+- **Fixed in:** [huntermcgrew/prism-425-dist-lifecycle] — added an `## AC Adjustments` entry naming the blocked exit-0 clause; AC-1's other clauses hold as written.
 
 ---
 
@@ -305,7 +310,7 @@ All tasks are `[AFK]` unless tagged. Tasks 1–5 are strictly sequential (each d
 
 ## PR Readiness
 
-- [x] No critical or major issues (two Minor findings — see Review Issues)
+- [x] No critical or major issues (two Minor findings — both fixed, see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as` (the one pre-existing `as` in `verify-pack-parity.ts` predates this diff, unchanged)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (n/a — see `## Decisions`, no new logic; the `verify-pack-parity.ts` stdout-slice fix is covered by existing unit tests exercising `findMissingRuntimeReadPaths` plus the live `prism:verify-pack` run)

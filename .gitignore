@@ -21,7 +21,6 @@ node_modules/
 # machine-generated bundle with no drift gate is a silent-staleness surface.
 /dist/
 
-
 # Theo state files — operational; gitignored per ADR-0040 + Theo state schema
 .prism/theo-state.json
 .prism/theo-state.json.tmp
