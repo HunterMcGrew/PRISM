@@ -334,6 +334,24 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **How to apply:** Sol decides — without asking — anything the roster + rules already determine: persona routing, fold-in vs. new-ticket (`followup-scope.md`), phase ordering, conflict-gate serialization, firewall pass/fail, whether to run the full chain. Reserve human questions for genuine human-owned gates: decisions that reverse a prior human ratification, publish/merge beyond the granted authorization, destructive actions (worktree sweeps), and product/distribution calls (e.g. does a script ship to consumers). When the framework answers it, route and state the call; don't ask.
 
+## When classifying a file as "never bundled," check the transitive import graph, not just direct imports
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix) — the plan's tree-wide sweep for the `import.meta.url`-collapse guard bug found eight files with the vulnerable pattern and classified four as "standalone, never in `cli.ts`'s import graph" by checking whether `adopt.ts`/`doctor.ts`/`eject.ts`/`update.ts`/`init.ts` imported them directly. Two of the four — `build.ts` and `verify-manifest-coverage.ts` — were still reachable one hop further out (`update.ts` imports from `./build`; `ownership.ts`, imported by three of the four entry files, imports from `./verify-manifest-coverage`), so both were actually bundled and carried the same live bug. Found only by manually running a freshly built `dist/cli.js --help` and seeing a leaked error before trusting the plan's four-file scope as complete.
+
+**How to apply:** When determining whether a module ends up inside a bundle (or any other transitive-inclusion question — bundling, tree-shaking, circular-dep checks), walk the full import graph from the actual entry point, not just the files you already know are entry-adjacent. A grep for direct imports of the file in question is not the same check.
+
+## `os.tmpdir()` returns a symlinked path on macOS — resolve it before comparing against `fileURLToPath(import.meta.url)`
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix) — a compiled-bundle regression test built its throwaway bundle into `os.tmpdir()` and passed even against a deliberately-reverted, still-buggy entry guard (a false negative). macOS's `/var` is a symlink to `/private/var`; `os.tmpdir()` returns the non-canonical `/var/folders/...` form while `fileURLToPath(import.meta.url)` resolves to the canonical `/private/var/folders/...` form for the same file, so any guard comparing the two literally never matches when built under an unresolved temp path — independent of whether the guard logic is correct.
+
+**How to apply:** Before building or writing test fixtures into `os.tmpdir()` that will later be compared against `import.meta.url`-derived paths (or any realpath-sensitive comparison), resolve the temp root with `fs.realpath()` first. This applies to any macOS-run test that builds-and-spawns a Node module from a temp directory.
+
+## A test for a `scripts/ai-skills/lib/*` module belongs at the top level, not inside `lib/`
+
+**Why:** 2026-07-22 (PRISM cli-multimain-dispatch fix, PR #436 review) — a reviewer suggested `lib/cli-entry.test.ts` for coverage of `lib/cli-entry.ts`. `run-tests.ts` discovers `*.test.ts` with a non-recursive `readdirSync` on `scripts/ai-skills/` only, so a test placed under `lib/` would never run under `pnpm prism:test` — silently, with no error. Every existing `lib/*` module's test (`tokens.test.ts` for `lib/tokens.ts`, `stack-detect.test.ts` for `lib/stack-detect.ts`) already lives at the top level for the same reason; caught by checking `run-tests.ts`'s discovery logic before trusting the suggested path.
+
+**How to apply:** When adding a test for any `scripts/ai-skills/lib/*.ts` module, place the `*.test.ts` file directly under `scripts/ai-skills/`, importing from `./lib/<module>`. Verify against `run-tests.ts`'s actual discovery mechanism before placing a test file anywhere non-obvious, rather than trusting a suggested path at face value.
+
 ## `grep -c` counts matching lines, not occurrences — use `grep -o 'token' file | wc -l` when counting how many times a token appears
 
 **Why:** 2026-07-22 (followup-427-428-verdict-wiring, per-PR retro) — an AC evidence command and an AC machine-note both used `grep -c 'needs-fix'` expecting an occurrence count, but two `needs-fix` mentions sat on one line, so `grep -c` read 1 where the criterion claimed ≥ 2. The trap surfaced twice in one ticket (the AC-3 note miscount and the AC-9 evidence-command miscalibration).

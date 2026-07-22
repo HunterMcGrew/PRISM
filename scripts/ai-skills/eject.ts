@@ -32,7 +32,6 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
 	AGENTS_MD_BLOCK_BEGIN,
@@ -50,6 +49,7 @@ import {
 	parseDryRunFlag,
 	resolveConsumerRoot,
 } from "./lib/consumer-root";
+import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
 import {
 	loadSyncManifest,
@@ -697,9 +697,7 @@ export async function runEjectCli(): Promise<void> {
 	console.log(formatEjectReport(report));
 }
 
-const isMain =
-	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (isMain) {
+if (isDirectCliEntry("eject")) {
 	runEjectCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);

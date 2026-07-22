@@ -16,7 +16,6 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { renderSeededAgentsMd } from "./agents-md-block";
 import {
@@ -26,6 +25,7 @@ import {
 	parseDryRunFlag,
 	parseSeedAgentsMdFlag,
 } from "./lib/consumer-root";
+import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { loadSyncManifest } from "./sync-manifest";
 import {
@@ -337,9 +337,7 @@ function reportSummary(summary: AdoptSummary, dryRun = false): void {
 	}
 }
 
-const isMain =
-	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (isMain) {
+if (isDirectCliEntry("adopt")) {
 	runAdoptCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);

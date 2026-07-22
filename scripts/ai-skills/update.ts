@@ -44,6 +44,7 @@ import {
 	parseConsumerFlag,
 	parseDryRunFlag,
 } from "./lib/consumer-root";
+import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
@@ -1147,9 +1148,7 @@ function reportSummary(summary: UpdateSummary, dryRun = false): void {
 	}
 }
 
-const isMain =
-	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (isMain) {
+if (isDirectCliEntry("update")) {
 	runUpdateCli().catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);

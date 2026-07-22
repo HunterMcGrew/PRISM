@@ -20,6 +20,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isDirectCliEntry } from "./lib/cli-entry";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.PRISM_REPO_ROOT
 	? path.resolve(process.env.PRISM_REPO_ROOT)
@@ -183,10 +185,7 @@ async function main(): Promise<void> {
 	}
 }
 
-const invokedDirectly =
-	process.argv[1] &&
-	fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (invokedDirectly) {
+if (isDirectCliEntry("verify-manifest-coverage")) {
 	main().catch((error) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);

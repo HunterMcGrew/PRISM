@@ -27,6 +27,7 @@ import {
 	replaceTier1Block,
 } from "./agents-md-block";
 import { deriveTokenMap, loadConfig, substituteTokens } from "./lib/tokens";
+import { isDirectCliEntry } from "./lib/cli-entry";
 import { runBomGuard } from "./bom-guard";
 import {
 	runConsumerSeedLiteralGuard,
@@ -1067,9 +1068,7 @@ async function main(): Promise<void> {
 	}
 }
 
-const invokedDirectly =
-	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-if (invokedDirectly) {
+if (isDirectCliEntry("build")) {
 	main().catch((error) => {
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);

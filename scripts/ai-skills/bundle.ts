@@ -25,26 +25,38 @@ const repoRoot = path.resolve(
 	"../.."
 );
 
-const outfile = path.join(repoRoot, "dist/cli.js");
+/**
+ * Bundles `scripts/ai-skills/cli.ts` to `outfile` as a single self-contained
+ * ESM bundle, rewrites its shebang to `#!/usr/bin/env node`, and marks it
+ * executable. Exported so the bundle-dispatch integration test can build a
+ * throwaway bundle with the exact production config instead of duplicating
+ * the esbuild options.
+ */
+export async function buildBundle(outfile: string): Promise<void> {
+	await build({
+		entryPoints: [path.join(repoRoot, "scripts/ai-skills/cli.ts")],
+		outfile,
+		format: "esm",
+		platform: "node",
+		target: "node20",
+		bundle: true,
+	});
 
-await build({
-	entryPoints: [path.join(repoRoot, "scripts/ai-skills/cli.ts")],
-	outfile,
-	format: "esm",
-	platform: "node",
-	target: "node20",
-	bundle: true,
-});
+	// Strip any leading shebang line emitted from the source file and prepend the
+	// correct Node shebang. The source cli.ts carries `#!/usr/bin/env -S npx tsx`
+	// for local dev; the compiled bin needs `#!/usr/bin/env node`.
+	const content = readFileSync(outfile, "utf8");
+	const stripped = content.startsWith("#!")
+		? content.slice(content.indexOf("\n") + 1)
+		: content;
+	writeFileSync(outfile, `#!/usr/bin/env node\n${stripped}`, "utf8");
 
-// Strip any leading shebang line emitted from the source file and prepend the
-// correct Node shebang. The source cli.ts carries `#!/usr/bin/env -S npx tsx`
-// for local dev; the compiled bin needs `#!/usr/bin/env node`.
-const content = readFileSync(outfile, "utf8");
-const stripped = content.startsWith("#!")
-	? content.slice(content.indexOf("\n") + 1)
-	: content;
-writeFileSync(outfile, `#!/usr/bin/env node\n${stripped}`, "utf8");
+	chmodSync(outfile, 0o755);
+}
 
-chmodSync(outfile, 0o755);
-
-console.log("dist/cli.js built.");
+const isMain =
+	process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (isMain) {
+	await buildBundle(path.join(repoRoot, "dist/cli.js"));
+	console.log("dist/cli.js built.");
+}
