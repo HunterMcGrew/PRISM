@@ -7,9 +7,10 @@
  * structure. The `## Canonical lane phase chain` block in `step-04-dispatch.md`
  * is the only place the six build-segment phases are enumerated; this suite
  * asserts it stays a contiguous, same-order subsequence of the full
- * `currentPhase` lifecycle enum in `lib/goal-state.md`, that `ac-verify` and
- * `qa` both map to Reese (the pairing the 2026-07-21 wave-1 run's dropped-`qa`
- * defect violated), and that no file re-enumerates the chain as a bare
+ * `currentPhase` lifecycle enum in `lib/goal-state.md`, that `phaseLog`'s
+ * phase enum matches the chain exactly, that `ac-verify` and `qa` both map
+ * to Reese (the pairing the 2026-07-21 wave-1 run's dropped-`qa` defect
+ * violated), and that no file re-enumerates the chain as a bare
  * arrow-literal instead of citing the block.
  */
 import fs from "node:fs/promises";
@@ -108,6 +109,27 @@ test("step-04-dispatch.md: phase chain is a contiguous, same-order subsequence o
 		actualSlice,
 		phases,
 		`§ Canonical lane phase chain is not a contiguous, same-order subsequence of currentPhase. Expected [${phases.join(", ")}], found [${actualSlice.join(", ")}] starting at index ${startIndex}`
+	);
+});
+
+test("lib/goal-state.md: phaseLog's phase enum matches the canonical lane phase chain exactly", async () => {
+	const [dispatchRaw, goalStateRaw] = await Promise.all([
+		fs.readFile(STEP_04_PATH, "utf8"),
+		fs.readFile(GOAL_STATE_PATH, "utf8"),
+	]);
+	const section = extractSection(dispatchRaw, "## Canonical lane phase chain");
+	const phases = extractPhaseChainBlock(section).map((line) => line.phase);
+
+	const phaseLogMatch = goalStateRaw.match(/"phaseLog":[\s\S]*?"phase":\s*"([^"]+)"/);
+	if (!phaseLogMatch) {
+		throw new Error("No `phaseLog` schema field found in lib/goal-state.md");
+	}
+	const phaseLogEnum = phaseLogMatch[1].split("|").map((v) => v.trim());
+
+	assert.deepEqual(
+		phaseLogEnum,
+		phases,
+		`phaseLog's phase enum diverged from § Canonical lane phase chain. Expected [${phases.join(", ")}], found [${phaseLogEnum.join(", ")}]`
 	);
 });
 

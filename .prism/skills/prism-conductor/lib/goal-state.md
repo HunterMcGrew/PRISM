@@ -34,6 +34,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
       "escalation": { "axis": "replan | model | human", "reason": "blast-radius | string", "raisedAt": "ISO-8601" },
       "lastVerdict": "done | needs-fix | blocked | needs-replan | needs-stronger-model | needs-human",
       "verification": { "command": "string", "exitCode": 0, "diffStat": "string", "ratifiedAt": "ISO-8601" },
+      "phaseLog": [ { "phase": "implement | ac-verify | self-review | pr-review | qa | docs", "at": "ISO-8601", "skipped": false, "skipReason": "string or null" } ],
       "signals": [
         {
           "kind": "found-bug | found-followup-work | observation",
@@ -75,6 +76,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 - `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded. `escalation.reason` is typed `"blast-radius"` for decision-box escalations; plain string for other escalation axes. A same-scope-vs-split scope-fit call is never escalated — Nora resolves it inside her four-signal gate.
 - `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal. `needs-stronger-model` is the worker's own capability call (per `lib/report-back.md`), distinct from `needs-replan` (a plan defect).
 - `verification` is a nullable object written at ratification — absent until a write-lane `done` is ratified (`step-05-route.md` § Deterministic ratification). It is the audit record the step-10 report reads, never a routing input.
+- `phaseLog` is an append-only array recording each phase transition (`{ phase, at }`) or a conscious content-gated skip (`{ phase, at, skipped: true, skipReason }`) — never both for the same phase. Additive and absent-safe: a lane record with no `phaseLog` (written before this field existed) is treated as an empty log, the same guarantee as the other v2-additive fields. Home is goal-state, not the plan — traversal is run-control, not work content, and unlike `verification`'s plan-blob-SHA counterpart it is not recorded anywhere else. Rides the v3 partition layout unchanged: partition files hold unchanged v2 lane records, and `phaseLog` is part of that record.
 - `worktree` is `null` for a single-lane (pipeline) run and a checkout path for a fleet lane under worktree isolation.
 - `team`, `dependsOn`, and `type` are driven as of Phase C: `team` groups lanes for scheduling/reporting/discovered-work routing; `dependsOn` is a flat `laneId[]` DAG enforced at dispatch eligibility; `type: "integration" | null` marks a lane as an integration lane (`null` = ordinary lane). Phase A/B runs with null `team` / empty `dependsOn` / null `type` dispatch identically — the fields are additive (NFR-2).
 - A lane blocked on an unresolved `dependsOn` edge stays `status: "active"` with `phaseStatus: "parked"` and a `blockedBy: laneId[]` note naming the unresolved edges; it is not a new top-level status value (the four-value status model is unchanged). `blockedBy` is absent when the lane has no unresolved dependency.
@@ -191,7 +193,7 @@ Never write directly to the canonical path — a partial write corrupts resumabi
 
 ## Mutate protocol
 
-Read → mutate the in-memory copy → atomic write back. Always update `lastUpdated`. Batch multiple mutations within one step into a single read-mutate-write cycle. Read at every dispatch boundary; write at every phase transition.
+Read → mutate the in-memory copy → atomic write back. Always update `lastUpdated`. Batch multiple mutations within one step into a single read-mutate-write cycle. Read at every dispatch boundary; write at every phase transition (appending the lane's `phaseLog` entry — `step-04-dispatch.md` § Canonical lane phase chain).
 
 ## Resume detection
 
