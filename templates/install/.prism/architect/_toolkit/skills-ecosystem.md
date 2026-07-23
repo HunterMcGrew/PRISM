@@ -299,7 +299,7 @@ A quick architecture question with no ticket doesn't need the full plan ceremony
 
 The escalation trigger keeps the discipline: the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — Winston shifts into full mode. He resolves or creates the plan then, and retroactively records any decisions already made during the consult. Winston self-judges the grain; there's no fixed size threshold.
 
-**Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
+**Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan — see § Handoff phrases above. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
 
 ---
 

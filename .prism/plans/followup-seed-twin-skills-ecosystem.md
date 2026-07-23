@@ -112,6 +112,10 @@ Every "replace" below gives the exact current text so the Edit call writes itsel
 
 ## Decisions
 
+- **Two PR-review corrections landed post-implementation, restoring the plan's "twin holds no content canonical lacks" claim to true.** Eric's PR #442 review found: (1) the new Test 1 paragraph in `install-layout.md:233` illustrated token syntax with `${GITHUB_OWNER}`/`${DEFAULT_BRANCH}` — since the file is mirrored, `prism:build` substituted these examples into rendered values, inverting the sentence in `.claude/`/`.codex/`/`.cursor/`; (2) task 6's restored `### Handoff phrases` section made canonical's `— see § Handoff phrases above` pointer reachable again, but the twin kept it dropped; (3) canonical `skills-ecosystem.md:368` carried a lowercase "this project squash-merges" typo the twin had already corrected — a fourth kind of twin-only content the Findings section's mechanical claim didn't account for.
+  - **Chosen approach:** (1) named the tokens without the `${}` wrapper so the substitution regex (`\$\{([A-Z][A-Z0-9_]*)\}`) can't match; (2) restored the dropped clause in the twin now that its target ships; (3) fixed the capitalization in canonical (direction of flow is always canonical → twin), which also restores the Findings claim to true.
+  - → no promotion needed (PR-review corrections to this plan's own implementation, not a new lasting decision)
+
 - **The curation boundary is three ordered tests — tokenize identifiers, drop references whose targets don't ship, drop maintainer-audience subject matter — and nothing else.** Everything passing all three ships verbatim.
   - **Root cause:** the boundary was never written down. Each editor re-derived it, and "curated" got read as "roughly equivalent, edit freely," which is how 65 lines of divergence accumulated with every gate green.
   - **Alternatives considered:** (a) a per-file prose note at the top of each twin; (b) a `curationNotes` field in `seed-curation.json`; (c) one rule in the architect doc that owns the install layout.
@@ -132,6 +136,15 @@ Every "replace" below gives the exact current text so the Edit call writes itsel
 
 - **Byte-parity is not the acceptance criterion and cannot be.** The twin ships tokens where canonical ships values, so the two files are correct precisely when their bytes differ. The AC below substitutes structural and invariant checks — heading-set conformance against a named allowlist, zero ADR citations, zero unreachable paths, tokens intact, crossref-lint green.
   - → no promotion needed (specific to this plan's AC construction)
+
+- **AC-1's evidence count is 2, not 1, and that is correct.** `grep -c 'executed AC Verification' templates/install/.prism/architect/_toolkit/skills-ecosystem.md` returns `2`: once in the Reese row (task 1) and once in the AC gradeability paragraph (task 5). Canonical itself has the same 2 occurrences (verified: `grep -c 'executed AC Verification' .prism/architect/_toolkit/skills-ecosystem.md` also returns `2`), and both tasks call for verbatim copies of canonical text. The plan's AC-1 evidence undercounted; the twin content is correct as specified.
+  - → no promotion needed (AC wording correction, specific to this plan)
+
+- **`git diff --name-only origin/main` lists five tracked paths, not three, and that is expected.** Editing non-curated canonical `install-layout.md` (task 8) causes `pnpm prism:build` to regenerate its mirrors in `.claude/`, `.codex/`, `.cursor/` per the existing copied-areas mechanism (`install-layout.md § What gets copied`) — confirmed as established repo convention via `git show --stat d62197c`, which shows the same four-file pattern (canonical + three platform mirrors) for a prior install-layout.md edit. The plan's task 9 bullet and AC-10 evidence anticipated only the twin, `install-layout.md`, and the plan file — they didn't account for the mandatory mirror regeneration that keeps `pnpm prism:check` green. Omitting the mirrors from the commit would leave the branch failing drift detection, so committing all five tracked paths (plus the untracked plan file) is the correct — and only build-green — outcome.
+  - **Root cause:** the plan's verification bullet and AC-10 were written assuming install-layout.md's edit wouldn't need its own mirrors re-generated, missing that it's a non-curated (mirrored) file like any other canonical architect doc.
+  - **Alternatives considered:** (a) follow the literal three-path count and omit the mirrors — rejected, breaks `prism:check` on the very next CI run; (b) revert the mirrors and hand-edit them out of the diff — rejected, this is exactly the kind of out-of-band platform-copy edit that `prism:check` exists to catch.
+  - **Chosen approach:** commit all `prism:build`-regenerated paths. This is the only outcome consistent with "build passes" and "check stays green," both of which are load-bearing elsewhere in this same plan.
+  - → no promotion needed (verification-wording correction, specific to this plan)
 
 ---
 
@@ -206,6 +219,7 @@ Each is a separate follow-up. Folding any of them into this PR would turn a focu
 - 2026-07-23 [main] open: Intent — write an executable plan reconciling the curated seed twin and state the curation boundary as a reusable rule; Bounds — plan file only, no code, no twin edits, no mirror regeneration; Approach — read both files in full, prove the drift direction mechanically, derive the boundary from what actually ships rather than from the existing edits · close: scope held
 - 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills-ecosystem] open: Intent — execute tasks 1–9 exactly as specified, reconciling the twin and promoting the curation boundary to `install-layout.md`; Bounds — content-only edits to the two named files plus this plan; no source/build changes; Approach — verbatim copy per task, then run the task 9 verification sequence in order · close: scope held with two documented verification-count corrections (see `## Decisions`) — implementation matches every task's specified text exactly.
 - 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills-ecosystem] open: Intent — self-review the PR #442 diff for correctness, scope discipline, and build/seed-drift gates; Bounds — review only, no code edits; Approach — re-verify each AC's evidence command against the checked-out branch, confirm no mirror was hand-edited by diffing `pnpm prism:build` output against committed state, run full `pnpm prism:check` · close: scope held — zero findings, all 11 ACs mechanically re-verified, `prism:check` green with no drift.
+- 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills-ecosystem] open: Intent — fix Eric's PR #442 review findings (one Major, three Minor) and re-verify the full check gate; Bounds — the four flagged lines plus regenerated mirrors and this plan's Decisions/History; no new scope beyond what Eric named; Approach — apply each suggested fix as specified, run `pnpm prism:build` to regenerate mirrors, then `pnpm prism:check` end to end · close: scope held — all four findings fixed, `prism:check` exits 0.
 
 ---
 
@@ -213,19 +227,7 @@ Each is a separate follow-up. Folding any of them into this PR would turn a focu
 
 - 2026-07-23 [main]: Winston planned the seed-twin reconciliation — nine tasks, boundary rule promoted to `install-layout.md`, mechanism call recorded (hand-curation stays, change-parity detector is a separate ticket). Confirmed mechanically that the twin holds no content canonical lacks, so this is a one-way catch-up. Flagged the drift as a class affecting nine of seventeen curated twins; see `## Signals`.
 - 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills-ecosystem]: Clove executed tasks 1–8 verbatim per spec and ran task 9's verification sequence — crossref-lint, check-types, test, and build all pass, with no build-generated diff on either `skills-ecosystem.md`. Two verification-count corrections found during task 9 are recorded in `## Decisions` (AC-1 evidence count, and the `git diff --name-only origin/main` path count); both are undercounts in the plan's verification wording, not implementation defects — see Decisions for the actual counts and why they're correct.
-
----
-
-## Decisions
-
-- **AC-1's evidence count is 2, not 1, and that is correct.** `grep -c 'executed AC Verification' templates/install/.prism/architect/_toolkit/skills-ecosystem.md` returns `2`: once in the Reese row (task 1) and once in the AC gradeability paragraph (task 5). Canonical itself has the same 2 occurrences (verified: `grep -c 'executed AC Verification' .prism/architect/_toolkit/skills-ecosystem.md` also returns `2`), and both tasks call for verbatim copies of canonical text. The plan's AC-1 evidence undercounted; the twin content is correct as specified.
-  - → no promotion needed (AC wording correction, specific to this plan)
-
-- **`git diff --name-only origin/main` lists five tracked paths, not three, and that is expected.** Editing non-curated canonical `install-layout.md` (task 8) causes `pnpm prism:build` to regenerate its mirrors in `.claude/`, `.codex/`, `.cursor/` per the existing copied-areas mechanism (`install-layout.md § What gets copied`) — confirmed as established repo convention via `git show --stat d62197c`, which shows the same four-file pattern (canonical + three platform mirrors) for a prior install-layout.md edit. The plan's task 9 bullet and AC-10 evidence anticipated only the twin, `install-layout.md`, and the plan file — they didn't account for the mandatory mirror regeneration that keeps `pnpm prism:check` green. Omitting the mirrors from the commit would leave the branch failing drift detection, so committing all five tracked paths (plus the untracked plan file) is the correct — and only build-green — outcome.
-  - **Root cause:** the plan's verification bullet and AC-10 were written assuming install-layout.md's edit wouldn't need its own mirrors re-generated, missing that it's a non-curated (mirrored) file like any other canonical architect doc.
-  - **Alternatives considered:** (a) follow the literal three-path count and omit the mirrors — rejected, breaks `prism:check` on the very next CI run; (b) revert the mirrors and hand-edit them out of the diff — rejected, this is exactly the kind of out-of-band platform-copy edit that `prism:check` exists to catch.
-  - **Chosen approach:** commit all `prism:build`-regenerated paths. This is the only outcome consistent with "build passes" and "check stays green," both of which are load-bearing elsewhere in this same plan.
-  - → no promotion needed (verification-wording correction, specific to this plan)
+- 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills-ecosystem]: Clove fixed all four of Eric's PR #442 review findings — de-tokenized the Test 1 example in `install-layout.md` so mirroring can't substitute it, restored the twin's now-reachable `§ Handoff phrases` pointer, merged the plan's duplicate `## Decisions` section, and fixed canonical's lowercase squash-merge typo the twin had already corrected. See `## Decisions` for the fuller writeup. `pnpm prism:build` regenerated the three platform mirrors for both edited canonical files; `pnpm prism:check` exits 0.
 
 ---
 
@@ -241,8 +243,9 @@ No issues found — 2026-07-23 [huntermcgrew/prism-429-followup-seed-twin-skills
 - [x] `pnpm run prism:crossref-lint` passes
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
-- [x] `pnpm run prism:build` passes and produces no git diff on either `skills-ecosystem.md` (five tracked paths in total change — see `## Decisions`)
+- [x] `pnpm run prism:build` passes and produces no git diff on either `skills-ecosystem.md` (ten tracked paths in total change after Eric's review pass — see `## Decisions`)
 - [x] PR description up to date, opening with the follow-up attribution line (PR #442)
 - [x] Lasting decisions promoted to architect context (task 8)
+- [x] `pnpm run prism:check` (full gate) exits 0 after fixing Eric's four PR #442 findings
 
 **Last updated:** 2026-07-23
