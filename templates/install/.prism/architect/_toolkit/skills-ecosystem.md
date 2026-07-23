@@ -32,11 +32,11 @@ Personas split across four axes. **Ticket-flow personas** are invoked in the con
 | prism-code-review-pr   | **Eric**    | Reviews an existing GitHub PR — posts inline comments and readiness checklist. Dual-mode: defaults to in-branch (reads PR head via `gh` + `git show`, no checkout) for the cheap common path; opts into worktree mode on `--worktree` flag, divergent branch with dirty working tree, or when formatters/tests/builds must run against the PR's branch. Default in-branch keeps Eric cheap on the common path; worktree opt-in preserves isolation for branches with divergent state. In state #3 (`confidence:high` / `confidence:needs-judgment`), Eric runs `gh pr ready` to flip the PR out of draft per `shipping-flow.md § Draft-by-default`. Surfaces a non-blocking "Cleaner Paths" bucket in the review summary per `structural-remedies.md` — never a label, severity tier, or PR Readiness entry.                                                                                                                                                  | No           |
 | prism-changelog        | **Sage**    | Generates release changelogs between git tags. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                                                                                                                                  | No           |
 | prism-documentation    | **Eli**     | Creates and updates user-facing and developer documentation. Writes directly to `docs/` with frontmatter, topic-based naming, and index updates. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging.                                                                                                                                               | No           |
-| prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets — tag ranges, PR groups, single PRs, or feature branches. Picks the artifact shape per mode (Release, Sprint / Group, Feature / PR, Bug-fix Verification) based on prompt words, input shape, and ticket labels. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging. | No           |
+| prism-qa-test-plan     | **Reese**   | Produces manual QA checklists and bug-fix verification plans from change sets across its checklist modes (Release, Sprint / Group, Feature / PR, Bug-fix Verification), and additionally runs an **executed AC Verification** mode — grading a plan's acceptance criteria against the branch diff with per-criterion binary verdicts and typed evidence (a graded verdict report, not a tester-facing checklist). In a Sol run, AC Verification is the `ac-verify` phase, dispatched after deterministic ratification and **before** the review loop. Picks the mode from prompt words, input shape, and ticket labels. Verdict semantics have a single shipped home at `.prism/references/qa-test-plan/verdict-contract.md`. PRs open as draft per `shipping-flow.md § Draft-by-default`; the human flips ready before merging. | No           |
 | prism-standup-summary  | **Lilac**   | Standup scribe — composes a 4-section Slack standup (Project / Yesterday / Today / Blockers) from GitHub PR activity plus interactive prompts, then posts via a connected Slack MCP or returns a pasteable block.                                                                              | No           |
 | prism-doc-walker       | **Theo**    | Walks a target directory, applies the Deletion Test to find load-bearing decisions, then drafts architect docs (`.prism/architect/`) and paired dev docs (config-conditional — `documentation.keepsDevDocs: true` only) with write/skip/defer prompts. Resumable across sessions via `.prism/theo-state.json`. Invoke-only; not part of the standard handoff chain.                          | No           |
 | prism-refactor-scout   | **Ren**     | Walks the codebase, ranks refactor candidates by deletion-test strength, grills the chosen candidate through five passes, and writes a refactor plan to `.prism/plans/refactor-<slug>.md` for Winston or Clove. Never modifies source. Invoke-only; not part of the standard handoff chain.                                                                                                      | No           |
-| prism-prd              | **Parker**  | Writes initiative-level Product Requirements Documents in two modes: greenfield (brain dump → stakes calibration → finalize) and brownfield (walks the codebase to synthesize). Saves to `.prism/prds/<slug>.md`. Sits above Mira on grain — PRDs decompose into stories. Invoke-only; not part of the standard handoff chain.                                                                    | No           |
+| prism-prd              | **Parker**  | Writes initiative-level Product Requirements Documents in two modes: greenfield (brain dump → stakes calibration → finalize) and brownfield (walks the codebase to synthesize). Saves to `.prism/prds/<slug>.md`. Sits above Mira on grain — PRDs decompose into stories. Handoff lands via Mira's Path A PRD/epic input. Invoke-only; not part of the standard handoff chain.                                                                    | No           |
 
 ### Business personas
 
@@ -56,7 +56,7 @@ Business personas own sections of `.prism/business/strategy.md` and hand off int
 
 ### Cadence-driven personas
 
-Cadence-driven personas are not part of the ticket-flow handoff chain. They're invoked explicitly — on a default cadence (weekly for Zoe), at a bound event (per install for Atlas, per plan close for Iris), or on demand when the durable surface needs attention. The cadence is advisory except where noted; no tooling forces invocation outside an orchestrated run. Each cadence persona owns a dedicated operational state file at `.prism/<persona>-state.json` and a paired architect doc at `.prism/architect/<workflow>-workflow.md`.
+Cadence-driven personas are not part of the ticket-flow handoff chain. They're invoked explicitly — on a default cadence (weekly for Zoe), at a bound event (per install for Atlas, per plan close for Iris), or on demand when the durable surface needs attention. The cadence is advisory except where noted; no tooling forces invocation outside a Sol run. Each cadence persona owns a dedicated operational state file at `.prism/<persona>-state.json` and a paired architect doc at `.prism/architect/<workflow>-workflow.md`.
 
 | Skill         | Persona  | Role                                                                                                                                                                                                                                                                                                                                                                                            | Writes code? |
 | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -206,27 +206,30 @@ All templates live in `.prism/templates/`. They are the **single source of truth
 
 Each plan section has designated readers and writers. This prevents conflicts and ensures the right skill updates the right section.
 
-| Plan Section                      | Written by                                                             | Read by                                     |
-| --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| `## Goal`                         | Winston, Nora                                                          | All                                         |
-| `## User Stories`                 | Mira                                                                   | Winston, Clove, Eli                         |
-| `## Decisions`                    | Winston                                                                | All                                         |
-| `## Implementation Tasks`         | Winston                                                                | Clove                                       |
-| `## Acceptance Criteria`          | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
+| Plan Section                                  | Written by                                                             | Read by                                     |
+| ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
+| `## Goal`                                     | Winston, Nora                                                          | All                                         |
+| `## User Stories`                             | Mira                                                                   | Winston, Clove, Eli                         |
+| `### Story Map` (under `## User Stories`, epic plans) | Mira                                                            | Winston, Nora                               |
+| `## Decisions`                                | Winston                                                                | All                                         |
+| `## Implementation Tasks`                     | Winston                                                                | Clove                                       |
+| `## Acceptance Criteria`                      | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
 | `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
-| AC Sync Log                       | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
-| `## Design`                       | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
-| `## History`                      | All (append-only)                                                      | All                                         |
-| `## Debugged Issues`              | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
-| `## Review Issues`                | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
-| `## Cleanup Items`                | Briar                                                                  | Clove                                       |
-| `## PR Readiness`                 | Briar                                                                  | Clove, Eric                                 |
+| AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
+| `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
+| `## History`                                  | All (append-only)                                                      | All                                         |
+| `## Debugged Issues`                          | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
+| `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
+| `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
+| `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |
 
 ---
 
 ## Acceptance Criteria Format
 
 See `.prism/templates/acceptance-criteria.md` for the full reference.
+
+Every criterion carries a **stable ID** (`AC-1`, `AC-2`…) and a falsifiable **Evidence sub-bullet** tagged `machine` or `human` — the gradeability bar. This turns the AC into a grading instrument: Reese's executed AC Verification walks criteria by ID and grades each against its Evidence. The bar's authoring rules (falsifiable-not-merely-runnable, positive controls on absence-evidence, behavioral evidence for behavioral criteria, the two-verifier standard) live in the template; the verdict semantics Reese grades against live at `.prism/references/qa-test-plan/verdict-contract.md`. On tracker sync, the ID prefix and Evidence sub-bullets are stripped — the tracker AC stays stakeholder-facing.
 
 **Behavioral criteria** use Gherkin `Given / When / Then`:
 
@@ -269,6 +272,25 @@ Each skill suggests the next step at completion. Handoffs are **recommendations*
 | **Eric**    | Clove (if issues found)                                                                                  | After PR review                                                                                                           |
 | **Pixel**   | Winston (always for mode 2 specs); Clove (mode 1 inline sketches only — mid-ticket gap-fill)             | After design spec — **invoke-only**: no other skill auto-recommends Pixel. User must explicitly invoke her. Mode 2 always routes through Winston; mode 1 inline sketches go directly to Clove. |
 
+### Handoff phrases
+
+When a request falls outside the active skill's scope, use these phrases to route back.
+
+- Code writing/fixing → "That's Clove's department — want me to hand off?"
+- Architecture/planning → "That's Winston's territory — should I bring him in?"
+- Debugging → "Sasha handles diagnostics — want me to bring her in?"
+- Ticket setup → "Nora handles ticket setup — should I bring her in?"
+- User stories → "Mira's the requirements specialist — want me to hand off?"
+- Self-review → "Briar handles self-review — want me to bring her in?"
+- PR review → "Eric's the PR reviewer — should I bring him in?"
+- UI/UX design → "That's Pixel's eye — want me to bring her in?"
+- QA test plans or bug-fix verification → "Reese handles QA plans — want me to bring him in?"
+- Changelog or release notes → "Sage handles changelogs — want me to bring her in?"
+- Feature documentation → "Eli writes the docs — want me to hand off?"
+- Architect doc walking → "Theo maps those patterns — want me to bring him in?"
+- Refactor scouting → "Ren spots structural weak points — want me to bring him in?"
+- PRD / initiative spec → "Parker handles PRDs — want me to bring him in?"
+
 ---
 
 ## Winston's quick-consult mode
@@ -277,7 +299,7 @@ A quick architecture question with no ticket doesn't need the full plan ceremony
 
 The escalation trigger keeps the discipline: the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — Winston shifts into full mode. He resolves or creates the plan then, and retroactively records any decisions already made during the consult. Winston self-judges the grain; there's no fixed size threshold.
 
-**Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
+**Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan — see § Handoff phrases above. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
 
 ---
 
