@@ -13,7 +13,7 @@ Two kinds of content sit in a PRISM install:
 
 Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style rule. `pnpm prism:build` writes byte-identical copies to `.claude/rules/code-comments.md` and `.codex/rules/code-comments.md` — both runtimes read the canonical Claude dialect (`paths:` frontmatter for Tier 2, no frontmatter for Tier 1) directly. Cursor is the exception: its rules loader keys on `.mdc` files whose frontmatter uses `globs:` (path-scoped) or `alwaysApply: true` (always-on), so `pnpm prism:build` translates the dialect when copying to `.cursor/rules/` — `code-comments.md` lands as `.cursor/rules/code-comments.mdc`. Editing the canonical and rebuilding refreshes all three. Editing a platform copy directly is drift — `pnpm prism:check` flags it.
 
-The Cursor translation is mechanical and lossless: `paths:` becomes `globs:` with the same glob list, a frontmatter-less Tier 1 rule gains `alwaysApply: true`, and the `.md` extension becomes `.mdc`. Canonical rules stay in the Claude dialect per [ADR-0035](../spec/adrs/_toolkit/0035-rule-loading-tiers.md); a verbatim `.md` copy carrying `paths:` was untiered in Cursor at best and inert at worst (the gap routed to issue `#73`).
+The Cursor translation is mechanical and lossless: `paths:` becomes `globs:` with the same glob list, a frontmatter-less Tier 1 rule gains `alwaysApply: true`, and the `.md` extension becomes `.mdc`. Canonical rules stay in the Claude dialect per [ADR-0035](../../spec/adrs/_toolkit/0035-rule-loading-tiers.md); a verbatim `.md` copy carrying `paths:` was untiered in Cursor at best and inert at worst (the gap routed to issue `#73`).
 
 ## Ownership is path-decidable: the `_toolkit/` namespace
 
@@ -60,14 +60,14 @@ Skills are never under canonical at all — they're generated platform outputs f
 
 `pnpm prism:build` writes platform outputs directly to their tool-namespaced destinations — no staging directory. Cursor skills land at `.cursor/skills/<id>/SKILL.md`; Codex config lands at `.codex/codex-config.toml`. There is no `.generated/` staging surface.
 
-The committed-vs-ignored split inside each tool namespace is the consumer install contract — codified in [`.ai-skills/docs/compatibility.md`](../../.ai-skills/docs/compatibility.md) § Per-Tool Directory Ownership and recorded as [ADR-0044](../spec/adrs/_toolkit/0044-direct-write-tool-outputs.md). The short version:
+The committed-vs-ignored split inside each tool namespace is the consumer install contract — codified in [`.ai-skills/docs/compatibility.md`](../../../.ai-skills/docs/compatibility.md) § Per-Tool Directory Ownership and recorded as [ADR-0044](../../spec/adrs/_toolkit/0044-direct-write-tool-outputs.md). The short version:
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
 - `.agents/` is **ignored** — per-user Codex skills root; consumers will populate it via a per-user install script planned for Phase 2 (not yet shipped in PRISM).
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
-The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../.ai-skills/docs/compatibility.md) for the full reasoning.
+The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See [`.ai-skills/docs/compatibility.md § Install-Script Scope`](../../../.ai-skills/docs/compatibility.md) for the full reasoning.
 
 ## The templates/install seed surface
 
@@ -236,7 +236,7 @@ A curated twin is **canonical minus what a consumer cannot reach, with consumer-
 
 **Test 3 — Subject-matter.** Content about building, publishing, or maintaining PRISM itself is maintainer-only and never ships: npm packaging invariants, `scripts/ai-skills/**` internals, `dist/cli.js`, the release ritual, the literal guards' implementation. The discriminator is the audience — a consumer runs `prism adopt` and `prism update`; they never publish the package or run its build guards. Content about what a consumer's own install does ships even when the mechanism lives in PRISM's scripts.
 
-**What the boundary does not license.** Everything that passes all three tests ships verbatim. Curation is subtraction, tokenization, and — per [ADR-0064](../spec/adrs/_toolkit/0064-consumer-internal-boundary.md) § "ADR references split into two lanes" — genericization of an illustrative example: when an ADR number is cited only as a sample of the citation form rather than a link to follow, the PRISM-specific number and topic swap for a generic placeholder while the instruction ships unchanged. What curation never licenses is paraphrase-for-its-own-sake — a shorter version of a shipping concept restated in different words. A twin sentence that carries canonical's meaning in different words is drift waiting to happen: it reads as intentional, so the next editor leaves it, and the two versions diverge further on the next canonical edit. When a paraphrase is genuinely required — a load-bearing ADR's reasoning must survive without the link — keep it to the minimum edit that removes the unreachable reference.
+**What the boundary does not license.** Everything that passes all three tests ships verbatim. Curation is subtraction, tokenization, and — per [ADR-0064](../../spec/adrs/_toolkit/0064-consumer-internal-boundary.md) § "ADR references split into two lanes" — genericization of an illustrative example: when an ADR number is cited only as a sample of the citation form rather than a link to follow, the PRISM-specific number and topic swap for a generic placeholder while the instruction ships unchanged. What curation never licenses is paraphrase-for-its-own-sake — a shorter version of a shipping concept restated in different words. A twin sentence that carries canonical's meaning in different words is drift waiting to happen: it reads as intentional, so the next editor leaves it, and the two versions diverge further on the next canonical edit. When a paraphrase is genuinely required — a load-bearing ADR's reasoning must survive without the link — keep it to the minimum edit that removes the unreachable reference.
 
 **Direction of flow is always canonical → twin.** The twin is never the place a new idea lands first.
 
