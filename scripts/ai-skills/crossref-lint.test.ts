@@ -35,6 +35,7 @@ import {
 	isInstallRelativeLinkAllowlisted,
 	INSTALL_RELATIVE_LINK_TRACKED_VIOLATIONS,
 	INSTALL_RELATIVE_LINK_ALLOWLIST,
+	CROSSREF_SCAN_ROOTS,
 } from "./crossref-lint";
 
 // ---------------------------------------------------------------------------
@@ -323,6 +324,19 @@ test("scanLines: PR #156-class catch — corrected repo-root-absolute ref passes
 			);
 			assert.equal(violations.length, 0, "corrected repo-root-absolute ref must pass clean");
 		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// CROSSREF_SCAN_ROOTS — configuration regression guard
+// ---------------------------------------------------------------------------
+
+test("CROSSREF_SCAN_ROOTS: .prism root covers every canonical prose area", () => {
+	const prismRoot = CROSSREF_SCAN_ROOTS.find((root) => root.contentRoot === ".prism");
+	assert.ok(prismRoot, ".prism scan root must be registered");
+	assert.deepEqual(
+		[...(prismRoot?.areas ?? [])].sort(),
+		["architect", "references", "rules", "skills", "spec", "templates"]
 	);
 });
 

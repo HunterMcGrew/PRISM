@@ -20,9 +20,8 @@
  * not in this partial monorepo. See the plan's resolution-model decision.
  *
  * Scan roots: `.prism/{rules,architect,spec,references,templates,skills}` +
- * `templates/install/.prism/` mirror (no `skills/` there — skills ship
- * generated, not canonical, under `templates/install/`) + repo-root loose
- * files (AGENTS.md, templates/install/AGENTS.md.tmpl).
+ * `templates/install/.prism/` mirror + repo-root loose files (AGENTS.md,
+ * templates/install/AGENTS.md.tmpl).
  *
  * Excluded by search-root choice (not by grep -v): `plans/`, `lessons.md`,
  * `audits/`, `retros/`, `prds/`, `design/` — historical and agent-generated
@@ -118,7 +117,7 @@ export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
 	},
 	{
 		contentRoot: "templates/install/.prism",
-		areas: ["rules", "architect", "spec", "references", "templates"],
+		areas: ["rules", "architect", "spec", "references", "templates", "skills"],
 		looseFiles: ["SPEC.md.tmpl"],
 	},
 	{
