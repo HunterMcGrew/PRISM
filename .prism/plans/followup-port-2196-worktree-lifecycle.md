@@ -1,5 +1,8 @@
 # Plan: followup-port-2196-worktree-lifecycle
 
+> Closed: 2026-07-22
+> Retro: .prism/retros/per-pr/followup-port-2196-worktree-lifecycle.md
+
 ## Ticket
 
 Upstream source: https://github.com/TracTru/thrive/pull/2196 (THR-2051, OPEN at time of planning). No PRISM ticket — this is a port tracked by this plan.
@@ -31,6 +34,7 @@ Not applicable — no UI surface.
 ## Decisions
 
 - **Gate disposition: auto-cleared.** Stakes reasoning: the delegated design call (rule placement) was explicitly assigned to this lane, and the two follow-on calls (classifier language, Zoe lane shape) are internal to PRISM's own dev tooling and skill source — no public API, no shared type, no consumer-facing contract changes in v1, and nothing is removed from disk by this plan. The one genuinely operator-owned question (consumer distribution of the classifier) is recorded below as an `OPEN` Decision with a documented default path, so the work proceeds without it. The removal-capable behavior this plan introduces is gated twice before it can delete anything: task 11's read-only dry-run, and Zoe's Procedure E batch confirmation.
+  - → no promotion needed (dispatch-run mechanics for this port — the stakes reasoning is ticket-scoped and nothing in it generalizes beyond this plan).
 
 - **The worktree conventions land in a new `.prism/rules/worktree-git.md` declaring `load: skill` (Tier 3), not as a section inside the always-on `git-conventions.md`.**
   - **Root cause of the question:** thrive keeps these in `.ai-spec/rules/worktree-git.md`; PRISM has no worktree rule, and `git-conventions.md` is already substantial and `load: always`. The framing offered two options — a new always-on file, or a section in the existing always-on file — and both spend always-on context budget on roughly 35 lines of prose that most sessions never need.
@@ -68,6 +72,7 @@ Not applicable — no UI surface.
   - → promoted to `.prism/architect/_toolkit/audit-workflow.md`.
 
 - **OPEN — TBD, needs Hunter's input.** Whether the classifier ships to consumer repos. `scripts/` is not in `package.json`'s `files` array and is not part of the `templates/install/` seed surface, so a consumer's rendered Zoe would cite a script their repo does not contain. Shipping it means new machinery: a home under a distributed area, a `seed-curation.json` classification, an `ownership.ts` glob, a `files` entry, and `verify-pack-parity` coverage. **Default path (used until resolved):** v1 is PRISM-repo-local. Zoe's worktree lane checks for the classifier and, when absent, reports that the lane is unavailable in this repo and does nothing — no partial classification, no guessing. The lane is honest about being repo-local rather than silently broken.
+  - → no promotion needed for the open question itself — it stays OPEN here pending Hunter's call, and Zoe's cadence audit will flag it if it ages past 30 days. The default path is already codified durably: availability guards in `worktree-git.md` and Zoe's lane, and `.prism/architect/_toolkit/audit-workflow.md` § Worktree hygiene ("Repo-local for now") cites this entry as the question's home.
 
 - **A session-end auto-removal hook is deliberately deferred, not v1.** Ports upstream's own deferral. Mechanical enforcement of self-cleanup is a separate concern from having a correct predicate, and it should not gate the predicate landing.
   - → no promotion needed (scope boundary for this port; recorded so a later reader does not read the gap as an oversight).
@@ -296,6 +301,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — pass-2 self-review of the port, verifying pass-1's AC-9 fix landed and re-running the full gauntlet against the classifier's logic and every mirror; Bounds — read-only against source and a live checkout of the branch tip, plan-file edits only, no code changes; Approach — read the full diff against `main`, checked out the branch tip (detached HEAD, since the branch ref itself was held by a sibling worktree) to run all six `pnpm prism:check` gates live rather than trust the prior pass's claims, then adversarially traced the classifier's predicate branch-by-branch against the rule prose and the plan's task 4 spec · close: scope held — one finding (AC-8's own evidence grep can never match the `.ts` source because `execFile` splits `"rev-list"` and `"--count"` into separate array elements), fixed in-place in `## Acceptance Criteria` and recorded in `## Review Issues`; all 570 tests pass (1 pre-existing, unrelated skip), all six `prism:check` gates green, zero mirror drift confirmed live. One pre-existing, out-of-scope observation noted separately (not this PR's diff): `.prism/architect/manifest.json`/`manifest.base.json` route `.prism/rules/worktree-isolation.md`, a file that does not exist anywhere in the tree.
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — fix Eric's four PR-review minors (comment-invariant overstate, stale count in durable prose, non-verb test-helper name, missing consumer-availability guard); Bounds — the four cited lines only, no design calls, no scope beyond what Eric flagged; Approach — apply each suggested rewording verbatim where Eric proposed one, then `pnpm prism:build` to resync the seed mirror and `pnpm prism:check` to confirm all six gates stay green · close: scope held — exactly four files touched (three source + the auto-mirrored `templates/install/.prism/rules/worktree-git.md`), `pnpm prism:check` exits 0, no reply-only findings (all four were code/prose changes, not decisions).
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — build a tester-facing manual QA checklist for PR #439 now that AC-verification and both review rungs have passed; Bounds — write only `.prism/qa/pr-439-qa-checklist.md`, no source changes, no re-litigating already-fixed review findings; Approach — read the plan's 12 AC plus the full diff, then execute every command the checklist asks a tester to run (against a disposable clone) before publishing it, rather than writing untested steps · close: scope held — all 9 classifier test cases pass, `pnpm prism:check` exits 0 across all six stages, AC-8's corrected grep confirmed; no failures surfaced, nothing routed to `## Review Issues`.
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — run the plan close ceremony (reflect on Iris's per-PR retro, promote, verdict-gate, mark closed) riding PR #439's final branch; Bounds — this plan file, carrying Iris's stranded retro report onto the branch, and one lessons.md append; no source changes, no merge, no draft flip; Approach — verify each promoted Decision physically exists in `audit-workflow.md` rather than re-writing it, add verdict sub-bullets to the two entries missing one, then commit and push with `pnpm prism:check` green · close: scope held
 
 ---
 
@@ -306,6 +312,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Ran the task-11 live dry-run against all 80 non-main worktrees — 11 GREEN, 35 RED, 34 YELLOW, 0 unreadable. Hand spot-checked one GREEN (`PRISM-skill-improvements`: clean tree, upstream in sync) and one RED (an `agent-*` worktree: three tracked modifications) against the classifier's verdicts — both agreed. No 0-of-N GREEN pathology; no escalation warranted.
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Fixed Eric's four PR #439 review minors — reworded the detached-HEAD invariant comment and added a precedence clause to `worktree-git.md`, dropped the stale "35 worktrees" count, renamed `currentHeadOid` to `readHeadOid`, and added the consumer-availability guard to the self-cleanup line. `pnpm prism:check` exits 0.
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Added `.prism/qa/pr-439-qa-checklist.md`, a tester-facing manual QA plan covering all 12 AC items, the rule/classifier/Zoe-lane behavior, mirror parity, and edge cases. Every command in it was executed against the branch tip first — all passed.
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle]: Closed the plan — every Decision now carries a verdict sub-bullet, all promoted content verified already present in `audit-workflow.md` § Worktree hygiene, no Promotion cautions from the retro. Both CI runners are green (windows-latest completed after Iris's retro, closing charter item 6 and completing AC-12's both-runners evidence). Carried Iris's per-PR retro report onto the branch at `.prism/retros/per-pr/followup-port-2196-worktree-lifecycle.md` and appended the AC-evidence-dry-run lesson to `.prism/lessons.md`.
 
 ---
 
@@ -377,7 +384,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - [x] Tests written for new logic and edge cases — 10 cases in `worktree-classify.test.ts`, all passing
 - [x] All debugged issues resolved (no `open` entries) — none recorded
 - [x] Build passes — last run: 2026-07-22 (post-review fix pass, Eric's four PR #439 minors), `pnpm prism:check` exit 0 (all six steps); 570 tests pass, 1 pre-existing unrelated skip
-- [ ] PR description up to date — pending PR open
-- [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md` § Before Closing; this is a self-contained port, not yet closed
+- [x] PR description up to date — verified against PR #439's live body at plan close (summary, design calls, dry-run results, and the OPEN decision all current)
+- [x] Lasting decisions promoted to architect context — verified at plan close 2026-07-22; every `## Decisions` entry carries a verdict sub-bullet, and all `→ promoted` targets confirmed present in `.prism/architect/_toolkit/audit-workflow.md`
 
 **Last updated:** 2026-07-22
