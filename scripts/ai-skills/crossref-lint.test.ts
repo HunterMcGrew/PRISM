@@ -335,7 +335,7 @@ test("CROSSREF_SCAN_ROOTS: .prism root covers every canonical prose area", () =>
 	const prismRoot = CROSSREF_SCAN_ROOTS.find((root) => root.contentRoot === ".prism");
 	assert.ok(prismRoot, ".prism scan root must be registered");
 	assert.deepEqual(
-		[...(prismRoot?.areas ?? [])].sort(),
+		[...prismRoot.areas].sort(),
 		["architect", "references", "rules", "skills", "spec", "templates"]
 	);
 });
