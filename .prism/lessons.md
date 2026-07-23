@@ -363,3 +363,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-22 (followup-427-428-verdict-wiring, Eric Round-1 Minor) — `phase-chain-parity.test.ts` — a test whose entire job is preventing a second copy of the canonical phase chain — held its own second hardcoded copy in `ARROW_LITERAL` alongside `EXPECTED_PHASES`. The anti-drift guard briefly reintroduced the exact drift it exists to forbid.
 
 **How to apply:** After writing a test that forbids a dual source of truth, re-read the test's own constants: derive the second representation from the first (`EXPECTED_PHASES.join(" → ")`), never re-hardcode it. The guard has to hold itself to its own rule.
+
+## AC evidence commands are code — dry-run them at authoring time
+
+**Why:** 2026-07-22 (followup-port-2196-worktree-lifecycle, per-PR retro) — two of the plan's twelve machine-evidence AC clauses could never return their asserted result as authored: AC-9 asserted a grep count of `0` that the plan's own task 2 made `1` by design, and AC-8's pattern `"rev-list --count"` can never match code that passes `"rev-list"` and `"--count"` as separate `execFile` argv elements. Each survived a full review pass before self-review caught it, and AC-8's original clause would have passed-by-vacuous-miss if run uncritically.
+
+**How to apply:** When an AC's evidence is a command with an asserted result, execute it — against the tree, or reasoned against the plan's own tasks — before the plan ships. A grep meant to match code must account for argv-array invocation style: a shell command written as prose never appears as a joined string in `execFile` calls.

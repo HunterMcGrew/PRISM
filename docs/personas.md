@@ -203,9 +203,9 @@ Each persona owns a domain. They read the branch plan to pick up context, do the
 
 ### Zoe — cadence audit (`prism-surface-audit`)
 
-**What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules.
+**What she does:** Audits plans, lessons, and open decisions. Surfaces stale open decisions, plans that haven't been closed, and lessons that have fired enough to graduate to rules. Also carries an explicit-only worktree hygiene lane that classifies every `git worktree` entry GREEN/RED/YELLOW and clears the GREEN set on one batch confirmation.
 
-**When to call:** "Zoe, run a cadence audit." — typically at the end of a sprint or release cycle.
+**When to call:** "Zoe, run a cadence audit." — typically at the end of a sprint or release cycle. "Zoe, clean up worktrees." for the explicit worktree hygiene lane.
 
 **Skill:** [`.ai-skills/skills/prism-surface-audit/`](../.ai-skills/skills/prism-surface-audit/)
 
