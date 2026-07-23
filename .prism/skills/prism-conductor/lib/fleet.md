@@ -55,7 +55,7 @@ When a discovered fix belongs to another lane (a "fold-in"), the routing depends
 
 ## Per-lane isolation
 
-Each fleet lane runs in its own worktree (`isolation: 'worktree'`), recorded as the lane's `worktree` path, bound to the cleanup contract in `.prism/rules/worktree-isolation.md` — removed on success, error, or interruption. A single-lane pipeline run leaves `worktree: null` and uses the current checkout.
+Each fleet lane runs in its own worktree (`isolation: 'worktree'`), recorded as the lane's `worktree` path, bound to the cleanup contract in `.prism/references/worktree-mode.md` — removed on success, error, or interruption. A single-lane pipeline run leaves `worktree: null` and uses the current checkout.
 
 ## Integration gate — persona assignment
 
