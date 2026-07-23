@@ -264,7 +264,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 ### Non-behavioral
 
 - [ ] **AC-8 — The predicate has exactly one implementation.** `scripts/ai-skills/worktree-classify.ts` is the only place the GREEN/RED/YELLOW logic is coded; the rule and the skill describe it in prose and delegate to the script.
-  - Evidence (`machine`): `grep -rn "rev-list --count" .prism/ .ai-skills/ scripts/ --include='*.md' --include='*.ts'` shows executable occurrences only in `worktree-classify.ts` and its test; every other hit is prose.
+  - Evidence (`machine`): `grep -rn "rev-list" .prism/ .ai-skills/ scripts/ --include='*.md' --include='*.ts'` shows executable occurrences only in `worktree-classify.ts` and its test; every other hit is prose. (Corrected by Briar's pass-2 self-review: the original pattern `"rev-list --count"` never matches the `.ts` source, because `execFile` passes `"rev-list"` and `"--count"` as separate array elements rather than one joined string — the literal substring with a space between them doesn't occur in code, only in prose. The narrower `"rev-list"` pattern matches both, with no additional noise confirmed by hand.)
 
 - [x] **AC-9 — The new rule's body costs zero always-on context budget.** `.prism/rules/worktree-git.md` declares `load: skill` and its body is absent from every platform rules mirror; the only always-on trace is the one-line cross-reference task 2 deliberately added to `git-conventions.md` § Worktrees.
   - Evidence (`machine`): after `pnpm prism:build`, `ls .claude/rules/worktree-git.md .cursor/rules/worktree-git.mdc .codex/rules/worktree-git.md` reports all three missing (confirmed), and `grep -c "worktree-git" AGENTS.md` returns `1` — the intentional cross-reference line, not the rule body. Corrected by Briar's self-review from an original evidence clause that asserted `0`, which the plan's own task 2 (the cross-reference) makes impossible to satisfy — see `## Review Issues`.
@@ -293,6 +293,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - 2026-07-21 [main] open: Intent — produce a Clove-ready port plan for thrive#2196 with the rule-placement design call made and reasoned; Bounds — write only `.prism/plans/followup-port-2196-worktree-lifecycle.md`, no code, no branch, no git mutation, no tracker; Approach — read the upstream diff in full, then ground every mapping against PRISM's actual build/tier/test machinery rather than assuming shape parity with thrive · close: scope held
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — implement all 12 tasks of the port exactly as sequenced; Bounds — only the files the plan names, no hand-edited mirrors, `pnpm prism:check` exit 0 before push; Approach — execute tasks 1–11 in order (task 10's check depends on task 3's manifest routes), then task 12, verifying each task's stated command before moving on · close: scope held — one deviation from the plan's literal task 8 wording (no "Specializes-in list" bullet structure exists in Zoe's shared.md; extended the opening paragraph instead, same intent) and one fix beyond the plan (a markdown link to the repo-local classifier script broke the install-relative-link-gate on the seed-mirrored copy; changed to a plain code-span reference, consistent with every other architect-doc reference to `scripts/ai-skills/`).
 - 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — first-pass self-review of the port against this plan, covering types, logic, tests, and the build; Bounds — read-only against source, plan-file edits only, no code changes; Approach — verify every AC and Decision against the actual diff and a live run of all six `pnpm prism:check` gates rather than trusting the plan's own claims · close: scope held — one finding (AC-9's evidence clause asserted an impossible zero-count against the plan's own task 2 design), fixed in-place in `## Acceptance Criteria` and recorded in `## Review Issues`; no code changes needed.
+- 2026-07-22 [huntermcgrew/prism-port-2196-worktree-lifecycle] open: Intent — pass-2 self-review of the port, verifying pass-1's AC-9 fix landed and re-running the full gauntlet against the classifier's logic and every mirror; Bounds — read-only against source and a live checkout of the branch tip, plan-file edits only, no code changes; Approach — read the full diff against `main`, checked out the branch tip (detached HEAD, since the branch ref itself was held by a sibling worktree) to run all six `pnpm prism:check` gates live rather than trust the prior pass's claims, then adversarially traced the classifier's predicate branch-by-branch against the rule prose and the plan's task 4 spec · close: scope held — one finding (AC-8's own evidence grep can never match the `.ts` source because `execFile` splits `"rev-list"` and `"--count"` into separate array elements), fixed in-place in `## Acceptance Criteria` and recorded in `## Review Issues`; all 570 tests pass (1 pre-existing, unrelated skip), all six `prism:check` gates green, zero mirror drift confirmed live. One pre-existing, out-of-scope observation noted separately (not this PR's diff): `.prism/architect/manifest.json`/`manifest.base.json` route `.prism/rules/worktree-isolation.md`, a file that does not exist anywhere in the tree.
 
 ---
 
@@ -318,6 +319,14 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - **Problem:** AC-9's evidence clause asserted `grep -c "worktree-git" AGENTS.md` returns `0`, but the plan's own task 2 deliberately adds a one-line cross-reference to `git-conventions.md` § Worktrees (an always-on rule that mirrors into `AGENTS.md`) — so the literal grep always returns `1`, never `0`, regardless of implementation correctness. As written, AC-9 fails verification for a design the plan itself calls for.
 - **Suggested fix:** narrow the evidence to the rule's own body (already applied) — grep count of `1` attributed to the intentional cross-reference line, confirmed by manual inspection that `AGENTS.md` contains no other `worktree-git` occurrence.
 
+### AC-8 evidence grep can never match the TypeScript source it's meant to verify
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/plans/followup-port-2196-worktree-lifecycle.md` (AC-8 evidence clause)
+- **Problem:** AC-8's evidence command was `grep -rn "rev-list --count" .prism/ .ai-skills/ scripts/ --include='*.md' --include='*.ts'`, expected to show hits in `worktree-classify.ts`/`.test.ts` plus prose elsewhere. Run live, it returns zero hits in either `.ts` file — only the `.md` prose. The `.ts` source calls `execFile` with `"rev-list"` and `"--count"` as separate array elements (`["rev-list", "--count", "@{u}..HEAD"]`), so the literal joined substring `"rev-list --count"` never appears in the code, only in prose that writes the git command as a sentence. As specified, the AC's own verification method cannot detect the implementation it claims to confirm exists.
+- **Suggested fix:** narrow the pattern to `"rev-list"` alone (already applied) — confirmed live that this matches exactly the two `.ts` occurrences plus the pre-existing prose hits, with no added noise.
+
 ---
 
 ## Cleanup Items
@@ -331,7 +340,7 @@ Sequence matters: tasks 1–3 establish the rule and its registration, 4–6 the
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — 10 cases in `worktree-classify.test.ts`, all passing
 - [x] All debugged issues resolved (no `open` entries) — none recorded
-- [x] Build passes — last run: 2026-07-22, `pnpm prism:check` exit 0 (all six steps)
+- [x] Build passes — last run: 2026-07-22 (pass-2, live re-run against the branch tip), `pnpm prism:check` exit 0 (all six steps); 570 tests pass, 1 pre-existing unrelated skip
 - [ ] PR description up to date — pending PR open
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md` § Before Closing; this is a self-contained port, not yet closed
 
