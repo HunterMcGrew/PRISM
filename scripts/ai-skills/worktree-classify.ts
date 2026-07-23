@@ -104,9 +104,9 @@ export async function classifyWorktree(
 		worktreePath
 	);
 
-	// Detached HEAD never returns GREEN or RED — there is no branch to measure
-	// ahead-count or merge state against, only whether the commit is still
-	// reachable from some other ref.
+	// From here, detached HEAD resolves only to YELLOW — a dirty detached tree
+	// was already caught as RED above, and there is no branch to measure
+	// ahead-count or merge state against.
 	if (!branch) {
 		const containingRefs = await tryGit(
 			["for-each-ref", "--format=%(refname)", "--contains", "HEAD"],

@@ -95,7 +95,7 @@ function commitFile(worktreeDir: string, fileName: string, message: string): voi
 	});
 }
 
-function currentHeadOid(worktreeDir: string): string {
+function readHeadOid(worktreeDir: string): string {
 	return execFileSync("git", ["rev-parse", "HEAD"], {
 		cwd: worktreeDir,
 		encoding: "utf8",
@@ -152,7 +152,7 @@ test("GREEN pr-merged — merged PR's shipped commit contains a stale-tracking-r
 			stdio: "ignore",
 		});
 
-		const shippedOid = currentHeadOid(worktreeDir);
+		const shippedOid = readHeadOid(worktreeDir);
 
 		// Rewind the local tracking ref one commit behind reality, so the
 		// worktree reads as ahead of a stale `@{u}` even though everything it
@@ -267,7 +267,7 @@ test("RED unpushed-commits — regression guard: a commit after the merged PR's 
 			{ cwd: worktreeDir, stdio: "ignore" }
 		);
 
-		const shippedOid = currentHeadOid(worktreeDir);
+		const shippedOid = readHeadOid(worktreeDir);
 
 		await fs.writeFile(path.join(worktreeDir, "after-merge.txt"), "after\n");
 		commitFile(
