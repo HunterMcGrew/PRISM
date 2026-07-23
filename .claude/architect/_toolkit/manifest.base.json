@@ -27,7 +27,6 @@
 	".prism/rules/verification-before-done.md": "_toolkit/spec-editing.md",
 	".prism/rules/verification-commands.md": "_toolkit/spec-editing.md",
 	".prism/rules/worktree-git.md": "_toolkit/spec-editing.md",
-	".prism/rules/worktree-isolation.md": "_toolkit/spec-editing.md",
 	".prism/rules/writing-voice.md": "_toolkit/spec-editing.md",
 	".prism/spec/adrs/**": "_toolkit/spec-editing.md",
 	".prism/architect/**": "_toolkit/spec-editing.md",
