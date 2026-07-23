@@ -19,7 +19,7 @@
  * canonical content authors those to resolve in the consumer's installed tree,
  * not in this partial monorepo. See the plan's resolution-model decision.
  *
- * Scan roots: `.prism/{rules,architect,spec,references,templates}` +
+ * Scan roots: `.prism/{rules,architect,spec,references,templates,skills}` +
  * `templates/install/.prism/` mirror + repo-root loose files (AGENTS.md,
  * templates/install/AGENTS.md.tmpl).
  *
@@ -112,12 +112,12 @@ interface ScanRoot {
 export const CROSSREF_SCAN_ROOTS: ScanRoot[] = [
 	{
 		contentRoot: ".prism",
-		areas: ["rules", "architect", "spec", "references", "templates"],
+		areas: ["rules", "architect", "spec", "references", "templates", "skills"],
 		looseFiles: ["SPEC.md"],
 	},
 	{
 		contentRoot: "templates/install/.prism",
-		areas: ["rules", "architect", "spec", "references", "templates"],
+		areas: ["rules", "architect", "spec", "references", "templates", "skills"],
 		looseFiles: ["SPEC.md.tmpl"],
 	},
 	{
