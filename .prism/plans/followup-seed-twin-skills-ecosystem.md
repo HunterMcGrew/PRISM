@@ -239,7 +239,7 @@ Each is a separate follow-up. Folding any of them into this PR would turn a focu
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
 - [x] `pnpm run prism:build` passes and produces no git diff on either `skills-ecosystem.md` (five tracked paths in total change — see `## Decisions`)
-- [ ] PR description up to date, opening with the follow-up attribution line
+- [x] PR description up to date, opening with the follow-up attribution line (PR #442)
 - [x] Lasting decisions promoted to architect context (task 8)
 
 **Last updated:** 2026-07-23
