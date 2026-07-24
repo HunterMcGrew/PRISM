@@ -274,6 +274,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — implement the bounded delta fix (tasks 1–7) against the twin and the now-merged canonical boundary section, per Sol dispatch; Bounds — the twin, canonical `install-layout.md`'s boundary section, and this plan file only; do not copy the boundary section into the twin; do not sweep D1/D3 outside the local frame; Approach — apply each task's exact edit verbatim, verify every AC's machine evidence directly, run `pnpm prism:check` as the load-bearing gate · close: scope held — five files changed beyond the plan's literal "three paths" (twin, canonical, plan) are the three platform-copy mirrors, an expected and required side effect of any canonical architect-doc edit, not scope drift; recorded as a Decision
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — self-review the branch for correctness, scope discipline, and the build, confirming no mirror was hand-edited and `pnpm prism:check` passes seed drift; Bounds — review only, no source edits, plan-only commit permitted; Approach — independently re-run the verification gate in an isolated detached worktree, re-check every AC's machine claim, and sweep for rename-completeness gaps the diff wouldn't surface · close: scope held — found one Minor (stale ADR-0059 heading citation), no critical/major; verdict needs-fix
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — fix Briar's Minor finding (stale ADR-0059 heading citation) per Sol dispatch and re-run `pnpm prism:check`; Bounds — the one-line citation fix in canonical ADR-0059 plus the build-regenerated platform mirrors, no other source edits; Approach — apply the exact suggested fix, run `pnpm prism:build` to refresh mirrors, verify idempotence, then `pnpm prism:check` as the load-bearing gate · close: scope held — four files changed (canonical + three mirrors), matching Briar's suggested fix exactly
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — self-review pass 2 (post-fix) covering correctness, scope discipline, and the build per Sol dispatch; Bounds — review only, no source edits, plan-only commit permitted; Approach — independently re-verify every AC's machine evidence against the committed twin/canonical text, confirm the three platform mirrors stay byte-identical to canonical, and re-run `pnpm prism:check` as the load-bearing gate · close: scope held — one new Minor found (malformed clause in canonical's Test 2 tarball/command-surface paragraph), no critical/major; verdict needs-fix
 
 ---
 
@@ -282,6 +283,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - 2026-07-23 [main]: Winston audited the `install-layout.md` seed twin — seven missing canonical sections classified as five correct omissions (S1, S4, S5, S6, S7, all Test 3 maintainer content) and two missing in error (S2's init steps, S3 in full), plus four twin-only defects of which two are in scope. Seven tasks, blocked on the upstream skills-ecosystem merge; boundary rule amended twice (Test 2 gains the tarball and the command surface; the attribution idiom named). Recorded the larger finding that the twin retains more maintainer content than it omits — a re-scoping question routed to `## Signals` for a human call; see Decisions.
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove implemented all seven tasks — renamed the first-contact heading and inserted the `init`/`adopt`/Atlas steps, fixed the retained command forms, inserted the steady-state persona-skill-distribution section, deleted the dangling `docs/` bullet, verified the five correct omissions stayed omitted, and amended canonical's curation-boundary section (Test 2's tarball/command-surface gap, the crossref-lint caveat, the attribution idiom) as it stood post-`#442` merge. `pnpm prism:check` exits 0; build is idempotent. See Decisions for the plan-authoring gap in task 7/AC-6/AC-10's exact-count evidence (platform-mirror side effect and the pre-existing boundary heading), neither a code defect.
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed Briar's Minor finding — updated canonical ADR-0059's stale heading citation (`§ First-contact adoption: \`prism:adopt\`` → `\`prism init\` then \`prism adopt\``) and ran `pnpm prism:build` to refresh the three platform mirrors. `pnpm prism:check` exits 0 (571/571 tests); rerunning `pnpm prism:build` produced zero further diff.
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Briar ran self-review pass 2 — independently re-verified every AC's machine-evidence claim against the committed twin and canonical text, confirmed the three platform mirrors stay byte-identical to canonical (no hand-edit), and re-ran `pnpm prism:check` in the branch's tip (exit 0, build idempotent). One new Minor: a malformed "neither…yet ship in neither" clause in canonical's Test 2 tarball/command-surface paragraph — see Review Issues.
 
 ---
 
@@ -302,11 +304,21 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 
 No critical or major issues. Everything else checked out: `pnpm run prism:check` (571/571 tests, crossref-lint, manifest-coverage, verify-pack-parity) passes clean in an isolated worktree at this branch's tip; `pnpm run prism:build` is idempotent (zero diff on rerun, confirming the `.claude`/`.codex`/`.cursor` architect-doc mirrors are build-generated, not hand-edited — their divergence from canonical is expected dogfood token-substitution, not drift); every AC-1–AC-10 machine claim re-verified independently (init/adopt ordering, dangling `docs/` bullet removed, five correct omissions still absent, zero Linear/ticket literals, S3 verbatim-copy with only the documented in-scope command-form fixes). AC-11 remains open pending a human cold-read, as the plan already notes. The one Minor (stale ADR-0059 heading citation) is fixed — see Review Issues.
 
+### Malformed sentence in Test 2's new tarball/command-surface paragraph
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/install-layout.md:236` (and its byte-identical `.claude/`, `.codex/`, `.cursor/` mirrors)
+- **Problem:** "`scripts/ai-skills/**` and `docs/**` appear in neither the seed tree nor the seed-curation manifest, yet ship in neither the tarball" pairs "neither" with a single item (the tarball) instead of the paired "neither…nor" construction the rest of the sentence uses — the clause doesn't parse as clean English, though the intended meaning (they're unshipped in the tarball too) is still recoverable from context.
+- **Suggested fix:** Rephrase to something like "…yet are unshipped in the tarball too, so a reference into them is exactly as dangling as an unreachable ADR citation." Edit canonical only — the platform mirrors regenerate from it via `pnpm prism:build` on the next build pass; do not hand-edit the mirrors.
+
+Pass 2 (post-ADR-0059-fix) re-verified every AC-1–AC-10 machine claim independently against the current committed twin and canonical text (init/adopt heading and ordering, command-form fixes, steady-state section content and its Test 2 drops, dangling-docs deletion, the five correct omissions still absent, zero Linear/ticket-literal/ADR/`docs/content`/`prism-242` references in the twin), confirmed the three platform mirrors stay byte-identical to canonical (`pnpm prism:check` reports "Generated outputs are in sync" — no hand-edit), and re-ran the full `pnpm prism:check` gate clean (571/571 tests, crossref-lint, manifest-coverage, verify-pack-parity). One new Minor found, above — a prose-only defect with no functional or test impact. AC-11 remains open pending a human cold-read.
+
 ## PR Readiness
 
 - [x] Upstream `followup-seed-twin-skills-ecosystem` PR merged before implementation started (`49a489d`, #442)
-- [x] No critical or major issues (Minor — stale ADR-0059 heading citation — fixed, see Review Issues)
-- [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24
+- [x] No critical or major issues (two Minors — stale ADR-0059 heading citation, fixed; malformed Test 2 clause, open — see Review Issues)
+- [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24 (pass 2)
 - [x] `pnpm run prism:crossref-lint` passes
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
@@ -314,4 +326,4 @@ No critical or major issues. Everything else checked out: `pnpm run prism:check`
 - [x] PR description up to date, opening with the follow-up attribution line
 - [x] Lasting decisions promoted to architect context (task 6)
 
-**Last updated:** 2026-07-24 [Clove — fixed Briar's Minor finding]
+**Last updated:** 2026-07-24 [Briar — self-review pass 2]
