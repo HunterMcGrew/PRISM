@@ -7,7 +7,7 @@ How PRISM's build outputs land across the four tool namespaces (`.claude/`, `.co
 PRISM generates content for three AI coding tools plus Codex's per-user installation:
 
 - **Claude Code** — reads skills from `.claude/skills/`, rules and architect docs from `.claude/rules/`, `.claude/architect/`, etc. Loaded from the repo directly.
-- **Codex** — reads agents from `.codex/agents/`, native configuration from `.codex/codex-config.toml`. The skill bodies install per-user to `.agents/skills/` and `~/.codex/agents/`.
+- **Codex** — reads agents from `.codex/agents/`, native configuration from `.codex/codex-config.toml`. Skill bodies land at `.agents/skills/`, populated directly by every `prism adopt`/`prism update` (see § Per-Tool Directory Ownership) — not a per-user install step.
 - **Cursor** — reads skills from `.cursor/skills/`. Loaded from the repo directly.
 
 Minimum tool versions are tracked in each tool's own setup docs; PRISM targets the latest stable release of each.
@@ -41,7 +41,7 @@ Each tool namespace has a committed-vs-ignored split. The rule of thumb: content
 - **`.claude/`** — fully committed. PRISM dogfoods Claude Code; consumers of PRISM inherit the `.claude/` content tree directly. Exceptions: `.claude/worktrees/` (operational; ignored) and `.claude/settings.local.json` (per-user override; ignored).
 - **`.codex/`** — partially committed. `SPEC.md`, `agents/`, `architect/`, `references/`, `rules/`, `spec/`, `templates/` are tracked (generated mirrors of `.prism/`). `codex-config.toml` is **ignored** because it's a per-user file containing personality, projects, and marketplaces — committing it would clobber consumer customization. `.codex/worktrees/` is ignored (operational).
 - **`.cursor/`** — partially committed. `skills/` is tracked so Cursor consumers get every persona via `git pull` with no install step. `SPEC.md`, `architect/`, `references/`, `rules/`, `spec/`, `templates/` are also tracked (generated mirrors of `.prism/`). `.cursor/worktrees/` is ignored (operational).
-- **`.agents/`** — fully ignored. This is Codex's per-user skills root; the destination lives outside the repo on consumer machines (`~/.agents/skills/`), so even PRISM's own dogfood install doesn't commit it. PRISM does not yet ship a per-user install script — Phase 2 will add one.
+- **`.agents/`** — ignored but populated. `.agents/skills/` is Codex's skills root, resolved repo-relative (not `~/.agents/skills/`) and rendered directly by every `prism adopt`/`prism update` — the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It stays gitignored as machine-local output, not because population is unshipped.
 
 The rule for future tool integrations: per-tool workspace state belongs under each tool's own namespace, with the committed-vs-ignored split codified per-tool.
 
