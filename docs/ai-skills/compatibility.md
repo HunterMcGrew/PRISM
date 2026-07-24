@@ -12,7 +12,7 @@ The short version, before the prose:
 - **Claude Code** reads from `.claude/` — fully committed.
 - **Codex** reads from `.codex/agents/` (tracked) and `.codex/codex-config.toml` (per-user, ignored).
 - **Cursor** reads from `.cursor/skills/` — tracked.
-- **Codex per-user skills** install to `~/.agents/skills/` via a future `pnpm prism:install-codex` command (planned for Phase 2 — not yet shipped). `.agents/` in the repo is fully ignored.
+- **Codex skill bodies** land at `.agents/skills/` — resolved repo-relative, not `~/.agents/skills/` — populated directly by every `prism adopt`/`prism update`. `.agents/` in the repo is ignored but populated.
 
 ## Persona vs utility skills
 
@@ -60,20 +60,18 @@ The ignored parts:
 
 There's no `.cursor/codex-config.toml`-equivalent — Cursor doesn't have an in-repo per-user config file the way Codex does.
 
-### `.agents/` — fully ignored
+### `.agents/` — ignored but populated
 
-Codex's per-user skills root lives at `~/.agents/skills/` on the consumer's machine, not in the repo. The repo's `.agents/` directory is a PRISM-side build artifact used during the install-script workflow — it's never committed because the destination it represents is outside the repo entirely.
-
-Consumers run `pnpm prism:install-codex` (or PRISM's equivalent install command) to populate their `~/.agents/skills/` from the repo's build outputs.
+Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agents/skills/` — and is rendered directly by every `prism adopt`/`prism update`, the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It stays gitignored as machine-local output, not because population is unshipped.
 
 ## The install-script rule
 
 This is the principle that decides whether a destination gets sync or install:
 
 - **In-repo destinations get sync.** `pnpm prism:build` writes directly to `.claude/skills/`, `.codex/agents/`, `.cursor/skills/`, `.codex/codex-config.toml`, and the platform-content-copy areas. The build IS the install for in-repo destinations.
-- **Outside-repo destinations get install scripts.** `~/.agents/skills/` and `~/.codex/agents/` live in the user's home directory, so they need a separate copy step that runs against the user's actual home — not against a build output in the repo.
+- **Outside-repo destinations get install scripts.** No PRISM destination is currently outside the repo — `.agents/skills/` and `.codex/agents/` both resolve repo-relative and are written by the same render pass as everything else. The rule is retained for a future tool integration whose destination genuinely lives outside the repo.
 
-The failure mode this rule prevents is staging-and-deploy drift. Before Phase 1.5f, PRISM had a `.generated/` staging directory: the build wrote to `.generated/cursor-skills/` and `.generated/codex-config.toml`, intended for a follow-up install script to copy into the live destinations. PRISM never shipped that install script — the staging directory existed without a downstream consumer, leaving Cursor users without a clean path. The fix was to remove staging entirely for in-repo destinations: the build writes directly to where the tool reads, and install scripts are reserved for genuinely external destinations (the future Phase 2 `pnpm prism:install-codex` for `~/.agents/skills/`).
+The failure mode this rule prevents is staging-and-deploy drift. Before Phase 1.5f, PRISM had a `.generated/` staging directory: the build wrote to `.generated/cursor-skills/` and `.generated/codex-config.toml`, intended for a follow-up install script to copy into the live destinations. PRISM never shipped that install script — the staging directory existed without a downstream consumer, leaving Cursor users without a clean path. The fix was to remove staging entirely for in-repo destinations: the build writes directly to where the tool reads. No PRISM destination is currently outside the repo, so install scripts are unused today — the rule is retained for a future tool integration whose destination genuinely lives outside the repo.
 
 ## The architectural decision
 
