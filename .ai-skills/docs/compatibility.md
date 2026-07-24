@@ -1,10 +1,10 @@
 # Compatibility
 
-How PRISM's build outputs land across the four tool namespaces (`.claude/`, `.codex/`, `.cursor/`, `.agents/`), what gets committed vs ignored, and which destinations need install scripts.
+How PRISM's build outputs land across the four tool namespaces (`.claude/`, `.codex/`, `.cursor/`, `.agents/`), and what gets committed vs ignored.
 
 ## Runtime Expectations
 
-PRISM generates content for three AI coding tools plus Codex's per-user installation:
+PRISM generates content for three AI coding tools:
 
 - **Claude Code** — reads skills from `.claude/skills/`, rules and architect docs from `.claude/rules/`, `.claude/architect/`, etc. Loaded from the repo directly.
 - **Codex** — reads agents from `.codex/agents/`, native configuration from `.codex/codex-config.toml`. Skill bodies land at `.agents/skills/`, populated directly by every `prism adopt`/`prism update` (see § Per-Tool Directory Ownership) — not a per-user install step.
@@ -50,7 +50,7 @@ The rule for future tool integrations: per-tool workspace state belongs under ea
 Install scripts exist only when the destination is outside the repo.
 
 - **In-repo destinations get sync.** `pnpm prism:build` writes directly to `.claude/skills/`, `.codex/agents/`, `.cursor/skills/`, `.codex/codex-config.toml`, and the platform-content-copy areas. No install step required; the build IS the install for in-repo destinations.
-- **Outside-repo destinations get install scripts.** The Codex per-user skills root at `~/.agents/skills/` and the per-user Codex agents at `~/.codex/agents/` live in the user's home directory, not the repo. These need a separate install step that copies from the repo to the user's home. PRISM does not yet ship that install script — Phase 2 will add `pnpm prism:install-codex` as part of Atlas's onboarding flow. Until then, Codex consumers either dogfood PRISM directly or wire `~/.agents/skills/` themselves.
+- **Outside-repo destinations get install scripts.** No PRISM destination is currently outside the repo: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, and `.codex/agents/` all resolve repo-relative and are written by the same render pass, so every destination takes the sync path above. The rule is retained for future tool integrations whose destination genuinely lives outside the repo.
 
 The failure mode this rule prevents: staging-and-deploy drift. Without this discipline, build outputs accumulate in a staging directory (formerly `.generated/`) and the install scripts drift from the source of truth — what the build writes to staging stops matching what install copies to the destination. The fix is to remove staging entirely for in-repo destinations and only use install scripts when the destination is genuinely external.
 

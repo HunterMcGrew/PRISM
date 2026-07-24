@@ -278,6 +278,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — self-review pass 3 (post-fix) covering correctness, scope discipline, and the build per Sol dispatch; Bounds — review only, no source edits, plan-only commit permitted; Approach — independently re-run `pnpm prism:check`/`prism:build` from a detached checkout at the branch tip, re-verify the malformed-clause fix and mirror byte-identity, sweep for rename-completeness gaps, and check the PR body against the plan's own attribution record · close: scope held — one new Major found (PR #443's body opener misattributes this follow-up to an unrelated port instead of #429/the seed-twin thread), no critical; verdict needs-fix
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — self-review pass 4 (post-fix) covering correctness, scope discipline, and the build per Sol dispatch; Bounds — review only, no source edits, plan-only commit permitted; Approach — resynced this worktree to the actual PR branch tip (it was stale at main), independently re-ran `pnpm prism:check`/`prism:build` twice for idempotence, verified every twin claim against the real `init.ts`/`adopt.ts`/`cli.ts` source, confirmed heading-set conformance by direct grep, confirmed the three mirrors changed identically to canonical for this PR's own diff hunks, and re-verified the PR #443 body fix · close: scope held — no new findings; verdict done
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — fix Eric's round-2 PR review findings (three Minors, no Major/Critical) and re-run `pnpm prism:check` per Sol dispatch; Bounds — the twin's `.gitignore` clause, `compatibility.md:10`/`:44`, ADR-0044's superseded-in-part banner, and the PR body — no other source edits, no rewriting ADR-0044's Decision/Consequences prose; Approach — apply each suggested fix, fold in the `.agents/` staleness per Eric's own stated preference rather than filing a new issue, verify `pnpm prism:build` idempotence and `pnpm prism:check` as the load-bearing gate, reply inline on the two threads where the fix involved a decision · close: scope held — three findings fixed, six files changed (twin, ADR-0044 canonical + 3 mirrors, compatibility.md), no new issue filed since fold-in was the chosen path
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — fix Eric's round-3 PR review findings (one Major, one Minor) and re-run `pnpm prism:check` per Sol dispatch; Bounds — `.ai-skills/docs/compatibility.md` lines 3/7/53 and the twin's `.gitignore` sentence at line 63 — no other source edits; Approach — apply each suggested fix verbatim, repost the two round-2 thread replies that had landed as bare scratchpad paths instead of their contents, verify `pnpm prism:build` idempotence and `pnpm prism:check` as the load-bearing gate, reply inline on both new threads · close: scope held — two findings fixed (two files changed, no mirror side effect since neither file is platform-copied), two stale round-2 replies corrected in place via PATCH
 
 ---
 
@@ -293,6 +294,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Briar ran self-review pass 4 — independently re-verified `pnpm prism:check` (570/571 tests, crossref-lint, manifest-coverage, pack-parity) and `pnpm prism:build` idempotence (two runs, zero diff), confirmed the three mirrors changed identically to canonical for this PR's diff hunks (no hand-edit), verified twin claims against real CLI source (`init.ts`, `adopt.ts`, `cli.ts` USAGE), confirmed heading-set conformance by direct grep against AC-6/AC-9, and re-verified PR #443's body opener. No new findings.
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed all six of Eric's PR #443 review findings — filed issue #444 and added the pointer sentence (Major), fixed the verification-caveat wording and the line-number citation (Minors, canonical § Curated seed twins), fixed the twin's "identical skill output" drift, added `--slack-channel` to the Optional flags list (canonical + twin), and corrected the stale `.agents/` Phase-2 claim to match the shipped repo-relative behavior (canonical + twin). `pnpm prism:build` is idempotent; `pnpm prism:check` exits 0 (571/571 tests). Replied on the Major and `.agents/` threads explaining the decisions taken; spawned a follow-up task for the identical `.agents/` staleness in `compatibility.md`/ADR-0044 (out of this PR's diff).
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed Eric's round-2 PR review findings (three Minors, no Major/Critical) — twin's `.gitignore` claim converted to an actionable instruction, `compatibility.md:10`/`:44` corrected to match the shipped repo-relative `.agents/` behavior (folded in rather than left as a session chip), ADR-0044 given a second `Superseded-in-part-by: ADR-0062` banner paragraph following its existing ADR-0058 convention, and the PR body's overclaiming bullet qualified with the `#444` pointer. `pnpm prism:build` idempotent (six files, zero further diff); `pnpm prism:check` exits 0 (571/571 tests). Replied inline on both Minor threads with the reasoning.
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed Eric's round-3 PR review findings — `compatibility.md` § Install-Script Scope no longer contradicts the `.agents/` correction nine lines above it (no PRISM destination is currently outside the repo; two framing echoes at lines 3/7 dropped too), and the twin's `.gitignore` sentence split so the "not because population is unshipped" contrast lands against the clause it's actually contrasting with. Also corrected two round-2 thread replies that had landed as bare scratchpad file paths instead of their contents (PATCHed in place with the original drafted text). `pnpm prism:build` idempotent (two files, zero further diff); `pnpm prism:check` exits 0 (571/571 tests, crossref-lint, manifest-coverage, pack-parity). Replied inline on both new threads.
 
 ---
 
@@ -415,17 +417,43 @@ No issues found — 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-la
 - **Suggested fix:** Add a trailing qualifier: "(in the first-contact section; the rest are tracked in #444)."
 - **Fixed in:** Applied via `gh api` PATCH — "in the first-contact section; the rest of the file's unreachable-command occurrences are tracked in #444."
 
+### Eric's round-3 Major: `compatibility.md` § Install-Script Scope still contradicts the round-2 `.agents/` correction
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/docs/compatibility.md:53` (§ Install-Script Scope), also lines 3 and 7
+- **Problem:** Line 53 called `~/.agents/skills/` "The Codex per-user skills root" and told Codex consumers to hand-wire it themselves — the opposite of round-2's own correction nine lines above (line 44: `.agents/skills/` is repo-relative and populated by every `prism adopt`/`prism update`). No code backs the home-relative destination (`grep -rn "homedir\|~/.agents\|~/.codex" scripts/ai-skills/*.ts` → nothing; no `install-codex` script; `codexAgentsRoot` is repo-relative), and canonical `install-layout.md:70` cites this exact section by name as "the full reasoning" three lines under the corrected bullet — the same citation-chain failure this whole PR exists to fix, reintroduced one hop out. The round-2 plan entry recorded leaving line 53 as deliberate ("describes the still-unshipped home-relative Phase-2 destination, a different thing"); that reasoning doesn't survive the last sentence's hand-wire instruction.
+- **Suggested fix:** Eric's suggested replacement bullet, plus dropping "which destinations need install scripts" from the doc summary (line 3) and "plus Codex's per-user installation" from the § Runtime Expectations lead-in (line 7) — both carry the same stale framing.
+- **Fixed in:** Applied Eric's suggested bullet verbatim at line 53 ("No PRISM destination is currently outside the repo... retained for future tool integrations whose destination genuinely lives outside the repo") and both framing drops. `docs/ai-skills/compatibility.md` and `docs/ai-skills/syncing.md` carry the identical stale claim but are separate narrative docs outside this PR's diff — flagged as a follow-up signal, not swept in.
+
+### Eric's round-3 Minor: twin's `.gitignore` sentence has a dangling em-dash contrast
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/_toolkit/install-layout.md:63`
+- **Problem:** The round-2 reframe (claim → instruction) was correct, but the inserted em-dash aside sat between "as machine-local output" and the "not because population is unshipped" contrast, leaving the trailing clause read as dangling off `prism update` on first pass.
+- **Suggested fix:** Split the aside into its own sentence so the contrast stays adjacent to what it contrasts with.
+- **Fixed in:** Applied verbatim: "It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM does not write your `.gitignore` for you, and the render regenerates on every `prism update`."
+
+### Two round-2 thread replies posted as bare scratchpad paths instead of their contents
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** PR #443 review threads (GitHub, not a repo file)
+- **Problem:** The `.gitignore` thread reply and the ADR-0044 thread reply were each posted as a literal `@/private/tmp/.../reply-*.md` string — `-f body=@file` sends the string, `-F body=@file` reads the file. The reasoning behind both decisions was invisible to anyone reading the PR.
+- **Fixed in:** PATCHed both comments in place with their originally-drafted content (`gh api ... -F body=@file`, not `-f`).
+
 ## PR Readiness
 
-- [x] No critical or major issues (two Minors fixed pre-review — stale ADR-0059 heading citation, malformed Test 2 clause; one Major fixed pre-review — PR #443 body opener misattribution; Eric's round-1 PR review found one Major + five Minors, all fixed; Eric's round-2 re-review found three new Minors, no Major/Critical, all fixed — see Review Issues)
-- [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24 (pass 2, pass 3 from a detached checkout, post-round-1-fixes, and again post-round-2-fixes)
+- [x] No critical or major issues (two Minors fixed pre-review — stale ADR-0059 heading citation, malformed Test 2 clause; one Major fixed pre-review — PR #443 body opener misattribution; Eric's round-1 PR review found one Major + five Minors, all fixed; Eric's round-2 re-review found three new Minors, no Major/Critical, all fixed; Eric's round-3 re-review found one new Major + one new Minor, both fixed — see Review Issues)
+- [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24 (pass 2, pass 3 from a detached checkout, post-round-1-fixes, post-round-2-fixes, and again post-round-3-fixes)
 - [x] `pnpm run prism:crossref-lint` passes
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
-- [x] `pnpm run prism:build` passes and produces no unexpected diff (idempotent on rerun after round-2 fixes: twin, ADR-0044 canonical + 3 platform mirrors, `compatibility.md` — six files, zero further diff on a second run)
-- [x] PR description up to date — opens with the follow-up attribution line; "Fixed retained command forms" bullet now qualified per round-2 fix
+- [x] `pnpm run prism:build` passes and produces no unexpected diff (idempotent after round-3 fixes: `.ai-skills/docs/compatibility.md` and the twin — two files, zero further diff on a second run; neither file is platform-copied so no mirror side effect this round)
+- [x] PR description up to date — opens with the follow-up attribution line; "Fixed retained command forms" bullet qualified per round-2 fix
 - [x] Lasting decisions promoted to architect context (task 6)
 - [x] Upstream `followup-seed-twin-skills-ecosystem` PR merged before implementation started (`49a489d`, #442)
-- [x] Eric's PR review findings addressed — round 1 (one Major, five Minors) and round 2 (three Minors), all fixed; issue #444 filed for the deferred command-reachability backlog
+- [x] Eric's PR review findings addressed — round 1 (one Major, five Minors), round 2 (three Minors), and round 3 (one Major, one Minor), all fixed; issue #444 filed for the deferred command-reachability backlog; two round-2 thread replies corrected from bare scratchpad paths to their actual content
 
-**Last updated:** 2026-07-24 [Clove — Eric's round-2 PR review findings fixed]
+**Last updated:** 2026-07-24 [Clove — Eric's round-3 PR review findings fixed]
