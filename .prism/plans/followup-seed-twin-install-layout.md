@@ -272,6 +272,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 
 - 2026-07-23 [main] open: Intent — audit the curated `install-layout.md` seed twin against canonical under the three-test boundary and plan the fix for the consumer-visible `init` omission; Bounds — plan file only, no code, no twin edits, no branch; Approach — classify every missing section with its deciding test before proposing any edit, and verify reachability against `package.json#files` and the CLI's own command surface rather than assuming · close: scope held
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — implement the bounded delta fix (tasks 1–7) against the twin and the now-merged canonical boundary section, per Sol dispatch; Bounds — the twin, canonical `install-layout.md`'s boundary section, and this plan file only; do not copy the boundary section into the twin; do not sweep D1/D3 outside the local frame; Approach — apply each task's exact edit verbatim, verify every AC's machine evidence directly, run `pnpm prism:check` as the load-bearing gate · close: scope held — five files changed beyond the plan's literal "three paths" (twin, canonical, plan) are the three platform-copy mirrors, an expected and required side effect of any canonical architect-doc edit, not scope drift; recorded as a Decision
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout] open: Intent — self-review the branch for correctness, scope discipline, and the build, confirming no mirror was hand-edited and `pnpm prism:check` passes seed drift; Bounds — review only, no source edits, plan-only commit permitted; Approach — independently re-run the verification gate in an isolated detached worktree, re-check every AC's machine claim, and sweep for rename-completeness gaps the diff wouldn't surface · close: scope held — found one Minor (stale ADR-0059 heading citation), no critical/major; verdict needs-fix
 
 ---
 
@@ -288,13 +289,21 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 
 ## Review Issues
 
----
+### Stale ADR-0059 heading citation after the first-contact rename
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0059-first-contact-adopts-via-seed-and-sync.md:41`
+- **Problem:** Task 1 renamed the twin's heading from `## First-contact adoption: \`prism:adopt\`` to `## First-contact adoption: \`prism init\` then \`prism adopt\``. ADR-0059 cites the old heading verbatim (`§ First-contact adoption: \`prism:adopt\`.`) as a pointer into `install-layout.md`; that citation is now a dangling reference to a heading that no longer exists. Per `code-standards.md` § Removal and rename completeness, the diff alone doesn't surface this — the ADR is a file the rename never opened, and `crossref-lint` doesn't check prose heading citations, only path-shaped references (confirmed clean on this branch). Three platform mirrors of the ADR (`.claude/`, `.codex/`, `.cursor/spec/adrs/_toolkit/0059-*.md`) carry the same stale text and will self-correct once canonical is fixed and rebuilt.
+- **Suggested fix:** Update canonical `.prism/spec/adrs/_toolkit/0059-first-contact-adopts-via-seed-and-sync.md:41` to cite the new heading text, then `pnpm prism:build` to refresh the three platform mirrors.
+
+No critical or major issues. Everything else checked out: `pnpm run prism:check` (571/571 tests, crossref-lint, manifest-coverage, verify-pack-parity) passes clean in an isolated worktree at this branch's tip; `pnpm run prism:build` is idempotent (zero diff on rerun, confirming the `.claude`/`.codex`/`.cursor` architect-doc mirrors are build-generated, not hand-edited — their divergence from canonical is expected dogfood token-substitution, not drift); every AC-1–AC-10 machine claim re-verified independently (init/adopt ordering, dangling `docs/` bullet removed, five correct omissions still absent, zero Linear/ticket literals, S3 verbatim-copy with only the documented in-scope command-form fixes). AC-11 remains open pending a human cold-read, as the plan already notes.
 
 ## PR Readiness
 
 - [x] Upstream `followup-seed-twin-skills-ecosystem` PR merged before implementation started (`49a489d`, #442)
-- [x] No critical or major issues
-- [x] `pnpm run prism:check` passes (seed literal guard + path guard)
+- [x] No critical or major issues (one Minor — stale ADR-0059 heading citation, see Review Issues)
+- [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24
 - [x] `pnpm run prism:crossref-lint` passes
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
@@ -302,4 +311,4 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - [x] PR description up to date, opening with the follow-up attribution line
 - [x] Lasting decisions promoted to architect context (task 6)
 
-**Last updated:** 2026-07-24
+**Last updated:** 2026-07-24 [Briar self-review]
