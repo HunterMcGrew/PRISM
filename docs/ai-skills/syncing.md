@@ -5,14 +5,13 @@ description: The commands developers use to keep PRISM's platform outputs in syn
 
 # Syncing
 
-PRISM's sync model has one command today and one more planned:
+PRISM's sync model has one command:
 
 ```bash
 pnpm prism:build         # regenerate platform outputs from .ai-skills/ and .prism/
-# pnpm prism:install-codex  (planned for Phase 2 — not yet shipped)
 ```
 
-This page explains what `pnpm prism:build` does, when to run it, and why the per-user Codex install needs its own script (eventually).
+This page explains what `pnpm prism:build` does, when to run it, and how Codex's skill bodies reach `.agents/skills/` without a separate per-user install step.
 
 ## `pnpm prism:build` — the build
 
@@ -32,16 +31,11 @@ After the build, `pnpm prism:test` runs automatically to verify the canonical-so
 
 Run it whenever you edit anything under `.ai-skills/` or `.prism/`. If you forget, `pnpm prism:check` will catch the drift on CI.
 
-## Per-user Codex install — planned
+## Codex skill bodies — no install step
 
-Codex reads skills from `~/.agents/skills/` and agents from `~/.codex/agents/` on the user's machine — both of those live in the user's home directory, not in the repo. A future per-user install script (`pnpm prism:install-codex`, planned for Phase 2 as part of Atlas's onboarding flow) will copy PRISM's build outputs into those home-directory destinations.
+Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agents/skills/` — so `pnpm prism:build` populates it directly, the same render pass that writes `.claude/skills/` and `.cursor/skills/`. Consumer repos get the same behavior from `prism update`/`prism adopt` (ADR-0062). `.agents/` stays gitignored as machine-local output, not because population is unshipped.
 
-PRISM does not yet ship that script. Pre-Phase-2, Codex consumers have two options:
-
-1. **Dogfood PRISM directly** — clone PRISM, run `pnpm prism:build`, and point Codex at the repo's `.agents/skills/` and `.codex/agents/` (or symlink them into your home directory).
-2. **Wire `~/.agents/skills/` yourself** — copy the build outputs from `.agents/skills/` and `.codex/agents/` into your home directory by hand or with a personal script.
-
-Whichever path you take, do **not** touch `~/.codex/codex-config.toml` from PRISM's build. That file is per-user (personality, projects, marketplaces); overwriting it would clobber your setup. The build still produces `.codex/codex-config.toml` in the repo so PRISM's dogfood install works locally, but `.gitignore` keeps it out of commits and any future install script must not push it to the home directory.
+`.codex/codex-config.toml` is per-user (personality, projects, marketplaces) and stays gitignored for the same reason — the build writes it locally so PRISM's own dogfood install works, but never commits it.
 
 ## Cursor: no install step
 
@@ -54,7 +48,7 @@ This is the Phase 1.5f change. Before it, `.cursor/skills/` was generated and gi
 The build vs install-script split is governed by the in-repo vs outside-repo rule:
 
 - **In-repo destinations get sync.** The build writes directly to where the tool reads. The build IS the install.
-- **Outside-repo destinations get install scripts.** The destination lives in the user's home directory, so the install script handles the copy from the repo's build output to the user's home.
+- **Outside-repo destinations get install scripts.** No PRISM destination is currently outside the repo — the rule is retained for a future tool integration whose destination genuinely lives outside the repo.
 
 The failure mode the rule prevents is staging-and-deploy drift — covered in detail in [`compatibility.md § Install-Script Scope`](./compatibility.md). The short version: a single staging-plus-install pipeline inevitably drifts as the build evolves; separating in-repo sync from outside-repo install removes the drift surface entirely.
 

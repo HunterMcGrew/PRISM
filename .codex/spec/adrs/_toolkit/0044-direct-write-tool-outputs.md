@@ -1,10 +1,12 @@
 # ADR-0044: Direct-write tool outputs; commit `.cursor/skills/`
 
 **Status:** Accepted
-**Superseded-in-part-by:** ADR-0058
+**Superseded-in-part-by:** ADR-0058, ADR-0062
 **Date:** 2026-05-23
 
 > **Superseded in part by [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md).** Only this ADR's paired-doc obligation is retired — the mandated companion at `docs/content/dev/ai-skills/compatibility.md`. The direct-write spine — tool-namespaced build outputs, the `.generated/` staging collapse, and the committed-`.cursor/skills/`-vs-ignored-Codex-config split — stands and is live.
+>
+> **Superseded in part by [ADR-0062](./0062-consumer-skill-distribution-via-prism-update.md).** Only the `.agents/` destination claim below (Decision and Consequences) is retired: `codexSkillsRoot` resolves repo-relative (`.agents/skills`, joined against `repoRoot`), not to `~/.agents/skills/` on the consumer's machine, and every `prism adopt`/`prism update` populates it directly. `.agents/skills/` stays gitignored as machine-local output, not because the destination is outside the repo. The rest of this ADR — commit `.cursor/skills/`, keep `.codex/codex-config.toml` ignored as a per-user file — stands and is live.
 
 ## Context
 

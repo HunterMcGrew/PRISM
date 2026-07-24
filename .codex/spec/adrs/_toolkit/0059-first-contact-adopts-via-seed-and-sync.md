@@ -38,5 +38,5 @@ The two safety pieces above — the no-op-before-`.bak` ordering and the seed's 
 - [ADR-0058](./0058-single-audience-retires-paired-dev-docs.md) — single-audience docs; why the docs sweep records the existing layout rather than mandating one.
 - `scripts/ai-skills/adopt.ts` — `runAdopt`, `seedConsumerContentRoot`, `assertConsumerIsEstablished`, `reportSummary`.
 - `scripts/ai-skills/update.ts` — `runUpdate`, `applyIncomingFile`, `rewriteConsumerManifest`, `resolvePrismSource`.
-- `.prism/architect/_toolkit/install-layout.md` — § First-contact adoption: `prism:adopt`.
+- `.prism/architect/_toolkit/install-layout.md` — § First-contact adoption: `prism init` then `prism adopt`.
 - `.prism/plans/epic-prism-first-contact-reconciliation.md` — the epic plan this ADR closes.
