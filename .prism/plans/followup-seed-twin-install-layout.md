@@ -287,6 +287,7 @@ Each is a separate follow-up. Signal 2 is a scope question for the human before 
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Briar ran self-review pass 2 — independently re-verified every AC's machine-evidence claim against the committed twin and canonical text, confirmed the three platform mirrors stay byte-identical to canonical (no hand-edit), and re-ran `pnpm prism:check` in the branch's tip (exit 0, build idempotent). One new Minor: a malformed "neither…yet ship in neither" clause in canonical's Test 2 tarball/command-surface paragraph — see Review Issues.
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed Briar's pass-2 Minor — rephrased canonical's Test 2 tarball clause to the suggested "yet are unshipped in the tarball too" wording and ran `pnpm prism:build` to refresh the three platform mirrors. `pnpm prism:check` exits 0 (571/571 tests, crossref-lint, manifest-coverage, verify-pack-parity).
 - 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Briar ran self-review pass 3 — independently re-ran `pnpm prism:check` and `pnpm prism:build` from a detached checkout at the branch tip (exit 0 both times, 570-571/571 tests, zero diff on rebuild), confirmed the malformed-clause fix landed verbatim and the four mirrors stay byte-identical to canonical, and swept for stale references to the renamed heading (none found). One new Major: PR #443's body opener names an unrelated thread instead of the plan's own specified attribution — see Review Issues.
+- 2026-07-24 [huntermcgrew/prism-followup-seed-twin-install-layout]: Clove fixed Briar's pass-3 Major — edited PR #443's body via `gh api` (GitHub PATCH) to open with the plan-specified "Follow-up to `#429` / the seed-twin thread" line, replacing the misattributed thrive#2196/#439 opener. No repo files changed; `pnpm prism:check` re-verified exit 0.
 
 ---
 
@@ -321,21 +322,22 @@ Pass 2 (post-ADR-0059-fix) re-verified every AC-1–AC-10 machine claim independ
 ### PR #443 body opener misattributes this follow-up's origin
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** PR #443 description (GitHub, not a repo file)
-- **Problem:** This plan's own `## Ticket` section (line 8) specifies the PR body opener as `Follow-up to #429 / the seed-twin thread. No new ticket per .prism/rules/followup-scope.md.` — #429 is the seed-twin skills-ecosystem lane this plan is item 1 of (per `.prism/plans/followup-seed-twin-skills-ecosystem.md` § Signals, whose own PR body opener correctly reads "Follow-up to #429"). The shipped PR #443 body instead opens with "Follow-up to the thrive#2196 worktree-lifecycle port (PR #439)" — a completely unrelated piece of work (git log: `b441d6e chore: Port thrive PR 2196 — Worktree lifecycle + removal classifier (`#439`)`). This misattributes the follow-up's lineage in the permanent merge record and contradicts both the plan's explicit instruction and `followup-scope.md`'s traceability requirement ("cites the specific decision... that produced it").
+- **Problem:** This plan's own `## Ticket` section (line 8) specifies the PR body opener as `Follow-up to #429 / the seed-twin thread. No new ticket per .prism/rules/followup-scope.md.` — #429 is the seed-twin skills-ecosystem lane this plan is item 1 of (per `.prism/plans/followup-seed-twin-skills-ecosystem.md` § Signals, whose own PR body opener correctly reads "Follow-up to #429"). The shipped PR #443 body instead opened with "Follow-up to the thrive#2196 worktree-lifecycle port (PR #439)" — a completely unrelated piece of work (git log: `b441d6e chore: Port thrive PR 2196 — Worktree lifecycle + removal classifier (`#439`)`). This misattributed the follow-up's lineage in the permanent merge record and contradicted both the plan's explicit instruction and `followup-scope.md`'s traceability requirement ("cites the specific decision... that produced it").
 - **Suggested fix:** Edit PR #443's body (`gh pr edit 443 --body ...`) to open with the plan-specified line: "Follow-up to `#429` / the seed-twin thread. No new ticket per `.prism/rules/followup-scope.md`." Keep the rest of the existing Summary/Test plan content, which is otherwise accurate.
+- **Fixed in:** PR #443's body opener replaced with the plan-specified line via the GitHub API (`gh pr edit` errored on an unrelated Projects-classic GraphQL deprecation, so the edit went through `gh api repos/huntermcgrew/PRISM/pulls/443 -X PATCH`); rest of the Summary/Test plan content unchanged. Verified the live body now opens with "Follow-up to `#429` / the seed-twin thread."
 
 ## PR Readiness
 
-- [ ] No critical or major issues (two Minors fixed — stale ADR-0059 heading citation, malformed Test 2 clause; one new Major open — PR #443 body opener misattribution, see Review Issues)
+- [x] No critical or major issues (two Minors fixed — stale ADR-0059 heading citation, malformed Test 2 clause; one Major fixed — PR #443 body opener misattribution, see Review Issues)
 - [x] `pnpm run prism:check` passes (seed literal guard + path guard) — independently re-verified 2026-07-24 (pass 2, and again pass 3 from a detached checkout at the branch tip)
 - [x] `pnpm run prism:crossref-lint` passes
 - [x] `pnpm run prism:check-types` passes
 - [x] `pnpm run prism:test` passes
 - [x] `pnpm run prism:build` passes and produces no unexpected diff (idempotent on rerun; the five-file diff vs. `origin/main` is expected — see Decisions)
-- [ ] PR description up to date, opening with the follow-up attribution line — **not currently true, see Review Issues**
+- [x] PR description up to date, opening with the follow-up attribution line
 - [x] Lasting decisions promoted to architect context (task 6)
 - [x] Upstream `followup-seed-twin-skills-ecosystem` PR merged before implementation started (`49a489d`, #442)
 
-**Last updated:** 2026-07-24 [Briar — self-review pass 3]
+**Last updated:** 2026-07-24 [Clove — fixed pass-3 Major]
