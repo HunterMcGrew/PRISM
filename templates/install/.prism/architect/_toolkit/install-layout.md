@@ -60,7 +60,7 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
-- `.agents/` is **ignored** — per-user Codex skills root; consumers will populate it via a per-user install script planned for Phase 2 (not yet shipped in PRISM).
+- `.agents/skills/` is **ignored but populated** — every `prism adopt`/`prism update` renders the persona roster there directly (see § Steady-state persona-skill distribution below), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It stays gitignored as machine-local output, not because population is unshipped.
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See PRISM's internal `.ai-skills/docs/compatibility.md` § Install-Script Scope for the full reasoning (monorepo-only, not shipped to consumers).
@@ -75,7 +75,7 @@ The rule for future tool integrations: in-repo destinations get sync; outside-re
 
 A cold consumer — a repo that has never had PRISM — needs to run two commands before the agent-driven onboarding begins:
 
-1. **`npx @huntermcgrew/prism init`** — writes `.ai-skills/config.json` so the consumer repo is identifiable. This is deterministic and requires no AI agent: it detects the tech stack, collects a handful of required values (project name, ticket prefix, ticket system, GitHub owner, and repo), and writes the config. When stdin is a TTY, it prompts interactively. In CI or scripted contexts, pass the same values as flags: `--project`, `--ticket-prefix`, `--ticket-system` (`linear` or `github-issues`), `--github-owner`, `--github-repo`. Optional flags: `--org`, `--linear-team`, `--linear-workspace`, `--default-branch`. `init` refuses and exits if a config already exists — edit the file directly or remove it to re-init. `init` writes only `config.json` and nothing else; adopt, update, and Atlas are responsible for everything after it.
+1. **`npx @huntermcgrew/prism init`** — writes `.ai-skills/config.json` so the consumer repo is identifiable. This is deterministic and requires no AI agent: it detects the tech stack, collects a handful of required values (project name, ticket prefix, ticket system, GitHub owner, and repo), and writes the config. When stdin is a TTY, it prompts interactively. In CI or scripted contexts, pass the same values as flags: `--project`, `--ticket-prefix`, `--ticket-system` (`linear` or `github-issues`), `--github-owner`, `--github-repo`. Optional flags: `--org`, `--linear-team`, `--linear-workspace`, `--default-branch`, `--slack-channel`. `init` refuses and exits if a config already exists — edit the file directly or remove it to re-init. `init` writes only `config.json` and nothing else; adopt, update, and Atlas are responsible for everything after it.
 
 2. **`npx @huntermcgrew/prism adopt`** — seeds `.prism/` and projects the full persona roster. This is the first-contact install step described in the section below. If adopt detects that `config.json` is missing, it stops and tells the consumer to run `init` first. Adopt also self-heals the consumer's `.ai-skills/definitions/paths.json` — provisioning it from the PRISM package copy when it is absent or structurally incomplete (an older schema missing `generated.platformContentCopies`) — so the cold `init`→`adopt` path is robust against a `paths.json` that `init` never writes; a complete consumer file (even a customized one) is left untouched.
 
@@ -98,7 +98,7 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 ## Steady-state persona-skill distribution
 
-After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step, so `adopt` and `update` produce identical skill output.
+After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
 
 **What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with the consumer's own token map — `${PROJECT}` becomes the consumer's project name, `${TICKET_PREFIX}` becomes their ticket prefix, and so on — and writes the rendered output to each opted-in platform directory:
 
