@@ -22,6 +22,7 @@
 	".prism/rules/plan-before-building.md": "_toolkit/spec-editing.md",
 	".prism/rules/pr-description.md": "_toolkit/spec-editing.md",
 	".prism/rules/pre-compaction-checkpoint.md": "_toolkit/spec-editing.md",
+	".prism/rules/response-shape.md": "_toolkit/spec-editing.md",
 	".prism/rules/self-improvement-loop.md": "_toolkit/spec-editing.md",
 	".prism/rules/skill-authoring.md": "_toolkit/spec-editing.md",
 	".prism/rules/subagent-strategy.md": "_toolkit/spec-editing.md",

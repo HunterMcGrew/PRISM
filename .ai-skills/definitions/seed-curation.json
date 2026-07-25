@@ -72,6 +72,7 @@
     "rules/verification-commands.md",
     "rules/implementation-task-detail.md",
     "rules/architect-doc-verification.md",
+    "rules/response-shape.md",
     "references/architect-context.md",
     "references/architect/plan-mode.md",
     "references/micro-file-step-machine.md",
