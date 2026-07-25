@@ -369,3 +369,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-22 (followup-port-2196-worktree-lifecycle, per-PR retro) — two of the plan's twelve machine-evidence AC clauses could never return their asserted result as authored: AC-9 asserted a grep count of `0` that the plan's own task 2 made `1` by design, and AC-8's pattern `"rev-list --count"` can never match code that passes `"rev-list"` and `"--count"` as separate `execFile` argv elements. Each survived a full review pass before self-review caught it, and AC-8's original clause would have passed-by-vacuous-miss if run uncritically.
 
 **How to apply:** When an AC's evidence is a command with an asserted result, execute it — against the tree, or reasoned against the plan's own tasks — before the plan ships. A grep meant to match code must account for argv-array invocation style: a shell command written as prose never appears as a joined string in `execFile` calls.
+
+## A fix that reverses a plan Decision must sweep `## Decisions` and `## Implementation Tasks`, not just the section the finding named
+
+**Why:** 2026-07-25 (PRISM-445, Eric review passes 1–3) — the same failure species recurred on all three passes: a claim the shipping commit had already invalidated, left standing elsewhere in the plan (pass 1 a stale classification-table row, pass 2 a stale `**Reorder briar's output**` row, pass 3 the `curated` seed-twin Decision plus Task 9's matching instruction). Each time the fix reversed a Decision but the sweep stopped at the section the review finding pointed at.
+
+**How to apply:** When a fix reverses a plan Decision, sweep both `## Decisions` and `## Implementation Tasks` for the same reversed claim, not only the section the finding named — a Decision's conclusion is often restated in the task that implements it, and the two drift together if only one is corrected.
