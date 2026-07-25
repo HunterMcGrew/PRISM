@@ -81,6 +81,7 @@ Give the review loop a scope boundary that distinguishes the diff it was invoked
 ## Sessions
 
 - 2026-07-25 [huntermcgrew/prism-review-loop-self-audit] open: Intent — design the fix for a review loop that audits its own output instead of converging, across two independently observed instances; Bounds — this plan file only on a new branch off `origin/main`, no rule or skill edits, no PR, `pnpm prism:check` exit 0; Approach — find the one missing concept underneath the three reported defects rather than writing three independent guardrails, and check any trip-wire against both halves of the fold-in / back-out contrast before proposing it · close: scope held — one new plan file, no rule, skill, script, or config touched; `pnpm prism:check` exit 0; the fourth candidate defect routed to its own ticket rather than absorbed.
+- 2026-07-25 [huntermcgrew/prism-review-loop-self-audit] open: Intent — implement Clove tasks 1-5 exactly as specified (review surfaces + subject-clean exit + disposition table, the shared plan resolver, the spec-scope lint with its three required fixtures, and the trip-wire's rule home), then rebuild and verify; Bounds — touch only the canonical sources the tasks name, never hand-edit `.claude/`/`.codex/`/`.cursor/`/`templates/install/` mirrors, commit and push only, no PR; Approach — insert the verbatim blocks for tasks 1-3 as given, extract the resolver before the lint per the stated sequence, and implement Condition A/B as the simplest logic that satisfies all three AC-6 fixtures without extra machinery · close: scope held — touched exactly the files tasks 1-5 name plus their build-regenerated mirrors (AGENTS.md and the platform copies); task 2's own `grep` verification is internally inconsistent with its required verbatim text (documented in `## History`, not a build defect); `pnpm prism:check-types`, `pnpm prism:test`, `pnpm prism:build` (twice, idempotent), and `pnpm prism:check` all ran and exit 0.
 
 ---
 
@@ -327,15 +328,17 @@ The four requirements the acceptance criteria below cite. Each names the observe
 ## History
 
 - 2026-07-25 [huntermcgrew/prism-review-loop-self-audit]: Plan created — surface split, subject-clean exit, provenance-based disposition, and the spec-content trip-wire designed against PR #446's review ledger and a second independently observed instance. Code-vs-docs drift routed to its own ticket; see Decision: *Real code-vs-docs drift detection goes to a separate ticket*.
+- 2026-07-25 [huntermcgrew/prism-review-loop-self-audit]: Landed Clove tasks 1-5 — review surfaces, subject-clean exit, and the disposition table in `.ai-skills/skills/prism-review-loop/shared.md`; the shared plan resolver (`scripts/ai-skills/lib/resolve-live-plan.ts`) and `spec-scope-lint.ts` with its three required fixtures; and the trip-wire's rule home in `followup-scope.md`. `pnpm prism:build` regenerated every mirror and `pnpm prism:check` exits 0.
+- 2026-07-25 [huntermcgrew/prism-review-loop-self-audit]: Task 2's own verification (`grep -c 'zero findings'` expected 0) reads 2 in practice — one hit is the verbatim Why-clause quote task 2's own insert text required, the other a pre-existing Closing Battery line unrelated to the ladder's exit condition; edit 2a's actual sentence replacement was independently confirmed correct by direct inspection, so this is a busted self-check wording, not a defect in the edit.
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Tests written for new logic and edge cases
-- [ ] Build passes — last run: not yet
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] No critical or major issues — pending Briar self-review
+- [x] Tests written for new logic and edge cases — `spec-scope-lint.test.ts` covers Condition A, Condition B, `deriveExitCode`, and the three required fixtures (fold-in, back-out, escape-hatch)
+- [x] Build passes — last run: 2026-07-25, `pnpm prism:build` (twice, idempotent) then `pnpm prism:check` exit 0
+- [ ] PR description up to date — no PR opened yet
+- [ ] Lasting decisions promoted to architect context (if applicable) — pending plan close; every `## Decisions` entry still carries `→ promotion verdict pending close`
 
 **Last updated:** 2026-07-25

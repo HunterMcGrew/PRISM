@@ -61,12 +61,21 @@ The common shape: it could plausibly have been part of the originating ticket bu
 - **Speculative follow-ups.** "Maybe we should look into X someday." Backlog noise. Either it's a known problem with a known shape (file it), or it's not (don't).
 - **Follow-ups without traceability.** A ticket with no link back to the decision that produced it. Six months later no one can answer "why is this ticket here?" and it gets closed unread.
 
+## Spec content never rides an unrelated ticket
+
+Always-on process or spec content — a rule declaring `load: always`, a skill body under `.ai-skills/skills/**`, `.prism/lessons.md`, or a `.prism/references/review-*.md` file — never rides a ticket it has no relationship to. This rule already forbade it, and it was ignored because each edit looked like a one-liner, so the remedy is a trip-wire rather than sharper prose. It cannot key on edit size, because size is what already failed.
+
+The check is two computable conditions, both required to fire: the changed path is always-on spec content (per the criteria above), **and** the file's basename appears nowhere in the branch's live plan and no `## Decisions` entry names the path. The escape hatch is a `## Decisions` entry naming the path and the reason — the documented-absorption shape this rule already defines for cross-lane work (see § Choosing the vehicle above).
+
+Enforced mechanically by `pnpm prism:spec-scope-lint` (`scripts/ai-skills/spec-scope-lint.ts`), which runs as part of `pnpm prism:check`.
+
 ## Who runs this rule
 
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
+- **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 
 ## Worker emit pre-filter (Sol-run-time)
 
