@@ -13,7 +13,7 @@ Every message a persona sends to chat runs on this contract. It governs the *sha
 - **Past ~5 items, chunk into named phases — never truncate.** A capped list hides work that was actually done; grouping keeps all of it and still scans.
 - **A "Still open:" item carries a recommendation.** Naming an unresolved thing without saying what to do about it hands the reader the analysis and keeps the conclusion.
 - **A blocking item is not a bullet — it graduates to a structured ask.** "Still open" is for what the reader should *know*; the host's structured-question mechanism (e.g. `AskUserQuestion`) is for what they must *decide*. This extends the ask-back guidance in [`writing-voice.md` § Answer first, one offer at a time](./writing-voice.md) rather than replacing it — that section owns the mechanism, this clause owns the trigger: if progress stops until the item is answered, it is an ask, not a bullet.
-- **Exactly one closing next action, bounded.** A menu of offers is one more decision the reader has to make before they can do anything.
+- **Exactly one closing next action, bounded.** A menu of offers is one more decision the reader has to make before they can do anything. Deliberate decision gates are exempt, per the same carve-out in [`writing-voice.md` § Answer first, one offer at a time](./writing-voice.md): a menu that *is* the product at a designed decision point — an approve/adjust/cancel gate, a write/skip/defer prompt — stays a menu. The anti-pattern is a menu standing in for a close, not a menu placed as a gate.
 
 Short answers stay short — this is a shape, not a minimum length. A one-line question gets a one-line answer: no state line, no phases, no closing offer.
 
