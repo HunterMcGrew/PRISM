@@ -22,6 +22,7 @@ import {
 	isAlwaysOnSpecContent,
 	isUnrelatedToTicket,
 	deriveExitCode,
+	resolveBranchNameFromEnv,
 } from "./spec-scope-lint";
 
 // ---------------------------------------------------------------------------
@@ -493,6 +494,53 @@ test("curated-twin fixture: a non-curated templates/install twin still inherits 
 			assert.deepEqual(result.violations, []);
 		}
 	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveBranchNameFromEnv — detached-HEAD CI branch detection
+// ---------------------------------------------------------------------------
+
+test("resolveBranchNameFromEnv: reads GITHUB_HEAD_REF when set", () => {
+	const original = process.env.GITHUB_HEAD_REF;
+	process.env.GITHUB_HEAD_REF = "huntermcgrew/prism-1234-fix-thing";
+	try {
+		assert.equal(
+			resolveBranchNameFromEnv(),
+			"huntermcgrew/prism-1234-fix-thing"
+		);
+	} finally {
+		if (original === undefined) {
+			delete process.env.GITHUB_HEAD_REF;
+		} else {
+			process.env.GITHUB_HEAD_REF = original;
+		}
+	}
+});
+
+test("resolveBranchNameFromEnv: null when GITHUB_HEAD_REF is unset — the detached-HEAD case main() must fall back from", () => {
+	const original = process.env.GITHUB_HEAD_REF;
+	delete process.env.GITHUB_HEAD_REF;
+	try {
+		assert.equal(resolveBranchNameFromEnv(), null);
+	} finally {
+		if (original !== undefined) {
+			process.env.GITHUB_HEAD_REF = original;
+		}
+	}
+});
+
+test("resolveBranchNameFromEnv: null when GITHUB_HEAD_REF is set but empty", () => {
+	const original = process.env.GITHUB_HEAD_REF;
+	process.env.GITHUB_HEAD_REF = "";
+	try {
+		assert.equal(resolveBranchNameFromEnv(), null);
+	} finally {
+		if (original === undefined) {
+			delete process.env.GITHUB_HEAD_REF;
+		} else {
+			process.env.GITHUB_HEAD_REF = original;
+		}
+	}
 });
 
 // ---------------------------------------------------------------------------

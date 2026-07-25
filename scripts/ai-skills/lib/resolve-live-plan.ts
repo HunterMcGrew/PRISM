@@ -21,6 +21,22 @@ const TICKET_ID_RE = /([a-z]+-\d+)/i;
 /** Matches the `## Ticket` section heading and captures its first content line. */
 const TICKET_SECTION_RE = /## Ticket\s*\r?\n+([^\r\n#]*)/i;
 
+/** Escapes regex metacharacters so a ticket id can be dropped into a pattern literally. */
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Builds a boundary-anchored, case-insensitive matcher for `ticketId` — true
+ * only when `ticketId` appears as a whole token, not as a substring of a
+ * longer ticket id (e.g. `prism-100` must not match inside `prism-1005`).
+ * Mirrors the anchoring discipline `extractTicketId` already applies to the
+ * branch-name side of this same lookup.
+ */
+function ticketIdBoundaryPattern(ticketId: string): RegExp {
+	return new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(ticketId)}(?:[^a-z0-9]|$)`, "i");
+}
+
 /**
  * Extracts a lowercase ticket id (e.g. `prism-1234`) from a branch name, or
  * null when the branch carries no ticket-id-shaped token — a plan-less draft
@@ -58,15 +74,14 @@ async function findPlanByTicketField(
 		return null;
 	}
 
+	const boundaryPattern = ticketIdBoundaryPattern(ticketId);
+
 	for (const entry of entries.sort()) {
 		const absPath = path.join(plansDir, entry);
 		const content = await fs.readFile(absPath, "utf8");
 		const sectionMatch = content.match(TICKET_SECTION_RE);
 
-		if (
-			sectionMatch &&
-			sectionMatch[1].toLowerCase().includes(ticketId)
-		) {
+		if (sectionMatch && boundaryPattern.test(sectionMatch[1])) {
 			return path
 				.join(".prism", "plans", entry)
 				.split(path.sep)

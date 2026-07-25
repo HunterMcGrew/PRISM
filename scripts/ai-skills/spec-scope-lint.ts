@@ -326,8 +326,25 @@ async function resolveMergeBaseRef(
 	return defaultBranch;
 }
 
+/**
+ * Reads the PR's head branch name from `GITHUB_HEAD_REF` — the environment
+ * variable GitHub Actions populates for `pull_request` events — before
+ * falling back to `git branch --show-current`. `actions/checkout@v4` checks
+ * out `pull_request` events at a detached HEAD by default, where
+ * `git branch --show-current` returns an empty string; that empty string
+ * makes `extractTicketId` return null, which makes this lint silently no-op
+ * in the one place it's meant to enforce: CI on every PR.
+ */
+export function resolveBranchNameFromEnv(): string | null {
+	const headRef = process.env.GITHUB_HEAD_REF;
+	return headRef && headRef.trim().length > 0 ? headRef.trim() : null;
+}
+
 async function main(): Promise<void> {
-	const branchName = (await tryGit(["branch", "--show-current"], repoRoot)) ?? "";
+	const branchName =
+		resolveBranchNameFromEnv() ??
+		(await tryGit(["branch", "--show-current"], repoRoot)) ??
+		"";
 	const defaultBranch = await readDefaultBranch(repoRoot);
 	const mergeBaseRef = await resolveMergeBaseRef(repoRoot, defaultBranch);
 	const mergeBase = await tryGit(

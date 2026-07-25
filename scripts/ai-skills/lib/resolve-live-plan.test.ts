@@ -161,6 +161,50 @@ test("resolveLivePlan: the ## Ticket field-scan tier never reads .prism/archived
 	);
 });
 
+test("resolveLivePlan: the ## Ticket field-scan tier does not match a shorter ticket id as a prefix of a longer one", async () => {
+	const branchName = "someone/prism-100-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/some-other-name.md",
+				["# Plan: some-other-name", "", "## Ticket", "", "PRISM-1005", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+test("resolveLivePlan: the ## Ticket field-scan tier resolves the correct plan when a prefix-related ticket id also exists", async () => {
+	const branchName = "someone/prism-1005-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/plan-a.md",
+				["# Plan: plan-a", "", "## Ticket", "", "PRISM-100", ""].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/plan-b.md",
+				["# Plan: plan-b", "", "## Ticket", "", "PRISM-1005", ""].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/plan-b.md"
+			);
+		}
+	);
+});
+
 // ---------------------------------------------------------------------------
 // resolveLivePlan — no ticket id, no plan
 // ---------------------------------------------------------------------------
