@@ -163,6 +163,23 @@ Phase order matters: Phase 1 proves the contract's wording on the roster Hunter 
 
 ## Review Issues
 
+### Review ledger
+
+Two review surfaces ran on this branch: Briar's self-review (3 passes) and Eric's PR review on #446 (5 passes). Entries below are grouped by the pass that raised them; every entry is `fixed`, and no finding is open.
+
+| Pass | Raised | What closed it |
+| --- | --- | --- |
+| Briar self-review 1 | 2 Major | Pre-fix example tokens replaced on both rule surfaces; briar's four-way close collapsed; sasha's `**Verdict:**` line added |
+| Briar self-review 2 | 1 Major | sasha's closing next-action line added — the other half of AC-1 |
+| Briar self-review 3 | 0 new | Re-verified five weighted risk areas; `prism:build` zero-diff, `prism:check` exit 0 |
+| Eric PR pass 1 | 2 Major, 3 Minor (+1 pre-existing Minor confirmed) | Stale classification row deleted; briar re-pointed at `## Clean-Review Closing`; roster enumeration trimmed; sasha's cross-file handle inlined; briar's verdict labeled; twin `**Why:**` reverted to canonical |
+| Eric PR pass 2 | 2 Major, 1 Minor | `curated` registration dropped; classification row's dead token removed; phased-persona enumeration replaced with a checkable marker |
+| Eric PR pass 3 | 2 Major, 1 Minor | Decision-gate exemption added; refuted `curated` Decision swept in `## Decisions` and Task 9; stale pass-3 sentence dated |
+| Eric PR pass 4 | 0 Critical, 0 Major, 2 Minor | Ratification — all three pass-3 fixes verified from the tree, not from `fixed` markers; 12 threads resolved |
+| Eric PR pass 5 | 0 new | Both pass-4 Minors verified resolved; `pnpm prism:check` exit 0; 14/14 threads resolved |
+
+**The pattern a future reader would otherwise miss: the same defect species landed on passes 1, 2, and 3 — a claim the shipping commit had already invalidated, left standing in the plan.** Pass 1's stale `#442`→`#3` classification row, pass 2's row blessing a token pass 1 had deleted, and pass 3's refuted `curated` Decision are one failure repeated three times: the fix landed in the code and the plan's own description of it did not get swept. Three review passes were spent on bookkeeping, not on the rule. Captured as a lesson at `.prism/lessons.md` § *When a plan (or any doc) corrects an earlier claim, sweep that claim's other occurrences in the same file at correction time* — that entry cites this branch, and this ledger is the case it was drawn from.
+
 **AC verification (Reese, 2026-07-25) — AC-4, AC-5, AC-7, AC-8 all MET.** Each criterion's named command was run together with its named positive control; no criterion is UNMET, so no verification issue is filed against this branch. AC-1/AC-2/AC-3 are human-evidence criteria paired with Task 12 and were not graded; AC-6 covers memory files outside this repo and was out of scope.
 
 One finding carries forward from Winston's `## Seed twin classification` — it does not affect any graded criterion, and it is recorded here so it is visible to a reader who checks open issues rather than the classification table.
@@ -213,6 +230,45 @@ One finding carries forward from Winston's `## Seed twin classification` — it 
 
 The one pre-existing open Minor (seed twin `**Why:**` block is a same-meaning paraphrase rather than a verbatim carry — see above) remained open at pass-3 time and did not block a clean self-review verdict per severity calibration (Minor, not Critical/Major). It was fixed in Eric's PR review pass 1 — see "Seed twin `**Why:**` block diverges from canonical with no test forcing it" above — and the twin is byte-identical to canonical as of `a7879d70`.
 
+### PR review pass 1 — stale classification row, routing target, and three drift-prone enumerations
+
+Six findings. The pre-existing twin `**Why:**` Minor is the sixth — Eric confirmed rather than re-raised it; see "Seed twin `**Why:**` block diverges from canonical with no test forcing it" above for its record and fix.
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/plans/response-shape-contract.md:280` (`## Seed twin classification`)
+- **Problem:** the row recorded `#442` shipping as `#3` with verdict `correct-transformation`, but neither file contained either token — both carried `issue #<n>`. The row was superseded by a fix recorded in this same section, which said so in as many words.
+- **Suggested fix:** delete the row and correct the surrounding "differ on exactly two/one" claims.
+- **Fixed in:** row deleted; the remaining `#442` hits in the file are a genuine PR citation in Task 9 and this section's quoted finding.
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-self/shared.md:334`
+- **Problem:** the previous fix pointed briar's close at `## Next persona`, the coarser of the file's two routing sections, and inlined a second copy of it. `## Clean-Review Closing` (same file, line 394) is the emit-time procedure and prescribes something different for the clean case — two routing descriptions, one emitted message.
+- **Suggested fix:** defer to `## Clean-Review Closing` by section name instead of restating routing.
+- **Fixed in:** `:334` now defers to `## Clean-Review Closing` by name and states "never a menu" rather than carrying a second copy.
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/response-shape.md:30` (and twin)
+- **Problem:** `## Who runs this rule` itemized the roster behind "Every persona in the PRISM roster" and the list was already wrong — Atlas (`prism-onboarding`) was missing. `writing-voice.md` § Count rules, not numbers names the persona roster as its canonical case for stating the membership rule instead of listing names, and the sentence already stated the rule.
+- **Suggested fix:** end at the rule; drop the names.
+- **Fixed in:** enumeration removed on both surfaces; nothing left to drift.
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/references/debugger/output-format.md:27`
+- **Problem:** the opener's `## Next persona` handle pointed at a section of `prism-debugger/shared.md`, not of this file. `output-format.md` is loaded standalone, so the handle could not be redeemed from where it is read — the exact cost the rule this PR ships describes.
+- **Suggested fix:** name the content inline, as briar's parallel edit does.
+- **Fixed in:** the file now opens with its own `**Verdict:**` line carrying the evidence-grade vocabulary inline; no cross-file handle in the opener.
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-self/shared.md:316`
+- **Problem:** the template named the verdict's position but not its shape, while both sibling edits in the same series enumerated their values (Winston `Proceed / Proceed with changes / Do not proceed`, sasha `[Confirmed] | [Deduced] | [Hypothesized]`). Two runs would diverge on whether the first line is a labeled field or prose.
+- **Suggested fix:** make it a labeled field above `**Issues:**`, matching the siblings.
+- **Fixed in:** `:316` is now `**Verdict:** Ready for PR (or: N Major, M Minor to fix)`.
+
 ### PR review pass 2 — `curated` registration and two stale-content rows
 
 - **Severity:** `major`
@@ -258,6 +314,28 @@ The one pre-existing open Minor (seed twin `**Why:**` block is a same-meaning pa
 - **Problem:** the closing sentence of the pass-3 self-review record said the seed-twin `**Why:**` Minor "remains open" and that the twin's Why line "differs" — both true at pass-3 time but stale as of `a7879d70`, where the same Minor is recorded `fixed` two sections earlier and the classification table confirms the two files are byte-identical.
 - **Suggested fix:** reword the sentence to mark it as a pass-3-time snapshot and note the later fix.
 - **Fixed in:** reworded to "remained open at pass-3 time," and appended a sentence naming the fixing entry and confirming byte-identity as of `a7879d70`.
+
+### PR review pass 4 — ratification, plus two Minors
+
+0 Critical, 0 Major. All three pass-3 findings were re-verified from the tree rather than from their `fixed` markers: the decision-gate exemption is present and byte-identical across all six homes, and canonical and twin are the **same git blob** (`fe515b6c`) — stronger evidence than a content diff. The reversal sub-bullet sits above `→ promotion verdict pending close`, so the close ceremony cannot reach the verdict without passing the refutation. 12 threads resolved.
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/response-shape-contract.md:152` (Task 9)
+- **Problem:** pass 3's fix corrected Task 9's closing sentence, but the task's opening sentences still read "the seed is a curated twin, not build output" and "Rewrite only the `**Why:**` block" — the approach the final sentence reverses. One task, two incompatible instructions; a reader following it top-down lands on the reversed approach.
+- **Suggested fix:** open the task with what shipped, and keep the build-gate reasoning as the counterfactual it always was.
+- **Fixed in:** Task 9 now opens with `carries canonical's text verbatim`; both citations survive intact (`runInstallAdrGate` at `crossref-lint.ts:871`, `SEED_DOGFOODING_PATTERN` at `literal-guard.ts:48-49`).
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/lessons.md:373`
+- **Problem:** the new lesson was correctly shaped and not a duplicate heading, but it split coverage — a `2026-07-07` bullet under `## Docs drift after a large epic` addressed the same pattern, leaving the general lesson with two addresses.
+- **Suggested fix:** fold the older specific bullet into the general entry rather than keeping both.
+- **Fixed in:** the `2026-07-07` bullet was folded into the entry now headed *When a plan (or any doc) corrects an earlier claim, sweep that claim's other occurrences in the same file at correction time* — the general lesson now has one address, with the specific case inside it.
+
+### PR review pass 5 — scoped verification, clean
+
+0 new findings. Both pass-4 Minors verified resolved from the tree at `0b1fc29b`, with no scope creep in the fixing commit. `pnpm prism:check` was executed for real in a worktree — exit 0. 14/14 threads resolved. No open findings remain on this branch.
 
 ---
 
@@ -376,7 +454,7 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## PR Readiness
 
-- [x] No critical or major issues — self-review's Majors and Eric's PR review pass 1, pass 2, and pass 3 Majors all confirmed landed and fixed — see `## Review Issues`
+- [x] No critical or major issues — self-review's Majors and every Major and Minor from Eric's PR review passes 1–5 confirmed landed and fixed; passes 4 and 5 raised no Critical or Major at all — see `## Review Issues` § Review ledger
 - [x] `pnpm prism:check` passes — exit 0, re-confirmed after pass 3's fixes (571/571 tests, build/crossref/pack-parity/manifest-coverage all clean)
 - [x] Consumer-distribution open question resolved — ships as a plain build-mirrored twin (no longer `curated`; the two files are byte-identical, so the drift detector now runs on this pair like any other synced rule); the `## Decisions` entry now carries a reversal sub-bullet matching what shipped
 - [ ] Lasting decisions promoted to architect context — pending plan close (all Decisions still carry `→ promotion verdict pending close`)
