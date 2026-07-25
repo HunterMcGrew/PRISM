@@ -1,0 +1,355 @@
+/**
+ * Regression suite for the spec-content-scope lint.
+ *
+ * Exercises `evaluateSpecScopeLint` against temp trees built per test, rather
+ * than the fixed repo tree — each test controls its own plan file, changed
+ * path, and frontmatter, following the `crossref-lint.test.ts` pattern of
+ * testing exported pure functions against a controlled filesystem.
+ *
+ * The three fixtures below are the acceptance bar for AC-6: a lint that
+ * passes one half and fails the other is UNMET.
+ */
+import fs from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+	evaluateSpecScopeLint,
+	isMirrorPath,
+	isAlwaysOnSpecContent,
+	isUnrelatedToTicket,
+	deriveExitCode,
+} from "./spec-scope-lint";
+
+// ---------------------------------------------------------------------------
+// Test helper
+// ---------------------------------------------------------------------------
+
+async function withTempTree(
+	build: (tempRoot: string) => Promise<void>,
+	check: (tempRoot: string) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(
+		path.join(os.tmpdir(), "prism-spec-scope-lint-")
+	);
+	try {
+		await build(tempRoot);
+		await check(tempRoot);
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+async function writeFile(
+	tempRoot: string,
+	relativePath: string,
+	content: string
+): Promise<void> {
+	const absPath = path.join(tempRoot, relativePath);
+	await fs.mkdir(path.dirname(absPath), { recursive: true });
+	await fs.writeFile(absPath, content, "utf8");
+}
+
+const ALWAYS_ON_RULE = `---
+load: always
+---
+
+# Some rule
+
+Body text.
+`;
+
+// ---------------------------------------------------------------------------
+// isMirrorPath
+// ---------------------------------------------------------------------------
+
+test("isMirrorPath: recognizes every mirror root", () => {
+	assert.equal(isMirrorPath(".claude/rules/foo.md"), true);
+	assert.equal(isMirrorPath(".codex/rules/foo.md"), true);
+	assert.equal(isMirrorPath(".cursor/rules/foo.mdc"), true);
+	assert.equal(isMirrorPath("templates/install/.prism/rules/foo.md"), true);
+});
+
+test("isMirrorPath: false for canonical paths", () => {
+	assert.equal(isMirrorPath(".prism/rules/foo.md"), false);
+	assert.equal(isMirrorPath(".ai-skills/skills/prism-clove/shared.md"), false);
+});
+
+// ---------------------------------------------------------------------------
+// isAlwaysOnSpecContent (Condition A)
+// ---------------------------------------------------------------------------
+
+test("isAlwaysOnSpecContent: true for .ai-skills/skills/** regardless of frontmatter", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-clove/shared.md",
+				"No frontmatter here.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await isAlwaysOnSpecContent(
+				tempRoot,
+				".ai-skills/skills/prism-clove/shared.md"
+			);
+			assert.equal(result, true);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: true for .prism/lessons.md", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/lessons.md", "- a lesson\n");
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(tempRoot, ".prism/lessons.md"),
+				true
+			);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: true for .prism/references/review-*.md", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/references/review-frameworks.md",
+				"Body.\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(
+					tempRoot,
+					".prism/references/review-frameworks.md"
+				),
+				true
+			);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: true when frontmatter declares load: always", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(tempRoot, ".prism/rules/some-rule.md", ALWAYS_ON_RULE);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(tempRoot, ".prism/rules/some-rule.md"),
+				true
+			);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: false when frontmatter declares a non-always load value", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/rules/some-rule.md",
+				"---\nload: paths\n---\n\n# Some rule\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(tempRoot, ".prism/rules/some-rule.md"),
+				false
+			);
+		}
+	);
+});
+
+test("isAlwaysOnSpecContent: false for a deleted path (nothing to read)", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(
+				await isAlwaysOnSpecContent(tempRoot, ".prism/rules/gone.md"),
+				false
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// isUnrelatedToTicket (Condition B)
+// ---------------------------------------------------------------------------
+
+test("isUnrelatedToTicket: false when the basename appears in the plan text", () => {
+	const planText = "## Goal\n\nUpdate `some-rule.md` for the new behavior.\n";
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), false);
+});
+
+test("isUnrelatedToTicket: true when the basename appears nowhere in the plan text", () => {
+	const planText = "## Goal\n\nUpdate the widget renderer.\n";
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
+});
+
+// ---------------------------------------------------------------------------
+// deriveExitCode
+// ---------------------------------------------------------------------------
+
+test("deriveExitCode: 0 for no violations, 1 for any violations", () => {
+	assert.equal(deriveExitCode([]), 0);
+	assert.equal(
+		deriveExitCode([{ path: ".prism/rules/x.md", planPath: ".prism/plans/x.md" }]),
+		1
+	);
+});
+
+// ---------------------------------------------------------------------------
+// evaluateSpecScopeLint — the three required fixtures (AC-6)
+// ---------------------------------------------------------------------------
+
+test("fold-in fixture: a second surface of an artifact the plan already names passes clean", async () => {
+	const branchName = "someone/prism-9001-fold-in";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9001.md",
+				[
+					"# Plan: prism-9001",
+					"",
+					"## Goal",
+					"",
+					"Roll `response-shape.md` out to a second surface.",
+					"",
+					"## Implementation Tasks",
+					"",
+					"1. Update `response-shape.md` at both surfaces.",
+					"",
+				].join("\n")
+			);
+			// The mirror path is excluded from evaluation entirely — the
+			// canonical `.prism/rules/response-shape.md` (also named in the
+			// plan above) carries the real verdict.
+			await writeFile(
+				tempRoot,
+				"templates/install/.prism/rules/response-shape.md",
+				ALWAYS_ON_RULE
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				["templates/install/.prism/rules/response-shape.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 0);
+			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+test("back-out fixture: an always-on rule unrelated to the plan fires", async () => {
+	const branchName = "someone/prism-9002-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9002.md",
+				[
+					"# Plan: prism-9002",
+					"",
+					"## Goal",
+					"",
+					"Fix the widget renderer's overflow bug.",
+					"",
+					"## Decisions",
+					"",
+					"- Nothing relevant here.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".prism/rules/some-unrelated-rule.md",
+				ALWAYS_ON_RULE
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[".prism/rules/some-unrelated-rule.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 1);
+			assert.deepEqual(result.violations, [
+				{
+					path: ".prism/rules/some-unrelated-rule.md",
+					planPath: ".prism/plans/prism-9002.md",
+				},
+			]);
+		}
+	);
+});
+
+test("escape-hatch fixture: a ## Decisions entry naming the path suppresses the error", async () => {
+	const branchName = "someone/prism-9003-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9003.md",
+				[
+					"# Plan: prism-9003",
+					"",
+					"## Goal",
+					"",
+					"Fix the widget renderer's overflow bug.",
+					"",
+					"## Decisions",
+					"",
+					"- Also touching `.prism/rules/some-unrelated-rule.md` here because the",
+					"  overflow fix and this rule share a helper — see the change together.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".prism/rules/some-unrelated-rule.md",
+				ALWAYS_ON_RULE
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[".prism/rules/some-unrelated-rule.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 0);
+			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// No live plan resolves
+// ---------------------------------------------------------------------------
+
+test("evaluateSpecScopeLint: passes clean when no live plan resolves for the branch", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[".prism/rules/some-unrelated-rule.md"],
+				"someone/no-ticket-branch"
+			);
+			assert.equal(result.planPath, null);
+			assert.deepEqual(result.violations, []);
+		}
+	);
+});
