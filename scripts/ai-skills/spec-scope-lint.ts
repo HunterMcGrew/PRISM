@@ -299,7 +299,7 @@ async function tryGit(args: string[], cwd: string): Promise<string | null> {
 	}
 }
 
-async function readDefaultBranch(repoRootPath: string): Promise<string> {
+export async function readDefaultBranch(repoRootPath: string): Promise<string> {
 	const configPath = path.join(repoRootPath, ".ai-skills", "config.json");
 	const raw = await fs.readFile(configPath, "utf8").catch(() => null);
 
@@ -315,7 +315,21 @@ async function readDefaultBranch(repoRootPath: string): Promise<string> {
 	}
 }
 
-async function resolveMergeBaseRef(
+/**
+ * Resolves the ref to diff against, fetching it on demand when the local
+ * repository doesn't already have it.
+ *
+ * `actions/checkout@v4`'s default `pull_request` checkout is a single-branch,
+ * depth-1 fetch that scopes `remote.origin.fetch` to just the PR's own ref —
+ * `origin/<defaultBranch>` never exists locally under that config, so a plain
+ * `rev-parse --verify` fails and the merge-base step silently no-ops. Because
+ * the configured refspec doesn't cover `defaultBranch`, `git fetch origin
+ * <defaultBranch>` alone only updates `FETCH_HEAD`; the destination refspec
+ * (`<defaultBranch>:refs/remotes/origin/<defaultBranch>`) is what actually
+ * creates the `origin/<defaultBranch>` tracking ref the rest of this
+ * function (and `main()`'s merge-base call) depends on.
+ */
+export async function resolveMergeBaseRef(
 	repoRootPath: string,
 	defaultBranch: string
 ): Promise<string> {
@@ -323,6 +337,15 @@ async function resolveMergeBaseRef(
 	if ((await tryGit(["rev-parse", "--verify", remoteRef], repoRootPath)) !== null) {
 		return remoteRef;
 	}
+
+	await tryGit(
+		["fetch", "--depth=1", "origin", `${defaultBranch}:refs/remotes/${remoteRef}`],
+		repoRootPath
+	);
+	if ((await tryGit(["rev-parse", "--verify", remoteRef], repoRootPath)) !== null) {
+		return remoteRef;
+	}
+
 	return defaultBranch;
 }
 

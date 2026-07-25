@@ -14,6 +14,7 @@ import path from "node:path";
 import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 
 import {
 	evaluateSpecScopeLint,
@@ -23,6 +24,8 @@ import {
 	isUnrelatedToTicket,
 	deriveExitCode,
 	resolveBranchNameFromEnv,
+	readDefaultBranch,
+	resolveMergeBaseRef,
 } from "./spec-scope-lint";
 
 // ---------------------------------------------------------------------------
@@ -561,3 +564,153 @@ test("evaluateSpecScopeLint: passes clean when no live plan resolves for the bra
 		}
 	);
 });
+
+// ---------------------------------------------------------------------------
+// readDefaultBranch
+// ---------------------------------------------------------------------------
+
+test("readDefaultBranch: falls back to 'main' when .ai-skills/config.json is absent", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(await readDefaultBranch(tempRoot), "main");
+		}
+	);
+});
+
+test("readDefaultBranch: reads the configured defaultBranch from .ai-skills/config.json", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/config.json",
+				JSON.stringify({ defaultBranch: "trunk" })
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await readDefaultBranch(tempRoot), "trunk");
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveMergeBaseRef — merge-base resolution under CI's actual shallow checkout
+// ---------------------------------------------------------------------------
+
+/** True when `git` resolves on PATH — the git-backed tests below skip gracefully when it does not. */
+let gitAvailable = true;
+
+try {
+	execFileSync("git", ["--version"], { stdio: "ignore" });
+} catch {
+	gitAvailable = false;
+}
+
+/**
+ * Builds a bare "remote" repo with a `main` branch and a `feature` branch one
+ * commit ahead, matching the shape a real PR branch has against its base.
+ * Returns the bare remote's path.
+ */
+function createBareRemoteWithFeatureBranch(tempRoot: string): string {
+	const remoteDir = path.join(tempRoot, "remote.git");
+	const seedRepo = path.join(tempRoot, "seed");
+
+	execFileSync("git", ["init", "--quiet", "--bare", "-b", "main", remoteDir], {
+		stdio: "ignore",
+	});
+	execFileSync("git", ["clone", "--quiet", remoteDir, seedRepo], {
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.email", "test@prism.local"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "PRISM Test"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["commit", "--quiet", "--allow-empty", "-m", "seed"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["push", "--quiet", "-u", "origin", "main"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["checkout", "--quiet", "-b", "feature"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync(
+		"git",
+		["commit", "--quiet", "--allow-empty", "-m", "feature work"],
+		{ cwd: seedRepo, stdio: "ignore" }
+	);
+	execFileSync("git", ["push", "--quiet", "-u", "origin", "feature"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+
+	return remoteDir;
+}
+
+/**
+ * Clones `feature` as `actions/checkout@v4` does by default for `pull_request`
+ * events: a single-branch, depth-1 fetch of only the PR's own ref. This is
+ * the exact condition that reproduced the finding — `origin/main` and `main`
+ * are both unresolvable in the resulting clone.
+ */
+function shallowCloneFeatureBranch(remoteDir: string, cloneDir: string): void {
+	execFileSync(
+		"git",
+		[
+			"clone",
+			"--quiet",
+			"--depth=1",
+			"--branch=feature",
+			"--single-branch",
+			remoteDir,
+			cloneDir,
+		],
+		{ stdio: "ignore" }
+	);
+}
+
+test(
+	"resolveMergeBaseRef: fetches origin/main on demand under CI's actual shallow, single-branch checkout",
+	{ skip: !gitAvailable },
+	async () => {
+		await withTempTree(
+			async () => {},
+			async (tempRoot) => {
+				const remoteDir = createBareRemoteWithFeatureBranch(tempRoot);
+				const cloneDir = path.join(tempRoot, "clone");
+				shallowCloneFeatureBranch(remoteDir, cloneDir);
+
+				assert.throws(
+					() =>
+						execFileSync("git", ["rev-parse", "--verify", "origin/main"], {
+							cwd: cloneDir,
+							stdio: "ignore",
+						}),
+					"origin/main must not resolve before the fetch — this is the CI condition being reproduced"
+				);
+
+				const mergeBaseRef = await resolveMergeBaseRef(cloneDir, "main");
+				assert.equal(mergeBaseRef, "origin/main");
+
+				const mergeBase = execFileSync(
+					"git",
+					["merge-base", mergeBaseRef, "HEAD"],
+					{ cwd: cloneDir }
+				)
+					.toString()
+					.trim();
+				assert.ok(
+					mergeBase.length > 0,
+					"merge-base must resolve to a commit, not silently no-op"
+				);
+			}
+		);
+	}
+);
