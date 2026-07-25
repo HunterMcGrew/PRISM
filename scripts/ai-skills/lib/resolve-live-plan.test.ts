@@ -1,8 +1,9 @@
 /**
  * Regression suite for the shared live-plan resolver.
  *
- * Exercises every fallback tier — direct `<id>.md`, `epic-<id>.md`, and the
- * `## Ticket` field scan — plus `extractTicketId`'s branch-name parsing,
+ * Exercises every fallback tier — direct `<id>.md`, `epic-<id>.md`, the
+ * `## Ticket` field scan, and the unfiled-plan-by-slug tier for branches with
+ * no ticket-id-shaped token — plus `extractTicketId`'s branch-name parsing,
  * against temp trees built per test, following the
  * `spec-scope-lint.test.ts` pattern of testing exported pure functions
  * against a controlled filesystem.
@@ -229,6 +230,116 @@ test("resolveLivePlan: null when a ticket id is present but no tier resolves a p
 				await resolveLivePlan("someone/prism-1005-fix-thing", tempRoot),
 				null
 			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — unfiled-plan-by-slug fallback tier
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: resolves a plan-first branch by matching an unfiled plan's filename slug", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self-audit.md",
+				[
+					"# Plan: review-loop-self-audit",
+					"",
+					"## Ticket",
+					"",
+					"None yet — Nora files from this plan.",
+					"",
+				].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/review-loop-self-audit.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier skips a plan whose ## Ticket field is already filed", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self-audit.md",
+				["# Plan: review-loop-self-audit", "", "## Ticket", "", "PRISM-2001", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier returns null when two unfiled plans both match", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self-audit.md",
+				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+					"\n"
+				)
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self.md",
+				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier requires at least two hyphenated tokens in the slug", async () => {
+	const branchName = "huntermcgrew/prism-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/audit.md",
+				["# Plan: audit", "", "## Ticket", "", "None yet.", ""].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier never reads .prism/archived/", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/archived/plans/review-loop-self-audit.md",
+				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
 		}
 	);
 });
