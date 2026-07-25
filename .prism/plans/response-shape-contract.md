@@ -77,6 +77,7 @@ Give every persona a shared chat-output contract — verdict first, chunked body
 - 2026-07-25 [feat/response-shape-contract] open: Intent — confirm Task 1's contract wording lands as an enforceable rule rather than a style note, correct anything in Phase 1 that would ship wrong, then hand to clove; Bounds — this plan file plus a work branch in `portable-skills`; no source edits, no commits, no PRISM-side files; Approach — resolve Task 1's text verbatim into the plan so the implementer copies rather than re-derives · close: scope held — plan-only writes plus branch creation; no source file touched, nothing committed.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — run Task 11 (build and check) on the merged branch and ship a draft PR; Bounds — regenerate `.claude/`/`.codex/`/`.cursor/` mirrors via `pnpm prism:build`, fix `prism:check` only if one of the two anticipated failure modes occurred, no other source edits; Approach — build, check, commit mirrors, push, open draft PR · close: scope held — `pnpm prism:check` passed clean on the first run (neither anticipated failure mode occurred: the seed twin already carried de-identified provenance and the plan's references to the untracked boundary-analysis file are backtick-quoted paths, not markdown links, so crossref-lint didn't flag them); committed the regenerated mirrors (8c6a143), pushed, opened draft PR #446.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — Task 10: record a per-file classification for the `response-shape.md` seed twin so shipping it does not add a fourth undetected-drift case; Bounds — the plan file only, one new `## Seed twin classification` section; read-only on both rule files, no twin edits, no source; Approach — extract both heading sets mechanically, then classify at whatever unit the pair's divergence actually lives at rather than declaring clean on a vacuous heading comparison · close: scope held — plan file only; both rule files read-only; the one `missing-in-error` finding routed to the implementer rather than fixed in-lane.
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — grade AC-4, AC-5, AC-7, and AC-8 against the branch diff with executed evidence, and report rather than repair; Bounds — this plan file only; read-only on every rule, twin, mirror, and config file; no fixes regardless of what the grading turns up; Approach — run each criterion's named command together with its named positive control, so a pass on an empty or missing file is distinguishable from a real pass · close: scope held — plan file only; all four criteria MET; the twin's `**Why:**` divergence was recorded under `## Review Issues` and left unfixed for the implementer.
 
 ---
 
@@ -151,6 +152,22 @@ Phase order matters: Phase 1 proves the contract's wording on the roster Hunter 
 ### Phase 3 — Verify the contract actually lands
 
 12. **Read the output cold.** On a throwaway branch with a small deliberate diff, run briar and winston and read only the first three lines and last three lines of each. The pass condition is answering "what's the verdict" and "what do I do next" from those six lines alone. Record the result in `## History`.
+
+---
+
+## Review Issues
+
+**AC verification (Reese, 2026-07-25) — AC-4, AC-5, AC-7, AC-8 all MET.** Each criterion's named command was run together with its named positive control; no criterion is UNMET, so no verification issue is filed against this branch. AC-1/AC-2/AC-3 are human-evidence criteria paired with Task 12 and were not graded; AC-6 covers memory files outside this repo and was out of scope.
+
+One finding carries forward from Winston's `## Seed twin classification` — it does not affect any graded criterion, and it is recorded here so it is visible to a reader who checks open issues rather than the classification table.
+
+### Seed twin `**Why:**` block diverges from canonical with no test forcing it
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/rules/response-shape.md:9`
+- **Problem:** the twin's `**Why:**` block is a same-meaning rewrite of canonical's, and Amendment D does not sanction paraphrase — canonical's wording carries no name, date, PR number, or ADR citation, so it would have shipped verbatim and still passed AC-7's provenance grep.
+- **Suggested fix:** replace the twin's `**Why:**` block with canonical's wording verbatim. Leave the `#442` → `#3` de-identification on line 15 alone — that one is a correct Test 1 / Amendment C.1 transformation and reverting it would fail AC-7.
 
 ---
 
@@ -245,6 +262,7 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## History
 
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Reese graded the four machine-checkable AC — AC-4 (writing-voice gains one line), AC-5 (`pnpm prism:check`), AC-7 (twin provenance), AC-8 (twin classification rows) — all MET, each verified alongside its named positive control so an empty-file pass is ruled out. AC-1/AC-2/AC-3 were left ungraded as human evidence paired with Task 12, and AC-6 is out of this repo's scope. Recorded the result and the one carried-forward twin `**Why:**` divergence under `## Review Issues`; nothing fixed in-lane.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Winston wrote `## Seed twin classification` for the `response-shape.md` pair. Heading-level absent set is empty (one `##` heading per side), so the table classifies at block level, where the pair's two divergences live. One is `missing-in-error` — the twin's `**Why:**` block is unsanctioned same-meaning paraphrase; canonical's clears every seed gate verbatim.
 - 2026-07-25 [feat/response-shape-contract]: Task 1's contract text resolved verbatim into the plan and three defects corrected before implementation — the House-rules cross-reference shipped a line number that the insertion itself would invalidate, six of nine clauses carried no reader-cost clause, and Task 3's insertion point admitted two valid readings. Added Task 5b (informal cold read) and recorded the profile-drift pre-check as clean. Branch `feat/response-shape-contract` created off `origin/main` in `portable-skills`; no source file edited.
 - 2026-07-25 [main]: Filed [HunterMcGrew/PRISM#445](https://github.com/HunterMcGrew/PRISM/issues/445) covering Phase 2 and Phase 3. Phase 1 is tracked in `HunterMcGrew/portable-skills`, which turned out to be a real repo — so the contract's own framing there must be de-identified too, per that repo's `b94f665` "Genericize personal and workplace references."
