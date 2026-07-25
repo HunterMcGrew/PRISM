@@ -14,13 +14,92 @@ Run the Opening Orientation Battery per [session-orientation.md](../../../.prism
 once, immediately before the first loop pass, so the scope and intent are clear
 before starting.
 
+## Review surfaces
+
+Freeze one ref before the first pass: `loopBase = git rev-parse HEAD`. Record
+it in the gauntlet state alongside the pass count. Three surfaces derive from
+it, and every pass reviews them at different bars:
+
+- **Subject** — `git diff $(git merge-base <default-branch> $loopBase) $loopBase`.
+  The work the loop was invoked to review. Full bar, every pass.
+- **Repair** — `git diff $loopBase HEAD`. Changes the loop itself authored.
+  Regression-only bar (below).
+- **Ledger** — the plan file, its `## Review Issues` and `## History`
+  entries, and `.prism/lessons.md`. Text the loop authored *about itself*.
+  Not a review target during the loop at any bar.
+
+**Why:** the review target used to be the live branch diff, which resolves at
+pass time — so every fix the loop landed joined the surface the next pass
+reviewed. A loop that reviews its own output cannot converge; it generates
+its own backlog. Two independent runs of this skill set recorded the failure:
+one spent consecutive passes finding nothing in the feature under review
+while still producing findings, all of them in text the cycle had written;
+PRISM's own PR #446 (merged as `d28f2aaf`) recorded the same species three
+passes running against its plan file. The ledger for that run is at
+`.prism/plans/response-shape-contract.md` § Review Issues.
+
+**The repair bar — four anchors, name one or it is not a finding.** A
+repair-surface finding is admissible only when the reviewer names, and the
+scoreboard records, one of:
+
+1. **A failing command** — a named test, build, type-check, or check
+   invocation that passes at `loopBase` and fails at `HEAD`.
+2. **A violated acceptance criterion**, cited by its AC ID.
+3. **A contradicted Decision**, cited by its `## Decisions` title.
+4. **The original finding is still true** — quote it and show it unclosed.
+
+No anchor, no finding. An observation with no anchor is a follow-up per
+`.prism/rules/followup-scope.md`, recorded in the scoreboard, never a fix
+pass. Three of the four anchors are mechanically checkable and the fourth is
+a quotation, so a rationalized anchor is visible to the human reading the
+scoreboard.
+
+**The exemption expires with the loop.** `loopBase` is per-invocation. A
+later gauntlet run on the same branch re-freezes at the then-current `HEAD`,
+so everything this run authored is subject at full bar in the next one.
+Nothing is permanently unreviewable — the exemption covers only the pass
+sequence that created the text, which is the one window where re-review
+cannot converge.
+
+**The ledger's correctness is owned by a check, not by a pass.** Excluding it
+here depends on the plan-drift checks landing separately; until they do, the
+human's pre-merge read is the backstop. That backstop is real — PRISM's own
+instance was caught by a human reading the ledger, not by a pass.
+
+The split is a loop construct. The self-review and PR-review personas invoked
+standalone still review the full branch diff; the loop states the boundary in
+its dispatch text rather than changing how either persona works.
+
+**Disposition — surface decides, severity is unchanged.** No new severity
+vocabulary: Critical / Major / Minor keep their existing meanings from
+`.prism/references/review-frameworks.md`, and the surface supplies provenance
+for free.
+
+| Surface | Critical / Major | Minor |
+| --- | --- | --- |
+| Subject | fix in cycle | fix in cycle |
+| Repair | fix in cycle, only if an anchor was named | not raisable |
+| Ledger | not raised during the loop; swept once at close | not raised |
+
+Fixing Minors on the subject surface terminates: the subject is frozen and
+finite, so each line can produce at most one fix, and that fix lands on the
+repair surface where the anchor bar protects it. Severity was never the
+discriminator — the findings in PR #446's recorded self-audit were graded
+Major and were still self-audit. Provenance is.
+
+Do not add a taxonomy vocabulary anywhere in the file. The value of this table
+is that there is nothing new for a reviewer to learn; a named three-way
+classification would reintroduce exactly the judgment call the surface split
+removes.
+
 ## The ladder
 
 1. **Self-review loop** — invoke the self-review persona on the branch. Every
    finding, any severity (critical, major, minor, nit, cleanup), goes to the
    implementation persona to fix — review-fix commits stay separate per
    `.prism/rules/git-conventions.md` § Commit Granularity. Re-run
-   self-review. Repeat until a pass returns zero findings.
+   self-review. Repeat until the phase is subject-clean (see **Subject-clean exit** under
+   ## Guardrails).
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
    Findings → fixes → re-review. The phase is not done until a pass returns
    **zero new findings AND zero fixed-but-unresolved review threads** — when a
@@ -39,6 +118,17 @@ before starting.
   Architect consultations and user pauses don't count — they're escalations,
   already bounded by their own ladder. Budget exhaustion triggers **Procedure D** —
   stop, report state, hand back.
+- **Subject-clean exit.** A phase closes when two consecutive passes return
+  zero admissible findings on the **subject** surface and every admitted
+  repair-surface finding is closed. When it fires, stop the phase and write
+  every outstanding non-subject observation into the scoreboard as a
+  follow-up per `.prism/rules/followup-scope.md` — do not open a fix pass for
+  it. **Why:** "zero findings" counted every surface, so it was unreachable
+  whenever the loop was producing findings of its own; the pass budget, not
+  the exit condition, is what actually ended those runs. This is the exit
+  condition, not a warning — a warning would hand the operator the same call
+  under the same pressure that produced them. The 20-pass budget stays as the
+  backstop for the case where subject-clean does not fire.
 - **Three-strike survival rule.** An issue a reviewer re-raises after a fix
   pass has survived a strike. Strike 1: run **Procedure A**. Strike 2:
   continue, marked in the scoreboard. Strike 3: trigger **Procedure E** —
