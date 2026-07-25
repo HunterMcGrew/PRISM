@@ -75,6 +75,7 @@ Give every persona a shared chat-output contract — verdict first, chunked body
 
 - 2026-07-25 [main] open: Intent — give personas a shared chat-output contract (verdict-first, chunked, state line, one next action) without polluting durable-doc voice rules; Bounds — plan + memory files + co-worker handoff only, no skill or rule edits this session, nothing committed on `main`; Approach — verify the writing-voice blast radius first, then a new sibling rule in the two existing single-load homes rather than 29 persona edits · close: drifted — bounds widened twice on explicit user instruction, both outward-facing: filed HunterMcGrew/PRISM#445, and the contract itself gained three clauses (references carry their content, open items carry a recommendation, blocking items graduate to a structured ask) after the session's own output shipped the defect twice. No skill, rule, or source file was edited, and nothing was committed.
 - 2026-07-25 [feat/response-shape-contract] open: Intent — confirm Task 1's contract wording lands as an enforceable rule rather than a style note, correct anything in Phase 1 that would ship wrong, then hand to clove; Bounds — this plan file plus a work branch in `portable-skills`; no source edits, no commits, no PRISM-side files; Approach — resolve Task 1's text verbatim into the plan so the implementer copies rather than re-derives · close: scope held — plan-only writes plus branch creation; no source file touched, nothing committed.
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — Task 10: record a per-file classification for the `response-shape.md` seed twin so shipping it does not add a fourth undetected-drift case; Bounds — the plan file only, one new `## Seed twin classification` section; read-only on both rule files, no twin edits, no source; Approach — extract both heading sets mechanically, then classify at whatever unit the pair's divergence actually lives at rather than declaring clean on a vacuous heading comparison · close: scope held — plan file only; both rule files read-only; the one `missing-in-error` finding routed to the implementer rather than fixed in-lane.
 
 ---
 
@@ -184,8 +185,66 @@ Phase order matters: Phase 1 proves the contract's wording on the roster Hunter 
 
 ---
 
+## Seed twin classification
+
+Pair: `.prism/rules/response-shape.md` (canonical) ↔ `templates/install/.prism/rules/response-shape.md` (twin), registered `curated` in `.ai-skills/definitions/seed-curation.json:75`.
+
+**Verdict: one row is `missing-in-error`.** The twin's `**Why:**` block is a same-meaning rewrite of canonical's, and nothing forced it — canonical's Why passes every seed gate verbatim. Everything else in the file is either identical or a gate-forced de-identification.
+
+Why this table exists: the seed has no working drift detector. `.prism/plans/followup-seed-twin-boundary-rule-pressure-test.md` records three independent misses, including `rules/implementation-task-detail.md` — materially stale with identical commit dates on both sides, caught only because it was pulled as a control. Adding a fourth twin to that undetected-drift set without a recorded classification would knowingly create the next silent-drift case. The table turns "already-shipping content nobody re-reads" from an invisible default into a reviewable claim, per that analysis's own conclusion (§ The structural question, item 2: *a recorded per-file classification, written once per twin*).
+
+**Test vocabulary** (from that analysis, § Per-file verdicts and Amendments C/D):
+
+- **Test 1** — install-specific values. Widened by Amendment C from identifier tokenization to *identifier and provenance neutralization*, with three treatments: tokenize when a `${TOKEN}` exists, **de-identify** when a gate forbids the literal, generalize when the value is PRISM's own rendered instance of a per-team config key.
+- **Test 2** — reference resolvability: does the referenced target actually ship? Authorities: `seed-curation.json`, the seed tree, `package.json#files`.
+- **Test 3** — audience discriminator: maintainer content vs consumer content. The load-bearing test; survived the pressure test unamended.
+- Sanctioned transformations (Amendment D): subtraction, tokenization, attribution-to-PRISM, genericization. Same-meaning paraphrase is **not** among them — the boundary rule's own second Decision condemns it.
+
+### Heading-level result — the absent set is empty
+
+```
+$ grep -nE '^#{2,3} ' .prism/rules/response-shape.md
+28:## Who runs this rule
+$ grep -nE '^#{2,3} ' templates/install/.prism/rules/response-shape.md
+28:## Who runs this rule
+```
+
+Canonical headings absent from the twin: **none**. AC-8's positive control passes — the twin's heading set is non-empty (one heading).
+
+That result is honest but weak *for this file*, and saying so is the point: the file carries a single `##` heading, so a heading-set comparison has almost nothing to compare and would certify this pair as clean no matter how far the prose drifted. The unit of curation here is the block, not the section. The table below therefore classifies at block level, which is where this pair's divergence actually lives. (The heading axis is not useless in general — it catches `implementation-task-detail.md`, whose twin is missing an entire `### When to apply [HITL]` section. It is vacuous on a file this flat.)
+
+### Block-level classification — canonical content absent from or altered in the twin
+
+| Canonical block | Verdict | Deciding test |
+| --- | --- | --- |
+| `**Why:**` block (canonical:9) — *"A reader scanning a reply should get the verdict and the next action without reconstructing where they are in the thread. That reconstruction is work the writer can do once and the reader would otherwise redo on every message."* | **missing-in-error** | **No test decides for the twin's version.** Test 1 does not fire — the line carries no name, date, PR number, ADR citation, or install-specific value, and `grep -cE '[Hh]unter\|ADHD\|ADR-[0-9]\|2026-\|#[0-9]{2,}\|THR-\|PRISM-[0-9]'` against it returns `0`, so it would have shipped verbatim and passed AC-7. Test 3 does not distinguish the two texts — both are consumer-appropriate on general grounds. With no test forcing a transformation, the direction of flow is canonical → twin verbatim; the twin diverging anyway is unsanctioned same-meaning paraphrase, which Amendment D declines to sanction. |
+| `#442` inside the naked-handle example (canonical:15), shipped as `#3` | **correct-transformation** — de-identification | **Test 1, Amendment C.1 treatment.** `#442` is PRISM's own provenance and the sole line in canonical that trips a seed gate: AC-7's `#[0-9]{2,}` pattern matches it, and Task 9 names PR/issue numbers as forbidden under `templates/install/`. There is no `${TOKEN}` for "the PR this example came from," so the practiced treatment is de-identification — the same shape as `THR-1775 audit` shipping as `an early-Phase audit`. `#3` preserves what the example needs (a bare issue handle the reader cannot redeem) while carrying no provenance. |
+
+No canonical block is *omitted* from the twin — the `correct-omission` verdict has no instances on this pair. Both files are 32 lines and differ on exactly two.
+
+### Carried verbatim, deliberately
+
+Recorded so a future editor does not "fix" correct content back into a defect — the failure the classification table exists to prevent:
+
+| Content carried unchanged | Why it correctly ships verbatim |
+| --- | --- |
+| Persona names throughout — the roster in `## Who runs this rule`, and `**Reorder briar's output**` as the bolded-lead example | The literal guard's own doc comment (`scripts/ai-skills/literal-guard.ts`) states that persona names are deliberately absent from `SEED_DOGFOODING_PATTERN` as *legitimate framework content that ships to consumers*. Test 3 agrees: a rule governing how a consumer's own personas reply is consumer content. `branch-plan.md`'s twin practices the opposite convention (de-naming personas) and is wrong to — do not copy it here. |
+| `.prism/rules/writing-voice.md` boundary paragraph and the `[writing-voice.md § Answer first, one offer at a time](./writing-voice.md)` link | **Test 2 resolves.** `templates/install/.prism/rules/writing-voice.md` exists in the seed tree, and the relative link resolves within the installed `.prism/rules/` directory. The reference is live for a consumer, not dangling. |
+| "the PRISM roster" | Attribution-to-PRISM (Amendment B) — the framework names itself to the consumer who installed it. |
+| `AskUserQuestion` named as an example (canonical:19) | Already hedged as *"the host's structured-question mechanism (e.g. `AskUserQuestion`)"* — host-neutral phrasing with a concrete instance behind it. Test 3: consumer-facing, no maintainer coupling. |
+| Absence of any `ADR-NNNN` citation | Nothing to strip. Task 9 instructed removing "the ADR-0035 citation," but canonical never carried one — `runInstallAdrGate` has no target here. Recorded because the task text implies a removal that did not happen, which a later reader could mistake for a missed edit. |
+
+### Recommended fix
+
+Revert the twin's `**Why:**` block to canonical's text verbatim. Direction of flow is canonical → twin, and canonical's version clears both seed gates unmodified. Owned by the implementer (this file is not Winston's to edit); same file, same thread, so it folds into this PR rather than earning a follow-up ticket, per `.prism/rules/followup-scope.md`.
+
+Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only the `**Why:**` block on general grounds," on the premise recorded in `## Decisions` that canonical would keep personal provenance (ADHD framing, dated sessions). Task 6's canonical output already stated the why on general grounds, which invalidated that premise — so the mandated rewrite became a transformation with nothing left to transform, and shipped as pure divergence. The cost is not the wording: it is that the next canonical edit to that paragraph has no mechanical signal to land in the twin, because a heading-set comparison sees two identical heading sets and reports clean.
+
+---
+
 ## History
 
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Winston wrote `## Seed twin classification` for the `response-shape.md` pair. Heading-level absent set is empty (one `##` heading per side), so the table classifies at block level, where the pair's two divergences live. One is `missing-in-error` — the twin's `**Why:**` block is unsanctioned same-meaning paraphrase; canonical's clears every seed gate verbatim.
 - 2026-07-25 [feat/response-shape-contract]: Task 1's contract text resolved verbatim into the plan and three defects corrected before implementation — the House-rules cross-reference shipped a line number that the insertion itself would invalidate, six of nine clauses carried no reader-cost clause, and Task 3's insertion point admitted two valid readings. Added Task 5b (informal cold read) and recorded the profile-drift pre-check as clean. Branch `feat/response-shape-contract` created off `origin/main` in `portable-skills`; no source file edited.
 - 2026-07-25 [main]: Filed [HunterMcGrew/PRISM#445](https://github.com/HunterMcGrew/PRISM/issues/445) covering Phase 2 and Phase 3. Phase 1 is tracked in `HunterMcGrew/portable-skills`, which turned out to be a real repo — so the contract's own framing there must be de-identified too, per that repo's `b94f665` "Genericize personal and workplace references."
 - 2026-07-25 [main]: Contract widened past section order — references must carry their own content, open items must carry a recommendation, and blocking items graduate from a prose bullet to a structured ask. Added after this plan's own closing message shipped two instances of the defect (an undescribed `Task 10` whose number had silently moved, and a recommendation-free open item); see Decision: *The contract governs cross-references and open items*.
