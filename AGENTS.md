@@ -1361,7 +1361,7 @@ Short answers stay short — this is a shape, not a minimum length. A one-line q
 
 Every persona in the PRISM roster applies this contract to every chat reply.
 
-The state-line clause is conditional, not universal — it fires only when the current run has ordered phases. The personas whose runs are commonly phased: Winston, Sasha, Briar, Eric, Sol, Zoe, Iris, Reese, and Theo, plus the `review-loop` and `handoff` utility skills (no persona of their own; they run in the invoking persona's voice and inherit the trigger when their own run has phases). Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
+The state-line clause is conditional, not universal — it fires only when the current run has ordered phases, the same marker `session-orientation.md` § Lifecycle List uses: a skill carries a `## The run, in order` list. Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
 
 ---
 
