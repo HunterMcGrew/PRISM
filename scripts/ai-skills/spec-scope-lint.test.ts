@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 import {
 	evaluateSpecScopeLint,
 	isMirrorPath,
+	isCuratedSeedTwin,
 	isAlwaysOnSpecContent,
 	isUnrelatedToTicket,
 	deriveExitCode,
@@ -75,6 +76,77 @@ test("isMirrorPath: recognizes every mirror root", () => {
 test("isMirrorPath: false for canonical paths", () => {
 	assert.equal(isMirrorPath(".prism/rules/foo.md"), false);
 	assert.equal(isMirrorPath(".ai-skills/skills/prism-clove/shared.md"), false);
+});
+
+// ---------------------------------------------------------------------------
+// isCuratedSeedTwin
+// ---------------------------------------------------------------------------
+
+const SEED_CURATION_WITH_REVIEW_DOCS_IMPACT = JSON.stringify({
+	excluded: [],
+	curated: ["references/review-docs-impact.md"],
+	seedOnly: [],
+	renames: {},
+});
+
+test("isCuratedSeedTwin: true for a templates/install path listed in seed-curation.json's curated array", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/definitions/seed-curation.json",
+				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isCuratedSeedTwin(
+					tempRoot,
+					"templates/install/.prism/references/review-docs-impact.md"
+				),
+				true
+			);
+		}
+	);
+});
+
+test("isCuratedSeedTwin: false for a templates/install path absent from the curated array", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/definitions/seed-curation.json",
+				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isCuratedSeedTwin(
+					tempRoot,
+					"templates/install/.prism/rules/response-shape.md"
+				),
+				false
+			);
+		}
+	);
+});
+
+test("isCuratedSeedTwin: false for a canonical path (no templates/install prefix)", async () => {
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/definitions/seed-curation.json",
+				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await isCuratedSeedTwin(tempRoot, ".prism/references/review-docs-impact.md"),
+				false
+			);
+		}
+	);
 });
 
 // ---------------------------------------------------------------------------
@@ -327,6 +399,94 @@ test("escape-hatch fixture: a ## Decisions entry naming the path suppresses the 
 			const result = await evaluateSpecScopeLint(
 				tempRoot,
 				[".prism/rules/some-unrelated-rule.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 0);
+			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// Curated seed twin regression — an edit to a curated templates/install
+// twin alone, with no canonical file touched in the same diff, fires.
+// ---------------------------------------------------------------------------
+
+test("curated-twin fixture: editing a curated install-seed twin alone, unrelated to the plan, fires", async () => {
+	const branchName = "someone/prism-9004-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/definitions/seed-curation.json",
+				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9004.md",
+				[
+					"# Plan: prism-9004",
+					"",
+					"## Goal",
+					"",
+					"Fix the widget renderer's overflow bug.",
+					"",
+				].join("\n")
+			);
+			// No frontmatter — this file matches Condition A only via the
+			// `review-*.md` path pattern, which must be checked against its
+			// canonical-equivalent path, not its templates/install location.
+			await writeFile(
+				tempRoot,
+				"templates/install/.prism/references/review-docs-impact.md",
+				"# Docs Impact Check\n\nBody text.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				["templates/install/.prism/references/review-docs-impact.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 1);
+			assert.deepEqual(result.violations, [
+				{
+					path: "templates/install/.prism/references/review-docs-impact.md",
+					planPath: ".prism/plans/prism-9004.md",
+				},
+			]);
+		}
+	);
+});
+
+test("curated-twin fixture: a non-curated templates/install twin still inherits the mirror skip", async () => {
+	const branchName = "someone/prism-9005-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".ai-skills/definitions/seed-curation.json",
+				SEED_CURATION_WITH_REVIEW_DOCS_IMPACT
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9005.md",
+				["# Plan: prism-9005", "", "## Goal", "", "Fix the overflow bug.", ""].join(
+					"\n"
+				)
+			);
+			await writeFile(
+				tempRoot,
+				"templates/install/.prism/rules/response-shape.md",
+				ALWAYS_ON_RULE
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				["templates/install/.prism/rules/response-shape.md"],
 				branchName
 			);
 			assert.equal(deriveExitCode(result.violations), 0);

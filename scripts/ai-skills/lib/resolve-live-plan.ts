@@ -15,7 +15,7 @@ import path from "node:path";
 
 import { pathExists } from "../utils";
 
-/** Matches a ticket-id token such as `prism-1234` or `thr-42` anywhere in a branch name. */
+/** Matches a ticket-id token such as `prism-1234` or `thr-42` anywhere in a branch segment. */
 const TICKET_ID_RE = /([a-z]+-\d+)/i;
 
 /** Matches the `## Ticket` section heading and captures its first content line. */
@@ -25,9 +25,16 @@ const TICKET_SECTION_RE = /## Ticket\s*\r?\n+([^\r\n#]*)/i;
  * Extracts a lowercase ticket id (e.g. `prism-1234`) from a branch name, or
  * null when the branch carries no ticket-id-shaped token — a plan-less draft
  * branch, as this ticket's own branch is before Nora files it.
+ *
+ * Matches only within the branch name's final `/`-separated segment, per
+ * `git-conventions.md` § Branch Naming's `<username>/prism-NNNN-<slug>`
+ * shape. Matching the whole string would let a hyphenated username (e.g.
+ * `dev-2` in `dev-2/prism-1234-fix-thing`) shadow the real ticket id, since
+ * the regex takes the leftmost match.
  */
 export function extractTicketId(branchName: string): string | null {
-	const match = branchName.match(TICKET_ID_RE);
+	const finalSegment = branchName.split("/").pop() ?? branchName;
+	const match = finalSegment.match(TICKET_ID_RE);
 	return match ? match[1].toLowerCase() : null;
 }
 

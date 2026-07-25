@@ -98,8 +98,8 @@ removes.
    finding, any severity (critical, major, minor, nit, cleanup), goes to the
    implementation persona to fix — review-fix commits stay separate per
    `.prism/rules/git-conventions.md` § Commit Granularity. Re-run
-   self-review. Repeat until the phase is subject-clean (see **Subject-clean exit** under
-   ## Guardrails).
+   self-review. Repeat until the phase is subject-clean (see
+   **Subject-clean exit** under **Guardrails** below).
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
    Findings → fixes → re-review. The phase is not done until a pass returns
    **zero new findings AND zero fixed-but-unresolved review threads** — when a

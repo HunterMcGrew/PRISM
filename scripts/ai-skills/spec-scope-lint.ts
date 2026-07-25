@@ -55,6 +55,11 @@ export interface SpecScopeLintResult {
  * inherits its canonical source's verdict, and `pnpm prism:build` regenerates
  * mirrors from canonical changes that land in the same diff, so the
  * canonical path is evaluated on its own when it too is a changed path.
+ *
+ * This holds unconditionally for `.claude/`, `.codex/`, `.cursor/` — `build.ts`
+ * fully rewrites and content-diffs those on every `prism:check`. It does not
+ * hold for every path under `templates/install/`: `isCuratedSeedTwin` carves
+ * out the exception where the mirror claim is false.
  */
 const MIRROR_ROOT_PREFIXES = [
 	".claude/",
@@ -62,6 +67,9 @@ const MIRROR_ROOT_PREFIXES = [
 	".cursor/",
 	"templates/install/",
 ] as const;
+
+/** The canonical content root's install-seed mirror, per `paths.json#canonical.templatesContentRoot`. */
+const TEMPLATES_INSTALL_PRISM_PREFIX = "templates/install/.prism/";
 
 /** Matches `.prism/references/review-<anything>.md`. */
 const REVIEW_REFERENCE_RE = /^\.prism\/references\/review-[^/]+\.md$/;
@@ -71,6 +79,82 @@ const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---/;
 
 export function isMirrorPath(changedPath: string): boolean {
 	return MIRROR_ROOT_PREFIXES.some((prefix) => changedPath.startsWith(prefix));
+}
+
+const curatedSeedPathsCache = new Map<string, Promise<Set<string>>>();
+
+/**
+ * Reads `.ai-skills/definitions/seed-curation.json`'s `curated` array —
+ * the same source `build.ts`'s `checkSeedDrift` treats as authoritative —
+ * and returns it as a set of canonical-relative paths (e.g.
+ * `references/review-docs-impact.md`). Cached per repo root: this lint may
+ * evaluate many changed paths per run and the file doesn't change mid-run.
+ */
+async function loadCuratedSeedPaths(repoRootPath: string): Promise<Set<string>> {
+	const cached = curatedSeedPathsCache.get(repoRootPath);
+	if (cached) {
+		return cached;
+	}
+
+	const curatedPaths = (async () => {
+		const curationPath = path.join(
+			repoRootPath,
+			".ai-skills",
+			"definitions",
+			"seed-curation.json"
+		);
+
+		if (!(await pathExists(curationPath))) {
+			return new Set<string>();
+		}
+
+		const raw = await fs.readFile(curationPath, "utf8");
+		const parsed = JSON.parse(raw) as { curated?: string[] };
+		return new Set(parsed.curated ?? []);
+	})();
+
+	curatedSeedPathsCache.set(repoRootPath, curatedPaths);
+	return curatedPaths;
+}
+
+/**
+ * True when `changedPath` is a curated install-seed twin — a
+ * `templates/install/.prism/` file whose canonical-relative path is listed
+ * in `seed-curation.json`'s `curated` array. `checkSeedDrift` only verifies
+ * a curated twin *exists*, never compares its content against the canonical
+ * source, so an edit to a curated twin alone can drift silently. Curated
+ * twins are evaluated the same as canonical content instead of being
+ * skipped as a mirror.
+ */
+export async function isCuratedSeedTwin(
+	repoRootPath: string,
+	changedPath: string
+): Promise<boolean> {
+	if (!changedPath.startsWith(TEMPLATES_INSTALL_PRISM_PREFIX)) {
+		return false;
+	}
+
+	const canonicalRelPath = changedPath.slice(TEMPLATES_INSTALL_PRISM_PREFIX.length);
+	const curatedPaths = await loadCuratedSeedPaths(repoRootPath);
+	return curatedPaths.has(canonicalRelPath);
+}
+
+/**
+ * The path Condition A's pattern checks (skills root, `lessons.md`, the
+ * `review-*.md` namespace) should match against. A curated seed twin lives
+ * under `templates/install/.prism/`, but the patterns describe canonical
+ * shapes (`.prism/references/review-*.md`) — so a curated twin is matched
+ * against its canonical-equivalent path, not its own location on disk.
+ */
+function patternPathFor(changedPath: string, isCuratedTwin: boolean): string {
+	if (!isCuratedTwin) {
+		return changedPath;
+	}
+
+	return path.posix.join(
+		".prism",
+		changedPath.slice(TEMPLATES_INSTALL_PRISM_PREFIX.length)
+	);
 }
 
 /**
@@ -106,20 +190,26 @@ async function declaresLoadAlways(
  * under `.ai-skills/skills/**`, or is `.prism/lessons.md`, or matches
  * `.prism/references/review-*.md`. Reads the `load` field rather than
  * hard-coding a path list, per the plan's Decision.
+ *
+ * `patternPath` defaults to `changedPath` and drives the three path-pattern
+ * checks; a curated seed twin passes its canonical-equivalent path here (see
+ * `patternPathFor`) so the patterns match the shape they describe. Frontmatter
+ * is always read from `changedPath` — the file whose bytes actually changed.
  */
 export async function isAlwaysOnSpecContent(
 	repoRootPath: string,
-	changedPath: string
+	changedPath: string,
+	patternPath: string = changedPath
 ): Promise<boolean> {
-	if (changedPath.startsWith(".ai-skills/skills/")) {
+	if (patternPath.startsWith(".ai-skills/skills/")) {
 		return true;
 	}
 
-	if (changedPath === ".prism/lessons.md") {
+	if (patternPath === ".prism/lessons.md") {
 		return true;
 	}
 
-	if (REVIEW_REFERENCE_RE.test(changedPath)) {
+	if (REVIEW_REFERENCE_RE.test(patternPath)) {
 		return true;
 	}
 
@@ -170,11 +260,14 @@ export async function evaluateSpecScopeLint(
 	const violations: SpecScopeViolation[] = [];
 
 	for (const changedPath of changedPaths) {
-		if (isMirrorPath(changedPath)) {
+		const curatedTwin = await isCuratedSeedTwin(repoRootPath, changedPath);
+
+		if (isMirrorPath(changedPath) && !curatedTwin) {
 			continue;
 		}
 
-		if (!(await isAlwaysOnSpecContent(repoRootPath, changedPath))) {
+		const patternPath = patternPathFor(changedPath, curatedTwin);
+		if (!(await isAlwaysOnSpecContent(repoRootPath, changedPath, patternPath))) {
 			continue;
 		}
 

@@ -1,0 +1,214 @@
+/**
+ * Regression suite for the shared live-plan resolver.
+ *
+ * Exercises every fallback tier — direct `<id>.md`, `epic-<id>.md`, and the
+ * `## Ticket` field scan — plus `extractTicketId`'s branch-name parsing,
+ * against temp trees built per test, following the
+ * `spec-scope-lint.test.ts` pattern of testing exported pure functions
+ * against a controlled filesystem.
+ */
+import fs from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import { extractTicketId, resolveLivePlan } from "./resolve-live-plan";
+
+// ---------------------------------------------------------------------------
+// Test helper
+// ---------------------------------------------------------------------------
+
+async function withTempTree(
+	build: (tempRoot: string) => Promise<void>,
+	check: (tempRoot: string) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(
+		path.join(os.tmpdir(), "prism-resolve-live-plan-")
+	);
+	try {
+		await build(tempRoot);
+		await check(tempRoot);
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+async function writeFile(
+	tempRoot: string,
+	relativePath: string,
+	content: string
+): Promise<void> {
+	const absPath = path.join(tempRoot, relativePath);
+	await fs.mkdir(path.dirname(absPath), { recursive: true });
+	await fs.writeFile(absPath, content, "utf8");
+}
+
+// ---------------------------------------------------------------------------
+// extractTicketId
+// ---------------------------------------------------------------------------
+
+test("extractTicketId: extracts the ticket id from a <username>/<ticket-id>-<slug> branch", () => {
+	assert.equal(
+		extractTicketId("huntermcgrew/prism-1234-fix-thing"),
+		"prism-1234"
+	);
+});
+
+test("extractTicketId: a hyphenated username ahead of the ticket id does not shadow it", () => {
+	assert.equal(extractTicketId("dev-2/prism-1234-fix-thing"), "prism-1234");
+	assert.equal(extractTicketId("user-99/thr-42-fix-thing"), "thr-42");
+});
+
+test("extractTicketId: null for a branch with no ticket-id-shaped token", () => {
+	assert.equal(extractTicketId("huntermcgrew/draft-cleanup"), null);
+});
+
+test("extractTicketId: works without a username prefix", () => {
+	assert.equal(extractTicketId("prism-1234-fix-thing"), "prism-1234");
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — direct tier
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: resolves the direct <id>.md tier", async () => {
+	const branchName = "someone/prism-1001-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-1001.md",
+				"# Plan: prism-1001\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1001.md"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — epic-<id>.md fallback tier
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: falls back to the epic-<id>.md tier when the direct plan is absent", async () => {
+	const branchName = "someone/prism-1002-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/epic-prism-1002.md",
+				"# Plan: epic-prism-1002\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/epic-prism-1002.md"
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — ## Ticket field-scan fallback tier
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: falls back to scanning ## Ticket fields when neither named tier exists", async () => {
+	const branchName = "someone/prism-1003-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/some-other-name.md",
+				["# Plan: some-other-name", "", "## Ticket", "", "PRISM-1003", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/some-other-name.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: the ## Ticket field-scan tier never reads .prism/archived/", async () => {
+	const branchName = "someone/prism-1004-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/archived/plans/some-archived-plan.md",
+				["# Plan: some-archived-plan", "", "## Ticket", "", "PRISM-1004", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — no ticket id, no plan
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: null when the branch carries no ticket-id-shaped token", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan("someone/draft-cleanup", tempRoot),
+				null
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: null when a ticket id is present but no tier resolves a plan", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan("someone/prism-1005-fix-thing", tempRoot),
+				null
+			);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// resolveLivePlan — hyphenated-username collision
+// ---------------------------------------------------------------------------
+
+test("resolveLivePlan: a hyphenated username ahead of the ticket id resolves the real ticket's plan", async () => {
+	const branchName = "dev-2/prism-1006-fix-thing";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-1006.md",
+				"# Plan: prism-1006\n"
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/prism-1006.md"
+			);
+		}
+	);
+});
