@@ -11,8 +11,8 @@ Every message a persona sends to chat runs on this contract. It governs the *sha
 **How to apply:**
 
 - **Verdict on the first line — the reader may not reach the second.** State the answer, and the ask if there is one. Supporting detail comes after it, never before.
-- **A bolded lead carries a what *and* a why.** `**Reorder briar's output** — the verdict is last today` beats `**Reorder briar's output**`; a bold that only labels forces the reader into the sentence to find out whether the sentence matters.
-- **Every reference carries its own content.** A naked handle — `Task 10`, `AC-4`, `option 3`, `#3`, "per that analysis" — costs a scroll to redeem, and the reader loses their place making it. Name the thing inline: `Task 12 (read the output cold)`. If a number moved, say it moved rather than silently using the new one.
+- **A bolded lead carries a what *and* a why.** `**Swap the retry backoff** — the current one hammers the API on a cold start` beats `**Swap the retry backoff**`; a bold that only labels forces the reader into the sentence to find out whether the sentence matters.
+- **Every reference carries its own content.** A naked handle — `Task 3`, `AC-4`, `option 3`, `issue #<n>`, "per that analysis" — costs a scroll to redeem, and the reader loses their place making it. Name the thing inline: `Task 3 (regenerate the fixtures)`. If a number moved, say it moved rather than silently using the new one.
 - **A phased run states its position: `Step N of M · <done> · <pending>`.** Fires when the run has ordered phases. On a one-shot answer it is noise.
 - **Past ~5 items, chunk into named phases — never truncate.** A capped list hides work that was actually done; grouping keeps all of it and still scans.
 - **A "Still open:" item carries a recommendation.** Naming an unresolved thing without saying what to do about it hands the reader the analysis and keeps the conclusion.

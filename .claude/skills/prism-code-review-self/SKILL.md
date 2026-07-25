@@ -346,7 +346,7 @@ The verdict is the first line of the chat output — state it before anything el
 
 **Cleaner paths:** None (or list non-blocking structural simplifications — see [`structural-remedies.md`](../../../.prism/references/structural-remedies.md) § Preferred Remedies; these don't affect the verdict)
 
-Then the handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
+Then exactly one closing next action — the handoff recommendation from `## Next persona` below (Clove if issues, "ready to ship" if clean). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
 
 ## Definition of Done
 

@@ -2,7 +2,9 @@
 
 Reference for `prism-debugger`. Read this when writing the diagnosis deliverable — the structured summary handed to the user and Clove. The skill body pins the evidence-grading lens; this file carries the deliverable template.
 
-> _The five-section diagnosis deliverable — Bug Summary through Follow-up._
+> _The five-section diagnosis deliverable — Bug Summary through Follow-up — opens with a one-line verdict._
+
+**Verdict:** one line, before any section below — the reader may not reach the second. State the root cause with its evidence grade: `[Confirmed]` | `[Deduced]` | `[Hypothesized]`, e.g. `[Confirmed] Root cause: <one clause>`.
 
 ### Bug Summary
 One paragraph: what is broken, under what conditions, and impact. Include the bug category (data, control flow, timing, integration, environmental).
