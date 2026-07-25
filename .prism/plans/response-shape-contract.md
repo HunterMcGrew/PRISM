@@ -75,6 +75,7 @@ Give every persona a shared chat-output contract — verdict first, chunked body
 
 - 2026-07-25 [main] open: Intent — give personas a shared chat-output contract (verdict-first, chunked, state line, one next action) without polluting durable-doc voice rules; Bounds — plan + memory files + co-worker handoff only, no skill or rule edits this session, nothing committed on `main`; Approach — verify the writing-voice blast radius first, then a new sibling rule in the two existing single-load homes rather than 29 persona edits · close: drifted — bounds widened twice on explicit user instruction, both outward-facing: filed HunterMcGrew/PRISM#445, and the contract itself gained three clauses (references carry their content, open items carry a recommendation, blocking items graduate to a structured ask) after the session's own output shipped the defect twice. No skill, rule, or source file was edited, and nothing was committed.
 - 2026-07-25 [feat/response-shape-contract] open: Intent — confirm Task 1's contract wording lands as an enforceable rule rather than a style note, correct anything in Phase 1 that would ship wrong, then hand to clove; Bounds — this plan file plus a work branch in `portable-skills`; no source edits, no commits, no PRISM-side files; Approach — resolve Task 1's text verbatim into the plan so the implementer copies rather than re-derives · close: scope held — plan-only writes plus branch creation; no source file touched, nothing committed.
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — run Task 11 (build and check) on the merged branch and ship a draft PR; Bounds — regenerate `.claude/`/`.codex/`/`.cursor/` mirrors via `pnpm prism:build`, fix `prism:check` only if one of the two anticipated failure modes occurred, no other source edits; Approach — build, check, commit mirrors, push, open draft PR · close: scope held — `pnpm prism:check` passed clean on the first run (neither anticipated failure mode occurred: the seed twin already carried de-identified provenance and the plan's references to the untracked boundary-analysis file are backtick-quoted paths, not markdown links, so crossref-lint didn't flag them); committed the regenerated mirrors (8c6a143), pushed, opened draft PR #446.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — Task 10: record a per-file classification for the `response-shape.md` seed twin so shipping it does not add a fourth undetected-drift case; Bounds — the plan file only, one new `## Seed twin classification` section; read-only on both rule files, no twin edits, no source; Approach — extract both heading sets mechanically, then classify at whatever unit the pair's divergence actually lives at rather than declaring clean on a vacuous heading comparison · close: scope held — plan file only; both rule files read-only; the one `missing-in-error` finding routed to the implementer rather than fixed in-lane.
 
 ---
@@ -250,6 +251,7 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 - 2026-07-25 [main]: Contract widened past section order — references must carry their own content, open items must carry a recommendation, and blocking items graduate from a prose bullet to a structured ask. Added after this plan's own closing message shipped two instances of the defect (an undescribed `Task 10` whose number had silently moved, and a recommendation-free open item); see Decision: *The contract governs cross-references and open items*.
 - 2026-07-25 [main]: Consumer-distribution question resolved — ships as a curated seed twin with provenance de-identified per the curation boundary's Amendment C.3. Settled by precedent (`writing-voice.md` already ships; `skill-authoring.md` doesn't, and the maintainer-vs-consumer discriminator explains both), not by preference. Tasks renumbered to 12; added the classification-table task and AC-7/AC-8.
 - 2026-07-25 [main]: Plan created — chat-output contract for the portable roster and PRISM. Verified `writing-voice.md` is the wrong home (self-excludes ad-hoc conversation; Tier 1 always-loaded) and that briar, winston, and sasha are the only three personas whose prescribed output order contradicts verdict-first.
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Task 11 (build and check) — `pnpm prism:build` regenerated `.claude/`, `.codex/`, `.cursor/` mirrors (571/571 tests passing); `pnpm prism:check` exited 0 on the first run, covering build parity, types, tests, manifest coverage, crossref lint, and pack parity. Committed the regenerated mirrors as 8c6a143, pushed, opened draft PR HunterMcGrew/PRISM#446 against `main`.
 
 ---
 
@@ -261,9 +263,10 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## PR Readiness
 
-- [ ] Work is on a branch, not `main` — plan was authored on `main` and must move before any commit
-- [ ] `pnpm prism:check` passes
+- [x] Work is on a branch, not `main` — `huntermcgrew/prism-445-response-shape-contract`
+- [x] `pnpm prism:check` passes — exit 0, first run
 - [x] Consumer-distribution open question resolved — ships as a curated twin, provenance de-identified
-- [ ] Lasting decisions promoted to architect context
+- [ ] Lasting decisions promoted to architect context — pending plan close (all Decisions still carry `→ promotion verdict pending close`)
+- [ ] Phase 3 (Task 12, cold-read AC verification) still open — draft PR #446 does not close the ticket until AC-1 through AC-8 are checked
 
 **Last updated:** 2026-07-25
