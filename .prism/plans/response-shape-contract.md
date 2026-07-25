@@ -193,10 +193,11 @@ One finding carries forward from Winston's `## Seed twin classification` — it 
 ### Sasha's fix landed only the verdict half of the contract — the closing next-action half is still unmet
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/references/debugger/output-format.md:20-25` (and its build-generated twin `templates/install/.prism/references/debugger/output-format.md:20-25`); stale cross-reference at `.ai-skills/skills/prism-debugger/shared.md:339`
 - **Problem:** The previous finding's fix (above) added sasha's `**Verdict:**` line but did not add a closing next-action line — the deliverable still ends on the `### Follow-up` bullet list with nothing pointing the reader at `## Next persona` (shared.md:354) as the single close. This is the same defect class briar had (contradicts response-shape.md's "Exactly one closing next action, bounded") and is one of AC-1's own two conjuncts ("the verdict appears before any supporting detail **and** exactly one next action appears at the end") — briar's half of that fix is verified; sasha's is not. Compounding it, `prism-debugger/shared.md:339`'s blockquote (`> _The five-section diagnosis deliverable — Bug Summary through Follow-up._`) was never updated to acknowledge the verdict line the referenced file now opens with, while `output-format.md`'s own blockquote was correctly updated to `"...opens with a one-line verdict."` — two descriptions of the same deliverable, now out of sync inside the same PR.
 - **Suggested fix:** Insert a closing line after the last `### Follow-up` bullet in both `output-format.md` and its twin, on the model of briar's fix: "Close with the single next action from `## Next persona` — one named handoff, not a menu." Then update `prism-debugger/shared.md:339`'s blockquote to match `output-format.md`'s corrected wording (or cut the restated summary and point at the file by name only, per `implementation-task-detail.md` § Cite, don't restate). Rebuild mirrors afterward.
+- **Fixed in:** appended `Close with the single next action from `## Next persona` — one named handoff, not a menu. The Follow-up bullets are things the reader should *know*; the closing line is the one thing to *do*.` after the last `### Follow-up` bullet in `.prism/references/debugger/output-format.md`; `prism-debugger/shared.md:339`'s blockquote now reads `> _The five-section diagnosis deliverable — Bug Summary through Follow-up — opens with a one-line verdict._`, matching `output-format.md`'s own wording. `pnpm prism:build` regenerated all mirrors (including the `templates/install/` twin) and `pnpm prism:check` exits 0 (571/571 tests).
 
 ---
 
@@ -291,6 +292,7 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## History
 
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Clove fixed Briar's self-review pass 2 Major — sasha's diagnosis deliverable ended on `### Follow-up` bullets with no stated next action, the other half of AC-1's two-part test. Added the closing next-action line to `output-format.md` and fixed the coupled stale blockquote in `prism-debugger/shared.md:339` to match. `pnpm prism:build` regenerated mirrors; `pnpm prism:check` exits 0 (571/571 tests).
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Reese graded the four machine-checkable AC — AC-4 (writing-voice gains one line), AC-5 (`pnpm prism:check`), AC-7 (twin provenance), AC-8 (twin classification rows) — all MET, each verified alongside its named positive control so an empty-file pass is ruled out. AC-1/AC-2/AC-3 were left ungraded as human evidence paired with Task 12, and AC-6 is out of this repo's scope. Recorded the result and the one carried-forward twin `**Why:**` divergence under `## Review Issues`; nothing fixed in-lane.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract]: Winston wrote `## Seed twin classification` for the `response-shape.md` pair. Heading-level absent set is empty (one `##` heading per side), so the table classifies at block level, where the pair's two divergences live. One is `missing-in-error` — the twin's `**Why:**` block is unsanctioned same-meaning paraphrase; canonical's clears every seed gate verbatim.
 - 2026-07-25 [feat/response-shape-contract]: Task 1's contract text resolved verbatim into the plan and three defects corrected before implementation — the House-rules cross-reference shipped a line number that the insertion itself would invalidate, six of nine clauses carried no reader-cost clause, and Task 3's insertion point admitted two valid readings. Added Task 5b (informal cold read) and recorded the profile-drift pre-check as clean. Branch `feat/response-shape-contract` created off `origin/main` in `portable-skills`; no source file edited.
@@ -311,8 +313,8 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## PR Readiness
 
-- [ ] No critical or major issues — self-review pass 1's two Majors: example-token fix confirmed landed; briar's closing-menu fix confirmed landed; sasha's fix landed the verdict half only — one Major still open (missing closing next-action, see `## Review Issues`)
-- [x] `pnpm prism:check` passes — exit 0, confirmed on independent re-run this pass (571/571 tests, build/crossref/pack-parity/manifest-coverage all clean)
+- [x] No critical or major issues — self-review pass 1's two Majors confirmed landed; self-review pass 2's Major (sasha's missing closing next-action, coupled with the stale `prism-debugger/shared.md:339` blockquote) fixed — see `## Review Issues`
+- [x] `pnpm prism:check` passes — exit 0, confirmed after this pass's fix (571/571 tests, build/crossref/pack-parity/manifest-coverage all clean)
 - [x] Consumer-distribution open question resolved — ships as a curated twin, provenance de-identified
 - [ ] Lasting decisions promoted to architect context — pending plan close (all Decisions still carry `→ promotion verdict pending close`)
 - [ ] Phase 3 (Task 12, cold-read AC verification) still open — draft PR #446 does not close the ticket until AC-1 through AC-8 are checked

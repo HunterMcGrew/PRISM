@@ -23,3 +23,5 @@ Minimal fix description. Do not apply — `code-dev` will use the plan.
 - Related code that may have the same issue (pattern-match the bug across the codebase)
 - Accessibility implications if applicable
 - Whether the root cause suggests a systemic gap (architecture, process, or rule update needed)
+
+Close with the single next action from `## Next persona` — one named handoff, not a menu. The Follow-up bullets are things the reader should *know*; the closing line is the one thing to *do*.
