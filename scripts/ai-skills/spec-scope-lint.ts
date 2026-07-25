@@ -328,6 +328,16 @@ export async function readDefaultBranch(repoRootPath: string): Promise<string> {
  * (`<defaultBranch>:refs/remotes/origin/<defaultBranch>`) is what actually
  * creates the `origin/<defaultBranch>` tracking ref the rest of this
  * function (and `main()`'s merge-base call) depends on.
+ *
+ * A depth-1 fetch of `defaultBranch` only retrieves its current tip, not the
+ * historical commit the PR branch actually forked from — fetching more of
+ * `defaultBranch`'s history doesn't fix that on its own, because the local
+ * HEAD (the PR branch itself) is also shallow: its own commit object still
+ * has a real parent pointer, but git's shallow boundary hides that parent
+ * during traversal, so `merge-base` can't walk back to a common ancestor no
+ * matter how much of `defaultBranch` is fetched. `git fetch --unshallow`
+ * removes that boundary and deepens HEAD's own history to the root, which is
+ * what actually makes a common ancestor discoverable again.
  */
 export async function resolveMergeBaseRef(
 	repoRootPath: string,
@@ -338,8 +348,9 @@ export async function resolveMergeBaseRef(
 		return remoteRef;
 	}
 
+	await tryGit(["fetch", "--unshallow", "origin"], repoRootPath);
 	await tryGit(
-		["fetch", "--depth=1", "origin", `${defaultBranch}:refs/remotes/${remoteRef}`],
+		["fetch", "origin", `${defaultBranch}:refs/remotes/${remoteRef}`],
 		repoRootPath
 	);
 	if ((await tryGit(["rev-parse", "--verify", remoteRef], repoRootPath)) !== null) {

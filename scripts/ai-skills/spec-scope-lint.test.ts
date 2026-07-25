@@ -714,3 +714,114 @@ test(
 		);
 	}
 );
+
+/**
+ * Builds a bare "remote" repo where `main` advances two commits past the
+ * point `feature` branched from — mirroring PRs landing on `main` while a
+ * PR sits in review. Returns the bare remote's path and the fork-point
+ * commit hash (the correct merge-base a depth-1 fetch of `main`'s tip
+ * cannot reach).
+ */
+function createBareRemoteWithAdvancedMain(tempRoot: string): {
+	remoteDir: string;
+	forkPoint: string;
+} {
+	const remoteDir = path.join(tempRoot, "remote-advanced.git");
+	const seedRepo = path.join(tempRoot, "seed-advanced");
+
+	execFileSync("git", ["init", "--quiet", "--bare", "-b", "main", remoteDir], {
+		stdio: "ignore",
+	});
+	execFileSync("git", ["clone", "--quiet", remoteDir, seedRepo], {
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.email", "test@prism.local"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "PRISM Test"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["commit", "--quiet", "--allow-empty", "-m", "seed"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["push", "--quiet", "-u", "origin", "main"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+
+	const forkPoint = execFileSync("git", ["rev-parse", "HEAD"], {
+		cwd: seedRepo,
+	})
+		.toString()
+		.trim();
+
+	execFileSync("git", ["checkout", "--quiet", "-b", "feature"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync(
+		"git",
+		["commit", "--quiet", "--allow-empty", "-m", "feature work"],
+		{ cwd: seedRepo, stdio: "ignore" }
+	);
+	execFileSync("git", ["push", "--quiet", "-u", "origin", "feature"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+
+	execFileSync("git", ["checkout", "--quiet", "main"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+	execFileSync(
+		"git",
+		["commit", "--quiet", "--allow-empty", "-m", "main advance 1"],
+		{ cwd: seedRepo, stdio: "ignore" }
+	);
+	execFileSync(
+		"git",
+		["commit", "--quiet", "--allow-empty", "-m", "main advance 2"],
+		{ cwd: seedRepo, stdio: "ignore" }
+	);
+	execFileSync("git", ["push", "--quiet", "origin", "main"], {
+		cwd: seedRepo,
+		stdio: "ignore",
+	});
+
+	return { remoteDir, forkPoint };
+}
+
+test(
+	"resolveMergeBaseRef: resolves the true fork point once the default branch has advanced past it",
+	{ skip: !gitAvailable },
+	async () => {
+		await withTempTree(
+			async () => {},
+			async (tempRoot) => {
+				const { remoteDir, forkPoint } =
+					createBareRemoteWithAdvancedMain(tempRoot);
+				const cloneDir = path.join(tempRoot, "clone-advanced");
+				shallowCloneFeatureBranch(remoteDir, cloneDir);
+
+				const mergeBaseRef = await resolveMergeBaseRef(cloneDir, "main");
+				assert.equal(mergeBaseRef, "origin/main");
+
+				const mergeBase = execFileSync(
+					"git",
+					["merge-base", mergeBaseRef, "HEAD"],
+					{ cwd: cloneDir }
+				)
+					.toString()
+					.trim();
+				assert.equal(
+					mergeBase,
+					forkPoint,
+					"merge-base must resolve to the actual fork point, not fail once main has advanced past it"
+				);
+			}
+		);
+	}
+);
