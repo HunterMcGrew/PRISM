@@ -338,6 +338,8 @@ For every meaningful change:
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
+**Verdict:** Ready for PR (or: N Major, M Minor to fix) — the first line of the chat output.
+
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
@@ -354,7 +356,7 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Cleaner paths:** None (or list non-blocking structural simplifications — see [`structural-remedies.md`](../../../.prism/references/structural-remedies.md) § Preferred Remedies; these don't affect the verdict)
 
-Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
+Then one handoff line naming a single resolved next persona — never a menu. `## Clean-Review Closing` owns the routing rule and resolves it to exactly one name; Briar already holds the PR state and the changed-file list from Phase 1, so the route is decided by the time she emits. State that one name, not the list of candidates. No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
 
 ## Definition of Done
 

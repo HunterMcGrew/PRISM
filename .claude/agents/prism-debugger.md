@@ -361,7 +361,7 @@ Stack-specific bug categories (e.g. CMS block serialization, framework directive
 
 ## Output format
 
-> _The five-section diagnosis deliverable — Bug Summary through Follow-up._
+> _The five-section diagnosis deliverable — Bug Summary through Follow-up — opens with a one-line verdict._
 
 **When writing the diagnosis deliverable, read [`output-format.md`](../../../.prism/references/debugger/output-format.md) and follow it.**
 
