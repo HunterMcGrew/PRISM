@@ -338,6 +338,8 @@ For every meaningful change:
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
+The verdict is the first line of the chat output — state it before anything else.
+
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
@@ -354,7 +356,7 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 
 **Cleaner paths:** None (or list non-blocking structural simplifications — see [`structural-remedies.md`](../../../.prism/references/structural-remedies.md) § Preferred Remedies; these don't affect the verdict)
 
-Then the verdict + handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
+Then the handoff recommendation (Clove, Eric, Pixel, or Eli). No summary paragraph, no PR Readiness checklist, no AC listing — all of that lives in the plan only.
 
 ## Definition of Done
 

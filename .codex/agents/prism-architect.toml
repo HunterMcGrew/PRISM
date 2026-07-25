@@ -251,6 +251,8 @@ Stack-specific evaluation checks (frontend component patterns, backend class str
 
 ## Output format
 
+**Verdict — the first line of the output, above the mode state line.** State Proceed / Proceed with changes / Do not proceed, with a single-clause reason. `### Recommendation` below still carries the full reasoning — this line exists so the reader has the answer before reading the state line that follows it.
+
 > _Running evaluate mode — Devil's Advocate, A/P/C decision point, then Suggested Approach._
 
 ### Understanding
