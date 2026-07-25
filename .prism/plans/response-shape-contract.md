@@ -78,6 +78,7 @@ Give every persona a shared chat-output contract — verdict first, chunked body
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — run Task 11 (build and check) on the merged branch and ship a draft PR; Bounds — regenerate `.claude/`/`.codex/`/`.cursor/` mirrors via `pnpm prism:build`, fix `prism:check` only if one of the two anticipated failure modes occurred, no other source edits; Approach — build, check, commit mirrors, push, open draft PR · close: scope held — `pnpm prism:check` passed clean on the first run (neither anticipated failure mode occurred: the seed twin already carried de-identified provenance and the plan's references to the untracked boundary-analysis file are backtick-quoted paths, not markdown links, so crossref-lint didn't flag them); committed the regenerated mirrors (8c6a143), pushed, opened draft PR #446.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — Task 10: record a per-file classification for the `response-shape.md` seed twin so shipping it does not add a fourth undetected-drift case; Bounds — the plan file only, one new `## Seed twin classification` section; read-only on both rule files, no twin edits, no source; Approach — extract both heading sets mechanically, then classify at whatever unit the pair's divergence actually lives at rather than declaring clean on a vacuous heading comparison · close: scope held — plan file only; both rule files read-only; the one `missing-in-error` finding routed to the implementer rather than fixed in-lane.
 - 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — grade AC-4, AC-5, AC-7, and AC-8 against the branch diff with executed evidence, and report rather than repair; Bounds — this plan file only; read-only on every rule, twin, mirror, and config file; no fixes regardless of what the grading turns up; Approach — run each criterion's named command together with its named positive control, so a pass on an empty or missing file is distinguishable from a real pass · close: scope held — plan file only; all four criteria MET; the twin's `**Why:**` divergence was recorded under `## Review Issues` and left unfixed for the implementer.
+- 2026-07-25 [huntermcgrew/prism-445-response-shape-contract] open: Intent — self-review pass 1 of 3, weighted toward the writing-voice.md diff, the seed twin's de-identification, the three ordering fixes, hand-edited build output, and AC-8 classification completeness; Bounds — read-only on source, plan file only for findings, no fixes, no PR edits, no merge; Approach — diff every named risk area against the plan's own resolved text rather than trusting the already-recorded AC grades, since those graded machine checks and not content correctness · close: scope held — plan file only; found 2 open Major issues neither Reese's AC grading nor Winston's classification table surfaced (both graded/classified content that was already wrong, not whether it was the *right* wrong content): (1) `response-shape.md` canonical and twin ship pre-fix example tokens (a live PR number, this plan's own stale task handles, a self-falsifying claim) that the plan's own re-plan already replaced; (2) PRISM's canonical briar and sasha bodies still violate the contract this PR ships — briar's closing line is still a four-way menu, sasha's deliverable still opens on `### Bug Summary` with no verdict line — because Task 8 ported only Tasks 2–4's bare reordering and never picked up 2b/4b. writing-voice.md, the three reorderings' section order, and build-mirror parity all checked clean.
 
 ---
 
@@ -168,6 +169,22 @@ One finding carries forward from Winston's `## Seed twin classification` — it 
 - **File:** `templates/install/.prism/rules/response-shape.md:9`
 - **Problem:** the twin's `**Why:**` block is a same-meaning rewrite of canonical's, and Amendment D does not sanction paraphrase — canonical's wording carries no name, date, PR number, or ADR citation, so it would have shipped verbatim and still passed AC-7's provenance grep.
 - **Suggested fix:** replace the twin's `**Why:**` block with canonical's wording verbatim. Leave the `#442` → `#3` de-identification on line 15 alone — that one is a correct Test 1 / Amendment C.1 transformation and reverting it would fail AC-7.
+
+### `response-shape.md` canonical and twin ship the pre-fix example tokens the plan already rejected
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/rules/response-shape.md:14-15`, `templates/install/.prism/rules/response-shape.md:14-15` (identical on both surfaces except the already-noted `#442`→`#3` swap)
+- **Problem:** Both files carry the draft examples the plan's own Decision *"Task 1's example tokens are shapes, not instances"* (resolved 2026-07-25) replaced before Task 1 could land: the bolded-lead example `**Reorder briar's output** — the verdict is last today` is false as of this same branch (Task 2 already reordered briar's output, so the claim is self-falsifying on arrival), and the reference-clause example uses `Task 10` and `Task 12 (read the output cold)` — this plan's own pre-renumbering task handles — plus `#442` in canonical, a real merged PR in this repo (see commit `49a489d`). A rule that teaches "a naked handle costs a scroll to redeem" shipping one that actually resolves is the exact failure the clause warns against. Root cause: Task 6 (canonical restatement) and Task 9 (twin curation) were executed against a plan snapshot that predates the 2026-07-25 re-plan; the corrected wording (`issue #<n>`, `Task 3`, `Task 3 (regenerate the fixtures)`, `**Swap the retry backoff** — the current one hammers the API on a cold start`) lives in the plan's current Task 1 block but was never carried into Phase 2.
+- **Suggested fix:** Replace lines 14-15 on both surfaces with the corrected wording from the plan's Task 1 text, then rebuild mirrors (`pnpm prism:build`).
+
+### PRISM's canonical briar and sasha bodies still violate the rule this PR ships
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-code-review-self/shared.md:334`, `.prism/references/debugger/output-format.md:5-7` (and its twin `templates/install/.prism/references/debugger/output-format.md:5-7`)
+- **Problem:** Task 8 ported only "the same edits as Tasks 2–4" (bare section reordering). It never picked up Tasks 2b and 4b, which the re-plan added specifically because the *emitted* briar and sasha messages still failed the contract after the ordering fix alone. As shipped: briar's `## Review format` still closes with `Then the handoff recommendation (Clove, Eric, Pixel, or Eli)` — a four-way menu, directly contradicting response-shape.md's own "Exactly one closing next action, bounded" clause; run per AC-1's own evidence procedure, this would fail AC-1's stated UNMET condition verbatim ("the close offers two or more options"). sasha's deliverable (canonical and its consumer twin) still opens with `### Bug Summary`, not a verdict line, contradicting "Verdict on the first line — the reader may not reach the second."
+- **Suggested fix:** Port Tasks 2b and 4b (already fully specified in the plan's Phase 1 task text) into `.ai-skills/skills/prism-code-review-self/shared.md` and `.prism/references/debugger/output-format.md`, regenerate the debugger twin, then rebuild mirrors.
 
 ---
 
@@ -281,10 +298,11 @@ Root cause is plan-level, not implementer error: Task 9 mandated "rewrite only t
 
 ## PR Readiness
 
-- [x] Work is on a branch, not `main` — `huntermcgrew/prism-445-response-shape-contract`
+- [ ] No critical or major issues — 2 open Major (Briar self-review, pass 1): stale example tokens in `response-shape.md` (canonical + twin); briar/sasha canonical bodies still violate the new rule
 - [x] `pnpm prism:check` passes — exit 0, first run
 - [x] Consumer-distribution open question resolved — ships as a curated twin, provenance de-identified
 - [ ] Lasting decisions promoted to architect context — pending plan close (all Decisions still carry `→ promotion verdict pending close`)
 - [ ] Phase 3 (Task 12, cold-read AC verification) still open — draft PR #446 does not close the ticket until AC-1 through AC-8 are checked
+- [ ] Build passes — last run: 2026-07-25 (`pnpm prism:build` regenerated mirrors, per Task 11 history entry)
 
 **Last updated:** 2026-07-25
