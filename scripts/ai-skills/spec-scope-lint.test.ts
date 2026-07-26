@@ -419,6 +419,28 @@ test("isUnrelatedToTicket: a non-Ledger heading quoted inside a fenced code bloc
 	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
+test("isUnrelatedToTicket: a Ledger heading quoted inside a narrower fence nested in a wider fence does not end the outer fence early", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Update the plan template — quoted verbatim below:",
+		"",
+		"````markdown",
+		"Some skill body excerpt.",
+		"",
+		"```ts",
+		"## History",
+		"",
+		"- example row",
+		"```",
+		"````",
+		"",
+		"2. Edit `.prism/rules/some-rule.md` to add the new field.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), false);
+});
+
 // ---------------------------------------------------------------------------
 // deriveExitCode
 // ---------------------------------------------------------------------------

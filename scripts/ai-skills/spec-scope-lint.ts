@@ -259,20 +259,31 @@ const LEDGER_SECTION_HEADINGS = [
  * before Condition B searches it. A section runs from its top-level `## `
  * heading up to (not including) the next top-level `## ` heading, or to the
  * end of the file. Heading detection is suspended inside fenced code blocks
- * (opened with three backticks or three tildes) — PRISM plans routinely
+ * (opened with three or more backticks or tildes) — PRISM plans routinely
  * quote verbatim markdown in `## Implementation Tasks`, and a quoted
  * `## `-prefixed line inside a fence is not real plan structure in either
- * direction.
+ * direction. Fence tracking follows CommonMark's own closing rule — a fence
+ * closes only on a run of the same character that is at least as long as the
+ * opener — so a wider outer fence quoting a narrower inner fence (e.g. a
+ * four-backtick block quoting a three-backtick example) doesn't prematurely
+ * end while still inside the outer block.
  */
 function stripLedgerSections(planText: string): string {
 	const kept: string[] = [];
 	let inLedgerSection = false;
-	let inFence = false;
+	let openFence: string | null = null;
 
 	for (const line of planText.split(/\r?\n/)) {
-		if (/^\s*(```|~~~)/.test(line)) {
-			inFence = !inFence;
-		} else if (!inFence && line.startsWith("## ")) {
+		const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+
+		if (fenceMatch) {
+			const marker = fenceMatch[1];
+			if (openFence === null) {
+				openFence = marker;
+			} else if (marker[0] === openFence[0] && marker.length >= openFence.length) {
+				openFence = null;
+			}
+		} else if (openFence === null && line.startsWith("## ")) {
 			inLedgerSection = (LEDGER_SECTION_HEADINGS as readonly string[]).includes(
 				line.trimEnd()
 			);

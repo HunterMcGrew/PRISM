@@ -100,10 +100,11 @@ removes.
 ## The ladder
 
 1. **Self-review loop** — invoke the self-review persona on the branch. Every
-   finding, any severity (critical, major, minor, nit, cleanup), goes to the
-   implementation persona to fix — review-fix commits stay separate per
-   `.prism/rules/git-conventions.md` § Commit Granularity. Re-run
-   self-review. Repeat until the phase is subject-clean (see
+   finding on the **subject** surface, any severity (critical, major, minor),
+   goes to the implementation persona to fix — findings on the repair and
+   ledger surfaces route per **Disposition** above. Review-fix commits stay
+   separate per `.prism/rules/git-conventions.md` § Commit Granularity.
+   Re-run self-review. Repeat until the phase is subject-clean (see
    **Subject-clean exit** under **Guardrails** below).
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
    Findings → fixes → re-review. The phase is not done until it is
@@ -157,8 +158,8 @@ removes.
   fixed-but-unresolved threads outstanding. If any remain, run a final reviewer
   pass; if after that pass unresolved threads persist, trigger **Procedure H**.
 - **Gauntlet state travels.** A mid-gauntlet handoff doc carries the ladder's
-  rules and live state — pass count, strike table, scoreboard, current phase —
-  in a `## Gauntlet state` section.
+  rules and live state — loopBase, pass count, strike table, scoreboard,
+  current phase — in a `## Gauntlet state` section.
 
 ## Procedures
 
@@ -190,10 +191,14 @@ fix be determined from the diff and the existing codebase alone?
 **Procedure D — Budget exhausted.** Stop all loops. Produce the scoreboard
 TLDR: per-persona table of passes (what each found or fixed), totals (review
 passes, fix passes, issues found/fixed by severity, cleaner paths implemented /
-rejected / parked). State that the budget is exhausted and list what remains
-open. The PR stays draft. Hand back to the user with the scoreboard. **Escape:**
-emit `blocked` — name the budget limit, the remaining open findings, and the
-most promising continuation path.
+rejected / parked). Each finding carries the surface it landed on; each
+admitted repair-surface finding carries the anchor that admitted it (the named
+command, AC ID, Decision title, or the quoted original finding). A
+`Follow-ups` section lists every observation converted rather than fixed.
+State the exit reason as budget-exhausted, the `loopBase` the run froze at,
+and list what remains open. The PR stays draft. Hand back to the user with the
+scoreboard. **Escape:** emit `blocked` — name the budget limit, the remaining
+open findings, and the most promising continuation path.
 
 **Procedure E — Third strike on a single issue.** Stop all loop passes on that
 issue. Collect the full survival history: the finding as originally stated, each
@@ -236,10 +241,14 @@ another reviewer pass. Do not declare the phase clean. **Escape:** emit
 
 Produce the scoreboard TLDR: a per-persona table of passes and what each found
 or fixed, plus totals — review passes, fix passes, issues found/fixed by
-severity, cleaner paths implemented/rejected/parked. The PR stays draft; tell
-the user it is ready for human testing and review. Merging and flipping
-ready-for-review remain the human's call (`.prism/rules/git-conventions.md`
-§ Who merges).
+severity, cleaner paths implemented/rejected/parked. Each finding carries the
+surface it landed on; each admitted repair-surface finding carries the anchor
+that admitted it (the named command, AC ID, Decision title, or the quoted
+original finding). A `Follow-ups` section lists every observation converted
+rather than fixed. State the exit reason — subject-clean or budget-exhausted —
+and the `loopBase` the run froze at. The PR stays draft; tell the user it is
+ready for human testing and review. Merging and flipping ready-for-review
+remain the human's call (`.prism/rules/git-conventions.md` § Who merges).
 
 ## Closing Re-Orientation Battery
 
