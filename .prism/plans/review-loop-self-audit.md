@@ -334,20 +334,21 @@ Execution order: Clove 1 → 2 → 3 → 4 → 5 → 6, then Nora 7 and 8. Tasks
    **Mechanical completion check — the sweep is done when this prints nothing.** Run from the repo root:
 
    ```bash
-   git grep -n --untracked -e 'zero-findings' -e 'zero findings' \
+   git grep -n -i --untracked -e 'zero-findings' -e 'zero findings' \
      | grep -vE '^\.prism/(plans|retros|qa|audits|archived)/' \
      | grep -vF '"zero findings" counted every surface' \
      | grep -vF 'zero-findings pass still writes' \
      | grep -vF 'zero-findings pass writes a single' \
-     | grep -vF '(zero findings)'
+     | grep -vF '(zero findings)' \
+     | grep -vF 'Zero findings → `done`.'
    ```
 
    Pipe it to `wc -l` and require `0` if you want the check as a number rather than an eyeball. Empty is the completion signal, and empty is not a judgment.
 
-   **Why this command and not another grep over the canonical roots.** It carries no root scoping, so it cannot be blind to a file class — which is the defect both prior enumerations had, and one that a better root set does not fix, because the next unsynced class is by definition the one nobody thought to list. The only judgments left are the two exclusion blocks, and each is a named decision rather than a belief about which directories matter:
+   **Why this command and not another grep over the canonical roots.** It carries no root scoping, so it cannot be blind to a file class — which is the defect both prior enumerations had, and one that a better root set does not fix, because the next unsynced class is by definition the one nobody thought to list. The `-i` flag closes a sibling gap in the same family: plain `git grep` is case-sensitive, so a capitalized variant would have escaped the search entirely — not excluded, just never found — and no exclusion block can adjudicate a hit it never sees. Case-insensitivity is what makes the search exhaustive before either exclusion block gets to filter it; the two blocks are named decisions rather than beliefs about which strings or directories matter:
 
    - **Record directories** hold frozen accounts of what was true when they were written. Failing a live invariant on a frozen record is the mistake `spec-scope-lint` already refuses to make by excluding `.prism/archived/`; this plan's own `## History` quotes the retired predicate correctly a dozen times over.
-   - **Four literal phrases** are the surviving legitimate uses, each describing a *different* contract that was never renamed: `"zero findings" counted every surface` (the deliberate historical Why-clause in the review-loop skill body, explaining what the rename replaced), `zero-findings pass still writes` and `zero-findings pass writes a single` (Briar's `No issues found` self-review contract per ADR-0068 — a different skill's exit, untouched by this ticket), and `(zero findings)` (the generic `done` verdict gloss in `.prism/skills/prism-conductor/lib/report-back.md`, which spans every persona). Excluding by phrase rather than by path means a phrase is excluded everywhere it appears, canonical and mirror alike — a mirror can never diverge from its source under this check.
+   - **Five literal phrases** are the surviving legitimate uses, each describing a *different* contract that was never renamed: `"zero findings" counted every surface` (the deliberate historical Why-clause in the review-loop skill body, explaining what the rename replaced), `zero-findings pass still writes` and `zero-findings pass writes a single` (Briar's `No issues found` self-review contract per ADR-0068 — a different skill's exit, untouched by this ticket), `(zero findings)` (the generic `done` verdict gloss in `.prism/skills/prism-conductor/lib/report-back.md`, which spans every persona), and ``Zero findings → `done`.`` (Eric's and Briar's own per-dispatch verdict contract — the persona-side statement of the same `done` gloss, surfaced only once `-i` stopped missing its capitalized form; a different contract from this ticket's `subject-clean` phase-close predicate, correctly left alone). Excluding by phrase rather than by path means a phrase is excluded everywhere it appears, canonical and mirror alike — a mirror can never diverge from its source under this check.
 
    `git grep` rather than plain `grep -r` is load-bearing, not stylistic: a plain `grep -r .` in this repo silently skips `.agents/` (a gitignored generated mirror), because the shell's `grep` here is gitignore-aware. A command whose scope depends on which `grep` the operator has is exactly the hidden scoping this task exists to remove. `git grep --untracked` is deterministic across environments and its scope is principled — tracked plus untracked-but-not-ignored is precisely the set that ships or gets reviewed, and the ignored remainder (`.agents/`, `dist/`) regenerates from tracked sources, which `pnpm prism:build` re-proves below.
 
