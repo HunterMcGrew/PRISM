@@ -2,7 +2,7 @@
 name: prism-review-loop
 description: >
   Orchestrate the review gauntlet on a PR — self-review loops with
-  fixes until a zero-findings pass, then PR review the same way; cleaner-path
+  fixes until a subject-clean pass, then PR review the same way; cleaner-path
   findings route by certainty (clear-cut → implement, uncertain → architect,
   architect-uncertain → pause for user). Pass budget, three-strike survival rule
   with mandatory diagnosis, scoreboard TLDR; PR stays draft. Explicit
