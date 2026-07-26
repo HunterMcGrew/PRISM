@@ -3,7 +3,7 @@ title: "PRISM Personas"
 description: "What each persona does, when to call them, and what they hand off."
 category: "personas"
 audience: "developer-user"
-last_updated: "2026-06-27"
+last_updated: "2026-07-25"
 ---
 
 # PRISM Personas
@@ -350,7 +350,7 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 | Skill | What it does |
 |-------|-------------|
 | `prism-handoff` | Compacts the session into a handoff document a fresh agent can continue from |
-| `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a zero-findings pass |
+| `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a subject-clean pass |
 | `prism-skill-forge` | Scaffolds a new PRISM skill from scratch or migrates an existing platform skill into canonical source |
 
 ---
