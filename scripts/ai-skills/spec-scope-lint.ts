@@ -235,8 +235,9 @@ const SKILLS_ROOT_PREFIX = ".ai-skills/skills/";
  * The heading text of the plan sections `.ai-skills/skills/prism-review-loop/shared.md`
  * § Review surfaces defines as Ledger — a section a persona appends findings
  * to (a fix-in note, a debugged-issue row, a cleanup item, a history append,
- * a session line), as opposed to a section an author writes to declare scope
- * (`## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria`).
+ * a session line, a readiness checklist rewrite), as opposed to a section an
+ * author writes to declare scope (`## Implementation Tasks`, `## Decisions`,
+ * `## Acceptance Criteria`).
  * Condition B strips these sections before searching (see
  * `stripLedgerSections`) so an automated bookkeeping append can't satisfy the
  * same escape hatch a deliberate `## Decisions` entry earns. This list,
@@ -252,6 +253,7 @@ const LEDGER_SECTION_HEADINGS = [
 	"## Sessions",
 	"## Debugged Issues",
 	"## Cleanup Items",
+	"## PR Readiness",
 ] as const;
 
 /**

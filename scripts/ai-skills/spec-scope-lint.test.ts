@@ -373,6 +373,20 @@ test("isUnrelatedToTicket: a discriminator mentioned only inside ## Cleanup Item
 	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
+test("isUnrelatedToTicket: a discriminator mentioned only inside ## PR Readiness does not clear the file", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Fix the widget renderer.",
+		"",
+		"## PR Readiness",
+		"",
+		"- [ ] Touched `.prism/rules/some-rule.md` per the last self-review pass.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
+});
+
 test("isUnrelatedToTicket: a discriminator named in ## Decisions (outside any Ledger section) still clears the file", () => {
 	const planText = [
 		"## Decisions",

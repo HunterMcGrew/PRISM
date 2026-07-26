@@ -26,12 +26,17 @@ it, and every pass reviews them at different bars:
   Regression-only bar (below).
 - **Ledger** — a section a persona appends findings to, as opposed to a
   section an author writes to declare scope: the plan's `## Review Issues`,
-  `## History`, `## Sessions`, `## Debugged Issues`, and `## Cleanup Items`
-  entries, plus `.prism/lessons.md`. Not a review target during the loop at
-  any bar. Everything else in the plan file — `## Implementation Tasks`,
-  `## Decisions`, `## Acceptance Criteria` — is Subject content when it
-  falls inside the diff being reviewed; Ledger names only bookkeeping, never
-  the whole plan file.
+  `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and
+  `## PR Readiness` entries, plus `.prism/lessons.md`. Not a review target
+  during the loop at any bar. Everything else in the plan file —
+  `## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria` — is
+  Subject content when it falls inside the diff being reviewed; Ledger names
+  only bookkeeping, never the whole plan file. `## PR Readiness` is
+  persona-rewritten on every self-review pass (`.prism/rules/branch-plan.md`
+  defines it as "updated every time `code-review-self` runs"), which is the
+  same persona-appends-vs-author-declares test the rest of this list applies
+  — reviewing it at Subject bar would flag the loop's own bookkeeping as a
+  finding on every pass.
 
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
@@ -264,9 +269,10 @@ Gauntlet-specific framing:
   § worker-emit pre-filter for anything left alone that warranted it.
 - **Unasked assumptions** — name each silent decision (e.g. runtime chosen for
   Procedure G, cleaner paths parked vs rejected).
-- **Edge recall** — what boundary inputs (zero findings on first pass, budget
-  hit on pass 1, all cleaner paths rejected) did this run hit, and did I
-  handle each on purpose?
+- **Edge recall** — what boundary inputs (subject-clean on the first pass,
+  budget hit on pass 1, all cleaner paths rejected) did this run hit, and did
+  I handle each on purpose?
 - **Verification honesty** — for each phase I claim is clean, what is the
-  evidence (a zero-findings reviewer pass, a resolved-thread count)? Where am
-  I asserting without proof?
+  evidence (two consecutive subject-clean passes, a resolved-thread count,
+  the recorded anchor for each admitted repair-surface finding)? Where am I
+  asserting without proof?
