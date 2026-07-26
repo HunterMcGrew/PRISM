@@ -89,21 +89,21 @@ function containsTokenRun(haystack: string[], needle: string[]): boolean {
 /**
  * Fallback tier for a branch with no ticket-id-shaped token — a plan-first
  * branch, cut before Nora files a ticket per `branch-plan.md` § Plan Lookup
- * step 5. Scans `.prism/plans/*.md` for a plan whose `## Ticket` field reads
- * as unfiled and whose filename slug appears as a contiguous token run in
- * the branch's final `/`-segment.
+ * step 5. Scans `.prism/plans/*.md` for every plan whose `## Ticket` field
+ * reads as unfiled and whose filename slug appears as a contiguous token run
+ * in the branch's final `/`-segment, requiring at least two hyphen-separated
+ * tokens in the slug (a one-word slug is too coincidence-prone to trust).
  *
- * Requires at least two hyphen-separated tokens in the slug (a one-word slug
- * is too coincidence-prone to trust) and exactly one matching plan; returns
- * null on zero or multiple matches rather than guess between them — a
- * silent wrong-plan resolution is worse than no resolution, the same
- * discipline `findPlanByTicketField`'s boundary-anchored match already
- * applies to the ticket-id-prefix-collision case.
+ * Returns every match rather than collapsing to a single winner — exported
+ * separately from `resolveLivePlan` so a caller that needs to explain *why*
+ * resolution failed (zero candidates vs. several, an ambiguity a plain
+ * `null` can't distinguish) can inspect the full candidate list instead of
+ * re-scanning the plans directory itself.
  */
-async function findUnfiledPlanBySlug(
+export async function findUnfiledPlanCandidatesBySlug(
 	branchName: string,
 	repoRoot: string
-): Promise<string | null> {
+): Promise<string[]> {
 	const finalSegment = branchName.split("/").pop() ?? branchName;
 	const branchTokens = hyphenTokens(finalSegment);
 
@@ -115,7 +115,7 @@ async function findUnfiledPlanBySlug(
 			name.endsWith(".md")
 		);
 	} catch {
-		return null;
+		return [];
 	}
 
 	const matches: string[] = [];
@@ -138,6 +138,22 @@ async function findUnfiledPlanBySlug(
 		}
 	}
 
+	return matches;
+}
+
+/**
+ * Collapses `findUnfiledPlanCandidatesBySlug`'s candidate list to a single
+ * winner, failing closed (null) on zero or multiple matches rather than
+ * guessing between them — a silent wrong-plan resolution is worse than no
+ * resolution, the same discipline `findPlanByTicketField`'s
+ * boundary-anchored match already applies to the ticket-id-prefix-collision
+ * case.
+ */
+async function findUnfiledPlanBySlug(
+	branchName: string,
+	repoRoot: string
+): Promise<string | null> {
+	const matches = await findUnfiledPlanCandidatesBySlug(branchName, repoRoot);
 	return matches.length === 1 ? matches[0] : null;
 }
 

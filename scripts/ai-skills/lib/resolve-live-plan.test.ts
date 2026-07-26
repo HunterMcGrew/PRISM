@@ -14,7 +14,11 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { extractTicketId, resolveLivePlan } from "./resolve-live-plan";
+import {
+	extractTicketId,
+	resolveLivePlan,
+	findUnfiledPlanCandidatesBySlug,
+} from "./resolve-live-plan";
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -304,6 +308,48 @@ test("resolveLivePlan: the unfiled-plan-by-slug tier returns null when two unfil
 		},
 		async (tempRoot) => {
 			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
+test("findUnfiledPlanCandidatesBySlug: returns both candidates on the same collision resolveLivePlan collapses to null", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self-audit.md",
+				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+					"\n"
+				)
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self.md",
+				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.deepEqual(
+				await findUnfiledPlanCandidatesBySlug(branchName, tempRoot),
+				[
+					".prism/plans/review-loop-self-audit.md",
+					".prism/plans/review-loop-self.md",
+				]
+			);
+		}
+	);
+});
+
+test("findUnfiledPlanCandidatesBySlug: empty when no plan matches", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.deepEqual(
+				await findUnfiledPlanCandidatesBySlug("someone/no-ticket-branch", tempRoot),
+				[]
+			);
 		}
 	);
 });

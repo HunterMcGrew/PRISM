@@ -26,6 +26,7 @@ import {
 	resolveBranchNameFromEnv,
 	readDefaultBranch,
 	resolveMergeBaseRef,
+	describeNoLivePlan,
 } from "./spec-scope-lint";
 
 // ---------------------------------------------------------------------------
@@ -269,6 +270,22 @@ test("isUnrelatedToTicket: true when the basename appears nowhere in the plan te
 	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
+test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename mentioned for a different skill does not clear the file", () => {
+	const planText =
+		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-review-loop/shared.md`.\n";
+	assert.equal(
+		isUnrelatedToTicket(
+			".ai-skills/skills/prism-review-loop/shared.md",
+			planText
+		),
+		false
+	);
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-architect/shared.md", planText),
+		true
+	);
+});
+
 // ---------------------------------------------------------------------------
 // deriveExitCode
 // ---------------------------------------------------------------------------
@@ -407,6 +424,58 @@ test("escape-hatch fixture: a ## Decisions entry naming the path suppresses the 
 			);
 			assert.equal(deriveExitCode(result.violations), 0);
 			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+test("skill-body basename collision: naming one skill's shared.md in the plan does not clear another skill's shared.md", async () => {
+	const branchName = "someone/prism-9010-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9010.md",
+				[
+					"# Plan: prism-9010",
+					"",
+					"## Goal",
+					"",
+					"Update the review-loop skill's shared.md body.",
+					"",
+					"## Implementation Tasks",
+					"",
+					"1. Edit `.ai-skills/skills/prism-review-loop/shared.md`.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-review-loop/shared.md",
+				"Body.\n"
+			);
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-architect/shared.md",
+				"Body.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[
+					".ai-skills/skills/prism-review-loop/shared.md",
+					".ai-skills/skills/prism-architect/shared.md",
+				],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 1);
+			assert.deepEqual(result.violations, [
+				{
+					path: ".ai-skills/skills/prism-architect/shared.md",
+					planPath: ".prism/plans/prism-9010.md",
+				},
+			]);
 		}
 	);
 });
@@ -561,6 +630,62 @@ test("evaluateSpecScopeLint: passes clean when no live plan resolves for the bra
 			);
 			assert.equal(result.planPath, null);
 			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+// ---------------------------------------------------------------------------
+// describeNoLivePlan — distinguishes "nothing matched" from "several
+// unfiled plans matched," a state resolveLivePlan's own null can't carry.
+// ---------------------------------------------------------------------------
+
+test("describeNoLivePlan: reports plain no-match when nothing at all resolves", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(
+				await describeNoLivePlan("someone/no-ticket-branch", tempRoot),
+				"spec-scope-lint: no live plan resolved for this branch — skipping."
+			);
+		}
+	);
+});
+
+test("describeNoLivePlan: reports plain no-match when a ticket id is present but no tier resolves a plan", async () => {
+	await withTempTree(
+		async () => {},
+		async (tempRoot) => {
+			assert.equal(
+				await describeNoLivePlan("someone/prism-1005-fix-thing", tempRoot),
+				"spec-scope-lint: no live plan resolved for this branch — skipping."
+			);
+		}
+	);
+});
+
+test("describeNoLivePlan: names the colliding candidates when several unfiled plans match the branch slug", async () => {
+	const branchName = "huntermcgrew/prism-review-loop-self-audit";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self-audit.md",
+				["# Plan: review-loop-self-audit", "", "## Ticket", "", "None yet.", ""].join(
+					"\n"
+				)
+			);
+			await writeFile(
+				tempRoot,
+				".prism/plans/review-loop-self.md",
+				["# Plan: review-loop-self", "", "## Ticket", "", "TBD", ""].join("\n")
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await describeNoLivePlan(branchName, tempRoot),
+				"spec-scope-lint: 2 unfiled plans match this branch slug (.prism/plans/review-loop-self-audit.md, .prism/plans/review-loop-self.md) — refusing to guess. Skipping."
+			);
 		}
 	);
 });

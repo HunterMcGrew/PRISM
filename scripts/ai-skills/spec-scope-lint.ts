@@ -22,7 +22,11 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 import { pathExists, parseFrontmatter } from "./utils";
-import { resolveLivePlan } from "./lib/resolve-live-plan";
+import {
+	resolveLivePlan,
+	extractTicketId,
+	findUnfiledPlanCandidatesBySlug,
+} from "./lib/resolve-live-plan";
 
 const execFileAsync = promisify(execFile);
 
@@ -220,17 +224,42 @@ export async function isAlwaysOnSpecContent(
 // Condition B — is it unrelated to the ticket?
 // ---------------------------------------------------------------------------
 
+/** Root prefix under which the same handful of basenames repeat across every skill directory. */
+const SKILLS_ROOT_PREFIX = ".ai-skills/skills/";
+
+/**
+ * The substring Condition B searches for in the plan text. Plain basename
+ * works for every always-on-spec-content path except one class: a skill
+ * body under `.ai-skills/skills/**` shares its basename (`shared.md`,
+ * `claude.md`, `codex.md`, `cursor.md`) with every other skill's same-named
+ * file, so basename alone can't tell one skill's body from another's — the
+ * discriminator there is the skill directory plus the basename
+ * (`prism-architect/shared.md`), which still satisfies the `## Decisions`
+ * escape hatch (a Decision naming the full path contains that substring).
+ * Every other class (a `.prism/rules/*.md` rule, `.prism/lessons.md`, a
+ * `review-*.md` reference) carries a basename that's already unique in its
+ * namespace, so plain basename stays the discriminator there.
+ */
+function discriminatorFor(changedPath: string): string {
+	if (changedPath.startsWith(SKILLS_ROOT_PREFIX)) {
+		return changedPath.slice(SKILLS_ROOT_PREFIX.length);
+	}
+
+	return path.basename(changedPath);
+}
+
 /**
  * Condition B — is `changedPath` unrelated to the ticket? True when its
- * basename appears nowhere in `planText`. A `## Decisions` entry naming the
- * path is itself part of the plan file, so it satisfies this same basename
- * check — no separate section-scoped search is needed. Known false negative,
- * accepted: a basename cited in the plan for an unrelated reason also
- * satisfies this check and suppresses the error, which is the permissive
- * bias this lint deliberately takes (see the plan's Decision).
+ * discriminator (see `discriminatorFor`) appears nowhere in `planText`. A
+ * `## Decisions` entry naming the path is itself part of the plan file, so
+ * it satisfies this same check — no separate section-scoped search is
+ * needed. Known false negative, accepted: a discriminator cited in the plan
+ * for an unrelated reason also satisfies this check and suppresses the
+ * error, which is the permissive bias this lint deliberately takes (see the
+ * plan's Decision).
  */
 export function isUnrelatedToTicket(changedPath: string, planText: string): boolean {
-	return !planText.includes(path.basename(changedPath));
+	return !planText.includes(discriminatorFor(changedPath));
 }
 
 // ---------------------------------------------------------------------------
@@ -374,6 +403,32 @@ export function resolveBranchNameFromEnv(): string | null {
 	return headRef && headRef.trim().length > 0 ? headRef.trim() : null;
 }
 
+/**
+ * Explains why `resolveLivePlan` returned null for `branchName` — no
+ * candidate at all, or several unfiled plans whose slugs all matched (a
+ * state `resolveLivePlan`'s own `string | null` return can't distinguish
+ * from "nothing matched," since it fails closed on both). Only the
+ * unfiled-plan-by-slug tier can be ambiguous — a branch carrying a ticket-id
+ * token resolves through the deterministic ticket-id tiers instead, so this
+ * only re-scans when `extractTicketId` finds nothing.
+ */
+export async function describeNoLivePlan(
+	branchName: string,
+	repoRootPath: string
+): Promise<string> {
+	if (extractTicketId(branchName) === null) {
+		const candidates = await findUnfiledPlanCandidatesBySlug(
+			branchName,
+			repoRootPath
+		);
+		if (candidates.length > 1) {
+			return `spec-scope-lint: ${candidates.length} unfiled plans match this branch slug (${candidates.join(", ")}) — refusing to guess. Skipping.`;
+		}
+	}
+
+	return "spec-scope-lint: no live plan resolved for this branch — skipping.";
+}
+
 async function main(): Promise<void> {
 	const branchName =
 		resolveBranchNameFromEnv() ??
@@ -405,9 +460,7 @@ async function main(): Promise<void> {
 	const result = await evaluateSpecScopeLint(repoRoot, changedPaths, branchName);
 
 	if (result.planPath === null) {
-		console.log(
-			"spec-scope-lint: no live plan resolved for this branch — skipping."
-		);
+		console.log(await describeNoLivePlan(branchName, repoRoot));
 		return;
 	}
 

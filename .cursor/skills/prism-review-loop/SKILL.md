@@ -41,9 +41,13 @@ it, and every pass reviews them at different bars:
   The work the loop was invoked to review. Full bar, every pass.
 - **Repair** — `git diff $loopBase HEAD`. Changes the loop itself authored.
   Regression-only bar (below).
-- **Ledger** — the plan file, its `## Review Issues` and `## History`
-  entries, and `.prism/lessons.md`. Text the loop authored *about itself*.
-  Not a review target during the loop at any bar.
+- **Ledger** — the plan's `## Review Issues`, `## History`, and `## Sessions`
+  entries, plus `.prism/lessons.md`. Text the loop authored *about itself*.
+  Not a review target during the loop at any bar. Everything else in the
+  plan file — `## Implementation Tasks`, `## Decisions`, `## Acceptance
+  Criteria` — is Subject content when it falls inside the diff being
+  reviewed; Ledger names only the loop's own bookkeeping, never the whole
+  plan file.
 
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
@@ -118,14 +122,16 @@ removes.
    self-review. Repeat until the phase is subject-clean (see
    **Subject-clean exit** under **Guardrails** below).
 2. **PR-review loop** — same shape with the PR-review persona on the PR.
-   Findings → fixes → re-review. The phase is not done until a pass returns
-   **zero new findings AND zero fixed-but-unresolved review threads** — when a
-   fix lands a finding, the thread that flagged it is only closed by the
-   reviewer's next pass (the reviewer's batch-D resolve step is the sole actor
-   that resolves threads). If fixed threads remain unresolved when findings hit
-   zero, run a final reviewer pass to resolve them before closing the phase.
+   Findings → fixes → re-review. The phase is not done until it is
+   subject-clean (see **Subject-clean exit** under **Guardrails** below)
+   **AND** zero fixed-but-unresolved review threads remain — when a fix lands
+   a finding, the thread that flagged it is only closed by the reviewer's next
+   pass (the reviewer's batch-D resolve step is the sole actor that resolves
+   threads). If fixed threads remain unresolved once the phase is
+   subject-clean, run a final reviewer pass to resolve them before closing the
+   phase.
 3. **Cleaner paths** — non-blocking by design; they never gate the
-   zero-findings exit, but each must reach a terminal state before the loop
+   subject-clean exit, but each must reach a terminal state before the loop
    closes: implemented, rejected with a one-line reason, or parked by the user.
    Route using **Procedure C** below.
 
