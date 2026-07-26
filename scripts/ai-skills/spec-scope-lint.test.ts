@@ -286,6 +286,73 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename men
 	);
 });
 
+test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in the skill directory clears every sibling file in that directory", () => {
+	const planText =
+		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-conductor/shared.md` and its platform half.\n";
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-conductor/shared.md", planText),
+		false
+	);
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-conductor/claude.md", planText),
+		false
+	);
+	assert.equal(
+		isUnrelatedToTicket(
+			".ai-skills/skills/prism-conductor/lib/report-back.md",
+			planText
+		),
+		false
+	);
+});
+
+test("isUnrelatedToTicket: a discriminator mentioned only inside a Ledger section (## Review Issues) does not clear the file", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Fix the widget renderer.",
+		"",
+		"## Review Issues",
+		"",
+		"### Some prior finding",
+		"",
+		"- **Fixed in:** touched `.ai-skills/skills/prism-architect/shared.md` as part of the fix.",
+		"",
+	].join("\n");
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-architect/shared.md", planText),
+		true
+	);
+});
+
+test("isUnrelatedToTicket: a discriminator mentioned only inside ## History or ## Sessions does not clear the file", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Fix the widget renderer.",
+		"",
+		"## History",
+		"",
+		"- 2026-07-25 [branch]: Touched `.prism/rules/some-rule.md` while fixing a prior review comment.",
+		"",
+		"## Sessions",
+		"",
+		"- 2026-07-25 [branch] open: mentions `.prism/rules/some-rule.md` in passing.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
+});
+
+test("isUnrelatedToTicket: a discriminator named in ## Decisions (outside any Ledger section) still clears the file", () => {
+	const planText = [
+		"## Decisions",
+		"",
+		"- `.prism/rules/some-rule.md` intentionally updated to reflect the new predicate.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), false);
+});
+
 // ---------------------------------------------------------------------------
 // deriveExitCode
 // ---------------------------------------------------------------------------
@@ -474,6 +541,99 @@ test("skill-body basename collision: naming one skill's shared.md in the plan do
 				{
 					path: ".ai-skills/skills/prism-architect/shared.md",
 					planPath: ".prism/plans/prism-9010.md",
+				},
+			]);
+		}
+	);
+});
+
+test("same-skill sibling-file fixture: a plan naming one file in a skill directory clears every sibling file in that directory (fold-in)", async () => {
+	const branchName = "someone/prism-9011-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9011.md",
+				[
+					"# Plan: prism-9011",
+					"",
+					"## Goal",
+					"",
+					"Update the conductor skill's shared.md body.",
+					"",
+					"## Implementation Tasks",
+					"",
+					"1. Edit `.ai-skills/skills/prism-conductor/shared.md` and its platform half.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-conductor/shared.md",
+				"Body.\n"
+			);
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-conductor/claude.md",
+				"Body.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[
+					".ai-skills/skills/prism-conductor/shared.md",
+					".ai-skills/skills/prism-conductor/claude.md",
+				],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 0);
+			assert.deepEqual(result.violations, []);
+		}
+	);
+});
+
+test("Ledger-only-mention fixture: a discriminator recorded only in a fix-in note under ## Review Issues still fires", async () => {
+	const branchName = "someone/prism-9012-unrelated-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9012.md",
+				[
+					"# Plan: prism-9012",
+					"",
+					"## Goal",
+					"",
+					"Fix the widget renderer's overflow bug.",
+					"",
+					"## Review Issues",
+					"",
+					"### A prior finding",
+					"",
+					"- **Fixed in:** also touched `.ai-skills/skills/prism-architect/shared.md` while fixing this.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".ai-skills/skills/prism-architect/shared.md",
+				"Body.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[".ai-skills/skills/prism-architect/shared.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 1);
+			assert.deepEqual(result.violations, [
+				{
+					path: ".ai-skills/skills/prism-architect/shared.md",
+					planPath: ".prism/plans/prism-9012.md",
 				},
 			]);
 		}

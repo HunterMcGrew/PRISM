@@ -224,25 +224,65 @@ export async function isAlwaysOnSpecContent(
 // Condition B — is it unrelated to the ticket?
 // ---------------------------------------------------------------------------
 
-/** Root prefix under which the same handful of basenames repeat across every skill directory. */
+/** Root prefix under which every skill's body lives, one directory per skill. */
 const SKILLS_ROOT_PREFIX = ".ai-skills/skills/";
+
+/**
+ * The heading text of the plan sections `.ai-skills/skills/prism-review-loop/shared.md`
+ * § Review surfaces defines as Ledger — text the review loop authors *about
+ * itself* (a fix-in note, a history append, a session line), never a review
+ * target. Condition B strips these sections before searching (see
+ * `stripLedgerSections`) so an automated bookkeeping append can't satisfy the
+ * same escape hatch a deliberate `## Decisions` entry earns.
+ */
+const LEDGER_SECTION_HEADINGS = ["## Review Issues", "## History", "## Sessions"] as const;
+
+/**
+ * Removes every Ledger section (see `LEDGER_SECTION_HEADINGS`) from `planText`
+ * before Condition B searches it. A section runs from its top-level `## `
+ * heading up to (not including) the next top-level `## ` heading, or to the
+ * end of the file.
+ */
+function stripLedgerSections(planText: string): string {
+	const kept: string[] = [];
+	let inLedgerSection = false;
+
+	for (const line of planText.split(/\r?\n/)) {
+		if (line.startsWith("## ")) {
+			inLedgerSection = (LEDGER_SECTION_HEADINGS as readonly string[]).includes(
+				line.trimEnd()
+			);
+		}
+
+		if (!inLedgerSection) {
+			kept.push(line);
+		}
+	}
+
+	return kept.join("\n");
+}
 
 /**
  * The substring Condition B searches for in the plan text. Plain basename
  * works for every always-on-spec-content path except one class: a skill
- * body under `.ai-skills/skills/**` shares its basename (`shared.md`,
+ * body under `.ai-skills/skills/**` shares its basenames (`shared.md`,
  * `claude.md`, `codex.md`, `cursor.md`) with every other skill's same-named
- * file, so basename alone can't tell one skill's body from another's — the
- * discriminator there is the skill directory plus the basename
- * (`prism-architect/shared.md`), which still satisfies the `## Decisions`
- * escape hatch (a Decision naming the full path contains that substring).
+ * files, so basename alone can't tell one skill's body from another's — the
+ * discriminator there is the skill directory itself (`prism-architect/`),
+ * which still satisfies the `## Decisions` escape hatch (a Decision naming
+ * any path inside that directory contains the substring). Directory rather
+ * than directory-plus-basename: a skill body is its `shared.md` plus a
+ * platform file plus any `lib/*.md` concatenated, so a plan that names one
+ * file in the directory is naming the whole skill body, not just that file.
  * Every other class (a `.prism/rules/*.md` rule, `.prism/lessons.md`, a
  * `review-*.md` reference) carries a basename that's already unique in its
  * namespace, so plain basename stays the discriminator there.
  */
 function discriminatorFor(changedPath: string): string {
 	if (changedPath.startsWith(SKILLS_ROOT_PREFIX)) {
-		return changedPath.slice(SKILLS_ROOT_PREFIX.length);
+		const relativePath = changedPath.slice(SKILLS_ROOT_PREFIX.length);
+		const skillDirectory = relativePath.split("/")[0];
+		return `${skillDirectory}/`;
 	}
 
 	return path.basename(changedPath);
@@ -250,16 +290,19 @@ function discriminatorFor(changedPath: string): string {
 
 /**
  * Condition B — is `changedPath` unrelated to the ticket? True when its
- * discriminator (see `discriminatorFor`) appears nowhere in `planText`. A
- * `## Decisions` entry naming the path is itself part of the plan file, so
- * it satisfies this same check — no separate section-scoped search is
- * needed. Known false negative, accepted: a discriminator cited in the plan
- * for an unrelated reason also satisfies this check and suppresses the
- * error, which is the permissive bias this lint deliberately takes (see the
- * plan's Decision).
+ * discriminator (see `discriminatorFor`) appears nowhere in `planText` once
+ * the plan's Ledger sections are stripped (see `stripLedgerSections`) — a
+ * mention the loop wrote about its own bookkeeping doesn't count as the
+ * deliberate authorial act the escape hatch requires. A `## Decisions` entry
+ * naming the path is itself part of the (non-Ledger) plan text, so it
+ * satisfies this same check — no separate section-scoped search is needed
+ * for the escape hatch itself. Known false negative, accepted: a
+ * discriminator cited in the plan's non-Ledger text for an unrelated reason
+ * also satisfies this check and suppresses the error, which is the
+ * permissive bias this lint deliberately takes (see the plan's Decision).
  */
 export function isUnrelatedToTicket(changedPath: string, planText: string): boolean {
-	return !planText.includes(discriminatorFor(changedPath));
+	return !stripLedgerSections(planText).includes(discriminatorFor(changedPath));
 }
 
 // ---------------------------------------------------------------------------
@@ -473,7 +516,7 @@ async function main(): Promise<void> {
 
 	for (const violation of result.violations) {
 		console.error(
-			`${violation.path}: always-on spec content unrelated to this ticket (basename absent from ${violation.planPath}). Ship it as a follow-up PR per .prism/rules/followup-scope.md, or add a ## Decisions entry naming this path and the reason.`
+			`${violation.path}: always-on spec content unrelated to this ticket (discriminator absent from ${violation.planPath}, outside its Ledger sections). Ship it as a follow-up PR per .prism/rules/followup-scope.md, or add a ## Decisions entry naming this path and the reason.`
 		);
 	}
 
