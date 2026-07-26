@@ -144,11 +144,11 @@ export async function isCuratedSeedTwin(
 }
 
 /**
- * The path Condition A's pattern checks (skills root, `lessons.md`, the
- * `review-*.md` namespace) should match against. A curated seed twin lives
- * under `templates/install/.prism/`, but the patterns describe canonical
- * shapes (`.prism/references/review-*.md`) — so a curated twin is matched
- * against its canonical-equivalent path, not its own location on disk.
+ * The path Condition A's pattern checks (skills root, the `review-*.md`
+ * namespace) should match against. A curated seed twin lives under
+ * `templates/install/.prism/`, but the patterns describe canonical shapes
+ * (`.prism/references/review-*.md`) — so a curated twin is matched against
+ * its canonical-equivalent path, not its own location on disk.
  */
 function patternPathFor(changedPath: string, isCuratedTwin: boolean): string {
 	if (!isCuratedTwin) {
@@ -191,11 +191,19 @@ async function declaresLoadAlways(
 /**
  * Condition A — is `changedPath` always-on process/spec content? True when
  * the canonical source declares `load: always` in its frontmatter, or lives
- * under `.ai-skills/skills/**`, or is `.prism/lessons.md`, or matches
- * `.prism/references/review-*.md`. Reads the `load` field rather than
- * hard-coding a path list, per the plan's Decision.
+ * under `.ai-skills/skills/**`, or matches `.prism/references/review-*.md`.
+ * Reads the `load` field rather than hard-coding a path list, per the plan's
+ * Decision.
  *
- * `patternPath` defaults to `changedPath` and drives the three path-pattern
+ * `.prism/lessons.md` is deliberately not a pattern here. Every persona
+ * appends to it after a correction (`.prism/rules/self-improvement-loop.md`,
+ * itself `load: always`), so it lands in the branch diff of any ticket that
+ * captured a lesson — the routine case Condition B's ticket-relationship
+ * test exists to let through, not the one-liner-riding-a-ticket case this
+ * lint exists to catch. `.prism/rules/writing-voice.md` already carves it
+ * out of the durable-artifact standard as working notes, not spec.
+ *
+ * `patternPath` defaults to `changedPath` and drives the two path-pattern
  * checks; a curated seed twin passes its canonical-equivalent path here (see
  * `patternPathFor`) so the patterns match the shape they describe. Frontmatter
  * is always read from `changedPath` — the file whose bytes actually changed.
@@ -206,10 +214,6 @@ export async function isAlwaysOnSpecContent(
 	patternPath: string = changedPath
 ): Promise<boolean> {
 	if (patternPath.startsWith(".ai-skills/skills/")) {
-		return true;
-	}
-
-	if (patternPath === ".prism/lessons.md") {
 		return true;
 	}
 
@@ -229,26 +233,46 @@ const SKILLS_ROOT_PREFIX = ".ai-skills/skills/";
 
 /**
  * The heading text of the plan sections `.ai-skills/skills/prism-review-loop/shared.md`
- * § Review surfaces defines as Ledger — text the review loop authors *about
- * itself* (a fix-in note, a history append, a session line), never a review
- * target. Condition B strips these sections before searching (see
+ * § Review surfaces defines as Ledger — a section a persona appends findings
+ * to (a fix-in note, a debugged-issue row, a cleanup item, a history append,
+ * a session line), as opposed to a section an author writes to declare scope
+ * (`## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria`).
+ * Condition B strips these sections before searching (see
  * `stripLedgerSections`) so an automated bookkeeping append can't satisfy the
- * same escape hatch a deliberate `## Decisions` entry earns.
+ * same escape hatch a deliberate `## Decisions` entry earns. This list,
+ * `.prism/rules/followup-scope.md` § Spec content never rides an unrelated
+ * ticket, and the Ledger bullet in `.ai-skills/skills/prism-review-loop/shared.md`
+ * name the same set by hand and need to stay in step — classify a new
+ * bookkeeping section by the persona-appends-vs-author-declares test above,
+ * not by copying this list blind.
  */
-const LEDGER_SECTION_HEADINGS = ["## Review Issues", "## History", "## Sessions"] as const;
+const LEDGER_SECTION_HEADINGS = [
+	"## Review Issues",
+	"## History",
+	"## Sessions",
+	"## Debugged Issues",
+	"## Cleanup Items",
+] as const;
 
 /**
  * Removes every Ledger section (see `LEDGER_SECTION_HEADINGS`) from `planText`
  * before Condition B searches it. A section runs from its top-level `## `
  * heading up to (not including) the next top-level `## ` heading, or to the
- * end of the file.
+ * end of the file. Heading detection is suspended inside fenced code blocks
+ * (opened with three backticks or three tildes) — PRISM plans routinely
+ * quote verbatim markdown in `## Implementation Tasks`, and a quoted
+ * `## `-prefixed line inside a fence is not real plan structure in either
+ * direction.
  */
 function stripLedgerSections(planText: string): string {
 	const kept: string[] = [];
 	let inLedgerSection = false;
+	let inFence = false;
 
 	for (const line of planText.split(/\r?\n/)) {
-		if (line.startsWith("## ")) {
+		if (/^\s*(```|~~~)/.test(line)) {
+			inFence = !inFence;
+		} else if (!inFence && line.startsWith("## ")) {
 			inLedgerSection = (LEDGER_SECTION_HEADINGS as readonly string[]).includes(
 				line.trimEnd()
 			);

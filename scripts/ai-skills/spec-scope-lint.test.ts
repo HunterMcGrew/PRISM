@@ -177,7 +177,7 @@ test("isAlwaysOnSpecContent: true for .ai-skills/skills/** regardless of frontma
 	);
 });
 
-test("isAlwaysOnSpecContent: true for .prism/lessons.md", async () => {
+test("isAlwaysOnSpecContent: false for .prism/lessons.md — append-only working notes, not spec content", async () => {
 	await withTempTree(
 		async (tempRoot) => {
 			await writeFile(tempRoot, ".prism/lessons.md", "- a lesson\n");
@@ -185,7 +185,7 @@ test("isAlwaysOnSpecContent: true for .prism/lessons.md", async () => {
 		async (tempRoot) => {
 			assert.equal(
 				await isAlwaysOnSpecContent(tempRoot, ".prism/lessons.md"),
-				true
+				false
 			);
 		}
 	);
@@ -343,6 +343,36 @@ test("isUnrelatedToTicket: a discriminator mentioned only inside ## History or #
 	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
+test("isUnrelatedToTicket: a discriminator mentioned only inside ## Debugged Issues does not clear the file", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Fix the widget renderer.",
+		"",
+		"## Debugged Issues",
+		"",
+		"### A prior bug",
+		"",
+		"- **File:** `.prism/rules/some-rule.md:42`",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
+});
+
+test("isUnrelatedToTicket: a discriminator mentioned only inside ## Cleanup Items does not clear the file", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Fix the widget renderer.",
+		"",
+		"## Cleanup Items",
+		"",
+		"- `.prism/rules/some-rule.md:42` — stray comment left from an earlier draft.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
+});
+
 test("isUnrelatedToTicket: a discriminator named in ## Decisions (outside any Ledger section) still clears the file", () => {
 	const planText = [
 		"## Decisions",
@@ -351,6 +381,42 @@ test("isUnrelatedToTicket: a discriminator named in ## Decisions (outside any Le
 		"",
 	].join("\n");
 	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), false);
+});
+
+test("isUnrelatedToTicket: a Ledger heading quoted inside a fenced code block in ## Implementation Tasks does not suppress a real mention", () => {
+	const planText = [
+		"## Implementation Tasks",
+		"",
+		"1. Update the plan template — quoted verbatim below:",
+		"",
+		"```",
+		"## History",
+		"",
+		"- example row",
+		"```",
+		"",
+		"2. Edit `.prism/rules/some-rule.md` to add the new field.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), false);
+});
+
+test("isUnrelatedToTicket: a non-Ledger heading quoted inside a fenced code block in ## History does not end the Ledger strip early", () => {
+	const planText = [
+		"## History",
+		"",
+		"- 2026-07-25 [branch]: Quoted a template below while documenting a decision:",
+		"",
+		"```",
+		"## Model tiering",
+		"",
+		"- example row",
+		"```",
+		"",
+		"- 2026-07-26 [branch]: Also touched `.prism/rules/some-rule.md` while fixing a prior review comment.",
+		"",
+	].join("\n");
+	assert.equal(isUnrelatedToTicket(".prism/rules/some-rule.md", planText), true);
 });
 
 // ---------------------------------------------------------------------------
@@ -451,6 +517,53 @@ test("back-out fixture: an always-on rule unrelated to the plan fires", async ()
 					planPath: ".prism/plans/prism-9002.md",
 				},
 			]);
+		}
+	);
+});
+
+test("routine lessons.md fixture: a plain feature-ticket plan with a lessons.md append in the diff passes clean", async () => {
+	const branchName = "someone/prism-9021-ordinary-feature";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/prism-9021.md",
+				[
+					"# Plan: prism-9021",
+					"",
+					"## Goal",
+					"",
+					"Fix the widget renderer's overflow bug.",
+					"",
+					"## Implementation Tasks",
+					"",
+					"1. Clamp the overflow value in `widget-renderer.ts`.",
+					"",
+					"## Decisions",
+					"",
+					"- Clamp rather than truncate — truncation drops the last row.",
+					"",
+					"## History",
+					"",
+					"- 2026-07-25 [branch]: Clamped overflow value.",
+					"",
+				].join("\n")
+			);
+			await writeFile(
+				tempRoot,
+				".prism/lessons.md",
+				"- Clamp overflow values instead of truncating them.\n"
+			);
+		},
+		async (tempRoot) => {
+			const result = await evaluateSpecScopeLint(
+				tempRoot,
+				[".prism/lessons.md"],
+				branchName
+			);
+			assert.equal(deriveExitCode(result.violations), 0);
+			assert.deepEqual(result.violations, []);
 		}
 	);
 });

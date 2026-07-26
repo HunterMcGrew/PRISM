@@ -24,13 +24,14 @@ it, and every pass reviews them at different bars:
   The work the loop was invoked to review. Full bar, every pass.
 - **Repair** — `git diff $loopBase HEAD`. Changes the loop itself authored.
   Regression-only bar (below).
-- **Ledger** — the plan's `## Review Issues`, `## History`, and `## Sessions`
-  entries, plus `.prism/lessons.md`. Text the loop authored *about itself*.
-  Not a review target during the loop at any bar. Everything else in the
-  plan file — `## Implementation Tasks`, `## Decisions`, `## Acceptance
-  Criteria` — is Subject content when it falls inside the diff being
-  reviewed; Ledger names only the loop's own bookkeeping, never the whole
-  plan file.
+- **Ledger** — a section a persona appends findings to, as opposed to a
+  section an author writes to declare scope: the plan's `## Review Issues`,
+  `## History`, `## Sessions`, `## Debugged Issues`, and `## Cleanup Items`
+  entries, plus `.prism/lessons.md`. Not a review target during the loop at
+  any bar. Everything else in the plan file — `## Implementation Tasks`,
+  `## Decisions`, `## Acceptance Criteria` — is Subject content when it
+  falls inside the diff being reviewed; Ledger names only bookkeeping, never
+  the whole plan file.
 
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
