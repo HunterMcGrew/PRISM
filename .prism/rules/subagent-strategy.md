@@ -6,12 +6,13 @@ load: always
 
 ## Purpose
 
-Keep the main context window clean by offloading research, exploration, and parallel analysis to subagents. One task per subagent keeps execution focused.
+Keep the main context window clean by offloading work that reads a lot to produce a small answer. One task per subagent keeps execution focused.
 
-**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. For complex problems, more compute via subagents is almost always the right call: it's cheaper to spend a subagent than to run out of context in the main window and lose the thread.
+**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. The criterion is shape, not size: a subagent earns its dispatch when the work is read-heavy and the answer is small.
 
 **How to apply:**
 
-- Offload research, exploration, and parallel analysis to subagents — anything that reads a lot to produce a small answer.
-- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three tasks returns a muddled one.
-- When a problem is large enough that you're unsure whether to spend the compute, spend it. Running out of context is the more expensive failure.
+- Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
+- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft — running several parallel axes of review (e.g. product-fit, technical-feasibility, clarity) against a stable artifact by a different agent than the one that authored it — that's read-heavy, multi-axis analysis, the shape this rule exists to offload, not a same-pass self-check.
+- Don't dispatch a subagent for work that could have been an inline read — a dispatch costs a round trip and a report-back that may not come back. This doesn't cap parallel dispatch across genuinely distinct axes of the same review; each axis is its own scoped task per the bullet above.

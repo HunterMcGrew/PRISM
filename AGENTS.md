@@ -1397,7 +1397,9 @@ load: always
 
 ## Purpose
 
-Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound — on a five-minute fix as much as a multi-hour epic. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+
+**The battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
@@ -1405,7 +1407,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
+Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
@@ -1542,15 +1544,16 @@ load: always
 
 ## Purpose
 
-Keep the main context window clean by offloading research, exploration, and parallel analysis to subagents. One task per subagent keeps execution focused.
+Keep the main context window clean by offloading work that reads a lot to produce a small answer. One task per subagent keeps execution focused.
 
-**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. For complex problems, more compute via subagents is almost always the right call: it's cheaper to spend a subagent than to run out of context in the main window and lose the thread.
+**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. The criterion is shape, not size: a subagent earns its dispatch when the work is read-heavy and the answer is small.
 
 **How to apply:**
 
-- Offload research, exploration, and parallel analysis to subagents — anything that reads a lot to produce a small answer.
-- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three tasks returns a muddled one.
-- When a problem is large enough that you're unsure whether to spend the compute, spend it. Running out of context is the more expensive failure.
+- Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
+- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft — running several parallel axes of review (e.g. product-fit, technical-feasibility, clarity) against a stable artifact by a different agent than the one that authored it — that's read-heavy, multi-axis analysis, the shape this rule exists to offload, not a same-pass self-check.
+- Don't dispatch a subagent for work that could have been an inline read — a dispatch costs a round trip and a report-back that may not come back. This doesn't cap parallel dispatch across genuinely distinct axes of the same review; each axis is its own scoped task per the bullet above.
 
 ---
 
@@ -1564,14 +1567,14 @@ load: always
 
 ## Purpose
 
-Prove a task works before marking it complete. Run tests, check logs, demonstrate correctness. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
+A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** "done" claimed without proof is a claim the next reader inherits and pays for when it turns out false. Demonstrated correctness — a passing test, a clean log, a behavior diff — is the difference between believing the work is right and knowing it. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** an unproven "done" claim is a debt the next reader inherits silently — they build on it, and the cost of the false claim lands on whoever discovers it, at whatever point they discover it, which is almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 
-- Run the tests, check the logs, and demonstrate the behavior before calling a task complete.
-- Diff behavior between `main` and your changes when the change is behavioral — the diff is the proof.
+- When claiming a task is complete, name the evidence the claim rests on — a test result, a log, a behavior diff. A claim with no evidence to name isn't ready to be made.
+- When the change is behavioral, the behavior diff between `main` and the change is the proof worth citing.
 - Hold the work to the staff-engineer bar. If you're not sure it would pass review, it isn't done yet.
 
 ---

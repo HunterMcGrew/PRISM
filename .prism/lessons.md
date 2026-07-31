@@ -373,3 +373,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-07 (retro-charter-redesign, Iris retro) — a Task-15 Major was an uncorrected passage coexisting with an already-written correction in the same plan file; a forward-reference sweep at correction time would have caught it before self-review. 2026-07-25 (PRISM-445, Eric review passes 1–3) — the same failure species recurred on all three passes: a claim the shipping commit had already invalidated, left standing elsewhere in the plan (pass 1 a stale classification-table row, pass 2 a stale `**Reorder briar's output**` row, pass 3 the `curated` seed-twin Decision plus Task 9's matching instruction).
 
 **How to apply:** Don't just append a correction elsewhere — sweep the whole file for the same claim's other occurrences at correction time. This especially matters when a fix reverses a plan Decision: sweep both `## Decisions` and `## Implementation Tasks`, since a Decision's conclusion is often restated in the task that implements it and the two drift together if only one is corrected.
+
+## Don't recommend working around a skill's designed behavior — check the design reason first
+
+**Why:** 2026-07-25 (response-shape-contract session) — recommended twice that handoff docs be moved out of the OS temp dir into the repo so a reboot couldn't delete them. The handoff skill's own read-side contract, already in context, gave the reason for temp: "a stale handoff read as current is worse than no handoff." Ephemerality is the feature; the recommendation would have defeated it.
+
+**How to apply:** Before suggesting a workaround for something that looks like a flaw in a skill or tool, re-read that skill's stated reason for the behavior. A path, default, or constraint that seems fragile usually has its justification a few lines away — and a fallback clause in the body ("if X cannot be written") marks the behavior as deliberate, not accidental.

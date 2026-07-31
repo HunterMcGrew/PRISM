@@ -6,7 +6,9 @@ load: always
 
 ## Purpose
 
-Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound — on a five-minute fix as much as a multi-hour epic. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+
+**The battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
@@ -14,7 +16,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
+Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
