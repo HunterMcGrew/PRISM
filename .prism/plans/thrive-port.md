@@ -213,9 +213,27 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 
 ---
 
+## Review Issues
+
+- No issues found — 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments] (PR A: `verification-before-done.md`, `subagent-strategy.md`, `session-orientation.md` — tasks 1-3). Mirror integrity confirmed byte-identical across `.claude/`, `.codex/` (frontmatter-stripped, body identical), `.cursor/`, and `templates/install/`; `pnpm prism:build` and `pnpm prism:check` clean. Removal-completeness swept for the deleted procedural-verification imperative, the spend-the-compute tiebreaker, and the "five-minute fix as much as a multi-hour epic" phrase — zero hits outside this plan's own task-history prose. The known `.prism/lessons.md` passenger entry is accepted per dispatch instructions, not a finding.
+
+## PR Readiness
+
+- [x] No critical or major issues
+- [x] Types correct — n/a (rules content, no code)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — n/a (rule-content-only change, no runtime logic)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-07-30 (`pnpm prism:build`, zero drift)
+- [ ] PR description up to date — not verified this session (chat-only scope; Eric verifies on GitHub)
+- [ ] Lasting decisions promoted to architect context — plan close not yet run
+
+**Last updated:** 2026-07-30
+
 ## Sessions
 
 - 2026-07-30 [main] open: Intent — per-candidate port verdicts + the two open calls + plan with PR cut lines; Bounds — write only this plan file, no rules/skills/mirrors; Approach — verify every claim on disk before verdicting, inline reads only per retry constraint · close: scope held — one file written; Sol's agent-registry gap claim corrected from evidence (consumers get the registry via generation) rather than accepted.
+- 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments] open: Intent — self-review PR A (tasks 1-3, the three amended rules) against mirror integrity, removal-completeness, and whether the trimmed rules still say what they need to; Bounds — chat + plan `## Review Issues` only, no fixes, no GitHub writes; Approach — diff-only reading of the three source files, tree-wide grep for the deleted phrasings, mirror byte-diff, `pnpm prism:build` for drift · close: scope held — zero findings; a false-positive scope-creep alarm (stale local `main` made `main...HEAD` look 30+ files wider than the actual PR) was resolved against `origin/main`/`gh pr diff` before it became a finding.
 
 ---
 
