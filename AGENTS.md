@@ -1407,7 +1407,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
+Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
@@ -1420,7 +1420,7 @@ The opening battery's answers don't stay in the transcript — they compress to 
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
+Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `close:` clause per the scaling clause above.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
@@ -1552,8 +1552,8 @@ Keep the main context window clean by offloading work that reads a lot to produc
 
 - Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
 - Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
-- Don't spawn subagents to verify or double-check your own work — verification belongs in the lane that did the work.
-- One agent where one suffices. A dispatch that could have been an inline read costs a round trip and a report-back that may not come back.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft (e.g. Parker's parallel product-fit/technical-feasibility/clarity subagents at `step-06-review.md`) — that's read-heavy, multi-axis analysis against a stable artifact, the shape this rule exists to offload, not a same-pass self-check.
+- Don't dispatch a subagent for work that could have been an inline read — a dispatch costs a round trip and a report-back that may not come back. This doesn't cap parallel dispatch across genuinely distinct axes of the same review; each axis is its own scoped task per the bullet above.
 
 ---
 
@@ -1569,7 +1569,7 @@ load: always
 
 A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** demonstrated correctness is the difference between believing the work is right and knowing it. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** an unproven "done" claim is a debt the next reader inherits silently — they build on it, and the cost of the false claim lands on whoever discovers it, at whatever point they discover it, which is almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 

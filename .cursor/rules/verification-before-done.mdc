@@ -8,7 +8,7 @@ alwaysApply: true
 
 A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** demonstrated correctness is the difference between believing the work is right and knowing it. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** an unproven "done" claim is a debt the next reader inherits silently — they build on it, and the cost of the false claim lands on whoever discovers it, at whatever point they discover it, which is almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 

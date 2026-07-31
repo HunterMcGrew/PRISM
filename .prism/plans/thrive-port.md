@@ -217,6 +217,32 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 
 - No issues found — 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments] (PR A: `verification-before-done.md`, `subagent-strategy.md`, `session-orientation.md` — tasks 1-3). Mirror integrity confirmed byte-identical across `.claude/`, `.codex/` (frontmatter-stripped, body identical), `.cursor/`, and `templates/install/`; `pnpm prism:build` and `pnpm prism:check` clean. Removal-completeness swept for the deleted procedural-verification imperative, the spend-the-compute tiebreaker, and the "five-minute fix as much as a multi-hour epic" phrase — zero hits outside this plan's own task-history prose. The known `.prism/lessons.md` passenger entry is accepted per dispatch instructions, not a finding.
 
+### Eric review fixes — PR #449
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/rules/session-orientation.md:19,32`
+- **Problem:** the "battery scales with the task" collapse clause in `## Purpose` was contradicted by the mechanics sections, which still mandated "answer all four questions in sequence" unconditionally — the amendment was inert as shipped and PR A's own AC ("battery collapses to the `open:` clause") wasn't met.
+- **Suggested fix:** cross-referenced both mechanics sections to the scaling clause so the collapse path is reachable, not just declared.
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/rules/subagent-strategy.md:16-18`
+- **Problem:** the "don't spawn subagents to verify your own work" cap was wider than the behavior it meant to stop — it also read as forbidding Parker's `step-06-review.md` parallel rubric subagents (product-fit/technical-feasibility/clarity) over a finished draft, which is read-heavy multi-axis analysis, not a same-pass self-check.
+- **Suggested fix:** narrowed the cap to same-pass self-verification and named the rubric-review shape as the excluded case, per Hunter's approved Decision — did not rewrite the rule beyond that scope, and did not touch Parker.
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/rules/subagent-strategy.md:18`
+- **Problem:** "One agent where one suffices" argued the one-vs-many axis while its supporting sentence argued the none-vs-one (inline-read-vs-dispatch) axis.
+- **Suggested fix:** reworded the bullet to argue none-vs-one throughout.
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/rules/verification-before-done.md:11`
+- **Problem:** the `**Why:**` line restated its own Purpose paragraph instead of carrying an independent reason.
+- **Suggested fix:** replaced with the inherited-debt argument — the next reader pays for a false "done" claim, discovered later and more expensively than at the source.
+
 ## PR Readiness
 
 - [x] No critical or major issues
@@ -234,11 +260,13 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 
 - 2026-07-30 [main] open: Intent — per-candidate port verdicts + the two open calls + plan with PR cut lines; Bounds — write only this plan file, no rules/skills/mirrors; Approach — verify every claim on disk before verdicting, inline reads only per retry constraint · close: scope held — one file written; Sol's agent-registry gap claim corrected from evidence (consumers get the registry via generation) rather than accepted.
 - 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments] open: Intent — self-review PR A (tasks 1-3, the three amended rules) against mirror integrity, removal-completeness, and whether the trimmed rules still say what they need to; Bounds — chat + plan `## Review Issues` only, no fixes, no GitHub writes; Approach — diff-only reading of the three source files, tree-wide grep for the deleted phrasings, mirror byte-diff, `pnpm prism:build` for drift · close: scope held — zero findings; a false-positive scope-creep alarm (stale local `main` made `main...HEAD` look 30+ files wider than the actual PR) was resolved against `origin/main`/`gh pr diff` before it became a finding.
+- 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments] open: Intent — fix Eric's PR #449 findings (2 major, 2 minor) on the three amended rules; Bounds — `.prism/rules/session-orientation.md`, `subagent-strategy.md`, `verification-before-done.md` only, no touching PR B's reach sites (Clove/Sasha/handoff), no `.claude`/`.codex`/`.cursor`/`templates/install` hand-edits; Approach — single-clause edits per finding, narrow M2's cap rather than touch Parker per Eric's recommendation, rebuild mirrors · close: scope held — four findings fixed, mirrors regenerated via `pnpm prism:build`, both build and check pass clean.
 
 ---
 
 ## History
 
 - 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments]: Amended `verification-before-done.md`, `subagent-strategy.md`, and `session-orientation.md` per PR A tasks 1-3 — evidence-naming replaces procedural verification imperatives, subagent dispatch drops the spend-the-compute tiebreaker in favor of read-heavy/small-answer shape, and the opening battery gets a task-scaled collapse clause. `pnpm prism:build` and `pnpm prism:check` both pass; removal-completeness sweep found no dangling references to the deleted language.
+- 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments]: Fixed Eric's PR #449 findings — `session-orientation.md`'s mechanics sections now cross-reference the collapse clause instead of contradicting it; `subagent-strategy.md`'s verification cap is narrowed to same-pass self-checks (excludes Parker's finished-draft rubric review) and its "one agent" bullet argues one axis throughout; `verification-before-done.md`'s `**Why:**` now carries an independent reason. See Review Issues.
 
 - 2026-07-30 [main]: Plan created by Winston (Sol dispatch, retry after subagent stall). Verdicts on 10 thrive PRs + agent registry + 2 external inputs; 8 PRs proposed as two stacks + independents; see Decisions for the 2222/2232/STE calls.
