@@ -69,6 +69,8 @@ Port the generalizable subset of thrive's recent skill-surface improvements into
 - **Canonical-surface discipline:** every rule edit lands in `.prism/rules/` (source); `.claude/rules/` and `templates/install/.prism/rules/` are build-managed mirrors regenerated via `pnpm prism:build`. Skill edits land in `.ai-skills/skills/*/shared.md` (or the platform-specific files) and regenerate projections. Editing a mirror is the failure mode; every task below names the source path only.
   - **→ promotion verdict pending close.**
 
+- **OPEN — TBD, needs Hunter input.** Whether the closing battery in `.prism/rules/session-orientation.md` should scale with task size the same way the opening battery now does (line 19's single-edit-no-ambiguity collapse to the `open:` clause). Eric's PR #449 pass-2 review found the pass-1 fix decided this silently by extending the collapse to `close:` (line 32) on a citation that didn't hold — `close:` carries one verdict token where `open:` has three answer slots, so a collapsed closing shape needs its own definition, not an implied mirror of the opening one. **Default path (used until resolved):** the closing battery keeps its current unconditional four-question form (line 32 reverted to pre-`fb2a05be` wording).
+
 ---
 
 ## Implementation Tasks
@@ -243,6 +245,20 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 - **Problem:** the `**Why:**` line restated its own Purpose paragraph instead of carrying an independent reason.
 - **Suggested fix:** replaced with the inherited-debt argument — the next reader pays for a false "done" claim, discovered later and more expensively than at the source.
 
+### Eric review fixes — PR #449 (pass 2)
+
+- **Severity:** major
+- **Status:** fixed
+- **File:** `.prism/rules/session-orientation.md:32`
+- **Problem:** the pass-1 fix extended the battery-collapse clause to the closing battery, citing "the scaling clause above" — but that clause (`## Purpose`) is opening-only, so the citation didn't hold. The extension exceeded plan task 3's approved text and PR A's acceptance criterion, and left the collapsed `close:` shape undefined (`close:` carries one verdict token, not the three answer slots `open:` has).
+- **Suggested fix:** reverted line 32 to its pre-`fb2a05be` wording — the closing battery ships opening-only (unconditional four-question run). The line-19 opening-battery reach (Major 1 from pass 1) is unaffected. Deferred whether the closing battery should scale to an `OPEN — TBD` Decision below, per Hunter's decision.
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/rules/subagent-strategy.md:17`
+- **Problem:** the M2 carve-out cited `step-06-review.md`, a bare filename shared by two skills, inside a rule that `templates/install/` ships to consumers with no Parker.
+- **Suggested fix:** rewrote the carve-out to describe the permitted shape directly — a structured rubric review over a finished draft, run by a different agent than the author — dropping the file citation so the rule reads standalone for any consumer.
+
 ## PR Readiness
 
 - [x] No critical or major issues
@@ -268,5 +284,6 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 
 - 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments]: Amended `verification-before-done.md`, `subagent-strategy.md`, and `session-orientation.md` per PR A tasks 1-3 — evidence-naming replaces procedural verification imperatives, subagent dispatch drops the spend-the-compute tiebreaker in favor of read-heavy/small-answer shape, and the opening battery gets a task-scaled collapse clause. `pnpm prism:build` and `pnpm prism:check` both pass; removal-completeness sweep found no dangling references to the deleted language.
 - 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments]: Fixed Eric's PR #449 findings — `session-orientation.md`'s mechanics sections now cross-reference the collapse clause instead of contradicting it; `subagent-strategy.md`'s verification cap is narrowed to same-pass self-checks (excludes Parker's finished-draft rubric review) and its "one agent" bullet argues one axis throughout; `verification-before-done.md`'s `**Why:**` now carries an independent reason. See Review Issues.
+- 2026-07-30 [huntermcgrew/thrive-port-opus5-rule-amendments]: Fixed Eric's PR #449 pass-2 findings — reverted `session-orientation.md:32`'s closing-battery collapse extension (Hunter's decision; closing battery ships opening-only, question deferred as an OPEN Decision) and rewrote `subagent-strategy.md:17`'s M2 carve-out to describe the permitted review shape instead of citing a PRISM-internal filename. See Review Issues.
 
 - 2026-07-30 [main]: Plan created by Winston (Sol dispatch, retry after subagent stall). Verdicts on 10 thrive PRs + agent registry + 2 external inputs; 8 PRs proposed as two stacks + independents; see Decisions for the 2222/2232/STE calls.

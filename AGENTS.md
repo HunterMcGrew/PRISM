@@ -1420,7 +1420,7 @@ The opening battery's answers don't stay in the transcript — they compress to 
 
 ## Closing Re-Orientation Battery
 
-Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `close:` clause per the scaling clause above.
+Run this battery once, immediately before declaring the work complete and reporting back. Answer all four questions in sequence, inline in the response.
 
 1. **Scope boundary** — what did I touch; is any of it outside what was named? What did I notice in adjacent work and leave alone? Emit `found-followup-work` or `found-bug` per `.prism/rules/followup-scope.md` § worker-emit pre-filter for anything left alone that warranted it.
 2. **Unasked assumptions** — what did the request not specify that my work nonetheless decided? Name each silent decision.
@@ -1552,7 +1552,7 @@ Keep the main context window clean by offloading work that reads a lot to produc
 
 - Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
 - Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
-- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft (e.g. Parker's parallel product-fit/technical-feasibility/clarity subagents at `step-06-review.md`) — that's read-heavy, multi-axis analysis against a stable artifact, the shape this rule exists to offload, not a same-pass self-check.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft — running several parallel axes of review (e.g. product-fit, technical-feasibility, clarity) against a stable artifact by a different agent than the one that authored it — that's read-heavy, multi-axis analysis, the shape this rule exists to offload, not a same-pass self-check.
 - Don't dispatch a subagent for work that could have been an inline read — a dispatch costs a round trip and a report-back that may not come back. This doesn't cap parallel dispatch across genuinely distinct axes of the same review; each axis is its own scoped task per the bullet above.
 
 ---
