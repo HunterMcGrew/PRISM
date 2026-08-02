@@ -13,8 +13,9 @@
 # against pnpm-workspace.yaml's `packages: ["."]` — the packages key exists
 # only to satisfy pnpm v9's `store path` check, not to declare real workspace
 # members), so unlike thrive's per-package link loop, root is the whole set.
-# See .prism/rules/command-execution.md if this repo later adopts real
-# workspace packages — the link set would need to grow to match.
+# If this repo later adopts real workspace packages (multiple entries in
+# pnpm-workspace.yaml's `packages` key), the link set above would need to
+# grow to cover each package's own node_modules, not just root's.
 #
 # Linux/Darwin use POSIX symlinks with relative targets — a relative target
 # resolves identically regardless of where the tree is mounted, so the same

@@ -17,7 +17,7 @@
 # Everything else — non-Bash tools, non-node commands, the main checkout, a
 # prepared worktree, an undeterminable directory, a malformed payload — exits 0.
 # The guard only ever redirects a command that is certain to fail; when in doubt
-# it stays out of the way. See .prism/rules/command-execution.md.
+# it stays out of the way.
 #
 # Commands are tokenized with shlex, so shell quoting and separators (&&,
 # |, ;, newline) are respected rather than regex-matched.
@@ -162,8 +162,8 @@ cmd_text, wt = violation
 sys.stderr.write(
     "Blocked: node tooling in an unprepared worktree.\n\n"
     "    " + cmd_text + "\n\n"
-    "This worktree has no linked node_modules, so package resolution will fail "
-    "(see .prism/rules/command-execution.md). Prepare it once, then re-run:\n\n"
+    "This worktree has no linked node_modules, so package resolution will fail. "
+    "Prepare it once, then re-run:\n\n"
     "    sh " + wt + "/scripts/worktree-setup.sh\n"
 )
 sys.exit(2)
