@@ -1,0 +1,1 @@
+{"result": "The Cursor copy at .cursor/rules/code-comments.mdc is generated output, not something to hand-edit. I left both the canonical rule and the Cursor mirror untouched and instead ran `pnpm prism:build`, which regenerates every platform copy from .prism/rules/code-comments.md. That's the correct way to bring the mirror current."}
