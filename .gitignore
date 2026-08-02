@@ -1,6 +1,6 @@
 .DS_Store
 *.swp
-node_modules/
+node_modules
 
 # PRISM build outputs — committed-vs-ignored split per `.ai-skills/docs/compatibility.md § Per-Tool Directory Ownership`.
 # `.agents/` is the per-user Codex skills root — fully ignored.
