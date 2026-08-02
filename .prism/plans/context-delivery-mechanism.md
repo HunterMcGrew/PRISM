@@ -297,12 +297,70 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 ---
 
+## Review Issues
+
+### `stateFilePath` doesn't start with a verb
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.ts:100`
+- **Problem:** `code-standards.md` § Naming requires function names to start with a verb; `stateFilePath` is a noun phrase.
+- **Suggested fix:** rename to `buildStateFilePath` or `resolveStateFilePath`; update the two call sites in `loadRouteState` and `saveRouteState`.
+
+### State-file read-modify-write races under concurrent same-session reads
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.ts:177-193`
+- **Problem:** `resolveArchitectDoc` reads the state file, computes pending docs, then writes the merged state — with no lock. Two `Read` calls in the same tool-call batch (the harness explicitly allows parallel tool calls in one message) spawn concurrent hook processes; if both read state before either writes, the later `saveRouteState` call overwrites the earlier one's addition, so a doc can be re-injected later in the same session — the "once per doc per session" ceiling (REQ-1 AC) can be violated under concurrency, though the failure mode is a harmless duplicate injection, not data loss or a crash.
+- **Suggested fix:** non-blocking for this PR given the low blast radius; worth a code comment noting the known race, or a follow-up if the ceiling needs to be exact rather than best-effort.
+
+### Fail-open hook has no inspectable failure signal (adjudicated — no fix required)
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `scripts/ai-skills/hooks/claude-post-read.ts:48-63`
+- **Problem:** Dispatch flagged this for adjudication. The hook writes failures to stderr and exits 0 by design (ADR-0071 names this as a deliberate, reasoned Negative consequence — blocking on failure was considered and rejected because auto-compaction-style blocking blocks at the worst moment). Weighed independently: the tradeoff is sound as recorded, but stderr from a background hook process is not visible in the transcript, so a silently-broken hook and a hook with nothing to inject are indistinguishable to the session.
+- **Suggested fix:** no change requested for this PR — the ADR's reasoning holds and the A/B harness (task 9) is the intended check on whether the hook does anything at all, which would also surface a systemically broken hook as a control-arm-equals-variant-arm result. A cheap future improvement (not blocking): append failures to a small inspectable log Zoe's cadence audit could read, rather than stderr alone.
+
+### Insertion anchor for the prose fallback (adjudicated — placement is correct)
+
+- **Severity:** `minor`
+- **Status:** `no_change_needed`
+- **File:** `.prism/rules/context-reuse.md:24`
+- **Problem:** Dispatch flagged that task 4 named "the mid-session-rebase paragraph" as the insertion anchor, and that text does not exist anywhere in `context-reuse.md` (confirmed — zero grep hits). Clove inserted a new `## Architect-context routing is diff-blind` subsection immediately before `## Citation list — skills that load this rule` instead.
+- **Suggested fix:** none — the chosen placement is correct on its own merits. The file's body ends at "The pattern is 'read once, refer many'" (line 22); a new subsection landing right after that and before the citation footer reads as a natural continuation, not a bolt-on. No better anchor exists in the file for a task-named anchor that was never real.
+
+---
+
+## Cleanup Items
+
+None.
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` beyond the controlled `JSON.parse(...) as Manifest` / `as ArchitectRouteState` pattern already used elsewhere in this codebase for trusted repo-local config files
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — 8 unit tests in `architect-route.test.ts` cover match, injection-once, cross-session re-injection, no-match, and disk-freshness
+- [x] All debugged issues resolved (no `open` entries in `## Debugged Issues`)
+- [x] Build passes — last run: 2026-08-02 (`pnpm prism:check`: build --check, type-check, 579 tests, verify-manifest, crossref-lint, verify-pack-parity all green)
+- [ ] PR description up to date — not checked this pass (chat-only scope; Eric's lane on GitHub)
+- [ ] Lasting decisions promoted to architect context — plan not yet closed; verdict pending per every Decision's `→ promotion verdict pending close` marker
+
+**Last updated:** 2026-08-02
+
+---
+
 ## Sessions
 
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — turn the thrive-port comparison into a plan whose PRs are small, single-concern, and parallel where the build allows; Bounds — write this plan file only, no rule, skill, hook, or mirror edits; Approach — verify every host-hook claim against vendor docs and every PRISM claim against disk before recording it as a Decision · close: scope held
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — apply the self-measurement criterion to every Tier-1 rule and independently verify the consumer-delivery claim that would make the audit moot; Bounds — one report file plus a plan pointer, read-only on source, no `conductor-state.json`; Approach — enumerate from disk not memory, cross-check against the generated block, grade every claim Confirmed/Deduced/Hypothesized · close: scope held — one deliberate addition beyond the tasked output, the orphan-tmpl finding, because it contradicts an already-tasked AC
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — settle task 6's `load:` tier so an implementer decides nothing, and spec an A/B that can falsify the architect-context hook; Bounds — this plan file only, no code, no `conductor-state.json`; Approach — map the enum blast radius on disk before choosing, and reframe the A/B from read-count to adherence · close: scope held — one deliberate touch beyond task 6 and the new task: a kill-switch clause added to PR 1's task 2, called out in the task text because the control arm depends on it
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — make Wave 2 dispatchable by resolving the plan-file contention, re-cutting the rows against the audit, and tasking them to the detail bar; Bounds — plan files only, append-only on this file, no code or rules; Approach — verify every lane assignment against the target's real `load:` value and check the fan-out premise before organizing a wave around it · close: scope held — Wave 2 moved to `epic-context-delivery-wave-2.md`; this file touched only by the pointer, this line, and one History entry
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — self-review PR #450 (the architect-context read hook) against this plan's task 1–5 detail and the repo's standards; Bounds — chat findings plus this plan's `## Review Issues`/`## Cleanup Items`/`## PR Readiness` only, no source edits, no GitHub comments; Approach — run the actual PR diff (not the local branch superset), execute the test suite and `pnpm prism:check`, and independently adjudicate the two flagged items rather than passing them through · close: scope held — 2 Minor findings (naming, a narrow concurrency race), both non-blocking; the fail-open design and the insertion-anchor placement were adjudicated and accepted as-is
 
 ---
 
