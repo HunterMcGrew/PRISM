@@ -52,3 +52,8 @@ node_modules
 
 # npm pack output — regenerated each release; reviewed via /tmp/prism-tarball-contents.txt.
 *.tgz
+
+# Hook adherence A/B harness — per-run evidence archived before worktree teardown
+# (response, stderr, changed-files, state file, diff). Local diagnostic material a
+# session reads, not a committed record; the TSV and DECISION.md stay committed.
+scripts/experiments/hook-adherence-ab/results/runs/

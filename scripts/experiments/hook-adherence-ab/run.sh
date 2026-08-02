@@ -22,10 +22,25 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CLAUDE_BIN="${CLAUDE_BIN:-/Users/hunter/.local/bin/claude}"
 RUNS_PER_CELL="${RUNS_PER_CELL:-10}"
 DATE_STAMP="$(date +%Y-%m-%d)"
-RESULTS_FILE="$SCRIPT_DIR/results/${DATE_STAMP}-run.tsv"
+
+# Set only when the operator did not already export RESULTS_FILE — this is
+# what lets the same-day-collision guard below tell "the default path exists
+# from an earlier run today" (abort) from "the operator explicitly chose this
+# path on purpose" (proceed).
+RESULTS_FILE_WAS_EXPLICIT="${RESULTS_FILE+1}"
+RESULTS_FILE="${RESULTS_FILE:-$SCRIPT_DIR/results/${DATE_STAMP}-run.tsv}"
 
 : "${MODEL:?MODEL must be set to a full model id, never an alias — see README.md}"
 : "${BUDGET:?BUDGET must be set (per-run USD ceiling passed to --max-budget-usd)}"
+
+# A same-day re-run would otherwise append into the prior run's file with no
+# separator, silently merging two matrices into one indistinguishable cell
+# set. Abort rather than guess; the operator can opt out by setting
+# RESULTS_FILE explicitly to a path of their choosing.
+if [ -z "$RESULTS_FILE_WAS_EXPLICIT" ] && [ -f "$RESULTS_FILE" ]; then
+	echo "run.sh: $RESULTS_FILE already exists — refusing to append a same-day re-run into it. Set RESULTS_FILE explicitly if this is intentional." >&2
+	exit 1
+fi
 
 if [ ! -f "$RESULTS_FILE" ]; then
 	printf 'date\tprompt\tarm\trun_index\tmodel\tsession_id\texit_status\thook_fired\tinjected_docs\tcriteria_passed\tcriteria_total\tvoid_reason\n' > "$RESULTS_FILE"
@@ -46,7 +61,7 @@ run_one() {
 
 	if ! "$REPO_ROOT/scripts/worktree-setup.sh" "$worktree_path"; then
 		echo "run.sh: worktree-setup.sh failed for $worktree_name — aborting this run, producing no row" >&2
-		git -C "$REPO_ROOT" worktree remove -q --force "$worktree_path" 2>/dev/null || true
+		remove_worktree "$worktree_path" "$worktree_name"
 		return 1
 	fi
 
@@ -88,6 +103,7 @@ run_one() {
 		void_reason="timeout"
 	elif [ "$run_exit_code" -ne 0 ]; then
 		exit_status="error:$run_exit_code"
+		void_reason="error"
 	fi
 
 	unset PRISM_HOOK_DISABLE || true
@@ -117,7 +133,53 @@ run_one() {
 		"${criteria_passed:-0}" "${criteria_total:-0}" "$void_reason" \
 		>> "$RESULTS_FILE"
 
-	git -C "$REPO_ROOT" worktree remove -q --force "$worktree_path" 2>/dev/null || true
+	archive_run_artifacts "$prompt" "$arm" "$run_index" "$worktree_path" "$base_sha"
+	remove_worktree "$worktree_path" "$worktree_name"
+}
+
+# Copies a run's evidence out of its worktree before teardown. Teardown
+# previously ran unconditionally and silently — the two surviving control
+# worktrees this plan's re-cut relies on only exist because teardown was
+# separately broken, so a correct implementation of "tear down after
+# grading" would have destroyed the exact evidence that diagnosis needed.
+archive_run_artifacts() {
+	prompt="$1"
+	arm="$2"
+	run_index="$3"
+	worktree_path="$4"
+	base_sha="$5"
+
+	archive_dir="$SCRIPT_DIR/results/runs/${DATE_STAMP}/${prompt}-${arm}-${run_index}"
+	mkdir -p "$archive_dir"
+
+	for artifact in response.json stderr.log changed-files.txt; do
+		[ -f "$worktree_path/$artifact" ] && cp "$worktree_path/$artifact" "$archive_dir/"
+	done
+
+	state_file="$(find "$worktree_path/.prism" -maxdepth 1 -name 'architect-route-state.*.json' 2>/dev/null | head -1)"
+	[ -n "$state_file" ] && cp "$state_file" "$archive_dir/"
+
+	git -C "$worktree_path" diff "$base_sha" > "$archive_dir/diff.patch" 2>/dev/null || true
+}
+
+# Tears a run's worktree down. Root cause of the six worktrees that survived
+# the stage-1 smoke: `git worktree remove` has no `-q`/`--quiet` flag on this
+# git (2.50.1) — only `git worktree add` does — so `-q --force` failed with
+# "unknown switch" on every call. `2>/dev/null || true` swallowed both the
+# error text and the exit code, so the failure was invisible; a by-hand
+# repro without the stray `-q` naturally succeeded, which is why it looked
+# unreproducible. Dropping `-q` (never valid here) fixes the removal itself;
+# the exit-code check stays as a safety net for genuine future failures
+# (a locked or dirty worktree), and must not abort a matrix run in progress —
+# the remaining cells still have evidentiary value — but it must be seen.
+remove_worktree() {
+	worktree_path="$1"
+	worktree_name="$2"
+
+	remove_err="$(git -C "$REPO_ROOT" worktree remove --force "$worktree_path" 2>&1)" && remove_exit_code=0 || remove_exit_code=$?
+	if [ "$remove_exit_code" -ne 0 ]; then
+		echo "run.sh: worktree remove failed for $worktree_name (exit $remove_exit_code): $remove_err" >&2
+	fi
 }
 
 prompt_slug() {
@@ -135,7 +197,11 @@ json_field() {
 }
 
 json_array_field() {
-	printf '%s' "$1" | grep -o "\"$2\": *\[[^]]*\]" | head -1 | sed -E 's/.*\[(.*)\]/\1/' | tr -d '"' | tr ',' ';'
+	# grade.ts pretty-prints with JSON.stringify(result, null, "\t"), so a
+	# multi-element array spans several lines — stripping newlines and tabs
+	# first joins it back to one line before the grep, which only matches
+	# within a line.
+	printf '%s' "$1" | tr -d '\n\t' | grep -o "\"$2\": *\[[^]]*\]" | head -1 | sed -E 's/.*\[(.*)\]/\1/' | tr -d '"' | tr ',' ';'
 }
 
 # --- the matrix: 3 prompts x 2 arms x RUNS_PER_CELL ---

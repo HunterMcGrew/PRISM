@@ -31,6 +31,8 @@ A null result is uninterpretable unless the hook is proven to have fired. `resol
 
 A run whose arm expectation fails is `void_reason=positive_control` and excluded from its cell's mean. More than 2 void runs in a 10-run cell means the cell — and the harness, not the hook — is broken.
 
+Voided rows — any `void_reason` other than `-` — are re-run, not subtracted: a voided row stays in the TSV for audit and a replacement run is appended with a fresh `run_index`, so the cell's denominator stays at `RUNS_PER_CELL`. Subtracting would silently shrink *n* and bias the cell whenever failures correlate with an arm, which they do here — only the variant arm runs the hook. Capped at 2 re-runs per cell, matching the void ceiling above.
+
 ## The falsifier
 
 > The hook fails to earn its keep if, on P1 and P2 combined, the variant arm's mean criteria-passed exceeds the control arm's by fewer than 2 criteria per 10 runs, or if P3 separates by any margin. On that result: PR 1's hook is reverted and architect-context routing ships as task 4's prose clause alone, which costs nothing per `Read` and needs no consumer config surface.
@@ -48,10 +50,14 @@ Write the outcome into `context-delivery-mechanism.md`'s `## Decisions` and into
 - `run.sh` — loops arms x prompts x runs, preparing a fresh worktree per run under `.claude/worktrees/`, invoking the agent, grading the result, and appending a row to the results TSV.
 - `fixtures/p2-adherent/`, `fixtures/p2-non-adherent/`, `fixtures/p2-control/` — hand-authored run directories the self-test grades, standing in for real worktrees without spending a run. `p2-adherent` and `p2-non-adherent` both carry a state file (hook fired; only the answer quality differs). `p2-control` carries none (kill switch active).
 - `results/` — where `run.sh` writes `<YYYY-MM-DD>-run.tsv` plus a sibling `DECISION.md`. Empty except `.gitkeep` until a matrix actually runs.
+- `results/runs/<date>/<prompt>-<arm>-<run_index>/` — per-run evidence (`response.json`, `stderr.log`, `changed-files.txt`, the architect-route state file if present, `diff.patch`) archived out of each worktree before teardown. Gitignored — local diagnostic material a session reads, not a committed record.
+- `results/diagnostic/` — non-experiment rows kept for their evidentiary value (e.g. the stage-1 smoke), moved off the canonical results path so a real run's same-day guard doesn't collide with them.
 
 ## Results TSV columns
 
-`date`, `prompt` (`p1|p2|p3`), `arm` (`control|variant`), `run_index`, `model`, `session_id`, `exit_status` (`ok`, `timeout`, or `error:<code>` — the actual non-zero, non-142 exit code, so a fast clean failure is never confused with a real 600s kill), `hook_fired` (`yes|no`), `injected_docs` (semicolon-joined, or `-`), `criteria_passed`, `criteria_total`, `void_reason` (`-|timeout|positive_control`).
+`date`, `prompt` (`p1|p2|p3`), `arm` (`control|variant`), `run_index`, `model`, `session_id`, `exit_status` (`ok`, `timeout`, or `error:<code>` — the actual non-zero, non-142 exit code, so a fast clean failure is never confused with a real 600s kill), `hook_fired` (`yes|no`), `injected_docs` (semicolon-joined, or `-`), `criteria_passed`, `criteria_total`, `void_reason` (`-|timeout|positive_control|error|no_headroom|invalid`).
+
+**Any `exit_status` other than `ok` voids the row** — an errored run's artifact set is not trustworthy, and a partial write scores the same as a deliberate one unless the row is marked. `no_headroom` and `invalid` are reserved for the interpretability-gate and validity-precondition rework tracked separately; `run.sh` does not emit them yet.
 
 ## Running the matrix
 

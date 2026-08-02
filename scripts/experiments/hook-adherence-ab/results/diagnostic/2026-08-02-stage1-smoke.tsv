@@ -1,0 +1,7 @@
+date	prompt	arm	run_index	model	session_id	exit_status	hook_fired	injected_docs	criteria_passed	criteria_total	void_reason
+2026-08-02	p1	control	1	claude-opus-5	6BC4DC8E-F7F6-4811-AC1C-582D32A1990D	ok	no	-	3	3	-
+2026-08-02	p1	variant	1	claude-opus-5	6A800133-8129-4CB8-BB9F-A09C44BDFDD4	error:1	yes	-	3	3	-
+2026-08-02	p2	control	1	claude-opus-5	1E040A46-2D68-48EE-B172-140D5217A83F	ok	no	-	3	3	-
+2026-08-02	p2	variant	1	claude-opus-5	0DDF8E9E-46D4-42ED-B7E8-6C5D40ED21C1	ok	no	-	3	3	positive_control
+2026-08-02	p3	control	1	claude-opus-5	462EF175-7E1E-4BE5-B004-48510F0CAF0B	ok	no	-	1	1	-
+2026-08-02	p3	variant	1	claude-opus-5	F8CEC025-A132-45DD-8C8B-2B5A8FDE4A41	ok	no	-	1	1	-
