@@ -850,6 +850,12 @@ Any multi-step skill invocation that touches the same file across steps. Concret
 
 The pattern is "read once, refer many" — not "read every step."
 
+## Architect-context routing is diff-blind
+
+Architect-context routing keys on the working diff (`prism-architect` startup step 4 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. When a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing.
+
+A `PostToolUse` hook on `Read` enforces this mechanically on hosts that expose the event (Claude Code today). This clause is the fallback that runs everywhere else, including hosts without a hook yet.
+
 ## Citation list — skills that load this rule
 
 This rule is referenced by every PRISM skill's reflex-bullets section:

@@ -44,5 +44,11 @@ node_modules/
 # (sourceCommit, generatedAt). Regenerated on every build; never a drift target.
 .prism/.sync-manifest.json
 
+# Architect-route hook state — operational; one file per session tracking which
+# architect docs the PostToolUse(Read) hook has already injected. Gitignored
+# per the same class as Theo/Ren/conductor state above.
+.prism/architect-route-state.*.json
+.prism/architect-route-state.*.json.tmp
+
 # npm pack output — regenerated each release; reviewed via /tmp/prism-tarball-contents.txt.
 *.tgz

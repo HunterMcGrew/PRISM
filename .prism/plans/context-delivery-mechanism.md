@@ -50,6 +50,13 @@ Five peripheral PRs (2258, 2237, 2235, 2226, 2225) were left at the inventory pa
   - **Implementation guidance:** two confirmed hits — `pre-compaction-checkpoint.md` (converts) and `context-window-handoff-check.md` (retires, already scoped as `thrive-port.md` task 17). The audit applies the criterion to the rest of the Tier-1 set.
   - **→ promotion verdict pending close.**
 
+- **The always-on audit found zero self-measurement hits beyond the two already known, and the consumer-delivery finding it was told to resolve no longer holds.** Report: [`.prism/audits/2026-08-02-always-on-rule-audit.md`](../audits/2026-08-02-always-on-rule-audit.md) — per-rule verdict table for all 22 Tier-1 rules, the consumer-distribution verification, and the Wave 2 cut-line deltas.
+  - **Consumer delivery:** `epic-prism-consumer-boundary.md`:63's claim is resolved. All 22 `load: always` rules ship in `templates/install/.prism/rules/`, and `prism adopt` + `prism update` generate the consumer's `AGENTS.md` Tier-1 block from the consumer's own seeded rules (`adopt.ts:229`, `update.ts:594-608`). Auditing Tier 1 is not moot.
+  - **Verdicts:** 20 keep, 1 convert (`pre-compaction-checkpoint.md`, already PR 2), 1 retire (`context-window-handoff-check.md`, already `thrive-port.md` task 17). The generated block's 22 sources match the canonical set exactly — no discrepancy.
+  - **Live residue found:** `templates/install/AGENTS.md.tmpl` is read by no code path yet ships in the npm package, and carries hand-written §8 and §12 duplicates of the two rules this plan retires and converts. **Task 8's "consolidate to one home" is short a copy** — it names `AGENTS.md § 12` and `CLAUDE.md`, and the tmpl is a third. The AC "the five checkpoint bullets exist in exactly one place" fails on disk unless PR 2 handles it. `docs/distribution.md:100` and `docs/parameterization.md:9` both describe the tmpl as a live distribution source; neither is true.
+  - **Wave 2 deltas:** no row changes lane and none is deleted. The retire-handoff-check row's sweep surface is wider than written (seed twin, the hand-maintained `| 8 |` pointer row outside the generated block, skill citations, and the tmpl). One new Lane B row is warranted — orphan-tmpl cleanup plus the two doc corrections — sequenced before the retire row.
+  - **→ promotion verdict pending close.**
+
 - **Hooks earn their place only where no file-based mechanism exists.** Always-on rule delivery stays as it is — CLAUDE.md imports, the generated `AGENTS.md` Tier-1 block, and Cursor's native `alwaysApply: true`.
   - **Root cause:** a SessionStart hook would inject the same content at the same position, so it does not touch the attention problem. What it would change is the failure mode: generation is gated by `prism:check` and fails loudly, where a hook that errors or times out silently delivers nothing. Install cost also triples — three consumer config surfaces to merge into rather than a file copy — and hook-injected content is invisible to a consumer reading their own repo.
   - **Alternatives considered:** move Tier-1 delivery to SessionStart injection on all three hosts.
@@ -73,7 +80,25 @@ Five peripheral PRs (2258, 2237, 2235, 2226, 2225) were left at the inventory pa
   - **Implementation guidance:** the rewritten `pre-compaction-checkpoint.md` keeps the five-bullet content spec as the hook's injected payload and drops the self-observation trigger. The same five bullets are currently duplicated in `AGENTS.md § 12` and `CLAUDE.md § Context Preservation Rules` — the rewrite consolidates to one home.
   - **→ promotion verdict pending close.**
 
-- **`rule-load.ts` needs a fourth tier value, or the rewritten checkpoint rule needs a different home.** The enum is `always | paths | skill`, and a hook is not a skill. Deciding between a `hook` value and declaring the rule `skill` with the hook as its reader is part of task 6.
+- **The rewritten checkpoint rule ships as `load: skill`; `rule-load.ts`'s enum stays `always | paths | skill`.** The hook is the rule's reader, and Tier 3 is defined by delivery behavior, not by the identity of the reader.
+  - **Root cause:** the question read as "a hook is not a skill, so the enum is short a value." It isn't. ADR-0070 defines `load: skill` by what the build does with the file — never copied to any platform always-on surface, never inlined into `AGENTS.md`, exists only canonically, and loads when something cites it at the triggering moment. A hook that reads the canonical file from disk on `SessionStart(source: "compact")` is exactly that contract. `skill` names the tier's most common reader, not its only permitted one.
+  - **Alternatives considered:** add a fourth value `hook` to `RuleLoad` and `VALID_LOADS`.
+  - **Chosen approach:** `load: skill`, zero code change. It beat the fourth value because the fourth value buys a naming nicety and costs a five-surface edit plus a cross-version regression:
+    - `scripts/ai-skills/build.ts` — `isSkillLoadRuleFile` is the *only* predicate excluding a rule from the platform always-on copies, and it is called at two sites (`:163` in the area copy, `:453` in orphan cleanup). A `hook` value would not match it, so the rule would be copied to `.claude/rules/`, `.codex/rules/`, and `.cursor/rules/` — the exact always-on delivery the rewrite exists to leave. The predicate would have to broaden at both sites.
+    - `scripts/ai-skills/rule-load.ts` — type, `VALID_LOADS`, and the operator-facing error string that enumerates the legal values.
+    - `scripts/ai-skills/doctor.ts` and `update.ts` — warn-mode degrade. A consumer on a PRISM CLI older than the enum addition parses `load: hook` as *invalid* and degrades it to `load: always`, silently re-inlining the rule into that consumer's `AGENTS.md` Tier-1 block. Every existing value is forward-safe; a new one is not.
+    - ADR-0070 and ADR-0035 (plus their `templates/install/` mirrors) — both enumerate the tier set. A fourth tier amends the three-tier model, which is a new ADR, not a value addition.
+    - `agents-md-block.ts` and `rule-dialect.ts` are safe either way — the first filters on `load === "always"`, the second never sees an excluded rule.
+  - **Orphan-gate check (verified on disk, not assumed):** nothing flags a `load: skill` rule that no skill cites. `build.ts` only excludes; `crossref-lint.ts` resolves link targets and has no unreferenced-file rule; `verify-manifest-coverage.ts` covers architect routing, not rules; no test asserts skill-side citation. So `skill` costs no suppression, which was the one finding that could have flipped the call.
+  - **Precedent:** `.prism/rules/pr-description.md` and `.prism/rules/worktree-git.md` already ship `load: skill`. `pr-description.md` is the closest analog — ADR-0070 reclassified it precisely because it fires at an action, not a path glob. Compaction is another action.
+  - **Implementation guidance:** task 6 changes one frontmatter line and the rule body. No `scripts/` edit, no test, no ADR amendment beyond the ADR-0008 supersession already scoped as task 8. **The PR-ownership question in the dispatch dissolves — there is no enum edit for either PR to own, so PR 1's scope is unchanged and Sol's PR 1 dispatch is unaffected.**
+  - **→ promotion verdict pending close.**
+
+- **The hook A/B measures adherence, not whether the agent read the file.** Same prompt, same target files, hook off vs hook on; the observable is whether the governing architect doc's constraints show up in the produced output.
+  - **Root cause:** "did the agent read the files" is already answered by this plan's own premise. Architect-context routing keys on the working diff (`prism-architect` startup step 4), so a prompt-driven task carries an unrelated diff and the target path's own doc never loads — that is the finding the hook exists to fix, recorded in the architect-routing Decision above. An experiment that re-measures it re-proves a premise instead of testing the remedy.
+  - **Alternatives considered:** Hunter's original framing — measure read-vs-not-read with the files injected later; skip the harness and ship the hook on the argument alone.
+  - **Chosen approach:** adherence. It is the only observable that can *falsify* the hook: injecting a doc that changes nothing about the output is a cost with no benefit, and read-count cannot detect that case. Shipping on the argument alone was rejected because the hook adds a per-`Read` process, a session state file, and a consumer config surface — complexity that should have to earn itself against a stated falsifier.
+  - **Implementation guidance:** task 9. The rubric grades on constraints that live *only* in an architect doc, never one restated in a Tier-1 rule — a Tier-1 constraint reaches the control arm too and washes out the contrast.
   - **→ promotion verdict pending close.**
 
 - **Sol keeps his autonomy and his merge capability; only the `launch | internal | hobby` intake goes.** Removing `autonomyPolicy` makes Sol more autonomous by default, not less — today it is a ceiling a persona may never auto-clear below, so identical work gates differently depending on an answer given at intake.
@@ -94,6 +119,9 @@ Five peripheral PRs (2258, 2237, 2235, 2226, 2225) were left at the inventory pa
   - **Root cause:** both non-Claude adapters rest on an inferred fact — that Cursor's `postToolUse` input carries the file path for a Read, and that Codex's `apply_patch` input exposes the target path in a stable shape. Both come from vendor docs, not from a run. Shipping them alongside a verified adapter would present three working integrations where only one is known to work.
   - **Alternatives considered:** ship all three with the two marked unverified in the ADR.
   - **Chosen approach:** PR 1 ships the Claude adapter only. The Cursor and Codex adapters become a follow-up PR gated on host access. The resolver is shared and host-agnostic, so the follow-up is adapters and registration alone.
+  - **→ promotion verdict pending close.**
+
+- **Codex's `apply_patch` does not expose a target path, and Cursor's read-tool path field is unconfirmed — verified against vendor docs on 2026-08-02, correcting one prior claim in task 3.** Codex's `apply_patch` (and Bash) input is a `tool_input.command` string only; there is no separate path field, so the follow-up PR recovers the path by parsing the patch format rather than reading it off the input. The preferred Codex trigger is `mcp__filesystem__read_file` — a real read event whose MCP call results flow to `PostToolUse` — used when a filesystem MCP is present, with the `apply_patch` route as fallback. Cursor's `postToolUse` input has no documented file-path field and no read-specific event name; whether it carries one for its own read tool is the follow-up's one host check, not a design gap. Cursor's `preCompact` input also carries `context_usage_percent`, `context_tokens`, `context_window_size`, and `message_count` — a genuine self-measurement capability the compaction Decision above didn't know about. It doesn't change that Decision: Cursor's `preCompact` still can't inject, only nudge via `user_message`.
   - **→ promotion verdict pending close.**
 
 - **Eli rides each PR rather than batching a documentation pass at the end.** A batched pass leaves every intermediate merge shipping docs that contradict their source.
@@ -134,9 +162,11 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 2. **Add the Claude adapter.** New file `scripts/ai-skills/hooks/claude-post-read.ts`. Parses stdin JSON, extracts the path, calls the resolver, wraps the result in Claude's output shape. Verified against the Claude Code hooks reference: event `PostToolUse`, matcher `"Read"`, path at `tool_input.file_path`, session key `session_id`, output `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "..."}}`. Exercise it end-to-end before the PR opens — read a file with a matching manifest entry and confirm the doc arrives, then read it again and confirm nothing does.
 
+   **Kill switch (added 2026-08-02, for task 9's control arm).** As the first statement in the adapter's entry path, before stdin is parsed: if `process.env.PRISM_HOOK_DISABLE === "1"`, write nothing to stdout and exit `0`. This is the only supported way to run a session with the hook registered but inert, and task 9's control arm depends on it — a control arm that instead deletes the `.claude/settings.json` entry would vary two things at once (registration and behavior) and could not attribute a difference to either. Same three lines go in `pre-compact-marker.ts` and `post-compact-inject.ts` in task 7, so one variable disables every hook this plan adds. Verify: `PRISM_HOOK_DISABLE=1` piped the same stdin JSON produces empty stdout and exit `0`; unset, it produces the doc.
+
 3. **Register the Claude hook.** Add the entry to `.claude/settings.json`. Registration must merge into any existing consumer config rather than overwrite it.
 
-   *Cursor and Codex adapters are a follow-up PR, gated on host access.* Their shapes are recorded here so the follow-up does not re-derive them: Cursor uses `postToolUse` matched on the Read tool with output field `additional_context` — its `beforeReadFile` supports access control only and cannot inject, so it is not usable. Codex has no file-read tool at all and reads through Bash or a filesystem MCP, so it triggers on `PreToolUse` with matcher `"^apply_patch$"`, output `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "..."}}`. Both rest on an inferred fact the follow-up must confirm on the host — that Cursor's `postToolUse` input carries the file path for a Read, and that Codex's `apply_patch` input exposes the target path in a stable shape.
+   *Cursor and Codex adapters are a follow-up PR, gated on host access.* Their shapes are recorded here, corrected against vendor docs on 2026-08-02, so the follow-up does not re-derive them. **Cursor:** `postToolUse` matched on the Read tool, output field `additional_context`; `beforeReadFile` supports access control only (`permission: allow|deny` plus an optional `user_message`) and cannot inject, so it is not usable. `postToolUse` input is documented as `tool_name`, `tool_input`, `tool_output`, `tool_use_id`, `cwd`, `duration` — no documented file-path field and no read-specific event. Whether `tool_input` carries the path for Cursor's read tool, and what that tool is even called, is the one open host check the follow-up needs to make. **Codex:** has no file-read tool at all. The preferred trigger is `mcp__filesystem__read_file` — a documented matchable tool name whose MCP call results flow to `PostToolUse` hooks, a real read event and semantically what this hook wants — used when the session has a filesystem MCP. The fallback, for sessions without one, is `PreToolUse` matched on `"^apply_patch$"`, output `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "..."}}` — but `apply_patch` and Bash both carry only a `tool_input.command` string, not a separate target-path field (this corrects the plan's prior claim that `apply_patch`'s input exposes the target path in a stable shape; it does not). Recovering the path from the `apply_patch` route means parsing the patch format, which the follow-up PR does, not this one.
 
 4. **Port the prose fallback.** [Lane A] In `.prism/rules/context-reuse.md`, add thrive #2247's clause after the mid-session-rebase paragraph: architect-context routing keys on the working diff, so a doc you are about to edit is invisible to it — when a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing. State that the hook is the enforcement layer on hosts that expose the event and that this clause is what runs where they do not.
 
@@ -144,17 +174,73 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 **PR 2 — compaction checkpoint hook** (stacks on PR 1 — same resolver chassis and state file)
 
-6. **Rewrite `.prism/rules/pre-compaction-checkpoint.md`.** [Lane A] Drop the self-observation trigger; keep the five-bullet content spec as the hook's payload. Resolve the `load:` tier question — either add a fourth value to `rule-load.ts`'s enum (`always | paths | skill | hook`) with validator and test coverage, or declare the rule `skill` and have the hook read the file directly. Record the call in the ADR from task 5's sibling.
+6. **Rewrite `.prism/rules/pre-compaction-checkpoint.md` and retier it to `load: skill`.** [Lane A — the retier removes the file from the Tier-1 block, so `AGENTS.md` regenerates] The tier call is settled in `## Decisions` above: `load: skill`, no `rule-load.ts` change. Three edits, in this order:
 
-7. **Add the two compaction hooks.** `scripts/ai-skills/hooks/pre-compact-marker.ts` writes branch, plan path, `git status --short`, `transcript_path`, and timestamp to a marker file. `scripts/ai-skills/hooks/post-compact-inject.ts` fires on Claude's `SessionStart` with `source: "compact"` and Codex's `PostCompact`, injecting the checkpoint spec plus an instruction to reconcile the plan against the marker. Bound the reconcile instruction to the transcript tail, not the whole file, or the reconcile pass pushes straight toward the next compaction. Cursor has no post-compact event — it degrades to the observational `preCompact` `user_message` nudge; state that limit in the ADR.
+   **6a — frontmatter.** In `.prism/rules/pre-compaction-checkpoint.md`, replace the frontmatter body line `load: always` with `load: skill`. Leave the `---` fences and everything else in the block alone. Do not add a `paths:` list — `parseRuleLoad` throws on `paths:` beside a non-`paths` load value.
+
+   **6b — rule body.** Replace the whole `## Purpose` section (from `## Purpose` through the end of the `**Why:**` paragraph, stopping before `**How to apply:**`) with:
+
+   > ## Purpose
+   >
+   > This rule is the payload the post-compaction hook injects, and the spec a persona follows when reconciling after a compaction event. It is not ambient — nothing here asks a session to notice its own context pressure.
+   >
+   > **Why:** the previous version fired on a self-measurement — "when context usage approaches the compaction threshold" — which a session cannot make reliably. It either misses the threshold silently or claims a number it cannot verify. No plan in `.prism/plans/` records it having fired. `SessionStart(source: "compact")` is the real event, so the trigger moves to the host and the content stays here as the thing the host delivers.
+
+   Keep the five `**How to apply:**` bullets verbatim — they are the injected payload and task 8 consolidates the other two copies into this one. Replace the `## Who runs this rule` body with: `The post-compaction hook (`scripts/ai-skills/hooks/post-compact-inject.ts`, task 7) reads this file and injects it into the session that resumes after a compaction. Any persona resuming after a compaction follows it.`
+
+   **6c — verify the retier actually took.** Run `pnpm prism:build`, then confirm all four hold:
+   - `grep -c "Pre-Compaction Checkpoint" AGENTS.md` returns `0` — the rule left the generated Tier-1 block.
+   - `ls .claude/rules/pre-compaction-checkpoint.md .cursor/rules/pre-compaction-checkpoint.mdc .codex/rules/pre-compaction-checkpoint.md` returns no such file for all three — `build.ts`'s `isSkillLoadRuleFile` gate at `:163` skipped the copy and orphan cleanup at `:453` removed the stale ones.
+   - `.prism/rules/pre-compaction-checkpoint.md` still exists — Tier 3 keeps its canonical file.
+   - `templates/install/.prism/rules/pre-compaction-checkpoint.md` matches the canonical byte-for-byte (the seed mirror is non-curated for this file).
+
+   Then `pnpm prism:check` passes. Sequence: 6a → 6b → 6c, and task 6 finishes before task 7 (the hook reads this file's final shape) and before task 8 (which removes the duplicate copies this file becomes the sole home for).
+
+   No `scripts/` edit and no new test belongs to this task. `RuleLoad` stays `always | paths | skill`; if you find yourself opening `scripts/ai-skills/rule-load.ts`, stop — the Decision above rules that out and names why.
+
+7. **Add the two compaction hooks.** `scripts/ai-skills/hooks/pre-compact-marker.ts` writes branch, plan path, `git status --short`, `transcript_path`, and timestamp to a marker file. `scripts/ai-skills/hooks/post-compact-inject.ts` fires on Claude's `SessionStart` with `source: "compact"` and Codex's `PostCompact`, injecting the checkpoint spec plus an instruction to reconcile the plan against the marker. (Codex also exposes `PreCompact` and `SessionStart` with `source: "compact"` — verified 2026-08-02 against https://learn.chatgpt.com/docs/hooks; `PostCompact` is the confirmed injection point and the other two are available if the implementer finds them more reliable.) Bound the reconcile instruction to the transcript tail, not the whole file, or the reconcile pass pushes straight toward the next compaction. Cursor has no post-compact event — it degrades to the observational `preCompact` `user_message` nudge; state that limit in the ADR.
 
 8. **Supersede ADR-0008.** Flip its status and record that `SessionStart(source: "compact")` refutes its stated premise. Consolidate the duplicated five bullets — remove them from `AGENTS.md § 12` and `CLAUDE.md § Context Preservation Rules`, leaving one home.
 
+**PR 3 — hook adherence A/B harness** (Lane B. Starts after PR 1 merges — it needs the shipped adapter and its kill switch. Independent of PR 2.)
+
+9. **Build the A/B harness that can falsify the architect-context hook.** New directory `scripts/experiments/hook-adherence-ab/`. Deliberately outside `scripts/ai-skills/` (whose `run-tests.ts` auto-collects `*.test.ts`, and whose files are swept by pack-parity) and outside `.prism/` (whose non-curated files are auto-mirrored into `templates/install/` and would ship this experiment to every consumer). No precedent exists in-repo; the closest prior art is the out-of-tree `~/.claude-work/experiments/review-inventory-ab/` harness, which this follows in shape — fixture repo, per-arm spec, `results/` directory, a `DECISION.md` — but lands in-tree because its verdict gates a shipped mechanism and has to be reviewable in the PR that acts on it.
+
+    **Files to create:**
+
+    - `scripts/experiments/hook-adherence-ab/README.md` — what the harness measures (adherence, not read-count), the falsifier verbatim from below, and how to run it.
+    - `scripts/experiments/hook-adherence-ab/prompts/p1-architect-doc.md`, `p2-canonical-file.md`, `p3-control.md` — one prompt per file, exact text below.
+    - `scripts/experiments/hook-adherence-ab/grade.ts` — the mechanical grader. Takes a directory containing one run's resulting worktree, returns per-criterion pass/fail JSON. Run with `npx tsx`, no new dependency.
+    - `scripts/experiments/hook-adherence-ab/run.sh` — loops arms × prompts × runs, each run in a fresh `git worktree` off the current branch, invokes the agent with the prompt, calls `grade.ts`, appends a row to the results TSV. Tears the worktree down after grading.
+    - `scripts/experiments/hook-adherence-ab/results/.gitkeep` — per `lazy-artifacts.md` the result file itself is created on first run, not seeded.
+
+    **Arms.** Identical in every respect except one environment variable, set by `run.sh` per arm:
+    - *Control:* `PRISM_HOOK_DISABLE=1`. The hook stays registered in `.claude/settings.json` and still fires; it returns empty and exits 0 (task 2's kill switch). Nothing about the hook source, the settings file, or the manifest differs between arms.
+    - *Variant:* `PRISM_HOOK_DISABLE` unset.
+
+    **Prompts and their target files.** Every prompt is phrased so the task requires reading the target file and produces a file-system-observable result, and carries no hint of the constraint being graded. Each graded constraint lives *only* in `.prism/architect/_toolkit/install-layout.md` — none is restated in any Tier-1 rule, which is what keeps the control arm from passing for free.
+
+    - **P1 — `.prism/architect/_toolkit/install-layout.md` via the `.prism/architect/**` manifest route.** Prompt: *"Read `.prism/architect/_toolkit/architecture-doc-shape.md`, then add a new PRISM architect doc covering how `pnpm prism:build` decides which platform directories to write. Wire it up so agents actually load it."* Graded constraints: (i) the new doc is created under `.prism/architect/_toolkit/`, not flat `.prism/architect/` — install-layout § "Ownership is path-decidable" reserves the flat namespace for consumer product docs; (ii) a route for it is added to `.prism/architect/manifest.json`; (iii) `.ai-skills/definitions/seed-curation.json` gains a classification for the new canonical file, per install-layout § "The templates/install seed surface".
+    - **P2 — `.prism/architect/_toolkit/install-layout.md` via the `scripts/ai-skills/build.ts` manifest route.** Prompt: *"`.claude/rules/code-comments.md` has a typo in its first heading. Fix it."* The adherent answer refuses the literal instruction: the platform copy is generated output, so the fix belongs in `.prism/rules/code-comments.md` followed by `pnpm prism:build`. Graded constraints: (i) `.prism/rules/code-comments.md` is modified; (ii) `.claude/rules/code-comments.md` is not hand-edited ahead of a rebuild; (iii) the response or a commit names the rebuild step.
+    - **P3 — negative control.** A target path with no `manifest.json` entry (`README.md`), graded on a formatting constraint from a Tier-1 rule. Both arms must score the same. If P3 separates, the harness is measuring run-to-run variance rather than the hook, and the P1/P2 result is void.
+
+    **Rubric and grader.** Every criterion above is a path assertion or a `git diff --name-only` / file-content grep — nothing turns on taste, so `grade.ts` grades all of them mechanically and no human is in the loop. Task is `[AFK]`, not `[HITL]`. Score per run is the count of criteria passed; report per prompt per arm as passed/total across runs.
+
+    **Run count.** 10 runs per arm per prompt — 60 runs total (3 prompts × 2 arms × 10). Matches the order of magnitude of the prior out-of-tree harness (23 runs, A/B/C) and is enough for a 2-of-10 separation floor to mean something without turning the harness into a project.
+
+    **Falsifier — state it in the README and honor it.** The hook fails to earn its keep if, on P1 and P2 combined, the variant arm's mean criteria-passed exceeds the control arm's by fewer than 2 criteria per 10 runs, *or* if P3 separates by any margin. On that result: PR 1's hook is reverted and architect-context routing ships as task 4's prose clause alone, which costs nothing per `Read` and needs no consumer config surface. Write that outcome into this plan's `## Decisions` and into the ADR from task 5 rather than quietly re-running until the numbers cooperate — a second run of the same design is a new experiment only if the design changed, and the reason it changed goes in the README.
+
+    **Where the result lands.** `scripts/experiments/hook-adherence-ab/results/<YYYY-MM-DD>-run.tsv` (raw rows) plus a sibling `DECISION.md` (the verdict and the arithmetic behind it), both committed in PR 3. The verdict is then promoted into this plan's `## Decisions` and into task 5's ADR as the evidence line for why the mechanical layer exists — or doesn't.
+
+    **Verification.** `npx tsx scripts/experiments/hook-adherence-ab/grade.ts --self-test` passes against two committed fixture worktrees (one adherent, one not) so the grader is proven before any run is graded by it. Then `pnpm prism:check` — the directory is outside every generated surface, so the expected effect on build output is none; if `prism:check` reports drift, the harness landed in the wrong place and the path decision above needs revisiting rather than the drift being accepted.
+
 ### Winston (architecture) — Wave 2 opener
 
-9. **Run the always-on audit.** Apply the self-measurement criterion to all Tier-1 rules; per-rule verdict of keep, retier, convert to mechanism, or retire. Output is a report, not a code change. Two hits are already known. Also resolve the finding recorded at [`epic-prism-consumer-boundary.md`](./epic-prism-consumer-boundary.md):63 — the always-loaded behavioral rules are in neither the install rule surface nor `AGENTS.md.tmpl`, so consumers run without them. Auditing Tier 1 is moot while consumers never receive Tier 1.
+10. **Run the always-on audit.** Apply the self-measurement criterion to all Tier-1 rules; per-rule verdict of keep, retier, convert to mechanism, or retire. Output is a report, not a code change. Two hits are already known. Also resolve the finding recorded at [`epic-prism-consumer-boundary.md`](./epic-prism-consumer-boundary.md):63 — the always-loaded behavioral rules are in neither the install rule surface nor `AGENTS.md.tmpl`, so consumers run without them. Auditing Tier 1 is moot while consumers never receive Tier 1.
 
-### Wave 2 — scoped, tasked when the wave opens
+### Wave 2 — moved to its own plan
+
+> **Wave 2 now lives at [`epic-context-delivery-wave-2.md`](./epic-context-delivery-wave-2.md)** — tasked to the detail bar, re-cut against the always-on audit, with lane assignments, sequencing, and a recommended dispatch order. Wave 2 lanes record there and never write to this file. The table below is the superseded PR-grain scoping it replaced.
 
 | PR | Lane | Content |
 | --- | --- | --- |
@@ -177,9 +263,9 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 ### Eli (documentation)
 
-10. **Run the docs grep on every PR in this plan.** Before a PR opens, `grep -rn "<changed concept>" docs/`. No hits — record that and proceed. Hits — the docs edit lands in the same PR, never a later one. The concept is the thing the PR renamed, retired, or redefined, not the filename it lives in.
+11. **Run the docs grep on every PR in this plan.** Before a PR opens, `grep -rn "<changed concept>" docs/`. No hits — record that and proceed. Hits — the docs edit lands in the same PR, never a later one. The concept is the thing the PR renamed, retired, or redefined, not the filename it lives in.
 
-11. **Size the standing docs gap once.** Separate from the per-PR grep: read `docs/` and determine whether the hook work, the retired rules, and the restructured PR-description headings leave a gap that needs its own PR. Not yet sized — no read of `docs/` has been done for this plan.
+12. **Size the standing docs gap once.** Separate from the per-PR grep: read `docs/` and determine whether the hook work, the retired rules, and the restructured PR-description headings leave a gap that needs its own PR. Not yet sized — no read of `docs/` has been done for this plan.
 
 ---
 
@@ -199,21 +285,30 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 - [ ] Every Tier-1 rule carries an audit verdict after the audit runs (REQ-1)
 - [ ] Repo-wide grep for `autonomyPolicy` returns hits only in plans and ADR history after the Sol intake PR (REQ-1)
 - [ ] The five checkpoint bullets exist in exactly one place after the compaction PR (REQ-1)
+- [ ] `pre-compaction-checkpoint.md` appears in no generated `AGENTS.md` block and in no platform rules directory after the compaction PR, while its canonical file remains (REQ-1)
+- [ ] The hook A/B harness reports a per-arm score for every prompt including the negative control, and its stated falsifier is recorded in `## Decisions` whichever way the result lands (REQ-1)
 
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-08-02 | Winston | AC created in plan; no tracker ticket exists for this work | ✓ | N/A |
+| 2026-08-02 | Winston | Added retier-verification and A/B-harness AC alongside the task 6 rewrite and task 9 | ✓ | N/A |
 
 ---
 
 ## Sessions
 
-- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — turn the thrive-port comparison into a plan whose PRs are small, single-concern, and parallel where the build allows; Bounds — write this plan file only, no rule, skill, hook, or mirror edits; Approach — verify every host-hook claim against vendor docs and every PRISM claim against disk before recording it as a Decision
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — turn the thrive-port comparison into a plan whose PRs are small, single-concern, and parallel where the build allows; Bounds — write this plan file only, no rule, skill, hook, or mirror edits; Approach — verify every host-hook claim against vendor docs and every PRISM claim against disk before recording it as a Decision · close: scope held
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — apply the self-measurement criterion to every Tier-1 rule and independently verify the consumer-delivery claim that would make the audit moot; Bounds — one report file plus a plan pointer, read-only on source, no `conductor-state.json`; Approach — enumerate from disk not memory, cross-check against the generated block, grade every claim Confirmed/Deduced/Hypothesized · close: scope held — one deliberate addition beyond the tasked output, the orphan-tmpl finding, because it contradicts an already-tasked AC
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — settle task 6's `load:` tier so an implementer decides nothing, and spec an A/B that can falsify the architect-context hook; Bounds — this plan file only, no code, no `conductor-state.json`; Approach — map the enum blast radius on disk before choosing, and reframe the A/B from read-count to adherence · close: scope held — one deliberate touch beyond task 6 and the new task: a kill-switch clause added to PR 1's task 2, called out in the task text because the control arm depends on it
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — make Wave 2 dispatchable by resolving the plan-file contention, re-cutting the rows against the audit, and tasking them to the detail bar; Bounds — plan files only, append-only on this file, no code or rules; Approach — verify every lane assignment against the target's real `load:` value and check the fan-out premise before organizing a wave around it · close: scope held — Wave 2 moved to `epic-context-delivery-wave-2.md`; this file touched only by the pointer, this line, and one History entry
 
 ---
 
 ## History
 
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Plan created from the thrive-port comparison pass. Records the delivery-tier findings, the two hook designs, the self-measurement audit criterion, and a two-lane parallelism model keyed on the generated `AGENTS.md` Tier-1 block. Companion to `thrive-port.md`, which keeps its original candidate verdicts.
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Ran task 10, the always-on rule audit; report at `.prism/audits/2026-08-02-always-on-rule-audit.md`. Zero self-measurement hits beyond the two known, and the consumer-delivery finding at `epic-prism-consumer-boundary.md`:63 is resolved on disk. See Decision: the always-on audit found zero further hits.
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Resolved task 6's `load:` tier as `skill` rather than a fourth `rule-load.ts` enum value, and rewrote the task to the detail bar with a four-check retier verification. Added task 9, an adherence A/B harness with a stated falsifier that can revert PR 1's hook. PR 1's scope is unchanged apart from a `PRISM_HOOK_DISABLE` kill switch the control arm needs; see Decisions.
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Split Wave 2 into `epic-context-delivery-wave-2.md` at epic grain, tasked its rows to the detail bar, and re-cut them against the always-on audit. Restored `.prism/plans/thrive-port.md` from `stash@{0}` — it was the sole copy and eleven Wave 2 rows cite it. This plan keeps Wave 1 and the audit criterion unchanged.
