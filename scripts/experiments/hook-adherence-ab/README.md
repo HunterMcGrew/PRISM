@@ -51,7 +51,7 @@ Write the outcome into `context-delivery-mechanism.md`'s `## Decisions` and into
 
 ## Results TSV columns
 
-`date`, `prompt` (`p1|p2|p3`), `arm` (`control|variant`), `run_index`, `model`, `session_id`, `exit_status` (`ok|timeout|error`), `hook_fired` (`yes|no`), `injected_docs` (semicolon-joined, or `-`), `criteria_passed`, `criteria_total`, `void_reason` (`-|timeout|positive_control`).
+`date`, `prompt` (`p1|p2|p3`), `arm` (`control|variant`), `run_index`, `model`, `session_id`, `exit_status` (`ok`, `timeout`, or `error:<code>` — the actual non-zero, non-142 exit code, so a fast clean failure is never confused with a real 600s kill), `hook_fired` (`yes|no`), `injected_docs` (semicolon-joined, or `-`), `criteria_passed`, `criteria_total`, `void_reason` (`-|timeout|positive_control`).
 
 ## Running the matrix
 

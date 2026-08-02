@@ -63,8 +63,14 @@ run_one() {
 
 	# Portable 600s timeout — neither `timeout` nor `gtimeout` exists on this
 	# machine (verified 2026-08-02), so wrap with perl's alarm rather than
-	# assume coreutils.
-	if ! (
+	# assume coreutils. Perl's `alarm` delivers SIGALRM, which a killed child
+	# reports as exit code 142 (128 + SIGALRM's signal number 14) — that is
+	# the only exit code that means "the 600s ceiling actually fired." Any
+	# other non-zero exit is a real, fast failure (e.g. an auth error) and
+	# must not be recorded as a timeout, or a poisoned row looks identical to
+	# a run that legitimately ran the full 600s.
+	run_exit_code=0
+	(
 		cd "$worktree_path" && \
 		perl -e 'alarm shift; exec @ARGV' 600 \
 			"$CLAUDE_BIN" -p "$(cat "$prompt_file")" \
@@ -75,9 +81,13 @@ run_one() {
 			--output-format json \
 			--max-budget-usd "$BUDGET" \
 			> "$worktree_path/response.json" 2> "$worktree_path/stderr.log"
-	); then
+	) || run_exit_code=$?
+
+	if [ "$run_exit_code" -eq 142 ]; then
 		exit_status="timeout"
 		void_reason="timeout"
+	elif [ "$run_exit_code" -ne 0 ]; then
+		exit_status="error:$run_exit_code"
 	fi
 
 	unset PRISM_HOOK_DISABLE || true
