@@ -333,6 +333,78 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 - **Problem:** Dispatch flagged that task 4 named "the mid-session-rebase paragraph" as the insertion anchor, and that text does not exist anywhere in `context-reuse.md` (confirmed — zero grep hits). Clove inserted a new `## Architect-context routing is diff-blind` subsection immediately before `## Citation list — skills that load this rule` instead.
 - **Suggested fix:** none — the chosen placement is correct on its own merits. The file's body ends at "The pattern is 'read once, refer many'" (line 22); a new subsection landing right after that and before the citation footer reads as a natural continuation, not a bolt-on. No better anchor exists in the file for a task-named anchor that was never real.
 
+### Injected payload has a count ceiling but no byte ceiling
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.ts:191-197`
+- **Problem:** Measured against the real `manifest.json` and real docs, one `Read` of `.prism/plans/thrive-port.md` produces 92,366 bytes (~23k tokens) of `additionalContext` — `.prism/**` routes to `install-layout.md` (40 KB) plus `skills-ecosystem.md` (49 KB). Summing every doc the manifest can reach, the per-session ceiling is ~180 KB (~45k tokens), roughly a fifth of the 200k–300k session the plan's problem statement targets. The "one injection per doc per session" ceiling is correctly implemented but counts docs, not bytes. All nine tests seed ~30-byte doc bodies, so the size dimension is never exercised and the suite stays green. Consequence for task 9: a variant arm spending 23k tokens on its first `.prism/` read measures a materially different intervention than ADR-0071 describes.
+- **Suggested fix:** add a byte ceiling beside the count ceiling — past a threshold inject the doc path plus its first section rather than the whole body; or give the hook its own narrower routing than the persona-startup manifest entries; at minimum add a realistic-size payload test so a `manifest.json` edit cannot silently double this.
+
+### `loadRouteState` recovers only from `ENOENT`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.ts:113-122`
+- **Problem:** A corrupt or truncated state file makes `JSON.parse` throw a `SyntaxError`, which carries no `code`, so `isNodeError` is false and the error propagates out of `resolveArchitectDoc`. The adapter catches it, and every subsequent `Read` takes the same path — the session goes silently inert with no repair path short of deleting the file by hand.
+- **Suggested fix:** treat unparseable state the same as absent and return `{ injected: [] }`. The state is a cache, not a record; the worst outcome is one duplicate injection.
+
+### Per-session state files accumulate with no reaper
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.ts:100`
+- **Problem:** One state file per session, retained indefinitely. Unlike the fixed-name Theo, Ren, and conductor state files, this one is a glob in `.gitignore` — unbounded, and gitignored so the growth never surfaces in `git status`.
+- **Suggested fix:** prune sibling state files older than a window inside `saveRouteState`, or give the sweep to Zoe's cadence audit rather than putting filesystem work on the hot path.
+
+### `cwd` is the session directory, not necessarily the repo root
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/claude-post-read.ts:51`
+- **Problem:** `repoRoot = input.cwd ?? process.cwd()` assumes the session started at the repo root. From a subdirectory, `loadManifest` throws `ENOENT`, the adapter catches it, and the hook is inert for the entire session with nothing in the transcript. This is also the largest single cause of the "silently broken hook is indistinguishable from nothing to inject" condition adjudicated as no-fix above.
+- **Suggested fix:** walk up from `cwd` looking for `.prism/architect/manifest.json` and use that directory as the root — removes the ambiguity class rather than adding a signal for it.
+
+### `process.exit(0)` immediately after a large `stdout.write`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/claude-post-read.ts:64-73`
+- **Problem:** Pipe writes are asynchronous on macOS and `process.exit()` does not guarantee pending writes flush, so a ~90 KB payload could truncate into malformed JSON. Not reproduced — 12 consecutive runs at 92,366 bytes all parsed clean, so this is latent hardening rather than a demonstrated defect.
+- **Suggested fix:** `process.exitCode = 0` and `return`, letting the event loop drain; same for the early-exit paths above it.
+
+### `npx` spawn on every `Read`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.claude/settings.json:9`
+- **Problem:** Measured 0.27–0.29s per invocation, paid on every `Read` including the majority that inject nothing. `npx` re-resolves the package each spawn and reaches the network when `tsx` is not locally resolvable, so a fresh clone before install pays much worse than 270ms.
+- **Suggested fix:** `pnpm exec tsx`, or invoke the locally-resolved `tsx` binary directly.
+
+### Adapter has no automated coverage
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/architect-route.test.ts`
+- **Problem:** All nine tests target the resolver. `claude-post-read.ts` has none — not the `PRISM_HOOK_DISABLE=1` kill switch, not the `hookSpecificOutput` shape, not the fail-open catch, not the missing-`file_path`/`session_id` early exits. Task 9's control arm depends on the kill switch for its validity and there is no regression net under it.
+- **Suggested fix:** pipe fixed stdin JSON to the adapter and assert stdout for each of those four cases.
+
+### ADR-0071 misstates the consumer surface
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0071-architect-context-read-hook.md:30`
+- **Problem:** The Negative bullet says `.claude/settings.json` "has to be merged into on every install." `package.json`'s `files` array does not include `scripts/`, so neither the resolver nor the adapter ships to a consumer and no consumer install merges anything — the mechanism is dogfood-only. This also settles why `templates/install/.claude/settings.json` stays `{}`: seeding the registration would point every consumer at a script path absent from the published package, and because the hook fails open, the resulting dead hook would be silent. The seed is required, not merely tolerated — but nothing durable records that, so the next reader who notices the missing registration will add it.
+- **Suggested fix:** recast the Negative as a burden the follow-up adapters incur once the scripts ship, and add a Decision line stating the mechanism is repo-local until `scripts/ai-skills/hooks/` is in `files`.
+
+### PR body omits the W2-01 artifacts riding in the diff
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/context-delivery-mechanism.md`
+- **Problem:** PR #450 carries `scripts/worktree-setup.sh` and `.claude/hooks/guard-worktree-node-modules.sh` (263 lines of shell, including a second hook) from row W2-01 of `epic-context-delivery-wave-2.md`, plus that plan, `thrive-port.md`, and the always-on audit report. The PR body explains only the `context-delivery-mechanism.md` plan file riding along. The code is not unreviewed — W2-01 carries its own review record — so this is traceability, not correctness.
+- **Suggested fix:** add a paragraph to the PR body naming the W2-01 artifacts in the diff and pointing at their review record in `epic-context-delivery-wave-2.md`.
+
 ---
 
 ## Cleanup Items
@@ -365,6 +437,7 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — self-review PR #450 (the architect-context read hook) against this plan's task 1–5 detail and the repo's standards; Bounds — chat findings plus this plan's `## Review Issues`/`## Cleanup Items`/`## PR Readiness` only, no source edits, no GitHub comments; Approach — run the actual PR diff (not the local branch superset), execute the test suite and `pnpm prism:check`, and independently adjudicate the two flagged items rather than passing them through · close: scope held — 2 Minor findings (naming, a narrow concurrency race), both non-blocking; the fail-open design and the insertion-anchor placement were adjudicated and accepted as-is
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — close both open Review Issues from Briar's self-review of PR #450; Bounds — `scripts/ai-skills/hooks/architect-route.ts` plus this plan's `## Review Issues`/`## PR Readiness`/`## History` only, no merge, no other PR; Approach — rename the noun-phrase function per code-standards.md § Naming, add a code comment naming the concurrency race per the reviewer's own suggested fix, re-run `pnpm prism:build` and `pnpm prism:check` · close: scope held — both findings fixed, no disputed findings, both checks green
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — round 2 self-review of PR #450, verifying both round-1 Minor findings landed correctly and directly checking lazy-artifacts compliance, disk-read freshness, `.gitignore` glob coverage, and dangling path citations across the new files; Bounds — chat findings plus this plan's Review Issues/PR Readiness only, no source edits, no GitHub comments; Approach — confirmed `buildStateFilePath` rename and the race-condition comment on disk, re-ran `pnpm prism:check` (579/579 tests, all gates green), grepped every cited path in the new ADR for existence · close: scope held — zero-findings pass; both round-1 Minors verified fixed on disk (not just claimed), lazy-artifacts/disk-freshness/`.gitignore` checks all pass, no dangling citations found
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — PR review of #450 as an integrated whole, weighing the two implementer-flagged items and the consumer-contract question self-review cannot answer; Bounds — GitHub inline comments plus a summary on #450, and this plan's `## Review Issues`/`## History`/`## Sessions` only; no source edits, no merge, no un-draft, no other PR; Approach — exercise the hook against the real manifest and real docs rather than fixtures, verify every claim on disk, and adjudicate the flagged items independently rather than ratifying self-review · close: scope held — 1 Major (ungated payload size, measured at 92,366 bytes on a single `.prism/` read) and 8 Minor; both flagged items adjudicated (fail-open ships, insertion anchor correct), consumer scoping judged correct and provably so
 
 ---
 
@@ -375,3 +448,4 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Resolved task 6's `load:` tier as `skill` rather than a fourth `rule-load.ts` enum value, and rewrote the task to the detail bar with a four-check retier verification. Added task 9, an adherence A/B harness with a stated falsifier that can revert PR 1's hook. PR 1's scope is unchanged apart from a `PRISM_HOOK_DISABLE` kill switch the control arm needs; see Decisions.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Split Wave 2 into `epic-context-delivery-wave-2.md` at epic grain, tasked its rows to the detail bar, and re-cut them against the always-on audit. Restored `.prism/plans/thrive-port.md` from `stash@{0}` — it was the sole copy and eleven Wave 2 rows cite it. This plan keeps Wave 1 and the audit criterion unchanged.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Closed both open Review Issues from Briar's self-review of PR #450 — renamed `stateFilePath` to `buildStateFilePath` (code-standards.md § Naming) and added a code comment documenting the known state-file read-modify-write race under concurrent same-session reads. No behavior change; `pnpm prism:build` and `pnpm prism:check` both re-ran green after the fixes.
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Eric PR-reviewed #450 — inline comments and a severity-ranked summary posted. One Major (the injected payload has a count ceiling but no byte ceiling; measured 92,366 bytes on one `.prism/` read) and eight Minor recorded in `## Review Issues`. No labels applied while the Major is open.
