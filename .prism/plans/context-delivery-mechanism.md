@@ -71,6 +71,16 @@ Two Tier-1 rules make this concrete. `pre-compaction-checkpoint.md` asks the mod
 - **Writing-voice stays Tier 1.** Its scope covers skills, rules, architect context, ADRs, templates, durable plan sections, PR descriptions, commit messages, and tracker tickets — nearly every persona's output, because PRISM's product is durable prose. A `load: skill` retier would need a thirteen-persona list, which is `always` with extra bookkeeping and a drift surface. The mechanically-detectable half moves to a build gate instead.
   - **→ promotion verdict pending close.**
 
+- **A host adapter ships only after it has been exercised on that host.** Claude Code is testable now; Cursor and Codex are not available to test as of 2026-08-02.
+  - **Root cause:** both non-Claude adapters rest on an inferred fact — that Cursor's `postToolUse` input carries the file path for a Read, and that Codex's `apply_patch` input exposes the target path in a stable shape. Both come from vendor docs, not from a run. Shipping them alongside a verified adapter would present three working integrations where only one is known to work.
+  - **Alternatives considered:** ship all three with the two marked unverified in the ADR.
+  - **Chosen approach:** PR 1 ships the Claude adapter only. The Cursor and Codex adapters become a follow-up PR gated on host access. The resolver is shared and host-agnostic, so the follow-up is adapters and registration alone.
+  - **→ promotion verdict pending close.**
+
+- **Eli rides each PR rather than batching a documentation pass at the end.** A batched pass leaves every intermediate merge shipping docs that contradict their source.
+  - **Chosen approach:** each PR runs `grep -rn "<changed concept>" docs/` before it opens. No hits means no docs work and the PR proceeds; hits mean the docs edit lands in the same PR. Cheap when there is nothing to do, and it catches drift at the only moment it is cheap to fix.
+  - **→ promotion verdict pending close.**
+
 - **The generated `AGENTS.md` Tier-1 block is the parallelism constraint.** It inlines every Tier-1 rule body, so any PR editing a Tier-1 rule also rewrites `AGENTS.md`. Tier-2 and Tier-3 rules are not in the block and do not collide.
   - **Chosen approach:** two lanes. Lane A (Tier-1 rule edits) merges one at a time; a conflict there is in generated output and resolves by taking either side and re-running `pnpm prism:build`. Lane B (everything else) runs with no serialization at all.
   - **→ promotion verdict pending close.**
@@ -103,13 +113,11 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 1. **Add the routing resolver.** New file `scripts/ai-skills/hooks/architect-route.ts`. One exported function taking a file path and a session id, returning the architect doc body to inject or `null`. Behavior: match the path against `.prism/architect/manifest.json`; if a doc matches, check the session state file for a prior injection of that doc; if absent, read the doc from disk, mark it injected, and return its body. Reads from disk at call time so an edited doc injects current content. State file per `lazy-artifacts.md` — created on first injection, never seeded; atomic write via `.tmp` + rename. Ceiling is one injection per architect doc per session.
 
-2. **Add the three host adapters.** New files under `scripts/ai-skills/hooks/`: `claude-post-read.ts`, `cursor-post-tool.ts`, `codex-pre-edit.ts`. Each parses its host's stdin JSON, extracts the path, calls the resolver, and wraps the result in that host's output shape. Verified field shapes:
-   - Claude Code — `PostToolUse`, matcher `"Read"`, path at `tool_input.file_path`, session key `session_id`, output `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "..."}}`.
-   - Cursor — `postToolUse` matched on the Read tool, output field `additional_context`. Cursor's `beforeReadFile` supports access control only and cannot inject — do not use it.
-   - Codex — no file-read tool; it reads through Bash or a filesystem MCP. Trigger on `PreToolUse` with matcher `"^apply_patch$"` instead, output `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "..."}}`.
-   Confirm at build time that Cursor's `postToolUse` input carries the file path for a Read, and that Codex's `apply_patch` input exposes the target path in a stable shape. Both are inferred from docs, not observed.
+2. **Add the Claude adapter.** New file `scripts/ai-skills/hooks/claude-post-read.ts`. Parses stdin JSON, extracts the path, calls the resolver, wraps the result in Claude's output shape. Verified against the Claude Code hooks reference: event `PostToolUse`, matcher `"Read"`, path at `tool_input.file_path`, session key `session_id`, output `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "..."}}`. Exercise it end-to-end before the PR opens — read a file with a matching manifest entry and confirm the doc arrives, then read it again and confirm nothing does.
 
-3. **Register the hooks.** Add the Claude entry to `.claude/settings.json`, and the Cursor and Codex entries to their config surfaces. Registration must merge into any existing consumer config rather than overwrite it.
+3. **Register the Claude hook.** Add the entry to `.claude/settings.json`. Registration must merge into any existing consumer config rather than overwrite it.
+
+   *Cursor and Codex adapters are a follow-up PR, gated on host access.* Their shapes are recorded here so the follow-up does not re-derive them: Cursor uses `postToolUse` matched on the Read tool with output field `additional_context` — its `beforeReadFile` supports access control only and cannot inject, so it is not usable. Codex has no file-read tool at all and reads through Bash or a filesystem MCP, so it triggers on `PreToolUse` with matcher `"^apply_patch$"`, output `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "..."}}`. Both rest on an inferred fact the follow-up must confirm on the host — that Cursor's `postToolUse` input carries the file path for a Read, and that Codex's `apply_patch` input exposes the target path in a stable shape.
 
 4. **Port the prose fallback.** [Lane A] In `.prism/rules/context-reuse.md`, add thrive #2247's clause after the mid-session-rebase paragraph: architect-context routing keys on the working diff, so a doc you are about to edit is invisible to it — when a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing. State that the hook is the enforcement layer on hosts that expose the event and that this clause is what runs where they do not.
 
@@ -150,7 +158,9 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 
 ### Eli (documentation)
 
-10. **Scope the PRISM docs pass.** Determine whether `docs/` needs its own PR or rides each source PR. Not yet sized — no read of `docs/` has been done for this plan.
+10. **Run the docs grep on every PR in this plan.** Before a PR opens, `grep -rn "<changed concept>" docs/`. No hits — record that and proceed. Hits — the docs edit lands in the same PR, never a later one. The concept is the thing the PR renamed, retired, or redefined, not the filename it lives in.
+
+11. **Size the standing docs gap once.** Separate from the per-PR grep: read `docs/` and determine whether the hook work, the retired rules, and the restructured PR-description headings leave a gap that needs its own PR. Not yet sized — no read of `docs/` has been done for this plan.
 
 ---
 
