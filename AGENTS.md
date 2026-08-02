@@ -1058,12 +1058,23 @@ The common shape: it could plausibly have been part of the originating ticket bu
 - **Speculative follow-ups.** "Maybe we should look into X someday." Backlog noise. Either it's a known problem with a known shape (file it), or it's not (don't).
 - **Follow-ups without traceability.** A ticket with no link back to the decision that produced it. Six months later no one can answer "why is this ticket here?" and it gets closed unread.
 
+## Spec content never rides an unrelated ticket
+
+Always-on process or spec content — a rule declaring `load: always`, a skill body under `.ai-skills/skills/**`, or a `.prism/references/review-*.md` file — never rides a ticket it has no relationship to. This rule already forbade it, and it was ignored because each edit looked like a one-liner, so the remedy is a trip-wire rather than sharper prose. It cannot key on edit size, because size is what already failed.
+
+`.prism/lessons.md` is deliberately not on that list. `.prism/rules/self-improvement-loop.md` mandates an append to it after every user correction, so it lands in the diff of any ticket that captured a lesson — the routine case this rule exists to let through, not the one-liner-riding-an-unrelated-ticket case it exists to catch. `.prism/rules/writing-voice.md` already carves `.prism/lessons.md` out of the durable-artifact standard as working notes, not spec.
+
+The check is two computable conditions, both required to fire: the changed path is always-on spec content (per the criteria above), **and** the file's discriminator — its basename, or for a skill body under `.ai-skills/skills/**`, its skill directory — appears nowhere in the branch's live plan outside the plan's own bookkeeping sections, and no `## Decisions` entry names the path. A bookkeeping section is one a persona appends findings to, as opposed to a section an author writes to declare scope — currently `## Review Issues`, `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and `## PR Readiness`. The escape hatch is a `## Decisions` entry naming the path and the reason — the documented-absorption shape this rule already defines for cross-lane work (see § Choosing the vehicle above). Bookkeeping sections are excluded from the search deliberately: a fix-in note that quotes a flagged path shouldn't permanently clear that same path for the life of the plan.
+
+Enforced mechanically by `pnpm prism:spec-scope-lint` (`scripts/ai-skills/spec-scope-lint.ts`), which runs as part of `pnpm prism:check`.
+
 ## Who runs this rule
 
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
+- **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 
 ## Worker emit pre-filter (Sol-run-time)
 
@@ -1517,7 +1528,7 @@ These personas route on their name or an explicit trigger phrase only — never 
 ## Utility skills
 
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
-- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
+- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a subject-clean pass and closes with a scoreboard TLDR; the PR stays draft.
 - `prism-skill-forge` is a *utility* skill — no persona; it runs in the current voice. Invocation is user-initiated: "create skill", "scaffold skill", "new skill", "add persona", "migrate skill", "decompose skill", "import skill". Create mode scaffolds a new PRISM skill from scratch; migrate mode decomposes a generated platform skill back into canonical source.
 
 ## Sol is a persona, not a utility
