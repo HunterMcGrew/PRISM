@@ -22,6 +22,25 @@ Two Tier-1 rules make this concrete. `pre-compaction-checkpoint.md` asks the mod
 
 ---
 
+## Verdict table
+
+Eight `TracTru/thrive` PRs that [`thrive-port.md`](./thrive-port.md) never triaged — its ten original candidates keep their verdicts there. Compared against PRISM `origin/main` on 2026-08-02; PRISM evidence verified on disk.
+
+| PR | Thrive behavior | PRISM state | Verdict |
+| --- | --- | --- | --- |
+| 2259 | Delegation tiebreaker — unsure whether work is delegation-shaped, do it yourself | `subagent-strategy.md` carries no tiebreaker; PR #449 removed the opposite one and put nothing back | **Port.** Thrive cites PRISM's own 2026-07-30 stall as its evidence |
+| 2247 | Seven promotions: claim-you-author, re-test-a-recorded-conclusion, enumerate-before-removing, brief-carries-content-or-a-path, concept-level sweep matcher, fetch-is-not-updating, architect-routing-keys-on-the-diff, gate predicates | None present; several have no parent section in PRISM at all | **Port**, split across four PRs by target file |
+| 2249 | `Rebuild rather than resurrect` — the trigger is structural dependency, not commit count | `git-conventions.md` covers keeping a branch current, nothing on reviving a dormant one | **Port.** Remainder of the PR is archive bookkeeping and a thrive-stack caching doc |
+| 2260 | Linear render spec, plus an overflowing-container detector generalized into writing-voice | No `ticket-description.md`; Nora is tracker-agnostic. `writing-voice.md` has no container section | **Split.** Linear half not applicable — no substrate. Container detector ports |
+| 2255 | Standup Today and Blockers labels run straight into their bullets | Template is still single-shape with ZWSP throughout; `thrive-port.md` task 13 is unshipped | **Subsumed** into the Lilac PR, not a separate port |
+| 2242 | Ticket-template rewrite; DX defined by layer rather than by QA visibility; one type label per ticket | `ticket-types.md` carries the same four types but still uses the invisibility test. Its DX definition is written in thrive's dealer vocabulary and ships to consumers via `templates/install/` | **Partial.** Port the DX and one-label fixes and the vocabulary leak; the Linear-shaped scaffold rewrite does not apply |
+| 2217 | Skill chassis synced from PRISM, plus citation gates that fail rather than pass silently | Chassis already present — PRISM was the source. `crossref-lint.ts` has no unqualified-`§` rule and no `see Decision:` resolver | **Split.** Chassis already landed; gates are the portable half |
+| 2211 | Finn scrum-master plugin and a fifth plugin-packaging sync target | No scrum-master persona; PRISM ships npm | **Not applicable.** Plugin packaging is a product decision, not a port |
+
+Five peripheral PRs (2258, 2237, 2235, 2226, 2225) were left at the inventory pass's default of no direct ecosystem candidate. Their patches were not opened.
+
+---
+
 ## Decisions
 
 - **A rule whose trigger is a self-measurement belongs in a mechanism or nowhere.** This is the audit criterion for the Tier-1 set, and it is mechanical enough to apply without judgment: does the rule ask the model to measure something about itself — context usage, exchange count, files read, tokens spent — before it can fire?
