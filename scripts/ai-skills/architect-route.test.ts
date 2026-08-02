@@ -12,8 +12,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+	findRepoRoot,
+	loadRouteState,
 	matchDocsForPath,
+	MAX_DOC_INJECTION_BYTES,
 	resolveArchitectDoc,
+	saveRouteState,
 	toRepoRelativePath,
 } from "./hooks/architect-route";
 
@@ -158,5 +162,108 @@ test("resolveArchitectDoc: reads the doc's current on-disk content, not a cached
 
 		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
 		assert.match(result as string, /Edited content\./);
+	});
+});
+
+test("resolveArchitectDoc: caps a real-size doc at MAX_DOC_INJECTION_BYTES and points at the full path", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const oversizedDoc = "A".repeat(MAX_DOC_INJECTION_BYTES * 2);
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/oversized.md" },
+			"_toolkit/oversized.md",
+			oversizedDoc
+		);
+
+		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
+
+		assert.ok(result, "expected an injection for the oversized doc");
+		assert.ok(
+			Buffer.byteLength(result as string, "utf8") < Buffer.byteLength(oversizedDoc, "utf8"),
+			"the injected body must be smaller than the full doc"
+		);
+		assert.match(result as string, /truncated/);
+		assert.match(result as string, /_toolkit\/oversized\.md/);
+	});
+});
+
+test("resolveArchitectDoc: a doc within the byte cap is injected verbatim, untruncated", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const smallDoc = "Small enough to ship whole.";
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/small.md" },
+			"_toolkit/small.md",
+			smallDoc
+		);
+
+		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
+
+		assert.match(result as string, /Small enough to ship whole\./);
+		assert.doesNotMatch(result as string, /truncated/);
+	});
+});
+
+test("loadRouteState: a corrupt state file is treated as absent, not thrown", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.mkdir(path.join(repoRoot, ".prism"), { recursive: true });
+		await fs.writeFile(
+			path.join(repoRoot, ".prism", "architect-route-state.session-1.json"),
+			"{not valid json",
+			"utf8"
+		);
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(state, { injected: [] });
+	});
+});
+
+test("saveRouteState: prunes sibling state files older than the staleness window", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const staleFile = path.join(
+			repoRoot,
+			".prism",
+			"architect-route-state.old-session.json"
+		);
+		await fs.mkdir(path.dirname(staleFile), { recursive: true });
+		await fs.writeFile(staleFile, JSON.stringify({ injected: [] }), "utf8");
+
+		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
+		await fs.utimes(staleFile, staleTimestamp, staleTimestamp);
+
+		await saveRouteState(repoRoot, "current-session", { injected: [] });
+
+		await assert.rejects(fs.access(staleFile));
+		await assert.doesNotReject(
+			fs.access(
+				path.join(repoRoot, ".prism", "architect-route-state.current-session.json")
+			)
+		);
+	});
+});
+
+test("findRepoRoot: walks upward from a subdirectory to find the directory holding the manifest", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+
+		const subdir = path.join(repoRoot, "scripts", "ai-skills");
+		await fs.mkdir(subdir, { recursive: true });
+
+		const found = await findRepoRoot(subdir);
+		assert.equal(found, repoRoot);
+	});
+});
+
+test("findRepoRoot: returns null when no ancestor holds the manifest", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const found = await findRepoRoot(repoRoot);
+		assert.equal(found, null);
 	});
 });
