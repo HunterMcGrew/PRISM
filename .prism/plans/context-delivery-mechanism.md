@@ -405,7 +405,7 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 - **Severity:** `major`
 - **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/architect-route.ts:191-197`
-- **Problem:** Eric measured one real `Read` of `.prism/plans/thrive-port.md` producing 92,366 bytes (~23k tokens) of `additionalContext` — the count ceiling ("one injection per doc per session") was correctly implemented but had no byte ceiling beside it, and the per-session total across every manifest-reachable doc runs to ~180 KB (~45k tokens). All nine existing tests seeded ~30-byte doc bodies, so the size dimension was never exercised.
+- **Problem:** Eric measured one real `Read` of `.prism/plans/thrive-port.md` producing 92,366 bytes (~23k tokens) of `additionalContext` — the count ceiling ("one injection per doc per session") was correctly implemented but had no byte ceiling beside it, and the per-session total across every manifest-reachable doc runs to ~180 KB (~45k tokens). All nine existing tests seeded ~30-byte doc bodies, so the size dimension was never exercised. Consequence for task 9: a variant arm spending ~23k tokens on its first `.prism/` read measures a materially different intervention than ADR-0071 describes.
 - **Suggested fix:** cap the payload, narrow the hook's routing, or at minimum add a realistic-size test.
 - **Fixed in:** added `MAX_DOC_INJECTION_BYTES` (4000 bytes, ~1k tokens per doc) in `architect-route.ts`. A doc over the cap is truncated at a UTF-8-safe byte boundary and the section header names the total size and the on-disk path for the rest (`formatInjectionSection`). Two new tests assert the cap on an oversized doc and verbatim injection under it.
 
@@ -448,11 +448,11 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 ### Eric's PR #450 review — Minor: `npx` on the hot path
 
 - **Severity:** `minor`
-- **Status:** `deferred`
+- **Status:** `fixed`
 - **File:** `.claude/settings.json:9`
-- **Problem:** Measured 0.27–0.29s per `Read` invocation, including the overwhelming majority that inject nothing. `npx` re-resolves the package on every spawn.
+- **Problem:** Measured 0.27–0.29s per `Read` invocation, including the overwhelming majority that inject nothing. `npx` re-resolves the package on every spawn, and reaches the network when `tsx` is not locally resolvable, so a fresh clone before install pays much worse than 270ms.
 - **Suggested fix:** `pnpm exec tsx` (or the locally-resolved `tsx` binary) instead of `npx tsx`.
-- **Deferred — not fixed in this pass.** `.claude/settings.json` is outside this dispatch's edit scope (hard boundary: settings/permission files are operator-only). Exact change for the operator to apply by hand: in `.claude/settings.json`, change `"command": "npx tsx scripts/ai-skills/hooks/claude-post-read.ts"` to `"command": "pnpm exec tsx scripts/ai-skills/hooks/claude-post-read.ts"`.
+- **Fixed in:** the swap was deferred at the time of the fix pass (settings files are operator-only) and the operator applied it by hand before merge. Verified on disk 2026-08-02: `.claude/settings.json:9` reads `"command": "pnpm exec tsx \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/claude-post-read.ts\""`, landed in `77029d1c` (the PR #450 merge) — which also made the path `$CLAUDE_PROJECT_DIR`-absolute, closing the same subdirectory-`cwd` class as the `findRepoRoot` fix.
 
 ### Eric's PR #450 review — Minor: `claude-post-read.ts` has zero automated coverage
 
@@ -481,78 +481,6 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 - **Suggested fix:** a paragraph in the PR body naming the artifacts and pointing at their review record.
 - **Fixed in:** added a Notes-section paragraph naming all three riding plan files plus the two W2-01 shell artifacts, and pointing at PR #451 for their review record. Also added a short "Consumer distribution (as of this PR)" section restating the repo-local fact now that ADR-0071 states it correctly.
 
-### Injected payload has a count ceiling but no byte ceiling
-
-- **Severity:** `major`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/hooks/architect-route.ts:191-197`
-- **Problem:** Measured against the real `manifest.json` and real docs, one `Read` of `.prism/plans/thrive-port.md` produces 92,366 bytes (~23k tokens) of `additionalContext` — `.prism/**` routes to `install-layout.md` (40 KB) plus `skills-ecosystem.md` (49 KB). Summing every doc the manifest can reach, the per-session ceiling is ~180 KB (~45k tokens), roughly a fifth of the 200k–300k session the plan's problem statement targets. The "one injection per doc per session" ceiling is correctly implemented but counts docs, not bytes. All nine tests seed ~30-byte doc bodies, so the size dimension is never exercised and the suite stays green. Consequence for task 9: a variant arm spending 23k tokens on its first `.prism/` read measures a materially different intervention than ADR-0071 describes.
-- **Suggested fix:** add a byte ceiling beside the count ceiling — past a threshold inject the doc path plus its first section rather than the whole body; or give the hook its own narrower routing than the persona-startup manifest entries; at minimum add a realistic-size payload test so a `manifest.json` edit cannot silently double this.
-
-### `loadRouteState` recovers only from `ENOENT`
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/hooks/architect-route.ts:113-122`
-- **Problem:** A corrupt or truncated state file makes `JSON.parse` throw a `SyntaxError`, which carries no `code`, so `isNodeError` is false and the error propagates out of `resolveArchitectDoc`. The adapter catches it, and every subsequent `Read` takes the same path — the session goes silently inert with no repair path short of deleting the file by hand.
-- **Suggested fix:** treat unparseable state the same as absent and return `{ injected: [] }`. The state is a cache, not a record; the worst outcome is one duplicate injection.
-
-### Per-session state files accumulate with no reaper
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/hooks/architect-route.ts:100`
-- **Problem:** One state file per session, retained indefinitely. Unlike the fixed-name Theo, Ren, and conductor state files, this one is a glob in `.gitignore` — unbounded, and gitignored so the growth never surfaces in `git status`.
-- **Suggested fix:** prune sibling state files older than a window inside `saveRouteState`, or give the sweep to Zoe's cadence audit rather than putting filesystem work on the hot path.
-
-### `cwd` is the session directory, not necessarily the repo root
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/hooks/claude-post-read.ts:51`
-- **Problem:** `repoRoot = input.cwd ?? process.cwd()` assumes the session started at the repo root. From a subdirectory, `loadManifest` throws `ENOENT`, the adapter catches it, and the hook is inert for the entire session with nothing in the transcript. This is also the largest single cause of the "silently broken hook is indistinguishable from nothing to inject" condition adjudicated as no-fix above.
-- **Suggested fix:** walk up from `cwd` looking for `.prism/architect/manifest.json` and use that directory as the root — removes the ambiguity class rather than adding a signal for it.
-
-### `process.exit(0)` immediately after a large `stdout.write`
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/hooks/claude-post-read.ts:64-73`
-- **Problem:** Pipe writes are asynchronous on macOS and `process.exit()` does not guarantee pending writes flush, so a ~90 KB payload could truncate into malformed JSON. Not reproduced — 12 consecutive runs at 92,366 bytes all parsed clean, so this is latent hardening rather than a demonstrated defect.
-- **Suggested fix:** `process.exitCode = 0` and `return`, letting the event loop drain; same for the early-exit paths above it.
-
-### `npx` spawn on every `Read`
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `.claude/settings.json:9`
-- **Problem:** Measured 0.27–0.29s per invocation, paid on every `Read` including the majority that inject nothing. `npx` re-resolves the package each spawn and reaches the network when `tsx` is not locally resolvable, so a fresh clone before install pays much worse than 270ms.
-- **Suggested fix:** `pnpm exec tsx`, or invoke the locally-resolved `tsx` binary directly.
-
-### Adapter has no automated coverage
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `scripts/ai-skills/architect-route.test.ts`
-- **Problem:** All nine tests target the resolver. `claude-post-read.ts` has none — not the `PRISM_HOOK_DISABLE=1` kill switch, not the `hookSpecificOutput` shape, not the fail-open catch, not the missing-`file_path`/`session_id` early exits. Task 9's control arm depends on the kill switch for its validity and there is no regression net under it.
-- **Suggested fix:** pipe fixed stdin JSON to the adapter and assert stdout for each of those four cases.
-
-### ADR-0071 misstates the consumer surface
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `.prism/spec/adrs/_toolkit/0071-architect-context-read-hook.md:30`
-- **Problem:** The Negative bullet says `.claude/settings.json` "has to be merged into on every install." `package.json`'s `files` array does not include `scripts/`, so neither the resolver nor the adapter ships to a consumer and no consumer install merges anything — the mechanism is dogfood-only. This also settles why `templates/install/.claude/settings.json` stays `{}`: seeding the registration would point every consumer at a script path absent from the published package, and because the hook fails open, the resulting dead hook would be silent. The seed is required, not merely tolerated — but nothing durable records that, so the next reader who notices the missing registration will add it.
-- **Suggested fix:** recast the Negative as a burden the follow-up adapters incur once the scripts ship, and add a Decision line stating the mechanism is repo-local until `scripts/ai-skills/hooks/` is in `files`.
-
-### PR body omits the W2-01 artifacts riding in the diff
-
-- **Severity:** `minor`
-- **Status:** `open`
-- **File:** `.prism/plans/context-delivery-mechanism.md`
-- **Problem:** PR #450 carries `scripts/worktree-setup.sh` and `.claude/hooks/guard-worktree-node-modules.sh` (263 lines of shell, including a second hook) from row W2-01 of `epic-context-delivery-wave-2.md`, plus that plan, `thrive-port.md`, and the always-on audit report. The PR body explains only the `context-delivery-mechanism.md` plan file riding along. The code is not unreviewed — W2-01 carries its own review record — so this is traceability, not correctness.
-- **Suggested fix:** add a paragraph to the PR body naming the W2-01 artifacts in the diff and pointing at their review record in `epic-context-delivery-wave-2.md`.
-
 ---
 
 ## Cleanup Items
@@ -572,7 +500,7 @@ None.
 - [x] PR description up to date — added the W2-01 traceability paragraph and the consumer-distribution section Eric's review requested
 - [ ] Lasting decisions promoted to architect context — plan not yet closed; verdict pending per every Decision's `→ promotion verdict pending close` marker
 
-**Still open, not in this dispatch's edit scope:** the `npx` → `pnpm exec tsx` change in `.claude/settings.json` (settings/permission files are operator-only per this dispatch's hard boundary) — exact change recorded in the deferred Review Issue above for the operator to apply by hand.
+Every Review Issue from Eric's PR #450 review is now closed. The last outstanding one — the `npx` → `pnpm exec tsx` change in `.claude/settings.json`, deferred at fix time because settings files are operator-only — was applied by the operator before merge and verified on disk 2026-08-02.
 
 **Last updated:** 2026-08-02
 
@@ -591,6 +519,7 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — close every open finding from Eric's PR #450 review (1 Major, 7 Minor) without silently overruling any, and re-verify all gates; Bounds — the two hook files, their test files, ADR-0071, and PR #450's own body/plan sections only, no merge, no other PR, no `.claude/settings.json` edit (hard dispatch boundary); Approach — fix in reviewer-recommended order, verify each fix's premise before applying it (per cross-agent-handoff-accountability), rerun `pnpm prism:check-types`/`prism:test`/`prism:build`/`prism:check` after every batch · close: scope held apart from the settings.json deferral (reported to the operator, not silently dropped) — 7 of 8 findings fixed, 1 deferred with the exact JSON recorded for hand-application; the test suite's own monkey-patch bug (found while writing the coverage fix) was root-caused via an API split (`runAdapter` returns, `main()` writes) rather than papered over; 591/591 tests, all gates green
 - 2026-08-02 [main] open: Intent — close the three plan-readiness gaps Sol failed task 9 on (unspecified agent invocation, worktree that cannot run the hook plus no positive control, unbounded payload confound) so the A/B harness is dispatchable as its own PR; Bounds — this plan file only, task 9 in place plus `## Decisions`/`## Sessions`/`## History`, no code, no branch, no commit, leave the modified `lessons.md` and untracked `plans/conductor/` alone; Approach — verify every premise on disk before prescribing (CLI flags from `claude --help`, manifest routes resolved through the real `compileMatcher`, byte offsets from the real docs) rather than reasoning from the task's own claims · close: scope held — all three gaps closed, and specifying the positive control surfaced two false premises in the parts I was told to keep: P2's target path matches zero manifest patterns (so it injected nothing in either arm) and one P1 criterion sits past the shipped 4000-byte cap; both re-picked against verified routing, each recorded as a Decision, falsifier threshold and 60-run matrix unchanged
 - 2026-08-02 [huntermcgrew/hook-adherence-ab-harness] open: Intent — build task 9's A/B harness (prompts, grader, `run.sh`) and prove the grader with `--self-test`, without running any arm; Bounds — new files under `scripts/experiments/hook-adherence-ab/` plus this plan file only, no `.claude/settings.json`, no worktree under `.claude/worktrees/`, no `claude -p` invocation, leave `lessons.md` and `plans/conductor/` untouched; Approach — read the shipped resolver/adapter/manifest on disk before designing the grader's directory contract, then prove it against committed fixtures before writing `run.sh` around it · close: scope held — no arm run, `grade.ts --self-test` passes (10/10 checks across three fixtures), `pnpm prism:check` exits 0 with no drift
+- 2026-08-02 [huntermcgrew/hook-adherence-ab-harness] open: Intent — collapse the nine duplicated Eric-review findings in `## Review Issues` to one entry each, statuses settled against code on disk; Bounds — this plan file only, no code, no `.claude/settings.json`, no `conductor-state.json`, leave `lessons.md` and the untracked `plans/conductor/` alone; Approach — verify all nine against disk before editing rather than trusting either copy, keep the copy carrying the `Fixed in:` note, fold in substance only the stub held · close: scope held — 9 collapsed, 0 unresolved; one status disagreement settled against disk (the `npx` swap is applied in `.claude/settings.json:9`, not deferred as one copy claimed), and its stale echo in `## PR Readiness` corrected in the same pass to avoid leaving the file self-contradictory
 
 ---
 
@@ -605,3 +534,4 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Closed 7 of 8 findings from Eric's PR #450 review — added a byte ceiling on injected doc payloads (Major), widened `loadRouteState`'s corrupt-file recovery, added a stale-state-file reaper, walked `cwd` up to the repo root in the Claude adapter, replaced `process.exit()` with `process.exitCode` throughout, corrected ADR-0071's consumer-burden claim, and added `claude-post-read.test.ts` (6 tests) plus 6 new `architect-route.test.ts` tests. The `npx` → `pnpm exec tsx` fix in `.claude/settings.json` is deferred — outside this dispatch's edit scope — with the exact change recorded in the plan's Review Issues for the operator. Updated PR #450's body with the W2-01 traceability paragraph and a consumer-distribution section. 591/591 tests, `pnpm prism:check-types`/`prism:build`/`prism:check` all green.
 - 2026-08-02 [main]: Rewrote task 9 to the detail bar — pinned the exact `claude` invocation (model, permission mode, session id, portable timeout), made `scripts/worktree-setup.sh` a required per-run step, and added a per-run positive control asserting the hook's session state file. Specifying that control surfaced two false premises in the prompts: P2's target path matches zero manifest patterns and one P1 criterion sits past the shipped 4000-byte injection cap; both re-picked against verified routing. See Decisions: null result falsifies only with a passing positive control, and P2/P1 re-picked against verified routing.
 - 2026-08-02 [huntermcgrew/hook-adherence-ab-harness]: Built task 9's harness at `scripts/experiments/hook-adherence-ab/` — three prompts, `grade.ts`, `run.sh`, and three committed fixtures (`p2-adherent`, `p2-non-adherent`, `p2-control`). No arm was run — build-only per dispatch. `grade.ts --self-test` passes and `pnpm prism:check` exits 0 with no drift, confirming the harness lands outside every generated surface. See Decision: the harness grades a directory, not a live git worktree.
+- 2026-08-02 [huntermcgrew/hook-adherence-ab-harness]: Collapsed the nine duplicated Eric-review findings in `## Review Issues` — a merge-conflict resolution had kept both sides of an append-order conflict, so each finding appeared once resolved and once as an `open` stub. Each status was re-verified against code on disk rather than either copy, which corrected the `npx` finding from `deferred` to `fixed` (`.claude/settings.json:9` reads `pnpm exec tsx`, landed in `77029d1c`) and its stale echo in `## PR Readiness`. No code touched.
