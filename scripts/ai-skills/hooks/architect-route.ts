@@ -97,7 +97,7 @@ export function matchDocsForPath(
 	return docs;
 }
 
-function stateFilePath(repoRoot: string, sessionId: string): string {
+function buildStateFilePath(repoRoot: string, sessionId: string): string {
 	const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
 	return path.join(repoRoot, ".prism", `architect-route-state.${safeSessionId}.json`);
 }
@@ -112,7 +112,7 @@ export async function loadRouteState(
 	sessionId: string
 ): Promise<ArchitectRouteState> {
 	try {
-		const raw = await fs.readFile(stateFilePath(repoRoot, sessionId), "utf8");
+		const raw = await fs.readFile(buildStateFilePath(repoRoot, sessionId), "utf8");
 		return JSON.parse(raw) as ArchitectRouteState;
 	} catch (error) {
 		if (isNodeError(error) && error.code === "ENOENT") {
@@ -133,7 +133,7 @@ export async function saveRouteState(
 	sessionId: string,
 	state: ArchitectRouteState
 ): Promise<void> {
-	const targetPath = stateFilePath(repoRoot, sessionId);
+	const targetPath = buildStateFilePath(repoRoot, sessionId);
 	await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
 	const tmpPath = `${targetPath}.tmp`;
@@ -174,6 +174,13 @@ export async function resolveArchitectDoc(
 		return null;
 	}
 
+	// Two `Read` calls in the same tool-call batch spawn concurrent hook
+	// processes with no lock between this read and the `saveRouteState` below —
+	// if both read state before either writes, the later write can drop the
+	// earlier one's addition and the same doc re-injects later in the session.
+	// The failure mode is a harmless duplicate injection, not data loss or a
+	// crash, so this is accepted as a known best-effort ceiling rather than
+	// serialized.
 	const state = await loadRouteState(repoRoot, sessionId);
 	const injectedSet = new Set(state.injected);
 	const pendingDocs = matchedDocs.filter((doc) => !injectedSet.has(doc));

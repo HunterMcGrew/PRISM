@@ -302,18 +302,20 @@ Verification for every rule or skill task: `pnpm prism:build` regenerates mirror
 ### `stateFilePath` doesn't start with a verb
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/architect-route.ts:100`
 - **Problem:** `code-standards.md` § Naming requires function names to start with a verb; `stateFilePath` is a noun phrase.
 - **Suggested fix:** rename to `buildStateFilePath` or `resolveStateFilePath`; update the two call sites in `loadRouteState` and `saveRouteState`.
+- **Fixed in:** renamed to `buildStateFilePath`; both call sites (`loadRouteState`, `saveRouteState`) updated.
 
 ### State-file read-modify-write races under concurrent same-session reads
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/architect-route.ts:177-193`
 - **Problem:** `resolveArchitectDoc` reads the state file, computes pending docs, then writes the merged state — with no lock. Two `Read` calls in the same tool-call batch (the harness explicitly allows parallel tool calls in one message) spawn concurrent hook processes; if both read state before either writes, the later `saveRouteState` call overwrites the earlier one's addition, so a doc can be re-injected later in the same session — the "once per doc per session" ceiling (REQ-1 AC) can be violated under concurrency, though the failure mode is a harmless duplicate injection, not data loss or a crash.
 - **Suggested fix:** non-blocking for this PR given the low blast radius; worth a code comment noting the known race, or a follow-up if the ceiling needs to be exact rather than best-effort.
+- **Fixed in:** added a code comment above the read-modify-write in `resolveArchitectDoc` naming the race and why it's accepted as a best-effort ceiling rather than serialized. No behavior change.
 
 ### Fail-open hook has no inspectable failure signal (adjudicated — no fix required)
 
@@ -346,7 +348,7 @@ None.
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — 8 unit tests in `architect-route.test.ts` cover match, injection-once, cross-session re-injection, no-match, and disk-freshness
 - [x] All debugged issues resolved (no `open` entries in `## Debugged Issues`)
-- [x] Build passes — last run: 2026-08-02 (`pnpm prism:check`: build --check, type-check, 579 tests, verify-manifest, crossref-lint, verify-pack-parity all green)
+- [x] Build passes — last run: 2026-08-02 (`pnpm prism:build` and `pnpm prism:check`: build --check, type-check, 579 tests, verify-manifest, crossref-lint, verify-pack-parity all green, re-run after the two Review Issue fixes below)
 - [ ] PR description up to date — not checked this pass (chat-only scope; Eric's lane on GitHub)
 - [ ] Lasting decisions promoted to architect context — plan not yet closed; verdict pending per every Decision's `→ promotion verdict pending close` marker
 
@@ -361,6 +363,7 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — settle task 6's `load:` tier so an implementer decides nothing, and spec an A/B that can falsify the architect-context hook; Bounds — this plan file only, no code, no `conductor-state.json`; Approach — map the enum blast radius on disk before choosing, and reframe the A/B from read-count to adherence · close: scope held — one deliberate touch beyond task 6 and the new task: a kill-switch clause added to PR 1's task 2, called out in the task text because the control arm depends on it
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — make Wave 2 dispatchable by resolving the plan-file contention, re-cutting the rows against the audit, and tasking them to the detail bar; Bounds — plan files only, append-only on this file, no code or rules; Approach — verify every lane assignment against the target's real `load:` value and check the fan-out premise before organizing a wave around it · close: scope held — Wave 2 moved to `epic-context-delivery-wave-2.md`; this file touched only by the pointer, this line, and one History entry
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — self-review PR #450 (the architect-context read hook) against this plan's task 1–5 detail and the repo's standards; Bounds — chat findings plus this plan's `## Review Issues`/`## Cleanup Items`/`## PR Readiness` only, no source edits, no GitHub comments; Approach — run the actual PR diff (not the local branch superset), execute the test suite and `pnpm prism:check`, and independently adjudicate the two flagged items rather than passing them through · close: scope held — 2 Minor findings (naming, a narrow concurrency race), both non-blocking; the fail-open design and the insertion-anchor placement were adjudicated and accepted as-is
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism] open: Intent — close both open Review Issues from Briar's self-review of PR #450; Bounds — `scripts/ai-skills/hooks/architect-route.ts` plus this plan's `## Review Issues`/`## PR Readiness`/`## History` only, no merge, no other PR; Approach — rename the noun-phrase function per code-standards.md § Naming, add a code comment naming the concurrency race per the reviewer's own suggested fix, re-run `pnpm prism:build` and `pnpm prism:check` · close: scope held — both findings fixed, no disputed findings, both checks green
 
 ---
 
@@ -370,3 +373,4 @@ None.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Ran task 10, the always-on rule audit; report at `.prism/audits/2026-08-02-always-on-rule-audit.md`. Zero self-measurement hits beyond the two known, and the consumer-delivery finding at `epic-prism-consumer-boundary.md`:63 is resolved on disk. See Decision: the always-on audit found zero further hits.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Resolved task 6's `load:` tier as `skill` rather than a fourth `rule-load.ts` enum value, and rewrote the task to the detail bar with a four-check retier verification. Added task 9, an adherence A/B harness with a stated falsifier that can revert PR 1's hook. PR 1's scope is unchanged apart from a `PRISM_HOOK_DISABLE` kill switch the control arm needs; see Decisions.
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Split Wave 2 into `epic-context-delivery-wave-2.md` at epic grain, tasked its rows to the detail bar, and re-cut them against the always-on audit. Restored `.prism/plans/thrive-port.md` from `stash@{0}` — it was the sole copy and eleven Wave 2 rows cite it. This plan keeps Wave 1 and the audit criterion unchanged.
+- 2026-08-02 [huntermcgrew/context-delivery-mechanism]: Closed both open Review Issues from Briar's self-review of PR #450 — renamed `stateFilePath` to `buildStateFilePath` (code-standards.md § Naming) and added a code comment documenting the known state-file read-modify-write race under concurrent same-session reads. No behavior change; `pnpm prism:build` and `pnpm prism:check` both re-ran green after the fixes.
