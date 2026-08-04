@@ -107,6 +107,31 @@ Thrive ran a live Cursor probe. Its findings are facts about the *host*, so they
 - **OPEN — TBD, needs Hunter input.** Whether consumers ever receive these hook registrations. `templates/install/.claude/settings.json` is an empty `{}` and no code path in `adopt.ts` or `update.ts` reads it, so consumers receive no hook registration today, for any host. **Default path (used until resolved):** hooks stay PRISM-repo-local. This plan adds no `templates/install/.codex/hooks.json` or `.cursor/hooks.json`, and no seed-curation entry. Consumer distribution is its own decision with its own migration, and inventing it inside a port would ship a surface nobody asked for.
   - **→ promotion verdict pending close.**
 
+- **`runAdapter`, `resolveArchitectNag`, `loadRouteState`, and `saveRouteState` all gain a `tool: string` parameter the plan's task 2/4 prose didn't fully spell out.** Task 2 states `runAdapter(spec: HarnessSpec, rawStdin: string)` — two parameters. `HarnessSpec` deliberately carries no name field (task 1: "exactly five members and no others"), so nothing inside `runAdapter` could recover which harness it's running as to pass to `resolveArchitectNag` for state-file namespacing (task 4). Task 4 said "thread `tool` through `loadRouteState` and `saveRouteState` and their call sites in the resolver" but didn't restate `resolveArchitectNag`'s own external signature.
+  - **Root cause:** the plan's task 1 and task 2/4 were both internally consistent on their own but didn't jointly account for how a bare string identity (not carried on `HarnessSpec`) reaches the resolver from the dispatch layer.
+  - **Alternatives considered:** add a sixth `name` field to `HarnessSpec` (rejected — task 1 is explicit that it's exactly five, and Thrive's own harness objects don't carry one either); prefix `sessionId` with the tool name before it reaches the resolver (rejected — conflates two different identifiers and complicates every test asserting on raw session ids).
+  - **Chosen approach:** thread an explicit `tool: string` alongside `spec`/`sessionId` at every boundary that needs it — exactly the shape Thrive's own `hook.mjs` already uses (`emitPostToolUseHook(harness, toolId, payload)`, `loadDedupState(toolId, sessionId)`, confirmed by reading the 1077-line source in this session). `runAdapter(tool, spec, rawStdin)`; `resolveArchitectNag(repoRoot, filePath, tool, sessionId)`; `loadRouteState(repoRoot, tool, sessionId)`; `saveRouteState(repoRoot, tool, sessionId, state)`; `buildStateFilePath(tool, repoRoot, sessionId)` (private, tool literally first per task 4's own wording).
+  - **Implementation guidance:** `repoRoot` stays first on every exported function per the file's existing convention; `tool` sits immediately before `sessionId` everywhere except the private `buildStateFilePath`, which task 4 explicitly ordered `tool` first.
+  - **→ no promotion needed (signature detail, self-evident from the diff; the reasoning is preserved here for anyone diffing against the plan's original two-parameter prose).**
+
+- **`claude-post-read.test.ts` renamed to `scripts/ai-skills/hook.test.ts`, not `scripts/ai-skills/hooks/hook.test.ts` as task 2's text names.** `pnpm prism:test` runs `tsx --test scripts/ai-skills/*.test.ts` — a single-level, non-recursive glob (`.ai-skills/config.json#commands`, mirrored in `.prism/rules/verification-commands.md`). A test file under `scripts/ai-skills/hooks/` would never run. The file's actual pre-port location was already top-level (`scripts/ai-skills/claude-post-read.test.ts`), matching every other hook-adjacent test (`architect-route.test.ts`, `verify-manifest-coverage.test.ts`) — the plan's path had an extra `hooks/` segment.
+  - **→ no promotion needed (test-runner glob is already documented in verification-commands.md; this is a plan-text correction, not a new fact).**
+
+- **`hook.ts`'s `main()` dispatch delegates unknown-`--tool` resolution to an exported `resolveHarnessFromArgv`, not inline logic.** AC-5 (unknown `--tool` writes nothing, exits 0) names `pnpm prism:test` as its evidence, but the original inline shape (`--tool=` parse + `HARNESSES[tool]` lookup directly in `main()`) had no seam a test could reach without spawning a real process and feeding it real stdin — `main()` is intentionally unexported and blocks on `process.stdin`.
+  - **Chosen approach:** pulled the resolution into `resolveHarnessFromArgv(argv): { tool, spec } | null`, a pure function over an argv array, exported and tested directly (unknown, absent, and known `--tool` cases). `main()` calls it and keeps its own process-I/O-only role.
+  - **→ no promotion needed (test-seam extraction, not an architectural change).**
+
+- **ADR-0071's two dead-link references to the deleted `claude-post-read.ts` were fixed as part of this implementation, not deferred whole to Eli's task 10.** Deleting `claude-post-read.ts` (task 2) broke `pnpm prism:crossref-lint` (which `pnpm prism:check` runs), a hard gate — task 10's "append a harness section" is separate, substantive authoring Eli still owns in full.
+  - **Root cause:** `code-standards.md` § Removal and rename completeness — the author of a rename sweeps every reference, not just the ones the compiler or diff happen to surface. Crossref-lint caught two path-qualified mentions; a manual grep found a third bare-filename mention in the same ADR plus one each in `architect-route.ts`'s file-level JSDoc and `hook.test.ts`'s temp-dir prefix string.
+  - **Chosen approach:** fixed the file-path tokens and the one clause that had gone factually false ("is the only adapter this decision ships; Cursor and Codex adapters are a follow-up PR" — no longer true once this port lands). Left every other paragraph in ADR-0071 (the Context section's dated "as of 2026-08-02" framing, the consumer-distribution paragraph, the Consequences section) untouched — those are either still accurate or are the substantive harness-row documentation task 10 owns.
+  - **Implementation guidance for Eli (task 10):** the ADR's Decision section now correctly names `hook.ts` / `harnesses.ts`; the harness-row contract section task 10 describes is still needed and should read the corrected paragraph as its anchor point, not the original.
+  - **→ no promotion needed (mechanical correction; substantive content still pending as task 10).**
+
+- **`.claude/settings.json` is not edited by this branch, per the dispatch's explicit constraint — it still points at the now-deleted `claude-post-read.ts`.** Agents are blocked from settings edits and the hook-invocation question is separately escalated to the operator (per dispatch instructions).
+  - **Consequence:** Claude Code's own `PostToolUse`/`Read` hook is functionally broken on this branch until a human applies a one-line change: `.claude/settings.json`'s `command` should become `"$CLAUDE_PROJECT_DIR/node_modules/.bin/tsx" "$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.ts" --tool=claude` (adding `--tool=claude` and repointing `claude-post-read.ts` → `hook.ts`).
+  - **Default path (used until resolved):** flagged in this Decision, in the PR body, and in the report back to the dispatcher. No code in this branch depends on the hook actually firing — every behavior is covered by direct unit tests against `runAdapter`/`resolveArchitectNag`, not by exercising the real registered hook.
+  - **→ no promotion needed (operational follow-up, not an architectural decision — tracked for the human gate, not the architect surface).**
+
 ---
 
 ## Implementation Tasks
@@ -250,30 +275,30 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 
 ### Behavioral
 
-- [ ] **AC-1** — Given a Claude Code session reads a file with a matching manifest route, When the hook fires through `--tool=claude`, Then the nag names every unread matched doc by path and contains no doc body (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the fixture case asserting no doc body appears in the emitted payload.
-- [ ] **AC-2** — Given a payload carrying a camelCase hook event name, When the hook runs under `--tool=claude`, Then nothing is written to stdout and nothing is written to stderr (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the foreign-payload case and its PascalCase control.
-- [ ] **AC-3** — Given the same session id under two different harnesses, When each writes route state, Then two separate state files exist, distinguishable by a harness segment in the filename (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the state-namespacing case.
-- [ ] **AC-4** — Given an `apply_patch` payload whose target path is inside the patch blob, When the Codex row extracts file paths, Then the target path is returned; and given a malformed blob, Then an empty list is returned rather than a thrown error (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the three `extractPatchFilePaths` fixture cases.
-- [ ] **AC-5** — Given an unknown `--tool` value, When the hook runs, Then it writes nothing and exits 0 (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the unknown-harness fail-open case.
+- [x] **AC-1** — Given a Claude Code session reads a file with a matching manifest route, When the hook fires through `--tool=claude`, Then the nag names every unread matched doc by path and contains no doc body (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `hook.test.ts` "a matching doc produces Claude Code's hookSpecificOutput shape".
+- [x] **AC-2** — Given a payload carrying a camelCase hook event name, When the hook runs under `--tool=claude`, Then nothing is written to stdout and nothing is written to stderr (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `hook.test.ts` "a camelCase hook_event_name under --tool=claude is declined silently" (asserts both the return value and a captured `process.stderr.write`) and its PascalCase control.
+- [x] **AC-3** — Given the same session id under two different harnesses, When each writes route state, Then two separate state files exist, distinguishable by a harness segment in the filename (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `architect-route.test.ts` "the same session id under two different harnesses writes two separate state files".
+- [x] **AC-4** — Given an `apply_patch` payload whose target path is inside the patch blob, When the Codex row extracts file paths, Then the target path is returned; and given a malformed blob, Then an empty list is returned rather than a thrown error (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `harnesses.test.ts`'s three `extractPatchFilePaths` fixture cases (single-file, multi-file, unrecognized blob).
+- [x] **AC-5** — Given an unknown `--tool` value, When the hook runs, Then it writes nothing and exits 0 (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `hook.test.ts` "resolveHarnessFromArgv: returns null for an unknown --tool value". `main()`'s dispatch logic was extracted into `resolveHarnessFromArgv` specifically because `main()` itself blocks on real stdin and isn't exported — see `## Decisions`.
 - [ ] **AC-6** — Given a Cursor session on a checkout with the registration in place, When a file with a manifest route is read, Then a nag naming unread doc paths appears in the session (REQ-1)
-  - Evidence: `human` — task 8 step 1. **This criterion cannot be graded in this repo** and is expected to stay unchecked when the implementation PR opens; it is the honest form of the risk recorded in `## Decisions`.
+  - Evidence: `human` — task 8 step 1. **This criterion cannot be graded in this repo** and stays unchecked on this implementation PR; it is the honest form of the risk recorded in `## Decisions`. `.cursor/hooks.json` is registered (task 6) but never fired against a live Cursor session by this work.
 
 ### Non-behavioral
 
-- [ ] **AC-7** — No harness-specific field name (`session_id`, `conversation_id`, `additional_context`, `additionalContext`, `hookSpecificOutput`) appears in any file under `scripts/ai-skills/hooks/` other than `harnesses.ts` (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the boundary assertion from task 2.
-- [ ] **AC-8** — A manifest key containing a brace glob fails `pnpm prism:check` with a message naming the key and the limitation (REQ-1)
-  - Evidence: `machine` — `pnpm prism:test`, the brace-route fixture case.
-- [ ] **AC-9** — `pnpm prism:build` produces no drift and `pnpm prism:check` passes after every task (REQ-1)
-  - Evidence: `machine` — the two commands, run at each task's close.
-- [ ] **AC-10** — No file under `templates/install/` is added or modified by this plan (REQ-1)
+- [x] **AC-7** — No harness-specific field name (`session_id`, `conversation_id`, `additional_context`, `additionalContext`, `hookSpecificOutput`) appears in any file under `scripts/ai-skills/hooks/` other than `harnesses.ts` (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `hook.test.ts` "boundary: harness-specific field names appear only in harnesses.ts" (greps every other file under `hooks/` at test time).
+- [x] **AC-8** — A manifest key containing a brace glob fails `pnpm prism:check` with a message naming the key and the limitation (REQ-1)
+  - Evidence: `machine` — `pnpm prism:test`, `verify-manifest-coverage.test.ts`'s `findBraceGlobKeys` fixture cases.
+- [x] **AC-9** — `pnpm prism:build` produces no drift and `pnpm prism:check` passes after every task (REQ-1)
+  - Evidence: `machine` — both commands, exit 0, re-run clean at the end of implementation (`git status` shows no drift after `pnpm prism:build`).
+- [x] **AC-10** — No file under `templates/install/` is added or modified by this plan (REQ-1)
   - Evidence: `machine` — `git diff --name-only origin/main...HEAD | grep '^templates/install/'` returns nothing.
-- [ ] **AC-11** — `.codex/hooks.json` does not exist on the implementation branch (REQ-1)
+- [x] **AC-11** — `.codex/hooks.json` does not exist on the implementation branch (REQ-1)
   - Evidence: `machine` — `test ! -f .codex/hooks.json`. Codex's registration is deliberately deferred to task 9; this criterion is what keeps the deferral from eroding mid-implementation.
 
 ### AC Sync Log
@@ -287,12 +312,14 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 ## Sessions
 
 - 2026-08-04 [huntermcgrew/thr-2171-port] open: Intent — plan the Codex/Cursor generalization of the architect-context hook against Thrive #2262, sequenced behind `lane-hook-fix`; Bounds — one plan file committed and pushed, no hook source, no `.claude/settings.json`, no `.prism/plans/conductor/`, no PR; Approach — port the harness table rather than Thrive's file layout, since PRISM already has the resolver seam Thrive's refactor created · close: scope held
+- 2026-08-04 [huntermcgrew/thr-2171-port] open: Intent — implement Clove's tasks 1–7 (harness table, dispatching entrypoint, foreign-payload guard, state namespacing, Codex row, Cursor registration, brace-glob guard); Bounds — no `.claude/settings.json` edit (dispatch constraint), no `.prism/plans/conductor/` staging, no worktree removal, tasks 8–10 out of scope (Winston/operator/Eli); Approach — thread an explicit `tool` string through every boundary that needs harness identity, matching Thrive's own `hook.mjs` pattern rather than re-deriving one · close: scope held — one deviation from the plan's literal prose (the `tool` parameter threading and the corrected test-file path), both documented in Decisions; one cross-lane absorption (ADR-0071's dead-link sweep, required to keep `pnpm prism:check` green) also documented in Decisions
 
 ---
 
 ## History
 
 - 2026-08-04 [huntermcgrew/thr-2171-port]: Created the plan from Thrive PR #2262, PRISM's `architect-route.ts` / `claude-post-read.ts`, and task 18 of `context-delivery-mechanism.md`. Recorded the harness-table-over-file-layout call, the TypeScript-over-`.mjs` call, and the Cursor-ships / Codex-waits split; see Decisions.
+- 2026-08-04 [huntermcgrew/thr-2171-port]: Implemented tasks 1–7 — `harnesses.ts` (claude/cursor/codex rows, `resolveToolKind`, `extractPatchFilePaths`), `hook.ts` (multi-host dispatcher replacing `claude-post-read.ts`, foreign-payload guard, `resolveHarnessFromArgv`), per-harness state-file namespacing in `architect-route.ts`, `.cursor/hooks.json`, and a brace-glob validation guard in `verify-manifest-coverage.ts`. Spot-checked Thrive's `HARNESSES` table against the real 1077-line `hook.mjs` source rather than the plan's verbatim quotation. `pnpm prism:check` and `pnpm prism:build` (no drift) both pass; see Decisions for the `tool`-threading deviation, the test-path correction, and the ADR-0071 reference sweep.
 
 ---
 
@@ -306,13 +333,13 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] No critical or major issues — pending Briar/Eric review
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries — none opened this session)
+- [x] Build passes — last run: 2026-08-04 (`pnpm prism:check`, `pnpm prism:build` — both clean, no drift)
+- [ ] PR description up to date — PR not yet opened
+- [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md`; this session's Decisions are marked `promotion verdict pending close` / `no promotion needed`
 
 **Last updated:** 2026-08-04
