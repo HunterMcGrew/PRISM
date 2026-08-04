@@ -11,7 +11,7 @@
  * nearer the work than a session-start copy, and current because it re-reads
  * the doc from disk on every call rather than replaying a cached one.
  *
- * `resolveArchitectDoc` is host-agnostic: it takes a file path and a session
+ * `resolveArchitectNag` is host-agnostic: it takes a file path and a session
  * id and returns a nag naming the unread matched docs by path, or `null`
  * when nothing matches or every matched doc has already been read this
  * session. It never injects a doc's body — naming is not delivering, so a
@@ -43,29 +43,27 @@ const NAG_PREFIX = "Architect context for this path is unread: ";
 const NAG_SUFFIX = " (under .prism/architect/).";
 
 /**
- * Ceiling on the total emitted nag payload, in bytes — with one exception:
- * a single doc's own formatted entry is always emitted even if it alone
- * exceeds this bound, because the nag never emits zero docs (`formatNag`
- * forces `included` to at least 1). Every doc path in this repo's own
- * manifest is under 40 bytes, so the exception has no live trigger today;
- * it exists only because nothing upstream of `formatNag` rules out a
- * future manifest entry long enough to hit it.
- *
- * Below that edge case, this is a real bound. Claude Code's
- * `additionalContext` channel truncates past 10,000 characters and
- * replaces the overflow with a file preview the model never opens
- * (ADR-0071). A nag naming a handful of doc paths sits far under that
- * today — the measured worst case across this repo's own manifest is
- * under 400 bytes — but nothing in the join bounds the sum, so this is
- * insurance against a future manifest fan-out rather than what keeps
- * today's nag safe.
+ * Ceiling on the total emitted nag payload, in bytes — insurance against a
+ * future manifest fan-out pushing the joined nag toward Claude Code's
+ * `additionalContext` truncation point (10,000 characters, past which the
+ * channel swaps in a file preview the model never opens; see ADR-0071), not
+ * what keeps today's nag safe on its own. One exception: the nag never
+ * emits zero docs, so a single doc's own formatted entry is still emitted
+ * even if it alone exceeds this bound (`formatNag` forces `included` to at
+ * least 1) — no doc path in this repo's manifest is long enough to trigger it.
  */
 export const MAX_EMISSION_BYTES = 8000;
 
+/** The manifest itself lives under `.prism/architect/` but is never a routable doc value — see `extractArchitectDocPath`. */
+const MANIFEST_FILE_NAME = "manifest.json";
+
 /**
  * Returns the doc identifier (relative to `.prism/architect/`, matching the
- * value shape `manifest.json` routes use) when `relativePath` is a read of a
- * file under that directory, or `null` otherwise.
+ * value shape manifest routes use) when `relativePath` is a read of a doc
+ * file under that directory, or `null` otherwise. A read of `manifest.json`
+ * itself returns `null` — it's the routing table, not a doc, and no route's
+ * value is ever `"manifest.json"`, so crediting it into the `read` array
+ * would add a name that can never mean anything to a caller.
  */
 function extractArchitectDocPath(relativePath: string): string | null {
 	if (!relativePath.startsWith(ARCHITECT_DIR_PREFIX)) {
@@ -73,7 +71,7 @@ function extractArchitectDocPath(relativePath: string): string | null {
 	}
 
 	const docPath = relativePath.slice(ARCHITECT_DIR_PREFIX.length);
-	return docPath.length > 0 ? docPath : null;
+	return docPath.length > 0 && docPath !== MANIFEST_FILE_NAME ? docPath : null;
 }
 
 /**
@@ -85,7 +83,7 @@ function extractArchitectDocPath(relativePath: string): string | null {
  * One doc is always named even when its own formatted entry alone exceeds
  * the ceiling — see `MAX_EMISSION_BYTES`.
  */
-function formatNag(unreadDocs: string[]): string {
+export function formatNag(unreadDocs: string[]): string {
 	const full = `${NAG_PREFIX}${unreadDocs.join(", ")}${NAG_SUFFIX}`;
 	if (Buffer.byteLength(full, "utf8") <= MAX_EMISSION_BYTES) {
 		return full;
@@ -207,6 +205,38 @@ export function matchDocsForPath(
 	return docs;
 }
 
+/**
+ * Returns the subset of `docs` (relative to `.prism/architect/`) that exist
+ * on disk under `repoRoot`, logging each missing one to stderr. A manifest
+ * route can name a doc that was renamed or deleted without the route being
+ * updated to match; nagging a path forever would follow, because crediting a
+ * doc as read requires an observed `Read` of that exact path (see
+ * `resolveArchitectNag` step 1), and a file that does not exist can never
+ * produce one. Skipping it here is the fail-open choice consistent with the
+ * rest of this hook: a stale manifest entry degrades to silence, not to a
+ * permanent unreadable nag.
+ */
+async function filterDocsOnDisk(
+	repoRoot: string,
+	docs: string[]
+): Promise<string[]> {
+	const checked = await Promise.all(
+		docs.map(async (doc) => {
+			const docPath = path.join(repoRoot, ARCHITECT_DIR_PREFIX, doc);
+			try {
+				await fs.access(docPath);
+				return doc;
+			} catch {
+				process.stderr.write(
+					`architect-route: manifest doc "${doc}" does not exist on disk — skipping from nag\n`
+				);
+				return null;
+			}
+		})
+	);
+	return checked.filter((doc): doc is string => doc !== null);
+}
+
 function buildStateFilePath(repoRoot: string, sessionId: string): string {
 	const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
 	return path.join(repoRoot, ".prism", `architect-route-state.${safeSessionId}.json`);
@@ -216,11 +246,12 @@ function buildStateFilePath(repoRoot: string, sessionId: string): string {
  * Loads the per-session read-tracking state. Returns `{ read: [] }` when no
  * state file exists yet — per `lazy-artifacts.md`, this file is created on
  * first write, never seeded — and also when an existing file cannot be read
- * or parsed (missing, truncated, hand-edited into invalid JSON, or written
- * under the pre-rename `injected` schema). This state is a cache, not a
- * record: treating unrecognized state the same as absent costs nothing and
- * the worst outcome is one doc getting re-nagged, versus re-throwing and
- * bricking the hook for the rest of the session with no repair path.
+ * or parsed, or has no `read` array (missing, truncated, hand-edited into
+ * invalid JSON, or written under a schema this version doesn't recognize).
+ * This state is a cache, not a record: treating unrecognized state the same
+ * as absent costs nothing and the worst outcome is one doc getting
+ * re-nagged, versus re-throwing and bricking the hook for the rest of the
+ * session with no repair path.
  */
 export async function loadRouteState(
 	repoRoot: string,
@@ -325,11 +356,12 @@ export async function saveRouteState(
  *    actually read; naming it in a nag is not delivery, so an unread doc
  *    keeps being named until this fires for it.
  * 2. **Nag the unread.** If `filePath` matches one or more manifest routes,
- *    every matched doc not yet marked read is named by path in a single nag
- *    payload — no doc bodies are ever injected. The nag is capped at
+ *    every matched doc not yet marked read, and confirmed to still exist on
+ *    disk (`filterDocsOnDisk`), is named by path in a single nag payload —
+ *    no doc bodies are ever injected. The nag is capped at
  *    `MAX_EMISSION_BYTES`; see `formatNag`.
  */
-export async function resolveArchitectDoc(
+export async function resolveArchitectNag(
 	repoRoot: string,
 	filePath: string,
 	sessionId: string
@@ -362,5 +394,10 @@ export async function resolveArchitectDoc(
 		return null;
 	}
 
-	return formatNag(unreadDocs);
+	const resolvableDocs = await filterDocsOnDisk(repoRoot, unreadDocs);
+	if (resolvableDocs.length === 0) {
+		return null;
+	}
+
+	return formatNag(resolvableDocs);
 }
