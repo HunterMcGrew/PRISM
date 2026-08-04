@@ -97,7 +97,12 @@ test("runAdapter: a matching doc produces Claude Code's hookSpecificOutput shape
 		assert.equal(parsed.hookSpecificOutput.hookEventName, "PostToolUse");
 		assert.match(
 			parsed.hookSpecificOutput.additionalContext,
-			/Spec editing constraints go here\./
+			/_toolkit\/spec-editing\.md/
+		);
+		assert.doesNotMatch(
+			parsed.hookSpecificOutput.additionalContext,
+			/Spec editing constraints go here\./,
+			"the adapter forwards a nag naming the doc's path, never its body"
 		);
 	});
 });

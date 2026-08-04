@@ -1,9 +1,10 @@
 /**
  * Regression suite for the read-triggered architect-context router (plan
- * `context-delivery-mechanism.md` task 1). Covers the three contract
- * guarantees the AC list depends on: a matching doc injects once, a repeat
- * read of the same file injects nothing, and a path with no manifest route
- * is a clean no-op.
+ * `context-delivery-mechanism.md` tasks 1 and 18). Covers the router's
+ * nag-based contract: a matched-but-unread doc is named by path (never by
+ * body), a doc keeps being named across repeat reads of the matched path
+ * until its own path is read, and a path with no manifest route is a clean
+ * no-op.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -13,10 +14,11 @@ import assert from "node:assert/strict";
 
 import {
 	findRepoRoot,
+	formatNag,
 	loadRouteState,
 	matchDocsForPath,
-	MAX_DOC_INJECTION_BYTES,
-	resolveArchitectDoc,
+	MAX_EMISSION_BYTES,
+	resolveArchitectNag,
 	saveRouteState,
 	toRepoRelativePath,
 } from "./hooks/architect-route";
@@ -34,11 +36,15 @@ async function withTempRepo<T>(
 	}
 }
 
-async function seedManifestAndDoc(
+/**
+ * Writes `.prism/architect/manifest.json` only. A test that expects a nag
+ * for a given doc must also write that doc to disk with `seedDoc` below —
+ * `resolveArchitectNag` skips a matched doc that does not exist on disk
+ * rather than nagging a path the model could never `Read`.
+ */
+async function seedManifest(
 	repoRoot: string,
-	manifest: Record<string, string | string[]>,
-	docRelativePath: string,
-	docBody: string
+	manifest: Record<string, string | string[]>
 ): Promise<void> {
 	const architectDir = path.join(repoRoot, ".prism", "architect");
 	await fs.mkdir(architectDir, { recursive: true });
@@ -47,9 +53,17 @@ async function seedManifestAndDoc(
 		JSON.stringify(manifest, null, "\t"),
 		"utf8"
 	);
-	const docPath = path.join(architectDir, docRelativePath);
+}
+
+/**
+ * Writes a stub doc file under `.prism/architect/<doc>` so a route matching
+ * it passes the resolver's on-disk existence check. Content is irrelevant —
+ * the resolver never reads a doc's body when producing a nag.
+ */
+async function seedDoc(repoRoot: string, doc: string): Promise<void> {
+	const docPath = path.join(repoRoot, ".prism", "architect", doc);
 	await fs.mkdir(path.dirname(docPath), { recursive: true });
-	await fs.writeFile(docPath, docBody, "utf8");
+	await fs.writeFile(docPath, "stub content\n", "utf8");
 }
 
 test("toRepoRelativePath: converts an absolute in-repo path to a forward-slash relative path", () => {
@@ -76,134 +90,250 @@ test("matchDocsForPath: collects docs from every matching manifest key, deduplic
 	assert.deepEqual(docs, ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"]);
 });
 
-test("resolveArchitectDoc: injects the matching doc's current content on first read", async () => {
+test("resolveArchitectNag: nags the unread matched doc by path on first read", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Spec editing constraints go here."
-		);
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
 
-		assert.ok(result, "expected a non-null injection on first read");
-		assert.match(result as string, /Spec editing constraints go here\./);
+		assert.ok(result, "expected a nag on first read of a matched path");
+		assert.match(result as string, /_toolkit\/spec-editing\.md/);
 	});
 });
 
-test("resolveArchitectDoc: does not re-inject the same doc later in the same session", async () => {
+test("resolveArchitectNag: the nag never carries a doc's body, only its path", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Spec editing constraints go here."
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await fs.mkdir(path.join(repoRoot, ".prism", "architect", "_toolkit"), {
+			recursive: true,
+		});
+		await fs.writeFile(
+			path.join(repoRoot, ".prism", "architect", "_toolkit", "spec-editing.md"),
+			"Spec editing constraints go here.",
+			"utf8"
 		);
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const first = await resolveArchitectDoc(repoRoot, filePath, "session-1");
-		const second = await resolveArchitectDoc(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
 
-		assert.ok(first, "first read injects");
-		assert.equal(second, null, "second read in the same session injects nothing");
+		assert.ok(result);
+		assert.match(result as string, /_toolkit\/spec-editing\.md/);
+		assert.doesNotMatch(result as string, /Spec editing constraints go here\./);
 	});
 });
 
-test("resolveArchitectDoc: a different session re-injects the same doc", async () => {
+test("resolveArchitectNag: keeps nagging on repeat reads of the matched path until the doc itself is read", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Spec editing constraints go here."
-		);
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		await resolveArchitectDoc(repoRoot, filePath, "session-1");
-		const otherSession = await resolveArchitectDoc(repoRoot, filePath, "session-2");
+		const first = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const second = await resolveArchitectNag(repoRoot, filePath, "session-1");
 
-		assert.ok(otherSession, "a new session id has its own injection tracking");
+		assert.ok(first, "first read nags");
+		assert.ok(second, "second read still nags — naming is not delivering");
+		assert.match(second as string, /_toolkit\/spec-editing\.md/);
 	});
 });
 
-test("resolveArchitectDoc: returns null when no manifest route matches the path", async () => {
+test("resolveArchitectNag: a doc drops out of the nag only after its own path is read", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+
+		const sourcePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const docPath = path.join(
 			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Spec editing constraints go here."
+			".prism",
+			"architect",
+			"_toolkit",
+			"spec-editing.md"
 		);
+
+		const beforeRead = await resolveArchitectNag(repoRoot, sourcePath, "session-1");
+		assert.ok(beforeRead, "unread doc is named before its own path is read");
+
+		const readOfDocItself = await resolveArchitectNag(repoRoot, docPath, "session-1");
+		assert.equal(
+			readOfDocItself,
+			null,
+			"reading the doc's own path matches no manifest route, so it nags nothing"
+		);
+
+		const afterRead = await resolveArchitectNag(repoRoot, sourcePath, "session-1");
+		assert.equal(
+			afterRead,
+			null,
+			"the doc no longer appears once its own path has been read"
+		);
+	});
+});
+
+test("resolveArchitectNag: a different session has its own read-tracking and re-nags", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+
+		const sourcePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const docPath = path.join(
+			repoRoot,
+			".prism",
+			"architect",
+			"_toolkit",
+			"spec-editing.md"
+		);
+
+		await resolveArchitectNag(repoRoot, sourcePath, "session-1");
+		await resolveArchitectNag(repoRoot, docPath, "session-1");
+
+		const otherSession = await resolveArchitectNag(repoRoot, sourcePath, "session-2");
+		assert.ok(otherSession, "a new session id has its own read tracking");
+	});
+});
+
+test("resolveArchitectNag: crediting the just-read doc and nagging other unread matched docs both happen in the same call", async () => {
+	await withTempRepo(async (repoRoot) => {
+		// A route that matches `.prism/architect/` itself, not just the source
+		// tree — the real manifest has routes like this, so reading a doc's own
+		// path can also match a route and pull in another unread doc. Step 1
+		// (credit the just-read doc) must run before step 2 (nag the unread
+		// matched set) computes its filter, or the just-read doc would nag itself.
+		await seedManifest(repoRoot, {
+			".prism/architect/**": ["_toolkit/spec-editing.md", "_toolkit/other-doc.md"],
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+		await seedDoc(repoRoot, "_toolkit/other-doc.md");
+
+		const docPath = path.join(
+			repoRoot,
+			".prism",
+			"architect",
+			"_toolkit",
+			"spec-editing.md"
+		);
+		const result = await resolveArchitectNag(repoRoot, docPath, "session-1");
+
+		assert.ok(result, "the read also matches .prism/architect/**, so the still-unread sibling doc is nagged");
+		assert.match(result as string, /_toolkit\/other-doc\.md/);
+		assert.doesNotMatch(
+			result as string,
+			/_toolkit\/spec-editing\.md/,
+			"the doc just read is credited before the nag filter runs, so it never nags itself"
+		);
+	});
+});
+
+test("resolveArchitectNag: reading manifest.json itself does not credit \"manifest.json\" as a read doc", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+
+		const manifestPath = path.join(repoRoot, ".prism", "architect", "manifest.json");
+		const result = await resolveArchitectNag(repoRoot, manifestPath, "session-1");
+		assert.equal(result, null, "manifest.json matches no route, so reading it nags nothing");
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(
+			state.read,
+			[],
+			"manifest.json is the routing table, not a doc — it must never appear in the read array"
+		);
+	});
+});
+
+test("resolveArchitectNag: a manifest doc absent from disk is skipped, not nagged forever", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/renamed-away.md",
+		});
+		// Deliberately no seedDoc call — the manifest route points at a doc
+		// that was renamed or deleted without the route being updated.
+
+		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const first = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const second = await resolveArchitectNag(repoRoot, filePath, "session-1");
+
+		assert.equal(
+			first,
+			null,
+			"a doc that cannot be read is never named — nagging it would repeat forever, since crediting a read requires a Read that can never succeed"
+		);
+		assert.equal(second, null, "the miss is not a one-time fluke — every subsequent read stays silent too");
+	});
+});
+
+test("resolveArchitectNag: returns null when no manifest route matches the path", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
 
 		const filePath = path.join(repoRoot, "README.md");
-		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
 
 		assert.equal(result, null);
 	});
 });
 
-test("resolveArchitectDoc: reads the doc's current on-disk content, not a cached copy", async () => {
+test("resolveArchitectNag: a large matched-doc fan-out stays under the emission ceiling with a remaining-count tail", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Original content."
-		);
+		const docs = Array.from({ length: 500 }, (_, i) => `_toolkit/doc-${i}.md`);
+		await seedManifest(repoRoot, { "scripts/ai-skills/**": docs });
+		await Promise.all(docs.map((doc) => seedDoc(repoRoot, doc)));
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		await fs.writeFile(
-			path.join(repoRoot, ".prism", "architect", "_toolkit", "spec-editing.md"),
-			"Edited content.",
-			"utf8"
-		);
+		const result = (await resolveArchitectNag(repoRoot, filePath, "session-1")) as string;
 
-		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
-		assert.match(result as string, /Edited content\./);
-	});
-});
-
-test("resolveArchitectDoc: caps a real-size doc at MAX_DOC_INJECTION_BYTES and points at the full path", async () => {
-	await withTempRepo(async (repoRoot) => {
-		const oversizedDoc = "A".repeat(MAX_DOC_INJECTION_BYTES * 2);
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/oversized.md" },
-			"_toolkit/oversized.md",
-			oversizedDoc
-		);
-
-		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
-
-		assert.ok(result, "expected an injection for the oversized doc");
+		assert.ok(result, "expected a nag for the fan-out route");
 		assert.ok(
-			Buffer.byteLength(result as string, "utf8") < Buffer.byteLength(oversizedDoc, "utf8"),
-			"the injected body must be smaller than the full doc"
+			Buffer.byteLength(result, "utf8") <= MAX_EMISSION_BYTES,
+			`nag payload must stay within the ${MAX_EMISSION_BYTES}-byte emission ceiling, got ${Buffer.byteLength(result, "utf8")} bytes`
 		);
-		assert.match(result as string, /truncated/);
-		assert.match(result as string, /_toolkit\/oversized\.md/);
+
+		const tailMatch = result.match(/\(\+(\d+) more matched\)/);
+		assert.ok(tailMatch, "a truncated nag names how many further docs were dropped");
+		const remaining = Number(tailMatch[1]);
+		const namedCount = (result.match(/_toolkit\/doc-\d+\.md/g) ?? []).length;
+		assert.equal(
+			namedCount + remaining,
+			500,
+			"named docs plus the remaining count must account for every matched doc — any digits pass a bare regex match, so this cross-checks the actual number instead of just its shape"
+		);
 	});
 });
 
-test("resolveArchitectDoc: a doc within the byte cap is injected verbatim, untruncated", async () => {
-	await withTempRepo(async (repoRoot) => {
-		const smallDoc = "Small enough to ship whole.";
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/small.md" },
-			"_toolkit/small.md",
-			smallDoc
-		);
+test("formatNag: a single doc entry longer than the ceiling is still emitted alone, past the bound", () => {
+	// Tested against `formatNag` directly rather than through
+	// `resolveArchitectNag`'s on-disk path: a doc entry this long could never
+	// exist as a real file (a single path segment this long exceeds every
+	// common filesystem's NAME_MAX), so `filterDocsOnDisk` would strip it
+	// before it ever reached `formatNag` in the full pipeline. This is the
+	// unit that actually implements the documented exception
+	// (`included = Math.max(included, 1)`), so it's tested at that level —
+	// a future edit that made the ceiling strictly hard would fail this test.
+	const overLongDoc = `_toolkit/${"x".repeat(MAX_EMISSION_BYTES)}.md`;
+	const result = formatNag([overLongDoc]);
 
-		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = await resolveArchitectDoc(repoRoot, filePath, "session-1");
-
-		assert.match(result as string, /Small enough to ship whole\./);
-		assert.doesNotMatch(result as string, /truncated/);
-	});
+	assert.match(result, new RegExp(overLongDoc.replace(/[.+*]/g, "\\$&")));
+	assert.ok(
+		Buffer.byteLength(result, "utf8") > MAX_EMISSION_BYTES,
+		`a single doc entry longer than the ceiling must still be emitted whole, exceeding the ${MAX_EMISSION_BYTES}-byte bound — got ${Buffer.byteLength(result, "utf8")} bytes`
+	);
 });
 
 test("loadRouteState: a corrupt state file is treated as absent, not thrown", async () => {
@@ -216,7 +346,21 @@ test("loadRouteState: a corrupt state file is treated as absent, not thrown", as
 		);
 
 		const state = await loadRouteState(repoRoot, "session-1");
-		assert.deepEqual(state, { injected: [] });
+		assert.deepEqual(state, { read: [] });
+	});
+});
+
+test("loadRouteState: an unrecognized state-file schema is treated as absent", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await fs.mkdir(path.join(repoRoot, ".prism"), { recursive: true });
+		await fs.writeFile(
+			path.join(repoRoot, ".prism", "architect-route-state.session-1.json"),
+			JSON.stringify({ injected: ["_toolkit/spec-editing.md"] }),
+			"utf8"
+		);
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(state, { read: [] });
 	});
 });
 
@@ -228,12 +372,12 @@ test("saveRouteState: prunes sibling state files older than the staleness window
 			"architect-route-state.old-session.json"
 		);
 		await fs.mkdir(path.dirname(staleFile), { recursive: true });
-		await fs.writeFile(staleFile, JSON.stringify({ injected: [] }), "utf8");
+		await fs.writeFile(staleFile, JSON.stringify({ read: [] }), "utf8");
 
 		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
 		await fs.utimes(staleFile, staleTimestamp, staleTimestamp);
 
-		await saveRouteState(repoRoot, "current-session", { injected: [] });
+		await saveRouteState(repoRoot, "current-session", { read: [] });
 
 		await assert.rejects(fs.access(staleFile));
 		await assert.doesNotReject(
@@ -252,12 +396,12 @@ test("saveRouteState: prunes a stale orphaned .json.tmp left by a killed mid-wri
 			"architect-route-state.crashed-session.json.tmp"
 		);
 		await fs.mkdir(path.dirname(orphanedTmpFile), { recursive: true });
-		await fs.writeFile(orphanedTmpFile, JSON.stringify({ injected: [] }), "utf8");
+		await fs.writeFile(orphanedTmpFile, JSON.stringify({ read: [] }), "utf8");
 
 		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
 		await fs.utimes(orphanedTmpFile, staleTimestamp, staleTimestamp);
 
-		await saveRouteState(repoRoot, "current-session", { injected: [] });
+		await saveRouteState(repoRoot, "current-session", { read: [] });
 
 		await assert.rejects(fs.access(orphanedTmpFile));
 	});
@@ -265,12 +409,9 @@ test("saveRouteState: prunes a stale orphaned .json.tmp left by a killed mid-wri
 
 test("findRepoRoot: walks upward from a subdirectory to find the directory holding the manifest", async () => {
 	await withTempRepo(async (repoRoot) => {
-		await seedManifestAndDoc(
-			repoRoot,
-			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
-			"_toolkit/spec-editing.md",
-			"Spec editing constraints go here."
-		);
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
 
 		const subdir = path.join(repoRoot, "scripts", "ai-skills");
 		await fs.mkdir(subdir, { recursive: true });
