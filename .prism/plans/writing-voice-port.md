@@ -2,7 +2,7 @@
 
 ## Ticket
 
-No tracker ID — always-on spec content, ships as its own lane per `.prism/rules/followup-scope.md` § Spec content never rides an unrelated ticket.
+None — always-on spec content, ships as its own lane per `.prism/rules/followup-scope.md` § Spec content never rides an unrelated ticket. The opening word is load-bearing: `resolve-live-plan.ts` § `UNFILED_TICKET_RE` matches only a `## Ticket` field that opens with `none`, `n/a`, `tbd`, or `unfiled`, and a plan that fails that match is treated as filed, so `pnpm prism:spec-scope-lint` resolves no plan for this branch and silently skips.
 
 ## Goal
 
@@ -135,6 +135,13 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 - **spec-scope-lint clearance — this entry names the paths the lint checks.** `.prism/rules/writing-voice.md` and `.prism/rules/response-shape.md` are the port lane's targets, and both declare `load: always`, so `.prism/rules/followup-scope.md` § Spec content never rides an unrelated ticket applies. This lane exists for exactly this content, which is the reason the escape hatch asks for. The audit lane's PR 2 edits the always-on rules, whose basenames the lint also requires present in this plan outside its bookkeeping sections: `autonomous-bug-fixing.md`, `bash-output-minimization.md`, `branch-plan.md`, `code-comments.md`, `code-standards.md`, `context-reuse.md`, `context-window-handoff-check.md`, `core-principles.md`, `cross-agent-handoff-accountability.md`, `demand-elegance.md`, `followup-scope.md`, `git-conventions.md`, `lazy-artifacts.md`, `plan-before-building.md`, `pre-compaction-checkpoint.md`, `response-shape.md`, `self-improvement-loop.md`, `session-orientation.md`, `skill-routing.md`, `subagent-strategy.md`, `verification-before-done.md`, `writing-voice.md`. The rules that do not declare `load: always` — `accessibility.md`, `acceptance-criteria.md`, `architect-doc-verification.md`, `design-governance.md`, `implementation-task-detail.md`, `pr-description.md`, `skill-authoring.md`, `verification-commands.md`, `worktree-git.md` — are audited in the same PR but fall outside the lint's scope. Architect docs and ADRs are outside it too.
   - → no promotion needed (lane-specific lint clearance)
 
+- **A plan's `## Ticket` field decides whether `spec-scope-lint` enforces at all on a ticketless branch.**
+  - **Root cause:** the lint resolves a plan by ticket-id token in the branch name first, then falls back to matching the branch slug against plan filenames — but that fallback only accepts a plan whose `## Ticket` field is empty or opens with `none`, `n/a`, `tbd`, or `unfiled` (`scripts/ai-skills/lib/resolve-live-plan.ts` § `UNFILED_TICKET_RE`). This plan's field originally opened with "No tracker ID", which fails that match, so the plan read as filed, no plan resolved, and the lint printed `no live plan resolved for this branch — skipping`. Verified by running it before and after the one-word change.
+  - **Alternatives considered:** leave it and rely on the `## Decisions` path-naming entry alone; rename the branch to carry a synthetic ticket id; open the `## Ticket` field with `None`.
+  - **Chosen approach:** open the field with `None`. It costs one word and turns the guard from inert to live — the lint now resolves this plan and passes rather than skipping. A synthetic ticket id would have lied about a tracker entry that does not exist.
+  - **Implementation guidance:** do not reword the opening of `## Ticket` during the audit lane. Checks 1–3 would otherwise read "None — always-on spec content" as a candidate for tightening and silently disable the lint for every remaining PR in the stack.
+  - → promoted to `.prism/architect/_toolkit/spec-editing.md` — every future ticketless spec lane hits this, and the failure is silent
+
 - **OPEN — TBD, needs Hunter's input.** Whether the audit ships as the recommended three-PR stack and whether PR 4 splits further. The audited surface is every markdown file under `.prism/architect/`, `.prism/rules/`, and `.prism/spec/adrs/` — well past the operator's ten-file / five-hundred-line threshold for proposing cut lines, and the standing rule is approval on the cuts before the stack is created. **Recommended cuts, in stack order:** PR 1 port (`writing-voice.md`, `response-shape.md`, regenerated mirrors) as the base, since everything downstream checks against it; PR 2 `.prism/rules/`, first because always-on rules load in every session and drift there reaches every persona's output; PR 3 `.prism/architect/`, smaller and contextually loaded; PR 4 `.prism/spec/adrs/`, last because ADRs are historical records taking the most conservative edits. Cut by directory rather than by check number so a reviewer sees all of one file's edits in one place. PR 4 is the largest by file count and may want splitting — that call is better made once PR 2's findings rate is known than guessed now. **Default path (used until resolved):** the port lane (tasks 1–7) proceeds; the audit lane (tasks 9–11) does not start, per task 8's `[HITL]` gate.
 
 ---
@@ -148,6 +155,7 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 ## History
 
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Fetched Thrive's merged `.ai-spec/rules/writing-voice.md` via `gh api`, diffed its eleven sections against PRISM's seven, and wrote this plan. Four sections and one expansion port; two of the four route to `response-shape.md` rather than `writing-voice.md`. Audit cut lines are recommended but gated on the operator — see the `OPEN` Decision.
+- 2026-08-04 [huntermcgrew/writing-voice-port]: Opened the `## Ticket` field with `None` so `spec-scope-lint` resolves this plan instead of skipping; it printed `no live plan resolved` before the change and `passed` after. See Decision: A plan's `## Ticket` field decides whether `spec-scope-lint` enforces at all on a ticketless branch.
 
 ---
 
