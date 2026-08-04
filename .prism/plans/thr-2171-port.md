@@ -320,6 +320,7 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 
 - 2026-08-04 [huntermcgrew/thr-2171-port] open: Intent — plan the Codex/Cursor generalization of the architect-context hook against Thrive #2262, sequenced behind `lane-hook-fix`; Bounds — one plan file committed and pushed, no hook source, no `.claude/settings.json`, no `.prism/plans/conductor/`, no PR; Approach — port the harness table rather than Thrive's file layout, since PRISM already has the resolver seam Thrive's refactor created · close: scope held
 - 2026-08-04 [huntermcgrew/thr-2171-port] open: Intent — implement Clove's tasks 1–7 (harness table, dispatching entrypoint, foreign-payload guard, state namespacing, Codex row, Cursor registration, brace-glob guard); Bounds — no `.claude/settings.json` edit (dispatch constraint), no `.prism/plans/conductor/` staging, no worktree removal, tasks 8–10 out of scope (Winston/operator/Eli); Approach — thread an explicit `tool` string through every boundary that needs harness identity, matching Thrive's own `hook.mjs` pattern rather than re-deriving one · close: scope held — one deviation from the plan's literal prose (the `tool` parameter threading and the corrected test-file path), both documented in Decisions; one cross-lane absorption (ADR-0071's dead-link sweep, required to keep `pnpm prism:check` green) also documented in Decisions
+- 2026-08-04 [huntermcgrew/thr-2171-port] open: Intent — self-review PR #457 against the six dispatch-flagged checkpoints (Cursor/Codex split, foreign-payload guard, brace-glob validation-not-fix, state namespacing, the resolveArchitectNag rename sweep, verification honesty on AC-6) plus a normal types/logic/build pass; Bounds — report findings in chat and the plan only, no GitHub comments, no `.claude/settings.json` edit, no PR ready/merge action; Approach — diff PR head against `origin/main` via `git show`/`git diff` from a detached checkout in this isolated worktree (the branch was already checked out in another worktree), read every changed source and test file in full rather than hunk-by-hunk · close: scope held — no code changes made; one operational finding recorded below that was already flagged in `## Decisions` but lacked a severity-tagged Review Issue entry
 
 ---
 
@@ -332,6 +333,14 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 
 ## Review Issues
 
+### `.claude/settings.json` still registers the deleted `claude-post-read.ts`
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.claude/settings.json`
+- **Problem:** Confirmed by reading the file at PR head — the `PostToolUse`/`Read` command still points at `scripts/ai-skills/hooks/claude-post-read.ts` (deleted by this PR, task 2) and carries no `--tool=claude` flag. Once this PR merges to `main`, Claude Code's own architect-context nag stops firing for every user on `main` — the command resolves to a file that no longer exists — until a human applies the fix. This was already recorded as a Decision by Clove with the exact one-line fix and flagged as out of scope per this dispatch's explicit "do not touch `.claude/settings.json`" constraint; recording it here as well so it rides `## PR Readiness` and the durable Review Issues record, not just Decisions prose.
+- **Suggested fix:** a human (not an agent, per the settings-file restriction) updates the command to `"$CLAUDE_PROJECT_DIR/node_modules/.bin/tsx" "$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.ts" --tool=claude`, ideally in the same merge window as this PR so the hook isn't dark on `main` for any stretch of time.
+
 ---
 
 ## Cleanup Items
@@ -340,13 +349,13 @@ Every task below is `[AFK]` unless tagged. Verification for each is stated inlin
 
 ## PR Readiness
 
-- [ ] No critical or major issues — pending Briar/Eric review
+- [ ] No critical or major issues — one Major open (`.claude/settings.json` registration break at merge, see Review Issues); zero code-level defects found across all six dispatch-flagged checkpoints plus a full types/logic/test pass
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [x] Tests written for new logic and edge cases — every new branch (foreign-payload accept/reject, unknown `--tool`, per-harness state namespacing, `apply_patch` extraction incl. malformed blob, brace-glob rejection) has a direct unit test; no test overclaims unverifiable host behavior (AC-6 correctly stays unchecked, evidence tagged `human`)
 - [x] All debugged issues resolved (no `open` entries — none opened this session)
-- [x] Build passes — last run: 2026-08-04 (`pnpm prism:check`, `pnpm prism:build` — both clean, no drift)
-- [ ] PR description up to date — PR not yet opened
+- [x] Build passes — last run: 2026-08-04 (`pnpm prism:check`, `pnpm prism:build` clean per Clove's session; CI `prism-check` green on both ubuntu-latest and windows-latest for PR #457 as of this review)
+- [x] PR description up to date — PR #457 is open (`thr-2171-port: Generalize the architect-context hook to Codex and Cursor`, base `main`, mergeable)
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md`; this session's Decisions are marked `promotion verdict pending close` / `no promotion needed`
 
-**Last updated:** 2026-08-04
+**Last updated:** 2026-08-04 (Briar self-review, PR #457)
