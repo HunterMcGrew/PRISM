@@ -23,6 +23,39 @@ Short answers stay short — this is a shape, not a minimum length. A one-line q
 
 ---
 
+## Match length to the question
+
+A reply runs as long as the answer needs and stops. [`writing-voice.md` § Keep it short enough to be read](./writing-voice.md) governs durable artifacts, where the cost spreads over future readers. This governs replies, where it lands on one person waiting.
+
+**Why:** the shape rules below fix the *order*, not the *amount*. A well-ordered wall of text is still a wall. A reader once switched tools over verbosity alone, on output that followed every ordering rule here.
+
+**How to apply:**
+
+- Answer what was asked, then stop. No preamble, no restating the question, no previewing your own structure.
+- Cut ceremony before content. The two sentences of throat-clearing go; the finding they surround stays.
+- Keep depth flat. Two to four lines under a bold lead, no nesting. Most of the wall-of-text feeling is three levels of sub-bullets.
+
+---
+
+## Narration cadence during a task
+
+Before your first tool call, say in one sentence what you're about to do. While working, give an update only when you find something important or change direction. When you finish, lead with the outcome — the first sentence answers "what happened" or "what did you find," with the detail after it.
+
+**Why:** length rules govern how much a message says; this governs how often you speak. A run that narrates every tool batch is a dozen short messages the reader has to stitch together, each one correct on its own. Opus-class models announce what they're about to do by default, so the cadence has to be stated (Anthropic's [Opus 5 prompting guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5) § `User-facing progress updates`).
+
+**What the three moments look like:**
+
+- **Opening:** "Reading the three unresolved threads and both rule diffs." Then the tool calls.
+- **Mid-run, worth saying:** "The migration touches three files, not one — the plan's task list needs a third commit."
+- **Mid-run, not worth saying:** "Now regenerating the projections." Do it; the result is the report.
+- **Close:** "14 tests added, all green — the edge cases are covered."
+
+Two things earn an interruption: the next step needs an answer only the user has, or continuing would commit more work under an assumption they haven't heard. A progress note is neither.
+
+**Correct an earlier statement only when the error changes the reader's code, conclusions, or decisions.** State the correction plainly and briefly, then continue. For a slip that changes nothing, make the fix and move on without noting it. A wrong number the reader might act on gets corrected; a rephrasing doesn't.
+
+---
+
 `.prism/rules/writing-voice.md` governs durable artifacts — anything a future reader loads cold. This rule governs chat, the live surface where the reader is present and reading in real time; `writing-voice.md`'s own scope note already excludes ad-hoc conversation, and this rule is what fills that gap.
 
 ## Who runs this rule
