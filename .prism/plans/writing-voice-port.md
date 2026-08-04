@@ -221,6 +221,7 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 
 - 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — plan the Thrive voice port plus the follow-on PRISM spec-surface audit, write it to `.prism/plans/writing-voice-port.md`, commit and push without a PR; Bounds — plan file only, never `writing-voice.md` itself, never `.prism/plans/conductor/`, no merge; Approach — fetch Thrive's source rather than reconstruct it, diff the section sets, decide per section against PRISM's durable/chat split rather than assuming verbatim · close: scope held
 - 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — record the operator's answers to both escalated questions and re-size the audit tasks so Clove can run PR 1 with no further gate; Bounds — this plan file only, never the two rule files themselves, never `.prism/plans/conductor/` or `.claude/settings.json`, no PR and no merge; Approach — measure the real violation surface before re-tasking, so the sweep is sized against counted hits rather than an estimate · close: scope held
+- 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — implement PR 1 (tasks 1–8): port the four Thrive voice sections into `writing-voice.md` and `response-shape.md`, fix the task-6 self-collision, regenerate mirrors, and open the stack-base PR as a draft; Bounds — only the two named rule files and their generated mirrors, never `.prism/architect/` or `.prism/spec/adrs/`, never `.prism/plans/conductor/`, no merge; Approach — fetch Thrive's merged source via `gh api` rather than reconstruct it, apply each task's named adaptation, then build and check · close: scope held — one branch-naming wrinkle noted below, no task scope changed
 
 ---
 
@@ -230,6 +231,7 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Opened the `## Ticket` field with `None` so `spec-scope-lint` resolves this plan instead of skipping; it printed `no live plan resolved` before the change and `passed` after. See Decision: A plan's `## Ticket` field decides whether `spec-scope-lint` enforces at all on a ticketless branch.
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Recorded the operator's answers to both escalated questions — the metaphor ban adopts as written with no grandfather clause, and the four-PR stack ships as cut — closing the `OPEN` Decision. Measured the sweep surface at 112 files, 7,312 lines, 336 banned-noun hits, which surfaced two findings that changed the tasks: over half the hits are `canonical` in a sense that names a real artifact, and PR 1 as originally tasked would have shipped a rule contradicting itself. See Decisions: the metaphor ban resolution, the `canonical` carve-out, and the `writing-voice.md:32` fix.
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Added the clean-file recording rule and a third fix/flag question covering blast radius, and constrained the audit branch names so `spec-scope-lint` resolves this plan across the whole stack. Routed the lint's general fail-open to separate work. See Decision: The lint's fail-open is real but belongs to separate work.
+- 2026-08-04 [huntermcgrew/writing-voice-port]: Implemented PR 1 (tasks 1–8) — ported the four Thrive sections, expanded § Plain language over jargon, fixed the `writing-voice.md:32` self-collision, and regenerated all mirrors. Pushed as commit `9ff6d07b`. `.claude/worktrees/agent-ae51a1101420f54f4` held this branch checked out at the stale tip `f8688576`, so this session worked from a detached checkout at `31f5022c` and pushed via the full refspec rather than checking out the branch by name.
 
 ---
 
@@ -296,13 +298,13 @@ None.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — N/A, content-only change
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` — N/A, content-only change
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — N/A, content-only change
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-08-04, `pnpm prism:check` exit 0 (spec-scope-lint, crossref-lint, build --check all passed on a branch carrying the plan's token run)
+- [ ] PR description up to date — PR 1 not yet opened
+- [ ] Lasting decisions promoted to architect context — deferred to plan close per `branch-plan.md` § Before Closing; several `## Decisions` entries already carry a promotion verdict for when that runs
 
 **Last updated:** 2026-08-04
