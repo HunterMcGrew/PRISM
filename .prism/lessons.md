@@ -373,3 +373,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-07-07 (retro-charter-redesign, Iris retro) — a Task-15 Major was an uncorrected passage coexisting with an already-written correction in the same plan file; a forward-reference sweep at correction time would have caught it before self-review. 2026-07-25 (PRISM-445, Eric review passes 1–3) — the same failure species recurred on all three passes: a claim the shipping commit had already invalidated, left standing elsewhere in the plan (pass 1 a stale classification-table row, pass 2 a stale `**Reorder briar's output**` row, pass 3 the `curated` seed-twin Decision plus Task 9's matching instruction).
 
 **How to apply:** Don't just append a correction elsewhere — sweep the whole file for the same claim's other occurrences at correction time. This especially matters when a fix reverses a plan Decision: sweep both `## Decisions` and `## Implementation Tasks`, since a Decision's conclusion is often restated in the task that implements it and the two drift together if only one is corrected.
+
+## `pnpm --dir <worktree> exec tsx <relative-path>` resolves the path against the worktree's cwd, not the caller's
+
+**Why:** 2026-08-04 (PR #452, Eric review) — a regression run against a target test file silently ran a different worktree's copy of the same relative path, reporting 14 tests against a 15-test file; caught only because the counts didn't match, which would not have held on a coincidentally-equal file.
+
+**How to apply:** When running `pnpm --dir <path> exec <cmd> <relative-file>`, use an absolute path for the file argument, or verify the resolved path (`pnpm --dir <path> exec node -e "console.log(require.resolve('<relative-file>'))"`) before trusting the run's result.
