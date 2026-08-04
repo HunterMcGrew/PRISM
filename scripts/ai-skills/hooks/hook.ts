@@ -126,6 +126,21 @@ function parseToolFlag(argv: string[]): string | undefined {
 }
 
 /**
+ * Resolves argv's `--tool=<name>` flag to a `HARNESSES` row, or `null` when
+ * the flag is absent or names a row that doesn't exist — the fail-open case
+ * `main()` below exits 0 on without calling `runAdapter` at all. Separated
+ * out from `main()` so this resolution is directly testable without
+ * spawning a process or feeding it real stdin.
+ */
+export function resolveHarnessFromArgv(
+	argv: string[]
+): { tool: string; spec: HarnessSpec } | null {
+	const tool = parseToolFlag(argv);
+	const spec = tool ? HARNESSES[tool] : undefined;
+	return tool && spec ? { tool, spec } : null;
+}
+
+/**
  * The kill switch checked before stdin is even parsed — the first statement
  * in this module's entry path. `PRISM_HOOK_DISABLE=1` makes the hook stay
  * registered and fire, but produce no output and exit 0, so an A/B harness
@@ -144,12 +159,12 @@ async function main(): Promise<void> {
 		return;
 	}
 
-	const tool = parseToolFlag(process.argv.slice(2));
-	const spec = tool ? HARNESSES[tool] : undefined;
-	if (!tool || !spec) {
+	const resolved = resolveHarnessFromArgv(process.argv.slice(2));
+	if (resolved === null) {
 		process.exitCode = 0;
 		return;
 	}
+	const { tool, spec } = resolved;
 
 	let rawStdin = "";
 	try {

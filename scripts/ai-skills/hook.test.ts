@@ -21,7 +21,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { HARNESSES } from "./hooks/harnesses";
-import { runAdapter } from "./hooks/hook";
+import { resolveHarnessFromArgv, runAdapter } from "./hooks/hook";
 
 async function withTempRepo<T>(
 	build: (repoRoot: string) => Promise<T>
@@ -200,6 +200,21 @@ test("runAdapter: a PascalCase hook_event_name under --tool=claude is accepted â
 		const result = await runAdapter("claude", HARNESSES.claude, stdin);
 		assert.ok(result, "a Claude-shaped (PascalCase) event name is processed normally");
 	});
+});
+
+test("resolveHarnessFromArgv: returns null for an unknown --tool value â€” the fail-open case AC-5 covers", () => {
+	assert.equal(resolveHarnessFromArgv(["--tool=bogus"]), null);
+});
+
+test("resolveHarnessFromArgv: returns null when --tool is absent", () => {
+	assert.equal(resolveHarnessFromArgv([]), null);
+});
+
+test("resolveHarnessFromArgv: resolves a known --tool value to its harness spec", () => {
+	const result = resolveHarnessFromArgv(["--tool=claude"]);
+	assert.ok(result);
+	assert.equal(result?.tool, "claude");
+	assert.equal(result?.spec, HARNESSES.claude);
 });
 
 test("boundary: harness-specific field names appear only in harnesses.ts", async () => {
