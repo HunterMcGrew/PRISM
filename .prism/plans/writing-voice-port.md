@@ -229,6 +229,7 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 - 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — plan the Thrive voice port plus the follow-on PRISM spec-surface audit, write it to `.prism/plans/writing-voice-port.md`, commit and push without a PR; Bounds — plan file only, never `writing-voice.md` itself, never `.prism/plans/conductor/`, no merge; Approach — fetch Thrive's source rather than reconstruct it, diff the section sets, decide per section against PRISM's durable/chat split rather than assuming verbatim · close: scope held
 - 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — record the operator's answers to both escalated questions and re-size the audit tasks so Clove can run PR 1 with no further gate; Bounds — this plan file only, never the two rule files themselves, never `.prism/plans/conductor/` or `.claude/settings.json`, no PR and no merge; Approach — measure the real violation surface before re-tasking, so the sweep is sized against counted hits rather than an estimate · close: scope held
 - 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — implement PR 1 (tasks 1–8): port the four Thrive voice sections into `writing-voice.md` and `response-shape.md`, fix the task-6 self-collision, regenerate mirrors, and open the stack-base PR as a draft; Bounds — only the two named rule files and their generated mirrors, never `.prism/architect/` or `.prism/spec/adrs/`, never `.prism/plans/conductor/`, no merge; Approach — fetch Thrive's merged source via `gh api` rather than reconstruct it, apply each task's named adaptation, then build and check · close: scope held — one branch-naming wrinkle noted below, no task scope changed
+- 2026-08-04 [huntermcgrew/writing-voice-port] open: Intent — self-review PR `#455` against the five named checks (routing geometry, the fifth adaptation's resolution, the self-collision fix, mirror integrity, scope containment) plus the live spec-scope-lint defect, and run the standard pass; Bounds — report findings only, no fixes, no GitHub posting, never `.prism/plans/conductor/`, never `.claude/settings.json`, no PR-ready mark, no merge; Approach — diff-only reading against the plan's own claims, verify each with a direct command rather than trusting the plan's narrative · close: scope held
 
 ---
 
@@ -251,6 +252,8 @@ None.
 ## Review Issues
 
 The audit lane's `flag` findings land here. Empty until task 9 runs.
+
+No issues found — 2026-08-04 [huntermcgrew/writing-voice-port]. Briar's self-review of PR 1 confirmed: the `response-shape.md` insertion geometry left the closing cross-reference paragraph and `## Who runs this rule` as the last two blocks, un-re-parented; the fifth (seed-literal-guard) adaptation is fully resolved in `## Decisions` and AC-6 with no `Thrive_Core`/`IEquipment` literal surviving in any mirror; the `writing-voice.md:32` self-collision fix landed, and every remaining `load-bearing`/`seam`/`canonical`/`altitude`/`surface area`/`primitive` hit in the two ported files sits inside § Plain language over jargon's own keep-vs-cut examples; all six mirrors (`.claude/`, `.codex/`, `.cursor/`, install seed) are byte-identical to canonical modulo each platform's own frontmatter convention; the 12-file diff touches only the two named rules, their generated mirrors, `AGENTS.md`, and this plan — no `.prism/architect/` or `.prism/spec/adrs/` reach; and `spec-scope-lint` printed `spec-scope-lint passed. No unrelated spec content found.`, the message `evaluateSpecScopeLint` only emits when `result.planPath` is non-null — confirming this PR's lint genuinely resolved this plan rather than skipping. `pnpm prism:check` exits 0.
 
 ---
 
@@ -310,7 +313,8 @@ None.
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — N/A, content-only change
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-04, `pnpm prism:check` exit 0 (spec-scope-lint, crossref-lint, build --check all passed on a branch carrying the plan's token run)
+- [x] Build passes — last run: 2026-08-04, `pnpm prism:check` exit 0 (spec-scope-lint resolved this plan and passed, not skipped — confirmed by reading `evaluateSpecScopeLint`'s exit path; crossref-lint, manifest coverage, pack parity, and build --check all passed too)
+- [x] Self-review complete — Briar, 2026-08-04, no findings; see `## Review Issues`
 - [ ] PR description up to date — PR 1 not yet opened
 - [ ] Lasting decisions promoted to architect context — deferred to plan close per `branch-plan.md` § Before Closing; several `## Decisions` entries already carry a promotion verdict for when that runs
 
