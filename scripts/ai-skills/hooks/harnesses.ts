@@ -52,6 +52,31 @@ function filePathFromToolInput(payload: HookPayload): string[] {
 	return filePath ? [filePath] : [];
 }
 
+/**
+ * Extracts file paths named by a Codex `apply_patch` command string, from
+ * its three header lines (`*** Add File:`, `*** Update File:`,
+ * `*** Delete File:`). Codex carries no separate path field for this tool —
+ * the target lives inside the patch text — so this is the only route to a
+ * path on it. Returns an empty list rather than throwing on a blob that
+ * matches none of the three headers.
+ */
+export function extractPatchFilePaths(command: string | undefined): string[] {
+	if (typeof command !== "string" || command.length === 0) {
+		return [];
+	}
+
+	const paths: string[] = [];
+	for (const line of command.split("\n")) {
+		const match = /^\*\*\* (?:Add File|Update File|Delete File): (.+)$/.exec(
+			line.trim()
+		);
+		if (match) {
+			paths.push(match[1].trim());
+		}
+	}
+	return paths;
+}
+
 export const HARNESSES: Record<string, HarnessSpec> = {
 	claude: {
 		toolKinds: { Read: "read", Bash: "shell" },
@@ -74,6 +99,24 @@ export const HARNESSES: Record<string, HarnessSpec> = {
 		filePaths: filePathFromToolInput,
 		emitNag: (text) => ({ additional_context: text }),
 		emitNone: () => ({}),
+	},
+	codex: {
+		// Codex's read tool is unmapped until a live probe observes its name
+		// (task 9), so every tool that isn't Bash or apply_patch takes the
+		// "write" default — over-nagging rather than under-gating.
+		toolKinds: { Bash: "shell", apply_patch: "write" },
+		sessionId: (payload) => payload.session_id ?? null,
+		filePaths: (payload) =>
+			payload.tool_name === "apply_patch"
+				? extractPatchFilePaths(payload.tool_input?.command)
+				: filePathFromToolInput(payload),
+		emitNag: (text) => ({
+			hookSpecificOutput: {
+				hookEventName: "PostToolUse",
+				additionalContext: text,
+			},
+		}),
+		emitNone: () => null,
 	},
 };
 

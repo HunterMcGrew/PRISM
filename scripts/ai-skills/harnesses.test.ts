@@ -1,12 +1,13 @@
 /**
  * Regression suite for the per-host harness table (plan `thr-2171-port`
- * task 1). Covers the claude and cursor rows' accessor and envelope
- * contracts, and the `resolveToolKind` fallback every row relies on.
+ * tasks 1 and 5). Covers the claude, cursor, and codex rows' accessor and
+ * envelope contracts, `extractPatchFilePaths`, and the `resolveToolKind`
+ * fallback every row relies on.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { HARNESSES, resolveToolKind } from "./hooks/harnesses";
+import { extractPatchFilePaths, HARNESSES, resolveToolKind } from "./hooks/harnesses";
 
 test("claude row: sessionId reads session_id", () => {
 	const result = HARNESSES.claude.sessionId({ session_id: "abc" });
@@ -80,4 +81,75 @@ test("resolveToolKind: defaults to write for an unmapped tool name", () => {
 
 test("resolveToolKind: defaults to write when toolName is undefined", () => {
 	assert.equal(resolveToolKind(HARNESSES.claude, undefined), "write");
+});
+
+test("codex row: sessionId reads session_id, same field as claude", () => {
+	const result = HARNESSES.codex.sessionId({ session_id: "abc" });
+	assert.equal(result, "abc");
+});
+
+test("codex row: filePaths reads tool_input.file_path for a non-apply_patch tool", () => {
+	const result = HARNESSES.codex.filePaths({
+		tool_name: "Bash",
+		tool_input: { file_path: "/repo/README.md" },
+	});
+	assert.deepEqual(result, ["/repo/README.md"]);
+});
+
+test("codex row: filePaths extracts the target from an apply_patch command blob", () => {
+	const result = HARNESSES.codex.filePaths({
+		tool_name: "apply_patch",
+		tool_input: {
+			command: "*** Update File: src/foo.ts\n@@ ...",
+		},
+	});
+	assert.deepEqual(result, ["src/foo.ts"]);
+});
+
+test("codex row: emitNag is identical in shape to claude's", () => {
+	const result = HARNESSES.codex.emitNag("unread doc: foo.md");
+	assert.deepEqual(result, {
+		hookSpecificOutput: {
+			hookEventName: "PostToolUse",
+			additionalContext: "unread doc: foo.md",
+		},
+	});
+});
+
+test("codex row: emitNone is null", () => {
+	assert.equal(HARNESSES.codex.emitNone(), null);
+});
+
+test("codex row: apply_patch is mapped to write in toolKinds, not read", () => {
+	assert.equal(HARNESSES.codex.toolKinds.apply_patch, "write");
+	assert.equal(HARNESSES.codex.toolKinds.Bash, "shell");
+});
+
+test("extractPatchFilePaths: returns the path from a single-file Add File header", () => {
+	const command = "*** Add File: src/new-file.ts\n+export const x = 1;\n";
+	assert.deepEqual(extractPatchFilePaths(command), ["src/new-file.ts"]);
+});
+
+test("extractPatchFilePaths: returns every path across a multi-file patch", () => {
+	const command = [
+		"*** Update File: src/a.ts",
+		"@@ ...",
+		"*** Add File: src/b.ts",
+		"+content",
+		"*** Delete File: src/c.ts",
+	].join("\n");
+	assert.deepEqual(extractPatchFilePaths(command), [
+		"src/a.ts",
+		"src/b.ts",
+		"src/c.ts",
+	]);
+});
+
+test("extractPatchFilePaths: returns an empty list for a blob with no recognized header, not a thrown error", () => {
+	assert.deepEqual(extractPatchFilePaths("not a patch at all"), []);
+});
+
+test("extractPatchFilePaths: returns an empty list for undefined or empty input", () => {
+	assert.deepEqual(extractPatchFilePaths(undefined), []);
+	assert.deepEqual(extractPatchFilePaths(""), []);
 });
