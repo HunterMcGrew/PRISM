@@ -244,6 +244,25 @@ test("saveRouteState: prunes sibling state files older than the staleness window
 	});
 });
 
+test("saveRouteState: prunes a stale orphaned .json.tmp left by a killed mid-write", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const orphanedTmpFile = path.join(
+			repoRoot,
+			".prism",
+			"architect-route-state.crashed-session.json.tmp"
+		);
+		await fs.mkdir(path.dirname(orphanedTmpFile), { recursive: true });
+		await fs.writeFile(orphanedTmpFile, JSON.stringify({ injected: [] }), "utf8");
+
+		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
+		await fs.utimes(orphanedTmpFile, staleTimestamp, staleTimestamp);
+
+		await saveRouteState(repoRoot, "current-session", { injected: [] });
+
+		await assert.rejects(fs.access(orphanedTmpFile));
+	});
+});
+
 test("findRepoRoot: walks upward from a subdirectory to find the directory holding the manifest", async () => {
 	await withTempRepo(async (repoRoot) => {
 		await seedManifestAndDoc(

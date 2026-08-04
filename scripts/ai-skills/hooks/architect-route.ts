@@ -209,11 +209,15 @@ export async function loadRouteState(
 const STALE_STATE_FILE_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Removes sibling `architect-route-state.*.json` files last modified more
- * than `STALE_STATE_FILE_AGE_MS` ago. One file accumulates per session with
+ * Removes sibling `architect-route-state.*.json` and orphaned
+ * `architect-route-state.*.json.tmp` files last modified more than
+ * `STALE_STATE_FILE_AGE_MS` ago. One file accumulates per session with
  * nothing to remove them otherwise — the `.gitignore` glob keeps them out of
  * `git status`, so they'd otherwise grow unbounded and invisibly in `.prism/`.
- * A day is long enough that no session still in progress loses its state;
+ * A `.tmp` orphan is exactly the file `saveRouteState`'s atomic write leaves
+ * behind when a hook process is killed mid-write (before the `rename` to the
+ * final path), so it earns the same reap as a stale finished state file. A
+ * day is long enough that no session still in progress loses its state;
  * failures here (a file removed between the listing and the unlink, a
  * permissions error) are swallowed — pruning is best-effort housekeeping,
  * never a reason to fail the save it rides along with.
@@ -232,8 +236,7 @@ async function pruneStaleRouteState(repoRoot: string): Promise<void> {
 	for (const entry of entries) {
 		if (
 			!entry.startsWith("architect-route-state.") ||
-			!entry.endsWith(".json") ||
-			entry.endsWith(".tmp")
+			!(entry.endsWith(".json") || entry.endsWith(".json.tmp"))
 		) {
 			continue;
 		}
