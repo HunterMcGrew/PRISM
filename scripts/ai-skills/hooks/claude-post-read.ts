@@ -6,7 +6,7 @@
  *
  * Reads the hook's stdin JSON, extracts the read path (`tool_input.file_path`)
  * and session id (`session_id`), calls the host-agnostic resolver in
- * `architect-route.ts`, and — when it returns a body — writes Claude Code's
+ * `architect-route.ts`, and — when it returns a nag — writes Claude Code's
  * injection shape to stdout: `{"hookSpecificOutput": {"hookEventName":
  * "PostToolUse", "additionalContext": "..."}}`. When the resolver returns
  * `null`, or when anything about the hook invocation fails, this process
@@ -16,7 +16,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { findRepoRoot, resolveArchitectDoc } from "./architect-route";
+import { findRepoRoot, resolveArchitectNag } from "./architect-route";
 
 interface ClaudePostToolUseInput {
 	session_id?: string;
@@ -56,15 +56,15 @@ export async function runAdapter(rawStdin: string): Promise<string | null> {
 			return null;
 		}
 
-		const body = await resolveArchitectDoc(repoRoot, filePath, sessionId);
-		if (body === null) {
+		const nag = await resolveArchitectNag(repoRoot, filePath, sessionId);
+		if (nag === null) {
 			return null;
 		}
 
 		return JSON.stringify({
 			hookSpecificOutput: {
 				hookEventName: "PostToolUse",
-				additionalContext: body,
+				additionalContext: nag,
 			},
 		});
 	} catch (error) {
@@ -85,7 +85,9 @@ export async function runAdapter(rawStdin: string): Promise<string | null> {
  * Every path sets `process.exitCode` rather than calling `process.exit()`
  * directly and returns — `process.exit()` does not guarantee pending
  * asynchronous `stdout` writes are flushed before the process tears down,
- * and this adapter's payload can run to tens of KB. Setting `exitCode` and
+ * and this adapter's payload is a nag capped at the resolver's
+ * `MAX_EMISSION_BYTES` ceiling (`architect-route.ts`), not the tens-of-KB
+ * doc-body payloads an earlier design produced. Setting `exitCode` and
  * returning lets Node drain the write queue before exiting on its own.
  */
 async function main(): Promise<void> {

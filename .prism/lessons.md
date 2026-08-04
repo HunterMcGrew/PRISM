@@ -391,3 +391,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-02 (PR #450, Eric's retroactive confirming pass, self-reported) — a Minor flagged `npx` on the hook's hot path for falling back to the registry on every invocation, and named `pnpm exec` as the remedy in the same sentence. The fixer implemented exactly that. The confirming pass measured all three forms: `npx` 0.325s, `pnpm exec` 0.413s, `node_modules/.bin/tsx` 0.153s. The prescribed remedy was slower than the thing it replaced; the alternative named alongside it was 2.7x faster. The network risk was genuinely closed, so the regression shipped looking like a closure.
 
 **How to apply:** When a finding names a specific remedy for a performance problem, measure the remedy before writing it down — otherwise the fixer inherits an unverified claim wearing a measured claim's clothes, and there is no later gate that catches it. If measuring the remedy is not practical, state the fault and leave the remedy open rather than naming one; an unmeasured prescription is worse than none, because it gets implemented.
+
+## `pnpm --dir <worktree> exec tsx <relative-path>` resolves the path against the worktree's cwd, not the caller's
+
+**Why:** 2026-08-04 (PR #452, Eric review) — a regression run against a target test file silently ran a different worktree's copy of the same relative path, reporting 14 tests against a 15-test file; caught only because the counts didn't match, which would not have held on a coincidentally-equal file.
+
+**How to apply:** When running `pnpm --dir <path> exec <cmd> <relative-file>`, use an absolute path for the file argument, or verify the resolved path (`pnpm --dir <path> exec node -e "console.log(require.resolve('<relative-file>'))"`) before trusting the run's result.
