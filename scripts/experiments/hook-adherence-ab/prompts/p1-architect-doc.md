@@ -1,1 +1,0 @@
-Read `.prism/architect/_toolkit/architecture-doc-shape.md`, then add a new PRISM architect doc covering how `pnpm prism:build` decides which platform directories to write. Wire it up so agents actually load it.
