@@ -2,7 +2,7 @@
 
 ## Ticket
 
-None — always-on spec content, ships as its own lane per `.prism/rules/followup-scope.md` § Spec content never rides an unrelated ticket. The opening word decides whether the lint runs at all: `resolve-live-plan.ts` § `UNFILED_TICKET_RE` matches only a `## Ticket` field that opens with `none`, `n/a`, `tbd`, or `unfiled`, and a plan that fails that match is treated as filed, so `pnpm prism:spec-scope-lint` resolves no plan for this branch and skips with a passing exit code.
+None — always-on spec content, ships as its own lane per `.prism/rules/followup-scope.md` § Spec content never rides an unrelated ticket. The opening word decides whether the lint runs at all: `resolve-live-plan.ts` § `UNFILED_TICKET_RE` matches only a `## Ticket` field that opens with `none`, `n/a`, `tbd`, or `unfiled`, and a plan that fails that match is treated as filed. This field opens with `None`, so it matches, and `pnpm prism:spec-scope-lint` resolves this plan for this branch and enforces normally. A `## Ticket` field that fails the match is the separate, still-open problem — see `## Decisions` → The lint's fail-open is real but belongs to separate work.
 
 ## Goal
 
@@ -32,7 +32,7 @@ Two lanes. The port lane is PR 1, the stack base; the audit lane is PRs 2–4, c
 
 2. **Add `## Anti-pattern: Reassurance that introduces a new claim` to `.prism/rules/writing-voice.md`.** Insert as the final section, after `## Anti-pattern: Session-context leakage`. Ports verbatim from Thrive — the three-sentence opening (check the sentence right after an admitted gap), the test (does the reassurance trace to something already verified, or introduce a new claim), the `**Why:**` incident with its three quoted examples ("A deterministic render over the labels the build already produced", "Both paths carry the same anti-fragment rule", "Stale is safe"), and the `**How to apply:**` closing that names cutting as usually the stronger edit. Then append one sentence to the `**Why:**` paragraph, verbatim: `PRISM hit the adjacent failure in its own tree — see `.prism/lessons.md` § A control arm that receives an always-on instruction doing the same job is not a control, where a null result was trusted before anyone enumerated what the control arm actually received.` Do not invent additional PRISM examples; the two unrecorded session incidents that motivated this port are not in the durable record and must not be written up as if they were. Verification: none at this step.
 
-3. **Add `## Match length to the question` to `.prism/rules/response-shape.md`** — not to `writing-voice.md` (see `## Decisions` → surface routing). Insert after the `---` at `.prism/rules/response-shape.md:24` and before the `` `.prism/rules/writing-voice.md` governs durable artifacts `` paragraph at line 26. Not after the `**How to apply:**` bullet list — the `Short answers stay short` paragraph at line 22 qualifies that bullet list, and a new `##` heading between them would re-parent it under the wrong section. End the new section with its own `---`. Port Thrive's three `**How to apply:**` bullets verbatim (answer what was asked then stop; cut ceremony before content; keep depth flat, two to four lines under a bold lead, no nesting). Replace Thrive's opening two sentences — which cross-reference Thrive's own `§ Keep it short enough to be read` — with: `A reply runs as long as the answer needs and stops. [`writing-voice.md` § Keep it short enough to be read](./writing-voice.md) governs durable artifacts, where the cost spreads over future readers. This governs replies, where it lands on one person waiting.` Port the `**Why:**` verbatim, including the sentence about a reader switching tools over verbosity alone. Verification: none at this step.
+3. **Add `## Match length to the question` to `.prism/rules/response-shape.md`** — not to `writing-voice.md` (see `## Decisions` → surface routing). Insert after the `---` at `.prism/rules/response-shape.md:24` and before the `` `.prism/rules/writing-voice.md` governs durable artifacts `` paragraph at line 26. Not after the `**How to apply:**` bullet list — the `Short answers stay short` paragraph at line 22 qualifies that bullet list, and a new `##` heading between them would re-parent it under the wrong section. End the new section with its own `---`. Port Thrive's three `**How to apply:**` bullets verbatim (answer what was asked then stop; cut ceremony before content; keep depth flat, two to four lines under a bold lead, no nesting). Adapt Thrive's opening two sentences — a light edit, not a rewrite: Thrive's same-file cross-reference (`§ Keep it short enough to be read`) becomes a markdown link to `writing-voice.md`, since the section now lives in a separate file, and `docs` becomes `durable artifacts`. Everything else, including the third sentence, ports verbatim. Final text: `A reply runs as long as the answer needs and stops. [`writing-voice.md` § Keep it short enough to be read](./writing-voice.md) governs durable artifacts, where the cost spreads over future readers. This governs replies, where it lands on one person waiting.` Port the `**Why:**` verbatim, including the sentence about a reader switching tools over verbosity alone. Verification: none at this step.
 
 4. **Add `## Narration cadence during a task` to `.prism/rules/response-shape.md`** — not to `writing-voice.md` (same routing decision). Insert immediately after the section added in task 3 and its closing `---`, still ahead of the `` `.prism/rules/writing-voice.md` governs durable artifacts `` paragraph. End with its own `---`, so the file's untitled closing cross-reference and `## Who runs this rule` stay the last two blocks. Ports verbatim from Thrive: the three-moment opening sentence, the `**Why:**` including the Opus 5 prompting-guide citation and its URL, the `**What the three moments look like:**` four-bullet block (opening / mid-run worth saying / mid-run not worth saying / close), the two-things-earn-an-interruption paragraph, and the correction rule (`**Correct an earlier statement only when the error changes the reader's code, conclusions, or decisions.**`). Thrive's example bullets reference its own work; replace the two that name specific artifacts — `"Every heading is cited — 7 hits on one — so the headings stay and only the bodies get cut."` and `"2,349 words, down from 2,956 — the new vocabulary rule ate into the cut."` — with PRISM-neutral equivalents of the same shape (a finding that changes the plan, and an outcome-first close carrying a number). Keep `"Now regenerating the projections."` as the not-worth-saying example; it is generic already. Verification: none at this step.
 
@@ -40,7 +40,7 @@ Two lanes. The port lane is PR 1, the stack base; the audit lane is PRs 2–4, c
 
 6. **Clear the one banned noun the port leaves behind in its own file.** `.prism/rules/writing-voice.md:32` — inside `## Explain the why`, which the port does not otherwise touch — reads `because the reader has no way to tell whether the rule is load-bearing or stale`. Replace `whether the rule is load-bearing or stale` with `whether the rule still prevents something or has gone stale`. The three other `load-bearing` uses in this file (lines 63, 70, 71) all sit inside `## Plain language over jargon` and disappear when task 5 replaces that section body — line 32 is the only survivor. This lands in PR 1 rather than the audit lane because without it PR 1 ships a file whose § Plain language over jargon bans a word its own § Explain the why uses, in the same commit. Verification: `grep -n "load-bearing" .prism/rules/writing-voice.md` — every surviving hit sits inside the § Plain language over jargon keep-vs-cut test, where the banned words are quoted as examples of what to cut. A zero count is the wrong target and would mean task 5's ban list went missing; the target is that no hit remains where the word is *used* rather than quoted. Sequence: after task 5.
 
-7. **Regenerate the mirrors.** Run `pnpm prism:build` from the repo root. This writes `.claude/rules/`, `.codex/rules/`, and the install seed at `templates/install/.prism/rules/` from canonical — do not hand-edit any of those three; `build.ts` § `writeSeedMirror` and the platform-copy step own them, and a hand edit is reverted on the next build. Confirm the build reports the six mirror paths as changed (`.claude/rules/writing-voice.md`, `.claude/rules/response-shape.md`, `.codex/rules/writing-voice.md`, `.codex/rules/response-shape.md`, `templates/install/.prism/rules/writing-voice.md`, `templates/install/.prism/rules/response-shape.md`). Verification: `pnpm prism:check` — exit 0. Sequence: after tasks 1–6.
+7. **Regenerate the mirrors.** Run `pnpm prism:build` from the repo root. This writes `.claude/rules/`, `.codex/rules/`, `.cursor/rules/`, and the install seed at `templates/install/.prism/rules/` from canonical — do not hand-edit any of those four; `build.ts` § `writeSeedMirror` and the platform-copy step own them, and a hand edit is reverted on the next build. Confirm the build reports the eight mirror paths as changed (`.claude/rules/writing-voice.md`, `.claude/rules/response-shape.md`, `.codex/rules/writing-voice.md`, `.codex/rules/response-shape.md`, `.cursor/rules/writing-voice.mdc`, `.cursor/rules/response-shape.mdc`, `templates/install/.prism/rules/writing-voice.md`, `templates/install/.prism/rules/response-shape.md`). Verification: `pnpm prism:check` — exit 0. Sequence: after tasks 1–6.
 
 8. **Commit and open PR 1 as the stack base.** Branch is `huntermcgrew/writing-voice-port` (already created off `origin/main`; this plan is its first commit). Commit message subject: `chore: Port Thrive's writing-voice sections into PRISM`. PR body opens with the surface-routing decision (two sections land in `response-shape.md`, not `writing-voice.md`) so a reviewer does not read it as a misfile, and names the task-6 self-collision fix so the one edit outside the four ported sections reads as deliberate. Do not merge. Sequence: after task 7.
 
@@ -193,6 +193,13 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
   - **Implementation guidance:** this is the fifth adaptation from Thrive's source, alongside the four already named in the Decision above titled "Four sections port; the file's section order does not" and its neighbors. AC-6 names it explicitly so a reviewer diffing against Thrive's source doesn't read it as an unexplained deviation.
   - → no promotion needed (port-tactical; future ports hit the same guard and get the same signal)
 
+- **§ Plain language over jargon silently corrects a Thrive grammar slip — the sixth adaptation from Thrive's source.**
+  - **Root cause:** Thrive's source reads `computer-science terms that reader already met in class`, missing the article before `reader`. The port shipped `the reader` without recording the change as an adaptation, so AC-6's five-item list undercounted what actually differs from Thrive's source.
+  - **Alternatives considered:** port the typo verbatim to stay literal; keep the silent fix as shipped; keep the fix and record it.
+  - **Chosen approach:** keep the fix — reproducing a source typo isn't in scope for a voice port — and record it so AC-6's reviewer diffing against Thrive's source has an explanation instead of an unexplained hit.
+  - **Implementation guidance:** AC-6 lists this as the sixth adaptation.
+  - → no promotion needed (port-tactical; future ports hit their own source typos, not this one)
+
 - **The port fixes `writing-voice.md:32` in PR 1 rather than leaving it to the audit lane.**
   - **Root cause:** § Explain the why uses `load-bearing` and the port does not otherwise touch that section, while § Plain language over jargon — which task 5 replaces with the version carrying the ban — is what forbids it. PR 1 as originally tasked would land one file whose two sections contradict each other in the same commit.
   - **Alternatives considered:** leave it for PR 2, which audits this directory anyway; fix it in PR 1.
@@ -240,6 +247,7 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Recorded the operator's answers to both escalated questions — the metaphor ban adopts as written with no grandfather clause, and the four-PR stack ships as cut — closing the `OPEN` Decision. Measured the sweep surface at 112 files, 7,312 lines, 336 banned-noun hits, which surfaced two findings that changed the tasks: over half the hits are `canonical` in a sense that names a real artifact, and PR 1 as originally tasked would have shipped a rule contradicting itself. See Decisions: the metaphor ban resolution, the `canonical` carve-out, and the `writing-voice.md:32` fix.
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Added the clean-file recording rule and a third fix/flag question covering blast radius, and constrained the audit branch names so `spec-scope-lint` resolves this plan across the whole stack. Routed the lint's general fail-open to separate work. See Decision: The lint's fail-open is real but belongs to separate work.
 - 2026-08-04 [huntermcgrew/writing-voice-port]: Implemented PR 1 (tasks 1–8) — ported the four Thrive sections, expanded § Plain language over jargon, fixed the `writing-voice.md:32` self-collision, and regenerated all mirrors. Pushed as commit `9ff6d07b`. `.claude/worktrees/agent-ae51a1101420f54f4` held this branch checked out at the stale tip `f8688576`, so this session worked from a detached checkout at `31f5022c` and pushed via the full refspec rather than checking out the branch by name.
+- 2026-08-04 [huntermcgrew/writing-voice-port]: Fixed Eric's PR review findings — corrected the `## Ticket` field's inverted claim about `spec-scope-lint`'s behavior on this branch, restored `response-shape.md`'s untitled cross-reference paragraph to file scope ahead of both ported `##` sections, and fixed task 7's mirror list to include `.cursor/rules/*.mdc` and the correct count of eight. Also recorded the sixth (typo-correction) adaptation in `## Decisions` and AC-6, and corrected task 3's description of its own adaptation to match what shipped. Regenerated mirrors; `pnpm prism:check` exits 0.
 
 ---
 
@@ -254,6 +262,46 @@ None.
 The audit lane's `flag` findings land here. Empty until task 9 runs.
 
 No issues found — 2026-08-04 [huntermcgrew/writing-voice-port]. Briar's self-review of PR 1 confirmed: the `response-shape.md` insertion geometry left the closing cross-reference paragraph and `## Who runs this rule` as the last two blocks, un-re-parented; the fifth (seed-literal-guard) adaptation is fully resolved in `## Decisions` and AC-6 with no `Thrive_Core`/`IEquipment` literal surviving in any mirror; the `writing-voice.md:32` self-collision fix landed, and every remaining `load-bearing`/`seam`/`canonical`/`altitude`/`surface area`/`primitive` hit in the two ported files sits inside § Plain language over jargon's own keep-vs-cut examples; all six mirrors (`.claude/`, `.codex/`, `.cursor/`, install seed) are byte-identical to canonical modulo each platform's own frontmatter convention; the 12-file diff touches only the two named rules, their generated mirrors, `AGENTS.md`, and this plan — no `.prism/architect/` or `.prism/spec/adrs/` reach; and `spec-scope-lint` printed `spec-scope-lint passed. No unrelated spec content found.`, the message `evaluateSpecScopeLint` only emits when `result.planPath` is non-null — confirming this PR's lint genuinely resolved this plan rather than skipping. `pnpm prism:check` exits 0.
+
+### `## Ticket` field states the opposite of the field's own effect
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/plans/writing-voice-port.md:5`
+- **Problem:** the closing clause claimed `pnpm prism:spec-scope-lint` "resolves no plan for this branch and skips" — but the field opens with `None`, which matches `UNFILED_TICKET_RE`, so the lint actually resolves this plan and enforces. A PR 2–4 implementer reading the field cold would conclude the guard is inert on this branch, when it is live.
+- **Suggested fix:** state the actual behavior — this field's wording is what makes the plan resolve — and point the general fail-open case (a field that fails to match) at the existing Decision covering it as separate work.
+
+### Untitled cross-reference paragraph re-parented under `## Narration cadence during a task`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/response-shape.md`
+- **Problem:** the file-scope closing paragraph (`` `.prism/rules/writing-voice.md` governs durable artifacts... ``) sat after the last `##` heading's closing `---` with no heading of its own, so heading-based section tooling reads it as part of `## Narration cadence during a task` rather than as file-scope prose. Briar's self-review checked `## Who runs this rule` and missed the untitled paragraph.
+- **Suggested fix:** move the paragraph back to its pre-port position — directly after the intro's `Short answers stay short...` paragraph and its `---`, ahead of both newly ported `##` sections — restoring it to file scope, unowned by any heading.
+
+### Task 7's mirror verification list omits `.cursor/rules/*.mdc` and miscounts the mirror set
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/writing-voice-port.md` (task 7)
+- **Problem:** the task named six mirror paths and called them "the six mirror paths," but `pnpm prism:build` also writes `.cursor/rules/writing-voice.mdc` and `.cursor/rules/response-shape.mdc` — eight paths total.
+- **Suggested fix:** add the two `.cursor/rules/*.mdc` paths to the list and correct "six" to "eight."
+
+### Pre-existing relative links in `response-shape.md` don't resolve on `.cursor/rules/` or root `AGENTS.md`
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `.prism/rules/response-shape.md`
+- **Problem:** `](./writing-voice.md)` doesn't resolve where the sibling file has a different name or doesn't exist (`.cursor/rules/writing-voice.mdc`, no sibling in repo-root `AGENTS.md`). `pnpm prism:crossref-lint` tolerates it.
+- **Suggested fix:** none in this lane — pre-existing, not introduced by this PR, and out of scope for PR 2's audit per Eric.
+
+### `spec-scope-lint`'s general fail-open (no resolvable plan → silent skip, not a failing exit code)
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `scripts/ai-skills/spec-scope-lint.ts`
+- **Problem:** a branch touching always-on spec content with no resolvable plan is indistinguishable from a clean pass in CI.
+- **Suggested fix:** routed to separate work — see `## Decisions` → The lint's fail-open is real but belongs to separate work. This lane's own exposure is closed by the branch-naming Decision; PR 2–4 branch names all resolve to exactly one plan (verified).
 
 ---
 
@@ -280,7 +328,7 @@ No issues found — 2026-08-04 [huntermcgrew/writing-voice-port]. Briar's self-r
 
 ### Non-behavioral
 
-- [ ] **AC-6** — The ported sections carry Thrive's reasoning, not a paraphrase of it. Adaptations are limited to the five named in `## Decisions` (dropped Linear pointer, added lessons.md citation, PRISM-neutral narration examples, surface routing, genericized stack-name example).
+- [ ] **AC-6** — The ported sections carry Thrive's reasoning, not a paraphrase of it. Adaptations are limited to the six named in `## Decisions` (dropped Linear pointer, added lessons.md citation, PRISM-neutral narration examples, surface routing, genericized stack-name example, corrected Thrive's `reader` typo).
   - Evidence (`human`): reviewer diffs each ported section against `gh api repos/TracTru/thrive/contents/.ai-spec/rules/writing-voice.md`.
 - [ ] **AC-7** — No ADR's decision content changes during the audit; edits to `.prism/spec/adrs/**` are voice-only.
   - Evidence (`human`): reviewer confirms no `## Decision` or `## Consequences` section changed meaning in PR 4.
@@ -315,6 +363,7 @@ None.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-04, `pnpm prism:check` exit 0 (spec-scope-lint resolved this plan and passed, not skipped — confirmed by reading `evaluateSpecScopeLint`'s exit path; crossref-lint, manifest coverage, pack parity, and build --check all passed too)
 - [x] Self-review complete — Briar, 2026-08-04, no findings; see `## Review Issues`
+- [x] PR review complete — Eric, 2026-08-04, one Major and two Minor, all three fixed in-loop; two Minors deferred as out of scope (pre-existing relative-link gap, lint's general fail-open); see `## Review Issues`
 - [ ] PR description up to date — PR 1 not yet opened
 - [ ] Lasting decisions promoted to architect context — deferred to plan close per `branch-plan.md` § Before Closing; several `## Decisions` entries already carry a promotion verdict for when that runs
 

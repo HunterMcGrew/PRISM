@@ -1372,6 +1372,8 @@ Short answers stay short — this is a shape, not a minimum length. A one-line q
 
 ---
 
+`.prism/rules/writing-voice.md` governs durable artifacts — anything a future reader loads cold. This rule governs chat, the live surface where the reader is present and reading in real time; `writing-voice.md`'s own scope note already excludes ad-hoc conversation, and this rule is what fills that gap.
+
 ## Match length to the question
 
 A reply runs as long as the answer needs and stops. [`writing-voice.md` § Keep it short enough to be read](./writing-voice.md) governs durable artifacts, where the cost spreads over future readers. This governs replies, where it lands on one person waiting.
@@ -1404,8 +1406,6 @@ Two things earn an interruption: the next step needs an answer only the user has
 **Correct an earlier statement only when the error changes the reader's code, conclusions, or decisions.** State the correction plainly and briefly, then continue. For a slip that changes nothing, make the fix and move on without noting it. A wrong number the reader might act on gets corrected; a rephrasing doesn't.
 
 ---
-
-`.prism/rules/writing-voice.md` governs durable artifacts — anything a future reader loads cold. This rule governs chat, the live surface where the reader is present and reading in real time; `writing-voice.md`'s own scope note already excludes ad-hoc conversation, and this rule is what fills that gap.
 
 ## Who runs this rule
 
