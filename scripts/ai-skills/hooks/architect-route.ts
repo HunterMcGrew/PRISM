@@ -43,13 +43,22 @@ const NAG_PREFIX = "Architect context for this path is unread: ";
 const NAG_SUFFIX = " (under .prism/architect/).";
 
 /**
- * Hard ceiling on the total emitted nag payload, in bytes. Claude Code's
- * `additionalContext` channel truncates past 10,000 characters and replaces
- * the overflow with a file preview the model never opens (ADR-0071). A nag
- * naming a handful of doc paths sits far under that today — the measured
- * worst case across this repo's own manifest is under 400 bytes — but
- * nothing in the join bounds the sum, so this is insurance against a future
- * manifest fan-out rather than what keeps today's nag safe.
+ * Ceiling on the total emitted nag payload, in bytes — with one exception:
+ * a single doc's own formatted entry is always emitted even if it alone
+ * exceeds this bound, because the nag never emits zero docs (`formatNag`
+ * forces `included` to at least 1). Every doc path in this repo's own
+ * manifest is under 40 bytes, so the exception has no live trigger today;
+ * it exists only because nothing upstream of `formatNag` rules out a
+ * future manifest entry long enough to hit it.
+ *
+ * Below that edge case, this is a real bound. Claude Code's
+ * `additionalContext` channel truncates past 10,000 characters and
+ * replaces the overflow with a file preview the model never opens
+ * (ADR-0071). A nag naming a handful of doc paths sits far under that
+ * today — the measured worst case across this repo's own manifest is
+ * under 400 bytes — but nothing in the join bounds the sum, so this is
+ * insurance against a future manifest fan-out rather than what keeps
+ * today's nag safe.
  */
 export const MAX_EMISSION_BYTES = 8000;
 
@@ -69,10 +78,12 @@ function extractArchitectDocPath(relativePath: string): string | null {
 
 /**
  * Formats the nag payload naming every doc in `unreadDocs` by path, holding
- * the joined text under `MAX_EMISSION_BYTES`. When the full list doesn't
- * fit, names as many docs as fit and appends a `(+N more matched)` count for
- * the rest — a truncated list that says so is honest about what was
- * dropped; a silently clipped one reads as complete.
+ * the joined text under `MAX_EMISSION_BYTES` whenever the list allows it.
+ * When the full list doesn't fit, names as many docs as fit and appends a
+ * `(+N more matched)` count for the rest — a truncated list that says so is
+ * honest about what was dropped; a silently clipped one reads as complete.
+ * One doc is always named even when its own formatted entry alone exceeds
+ * the ceiling — see `MAX_EMISSION_BYTES`.
  */
 function formatNag(unreadDocs: string[]): string {
 	const full = `${NAG_PREFIX}${unreadDocs.join(", ")}${NAG_SUFFIX}`;
