@@ -11,15 +11,16 @@
  * nearer the work than a session-start copy, and current because it re-reads
  * the doc from disk on every call rather than replaying a cached one.
  *
- * `resolveArchitectNag` is host-agnostic: it takes a file path and a session
- * id and returns a nag naming the unread matched docs by path, or `null`
- * when nothing matches or every matched doc has already been read this
- * session. It never injects a doc's body — naming is not delivering, so a
- * doc keeps being named until a real `Read` of its own path is observed,
- * which is what actually credits it as delivered. Each platform adapter
- * (`claude-post-read.ts` today; Cursor and Codex in a follow-up PR) owns only
- * the stdin/stdout shape for its host and calls this resolver for the actual
- * decision, so the routing logic is written and tested once.
+ * `resolveArchitectNag` is host-agnostic: it takes a file path, a harness
+ * name, and a session id, and returns a nag naming the unread matched docs
+ * by path, or `null` when nothing matches or every matched doc has already
+ * been read this session. It never injects a doc's body — naming is not
+ * delivering, so a doc keeps being named until a real `Read` of its own path
+ * is observed, which is what actually credits it as delivered. Each
+ * harness's own wire shape (`hooks/harnesses.ts`) owns only the
+ * stdin/stdout envelope for its host; `hooks/hook.ts` dispatches to this
+ * resolver for the actual decision, so the routing logic is written and
+ * tested once.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -44,8 +45,8 @@ const NAG_SUFFIX = " (under .prism/architect/).";
 
 /**
  * Ceiling on the total emitted nag payload, in bytes — insurance against a
- * future manifest fan-out pushing the joined nag toward Claude Code's
- * `additionalContext` truncation point (10,000 characters, past which the
+ * future manifest fan-out pushing the joined nag toward the context-injection
+ * channel's truncation point (10,000 characters on Claude Code, past which the
  * channel swaps in a file preview the model never opens; see ADR-0071), not
  * what keeps today's nag safe on its own. One exception: the nag never
  * emits zero docs, so a single doc's own formatted entry is still emitted
@@ -237,9 +238,19 @@ async function filterDocsOnDisk(
 	return checked.filter((doc): doc is string => doc !== null);
 }
 
-function buildStateFilePath(repoRoot: string, sessionId: string): string {
+/**
+ * Builds the per-harness, per-session state file path. The `tool` segment
+ * (e.g. "claude", "cursor") keeps two harnesses that happen to observe the
+ * same session id from colliding on one state file — see the `tool`
+ * parameters on `loadRouteState`/`saveRouteState` below.
+ */
+function buildStateFilePath(tool: string, repoRoot: string, sessionId: string): string {
 	const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
-	return path.join(repoRoot, ".prism", `architect-route-state.${safeSessionId}.json`);
+	return path.join(
+		repoRoot,
+		".prism",
+		`architect-route-state.${tool}.${safeSessionId}.json`
+	);
 }
 
 /**
@@ -255,10 +266,14 @@ function buildStateFilePath(repoRoot: string, sessionId: string): string {
  */
 export async function loadRouteState(
 	repoRoot: string,
+	tool: string,
 	sessionId: string
 ): Promise<ArchitectRouteState> {
 	try {
-		const raw = await fs.readFile(buildStateFilePath(repoRoot, sessionId), "utf8");
+		const raw = await fs.readFile(
+			buildStateFilePath(tool, repoRoot, sessionId),
+			"utf8"
+		);
 		const parsed = JSON.parse(raw) as Partial<ArchitectRouteState>;
 		return { read: Array.isArray(parsed.read) ? parsed.read : [] };
 	} catch {
@@ -324,10 +339,11 @@ async function pruneStaleRouteState(repoRoot: string): Promise<void> {
  */
 export async function saveRouteState(
 	repoRoot: string,
+	tool: string,
 	sessionId: string,
 	state: ArchitectRouteState
 ): Promise<void> {
-	const targetPath = buildStateFilePath(repoRoot, sessionId);
+	const targetPath = buildStateFilePath(tool, repoRoot, sessionId);
 	await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
 	const tmpPath = `${targetPath}.tmp`;
@@ -364,6 +380,7 @@ export async function saveRouteState(
 export async function resolveArchitectNag(
 	repoRoot: string,
 	filePath: string,
+	tool: string,
 	sessionId: string
 ): Promise<string | null> {
 	const relativePath = toRepoRelativePath(repoRoot, filePath);
@@ -371,7 +388,7 @@ export async function resolveArchitectNag(
 		return null;
 	}
 
-	const state = await loadRouteState(repoRoot, sessionId);
+	const state = await loadRouteState(repoRoot, tool, sessionId);
 	const readSet = new Set(state.read);
 
 	// Two `Read` calls in the same tool-call batch spawn concurrent hook
@@ -384,7 +401,7 @@ export async function resolveArchitectNag(
 	const docJustRead = extractArchitectDocPath(relativePath);
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
-		await saveRouteState(repoRoot, sessionId, { read: [...readSet] });
+		await saveRouteState(repoRoot, tool, sessionId, { read: [...readSet] });
 	}
 
 	const manifest = await loadManifest(repoRoot);

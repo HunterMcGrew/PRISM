@@ -98,7 +98,7 @@ test("resolveArchitectNag: nags the unread matched doc by path on first read", a
 		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
 
 		assert.ok(result, "expected a nag on first read of a matched path");
 		assert.match(result as string, /_toolkit\/spec-editing\.md/);
@@ -120,7 +120,7 @@ test("resolveArchitectNag: the nag never carries a doc's body, only its path", a
 		);
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
 
 		assert.ok(result);
 		assert.match(result as string, /_toolkit\/spec-editing\.md/);
@@ -136,8 +136,8 @@ test("resolveArchitectNag: keeps nagging on repeat reads of the matched path unt
 		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const first = await resolveArchitectNag(repoRoot, filePath, "session-1");
-		const second = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const first = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
+		const second = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
 
 		assert.ok(first, "first read nags");
 		assert.ok(second, "second read still nags — naming is not delivering");
@@ -161,17 +161,17 @@ test("resolveArchitectNag: a doc drops out of the nag only after its own path is
 			"spec-editing.md"
 		);
 
-		const beforeRead = await resolveArchitectNag(repoRoot, sourcePath, "session-1");
+		const beforeRead = await resolveArchitectNag(repoRoot, sourcePath, "claude", "session-1");
 		assert.ok(beforeRead, "unread doc is named before its own path is read");
 
-		const readOfDocItself = await resolveArchitectNag(repoRoot, docPath, "session-1");
+		const readOfDocItself = await resolveArchitectNag(repoRoot, docPath, "claude", "session-1");
 		assert.equal(
 			readOfDocItself,
 			null,
 			"reading the doc's own path matches no manifest route, so it nags nothing"
 		);
 
-		const afterRead = await resolveArchitectNag(repoRoot, sourcePath, "session-1");
+		const afterRead = await resolveArchitectNag(repoRoot, sourcePath, "claude", "session-1");
 		assert.equal(
 			afterRead,
 			null,
@@ -196,10 +196,10 @@ test("resolveArchitectNag: a different session has its own read-tracking and re-
 			"spec-editing.md"
 		);
 
-		await resolveArchitectNag(repoRoot, sourcePath, "session-1");
-		await resolveArchitectNag(repoRoot, docPath, "session-1");
+		await resolveArchitectNag(repoRoot, sourcePath, "claude", "session-1");
+		await resolveArchitectNag(repoRoot, docPath, "claude", "session-1");
 
-		const otherSession = await resolveArchitectNag(repoRoot, sourcePath, "session-2");
+		const otherSession = await resolveArchitectNag(repoRoot, sourcePath, "claude", "session-2");
 		assert.ok(otherSession, "a new session id has its own read tracking");
 	});
 });
@@ -224,7 +224,7 @@ test("resolveArchitectNag: crediting the just-read doc and nagging other unread 
 			"_toolkit",
 			"spec-editing.md"
 		);
-		const result = await resolveArchitectNag(repoRoot, docPath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, docPath, "claude", "session-1");
 
 		assert.ok(result, "the read also matches .prism/architect/**, so the still-unread sibling doc is nagged");
 		assert.match(result as string, /_toolkit\/other-doc\.md/);
@@ -244,10 +244,10 @@ test("resolveArchitectNag: reading manifest.json itself does not credit \"manife
 		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
 
 		const manifestPath = path.join(repoRoot, ".prism", "architect", "manifest.json");
-		const result = await resolveArchitectNag(repoRoot, manifestPath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, manifestPath, "claude", "session-1");
 		assert.equal(result, null, "manifest.json matches no route, so reading it nags nothing");
 
-		const state = await loadRouteState(repoRoot, "session-1");
+		const state = await loadRouteState(repoRoot, "claude", "session-1");
 		assert.deepEqual(
 			state.read,
 			[],
@@ -265,8 +265,8 @@ test("resolveArchitectNag: a manifest doc absent from disk is skipped, not nagge
 		// that was renamed or deleted without the route being updated.
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const first = await resolveArchitectNag(repoRoot, filePath, "session-1");
-		const second = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const first = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
+		const second = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
 
 		assert.equal(
 			first,
@@ -284,7 +284,7 @@ test("resolveArchitectNag: returns null when no manifest route matches the path"
 		});
 
 		const filePath = path.join(repoRoot, "README.md");
-		const result = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, filePath, "claude", "session-1");
 
 		assert.equal(result, null);
 	});
@@ -297,7 +297,7 @@ test("resolveArchitectNag: a large matched-doc fan-out stays under the emission 
 		await Promise.all(docs.map((doc) => seedDoc(repoRoot, doc)));
 
 		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
-		const result = (await resolveArchitectNag(repoRoot, filePath, "session-1")) as string;
+		const result = (await resolveArchitectNag(repoRoot, filePath, "claude", "session-1")) as string;
 
 		assert.ok(result, "expected a nag for the fan-out route");
 		assert.ok(
@@ -345,7 +345,7 @@ test("loadRouteState: a corrupt state file is treated as absent, not thrown", as
 			"utf8"
 		);
 
-		const state = await loadRouteState(repoRoot, "session-1");
+		const state = await loadRouteState(repoRoot, "claude", "session-1");
 		assert.deepEqual(state, { read: [] });
 	});
 });
@@ -359,7 +359,7 @@ test("loadRouteState: an unrecognized state-file schema is treated as absent", a
 			"utf8"
 		);
 
-		const state = await loadRouteState(repoRoot, "session-1");
+		const state = await loadRouteState(repoRoot, "claude", "session-1");
 		assert.deepEqual(state, { read: [] });
 	});
 });
@@ -377,12 +377,16 @@ test("saveRouteState: prunes sibling state files older than the staleness window
 		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
 		await fs.utimes(staleFile, staleTimestamp, staleTimestamp);
 
-		await saveRouteState(repoRoot, "current-session", { read: [] });
+		await saveRouteState(repoRoot, "claude", "current-session", { read: [] });
 
 		await assert.rejects(fs.access(staleFile));
 		await assert.doesNotReject(
 			fs.access(
-				path.join(repoRoot, ".prism", "architect-route-state.current-session.json")
+				path.join(
+					repoRoot,
+					".prism",
+					"architect-route-state.claude.current-session.json"
+				)
 			)
 		);
 	});
@@ -401,9 +405,97 @@ test("saveRouteState: prunes a stale orphaned .json.tmp left by a killed mid-wri
 		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
 		await fs.utimes(orphanedTmpFile, staleTimestamp, staleTimestamp);
 
-		await saveRouteState(repoRoot, "current-session", { read: [] });
+		await saveRouteState(repoRoot, "claude", "current-session", { read: [] });
 
 		await assert.rejects(fs.access(orphanedTmpFile));
+	});
+});
+
+test("saveRouteState: a state file written under --tool=cursor is reaped by the same prune pass as one written under --tool=claude", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const staleClaudeFile = path.join(
+			repoRoot,
+			".prism",
+			"architect-route-state.claude.old-session.json"
+		);
+		const staleCursorFile = path.join(
+			repoRoot,
+			".prism",
+			"architect-route-state.cursor.old-session.json"
+		);
+		await fs.mkdir(path.dirname(staleClaudeFile), { recursive: true });
+		await fs.writeFile(staleClaudeFile, JSON.stringify({ read: [] }), "utf8");
+		await fs.writeFile(staleCursorFile, JSON.stringify({ read: [] }), "utf8");
+
+		const staleTimestamp = new Date(Date.now() - 48 * 60 * 60 * 1000);
+		await fs.utimes(staleClaudeFile, staleTimestamp, staleTimestamp);
+		await fs.utimes(staleCursorFile, staleTimestamp, staleTimestamp);
+
+		await saveRouteState(repoRoot, "claude", "current-session", { read: [] });
+
+		await assert.rejects(
+			fs.access(staleClaudeFile),
+			"a stale claude-harness state file is pruned"
+		);
+		await assert.rejects(
+			fs.access(staleCursorFile),
+			"a stale cursor-harness state file is pruned by the same pass — pruneStaleRouteState's prefix match does not key on the tool segment"
+		);
+	});
+});
+
+test("resolveArchitectNag: the same session id under two different harnesses writes two separate state files", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+
+		// Reading the doc's own path (not just the matched source path) is what
+		// triggers a credited write — see `resolveArchitectNag`'s "credit a
+		// read" step. A read of a non-doc path alone never calls
+		// `saveRouteState`, so it would never produce a state file to compare.
+		const docPath = path.join(
+			repoRoot,
+			".prism",
+			"architect",
+			"_toolkit",
+			"spec-editing.md"
+		);
+		await resolveArchitectNag(repoRoot, docPath, "claude", "shared-session");
+		await resolveArchitectNag(repoRoot, docPath, "cursor", "shared-session");
+
+		const claudeState = await loadRouteState(repoRoot, "claude", "shared-session");
+		const cursorState = await loadRouteState(repoRoot, "cursor", "shared-session");
+		assert.deepEqual(
+			claudeState.read,
+			["_toolkit/spec-editing.md"],
+			"the claude-harness state file credited its own read"
+		);
+		assert.deepEqual(
+			cursorState.read,
+			["_toolkit/spec-editing.md"],
+			"the cursor-harness state file credited its own read independently"
+		);
+
+		await assert.doesNotReject(
+			fs.access(
+				path.join(
+					repoRoot,
+					".prism",
+					"architect-route-state.claude.shared-session.json"
+				)
+			)
+		);
+		await assert.doesNotReject(
+			fs.access(
+				path.join(
+					repoRoot,
+					".prism",
+					"architect-route-state.cursor.shared-session.json"
+				)
+			)
+		);
 	});
 });
 
