@@ -1,13 +1,15 @@
 /**
  * Regression suite for verify-manifest-coverage. Covers the three matcher
  * shapes (exact, prefix-with-slash, glob) and the multi-route collection
- * contract documented in `.prism/references/architect-context.md`.
+ * contract documented in `.prism/references/architect-context.md`, plus the
+ * brace-glob validation guard (plan `thr-2171-port` task 7).
  */
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
 	compileMatcher,
+	findBraceGlobKeys,
 	findMissingCoverage,
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
@@ -165,4 +167,39 @@ test("findMissingCoverage: reports each expected positive that is missing the do
 	assert.equal(failures.length, 2);
 	assert.ok(failures.some((message) => message.startsWith("zoe ")));
 	assert.ok(failures.some((message) => message.startsWith("eric ")));
+});
+
+test("findBraceGlobKeys: flags a manifest key using brace-alternation syntax", () => {
+	const manifest = {
+		"src/**/*.{ts,tsx}": "spec-editing.md",
+	};
+	const failures = findBraceGlobKeys(manifest);
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /"src\/\*\*\/\*\.\{ts,tsx\}"/);
+	assert.match(failures[0], /silently match nothing/);
+});
+
+test("findBraceGlobKeys: empty for a manifest containing only PRISM's current route shapes", () => {
+	const manifest = {
+		".prism/SPEC.md": "spec-editing.md",
+		".claude/skills/prism-qa-test-plan/": "spec-editing.md",
+		".claude/skills/**": "spec-editing.md",
+		"**": "skills-ecosystem.md",
+	};
+	assert.deepEqual(findBraceGlobKeys(manifest), []);
+});
+
+test("findBraceGlobKeys: reports every offending key when more than one manifest route uses brace syntax", () => {
+	const manifest = {
+		"a/**/*.{ts,tsx}": "spec-editing.md",
+		"b/{foo,bar}/**": "spec-editing.md",
+		"c/**": "spec-editing.md",
+	};
+	assert.equal(findBraceGlobKeys(manifest).length, 2);
+});
+
+test("compileMatcher: a brace-glob pattern compiles but matches only the literal brace characters, not alternation — the defect findBraceGlobKeys guards against", () => {
+	const matcher = compileMatcher("src/**/*.{ts,tsx}");
+	assert.equal(matcher("src/foo.ts"), false, "the intended alternation never matches");
+	assert.equal(matcher("src/foo.tsx"), false, "the intended alternation never matches");
 });

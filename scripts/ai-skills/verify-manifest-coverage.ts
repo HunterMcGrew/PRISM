@@ -158,6 +158,23 @@ export function findMissingCoverage(
 	return failures;
 }
 
+/**
+ * Returns one failure message per manifest key containing a brace glob
+ * (`{ts,tsx}`). `compileMatcher` escapes `{` and `}` into a regex literal
+ * class rather than expanding brace alternation, so a route written this way
+ * compiles to a regex that matches only a filename containing literal brace
+ * characters — silently matching nothing real. Empty array means every key
+ * is safe to compile.
+ */
+export function findBraceGlobKeys(manifest: Manifest): string[] {
+	return Object.keys(manifest)
+		.filter((key) => key.includes("{") || key.includes("}"))
+		.map(
+			(key) =>
+				`manifest route "${key}" uses a brace glob; compileMatcher escapes braces as literals rather than expanding them, so this route would silently match nothing. Write one route per extension instead.`
+		);
+}
+
 async function main(): Promise<void> {
 	const manifestPath = path.join(
 		repoRoot,
@@ -167,6 +184,15 @@ async function main(): Promise<void> {
 	);
 	const raw = await fs.readFile(manifestPath, "utf8");
 	const manifest = JSON.parse(raw) as Manifest;
+
+	const braceFailures = findBraceGlobKeys(manifest);
+	if (braceFailures.length > 0) {
+		console.error("\nverify-manifest-coverage failed:");
+		for (const failure of braceFailures) {
+			console.error(`  - ${failure}`);
+		}
+		process.exit(1);
+	}
 
 	const result: Record<string, string[]> = {};
 	for (const persona of PERSONA_SCOPES) {
