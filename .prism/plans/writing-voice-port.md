@@ -186,6 +186,13 @@ The split is what keeps the audit finishable. Without it an auditor stalls on th
   - **Implementation guidance:** `## Audit method` check 2 carries the substitution test and states the carve-out once, so the gap between a grep count and the findings tables is explained rather than looking like missed work.
   - → promoted to `.prism/architect/_toolkit/spec-editing.md` — the same word recurs in every future spec edit
 
+- **§ Plain language over jargon's "names from our stack" example genericizes Thrive's own class names, forced by the build pipeline rather than chosen.**
+  - **Root cause:** Thrive's verbatim illustration is `useEffect`, `block.json`, `Thrive_Core`, `IEquipment` — the last two are proper nouns from TracTru/thrive's own codebase, which this repo does not contain. `scripts/ai-skills/build.ts`'s seed-literal-guard flagged the literal word `Thrive` at `templates/install/.prism/rules/writing-voice.md:83` and failed the build with `Genericize the canonical source, or allowlist the file` — the install seed ships this content verbatim to every consumer, so a Thrive-specific class name would read as a dogfooding leak on every fresh install.
+  - **Alternatives considered:** keep Thrive's exact examples and add the file to `.ai-skills/definitions/literal-allowlist.json`; keep the examples and accept a failing build; genericize the two proper nouns and keep everything else in the sentence verbatim.
+  - **Chosen approach:** genericize the two proper nouns only (`Thrive_Core`, `IEquipment` → `a codebase's own class or type names`), keep `useEffect` and `block.json` — neither is Thrive-specific, both are common patterns any adopting team's codebase could carry. Allowlisting was rejected: the guard exists precisely to catch this class of leak, and this instance has no reason to be an exception. Discovered after the first `pnpm prism:build` run silently stopped short of regenerating every mirror (including `AGENTS.md`) because the guard failure aborted the build before that step — a second, clean build confirmed the fix.
+  - **Implementation guidance:** this is the fifth adaptation from Thrive's source, alongside the four already named in the Decision above titled "Four sections port; the file's section order does not" and its neighbors. AC-6 names it explicitly so a reviewer diffing against Thrive's source doesn't read it as an unexplained deviation.
+  - → no promotion needed (port-tactical; future ports hit the same guard and get the same signal)
+
 - **The port fixes `writing-voice.md:32` in PR 1 rather than leaving it to the audit lane.**
   - **Root cause:** § Explain the why uses `load-bearing` and the port does not otherwise touch that section, while § Plain language over jargon — which task 5 replaces with the version carrying the ban — is what forbids it. PR 1 as originally tasked would land one file whose two sections contradict each other in the same commit.
   - **Alternatives considered:** leave it for PR 2, which audits this directory anyway; fix it in PR 1.
@@ -270,7 +277,7 @@ The audit lane's `flag` findings land here. Empty until task 9 runs.
 
 ### Non-behavioral
 
-- [ ] **AC-6** — The ported sections carry Thrive's reasoning, not a paraphrase of it. Adaptations are limited to the four named in `## Decisions` (dropped Linear pointer, added lessons.md citation, PRISM-neutral narration examples, surface routing).
+- [ ] **AC-6** — The ported sections carry Thrive's reasoning, not a paraphrase of it. Adaptations are limited to the five named in `## Decisions` (dropped Linear pointer, added lessons.md citation, PRISM-neutral narration examples, surface routing, genericized stack-name example).
   - Evidence (`human`): reviewer diffs each ported section against `gh api repos/TracTru/thrive/contents/.ai-spec/rules/writing-voice.md`.
 - [ ] **AC-7** — No ADR's decision content changes during the audit; edits to `.prism/spec/adrs/**` are voice-only.
   - Evidence (`human`): reviewer confirms no `## Decision` or `## Consequences` section changed meaning in PR 4.
