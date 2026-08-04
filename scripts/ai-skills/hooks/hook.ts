@@ -100,7 +100,7 @@ export async function runAdapter(
 		const cwd = payload.cwd ?? process.cwd();
 		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
 
-		const nag = await resolveArchitectNag(repoRoot, filePath, sessionId);
+		const nag = await resolveArchitectNag(repoRoot, filePath, tool, sessionId);
 		if (nag === null) {
 			return emitNoneOutput(spec);
 		}
