@@ -8,7 +8,7 @@ Every persona skill opens a session with the same four-question battery, closes 
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
-**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, re-anchor at your skill's own event boundaries, and keep a lifecycle list near the top of your skill body. The sections below carry the exact mechanics for each.
+**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, and re-anchor at your skill's own event boundaries. The sections below carry the exact mechanics for each.
 
 ## Opening Orientation Battery
 
