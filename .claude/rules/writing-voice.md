@@ -29,7 +29,7 @@ Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE
 
 ## Explain the why
 
-Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule is load-bearing or stale.
+Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule still prevents something or has gone stale.
 
 **Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't.
 
@@ -58,18 +58,40 @@ A short rule that gets read beats a long rule that gets skimmed. Aim for the min
 
 ---
 
+## An overflowing container is the signal to cut
+
+A table cell wrapping to four lines is evidence you can't miss. So is a bullet that ran to a paragraph, or a sentence you can't read aloud in one breath.
+
+**Why:** "is this too long" has no honest answer from the person who wrote it. A wrapped cell is visible to anyone looking at the same page.
+
+**How to apply**, stopping at the first step that fixes it:
+
+- **Cut words.** An over-budget cell is usually a sentence where a phrase would do.
+- **Drop a column.** Most three-column tables are two columns plus commentary, and the commentary belongs in a sentence below.
+- **Change the container.** Content that survives an honest trim and still overflows needs bullets or prose, not cells.
+- **A value repeated in every row is a caption.** Move it to the sentence above the table.
+- **It runs the other way too.** Counts buried in a paragraph — "Mira 7, Clove 6, Nora 6" — are a two-column table that reads in one glance.
+
+---
+
 ## Plain language over jargon
 
-When a plainer word carries the same meaning, use it. When a technical term is load-bearing — the reader will keep seeing it, or plain words can't carry the concept alone — introduce the concept in plain words first and drop the term in behind.
+**Write for a tenth grader who has taken an intro computer-science class.** They know `array`, `boolean`, `recursion`, `primitive`, `closure`. They have never heard a wall called load-bearing.
 
-**Why:** Spec content is read by people with different levels of context — a senior engineer scanning for correctness, a new hire reading to learn, a reviewer scanning for concerns. Jargon-dense nouns ("primitive," "manifest," "orchestrator") make comprehension harder for every reader at once. The plainer phrasing is free; jargon only earns its place when nothing else fits.
+**Sentence structure is the half that bar governs.** One idea per sentence, two clauses at most. If the reader has to hold a clause in memory to reach the verb, split the sentence. A short sentence carrying a real technical term reads fine; a sixty-word sentence with five clauses doesn't, whatever words are in it.
+
+**Keep a word that names a real thing. Cut a word that dresses up an idea.** Two kinds earn their place — names from our stack (`useEffect`, `block.json`, a codebase's own class or type names) and computer-science terms the reader already met in class (`primitive`, `recursion`, `closure`, `RSC`). What goes is metaphor: "load-bearing," "seam," "canonical," "altitude," "surface area."
+
+**Why:** you shouldn't need a PhD to read our docs. But deleting a precise term doesn't make a doc clearer — it makes the reader rebuild the concept from a longer paraphrase. Metaphor is what costs the reader with nothing in return.
 
 **How to apply:**
 
-- When you reach for a noun that needs a gloss to land, try the gloss on its own first. If the gloss carries the meaning, delete the noun.
-- When a term is genuinely load-bearing, introduce the plain version first and drop the term in behind — don't ask the reader to learn the term from the cold. `GitHub Environments already hold the authoritative list of dealers... the environments _are_ the fleet manifest` works; opening with `GitHub Environments are the fleet manifest` doesn't.
-- One concrete example beats an abstract definition. If a term earns a paragraph of gloss, it probably isn't load-bearing enough to include at all.
-- Watch for nouns that sound architectural but add no signal — "primitive," "abstraction," "mechanism." These are usually standing in for a verb phrase that would land directly.
+- **The test: would plain English cost precision, or only characters?** `primitive` has no short plain twin — spelling it out takes a full sentence, so the term is doing real work. "Load-bearing" means "required," which is shorter. Keep the first, cut the second.
+- **Gloss a precise term on first use instead of dropping it.** "Returns a primitive — a string, number, or boolean, not an object" keeps the precision for one extra clause.
+- **Where a short plain twin exists, use the twin.** `idempotent` → safe to run twice. `memoize` → cache the result. `dedupe` → remove duplicates. `wire up` → connect. `fan out` → split.
+- Same word, two uses, two answers. `primitive` meaning `string | number | boolean` names a thing and stays. `primitive` meaning "a reusable building block" is metaphor and goes.
+- Say what breaks instead of calling something load-bearing. "Required — without it the resolver returns null."
+- Plain register, always: `subsequent` → later, `utilize` → use, `leverage` → use, `ensure` → make sure, `in order to` → to, `approximately` → about.
 
 ---
 
@@ -119,3 +141,15 @@ A durable artifact — anything a future reader loads cold, with no memory of th
 **Why:** Eli wrote `docs/content/dev/blocks/feature.md` during a batch run documenting many blocks in sequence. The Overview included the line _"This is the largest single-block editor in the loop so far (~410 lines of `edit.tsx`)... The frontend block (~230 lines)..."_ — comparison ("largest so far") that only made sense inside that generation session, paired with hard line counts that drift the moment the file changes. Caught on read-through, after the doc shipped. lessons.md 2026-04-27.
 
 **How to apply:** Before saving a durable artifact, re-read it as someone landing on it cold from search six months from now. If a sentence only makes sense given the session that wrote it — delete it. The Overview should land for a reader who has no idea other docs were generated in the same sitting. Test descriptions are durable too: name the contract under test, not the change that produced it or the implementation token it happens to use — prefer `it("renders the newest size", ...)` over a name pinned to a specific token or the edit that introduced it. This pairs with the "Count rules, not numbers" section above — both are observations about the moment of writing, not specifications about the subject.
+
+---
+
+## Anti-pattern: Reassurance that introduces a new claim
+
+When a passage has just admitted a gap — measured X but not Y, verified A but not B — check the sentence right after it. A line whose job is to make the reader feel better about the unknown is the likeliest place to assert something nobody verified.
+
+The test isn't whether it sounds reassuring; good writing reassures constantly. The test is whether the reassurance traces back to something already verified, or introduces a new claim.
+
+**Why:** one architecture doc took several review passes, each catching a closing sentence that asserted a property sounding like it followed from the design. "A deterministic render over the labels the build already produced" — no labels existed at that step. "Both paths carry the same anti-fragment rule" — it lived on one path. "Stale is safe" — the fallback didn't cover an outdated node that still matched. Each read as a natural conclusion, and each got past a reviewer once. PRISM hit the adjacent failure in its own tree — see `.prism/lessons.md` § A control arm that receives an always-on instruction doing the same job is not a control, where a null result was trusted before anyone enumerated what the control arm actually received.
+
+**How to apply:** find each admission and read the sentence after it. Name the property it asserts, then ask where that property was proven. "It follows from the design" is a guess, not proof. Cutting is usually the stronger edit — an admission that ends on the admission is more trustworthy than one that ends on a hedge.

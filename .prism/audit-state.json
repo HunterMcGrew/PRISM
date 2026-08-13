@@ -1,6 +1,14 @@
 {
 	"schemaVersion": 1,
-	"lastRun": "2026-06-05T21:44:34Z",
+	"lastRun": "2026-08-02T00:00:00Z",
+	"modes": ["worktrees"],
+	"stats": {
+		"worktrees_green": 22,
+		"worktrees_removed": 0,
+		"worktrees_red": 39,
+		"worktrees_yellow": 59,
+		"worktrees_unreadable": 0
+	},
 	"classified": {
 		".prism/plans/agents-md-slim.md": "2026-06-05T21:44:34Z",
 		".prism/plans/epic-lean-skill-architecture.md": "2026-06-05T21:44:34Z",

@@ -26,8 +26,11 @@ import { createRequire } from "node:module";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-const testFiles = readdirSync(scriptDirectory)
-	.filter((entry) => entry.endsWith(".test.ts"))
+const testFiles = readdirSync(scriptDirectory, { recursive: true })
+	.filter(
+		(entry): entry is string =>
+			typeof entry === "string" && entry.endsWith(".test.ts")
+	)
 	.sort()
 	.map((entry) => path.join(scriptDirectory, entry));
 

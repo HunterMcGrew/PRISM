@@ -850,6 +850,12 @@ Any multi-step skill invocation that touches the same file across steps. Concret
 
 The pattern is "read once, refer many" — not "read every step."
 
+## Architect-context routing is diff-blind
+
+Architect-context routing keys on the working diff (`prism-architect` startup step 4 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. When a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing.
+
+A `PostToolUse` hook on `Read` enforces this mechanically on hosts that expose the event (Claude Code today). This clause is the fallback that runs everywhere else, including hosts without a hook yet.
+
 ## Citation list — skills that load this rule
 
 This rule is referenced by every PRISM skill's reflex-bullets section:
@@ -1052,12 +1058,23 @@ The common shape: it could plausibly have been part of the originating ticket bu
 - **Speculative follow-ups.** "Maybe we should look into X someday." Backlog noise. Either it's a known problem with a known shape (file it), or it's not (don't).
 - **Follow-ups without traceability.** A ticket with no link back to the decision that produced it. Six months later no one can answer "why is this ticket here?" and it gets closed unread.
 
+## Spec content never rides an unrelated ticket
+
+Always-on process or spec content — a rule declaring `load: always`, a skill body under `.ai-skills/skills/**`, or a `.prism/references/review-*.md` file — never rides a ticket it has no relationship to. This rule already forbade it, and it was ignored because each edit looked like a one-liner, so the remedy is a trip-wire rather than sharper prose. It cannot key on edit size, because size is what already failed.
+
+`.prism/lessons.md` is deliberately not on that list. `.prism/rules/self-improvement-loop.md` mandates an append to it after every user correction, so it lands in the diff of any ticket that captured a lesson — the routine case this rule exists to let through, not the one-liner-riding-an-unrelated-ticket case it exists to catch. `.prism/rules/writing-voice.md` already carves `.prism/lessons.md` out of the durable-artifact standard as working notes, not spec.
+
+The check is two computable conditions, both required to fire: the changed path is always-on spec content (per the criteria above), **and** the file's discriminator — its basename, or for a skill body under `.ai-skills/skills/**`, its skill directory — appears nowhere in the branch's live plan outside the plan's own bookkeeping sections, and no `## Decisions` entry names the path. A bookkeeping section is one a persona appends findings to, as opposed to a section an author writes to declare scope — currently `## Review Issues`, `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and `## PR Readiness`. The escape hatch is a `## Decisions` entry naming the path and the reason — the documented-absorption shape this rule already defines for cross-lane work (see § Choosing the vehicle above). Bookkeeping sections are excluded from the search deliberately: a fix-in note that quotes a flagged path shouldn't permanently clear that same path for the life of the plan.
+
+Enforced mechanically by `pnpm prism:spec-scope-lint` (`scripts/ai-skills/spec-scope-lint.ts`), which runs as part of `pnpm prism:check`.
+
 ## Who runs this rule
 
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
 - **Winston** (`prism-architect`) — during evaluate mode, before recommending a new ticket for surfaced work, walks the table; same-scope work is a fold-in or a follow-up PR, not a ticket.
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
+- **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
 
 ## Worker emit pre-filter (Sol-run-time)
 
@@ -1357,6 +1374,39 @@ Short answers stay short — this is a shape, not a minimum length. A one-line q
 
 `.prism/rules/writing-voice.md` governs durable artifacts — anything a future reader loads cold. This rule governs chat, the live surface where the reader is present and reading in real time; `writing-voice.md`'s own scope note already excludes ad-hoc conversation, and this rule is what fills that gap.
 
+## Match length to the question
+
+A reply runs as long as the answer needs and stops. [`writing-voice.md` § Keep it short enough to be read](./writing-voice.md) governs durable artifacts, where the cost spreads over future readers. This governs replies, where it lands on one person waiting.
+
+**Why:** the shape rules below fix the *order*, not the *amount*. A well-ordered wall of text is still a wall. A reader once switched tools over verbosity alone, on output that followed every ordering rule here.
+
+**How to apply:**
+
+- Answer what was asked, then stop. No preamble, no restating the question, no previewing your own structure.
+- Cut ceremony before content. The two sentences of throat-clearing go; the finding they surround stays.
+- Keep depth flat. Two to four lines under a bold lead, no nesting. Most of the wall-of-text feeling is three levels of sub-bullets.
+
+---
+
+## Narration cadence during a task
+
+Before your first tool call, say in one sentence what you're about to do. While working, give an update only when you find something important or change direction. When you finish, lead with the outcome — the first sentence answers "what happened" or "what did you find," with the detail after it.
+
+**Why:** length rules govern how much a message says; this governs how often you speak. A run that narrates every tool batch is a dozen short messages the reader has to stitch together, each one correct on its own. Opus-class models announce what they're about to do by default, so the cadence has to be stated (Anthropic's [Opus 5 prompting guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5) § `User-facing progress updates`).
+
+**What the three moments look like:**
+
+- **Opening:** "Reading the three unresolved threads and both rule diffs." Then the tool calls.
+- **Mid-run, worth saying:** "The migration touches three files, not one — the plan's task list needs a third commit."
+- **Mid-run, not worth saying:** "Now regenerating the projections." Do it; the result is the report.
+- **Close:** "14 tests added, all green — the edge cases are covered."
+
+Two things earn an interruption: the next step needs an answer only the user has, or continuing would commit more work under an assumption they haven't heard. A progress note is neither.
+
+**Correct an earlier statement only when the error changes the reader's code, conclusions, or decisions.** State the correction plainly and briefly, then continue. For a slip that changes nothing, make the fix and move on without noting it. A wrong number the reader might act on gets corrected; a rephrasing doesn't.
+
+---
+
 ## Who runs this rule
 
 Every persona in the PRISM roster applies this contract to every chat reply.
@@ -1513,7 +1563,7 @@ These personas route on their name or an explicit trigger phrase only — never 
 ## Utility skills
 
 - `prism-handoff` is a *utility* skill — no persona; it runs in the current persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-handoff` command or a direct ask to hand off, continue in a new chat, or pass work to a fresh session. Personas may suggest it at session close but never auto-invoke it. It compacts the session into a handoff document and reports the path back.
-- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a zero-findings pass and closes with a scoreboard TLDR; the PR stays draft.
+- `prism-review-loop` is a *utility* skill — no persona; it runs in the invoking persona's voice (see the persona-vs-utility skill-type decision in `.prism/spec/adrs/_toolkit/`). Invocation is user-initiated: the `/prism-review-loop` command or a direct ask to run the review loop or gauntlet on a PR. It orchestrates self-review → fix → PR-review loops to a subject-clean pass and closes with a scoreboard TLDR; the PR stays draft.
 - `prism-skill-forge` is a *utility* skill — no persona; it runs in the current voice. Invocation is user-initiated: "create skill", "scaffold skill", "new skill", "add persona", "migrate skill", "decompose skill", "import skill". Create mode scaffolds a new PRISM skill from scratch; migrate mode decomposes a generated platform skill back into canonical source.
 
 ## Sol is a persona, not a utility
@@ -1612,7 +1662,7 @@ Mandate voice — `NON-NEGOTIABLE`, all-caps `MUST`, `FAILURE STATE`, `HARD RULE
 
 ## Explain the why
 
-Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule is load-bearing or stale.
+Every rule, every ADR, every architect-context constraint cites its reason. A rule without a reason gets treated as arbitrary and skipped in edge cases, because the reader has no way to tell whether the rule still prevents something or has gone stale.
 
 **Why:** The reason is what survives contact with situations the rule's author didn't anticipate. "We learned the hard way that Y caused Z" lets the reader judge whether Z is still a risk in front of them. "Do X" doesn't.
 
@@ -1641,18 +1691,40 @@ A short rule that gets read beats a long rule that gets skimmed. Aim for the min
 
 ---
 
+## An overflowing container is the signal to cut
+
+A table cell wrapping to four lines is evidence you can't miss. So is a bullet that ran to a paragraph, or a sentence you can't read aloud in one breath.
+
+**Why:** "is this too long" has no honest answer from the person who wrote it. A wrapped cell is visible to anyone looking at the same page.
+
+**How to apply**, stopping at the first step that fixes it:
+
+- **Cut words.** An over-budget cell is usually a sentence where a phrase would do.
+- **Drop a column.** Most three-column tables are two columns plus commentary, and the commentary belongs in a sentence below.
+- **Change the container.** Content that survives an honest trim and still overflows needs bullets or prose, not cells.
+- **A value repeated in every row is a caption.** Move it to the sentence above the table.
+- **It runs the other way too.** Counts buried in a paragraph — "Mira 7, Clove 6, Nora 6" — are a two-column table that reads in one glance.
+
+---
+
 ## Plain language over jargon
 
-When a plainer word carries the same meaning, use it. When a technical term is load-bearing — the reader will keep seeing it, or plain words can't carry the concept alone — introduce the concept in plain words first and drop the term in behind.
+**Write for a tenth grader who has taken an intro computer-science class.** They know `array`, `boolean`, `recursion`, `primitive`, `closure`. They have never heard a wall called load-bearing.
 
-**Why:** Spec content is read by people with different levels of context — a senior engineer scanning for correctness, a new hire reading to learn, a reviewer scanning for concerns. Jargon-dense nouns ("primitive," "manifest," "orchestrator") make comprehension harder for every reader at once. The plainer phrasing is free; jargon only earns its place when nothing else fits.
+**Sentence structure is the half that bar governs.** One idea per sentence, two clauses at most. If the reader has to hold a clause in memory to reach the verb, split the sentence. A short sentence carrying a real technical term reads fine; a sixty-word sentence with five clauses doesn't, whatever words are in it.
+
+**Keep a word that names a real thing. Cut a word that dresses up an idea.** Two kinds earn their place — names from our stack (`useEffect`, `block.json`, a codebase's own class or type names) and computer-science terms the reader already met in class (`primitive`, `recursion`, `closure`, `RSC`). What goes is metaphor: "load-bearing," "seam," "canonical," "altitude," "surface area."
+
+**Why:** you shouldn't need a PhD to read our docs. But deleting a precise term doesn't make a doc clearer — it makes the reader rebuild the concept from a longer paraphrase. Metaphor is what costs the reader with nothing in return.
 
 **How to apply:**
 
-- When you reach for a noun that needs a gloss to land, try the gloss on its own first. If the gloss carries the meaning, delete the noun.
-- When a term is genuinely load-bearing, introduce the plain version first and drop the term in behind — don't ask the reader to learn the term from the cold. `GitHub Environments already hold the authoritative list of dealers... the environments _are_ the fleet manifest` works; opening with `GitHub Environments are the fleet manifest` doesn't.
-- One concrete example beats an abstract definition. If a term earns a paragraph of gloss, it probably isn't load-bearing enough to include at all.
-- Watch for nouns that sound architectural but add no signal — "primitive," "abstraction," "mechanism." These are usually standing in for a verb phrase that would land directly.
+- **The test: would plain English cost precision, or only characters?** `primitive` has no short plain twin — spelling it out takes a full sentence, so the term is doing real work. "Load-bearing" means "required," which is shorter. Keep the first, cut the second.
+- **Gloss a precise term on first use instead of dropping it.** "Returns a primitive — a string, number, or boolean, not an object" keeps the precision for one extra clause.
+- **Where a short plain twin exists, use the twin.** `idempotent` → safe to run twice. `memoize` → cache the result. `dedupe` → remove duplicates. `wire up` → connect. `fan out` → split.
+- Same word, two uses, two answers. `primitive` meaning `string | number | boolean` names a thing and stays. `primitive` meaning "a reusable building block" is metaphor and goes.
+- Say what breaks instead of calling something load-bearing. "Required — without it the resolver returns null."
+- Plain register, always: `subsequent` → later, `utilize` → use, `leverage` → use, `ensure` → make sure, `in order to` → to, `approximately` → about.
 
 ---
 
@@ -1702,6 +1774,18 @@ A durable artifact — anything a future reader loads cold, with no memory of th
 **Why:** Eli wrote `docs/content/dev/blocks/feature.md` during a batch run documenting many blocks in sequence. The Overview included the line _"This is the largest single-block editor in the loop so far (~410 lines of `edit.tsx`)... The frontend block (~230 lines)..."_ — comparison ("largest so far") that only made sense inside that generation session, paired with hard line counts that drift the moment the file changes. Caught on read-through, after the doc shipped. lessons.md 2026-04-27.
 
 **How to apply:** Before saving a durable artifact, re-read it as someone landing on it cold from search six months from now. If a sentence only makes sense given the session that wrote it — delete it. The Overview should land for a reader who has no idea other docs were generated in the same sitting. Test descriptions are durable too: name the contract under test, not the change that produced it or the implementation token it happens to use — prefer `it("renders the newest size", ...)` over a name pinned to a specific token or the edit that introduced it. This pairs with the "Count rules, not numbers" section above — both are observations about the moment of writing, not specifications about the subject.
+
+---
+
+## Anti-pattern: Reassurance that introduces a new claim
+
+When a passage has just admitted a gap — measured X but not Y, verified A but not B — check the sentence right after it. A line whose job is to make the reader feel better about the unknown is the likeliest place to assert something nobody verified.
+
+The test isn't whether it sounds reassuring; good writing reassures constantly. The test is whether the reassurance traces back to something already verified, or introduces a new claim.
+
+**Why:** one architecture doc took several review passes, each catching a closing sentence that asserted a property sounding like it followed from the design. "A deterministic render over the labels the build already produced" — no labels existed at that step. "Both paths carry the same anti-fragment rule" — it lived on one path. "Stale is safe" — the fallback didn't cover an outdated node that still matched. Each read as a natural conclusion, and each got past a reviewer once. PRISM hit the adjacent failure in its own tree — see `.prism/lessons.md` § A control arm that receives an always-on instruction doing the same job is not a control, where a null result was trusted before anyone enumerated what the control arm actually received.
+
+**How to apply:** find each admission and read the sentence after it. Name the property it asserts, then ask where that property was proven. "It follows from the design" is a guess, not proof. Cutting is usually the stronger edit — an admission that ends on the admission is more trustworthy than one that ends on a hedge.
 
 <!-- END GENERATED TIER-1 RULE BODIES -->
 

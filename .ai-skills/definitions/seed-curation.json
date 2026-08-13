@@ -64,7 +64,8 @@
     "spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md",
     "spec/adrs/_toolkit/0068-retro-charter-and-two-grain-cadence.md",
     "spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md",
-    "spec/adrs/_toolkit/0070-explicit-rule-load-declaration.md"
+    "spec/adrs/_toolkit/0070-explicit-rule-load-declaration.md",
+    "spec/adrs/_toolkit/0071-architect-context-read-hook.md"
   ],
   "curated": [
     "rules/branch-plan.md",
