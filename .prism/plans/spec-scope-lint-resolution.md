@@ -160,10 +160,32 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 
 ---
 
+## Review Issues
+
+No issues found — 2026-08-13 [huntermcgrew/opus5-port-lint-resolution]
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — 5 new tests, each independently confirmed red-first against the pre-fix commit in a scratch worktree
+- [x] All debugged issues resolved (no `open` entries) — plan carries none
+- [x] Build passes — last run: 2026-08-13 (`pnpm prism:check`, zero drift; `pnpm prism:test`, 667 tests)
+- [x] PR description up to date — matches the diff and the verified test/AC evidence
+- [ ] Lasting decisions promoted to architect context — correctly deferred; all three Decisions carry `→ promotion verdict pending close`, and this plan is not closing in this PR
+
+**Last updated:** 2026-08-13
+
+---
+
 ## Sessions
 
 - 2026-08-13 [huntermcgrew/thrive-port-opus5-rule-amendments] open: Intent — plan a small prerequisite PR fixing the two defects that make `spec-scope-lint` no-op, and answer what happens to the false positives resolution will surface; Bounds — write only `.prism/plans/spec-scope-lint-resolution.md`, never touch `opus5-port.md`, no code, no subagents; Approach — run the counterfactual against the live tree and measure every claimed number rather than inheriting the reviewer's estimate · close: scope held — one file written; the reviewer's "~25 false positives" estimate was measured as 27 under today's discriminator and 17 after the fix, and the 17 were classified against the rule's actual text rather than assumed to be a defect.
 - 2026-08-13 [huntermcgrew/opus5-port-lint-resolution] open: Intent — implement the plan's 5 tasks (two red-first fixes) so `spec-scope-lint` gates instead of no-opping; Bounds — touch only the two lib/test file pairs plus this plan file, leave `opus5-port.md` and `.prism/plans/conductor/`/`.prism/research/` untouched; Approach — run each red test to observed failure before writing its fix, then the full gate and the live counterfactual before shipping · close: scope held — diff is exactly `resolve-live-plan.{ts,test.ts}`, `spec-scope-lint.{ts,test.ts}`, and this plan; all 11 AC items verified with the cited evidence; PR #458 opened as draft.
+- 2026-08-13 [huntermcgrew/opus5-port-lint-resolution] open: Intent — self-review PR #458's two-defect spec-scope-lint fix (set-containment matcher, bare skill-directory discriminator) per Sol's five scrutiny items; Bounds — the two lib/test file pairs plus this plan, findings chat-only, no GitHub posts, no merge; Approach — verify the two surviving guards by direct code read, confirm true red-first history by checking out the pre-fix commits in scratch worktrees and re-running the exact tests, and verify the substring-collision and four-branch-resolution claims by running the real functions against the live tree rather than trusting the plan's prose · close: scope held — zero critical/major findings; all five review items verified with direct evidence (worktree test runs, live script output, programmatic substring check).
 
 ---
 
