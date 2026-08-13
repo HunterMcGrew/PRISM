@@ -40,10 +40,6 @@ Long sessions drift between the opening and closing batteries — a plan gets re
 
 **Why:** a session that only checks orientation at the two ends can drift for hours in the middle without anyone noticing — the mid-flight re-anchor is cheap insurance against exactly that, and it costs one sentence, not a battery re-run.
 
-## Lifecycle List
-
-Every skill carries a short "The run, in order" list near the top of its body — the lifecycle phases in sequence, named in a few words each. It isn't new information; it's a long-context anchor, so a session that has read a lot since startup can re-orient from the list without re-reading the whole body.
-
 ## Who runs this rule
 
-Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries and keeps a lifecycle list; each skill's own body states which parts apply.
+Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries; each skill's own body states which parts apply.
