@@ -39,4 +39,4 @@ The check applies only to persona handoffs, not to routine operations (git comma
 
 ## References
 
-- `AGENTS.md § 8 Context Window Handoff Check` — the retired specification; the table row and the rule file are both gone as of `.prism/plans/opus5-port.md` task 5
+- `AGENTS.md § 8 Context Window Handoff Check` — the retired specification; the section heading, the behavioral-norms table row, and the rule file are all gone as of `.prism/plans/opus5-port.md` task 5. The §7→§9 gap is deliberate: numbers are never reused, so existing `AGENTS.md §N` citations keep resolving.

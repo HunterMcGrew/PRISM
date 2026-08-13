@@ -39,8 +39,9 @@ exactly when a good one matters most.
 it directly — the same two conditions apply: session length or self-observed
 drift. This is a judgment call the persona makes in the moment, never a
 counted proxy scored against fixed thresholds (skills invoked, files read,
-exchanges) — see `.prism/plans/opus5-port.md` task 5 for why that scoring was
-dropped. The suggestion is always an offer, never an auto-invocation.
+exchanges) — signals the model can't measure mid-session, which produce either
+theater or silence. The suggestion is always an offer, never an
+auto-invocation.
 
 ## Step 0 — Opening orientation
 

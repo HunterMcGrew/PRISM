@@ -27,7 +27,7 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 | 2 | Subagent strategy — offload research to subagents, one task each, to keep the main window clean | [`.prism/rules/subagent-strategy.md`](.prism/rules/subagent-strategy.md) |
 | 3 | Self-improvement loop — capture corrections in `.prism/lessons.md`; review lessons at session start | [`.prism/rules/self-improvement-loop.md`](.prism/rules/self-improvement-loop.md) |
 | 4 | Verification before done — prove it works against the staff-engineer bar before calling it complete | [`.prism/rules/verification-before-done.md`](.prism/rules/verification-before-done.md) |
-| 5 | Demand elegance — ask for the clean solution on non-trivial changes; skip it on obvious fixes | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
+| 5 | Demand elegance — pause when the change has a design with tradeoffs; mechanical edits skip it | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
 | 6 | Autonomous bug fixing — just fix the bug; stop only when the blast radius is wide | [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing.md) |
 | — | Core principles — simplicity first, no laziness | [`.prism/rules/core-principles.md`](.prism/rules/core-principles.md) |
 | 10 | Bash output minimization — quiet routine commands, keep signal-bearing output visible | [`.prism/rules/bash-output-minimization.md`](.prism/rules/bash-output-minimization.md) |
@@ -938,7 +938,7 @@ load: always
 
 When a change has a design with tradeoffs — more than one shape would work, and the shapes differ in what they cost later — stop before presenting it and ask whether a cleaner solution exists. A mechanical edit does not get this pause.
 
-**Why:** the first working version of a change with real design choices is rarely the clean one, and once it is in the tree the hacky shape becomes the pattern the next change copies. Stating the firing condition first is what keeps the rule from reading as a standing licence to reshape unrelated code — thrive PR #2273 measured that framing costing 2 out-of-scope files per run on this model class, against 0 with no project config loaded.
+**Why:** the first working version of a change with real design choices is rarely the clean one, and once it is in the tree the hacky shape becomes the pattern the next change copies. A rule phrased as a blanket license to reshape gets executed broadly rather than as the narrow judgment call it means — thrive PR #2273 measured that cost directly.
 
 **How to apply:**
 
@@ -1369,7 +1369,7 @@ Two things earn an interruption: the next step needs an answer only the user has
 
 Every persona in the PRISM roster applies this contract to every chat reply.
 
-The state-line clause is conditional, not universal — it fires only when the current run has ordered phases the reader is tracking across replies — a multi-step implementation, a phased review. On a one-shot answer it is noise. Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
+The state-line clause is conditional, not universal: it fires only when the run has ordered phases the reader is tracking across replies, such as a multi-step implementation or a phased review. Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
 
 ---
 
@@ -1407,7 +1407,7 @@ load: always
 
 Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
 
-**The battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt.
+**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
@@ -1556,9 +1556,8 @@ Keep the main context window clean by offloading work that reads a lot to produc
 
 - Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
 - Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
-- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. This doesn't cover a structured rubric review dispatched over a finished draft — running several parallel axes of review (e.g. product-fit, technical-feasibility, clarity) against a stable artifact by a different agent than the one that authored it — that's read-heavy, multi-axis analysis, the shape this rule exists to offload, not a same-pass self-check.
-- When unsure whether work is delegation-shaped, do it yourself. An inline read that turns out to have been delegable costs one extra read; a dispatch that turns out not to have been costs a round trip and a report-back that may never arrive.
-- Don't dispatch a subagent for work that could have been an inline read — a dispatch costs a round trip and a report-back that may not come back. This doesn't cap parallel dispatch across genuinely distinct axes of the same review; each axis is its own scoped task per the bullet above.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work.
+- Don't dispatch for work that could have been an inline read, and when you're unsure which it is, do it yourself: an inline read that turns out to have been delegable costs one extra read, while a needless dispatch costs a round trip and a report-back that may never arrive. This doesn't cap parallel dispatch across genuinely distinct axes of one review — each axis is its own scoped task per the one-task-per-subagent bullet.
 
 ---
 
@@ -1574,7 +1573,7 @@ load: always
 
 A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** an unproven "done" claim is a debt the next reader inherits silently — they build on it, and the cost of the false claim lands on whoever discovers it, at whatever point they discover it, which is almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** the cost of a false "done" lands on whoever discovers it, at whatever point they discover it — almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 
