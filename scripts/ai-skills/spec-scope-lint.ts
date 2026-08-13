@@ -305,7 +305,7 @@ function stripLedgerSections(planText: string): string {
  * body under `.ai-skills/skills/**` shares its basenames (`shared.md`,
  * `claude.md`, `codex.md`, `cursor.md`) with every other skill's same-named
  * files, so basename alone can't tell one skill's body from another's — the
- * discriminator there is the skill directory itself (`prism-architect/`),
+ * discriminator there is the skill directory name itself (`prism-architect`),
  * which still satisfies the `## Decisions` escape hatch (a Decision naming
  * any path inside that directory contains the substring). Directory rather
  * than directory-plus-basename: a skill body is its `shared.md` plus a
@@ -313,13 +313,15 @@ function stripLedgerSections(planText: string): string {
  * file in the directory is naming the whole skill body, not just that file.
  * Every other class (a `.prism/rules/*.md` rule, `.prism/lessons.md`, a
  * `review-*.md` reference) carries a basename that's already unique in its
- * namespace, so plain basename stays the discriminator there.
+ * namespace, so plain basename stays the discriminator there. The name is
+ * matched bare rather than as a path segment because plans name skill
+ * directories in prose, not as paths; no skill directory name is a substring
+ * of another, so a bare match cannot cross-clear a different skill.
  */
 function discriminatorFor(changedPath: string): string {
 	if (changedPath.startsWith(SKILLS_ROOT_PREFIX)) {
 		const relativePath = changedPath.slice(SKILLS_ROOT_PREFIX.length);
-		const skillDirectory = relativePath.split("/")[0];
-		return `${skillDirectory}/`;
+		return relativePath.split("/")[0];
 	}
 
 	return path.basename(changedPath);
