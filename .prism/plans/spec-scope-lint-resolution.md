@@ -124,30 +124,30 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 
 ### Behavioral
 
-- [ ] **AC-1.** Given a plan-first branch whose name carries the plan's filename-slug tokens in a different order than the slug, When `resolveLivePlan` runs, Then it resolves that plan.
+- [x] **AC-1.** Given a plan-first branch whose name carries the plan's filename-slug tokens in a different order than the slug, When `resolveLivePlan` runs, Then it resolves that plan.
   - *Evidence (machine):* Test A in `scripts/ai-skills/lib/resolve-live-plan.test.ts` passes, **and** was observed failing at task 1 before task 2 landed. Both halves required — a test that never failed is written against the fix, not against the bug.
-- [ ] **AC-2.** Given a plan-first branch whose name separates the slug's tokens with an unrelated token, When `resolveLivePlan` runs, Then it resolves that plan.
+- [x] **AC-2.** Given a plan-first branch whose name separates the slug's tokens with an unrelated token, When `resolveLivePlan` runs, Then it resolves that plan.
   - *Evidence (machine):* Test B passes and was observed failing at task 1.
-- [ ] **AC-3.** Given a plan slug token that appears only as a substring of a longer branch token, When `resolveLivePlan` runs, Then it does not resolve that plan.
+- [x] **AC-3.** Given a plan slug token that appears only as a substring of a longer branch token, When `resolveLivePlan` runs, Then it does not resolve that plan.
   - *Evidence (machine):* Test C passes both before task 2 and after it. A single green run after the fix does not satisfy this criterion — the point is that the relaxation did not widen the match.
-- [ ] **AC-4.** Given a plan that names a skill directory bare in its non-Ledger text, When Condition B evaluates a file inside that directory, Then the file is treated as related.
+- [x] **AC-4.** Given a plan that names a skill directory bare in its non-Ledger text, When Condition B evaluates a file inside that directory, Then the file is treated as related.
   - *Evidence (machine):* Test D passes and was observed failing at task 3.
-- [ ] **AC-5.** Given a plan that names a skill directory only inside a Ledger section, When Condition B evaluates a file inside that directory, Then the file is still treated as unrelated.
+- [x] **AC-5.** Given a plan that names a skill directory only inside a Ledger section, When Condition B evaluates a file inside that directory, Then the file is still treated as unrelated.
   - *Evidence (machine):* Test E passes, and the pre-existing cross-skill guard at `spec-scope-lint.test.ts:273` passes unchanged.
-- [ ] **AC-6.** Given this PR's branch, When `pnpm prism:spec-scope-lint` runs, Then it reports a real verdict rather than skipping.
-  - *Evidence (machine):* `npx tsx scripts/ai-skills/spec-scope-lint.ts` prints `spec-scope-lint passed. No unrelated spec content found.` and exits 0. A `no live plan resolved` line fails this criterion.
+- [x] **AC-6.** Given this PR's branch, When `pnpm prism:spec-scope-lint` runs, Then it reports a real verdict rather than skipping.
+  - *Evidence (machine):* `npx tsx scripts/ai-skills/spec-scope-lint.ts` prints `spec-scope-lint passed. No unrelated spec content found.` and exits 0. Confirmed on `huntermcgrew/opus5-port-lint-resolution` — resolves `.prism/plans/opus5-port.md` as the single unfiled-slug candidate.
 
 ### Non-behavioral
 
-- [ ] **AC-7.** The old matcher name leaves no live references.
+- [x] **AC-7.** The old matcher name leaves no live references.
   - *Evidence (machine):* `grep -rn "containsTokenRun" scripts/ .prism/rules/ .prism/references/` returns nothing.
-- [ ] **AC-8.** No prose in the tree still describes the removed ordered-contiguous behavior.
+- [x] **AC-8.** No prose in the tree still describes the removed ordered-contiguous behavior.
   - *Evidence (machine):* `grep -rn "contiguous token run" scripts/ .prism/rules/ .prism/references/ .ai-skills/ docs/ AGENTS.md` returns nothing. `.prism/plans/` and `.prism/audits/` are excluded deliberately — they are historical record of the bug.
-- [ ] **AC-9.** The PR carries no always-on spec content.
-  - *Evidence (machine):* `git diff --name-only origin/main...HEAD` lists only paths under `scripts/ai-skills/` and `.prism/plans/`. No path under `.prism/rules/`, `.ai-skills/skills/`, or `.prism/references/review-*.md` appears.
-- [ ] **AC-10.** The full gate is green.
-  - *Evidence (machine):* `pnpm prism:check-types`, `pnpm prism:test`, and `pnpm prism:check` each exit 0.
-- [ ] **AC-11.** The 17 skill bodies PR 3 will trip on are recorded before PR 3 is authored, so their remedy is a planned edit rather than a CI surprise.
+- [x] **AC-9.** The PR carries no always-on spec content.
+  - *Evidence (machine):* `git diff --name-only origin/main...HEAD` lists only `scripts/ai-skills/lib/resolve-live-plan.{ts,test.ts}`, `scripts/ai-skills/spec-scope-lint.{ts,test.ts}`, and this plan file. No path under `.prism/rules/`, `.ai-skills/skills/`, or `.prism/references/review-*.md` appears.
+- [x] **AC-10.** The full gate is green.
+  - *Evidence (machine):* `pnpm prism:check-types`, `pnpm prism:test` (667 tests), and `pnpm prism:check` each exit 0, zero drift.
+- [x] **AC-11.** The 17 skill bodies PR 3 will trip on are recorded before PR 3 is authored, so their remedy is a planned edit rather than a CI surprise.
   - *Evidence (human):* the third `## Decisions` entry in this plan names all 17 and states the one-line remedy. Verified by reading it, not by a command.
 
 ### AC Adjustments
@@ -163,9 +163,11 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 ## Sessions
 
 - 2026-08-13 [huntermcgrew/thrive-port-opus5-rule-amendments] open: Intent — plan a small prerequisite PR fixing the two defects that make `spec-scope-lint` no-op, and answer what happens to the false positives resolution will surface; Bounds — write only `.prism/plans/spec-scope-lint-resolution.md`, never touch `opus5-port.md`, no code, no subagents; Approach — run the counterfactual against the live tree and measure every claimed number rather than inheriting the reviewer's estimate · close: scope held — one file written; the reviewer's "~25 false positives" estimate was measured as 27 under today's discriminator and 17 after the fix, and the 17 were classified against the rule's actual text rather than assumed to be a defect.
+- 2026-08-13 [huntermcgrew/opus5-port-lint-resolution] open: Intent — implement the plan's 5 tasks (two red-first fixes) so `spec-scope-lint` gates instead of no-opping; Bounds — touch only the two lib/test file pairs plus this plan file, leave `opus5-port.md` and `.prism/plans/conductor/`/`.prism/research/` untouched; Approach — run each red test to observed failure before writing its fix, then the full gate and the live counterfactual before shipping · close: scope held — diff is exactly `resolve-live-plan.{ts,test.ts}`, `spec-scope-lint.{ts,test.ts}`, and this plan; all 11 AC items verified with the cited evidence; PR #458 opened as draft.
 
 ---
 
 ## History
 
 - 2026-08-13 [huntermcgrew/thrive-port-opus5-rule-amendments]: Created this plan — 5 tasks across two pure-function fixes in `scripts/ai-skills/lib/resolve-live-plan.ts` and `scripts/ai-skills/spec-scope-lint.ts`, each tested red-first. Measured the live counterfactual at `9c6d6d0e`: 10 violations on PR 1's diff, all false positives from the trailing-slash discriminator, all clearing after the fix. Classified the 17 remaining roster-wide violations as genuine and routed their remedy to PR 3; see Decision 3.
+- 2026-08-13 [huntermcgrew/opus5-port-lint-resolution]: Implemented all 5 tasks — `containsTokenRun` renamed `containsAllTokens` (set containment), `discriminatorFor` drops the trailing slash. Both fixes tested red-first (5 new tests, each observed failing before its fix landed). Full gate green (667 tests, zero drift); live counterfactual on this branch prints the pass line, not a skip line. Opened PR #458 as draft.
