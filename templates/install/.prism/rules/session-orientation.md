@@ -8,7 +8,7 @@ load: always
 
 Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
 
-**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
+**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 

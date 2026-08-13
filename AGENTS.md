@@ -942,8 +942,7 @@ When a change has a design with tradeoffs — more than one shape would work, an
 
 **How to apply:**
 
-- The test for whether this rule fires: does the change have a design with tradeoffs, or is it a mechanical edit? Designs get the pause; mechanical edits do not.
-- When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it does not fire, ship the obvious version.
+- When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it doesn't fire, ship the obvious version.
 
 ---
 
@@ -1407,7 +1406,7 @@ load: always
 
 Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
 
-**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
+**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
@@ -1556,7 +1555,7 @@ Keep the main context window clean by offloading work that reads a lot to produc
 
 - Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
 - Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
-- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. A structured review dispatched over a finished draft is a different shape: several parallel axes (product-fit, feasibility, clarity) reading a stable artifact is the read-heavy analysis this rule exists to offload, not a same-pass self-check.
 - Don't dispatch for work that could have been an inline read, and when you're unsure which it is, do it yourself: an inline read that turns out to have been delegable costs one extra read, while a needless dispatch costs a round trip and a report-back that may never arrive. This doesn't cap parallel dispatch across genuinely distinct axes of one review — each axis is its own scoped task per the one-task-per-subagent bullet.
 
 ---

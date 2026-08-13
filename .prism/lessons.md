@@ -403,3 +403,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-04 (PR #452, Eric review) — a regression run against a target test file silently ran a different worktree's copy of the same relative path, reporting 14 tests against a 15-test file; caught only because the counts didn't match, which would not have held on a coincidentally-equal file.
 
 **How to apply:** When running `pnpm --dir <path> exec <cmd> <relative-file>`, use an absolute path for the file argument, or verify the resolved path (`pnpm --dir <path> exec node -e "console.log(require.resolve('<relative-file>'))"`) before trusting the run's result.
+
+## A reviewer's prescribed fix is a hypothesis the fixer executes, not adopts
+
+**Why:** 2026-08-13 (PRISM-opus5-port, PR #449) — in one review pass, the reviewer fired both halves of the same failure: it prescribed an exclusion regex anchored on `^\./` that never matches on this repo (`grep -r` emits no `./` prefix — the fixer tested it and found it returned 47 lines while reading as verified), and it asserted that ADR-0006 ships to consumers without checking (`templates/install/.prism/spec/` holds only `TEMPLATE.md` and `README.md`), which would have relocated a dangling pointer rather than fixed it. A third prescription — "these two carve-outs are duplicates, drop one" — was adopted without testing and deleted a live carve-out, producing a Major in the next review pass.
+
+**How to apply:** when a review names a specific remedy, execute the remedy before writing it down; if it can't be executed, treat the finding as real and the remedy as unverified. This is the reviewer-side twin of the existing unmeasured-remedy lesson (§ A review finding that prescribes a performance fix benchmarks the fix, not just the fault).
