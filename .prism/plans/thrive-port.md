@@ -1,5 +1,7 @@
 # Plan: thrive-port
 
+> Superseded: 2026-08-13 — folded into `.prism/plans/opus5-port.md`; PRs B–H re-homed there or deferred with dispositions.
+
 ## Ticket
 
 No tracker ticket — port triage requested directly by Hunter ("what fits into PRISM?"), dispatched via Sol 2026-07-30. Source candidates: TracTru/thrive PRs 2192, 2196, 2206, 2221, 2222, 2230, 2231, 2232, 2238, 2239, plus two external inputs (Opus 5 prompting guide, ASD-STE100 writing skill) and the agent-registry concern added mid-dispatch.
@@ -296,3 +298,4 @@ Suggested order: A→B and H first (always-on rule surface, smallest review cost
 - 2026-08-02 [huntermcgrew/context-delivery-mechanism]: This plan file entered git for the first time, recovered from `git stash@{0}` after it was found absent from `origin/main` and every branch. The 2026-07-30 ratification note in `.prism/plans/conductor/thrive-port-triage.md` is contradicted; see the provenance Decision above for the correction and for why `stash@{0}` was left untouched.
 
 - 2026-07-30 [main]: Plan created by Winston (Sol dispatch, retry after subagent stall). Verdicts on 10 thrive PRs + agent registry + 2 external inputs; 8 PRs proposed as two stacks + independents; see Decisions for the 2222/2232/STE calls.
+- 2026-08-13 [huntermcgrew/thrive-port-opus5-rule-amendments]: Superseded by `.prism/plans/opus5-port.md` — PR A's remaining work (tasks 4-9) folds into that plan's PR 1; PRs B-H are re-homed there or deferred with dispositions.
