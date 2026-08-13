@@ -306,8 +306,6 @@ Note which `.prism/architect/` file(s) should be updated if this approach is ado
 
 At the end of evaluate mode, always offer: **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
 
-Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ---
 
 ## Plan Mode

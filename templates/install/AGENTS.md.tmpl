@@ -124,28 +124,6 @@ When editing spec content under `.claude/**`, `.prism/architect/_toolkit/spec-ed
 
 ---
 
-## 8. Context Window Handoff Check
-
-Before recommending the next persona/skill at the end of a skill session, assess context load.
-
-**Scope:** This check applies only to persona/skill handoffs — not to simple operations like committing, pushing, running git commands, answering questions, or any non-skill task.
-
-Evaluate these three signals:
-
-1. **Multiple skills invoked** — 5+ skill invocations in this conversation
-2. **Large codebase reads** — 30+ files read or 1,000+ combined insertions and deletions (per `git diff --stat`)
-3. **Extensive back-and-forth** — 100+ user exchanges
-
-**When 2 or more signals fire**, include in the handoff:
-
-> "We've covered a lot of ground. I'd recommend opening a new chat for [next persona] — they'll have full context available and won't risk losing details from compression."
-
-**When only 1 signal fires**, proceed normally — a single signal alone is not sufficient evidence of context pressure.
-
-**When 0 signals fire**, don't mention context load at all.
-
----
-
 ## 9. Ownership & Handoff
 
 > This is the in-persona step — a skill is already active, and a request just drifted past its lane. Here's what each skill owns and the language for handing off when you're not the right person for the job.

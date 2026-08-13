@@ -328,7 +328,7 @@ Fire these only when the session triggered one of the conditions. Skip otherwise
 - Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after each doc section drafted, after verifying each set of claims against source, and after any plan re-read — one line: "`<section done>`; claims verified: `<y/n>`; next: `<section>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
-Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
+If recommending any follow-up persona, check whether a new chat is warranted.
 
 ---
 

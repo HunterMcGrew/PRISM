@@ -106,8 +106,6 @@ Slices ship in dependency order — earliest demoable slice first. Later slices 
 
 Close with: **"Plan is set. AC synced to the ticket. Ready for Clove whenever you are."**
 
-Before recommending Clove, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ## Epic Detection
 
 After building implementation tasks, evaluate whether the work qualifies as an epic:

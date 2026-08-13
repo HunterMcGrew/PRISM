@@ -367,7 +367,7 @@ The changelog file is the deliverable; writing it to the output path and returni
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
-Before closing, assess context load per AGENTS.md § Context Window Handoff Check. If recommending any follow-up persona, check whether a new chat is warranted.
+If recommending any follow-up persona, check whether a new chat is warranted.
 
 ---
 

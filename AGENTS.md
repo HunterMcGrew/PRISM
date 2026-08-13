@@ -30,7 +30,6 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 | 5 | Demand elegance — ask for the clean solution on non-trivial changes; skip it on obvious fixes | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
 | 6 | Autonomous bug fixing — just fix the bug; stop only when the blast radius is wide | [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing.md) |
 | — | Core principles — simplicity first, no laziness | [`.prism/rules/core-principles.md`](.prism/rules/core-principles.md) |
-| 8 | Context window handoff check — assess context load before recommending the next persona | [`.prism/rules/context-window-handoff-check.md`](.prism/rules/context-window-handoff-check.md) |
 | 10 | Bash output minimization — quiet routine commands, keep signal-bearing output visible | [`.prism/rules/bash-output-minimization.md`](.prism/rules/bash-output-minimization.md) |
 | 11 | Cross-agent handoff accountability — verify upstream work before acting on it | [`.prism/rules/cross-agent-handoff-accountability.md`](.prism/rules/cross-agent-handoff-accountability.md) |
 | 12 | Pre-compaction checkpoint — capture critical session state before auto-compaction | [`.prism/rules/pre-compaction-checkpoint.md`](.prism/rules/pre-compaction-checkpoint.md) |
@@ -872,46 +871,6 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 - prism-user-stories (Mira)
 - prism-changelog (Sage)
 - prism-standup-summary (Lilac)
-
----
-
-<!-- source: .prism/rules/context-window-handoff-check.md -->
-
----
-load: always
----
-
-# Context Window Handoff Check
-
-## Purpose
-
-Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression.
-
-**Why:** a persona recommendation that ignores context load hands the next persona a session already close to compaction, where load-bearing details get silently dropped. The check costs one evaluation at session close and protects the handoff at exactly the moment the context is most likely to be lost.
-
-**Scope:** this check applies only to persona/skill handoffs — not to committing, pushing, running git commands, answering questions, or any non-skill task.
-
-## How to apply
-
-Evaluate these three signals:
-
-1. **Multiple skills invoked** — 5 or more skill invocations in this conversation.
-2. **Large codebase reads** — 30 or more files read, or 1,000 or more combined insertions and deletions (per `git diff --stat`).
-3. **Extensive back-and-forth** — 100 or more user exchanges.
-
-- **When 2 or more signals fire**, include in the handoff:
-
-  > "We've covered a lot of ground. I'd recommend opening a new chat for [next persona] — they'll have full context available and won't risk losing details from compression."
-
-  Name `/prism-handoff` as the remedy alongside that recommendation — it compacts this session into a handoff document the fresh chat continues from. Suggest it in the closing message; never auto-invoke it.
-
-- **When only 1 signal fires**, proceed normally — a single signal alone is not sufficient evidence of context pressure.
-
-- **When 0 signals fire**, don't mention context load at all.
-
-## Who runs this rule
-
-Every persona runs this check at the end of a skill session before recommending the next persona. The `/prism-handoff` utility skill is the named remedy when 2 or more signals fire.
 
 ---
 
@@ -1827,12 +1786,6 @@ See [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing
 ## 7. Project Engineering Standards
 
 The `.prism/rules/` and `.prism/architect/` files are the team's intentional engineering standards — the equivalent of a style guide. Follow them as the default authority for project-specific decisions; if a situation genuinely requires deviation, flag it and explain the reasoning rather than silently overriding. When you find a gap, recommend an update or a new file.
-
----
-
-## 8. Context Window Handoff Check
-
-See [`.prism/rules/context-window-handoff-check.md`](.prism/rules/context-window-handoff-check.md).
 
 ---
 
