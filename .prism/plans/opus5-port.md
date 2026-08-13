@@ -2,7 +2,7 @@
 
 ## Ticket
 
-No tracker ticket — port authored by Winston under a Sol fleet dispatch, 2026-08-13. Source material: [`.prism/research/opus5-port-evidence.md`](../research/opus5-port-evidence.md) (thrive PRs #2240–2326, the `~/Documents/portable-skills` slimming doctrine, thrive's live hook system). Supersedes [`.prism/plans/thrive-port.md`](./thrive-port.md), whose PR A is open as [#449](https://github.com/HunterMcGrew/PRISM/pull/449) and whose PRs B–H were never started.
+Unfiled — no tracker ticket, port authored by Winston under a Sol fleet dispatch, 2026-08-13. Source material: [`.prism/research/opus5-port-evidence.md`](../research/opus5-port-evidence.md) (thrive PRs #2240–2326, the `~/Documents/portable-skills` slimming doctrine, thrive's live hook system). Supersedes [`.prism/plans/thrive-port.md`](./thrive-port.md), whose PR A is open as [#449](https://github.com/HunterMcGrew/PRISM/pull/449) and whose PRs B–H were never started.
 
 ## Goal
 
@@ -36,6 +36,10 @@ Sequencing is forced, not stylistic — see § Cross-PR collisions.
   - **Evidence:** `git stash show -p stash@{0}` is a single-line `## History` append to `.prism/plans/thrive-port.md` (the 2026-08-01 thrive-PR-inventory entry). `git show origin/main:.prism/plans/thrive-port.md | grep -c "2026-08-01 .*Inventoried"` returns `1` — the line is already on `main`.
   - **Chosen approach:** `git stash drop stash@{0}` as part of task 1, after the grep above is re-run and returns `1`. The prior session's note that "whatever else `stash@{0}` carries may still belong on the branch" (`thrive-port.md § Decisions`, provenance entry) is now answered: it carries nothing else.
   - **→ promotion verdict pending close.**
+
+- **The `git stash drop stash@{0}` this plan calls for was deliberately not executed — reversed by Sol's explicit instruction during PR 1 implementation, not by the implementer's judgment.** The redundancy precondition above still holds — `git show origin/main:.prism/plans/thrive-port.md | grep -c "2026-08-01 .*Inventoried"` returned `1` when Clove ran it (task 1) and again when Briar re-verified it in self-review — so nothing about the "safe to drop" analysis changed. What changed is who owns the drop: the stash is operator data, dropping a stash is irreversible, and no operator was available mid-dispatch to confirm the drop in the moment. Sol's dispatch instructions for this session named the drop as the one step to skip and report on instead.
+  - **Current state:** `stash@{0}` is still present on `huntermcgrew/thrive-port-opus5-rule-amendments` as of this Decision. The operator (Hunter) can drop it at will — the precondition that makes it safe to drop has been verified twice and holds.
+  - **→ no promotion needed (session-scoped operational note; the underlying redundancy Decision above is what would promote, not this reversal).**
 
 - **The authoring-route deny is scoped to authoring paths only; `code` routes stay nag-only on every verb.** This reverses the recommendation in [ADR-0071](../spec/adrs/_toolkit/0071-architect-context-read-hook.md) (design 2, "a `PreToolUse` gate on `Edit` … adds friction and false positives") and contradicts the live line in `.ai-skills/skills/prism-conductor/shared.md:106`. Both are corrected in PR 2, by ADR and by edit respectively — a carve-out that leaves the tree contradicting itself is worse than no carve-out.
   - **Root cause the carve-out addresses:** architect-context routing is diff-blind (ADR-0071 § Context). The nag names the doc; nothing makes reading it a precondition of the edit. On instruction-layer files — rules, ADRs, skill bodies — an edit made without the governing doc does not merely produce worse code, it produces *wrong spec that later readers execute*.

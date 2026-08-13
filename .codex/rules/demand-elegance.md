@@ -10,4 +10,3 @@ When a change has a design with tradeoffs — more than one shape would work, an
 
 - The test for whether this rule fires: does the change have a design with tradeoffs, or is it a mechanical edit? Designs get the pause; mechanical edits do not.
 - When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it does not fire, ship the obvious version.
-- The test for which side you're on: does the change have a design with tradeoffs, or is it a mechanical edit? Designs get the pause; mechanical edits don't.
