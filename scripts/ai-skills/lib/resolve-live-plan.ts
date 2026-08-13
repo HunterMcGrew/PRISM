@@ -66,32 +66,25 @@ function hyphenTokens(value: string): string[] {
 }
 
 /**
- * True when `needle`'s tokens appear as a contiguous, in-order run inside
- * `haystack`'s tokens — e.g. `["review", "loop", "self", "audit"]` inside
- * `["prism", "review", "loop", "self", "audit"]`. Token-boundary matching
- * avoids the false positives a raw substring check would allow (a slug
- * `log` must not match inside a branch segment `catalog`).
+ * True when every token in `needle` appears somewhere in `haystack` — order
+ * and adjacency are not required, because a branch name interleaves the plan
+ * slug's words with its own descriptors (`thrive-port-opus5-rule-amendments`
+ * carries the `opus5-port` slug reversed, and `opus5-lint-port-fix` carries it
+ * split). Whole-token equality is what guards against false positives: a slug
+ * token `log` never matches the branch token `catalog`, at any position. The
+ * caller supplies the two guards that bound the looseness — a minimum of two
+ * slug tokens, and failing closed when more than one plan matches.
  */
-function containsTokenRun(haystack: string[], needle: string[]): boolean {
-	if (needle.length === 0 || needle.length > haystack.length) {
-		return false;
-	}
-
-	for (let start = 0; start <= haystack.length - needle.length; start++) {
-		if (needle.every((token, offset) => haystack[start + offset] === token)) {
-			return true;
-		}
-	}
-
-	return false;
+function containsAllTokens(haystack: string[], needle: string[]): boolean {
+	return needle.length > 0 && needle.every((token) => haystack.includes(token));
 }
 
 /**
  * Fallback tier for a branch with no ticket-id-shaped token — a plan-first
  * branch, cut before Nora files a ticket per `branch-plan.md` § Plan Lookup
  * step 5. Scans `.prism/plans/*.md` for every plan whose `## Ticket` field
- * reads as unfiled and whose filename slug appears as a contiguous token run
- * in the branch's final `/`-segment, requiring at least two hyphen-separated
+ * reads as unfiled and whose filename slug's tokens all appear in the
+ * branch's final `/`-segment, requiring at least two hyphen-separated
  * tokens in the slug (a one-word slug is too coincidence-prone to trust).
  *
  * Returns every match rather than collapsing to a single winner — exported
@@ -122,7 +115,7 @@ export async function findUnfiledPlanCandidatesBySlug(
 
 	for (const entry of entries.sort()) {
 		const slugTokens = hyphenTokens(entry.slice(0, -".md".length));
-		if (slugTokens.length < 2 || !containsTokenRun(branchTokens, slugTokens)) {
+		if (slugTokens.length < 2 || !containsAllTokens(branchTokens, slugTokens)) {
 			continue;
 		}
 
