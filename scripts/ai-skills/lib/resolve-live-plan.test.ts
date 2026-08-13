@@ -371,6 +371,69 @@ test("resolveLivePlan: the unfiled-plan-by-slug tier requires at least two hyphe
 	);
 });
 
+test("resolveLivePlan: the unfiled-plan-by-slug tier matches slug tokens in any order", async () => {
+	const branchName = "huntermcgrew/thrive-port-opus5-rule-amendments";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/opus5-port.md",
+				["# Plan: opus5-port", "", "## Ticket", "", "Unfiled — no tracker ticket.", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/opus5-port.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier matches slug tokens separated by an unrelated token", async () => {
+	const branchName = "huntermcgrew/opus5-lint-port-fix";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/opus5-port.md",
+				["# Plan: opus5-port", "", "## Ticket", "", "Unfiled — no tracker ticket.", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(
+				await resolveLivePlan(branchName, tempRoot),
+				".prism/plans/opus5-port.md"
+			);
+		}
+	);
+});
+
+test("resolveLivePlan: the unfiled-plan-by-slug tier does not match a slug token inside a longer branch token", async () => {
+	const branchName = "huntermcgrew/catalog-porting-notes";
+
+	await withTempTree(
+		async (tempRoot) => {
+			await writeFile(
+				tempRoot,
+				".prism/plans/log-port.md",
+				["# Plan: log-port", "", "## Ticket", "", "Unfiled — no tracker ticket.", ""].join(
+					"\n"
+				)
+			);
+		},
+		async (tempRoot) => {
+			assert.equal(await resolveLivePlan(branchName, tempRoot), null);
+		}
+	);
+});
+
 test("resolveLivePlan: the unfiled-plan-by-slug tier never reads .prism/archived/", async () => {
 	const branchName = "huntermcgrew/prism-review-loop-self-audit";
 
