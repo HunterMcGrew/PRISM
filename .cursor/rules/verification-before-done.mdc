@@ -6,12 +6,12 @@ alwaysApply: true
 
 ## Purpose
 
-Prove a task works before marking it complete. Run tests, check logs, demonstrate correctness. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
+A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** "done" claimed without proof is a claim the next reader inherits and pays for when it turns out false. Demonstrated correctness — a passing test, a clean log, a behavior diff — is the difference between believing the work is right and knowing it. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** the cost of a false "done" lands on whoever discovers it, at whatever point they discover it — almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 
-- Run the tests, check the logs, and demonstrate the behavior before calling a task complete.
-- Diff behavior between `main` and your changes when the change is behavioral — the diff is the proof.
+- When claiming a task is complete, name the evidence the claim rests on — a test result, a log, a behavior diff. A claim with no evidence to name isn't ready to be made.
+- When the change is behavioral, the behavior diff between `main` and the change is the proof worth citing.
 - Hold the work to the staff-engineer bar. If you're not sure it would pass review, it isn't done yet.

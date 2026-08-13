@@ -410,8 +410,6 @@ Once the `## Debugged Issues` entry is saved (and ticket updated if applicable),
 
 If the ticket was updated (root cause/fix or comment), include "and ticket updated" in the message. If not, omit it.
 
-Before recommending Clove, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ---
 
 ## Session close

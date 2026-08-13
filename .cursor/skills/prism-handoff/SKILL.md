@@ -35,6 +35,14 @@ Invoke when any of these conditions are true:
 Do not wait for 95% context — a session at the edge writes a degraded summary
 exactly when a good one matters most.
 
+**Any active persona may suggest this skill at session close**, not just invoke
+it directly — the same two conditions apply: session length or self-observed
+drift. This is a judgment call the persona makes in the moment, never a
+counted proxy scored against fixed thresholds (skills invoked, files read,
+exchanges) — signals the model can't measure mid-session, which produce either
+theater or silence. The suggestion is always an offer, never an
+auto-invocation.
+
 ## Step 0 — Opening orientation
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)

@@ -1,9 +1,11 @@
 ---
 Number: 0006
 Title: Context Window Handoff Check
-Status: accepted
+Status: deprecated
 Date: 2026-04-19
 ---
+
+**Superseded 2026-08-13:** the rule this ADR specified is retired — see `.prism/plans/opus5-port.md` task 5. A rule whose signals the model can't measure mid-session produces either theater or silence, and the always-on context cost buys nothing this model class does not do natively. The three signals below are preserved for record; the `/prism-handoff` remedy survives as a persona-suggested option on session length or self-observed drift, never on a counted proxy.
 
 ## Context
 
@@ -37,4 +39,4 @@ The check applies only to persona handoffs, not to routine operations (git comma
 
 ## References
 
-- `AGENTS.md § 8 Context Window Handoff Check` — the live specification
+- `AGENTS.md § 8 Context Window Handoff Check` — the retired specification; the section heading, the behavioral-norms table row, and the rule file are all gone as of `.prism/plans/opus5-port.md` task 5. The §7→§9 gap is deliberate: numbers are never reused, so existing `AGENTS.md §N` citations keep resolving.

@@ -311,8 +311,6 @@ Acceptance criteria hints use Gherkin `Given / When / Then` format for behaviora
    - "Stories are locked in. Want to bring in Winston to evaluate the approach and build out the implementation plan? If this feature needs UI design and there's no mock, you might want Pixel first — she'll design the screens so Winston has something concrete to plan against."
    - If AC hints use Gherkin format, add: "I've included Gherkin-style AC hints — Winston will formalize them into full acceptance criteria."
 
-Before recommending Winston, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ## When dispatched by Sol
 
 When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.

@@ -6,15 +6,17 @@ load: always
 
 ## Purpose
 
-Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound — on a five-minute fix as much as a multi-hour epic. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+
+**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
-**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, re-anchor at your skill's own event boundaries, and keep a lifecycle list near the top of your skill body. The sections below carry the exact mechanics for each.
+**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, and re-anchor at your skill's own event boundaries. The sections below carry the exact mechanics for each.
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
+Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
@@ -42,10 +44,6 @@ Long sessions drift between the opening and closing batteries — a plan gets re
 
 **Why:** a session that only checks orientation at the two ends can drift for hours in the middle without anyone noticing — the mid-flight re-anchor is cheap insurance against exactly that, and it costs one sentence, not a battery re-run.
 
-## Lifecycle List
-
-Every skill carries a short "The run, in order" list near the top of its body — the lifecycle phases in sequence, named in a few words each. It isn't new information; it's a long-context anchor, so a session that has read a lot since startup can re-orient from the list without re-reading the whole body.
-
 ## Who runs this rule
 
-Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries and keeps a lifecycle list; each skill's own body states which parts apply.
+Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries; each skill's own body states which parts apply.

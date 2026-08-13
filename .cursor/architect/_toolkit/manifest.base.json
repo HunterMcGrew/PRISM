@@ -12,7 +12,6 @@
 	".prism/rules/code-comments.md": "_toolkit/spec-editing.md",
 	".prism/rules/code-standards.md": "_toolkit/spec-editing.md",
 	".prism/rules/context-reuse.md": "_toolkit/spec-editing.md",
-	".prism/rules/context-window-handoff-check.md": "_toolkit/spec-editing.md",
 	".prism/rules/core-principles.md": "_toolkit/spec-editing.md",
 	".prism/rules/cross-agent-handoff-accountability.md": "_toolkit/spec-editing.md",
 	".prism/rules/demand-elegance.md": "_toolkit/spec-editing.md",

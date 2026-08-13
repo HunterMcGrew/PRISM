@@ -374,6 +374,12 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **How to apply:** Don't just append a correction elsewhere — sweep the whole file for the same claim's other occurrences at correction time. This especially matters when a fix reverses a plan Decision: sweep both `## Decisions` and `## Implementation Tasks`, since a Decision's conclusion is often restated in the task that implements it and the two drift together if only one is corrected.
 
+## Don't recommend working around a skill's designed behavior — check the design reason first
+
+**Why:** 2026-07-25 (response-shape-contract session) — recommended twice that handoff docs be moved out of the OS temp dir into the repo so a reboot couldn't delete them. The handoff skill's own read-side contract, already in context, gave the reason for temp: "a stale handoff read as current is worse than no handoff." Ephemerality is the feature; the recommendation would have defeated it.
+
+**How to apply:** Before suggesting a workaround for something that looks like a flaw in a skill or tool, re-read that skill's stated reason for the behavior. A path, default, or constraint that seems fragile usually has its justification a few lines away — and a fallback clause in the body ("if X cannot be written") marks the behavior as deliberate, not accidental.
+
 ## Two write lanes in one checkout cross-contaminate their PRs, and the squash-merge is where it detonates
 
 **Why:** 2026-08-02 (context-delivery-mechanism, Sol 2-lane run) — Sol dispatched Clove's PR-1 lane and the W2-01 worktree-setup lane concurrently with worktree isolation deliberately omitted, on the reasoning that W2-01 existed *because* a worktree cannot run `pnpm prism:check`. Both lanes committed into the same working tree, switched branches under each other, and interleaved their commits into one linear chain. Each PR's branch was therefore cut from the other's work. The damage stayed invisible until merge: squashing PR #451 carried PR #450's entire 1,957-line changeset into `main` in its pre-review-fix state, putting a known Major (an unbounded injected-payload size Eric had already flagged) live on `main` until #450 landed. CI was green throughout — the contamination is invisible to every gate.
@@ -397,3 +403,9 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-04 (PR #452, Eric review) — a regression run against a target test file silently ran a different worktree's copy of the same relative path, reporting 14 tests against a 15-test file; caught only because the counts didn't match, which would not have held on a coincidentally-equal file.
 
 **How to apply:** When running `pnpm --dir <path> exec <cmd> <relative-file>`, use an absolute path for the file argument, or verify the resolved path (`pnpm --dir <path> exec node -e "console.log(require.resolve('<relative-file>'))"`) before trusting the run's result.
+
+## A reviewer's prescribed fix is a hypothesis the fixer executes, not adopts
+
+**Why:** 2026-08-13 (PRISM-opus5-port, PR #449) — in one review pass, the reviewer fired both halves of the same failure: it prescribed an exclusion regex anchored on `^\./` that never matches on this repo (`grep -r` emits no `./` prefix — the fixer tested it and found it returned 47 lines while reading as verified), and it asserted that ADR-0006 ships to consumers without checking (`templates/install/.prism/spec/` holds only `TEMPLATE.md` and `README.md`), which would have relocated a dangling pointer rather than fixed it. A third prescription — "these two carve-outs are duplicates, drop one" — was adopted without testing and deleted a live carve-out, producing a Major in the next review pass.
+
+**How to apply:** when a review names a specific remedy, execute the remedy before writing it down; if it can't be executed, treat the finding as real and the remedy as unverified. This is the reviewer-side twin of the existing unmeasured-remedy lesson (§ A review finding that prescribes a performance fix benchmarks the fix, not just the fault).

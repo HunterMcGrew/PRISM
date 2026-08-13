@@ -396,8 +396,6 @@ Before declaring done:
 - [ ] No stray console.logs or debug artifacts
 - [ ] Handoff to Briar offered
 
-Before recommending Briar, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ## Session close
 
 > _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._

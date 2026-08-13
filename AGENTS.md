@@ -27,10 +27,9 @@ The norms that govern every session live as Tier 1 rules in `.prism/rules/` — 
 | 2 | Subagent strategy — offload research to subagents, one task each, to keep the main window clean | [`.prism/rules/subagent-strategy.md`](.prism/rules/subagent-strategy.md) |
 | 3 | Self-improvement loop — capture corrections in `.prism/lessons.md`; review lessons at session start | [`.prism/rules/self-improvement-loop.md`](.prism/rules/self-improvement-loop.md) |
 | 4 | Verification before done — prove it works against the staff-engineer bar before calling it complete | [`.prism/rules/verification-before-done.md`](.prism/rules/verification-before-done.md) |
-| 5 | Demand elegance — ask for the clean solution on non-trivial changes; skip it on obvious fixes | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
+| 5 | Demand elegance — pause when the change has a design with tradeoffs; mechanical edits skip it | [`.prism/rules/demand-elegance.md`](.prism/rules/demand-elegance.md) |
 | 6 | Autonomous bug fixing — just fix the bug; stop only when the blast radius is wide | [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing.md) |
 | — | Core principles — simplicity first, no laziness | [`.prism/rules/core-principles.md`](.prism/rules/core-principles.md) |
-| 8 | Context window handoff check — assess context load before recommending the next persona | [`.prism/rules/context-window-handoff-check.md`](.prism/rules/context-window-handoff-check.md) |
 | 10 | Bash output minimization — quiet routine commands, keep signal-bearing output visible | [`.prism/rules/bash-output-minimization.md`](.prism/rules/bash-output-minimization.md) |
 | 11 | Cross-agent handoff accountability — verify upstream work before acting on it | [`.prism/rules/cross-agent-handoff-accountability.md`](.prism/rules/cross-agent-handoff-accountability.md) |
 | 12 | Pre-compaction checkpoint — capture critical session state before auto-compaction | [`.prism/rules/pre-compaction-checkpoint.md`](.prism/rules/pre-compaction-checkpoint.md) |
@@ -740,7 +739,7 @@ Universal standards that apply to all code in this repository. Language-specific
 
 ### Refactor scope
 
-Refactor code you're already modifying for the ticket — including small local-frame reshape (initializing a variable to its default, extracting a helper from the function you're in, collapsing redundant branches) when the existing shape is making the right answer harder than it needs to be. That's not drive-by refactor; it's making the fix compose.
+When the existing shape of code you're already modifying for the ticket is making the right answer harder than it needs to be, refactor it — including small local-frame reshape (initializing a variable to its default, extracting a helper from the function you're in, collapsing redundant branches). That's not drive-by refactor; it's making the fix compose.
 
 Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unrelated code goes in a follow-up ticket.
 
@@ -875,46 +874,6 @@ This rule is referenced by every PRISM skill's reflex-bullets section:
 
 ---
 
-<!-- source: .prism/rules/context-window-handoff-check.md -->
-
----
-load: always
----
-
-# Context Window Handoff Check
-
-## Purpose
-
-Before recommending the next persona or skill at the end of a skill session, assess context load. When the session has accumulated enough context pressure, name `/prism-handoff` as the remedy alongside the recommendation so the fresh chat doesn't lose details to compression.
-
-**Why:** a persona recommendation that ignores context load hands the next persona a session already close to compaction, where load-bearing details get silently dropped. The check costs one evaluation at session close and protects the handoff at exactly the moment the context is most likely to be lost.
-
-**Scope:** this check applies only to persona/skill handoffs — not to committing, pushing, running git commands, answering questions, or any non-skill task.
-
-## How to apply
-
-Evaluate these three signals:
-
-1. **Multiple skills invoked** — 5 or more skill invocations in this conversation.
-2. **Large codebase reads** — 30 or more files read, or 1,000 or more combined insertions and deletions (per `git diff --stat`).
-3. **Extensive back-and-forth** — 100 or more user exchanges.
-
-- **When 2 or more signals fire**, include in the handoff:
-
-  > "We've covered a lot of ground. I'd recommend opening a new chat for [next persona] — they'll have full context available and won't risk losing details from compression."
-
-  Name `/prism-handoff` as the remedy alongside that recommendation — it compacts this session into a handoff document the fresh chat continues from. Suggest it in the closing message; never auto-invoke it.
-
-- **When only 1 signal fires**, proceed normally — a single signal alone is not sufficient evidence of context pressure.
-
-- **When 0 signals fire**, don't mention context load at all.
-
-## Who runs this rule
-
-Every persona runs this check at the end of a skill session before recommending the next persona. The `/prism-handoff` utility skill is the named remedy when 2 or more signals fire.
-
----
-
 <!-- source: .prism/rules/core-principles.md -->
 
 ---
@@ -977,15 +936,13 @@ load: always
 
 ## Purpose
 
-For non-trivial changes, pause and ask "is there a more elegant way?" If a fix feels hacky, step back and ask: "Knowing everything I know now, what's the clean solution?" Challenge your own work before presenting it. The flip side: skip this for simple, obvious fixes — elegance is a tool, not a tax.
+When a change has a design with tradeoffs — more than one shape would work, and the shapes differ in what they cost later — stop before presenting it and ask whether a cleaner solution exists. A mechanical edit does not get this pause.
 
-**Why:** the first working version of a non-trivial change is rarely the clean one, and the moment to find the clean version is before it ships — once it's in the tree, the hacky shape becomes the pattern the next change copies. The balance matters as much as the demand: over-engineering a one-line config change is its own failure, spending elegance budget where there's nothing to gain.
+**Why:** the first working version of a change with real design choices is rarely the clean one, and once it is in the tree the hacky shape becomes the pattern the next change copies. A rule phrased as a blanket license to reshape gets executed broadly rather than as the narrow judgment call it means — thrive PR #2273 measured that cost directly.
 
 **How to apply:**
 
-- For non-trivial changes, pause before presenting and ask whether a cleaner solution exists. If the fix feels hacky, it probably is — step back and find the clean version.
-- Skip the pause for simple, obvious fixes. A one-line config change doesn't earn an elegance review.
-- The test for which side you're on: does the change have a design with tradeoffs, or is it a mechanical edit? Designs get the pause; mechanical edits don't.
+- When the rule fires and the fix feels hacky, step back and ask what the clean solution is knowing everything you now know. When it doesn't fire, ship the obvious version.
 
 ---
 
@@ -1411,7 +1368,7 @@ Two things earn an interruption: the next step needs an answer only the user has
 
 Every persona in the PRISM roster applies this contract to every chat reply.
 
-The state-line clause is conditional, not universal — it fires only when the current run has ordered phases, the same marker `session-orientation.md` § Lifecycle List uses: a skill carries a `## The run, in order` list. Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
+The state-line clause is conditional, not universal: it fires only when the run has ordered phases the reader is tracking across replies, such as a multi-step implementation or a phased review. Every other persona applies the rest of the contract on every reply and skips the state line on a one-shot answer, per the "short answers stay short" clause above.
 
 ---
 
@@ -1447,15 +1404,17 @@ load: always
 
 ## Purpose
 
-Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound — on a five-minute fix as much as a multi-hour epic. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+Every persona skill opens a session with the same four-question battery, closes with another four, and checks in briefly whenever the work shifts underneath it in between. Getting this right catches scope drift, silent assumptions, and unproven "done" claims before they compound. This rule carries the mechanics once, so every skill body can point here instead of repeating the same paragraphs across the roster.
+
+**The opening battery scales with the task.** On a single-edit task with no ambiguity, the four opening answers collapse straight into the one-line `open:` clause — no separate deliberation. **Why:** the model already tracks scope and evidence as it works; a full battery on a five-minute fix re-verifies what was never in doubt. The closing battery does not scale: verification honesty is exactly what a task short enough to feel obvious is most likely to skip.
 
 **Why:** the batteries only protect against drift if every skill runs them the same way — a skill that quietly drops the Ambiguity calibration clause, or forgets to persist the opening Bounds for the closing battery to diff against, loses the guarantee without anyone noticing. Centralizing the mechanic here means a wording fix lands once, not in however many skill bodies have already drifted from each other.
 
-**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, re-anchor at your skill's own event boundaries, and keep a lifecycle list near the top of your skill body. The sections below carry the exact mechanics for each.
+**How to apply:** run the Opening Orientation Battery at session start, persist it per Battery Persistence, run the Closing Re-Orientation Battery before reporting back, and re-anchor at your skill's own event boundaries. The sections below carry the exact mechanics for each.
 
 ## Opening Orientation Battery
 
-Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit.
+Run this battery once, immediately after startup completes and before any of the skill's core work begins. Answer all four questions in sequence, inline in the response, so the scope and intent are clear before the first edit — except on a single-edit task with no ambiguity, where the four answers collapse straight into the one-line `open:` clause per the scaling clause above.
 
 1. **Intent** — in one sentence, what is the plan/user actually asking for (the outcome, not the literal words)?
 2. **Ambiguity** — what is unclear, under-specified, or readable two ways? For each: load-bearing (must resolve before starting) or non-load-bearing (proceed on a documented default)? **Calibration:** there is no user available mid-dispatch — do not stall; for each load-bearing gap pick a defensible default, state the assumption, and proceed. Escalate only by emitting a typed verdict (`needs-replan` / `blocked` / `needs-human`) when a gap genuinely blocks — never by a question into the void.
@@ -1483,13 +1442,9 @@ Long sessions drift between the opening and closing batteries — a plan gets re
 
 **Why:** a session that only checks orientation at the two ends can drift for hours in the middle without anyone noticing — the mid-flight re-anchor is cheap insurance against exactly that, and it costs one sentence, not a battery re-run.
 
-## Lifecycle List
-
-Every skill carries a short "The run, in order" list near the top of its body — the lifecycle phases in sequence, named in a few words each. It isn't new information; it's a long-context anchor, so a session that has read a lot since startup can re-orient from the list without re-reading the whole body.
-
 ## Who runs this rule
 
-Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries and keeps a lifecycle list; each skill's own body states which parts apply.
+Every persona skill loads this rule and runs both batteries. Utility skills and onboarding run whichever parts fit their shape — a persona-less utility skips the persona-specific re-anchor line but still runs the batteries; each skill's own body states which parts apply.
 
 ---
 
@@ -1592,15 +1547,16 @@ load: always
 
 ## Purpose
 
-Keep the main context window clean by offloading research, exploration, and parallel analysis to subagents. One task per subagent keeps execution focused.
+Keep the main context window clean by offloading work that reads a lot to produce a small answer. One task per subagent keeps execution focused.
 
-**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. For complex problems, more compute via subagents is almost always the right call: it's cheaper to spend a subagent than to run out of context in the main window and lose the thread.
+**Why:** the main window holds the load-bearing context — the plan, the architect docs, the user's framing. Every file a subagent reads on the main window's behalf crowds that context closer to compaction. The criterion is shape, not size: a subagent earns its dispatch when the work is read-heavy and the answer is small.
 
 **How to apply:**
 
-- Offload research, exploration, and parallel analysis to subagents — anything that reads a lot to produce a small answer.
-- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three tasks returns a muddled one.
-- When a problem is large enough that you're unsure whether to spend the compute, spend it. Running out of context is the more expensive failure.
+- Offload research, exploration, and parallel analysis that reads a lot to produce a small answer.
+- Scope one task per subagent. A subagent with a single clear task returns a clean result; a subagent juggling three returns a muddled one.
+- Don't spawn subagents to verify or double-check your own work in the same pass you produced it — verification belongs in the lane that did the work. A structured review dispatched over a finished draft is a different shape: several parallel axes (product-fit, feasibility, clarity) reading a stable artifact is the read-heavy analysis this rule exists to offload, not a same-pass self-check.
+- Don't dispatch for work that could have been an inline read, and when you're unsure which it is, do it yourself: an inline read that turns out to have been delegable costs one extra read, while a needless dispatch costs a round trip and a report-back that may never arrive. This doesn't cap parallel dispatch across genuinely distinct axes of one review — each axis is its own scoped task per the one-task-per-subagent bullet.
 
 ---
 
@@ -1614,14 +1570,14 @@ load: always
 
 ## Purpose
 
-Prove a task works before marking it complete. Run tests, check logs, demonstrate correctness. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
+A completion claim names its evidence. "Done" backed by a passing test, a clean log, or a behavior diff is knowledge; "done" without evidence is a belief the next reader inherits and pays for when it turns out false. The bar is: "Would a staff engineer approve this?" If you're not sure, you're not done.
 
-**Why:** "done" claimed without proof is a claim the next reader inherits and pays for when it turns out false. Demonstrated correctness — a passing test, a clean log, a behavior diff — is the difference between believing the work is right and knowing it. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
+**Why:** the cost of a false "done" lands on whoever discovers it, at whatever point they discover it — almost always later and more expensive than catching it at the source. The staff-engineer bar names the standard concretely so "done" means the same thing across sessions and models.
 
 **How to apply:**
 
-- Run the tests, check the logs, and demonstrate the behavior before calling a task complete.
-- Diff behavior between `main` and your changes when the change is behavioral — the diff is the proof.
+- When claiming a task is complete, name the evidence the claim rests on — a test result, a log, a behavior diff. A claim with no evidence to name isn't ready to be made.
+- When the change is behavioral, the behavior diff between `main` and the change is the proof worth citing.
 - Hold the work to the staff-engineer bar. If you're not sure it would pass review, it isn't done yet.
 
 ---
@@ -1823,12 +1779,6 @@ See [`.prism/rules/autonomous-bug-fixing.md`](.prism/rules/autonomous-bug-fixing
 ## 7. Project Engineering Standards
 
 The `.prism/rules/` and `.prism/architect/` files are the team's intentional engineering standards — the equivalent of a style guide. Follow them as the default authority for project-specific decisions; if a situation genuinely requires deviation, flag it and explain the reasoning rather than silently overriding. When you find a gap, recommend an update or a new file.
-
----
-
-## 8. Context Window Handoff Check
-
-See [`.prism/rules/context-window-handoff-check.md`](.prism/rules/context-window-handoff-check.md).
 
 ---
 

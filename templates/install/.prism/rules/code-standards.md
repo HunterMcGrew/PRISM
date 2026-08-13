@@ -19,7 +19,7 @@ Universal standards that apply to all code in this repository. Language-specific
 
 ### Refactor scope
 
-Refactor code you're already modifying for the ticket — including small local-frame reshape (initializing a variable to its default, extracting a helper from the function you're in, collapsing redundant branches) when the existing shape is making the right answer harder than it needs to be. That's not drive-by refactor; it's making the fix compose.
+When the existing shape of code you're already modifying for the ticket is making the right answer harder than it needs to be, refactor it — including small local-frame reshape (initializing a variable to its default, extracting a helper from the function you're in, collapsing redundant branches). That's not drive-by refactor; it's making the fix compose.
 
 Do not refactor code outside the local frame. Drive-by cleanup of nearby-but-unrelated code goes in a follow-up ticket.
 

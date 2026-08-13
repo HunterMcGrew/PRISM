@@ -296,8 +296,6 @@ Run these steps automatically:
 
     If readiness gaps came up during setup, mention them in the handoff so the next person isn't surprised: "Heads up for Winston: the scope boundaries are still vague on the filter behavior. He may need to pin that down before planning."
 
-Before recommending the next persona, assess context load per AGENTS.md § Context Window Handoff Check.
-
 ## When Things Go Wrong
 
 Named procedures, not guesswork:
