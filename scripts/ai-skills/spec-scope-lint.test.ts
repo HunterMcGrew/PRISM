@@ -306,6 +306,32 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in th
 	);
 });
 
+test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a plan naming the skill directory without a trailing slash clears the file", () => {
+	const planText =
+		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-architect`, `prism-changelog`, `prism-code-dev`.\n";
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
+		false
+	);
+});
+
+test("isUnrelatedToTicket: a bare skill-directory mention inside a Ledger section still does not clear the file", () => {
+	const planText = [
+		"## Goal",
+		"",
+		"Fix the widget renderer.",
+		"",
+		"## History",
+		"",
+		"- 2026-08-13 [branch]: touched `prism-changelog` while fixing the lint.",
+		"",
+	].join("\n");
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
+		true
+	);
+});
+
 test("isUnrelatedToTicket: a discriminator mentioned only inside a Ledger section (## Review Issues) does not clear the file", () => {
 	const planText = [
 		"## Implementation Tasks",
