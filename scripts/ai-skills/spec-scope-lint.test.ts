@@ -15,6 +15,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
 	evaluateSpecScopeLint,
@@ -286,6 +287,25 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename men
 	);
 });
 
+test("skill directory roster: no directory name is a substring of another (guards discriminatorFor's bare match)", async () => {
+	const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+	const repoRootPath = path.resolve(scriptDirectory, "..", "..");
+	const skillsDir = path.join(repoRootPath, ".ai-skills", "skills");
+	const entries = (await fs.readdir(skillsDir, { withFileTypes: true }))
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name);
+
+	const collisions = entries.filter((needle) =>
+		entries.some((haystack) => haystack !== needle && haystack.includes(needle))
+	);
+
+	assert.deepEqual(
+		collisions,
+		[],
+		"discriminatorFor's bare skill-directory match assumes no directory name is a substring of another; a new directory that breaks this would silently cross-clear an unrelated skill's files"
+	);
+});
+
 test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in the skill directory clears every sibling file in that directory", () => {
 	const planText =
 		"## Implementation Tasks\n\n1. Edit `.ai-skills/skills/prism-conductor/shared.md` and its platform half.\n";
@@ -303,6 +323,32 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, naming one file in th
 			planText
 		),
 		false
+	);
+});
+
+test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a plan naming the skill directory without a trailing slash clears the file", () => {
+	const planText =
+		"## Implementation Tasks\n\n1. Edit 11 skill bodies: `prism-architect`, `prism-changelog`, `prism-code-dev`.\n";
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
+		false
+	);
+});
+
+test("isUnrelatedToTicket: a bare skill-directory mention inside a Ledger section still does not clear the file", () => {
+	const planText = [
+		"## Goal",
+		"",
+		"Fix the widget renderer.",
+		"",
+		"## History",
+		"",
+		"- 2026-08-13 [branch]: touched `prism-changelog` while fixing the lint.",
+		"",
+	].join("\n");
+	assert.equal(
+		isUnrelatedToTicket(".ai-skills/skills/prism-changelog/shared.md", planText),
+		true
 	);
 });
 
