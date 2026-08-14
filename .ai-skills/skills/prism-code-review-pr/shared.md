@@ -329,8 +329,8 @@ Eric applies exactly **two** GitHub labels to every PR he reviews — one **effo
 Eric evaluates the PR and lands in exactly one of three states:
 
 1. **Critical or major issues exist** (in either axis) — skip labels entirely. The absence of labels signals "not ready — dev needs to fix first."
-2. **Unaddressed minors remain** — apply **effort + `review:has-minors`**. The `review:has-minors` label takes the confidence slot — minors need human eyes.
-3. **All clear** (zero issues, or all minors addressed/acknowledged) — apply **effort + confidence**. Pick the confidence label by axis state:
+2. **Unaddressed minors remain, and at least one is not bookkeeping-only** — apply **effort + `review:has-minors`**. The `review:has-minors` label takes the confidence slot — minors need human eyes.
+3. **All clear** (zero issues, or every remaining minor is addressed, acknowledged, or bookkeeping-only per [`.prism/rules/followup-scope.md`](../../../.prism/rules/followup-scope.md) § Bookkeeping findings are recorded, not gated) — apply **effort + confidence**. Pick the confidence label by axis state:
    - `confidence:high` — both axes ran and both came back clean.
    - `confidence:needs-judgment` — both axes ran but a judgment call remains (UX tradeoff, untestable behavior, ambiguous requirement).
    - `confidence:standards-only` — Spec axis was skipped (no plan / AC / architect context); Standards axis cleared. Treated as state #3 for ready-flip purposes — a Spec-axis skip is a transparency label, not a blocking finding.
@@ -359,7 +359,7 @@ The PR review — inline comments, the two-axis summary comment, and the labels 
 
 When the Conductor (Sol) dispatches you, finish by returning one primary verdict from the enum in [`.prism/skills/prism-conductor/lib/report-back.md`](../../../.prism/skills/prism-conductor/lib/report-back.md) plus any secondary signals, in addition to your normal plan writes.
 
-**The review-rung verdict, spelled out.** Zero findings → `done`. Findings you recorded in `## Review Issues` that a competent implementer can fix without an architecture call → **`needs-fix`** (Sol routes them to Clove and re-dispatches you; the lane stays in the review phase). Reserve `needs-replan` for findings that mean the *plan* is wrong, and `blocked` for a lane you genuinely cannot review — a missing branch, a failed checkout, an absent PR. `needs-human` is for a finding that needs a human's call, not a hard one.
+**The review-rung verdict, spelled out.** Zero findings → `done`; so does a pass whose only remaining findings are bookkeeping-only Minors — record them and return `done` rather than buying another dispatch (see [`.prism/rules/followup-scope.md`](../../../.prism/rules/followup-scope.md) § Bookkeeping findings are recorded, not gated). Findings you recorded in `## Review Issues` that a competent implementer can fix without an architecture call → **`needs-fix`** (Sol routes them to Clove and re-dispatches you; the lane stays in the review phase). Reserve `needs-replan` for findings that mean the *plan* is wrong, and `blocked` for a lane you genuinely cannot review — a missing branch, a failed checkout, an absent PR. `needs-human` is for a finding that needs a human's call, not a hard one.
 
 If the dispatch schema you were handed does not offer `needs-fix`, the schema is defective — return the closest verdict, and emit an `observation` signal naming the missing enum value so the run report surfaces it. Do not silently pick a verdict your own prose contradicts.
 
