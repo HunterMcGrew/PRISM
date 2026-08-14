@@ -15,6 +15,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
 	evaluateSpecScopeLint,
@@ -283,6 +284,25 @@ test("isUnrelatedToTicket: for .ai-skills/skills/** paths, a shared basename men
 	assert.equal(
 		isUnrelatedToTicket(".ai-skills/skills/prism-architect/shared.md", planText),
 		true
+	);
+});
+
+test("skill directory roster: no directory name is a substring of another (guards discriminatorFor's bare match)", async () => {
+	const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+	const repoRootPath = path.resolve(scriptDirectory, "..", "..");
+	const skillsDir = path.join(repoRootPath, ".ai-skills", "skills");
+	const entries = (await fs.readdir(skillsDir, { withFileTypes: true }))
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name);
+
+	const collisions = entries.filter((needle) =>
+		entries.some((haystack) => haystack !== needle && haystack.includes(needle))
+	);
+
+	assert.deepEqual(
+		collisions,
+		[],
+		"discriminatorFor's bare skill-directory match assumes no directory name is a substring of another; a new directory that breaks this would silently cross-clear an unrelated skill's files"
 	);
 });
 
