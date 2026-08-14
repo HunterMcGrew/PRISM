@@ -1025,6 +1025,22 @@ The check is two computable conditions, both required to fire: the changed path 
 
 Enforced mechanically by `pnpm prism:spec-scope-lint` (`scripts/ai-skills/spec-scope-lint.ts`), which runs as part of `pnpm prism:check`.
 
+## Bookkeeping findings are recorded, not gated
+
+A **Minor** finding whose every cited line falls in bookkeeping content is recorded like any other finding — and then it waits. It never holds a PR in draft, never takes the `review:has-minors` slot, and never on its own earns another review round. Critical and Major gate regardless of surface.
+
+**Bookkeeping content** is the section set named in § Spec content never rides an unrelated ticket, plus two additions that share its shape: `.prism/lessons.md`, which that same section already treats as working notes rather than spec, and the `Evidence` sub-bullets under `## Acceptance Criteria` (per `.prism/templates/acceptance-criteria.md` § Gradeability Bar). Nothing else moves — `## Implementation Tasks`, `## Decisions`, and the AC **criterion** lines those Evidence sub-bullets hang from are the ticket's contract, and they gate exactly like code.
+
+**Why:** the review process writes the bookkeeping sections, so reviewing them feeds itself. Briar writes `## Review Issues`; Clove writes `## History`, `## Sessions`, `## PR Readiness`, and AC evidence to satisfy the review; the next pass reviews that prose and produces more of it. Severity does not terminate the cycle — a miscounted number in a `## History` line grades Minor exactly like a missed null check. PR #458 measured the cost: three review rounds and roughly five dispatches, while the two actual code fixes were confirmed correct in the first round and never touched again.
+
+**The citation classifies the finding, not the reviewer's judgment.** A finding is bookkeeping-only when every `**File:** <path>:<line>` it cites lands in bookkeeping content. One cited line outside it — in code, in `## Decisions`, or on an AC criterion — and the finding gates normally. This is the guard against the obvious abuse: a reviewer cannot downgrade a real defect without misstating the path it lives at, and that path is visible to everyone reading the posted comment.
+
+**How to apply:**
+
+- **Record it in full.** A bookkeeping-only Minor still earns its `## Review Issues` entry, its inline comment, and its severity. Nothing is suppressed — a claim that would mislead a future implementer, like an AC evidence command that cannot return its asserted result, is worth flagging. It earns one flag, not a round.
+- **Don't re-dispatch for it.** Briar returns `done` rather than `needs-fix` when bookkeeping-only Minors are all that remain; Eric treats them as state #3 rather than state #2.
+- **Fix it in the next commit that touches the plan** — on a live branch that is the next commit, because every persona writes the plan.
+
 ## Who runs this rule
 
 - **Nora** (`prism-ticket-start`) — walks the three-tier table before filing. When the situation is a same-scope follow-up, redirects to a fold-in or a follow-up PR instead of creating a ticket. When a new ticket is warranted, applies the scope-fit gate and, if scope fails, asks the user to narrow it before filing.
@@ -1032,6 +1048,7 @@ Enforced mechanically by `pnpm prism:spec-scope-lint` (`scripts/ai-skills/spec-s
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
+- **`prism-review-loop`** — carries a stricter disposition on the same scope: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. See its § Review surfaces.
 
 ## Worker emit pre-filter (Sol-run-time)
 
