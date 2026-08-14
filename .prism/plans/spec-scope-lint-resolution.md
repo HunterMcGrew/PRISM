@@ -28,7 +28,7 @@ Fix the two independent defects that stop `pnpm prism:spec-scope-lint` from ever
   - **Evidence (measured at `9c6d6d0e`, branch `huntermcgrew/thrive-port-opus5-rule-amendments`, 121 changed paths):** running `evaluateSpecScopeLint` with a resolving branch name produces **10 violations, all of them skill bodies, all of them false positives** — every one of the 10 skill directories is named bare in `opus5-port.md`'s non-Ledger text, and none is named with a trailing slash. Widened to all 31 skill directories in the roster, today's discriminator would flag **27**; the bare-name discriminator flags **17** (see the next Decision for what those 17 are).
   - **The rule's own prose already specifies the fixed behavior.** `.prism/rules/followup-scope.md` reads: *"the file's discriminator — its basename, or for a skill body under `.ai-skills/skills/**`, its skill directory."* A skill directory is `prism-changelog`. The slash is an implementation artifact with no prose behind it, so this fix aligns code to spec rather than changing spec — which is why this PR touches no rule file (see the scope Decision below).
   - **Alternatives considered:** keep the slash and teach plans to write paths with trailing slashes (rejected — it makes a lint's internals a plan-authoring convention, and every existing plan is already written the other way); match both slashed and bare forms (rejected — two accepted spellings for one discriminator, with no case that needs the slashed one).
-  - **Substring-collision check, run before choosing this:** no skill directory name in the roster is a substring of any other, so a bare-name search cannot cross-clear one skill with a mention of a different one. The existing regression test at `spec-scope-lint.test.ts:273` locks that property and passes unchanged under the fix.
+  - **Substring-collision check, run before choosing this:** no skill directory name in the roster is a substring of any other, so a bare-name search cannot cross-clear one skill with a mention of a different one — verified by hand against the live roster at `9c6d6d0e`. The pre-existing regression test at `spec-scope-lint.test.ts:273` does **not** lock this: it hardcodes two non-colliding names (`prism-review-loop`, `prism-architect`) and never reads the roster, so it would still pass if a colliding directory landed tomorrow. The test that actually locks the property is new — `spec-scope-lint.test.ts:290`, *"skill directory roster: no directory name is a substring of another"* — which reads `.ai-skills/skills/` directly and fails the day a collision is introduced. Flagged by Eric on PR #458 review; see `## Review Issues`.
   - **→ promotion verdict pending close.**
 
 - **The 17 skill bodies that still violate after both fixes are genuine violations, not a third defect — and their remedy belongs to PR 3, not to this PR.**
@@ -133,7 +133,7 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 - [x] **AC-4.** Given a plan that names a skill directory bare in its non-Ledger text, When Condition B evaluates a file inside that directory, Then the file is treated as related.
   - *Evidence (machine):* Test D passes and was observed failing at task 3.
 - [x] **AC-5.** Given a plan that names a skill directory only inside a Ledger section, When Condition B evaluates a file inside that directory, Then the file is still treated as unrelated.
-  - *Evidence (machine):* Test E passes, and the pre-existing cross-skill guard at `spec-scope-lint.test.ts:273` passes unchanged.
+  - *Evidence (machine):* Test E passes, and the pre-existing two-name cross-skill guard at `spec-scope-lint.test.ts:273` passes unchanged. That guard covers Ledger-stripping order, not the roster-wide substring-collision property — the new test at `spec-scope-lint.test.ts:290` covers that separately (see the discriminator Decision above).
 - [x] **AC-6.** Given this PR's branch, When `pnpm prism:spec-scope-lint` runs, Then it reports a real verdict rather than skipping.
   - *Evidence (machine):* `npx tsx scripts/ai-skills/spec-scope-lint.ts` prints `spec-scope-lint passed. No unrelated spec content found.` and exits 0. Confirmed on `huntermcgrew/opus5-port-lint-resolution` — resolves `.prism/plans/opus5-port.md` as the single unfiled-slug candidate.
 
@@ -141,8 +141,10 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 
 - [x] **AC-7.** The old matcher name leaves no live references.
   - *Evidence (machine):* `grep -rn "containsTokenRun" scripts/ .prism/rules/ .prism/references/` returns nothing.
-- [x] **AC-8.** No prose in the tree still describes the removed ordered-contiguous behavior.
-  - *Evidence (machine):* `grep -rn "contiguous token run" scripts/ .prism/rules/ .prism/references/ .ai-skills/ docs/ AGENTS.md` returns nothing. `.prism/plans/` and `.prism/audits/` are excluded deliberately — they are historical record of the bug.
+- [x] **AC-8.** No prose describing the removed ordered-contiguous behavior remains as forward-looking guidance; where it survives as a record of the bug this PR fixed, that record is either genuinely historical or has been reconciled.
+  - *Evidence (machine + human), re-run per Eric's PR #458 finding that the original evidence's `.prism/plans/` carve-out swallowed a live case:* the fixed-phrase check (`grep -rn "contiguous token run" .`, genuinely tree-wide, no directory carve-out) returns three hits — two are this plan's own root-cause narrative (expected: a plan describing the bug it fixed), and the third is `.prism/plans/review-loop-self-audit.md:438`, a `## Debugged Issues` "Fixed in" note dated before this PR's fix landed.
+  - The fixed-phrase check alone is insufficient by construction — confirmed directly: `.prism/plans/writing-voice-port.md`'s stale text (the live case Eric found) read *"contiguous in-order run"* and *"contiguous run"*, never the exact phrase *"contiguous token run"*, so the original grep would have missed it even without the carve-out. A broadened wording sweep (`grep -rniE "(contiguous|ordered.?run|in-order run|adjacent.{0,15}token)" .`, same tree-wide scope) is required to reach behavior changes with no fixed token, per `code-standards.md` § Removal and rename completeness. That sweep confirms `writing-voice-port.md` is now clean (reconciled in this PR's first commit) and surfaces one further live site this PR does not fix: `.prism/plans/review-loop-self-audit.md:79` (a `## Decisions` entry) and `:438` describe `findUnfiledPlanBySlug`'s match as *"a contiguous, in-order token run"* — present tense, in a plan that is open (no `> Closed:` line) and owned by a different, unrelated lane.
+  - That second site is outside this PR's local frame regardless of triviality, per `.prism/rules/followup-scope.md`'s worker pre-filter — flagged as a `found-bug` signal in this dispatch's report rather than fixed inline here. `.prism/audits/` remains excluded — audit snapshots are genuinely historical, not living guidance.
 - [x] **AC-9.** The PR carries no always-on spec content.
   - *Evidence (machine):* `git diff --name-only origin/main...HEAD` lists only `scripts/ai-skills/lib/resolve-live-plan.{ts,test.ts}`, `scripts/ai-skills/spec-scope-lint.{ts,test.ts}`, and this plan file. No path under `.prism/rules/`, `.ai-skills/skills/`, or `.prism/references/review-*.md` appears.
 - [x] **AC-10.** The full gate is green.
@@ -162,7 +164,39 @@ Baselines measured on `huntermcgrew/thrive-port-opus5-rule-amendments` at `9c6d6
 
 ## Review Issues
 
-No issues found — 2026-08-13 [huntermcgrew/opus5-port-lint-resolution]
+Four minors from Eric's PR #458 review (in-branch mode, no plan-write path — recorded here per `.prism/rules/branch-plan.md`).
+
+### `discriminatorFor`'s bare match rests on an unenforced substring-collision invariant
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/spec-scope-lint.ts:321` (`discriminatorFor`)
+- **Problem:** dropping the trailing slash from the skill-directory discriminator is correct, but the slash was quietly making prefix collisions (e.g. `prism-design` inside `prism-design-system`) structurally impossible. The docstring asserted "no skill directory name is a substring of another" as settled fact with nothing enforcing it — a reassurance sitting exactly where `writing-voice.md` § Anti-pattern: Reassurance that introduces a new claim says to look.
+- **Suggested fix:** a unit test that reads the live `.ai-skills/skills/` roster and asserts no name is a substring of another. Added in `scripts/ai-skills/spec-scope-lint.test.ts:290` ("skill directory roster: no directory name is a substring of another"), committed alongside this entry. The plan's discriminator Decision (line 31) and AC-5's evidence (line 136) previously cited the pre-existing two-name test at `spec-scope-lint.test.ts:273` as locking this property; both now point to the new roster-reading test instead.
+
+### AC-8's fixed-phrase evidence, and its `.prism/plans/` carve-out, missed a live case
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/plans/spec-scope-lint-resolution.md:144-145` (AC-8); `.prism/plans/writing-voice-port.md:51,218,221` (the missed case)
+- **Problem:** AC-8's evidence was a fixed-phrase grep for `"contiguous token run"` with `.prism/plans/` excluded as "historical record of the bug." `writing-voice-port.md` — a live, unblocked plan giving forward-looking branch-naming guidance — still described the removed ordered-contiguous matcher, in wording (`"contiguous in-order run"`, `"contiguous run"`) the fixed phrase would have missed even without the carve-out. A behavior change with no token to grep has the same reach as a rename, per `code-standards.md` § Removal and rename completeness.
+- **Suggested fix:** reconcile the missed prose and re-run a genuinely tree-wide, wording-broadened check. Both done: `writing-voice-port.md` rewritten to state set containment (committed alongside this entry); AC-8's evidence rewritten to describe the actual tree-wide + broadened-wording check, including the one further live site the broadened sweep found (`review-loop-self-audit.md:79,438`, a different, unrelated, open lane — out of this PR's local frame, flagged as a `found-bug` signal rather than fixed here).
+
+### The discriminator Decision cites a test that doesn't lock the property it claims
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `.prism/plans/spec-scope-lint-resolution.md:31` (Decision), `:136` (AC-5 evidence, same claim repeated)
+- **Problem:** both lines credited `spec-scope-lint.test.ts:273` with locking "no skill directory name in the roster is a substring of any other." That test hardcodes two specific, non-colliding names and never reads the roster — it locks a weaker property (a mention of skill A doesn't clear unrelated skill B) and would keep passing if a colliding directory were added tomorrow.
+- **Suggested fix:** correct both citations to state what `:273` actually locks, and point them at the new roster-reading test (`spec-scope-lint.test.ts:290`) as the one that locks the roster-wide claim. Done in both locations.
+
+### Commit `20f2a476`'s subject describes the PR, not its own contents
+
+- **Severity:** minor
+- **Status:** deferred
+- **File:** commit `20f2a476` (branch history, already pushed)
+- **Problem:** the subject `chore: Fix the two defects that make spec-scope-lint silently no-op` was task 5's prescribed final-commit subject, but it landed on the commit that adds only the plan file — the actual fixes are in `d4512cdb` and `d98024cb`. Squash-merge means `main`'s history is unaffected; this costs only a branch-level `git log` reader.
+- **Suggested fix:** none applied — the branch is pushed and `.prism/rules/git-conventions.md` § Force Push Policy reserves history rewrites for explicit user request. Recorded here as the durable correction: `20f2a476` is a plan-only commit, not the fix commit its subject implies.
 
 ---
 
