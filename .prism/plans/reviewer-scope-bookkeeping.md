@@ -128,33 +128,33 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ### Behavioral
 
-- [ ] **AC-1** Given a reviewer has only findings about a plan's own history, session, or readiness prose, When they finish the pass, Then the pull request is not held open for those findings alone.
-  - *Evidence (machine):* `grep -o 'bookkeeping-only' .ai-skills/skills/prism-code-review-pr/shared.md | wc -l` → `≥ 3` (baseline today: `0`; task 2 lands one occurrence in state #2 and one in state #3, task 3 lands a third in the verdict paragraph of the same file). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches. · UNMET looks like: `0`, meaning the decision gate never learned the exemption.
-  - *Evidence (human):* read § Decision gate — three states and confirm a pass holding only bookkeeping-only minors routes to state #3, which applies `effort + confidence` and flips the PR out of draft. · UNMET looks like: the reader still lands in state #2.
+- [x] **AC-1** Given a reviewer has only findings about a plan's own history, session, or readiness prose, When they finish the pass, Then the pull request is not held open for those findings alone.
+  - *Evidence (machine):* `grep -o 'bookkeeping-only' .ai-skills/skills/prism-code-review-pr/shared.md | wc -l` → `≥ 3` (baseline today: `0`; task 2 lands one occurrence in state #2 and one in state #3, task 3 lands a third in the verdict paragraph of the same file). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches. · UNMET looks like: `0`, meaning the decision gate never learned the exemption. **Observed:** `3` (positive control `3`) — MET.
+  - *Evidence (human):* read § Decision gate — three states and confirm a pass holding only bookkeeping-only minors routes to state #3, which applies `effort + confidence` and flips the PR out of draft. · UNMET looks like: the reader still lands in state #2. **Observed:** state #3 now reads "every remaining minor is addressed, acknowledged, or bookkeeping-only" — MET.
 
-- [ ] **AC-2** Given a finding about how a criterion is to be verified, When the reviewer classifies it, Then it is treated as bookkeeping; and given a finding about the criterion itself, Then it is not.
-  - *Evidence (machine):* `grep -o 'sub-bullets under' .prism/rules/followup-scope.md | wc -l` → `≥ 1`, **and** `grep -o 'lines those Evidence sub-bullets hang from' .prism/rules/followup-scope.md | wc -l` → `≥ 1` (baseline for both: `0`). Both patterns are deliberately backtick-free and asterisk-free so they survive shell quoting — the surrounding rule prose wraps both phrases in markdown formatting that a literal-match grep would otherwise trip on. Both halves required: the inclusion without the exclusion would put the ticket's contract on the non-gating side. · UNMET looks like: either probe returns `0`.
+- [x] **AC-2** Given a finding about how a criterion is to be verified, When the reviewer classifies it, Then it is treated as bookkeeping; and given a finding about the criterion itself, Then it is not.
+  - *Evidence (machine):* `grep -o 'sub-bullets under' .prism/rules/followup-scope.md | wc -l` → `≥ 1`, **and** `grep -o 'lines those Evidence sub-bullets hang from' .prism/rules/followup-scope.md | wc -l` → `≥ 1` (baseline for both: `0`). Both patterns are deliberately backtick-free and asterisk-free so they survive shell quoting — the surrounding rule prose wraps both phrases in markdown formatting that a literal-match grep would otherwise trip on. Both halves required: the inclusion without the exclusion would put the ticket's contract on the non-gating side. · UNMET looks like: either probe returns `0`. **Observed:** `1` and `1` — MET.
 
-- [ ] **AC-3** Given a reviewer who believes a finding about the code is not worth another round, When they try to treat it as bookkeeping, Then the rule does not let them — the file path the finding cites decides, not their judgment.
-  - *Evidence (machine):* `grep -o 'classifies the finding, not the reviewer' .prism/rules/followup-scope.md | wc -l` → `≥ 1` (baseline: `0`). · UNMET looks like: `0`.
-  - *Evidence (human):* read the paragraph and confirm it states the every-cited-line condition and names one line outside bookkeeping content as sufficient to restore full gating. · UNMET looks like: the condition is stated as "mostly" or "primarily" about bookkeeping, which is a judgment call again.
+- [x] **AC-3** Given a reviewer who believes a finding about the code is not worth another round, When they try to treat it as bookkeeping, Then the rule does not let them — the file path the finding cites decides, not their judgment.
+  - *Evidence (machine):* `grep -o 'classifies the finding, not the reviewer' .prism/rules/followup-scope.md | wc -l` → `≥ 1` (baseline: `0`). · UNMET looks like: `0`. **Observed:** `1` — MET.
+  - *Evidence (human):* read the paragraph and confirm it states the every-cited-line condition and names one line outside bookkeeping content as sufficient to restore full gating. · UNMET looks like: the condition is stated as "mostly" or "primarily" about bookkeeping, which is a judgment call again. **Observed:** the rule states "every `**File:** <path>:<line>` it cites lands in bookkeeping content. One cited line outside it... and the finding gates normally" — no hedge language — MET.
 
-- [ ] **AC-4** Given the gauntlet's definition of which plan sections it skips, When the definition changes in one place, Then it cannot disagree with itself in another.
-  - *Evidence (machine):* `grep -o '## Cleanup Items' .ai-skills/skills/prism-review-loop/shared.md | wc -l` → `0` (baseline: `1`). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches a live file and the zero above is a real absence. · UNMET looks like: `1`, meaning the restated list survived.
+- [x] **AC-4** Given the gauntlet's definition of which plan sections it skips, When the definition changes in one place, Then it cannot disagree with itself in another.
+  - *Evidence (machine):* `grep -o '## Cleanup Items' .ai-skills/skills/prism-review-loop/shared.md | wc -l` → `0` (baseline: `1`). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches a live file and the zero above is a real absence. · UNMET looks like: `1`, meaning the restated list survived. **Observed:** `0` (positive control `1`) — MET.
 
-- [ ] **AC-5** Given a reviewer working without the conductor — a person reading a PR directly — When the rule applies, Then it reaches them.
-  - *Evidence (machine):* `head -3 .prism/rules/followup-scope.md` shows `load: always` in the frontmatter, **and** `git diff --name-only origin/main...HEAD -- .prism/rules/ | wc -l` → `1` with that one path being `.prism/rules/followup-scope.md` (baseline: `0` files changed). Together these show the rule reaches every session without adding a file to the always-on layer. · UNMET looks like: a count above `1`, meaning a new always-on rule file landed.
+- [x] **AC-5** Given a reviewer working without the conductor — a person reading a PR directly — When the rule applies, Then it reaches them.
+  - *Evidence (machine):* `head -3 .prism/rules/followup-scope.md` shows `load: always` in the frontmatter, **and** `git diff --name-only origin/main...HEAD -- .prism/rules/ | wc -l` → `1` with that one path being `.prism/rules/followup-scope.md` (baseline: `0` files changed). Together these show the rule reaches every session without adding a file to the always-on layer. · UNMET looks like: a count above `1`, meaning a new always-on rule file landed. **Observed:** `load: always` present; count `1` (`.prism/rules/followup-scope.md`) — MET.
 
 ### Non-behavioral
 
-- [ ] **AC-6** The new rule section defines bookkeeping content by citing the existing section set rather than copying it.
-  - *Evidence (machine):* `grep -o 'Spec content never rides an unrelated ticket' .prism/rules/followup-scope.md | wc -l` → `≥ 3`. **Baseline is `2`, not `0`** — the heading itself and the existing `## Who runs this rule` reference already match, so a threshold of `≥ 2` would pass without any change to the file. · UNMET looks like: `2`, meaning the new section restated the list instead of citing it.
+- [x] **AC-6** The new rule section defines bookkeeping content by citing the existing section set rather than copying it.
+  - *Evidence (machine):* `grep -o 'Spec content never rides an unrelated ticket' .prism/rules/followup-scope.md | wc -l` → `≥ 3`. **Baseline is `2`, not `0`** — the heading itself and the existing `## Who runs this rule` reference already match, so a threshold of `≥ 2` would pass without any change to the file. · UNMET looks like: `2`, meaning the new section restated the list instead of citing it. **Observed:** `3` — MET.
 
-- [ ] **AC-7** Every generated mirror matches its canonical source and the full check suite passes.
-  - *Evidence (machine):* `pnpm prism:check` → exit `0`. · UNMET looks like: non-zero exit, most likely `build --check` reporting seed or platform drift because task 5's `pnpm prism:build` was skipped, or `crossref-lint` failing on a section anchor that does not resolve.
+- [x] **AC-7** Every generated mirror matches its canonical source and the full check suite passes.
+  - *Evidence (machine):* `pnpm prism:check` → exit `0`. · UNMET looks like: non-zero exit, most likely `build --check` reporting seed or platform drift because task 5's `pnpm prism:build` was skipped, or `crossref-lint` failing on a section anchor that does not resolve. **Observed:** exit `0` (668/668 tests pass, crossref-lint/spec-scope-lint/verify-pack-parity all pass) — MET.
 
-- [ ] **AC-8** The conductor is unchanged — the label's meaning moved, its consumer did not.
-  - *Evidence (machine):* `git diff --name-only origin/main...HEAD -- .ai-skills/skills/prism-conductor/ .prism/skills/prism-conductor/ | wc -l` → `0`. Positive control: `git diff --name-only origin/main...HEAD -- .ai-skills/skills/ | wc -l` → `≥ 3`, proving the pathspec form finds changes when they exist. · UNMET looks like: any non-zero count under the conductor paths.
+- [x] **AC-8** The conductor is unchanged — the label's meaning moved, its consumer did not.
+  - *Evidence (machine):* `git diff --name-only origin/main...HEAD -- .ai-skills/skills/prism-conductor/ .prism/skills/prism-conductor/ | wc -l` → `0`. Positive control: `git diff --name-only origin/main...HEAD -- .ai-skills/skills/ | wc -l` → `≥ 3`, proving the pathspec form finds changes when they exist. · UNMET looks like: any non-zero count under the conductor paths. **Observed:** `0` (positive control `3`) — MET.
 
 ### AC Adjustments
 
@@ -169,12 +169,14 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 ## Sessions
 
 - 2026-08-14 [huntermcgrew/opus5-port-lint-resolution] open: Intent — stop bookkeeping-only review findings from gating merges and buying review rounds; Bounds — write this plan file only, touch no other plan, prescribe four source edits and no code; Approach — reuse the bookkeeping-section set `followup-scope.md` already defines, add the label mechanism at Eric's decision gate. · close: scope held
+- 2026-08-14 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — implement tasks 1-5 exactly as Winston specified: the bookkeeping-findings exemption in `followup-scope.md`, Eric's and Briar's decision-gate qualifiers, and the review-loop's Ledger citation; Bounds — the four named source files plus their generated mirrors, no `.ai-skills/skills/prism-conductor/` edits, no improvised text; Approach — apply each task's verbatim replacement text, verify `spec-scope-lint` resolves this plan before and after the diff exists, then `pnpm prism:build && pnpm prism:check`. · close: scope held
 
 ---
 
 ## History
 
 - 2026-08-14 [huntermcgrew/opus5-port-lint-resolution]: Winston scoped the rule after PR #458 spent three review rounds on plan prose. Found the review-loop's Ledger surface already covers most of the section set but is loop-only and puts AC evidence in Subject; see Decision: the mechanism is Eric's three-state decision gate.
+- 2026-08-14 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove implemented tasks 1-5 verbatim — the bookkeeping-findings exemption in `followup-scope.md`, Eric's and Briar's decision-gate qualifiers, and the review-loop's Ledger re-point to citation. `pnpm prism:build` (668/668 tests) and `pnpm prism:check` both exit 0; all eight AC evidence commands recorded MET.
 
 ---
 
@@ -188,10 +190,10 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] `pnpm prism:check` passes — last run: not yet run
-- [ ] All eight AC evidence commands executed with observed values recorded
+- [x] No critical or major issues
+- [x] `pnpm prism:check` passes — last run: 2026-08-14
+- [x] All eight AC evidence commands executed with observed values recorded
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed
 
 **Last updated:** 2026-08-14
