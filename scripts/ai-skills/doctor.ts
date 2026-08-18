@@ -182,6 +182,12 @@ function checkGitRepo(consumerRepoRoot: string): DoctorFinding[] {
  * the stray seed-named copy is still on disk, the remedy is a plain rename;
  * when even that's gone, the remedy points at the seed's own copy in the
  * PRISM source.
+ *
+ * `runDoctor` only calls this once `checkSyncManifest` confirms a sync
+ * manifest exists — a consumer with no manifest has never run `prism adopt`
+ * and has no renamed file to be missing yet, so there is nothing this check
+ * should report for it (mirrors `checkSyncManifest`'s own null-manifest
+ * gate).
  */
 async function checkSeedDelivery(
 	consumerContentRoot: string,
@@ -523,7 +529,13 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	const syncResult = await checkSyncManifest(consumerContentRoot);
 	findings.push(...syncResult.findings);
 
-	findings.push(...(await checkSeedDelivery(consumerContentRoot, prismSourceRoot)));
+	// A consumer with no sync manifest has never run `prism adopt`, so it was
+	// never delivered a renamed file in the first place — skip the check
+	// rather than misreport it as unhealthy with a "re-run prism:update"
+	// remedy that doesn't apply pre-adopt.
+	if (syncResult.syncState.manifest !== null) {
+		findings.push(...(await checkSeedDelivery(consumerContentRoot, prismSourceRoot)));
+	}
 
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 

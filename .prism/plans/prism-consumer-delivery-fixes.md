@@ -31,6 +31,7 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 - **`seed-curation.json` ships in the npm package.** It was previously dev-only (used by `build.ts` on the canonical→seed direction). The install-direction inverse needs the same table at runtime in a consumer's npm install, so it now ships via `package.json`'s `files` array — same shape as the earlier schema-omission fix (`.prism/plans/bug-adopt-missing-schema.md`, Bug `#1`). → no promotion needed (packaging detail, self-evident from `package.json`'s `files` array).
 - **`loadSeedCurationRenames` throws loudly on a missing/malformed file when called from `adopt`/`update`, but `doctor`'s check catches and degrades to a warning finding.** `adopt`/`update` write consumer state on the assumption the renames table resolved correctly; a silent empty-map fallback there would reproduce the exact bug this plan fixes, just less visibly. `doctor` never writes and is explicitly documented (`doctor.ts` file header) to report rather than throw, so it catches at the call site instead. → no promotion needed (mirrors the existing throw-vs-catch split already documented in `doctor.ts`'s own header comment).
 - **`prism doctor` reports the repair, it does not perform it.** `doctor.ts`'s existing header states it never writes to disk. The `seed-delivery` check's remedy is a plain `mv` (when the stale seed-named copy is still on disk) or a pointer at the seed's own copy (when even that's gone) — both are one-line, human-safe, and consistent with every other doctor finding. Considered: giving `doctor --repair` a write mode — rejected as a scope split from this bug fix; doctor stays read-only. → no promotion needed (extends an existing, already-documented doctor invariant; no new surface).
+- **`checkSeedDelivery` only runs once `checkSyncManifest` has confirmed a sync manifest exists, gated at the `runDoctor` call site rather than inside `checkSeedDelivery` itself.** Briar's suggested fix called `loadSyncManifest` a second time inside `checkSeedDelivery`, mirroring `checkSyncManifest`'s own null-check. `runDoctor` already computes `syncResult.syncState.manifest` right before this call, so gating on that value there avoids loading the manifest twice for the same check pass — same behavior, one fewer disk read. → no promotion needed (local call-site ordering, not a new invariant).
 - **`assertSourceIsPlausible`'s empty-source count stays rename-unaware.** A real PRISM seed always ships far more than the two renamed files (`rules/**`, `templates/**`, etc.), so the plausibility guard never legitimately trips over this in production — only an artificially minimal test fixture can hit it. Test fixtures that exercise the rename now also seed one ordinary rule file so the guard sees a plausible source, rather than widening `assertSourceIsPlausible`'s signature for a case that can't occur outside a test. → no promotion needed (test-fixture concern, not a product behavior).
 
 ---
@@ -39,11 +40,13 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 
 - 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes] open: Intent — invert seed-curation.json's renames on the install direction so `prism adopt`/`prism update` deliver `manifest.json`/`SPEC.md` instead of their seed names; Bounds — `adopt.ts`, `update.ts`, `sync-manifest.ts`, a new `lib/seed-curation.ts`, `doctor.ts`, `package.json` files array, `docs/distribution.md:66`, and their tests; no hook/manifest-schema/architect-gate changes; Approach — read the renames table once via a shared loader, invert it, thread it through adopt's seed copy and update's classify/apply/manifest passes, add a doctor check for already-adopted consumers · close: scope held
 - 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes] open: Intent — self-review PR #460's delivery-fix branch for correctness, especially the doctor "already-installed consumer" repair path; Bounds — diff-only review over `76c2f7de..HEAD`, chat + plan writes, no code fixes; Approach — trace the rename inversion end to end (adopt, update, sync-manifest, doctor), independently re-run type-check and tests, live-verify the doctor repair claim rather than trust it · close: scope held — found 1 major (doctor false-positives a never-adopted consumer as unhealthy) and 2 minor test-coverage gaps, all recorded below; no code touched
+- 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes] open: Intent — fix Briar's 3 self-review findings (major: `checkSeedDelivery` false-positives a never-adopted consumer; 2 minor: untested doctor branches); Bounds — `scripts/ai-skills/doctor.ts` and `doctor.test.ts` only, no rename-inversion mechanism changes, no AC additions; Approach — gate the check on the sync manifest already loaded by `checkSyncManifest`, add the fresh-repo-with-real-renames-table regression test plus the two missing-branch tests · close: scope held
 
 ## History
 
 - 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes]: Added `lib/seed-curation.ts` and inverted seed-curation.json's renames through `adopt.ts`'s seed copy and `update.ts`'s full file pass (`sync-manifest.ts`, `applyFilePass`, `rewriteConsumerManifest`); added a `prism doctor` `seed-delivery` check with an `mv` remedy for already-adopted consumers; shipped `seed-curation.json` in `package.json`'s `files`; bumped to 0.8.1.
 - 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes]: Briar self-review — 1 major (`checkSeedDelivery` misreports a never-adopted consumer as unhealthy), 2 minor (untested doctor branches). See `## Review Issues`.
+- 2026-08-18 [huntermcgrew/prism-consumer-delivery-fixes]: Fixed all 3 self-review findings — `runDoctor` now gates `checkSeedDelivery` on `checkSyncManifest`'s already-loaded sync-manifest result, skipping the check entirely for a never-adopted consumer; added 5 tests (the fresh-repo regression case plus the 2 previously-untested branches, and 2 existing seed-delivery tests updated to write a sync manifest so they represent an adopted consumer).
 
 ---
 
@@ -52,7 +55,7 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 ### `checkSeedDelivery` reports a never-adopted consumer as unhealthy with a wrong remedy
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:182-227` (`checkSeedDelivery`), called unconditionally from `runDoctor` at `:526`
 - **Problem:** `checkSeedDelivery` has no guard for "this consumer has never run `prism adopt`" versus "this consumer adopted before the rename fix." Reproduced live: a fresh consumer repo with a real (non-empty) `seed-curation.json` renames table and no `.prism/` content at all gets `report.healthy: false` with two `error` findings ("`.prism/architect/manifest.json` is missing and no seed copy... re-run `pnpm prism:update`"), directly contradicting the doctor contract the adjacent test at `doctor.test.ts:135` documents in its own comment: "a fresh repo that hasn't run `prism adopt` is still a healthy target for it." The suggested remedy is also wrong for this case — a never-adopted consumer needs `prism:adopt`, not `prism:update`. The test suite never catches this because `withTempRoots`'s default fixture seeds `seed-curation.json` with an empty `renames: {}` (`doctor.test.ts:107`), so every existing test — including the "fresh repo is healthy" test itself — runs `checkSeedDelivery` over zero rename entries and never exercises it against the real, non-empty production table.
 - **Class:** missing-guard: a check assumes a precondition ("this consumer has adopted") that its caller never establishes.
@@ -62,7 +65,7 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 ### Doctor's "no seed copy either" branch is untested
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:213-226` (`checkSeedDelivery`, `staleSeedAbsolute` absent branch)
 - **Problem:** `doctor.test.ts` covers the mv-remedy branch (stale seed copy present) and the no-finding branch (canonical file present), but not the branch where neither the canonical file nor the stale seed copy exists — the "copy it from the PRISM install seed" message path.
 - **Class:** untested branch on new conditional logic.
@@ -72,7 +75,7 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 ### `loadSeedCurationRenames` throw-to-warning degrade path is untested in doctor
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:190-198` (`checkSeedDelivery`'s `catch` block)
 - **Problem:** The plan's own Decisions document doctor's throw-vs-catch split (`doctor` catches `loadSeedCurationRenames`'s throw and degrades to a `warning` finding) as load-bearing behavior, but no test in `doctor.test.ts` exercises a missing or malformed `seed-curation.json` reaching `checkSeedDelivery`.
 - **Class:** untested branch on documented behavior.
@@ -101,12 +104,12 @@ None.
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 1 major open (`checkSeedDelivery` misreports never-adopted consumers)
+- [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — 2 branch gaps flagged as minor
+- [x] Tests written for new logic and edge cases — all 3 findings fixed, 5 tests added/updated in `doctor.test.ts`
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-18 (`pnpm prism:check`, exit 0; independently re-verified type-check + full test suite this session)
+- [x] Build passes — last run: 2026-08-18 (`pnpm prism:check`, exit 0)
 - [ ] PR description up to date
 - [x] Lasting decisions promoted to architect context (if applicable) — see verdicts above, none required promotion
 
