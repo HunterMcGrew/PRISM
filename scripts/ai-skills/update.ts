@@ -352,7 +352,7 @@ export async function applyDeletedFile(
  * `rewriteConsumerManifest` so a renamed seed file — `SPEC.md.tmpl` on disk,
  * `SPEC.md` in the consumer and the manifest — is classified, applied, and
  * recorded under its consumer name throughout the pass. Defaults to `{}` so
- * every existing caller (tests included) keeps today's no-rename behavior.
+ * a caller with no rename map behaves as if no renames exist.
  */
 export async function applyFilePass(
 	prismContentRoot: string,
@@ -509,14 +509,14 @@ export async function runUpdate(
 			).length
 		: 0;
 
-	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
+	const seedToConsumerRenames = invertRenames(await loadSeedCurationRenames(prismRepoRoot));
+
+	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount, seedToConsumerRenames);
 
 	const versionMetadata: VersionMetadata = {
 		prismVersion: await resolvePrismVersion(prismRepoRoot),
 		sourceCommit: await resolveSourceCommit(prismRepoRoot),
 	};
-
-	const seedToConsumerRenames = invertRenames(await loadSeedCurationRenames(prismRepoRoot));
 
 	const summary = await applyFilePass(
 		prismContentRoot,
@@ -1062,9 +1062,10 @@ export function resolvePrismContentRoot(prismSourceRoot: string): string {
  */
 export async function assertSourceIsPlausible(
 	prismContentRoot: string,
-	pendingDeletionCount: number
+	pendingDeletionCount: number,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<void> {
-	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot);
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
 
 	if (ownedPaths.length === 0) {
 		throw new Error(

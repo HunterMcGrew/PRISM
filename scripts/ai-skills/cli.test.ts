@@ -205,6 +205,13 @@ test("runUpdate refuses an empty PRISM source — the guard now fires through th
 			"utf8"
 		)
 	);
+	// A real seed always ships this file; an empty renames table still lets the
+	// plausibility guard (not the rename loader) be what fires in this test.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
+	);
 
 	// The consumer records two PRISM-owned files; an empty source would wipe both.
 	await writeConsumerManifest(consumerContentRoot, {

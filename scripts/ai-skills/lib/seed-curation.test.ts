@@ -106,3 +106,65 @@ test("invertRenames maps seed path back to canonical path", () => {
 test("invertRenames returns an empty map for an empty input", () => {
 	assert.deepEqual(invertRenames({}), {});
 });
+
+test("invertRenames throws when two canonical paths share a seed name", () => {
+	assert.throws(
+		() =>
+			invertRenames({
+				"architect/manifest.json": "shared.json",
+				"other/file.json": "shared.json",
+			}),
+		(err: unknown) => {
+			assert.ok(err instanceof Error);
+			assert.ok(err.message.includes("is not one-to-one"));
+			return true;
+		}
+	);
+});
+
+test("loadSeedCurationRenames throws when renames maps a key to a non-string value", async () => {
+	await withPrismSourceRoot(async (prismSourceRoot) => {
+		const curationPath = path.join(
+			prismSourceRoot,
+			".ai-skills",
+			"definitions",
+			"seed-curation.json"
+		);
+		await fs.mkdir(path.dirname(curationPath), { recursive: true });
+		await fs.writeFile(
+			curationPath,
+			`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: { "SPEC.md": 5 } }, null, "\t")}\n`,
+			"utf8"
+		);
+
+		await assert.rejects(
+			() => loadSeedCurationRenames(prismSourceRoot),
+			(err: unknown) => {
+				assert.ok(err instanceof Error);
+				assert.ok(err.message.includes('renames["SPEC.md"] must be a string'));
+				return true;
+			}
+		);
+	});
+});
+
+test("loadSeedCurationRenames returns an empty map when the renames key is absent", async () => {
+	await withPrismSourceRoot(async (prismSourceRoot) => {
+		const curationPath = path.join(
+			prismSourceRoot,
+			".ai-skills",
+			"definitions",
+			"seed-curation.json"
+		);
+		await fs.mkdir(path.dirname(curationPath), { recursive: true });
+		await fs.writeFile(
+			curationPath,
+			`${JSON.stringify({ excluded: [], curated: [], seedOnly: [] }, null, "\t")}\n`,
+			"utf8"
+		);
+
+		const renames = await loadSeedCurationRenames(prismSourceRoot);
+
+		assert.deepEqual(renames, {});
+	});
+});

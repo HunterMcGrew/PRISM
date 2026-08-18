@@ -133,7 +133,7 @@ test("generateSyncManifest records a renamed seed file under its consumer name, 
 	});
 });
 
-test("generateSyncManifest without a renames table never classifies a seed-named file — the pre-fix behavior stays available", async () => {
+test("generateSyncManifest without a renames table never classifies a seed-named file as PRISM-owned", async () => {
 	await withContentRoot(async (contentRoot) => {
 		await writeContentFile(contentRoot, "SPEC.md.tmpl", "# seed spec\n");
 

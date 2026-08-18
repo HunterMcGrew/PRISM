@@ -69,9 +69,7 @@ export interface AdoptSummary {
  * path it should land at (e.g. `architect/manifest.stub.json` →
  * `architect/manifest.json`) — the install-direction inverse of
  * `seed-curation.json`'s `renames` table. A path absent from the map copies
- * under its own name, same as before. Without this, `prism adopt` copied the
- * seed's renamed files verbatim and consumers never received
- * `.prism/architect/manifest.json` or `.prism/SPEC.md`.
+ * under its own name, same as before.
  */
 export async function seedConsumerContentRoot(
 	installSeedRoot: string,

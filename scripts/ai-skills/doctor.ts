@@ -176,7 +176,10 @@ function checkGitRepo(consumerRepoRoot: string): DoctorFinding[] {
  * file it was told it had. `prism adopt` refuses to re-run on an established
  * repo (`assertConsumerIsEstablished`), and `architect/manifest.json` is
  * consumer-owned so `prism update` never writes it either — this check is the
- * only path that surfaces the gap for an already-adopted repo.
+ * only path that surfaces the `architect/manifest.json` gap for an
+ * already-adopted repo. `SPEC.md` is prism-owned, so a stale `SPEC.md.tmpl`
+ * self-clears on the next `prism update`; this check still flags it in the
+ * meantime so the gap doesn't sit silent until then.
  *
  * Never writes — `doctor` reports, it doesn't repair (see file header). When
  * the stray seed-named copy is still on disk, the remedy is a plain rename;
@@ -226,7 +229,7 @@ async function checkSeedDelivery(
 		findings.push({
 			check: "seed-delivery",
 			severity: "error",
-			message: `.prism/${canonicalPath} is missing and no seed copy (.prism/${seedPath}) was found either. Copy it from the PRISM install seed (templates/install/.prism/${seedPath}) as .prism/${canonicalPath}, then re-run pnpm prism:update.`,
+			message: `.prism/${canonicalPath} is missing and no seed copy (.prism/${seedPath}) was found either. Copy it from ${path.join(prismSourceRoot, "templates", "install", ".prism", seedPath)} as .prism/${canonicalPath}, then re-run npx @huntermcgrew/prism update.`,
 		});
 	}
 

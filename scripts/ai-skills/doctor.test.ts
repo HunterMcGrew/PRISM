@@ -343,9 +343,8 @@ test("runDoctor reports diverged files with their .bak siblings and missing file
 test("runDoctor stays healthy for a fresh, never-adopted repo even with a real (non-empty) renames table", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		// A production-shaped renames table, not the default empty-`{}` fixture —
-		// this is what let the false positive slip past every other test in this
-		// file: they all inherit the empty table and never exercise this check
-		// against a real one.
+		// every other test in this file inherits the empty table, so only this
+		// one exercises checkSeedDelivery against a table with real entries.
 		await writeFile(
 			prismSourceRoot,
 			".ai-skills/definitions/seed-curation.json",
@@ -490,9 +489,13 @@ test("runDoctor points at the install seed when an adopted consumer has neither 
 		assert.equal(finding?.severity, "error");
 		assert.ok(
 			finding?.message.includes(
-				"Copy it from the PRISM install seed (templates/install/.prism/architect/manifest.stub.json) as .prism/architect/manifest.json"
-			),
+				path.join(prismSourceRoot, "templates", "install", ".prism", "architect", "manifest.stub.json")
+			) && finding?.message.includes("as .prism/architect/manifest.json"),
 			`expected a copy-from-seed remedy, got: ${finding?.message}`
+		);
+		assert.ok(
+			finding?.message.includes("npx @huntermcgrew/prism update"),
+			`expected the npx remedy command, got: ${finding?.message}`
 		);
 	});
 });

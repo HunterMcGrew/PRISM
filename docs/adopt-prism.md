@@ -171,6 +171,8 @@ npx @huntermcgrew/prism doctor
 
 Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every check runs regardless of what the others found, so you see everything wrong in one pass. It exits `0` when healthy and non-zero with the findings list printed when it isn't, which makes it a natural fit for a CI health-check step.
 
+If you adopted before the seed-delivery check above existed, expect `doctor` to flip red the first time you run it after updating — that's the check surfacing a gap this release closes, not a new problem with your repo. Run the `mv` it prints and re-run `doctor` to clear it.
+
 `pnpm prism:doctor` runs the same command from a local checkout.
 
 ## Ejecting PRISM

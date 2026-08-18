@@ -680,11 +680,6 @@ test("runUpdate applies a renamed seed file under its consumer name and records 
 			consumerContentRoot,
 		}) => {
 			await writeFile(prismContentRoot, "SPEC.md.tmpl", "# Seed SPEC\n");
-			// `assertSourceIsPlausible` counts PRISM-owned files without applying
-			// renames (a real seed always ships far more than the renamed file
-			// alone) — this keeps the plausibility guard from reading the
-			// deliberately minimal fixture as an empty source.
-			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
 			await writeFile(
 				prismRepoRoot,
 				".ai-skills/definitions/seed-curation.json",

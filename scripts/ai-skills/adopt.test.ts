@@ -395,11 +395,6 @@ test("runAdopt inverts seed renames — consumer receives manifest.json and SPEC
 				`${JSON.stringify({ routes: [] }, null, "\t")}\n`
 			);
 			await writeFile(installSeedRoot, "SPEC.md.tmpl", "# Test Project SPEC\n");
-			// `assertSourceIsPlausible` counts PRISM-owned files without applying
-			// renames (a real seed always ships far more than the two renamed
-			// files) — this keeps the plausibility guard from reading the
-			// deliberately minimal fixture as an empty source.
-			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
 			await fs.writeFile(
 				path.join(prismSourceRoot, ".ai-skills", "definitions", "seed-curation.json"),
 				`${JSON.stringify(
