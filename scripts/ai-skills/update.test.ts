@@ -561,6 +561,14 @@ async function withTempRepoRoots(
 		path.join(prismRepoRoot, ".ai-skills", "config.schema.json")
 	);
 
+	// `runUpdate` loads this to invert the install-direction rename; empty
+	// `renames` here since no test fixture uses a renamed seed file.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
+	);
+
 	// Consumer config + paths.json so the platform refresh resolves.
 	await writeFile(
 		consumerRepoRoot,
@@ -658,6 +666,63 @@ test("runUpdate copies content and projects the persona roster", async () => {
 				/\$\{[A-Z][A-Z0-9_]*\}/.test(skillBody),
 				false,
 				"no leftover token survives in the projected roster"
+			);
+		}
+	);
+});
+
+test("runUpdate applies a renamed seed file under its consumer name and records it in the manifest that way", async () => {
+	await withTempRepoRoots(
+		async ({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(prismContentRoot, "SPEC.md.tmpl", "# Seed SPEC\n");
+			// `assertSourceIsPlausible` counts PRISM-owned files without applying
+			// renames (a real seed always ships far more than the renamed file
+			// alone) — this keeps the plausibility guard from reading the
+			// deliberately minimal fixture as an empty source.
+			await writeFile(prismContentRoot, "rules/some-rule.md", "# Rule\n");
+			await writeFile(
+				prismRepoRoot,
+				".ai-skills/definitions/seed-curation.json",
+				`${JSON.stringify(
+					{ excluded: [], curated: [], seedOnly: [], renames: { "SPEC.md": "SPEC.md.tmpl" } },
+					null,
+					"\t"
+				)}\n`
+			);
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await readFile(consumerContentRoot, "SPEC.md"),
+				"# Seed SPEC\n",
+				"the seed's SPEC.md.tmpl bytes land at the consumer's SPEC.md"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "SPEC.md.tmpl"),
+				false,
+				"the seed name is never written to the consumer"
+			);
+
+			const raw = await readFile(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+			const manifest = JSON.parse(raw) as SyncManifest;
+			assert.ok(
+				manifest.files["SPEC.md"],
+				"the manifest records the renamed file under its consumer name"
+			);
+			assert.equal(
+				"SPEC.md.tmpl" in manifest.files,
+				false,
+				"the manifest never records the file under its seed name"
 			);
 		}
 	);

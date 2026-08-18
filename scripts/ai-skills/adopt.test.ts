@@ -89,6 +89,18 @@ async function withTempRoots(
 		path.join(prismSourceRoot, ".ai-skills", "config.schema.json")
 	);
 
+	// `runAdopt` loads this to invert the install-direction rename; empty
+	// `renames` here since no default fixture uses a renamed seed file — tests
+	// that exercise the rename write their own `renames` table over this.
+	await fs.mkdir(path.join(prismSourceRoot, ".ai-skills", "definitions"), {
+		recursive: true,
+	});
+	await fs.writeFile(
+		path.join(prismSourceRoot, ".ai-skills", "definitions", "seed-curation.json"),
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`,
+		"utf8"
+	);
+
 	// Most callers exercise `runAdopt` mechanics unrelated to `load:` semantics
 	// (seed writes, manifest creation, dry-run, config validation) with bare-body
 	// rule fixtures that predate the `load:` mechanism — without silencing here,
@@ -365,6 +377,87 @@ test("runAdopt produces a .sync-manifest.json after the first pass", async () =>
 
 			assert.ok(Array.isArray(summary.seed.written));
 			assert.ok(Array.isArray(summary.update.outcomes));
+		}
+	);
+});
+
+test("runAdopt inverts seed renames — consumer receives manifest.json and SPEC.md, and a pre-existing consumer source file is left alone", async () => {
+	await withTempRoots(
+		async ({
+			prismSourceRoot,
+			installSeedRoot,
+			consumerRepoRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(
+				installSeedRoot,
+				"architect/manifest.stub.json",
+				`${JSON.stringify({ routes: [] }, null, "\t")}\n`
+			);
+			await writeFile(installSeedRoot, "SPEC.md.tmpl", "# Test Project SPEC\n");
+			// `assertSourceIsPlausible` counts PRISM-owned files without applying
+			// renames (a real seed always ships far more than the two renamed
+			// files) — this keeps the plausibility guard from reading the
+			// deliberately minimal fixture as an empty source.
+			await writeFile(installSeedRoot, "rules/some-rule.md", "# Rule\n");
+			await fs.writeFile(
+				path.join(prismSourceRoot, ".ai-skills", "definitions", "seed-curation.json"),
+				`${JSON.stringify(
+					{
+						excluded: [],
+						curated: [],
+						seedOnly: [],
+						renames: {
+							"architect/manifest.json": "architect/manifest.stub.json",
+							"SPEC.md": "SPEC.md.tmpl",
+						},
+					},
+					null,
+					"\t"
+				)}\n`,
+				"utf8"
+			);
+			await scaffoldConsumerAndSkills({ prismSourceRoot, consumerRepoRoot });
+
+			// A cold-start consumer source file outside .prism/ — adopt must never
+			// touch it.
+			await writeFile(consumerRepoRoot, "src/index.ts", "export const hello = 1;\n");
+
+			await runAdopt({ prismSourceRoot, consumerRepoRoot });
+
+			assert.ok(
+				await fileExists(consumerContentRoot, "architect/manifest.json"),
+				"consumer receives manifest.json, not the seed's manifest.stub.json name"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "architect/manifest.stub.json"),
+				false,
+				"the seed-named copy is never written to the consumer"
+			);
+			assert.deepEqual(
+				JSON.parse(await readFile(consumerContentRoot, "architect/manifest.json")),
+				{ routes: [] }
+			);
+
+			assert.ok(
+				await fileExists(consumerContentRoot, "SPEC.md"),
+				"consumer receives SPEC.md, not the seed's SPEC.md.tmpl name"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "SPEC.md.tmpl"),
+				false,
+				"the seed-named copy is never written to the consumer"
+			);
+			assert.equal(
+				await readFile(consumerContentRoot, "SPEC.md"),
+				"# Test Project SPEC\n"
+			);
+
+			assert.equal(
+				await readFile(consumerRepoRoot, "src/index.ts"),
+				"export const hello = 1;\n",
+				"adopt must not touch a pre-existing consumer source file outside .prism/"
+			);
 		}
 	);
 });

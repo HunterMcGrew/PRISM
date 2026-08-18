@@ -29,6 +29,7 @@ import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./l
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
 import { parseRuleLoad } from "./rule-load";
+import { loadSeedCurationRenames } from "./lib/seed-curation";
 import { OVERLAY_SUBPATH, resolvePrismSource, resolveSelfPrismSource } from "./update";
 import { loadSyncManifest, SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 import { hashFile, pathExists, readFileIfExists } from "./utils";
@@ -38,7 +39,7 @@ const NPM_FETCH_TIMEOUT_MS = 3000;
 
 /** A single named health finding. `check` identifies which section produced it. */
 export interface DoctorFinding {
-	check: "config" | "git-repo" | "sync-manifest" | "version" | "rule-load";
+	check: "config" | "git-repo" | "sync-manifest" | "seed-delivery" | "version" | "rule-load";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -164,6 +165,66 @@ function checkGitRepo(consumerRepoRoot: string): DoctorFinding[] {
 			},
 		];
 	}
+}
+
+/**
+ * Reports a consumer `.prism/` missing a file `seed-curation.json` renames on
+ * the seed side (`architect/manifest.json`, `SPEC.md`). A repo adopted before
+ * `prism adopt`/`prism update` learned to invert that rename copied the seed
+ * file verbatim under its seed name — the consumer has
+ * `architect/manifest.stub.json` or `SPEC.md.tmpl` on disk and never got the
+ * file it was told it had. `prism adopt` refuses to re-run on an established
+ * repo (`assertConsumerIsEstablished`), and `architect/manifest.json` is
+ * consumer-owned so `prism update` never writes it either — this check is the
+ * only path that surfaces the gap for an already-adopted repo.
+ *
+ * Never writes — `doctor` reports, it doesn't repair (see file header). When
+ * the stray seed-named copy is still on disk, the remedy is a plain rename;
+ * when even that's gone, the remedy points at the seed's own copy in the
+ * PRISM source.
+ */
+async function checkSeedDelivery(
+	consumerContentRoot: string,
+	prismSourceRoot: string
+): Promise<DoctorFinding[]> {
+	let renames: Record<string, string>;
+	try {
+		renames = await loadSeedCurationRenames(prismSourceRoot);
+	} catch (error) {
+		return [
+			{
+				check: "seed-delivery",
+				severity: "warning",
+				message: `Could not check renamed seed files: ${error instanceof Error ? error.message : String(error)}`,
+			},
+		];
+	}
+
+	const findings: DoctorFinding[] = [];
+
+	for (const [canonicalPath, seedPath] of Object.entries(renames)) {
+		if (await pathExists(path.join(consumerContentRoot, canonicalPath))) {
+			continue;
+		}
+
+		const staleSeedAbsolute = path.join(consumerContentRoot, seedPath);
+		if (await pathExists(staleSeedAbsolute)) {
+			findings.push({
+				check: "seed-delivery",
+				severity: "error",
+				message: `.prism/${canonicalPath} is missing — this repo adopted before prism:adopt inverted seed renames. Repair: mv .prism/${seedPath} .prism/${canonicalPath}.`,
+			});
+			continue;
+		}
+
+		findings.push({
+			check: "seed-delivery",
+			severity: "error",
+			message: `.prism/${canonicalPath} is missing and no seed copy (.prism/${seedPath}) was found either. Copy it from the PRISM install seed (templates/install/.prism/${seedPath}) as .prism/${canonicalPath}, then re-run pnpm prism:update.`,
+		});
+	}
+
+	return findings;
 }
 
 /**
@@ -461,6 +522,8 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 
 	const syncResult = await checkSyncManifest(consumerContentRoot);
 	findings.push(...syncResult.findings);
+
+	findings.push(...(await checkSeedDelivery(consumerContentRoot, prismSourceRoot)));
 
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 

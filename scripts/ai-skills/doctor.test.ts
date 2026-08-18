@@ -104,6 +104,14 @@ async function withTempRoots(
 		"package.json",
 		`${JSON.stringify({ name: "@huntermcgrew/prism", version: "9.9.9" }, null, "\t")}\n`
 	);
+	// `checkSeedDelivery` loads this; empty `renames` here since no default
+	// fixture uses a renamed seed file — tests exercising the rename write
+	// their own `renames` table over this.
+	await writeFile(
+		prismSourceRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
+	);
 
 	await writeFile(
 		consumerRepoRoot,
@@ -327,6 +335,80 @@ test("runDoctor reports diverged files with their .bak siblings and missing file
 		const errorFinding = report.findings.find((f) => f.check === "sync-manifest" && f.severity === "error");
 		assert.ok(errorFinding, "expected an error finding for the missing file");
 		assert.ok(errorFinding?.message.includes("rules/missing.md"));
+	});
+});
+
+// --- seed-delivery (renamed seed files never inverted before the fix) ---
+
+test("runDoctor flags a missing manifest.json with an mv remedy when the stale manifest.stub.json copy is still on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		// Simulates a repo that adopted before the fix — the seed's own name
+		// landed on disk, and the consumer-facing manifest.json never did.
+		await writeFile(consumerContentRoot, "architect/manifest.stub.json", "{}\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, false);
+		const finding = report.findings.find(
+			(f) => f.check === "seed-delivery" && f.message.includes("manifest.json")
+		);
+		assert.ok(finding, "expected a seed-delivery finding for the missing manifest.json");
+		assert.equal(finding?.severity, "error");
+		assert.ok(
+			finding?.message.includes("mv .prism/architect/manifest.stub.json .prism/architect/manifest.json"),
+			`expected an mv remedy, got: ${finding?.message}`
+		);
+	});
+});
+
+test("runDoctor reports no seed-delivery finding once manifest.json is present", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		await writeFile(consumerContentRoot, "architect/manifest.json", "{}\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(
+			report.findings.some((f) => f.check === "seed-delivery"),
+			false
+		);
 	});
 });
 
