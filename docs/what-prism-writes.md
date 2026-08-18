@@ -3,7 +3,7 @@ title: "What PRISM writes"
 description: "The complete inventory of every path prism adopt, update, and eject can create or modify in your repo — grouped by who owns it."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-07-02"
+last_updated: "2026-08-18"
 ---
 
 # What PRISM writes
@@ -77,7 +77,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 ## What `prism doctor` does — nothing gets written
 
-`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), and checks your installed version against the latest on npm. It never writes a file — running `prism doctor` as often as you like is always safe.
+`prism doctor` is read-only. It validates your `.ai-skills/config.json` against its schema, confirms you're inside a git repository, reports drift between your sync manifest and what's actually on disk (including pairing diverged files with any `.bak` siblings already sitting there from a prior update), confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` were actually delivered under those names rather than left as their seed names, and checks your installed version against the latest on npm. It never writes a file — running `prism doctor` as often as you like is always safe.
 
 ## What `prism eject` removes
 
