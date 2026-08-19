@@ -409,3 +409,21 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-13 (PRISM-opus5-port, PR #449) — in one review pass, the reviewer fired both halves of the same failure: it prescribed an exclusion regex anchored on `^\./` that never matches on this repo (`grep -r` emits no `./` prefix — the fixer tested it and found it returned 47 lines while reading as verified), and it asserted that ADR-0006 ships to consumers without checking (`templates/install/.prism/spec/` holds only `TEMPLATE.md` and `README.md`), which would have relocated a dangling pointer rather than fixed it. A third prescription — "these two carve-outs are duplicates, drop one" — was adopted without testing and deleted a live carve-out, producing a Major in the next review pass.
 
 **How to apply:** when a review names a specific remedy, execute the remedy before writing it down; if it can't be executed, treat the finding as real and the remedy as unverified. This is the reviewer-side twin of the existing unmeasured-remedy lesson (§ A review finding that prescribes a performance fix benchmarks the fix, not just the fault).
+
+## A gate that already exists for a bug class is forgotten more quietly than a gate that never existed
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — `verify-pack-parity.ts` exists precisely to catch "new runtime-read file missing from the tarball," cites the 0.7.1 `config.schema.json` incident in its own header, and `install-layout.md` § Packaging-parity gate repeats the instruction. A new hard runtime read (`.ai-skills/definitions/seed-curation.json`) shipped anyway without being registered, because forgetting produces no local symptom — `pnpm prism:check` stayed green through the whole branch, and Eric's PR review was the only thing between it and a broken published package.
+
+**How to apply:** Treat "does this change add a file the CLI reads from `prismSourceRoot` at runtime?" as a question the change answers, not a question a gate asks. Register the path in `RUNTIME_READ_PATHS` in the same commit as the `import`, and prove the gate now catches its deletion (remove the `files` entry, run `pnpm run prism:verify-pack`, expect exit 1) rather than trusting a green run — a green run is what the un-updated gate produces too.
+
+## A test suite where every fixture shares one simplified default is blind to whatever that default hides
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460, Briar Major) — every fixture in `doctor.test.ts` seeded `seed-curation.json` with `renames: {}`, so `checkSeedDelivery`'s loop ran zero iterations in every test — including the test whose stated contract is "a fresh repo that hasn't run `prism adopt` is still a healthy target for it." Against the real production table the check reported a never-adopted consumer as unhealthy and prescribed the wrong command. No individual test looked wrong; the suite was testing a shape of the world that does not exist.
+
+**How to apply:** When a suite's shared setup supplies a config value, at least one fixture carries the production-shaped version of it, not the empty or minimal one. The tell to watch for: a shared default that makes a loop, branch, or lookup a no-op — that default silences every test in the suite at once, and the shared setup is the last place anyone looks.
+
+## Skipping the architect pass silently skips whatever the architect would have written into the plan
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — Sol dispatched the lane straight to Clove. `branch-plan.md`'s template puts `## Acceptance Criteria` under Winston's authorship, so the plan shipped with none, Eric's Spec axis ran partial with nothing to grade against, and the PR carries `confidence:needs-judgment` instead of `high`. The gap surfaced five review rounds in, at close, where backfilling AC against a finished diff would have been theater.
+
+**How to apply:** When a dispatch skips a lifecycle persona, name at dispatch time what that persona would have produced and whether the lane proceeds without it — the cost of the omission is cheapest to weigh before the work starts, and invisible after it ships. If the gap is only noticed at close, record it rather than backfilling: an artifact written against an already-reviewed diff cannot fail, so it hides the gap instead of closing it.
