@@ -712,6 +712,201 @@ test("runDoctor reports no version finding when installed matches latest", async
 	});
 });
 
+// --- architect route integrity ---
+
+/** Writes an architect tree: a routing manifest plus the docs listed in `docs`. */
+async function writeArchitectFixture(
+	consumerRepoRoot: string,
+	manifest: Record<string, string | string[]>,
+	docs: string[]
+): Promise<void> {
+	const contentRoot = path.join(consumerRepoRoot, ".prism");
+	await writeFile(
+		contentRoot,
+		"architect/manifest.json",
+		`${JSON.stringify(manifest, null, "\t")}\n`
+	);
+
+	for (const doc of docs) {
+		await writeFile(contentRoot, `architect/${doc}`, `# ${doc}\n`);
+	}
+}
+
+function architectMessages(findings: Array<{ check: string; message: string }>): string[] {
+	return findings.filter((f) => f.check === "architect-route").map((f) => f.message);
+}
+
+test("runDoctor reports an architect doc on disk that no manifest route names", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": "_toolkit/routed.md" },
+			["_toolkit/routed.md", "_toolkit/orphan.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /_toolkit\/orphan\.md/);
+		assert.doesNotMatch(messages[0], /_toolkit\/routed\.md/);
+	});
+});
+
+test("runDoctor reports no architect finding when every doc on disk is routed", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": ["_toolkit/routed.md", "guides/writing.md"] },
+			["_toolkit/routed.md", "guides/writing.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
+	});
+});
+
+test("runDoctor reports a manifest route naming a doc that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": ["_toolkit/routed.md", "_toolkit/gone.md"] },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not on disk/);
+		assert.match(messages[0], /_toolkit\/gone\.md/);
+	});
+});
+
+test("runDoctor treats the manifest tables themselves as unroutable, not as orphans", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			"{}\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
+	});
+});
+
+// --- hook registration ---
+
+function hookFindings(findings: Array<{ check: string; message: string }>): string[] {
+	return findings.filter((f) => f.check === "hook-registration").map((f) => f.message);
+}
+
+const SETTINGS_WITH_HOOK = {
+	hooks: {
+		PostToolUse: [
+			{
+				matcher: "Read",
+				hooks: [
+					{
+						type: "command",
+						command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+					},
+				],
+			},
+		],
+	},
+};
+
+test("runDoctor reports a hook runtime on disk that settings.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /registers no hook command/);
+	});
+});
+
+test("runDoctor reports a hook registration pointing at a file that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /which is not on disk/);
+	});
+});
+
+test("runDoctor reports no hook finding when the runtime and its registration agree", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(hookFindings(report.findings), []);
+	});
+});
+
+test("runDoctor reports no hook finding for a repo with neither a runtime nor a registration", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(hookFindings(report.findings), []);
+	});
+});
+
 // --- report formatting ---
 
 test("formatDoctorReport renders findings and a trailing health line", async () => {

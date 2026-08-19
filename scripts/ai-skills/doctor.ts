@@ -39,7 +39,15 @@ const NPM_FETCH_TIMEOUT_MS = 3000;
 
 /** A single named health finding. `check` identifies which section produced it. */
 export interface DoctorFinding {
-	check: "config" | "git-repo" | "sync-manifest" | "seed-delivery" | "version" | "rule-load";
+	check:
+		| "config"
+		| "git-repo"
+		| "sync-manifest"
+		| "seed-delivery"
+		| "version"
+		| "rule-load"
+		| "architect-route"
+		| "hook-registration";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -409,6 +417,182 @@ async function checkRuleLoadDeclarations(
 	];
 }
 
+/**
+ * Manifest files that live inside the architect tree but are routing tables
+ * rather than routable documents. Excluded from the orphan scan so the tables
+ * never report themselves.
+ */
+const ARCHITECT_MANIFEST_BASENAMES = new Set(["manifest.json", "manifest.base.json"]);
+
+/** Lists every `.md` file under `dir`, as paths relative to `dir` with `/` separators. */
+async function listMarkdownFilesRelative(dir: string): Promise<string[]> {
+	const found: string[] = [];
+
+	async function walk(current: string, prefix: string): Promise<void> {
+		const entries = await fs.readdir(current, { withFileTypes: true });
+
+		for (const entry of entries) {
+			const relative = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+
+			if (entry.isDirectory()) {
+				await walk(path.join(current, entry.name), relative);
+				continue;
+			}
+
+			if (entry.name.endsWith(".md") && !ARCHITECT_MANIFEST_BASENAMES.has(entry.name)) {
+				found.push(relative);
+			}
+		}
+	}
+
+	await walk(dir, "");
+
+	return found.sort();
+}
+
+/** Collects every doc path a manifest routes to, flattening single-string and array values. */
+function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
+	const routed = new Set<string>();
+
+	for (const value of Object.values(manifest)) {
+		for (const doc of Array.isArray(value) ? value : [value]) {
+			if (typeof doc === "string") {
+				routed.add(doc);
+			}
+		}
+	}
+
+	return routed;
+}
+
+/**
+ * Reports both halves of architect-route integrity: docs on disk that no
+ * manifest route names (orphans), and routes naming a doc that is not on disk
+ * (dead routes).
+ *
+ * The two directions together are what replaces per-doc frontmatter as the
+ * route-integrity mechanism. Without the orphan half, a doc can be authored
+ * and never routed, so nothing ever loads it; without the dead-route half,
+ * adding a route at authoring time is aspirational rather than verifiable —
+ * a typo'd route reads as healthy.
+ *
+ * Returns no findings when the architect tree or its manifest is absent.
+ * `checkSeedDelivery` already reports a missing `architect/manifest.json`
+ * with the remedy attached, so reporting it here too would double-count one
+ * problem.
+ */
+async function checkArchitectRoutes(consumerContentRoot: string): Promise<DoctorFinding[]> {
+	const architectDir = path.join(consumerContentRoot, "architect");
+	const manifestPath = path.join(architectDir, "manifest.json");
+
+	if (!(await pathExists(architectDir)) || !(await pathExists(manifestPath))) {
+		return [];
+	}
+
+	let manifest: Record<string, unknown>;
+	try {
+		manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as Record<string, unknown>;
+	} catch (error) {
+		return [
+			{
+				check: "architect-route",
+				severity: "error",
+				message: `.prism/architect/manifest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+			},
+		];
+	}
+
+	const routed = collectRoutedDocs(manifest);
+	const onDisk = await listMarkdownFilesRelative(architectDir);
+	const onDiskSet = new Set(onDisk);
+
+	const findings: DoctorFinding[] = [];
+
+	const orphans = onDisk.filter((doc) => !routed.has(doc));
+	if (orphans.length > 0) {
+		findings.push({
+			check: "architect-route",
+			severity: "warning",
+			message: `${orphans.length} architect doc(s) on disk are named by no manifest route, so nothing loads them: ${orphans.join(", ")}`,
+		});
+	}
+
+	const deadRoutes = [...routed].filter((doc) => !onDiskSet.has(doc)).sort();
+	if (deadRoutes.length > 0) {
+		findings.push({
+			check: "architect-route",
+			severity: "warning",
+			message: `${deadRoutes.length} manifest route(s) name an architect doc that is not on disk: ${deadRoutes.join(", ")}`,
+		});
+	}
+
+	return findings;
+}
+
+/** Matches any `hook.mjs` path inside a `.claude/settings.json` hook command string. */
+const HOOK_COMMAND_PATH_RE = /(\S*hook\.mjs)/g;
+
+/**
+ * Resolves one hook path as written in a `settings.json` command string to an
+ * absolute path. Strips the `$CLAUDE_PROJECT_DIR` prefix, which expands to the
+ * repo root, along with the quotes Claude Code's command strings carry — the
+ * scan reads raw file text, so those quotes arrive backslash-escaped and a
+ * path that keeps the escape resolves to a file that can never exist.
+ */
+function resolveHookCommandPath(rawPath: string, consumerRepoRoot: string): string {
+	const unquoted = rawPath.replace(/[\\"']/g, "");
+	const withoutProjectDir = unquoted
+		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?\//, "")
+		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?/, "");
+
+	return path.resolve(consumerRepoRoot, withoutProjectDir);
+}
+
+/**
+ * Reports a hook runtime that is present but unregistered, and a registration
+ * that points at a file which is not there.
+ *
+ * The write gate cannot prevent its own removal — deleting the runtime or its
+ * registration disables it, and neither is prevented (ADR-0072). Visibility is
+ * the compensating control the ADR names: a removal becomes a reported finding
+ * instead of a silently inert gate.
+ */
+async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
+	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const settingsRaw = await readFileIfExists(settingsPath);
+
+	const registeredPaths = new Set<string>();
+	if (settingsRaw !== null) {
+		for (const match of settingsRaw.matchAll(HOOK_COMMAND_PATH_RE)) {
+			registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+		}
+	}
+
+	const findings: DoctorFinding[] = [];
+
+	if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message:
+				".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+		});
+	}
+
+	for (const registered of [...registeredPaths].sort()) {
+		if (!(await pathExists(registered))) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message: `.claude/settings.json registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
+			});
+		}
+	}
+
+	return findings;
+}
+
 /** Fetcher shape `checkVersion` depends on — lets tests inject a stub instead of hitting the network. */
 export type NpmVersionFetcher = (url: string, timeoutMs: number) => Promise<string | null>;
 
@@ -541,6 +725,8 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	}
 
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
+	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
+	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
 
 	const versionResult = await checkVersion(prismSourceRoot, npmVersionFetcher);
 	findings.push(...versionResult.findings);
