@@ -129,6 +129,15 @@ Make `prism adopt`/`prism update` invert `seed-curation.json`'s canonical→seed
 - **Problem:** Eric's re-review found the same false predicate Minor 9 just corrected in `docs/distribution.md`, uncorrected two files over: "The consumer's installed files have substituted values, no tokens." The canonical `.prism/` tree (`.prism/SPEC.md`, ~30 `.prism/references/*` files) ships raw `${PROJECT}`/`${PROJECT_LOWERCASE}` tokens by design (ADR-0030); only the platform copies (`.claude/`, `.codex/`, `.cursor/`) get substituted values. Before this fix the docs tree was uniformly wrong on this point; after `docs/distribution.md`'s Minor-9 fix and before this one, the tree contradicted itself.
 - **Suggested fix:** one clause — matched the wording and ADR-0030 citation `docs/distribution.md`'s twin fix already used.
 
+### `spec-scope-lint` silently skips a plan whose `## Ticket` says "No tracker ticket"
+
+- **Severity:** `minor`
+- **Status:** `open` — routed to a follow-up PR, not fixed here (`resolve-live-plan.ts` is outside this PR's local frame)
+- **File:** `scripts/ai-skills/lib/resolve-live-plan.ts:28` (`UNFILED_TICKET_RE`), consumed at `:127`
+- **Problem:** `pnpm prism:check` on this branch prints `spec-scope-lint: no live plan resolved for this branch — skipping`, so the trip-wire in `followup-scope.md` § Spec content never rides an unrelated ticket never ran on #460. The branch name carries no `prism-NNNN` id, so resolution falls to the slug path, which only accepts a plan whose `## Ticket` field is empty or matches `/^\s*(?:none|n\/a|tbd|unfiled)\b/i`. This plan's field opens with "No tracker ticket — dispatched directly by Sol run `architect-gate-port`" — `No` is not `none`, so the plan reads as *filed*, the candidate list comes back empty, and `findUnfiledPlanBySlug` fails closed. Any Sol-dispatched lane that writes this same honest phrasing gets the same silent skip.
+- **Suggested fix:** widen the unfiled pattern to cover the phrasing personas actually write (`no ticket`, `no tracker ticket`, `none`), or have the plan template state a fixed sentinel for the ticket-less case so the field is machine-readable rather than prose. Prefer the sentinel — widening a prose regex invites the next unmatched phrasing.
+- **Verification for the follow-up:** on a branch with no `prism-NNNN` id and a ticket-less plan, `pnpm prism:spec-scope-lint` names the resolved plan path instead of printing the skip line.
+
 ### Angle Coverage
 
 - Logic correctness: `swept` — enumeration: `adopt.ts` walkAndSeed rename inversion, `update.ts` applyFilePass/rewriteConsumerManifest rename threading, `doctor.ts` checkSeedDelivery (found the major above), `lib/seed-curation.ts` load/invert.
