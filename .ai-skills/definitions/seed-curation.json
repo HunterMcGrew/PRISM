@@ -80,11 +80,6 @@
 		"architect/_toolkit/qa-test-planning.md",
 		"architect/_toolkit/skills-ecosystem.md",
 		"architect/_toolkit/ticket-workflows.md",
-		"architect/guides/writing-a-plan.md",
-		"architect/guides/writing-a-rule.md",
-		"architect/guides/writing-a-skill.md",
-		"architect/guides/writing-an-adr.md",
-		"architect/guides/writing-an-architect-doc.md",
 		"references/architect-context.md",
 		"references/architect/plan-mode.md",
 		"references/micro-file-step-machine.md",
@@ -97,6 +92,13 @@
 		"rules/verification-commands.md",
 		"spec/adrs/_toolkit/README.md",
 		"templates/bug-report.md"
+	],
+	"mirrored": [
+		"architect/guides/writing-a-plan.md",
+		"architect/guides/writing-a-rule.md",
+		"architect/guides/writing-a-skill.md",
+		"architect/guides/writing-an-adr.md",
+		"architect/guides/writing-an-architect-doc.md"
 	],
 	"seedOnly": [],
 	"renames": {
