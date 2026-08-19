@@ -68,7 +68,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **What binds:** The ticket the plan is scoped to. A plan's `## Decisions` section is load-bearing for _that_ ticket — do not remove a documented decision without updating the section.
 
-**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/_toolkit/skills-ecosystem.md`.
+**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/_toolkit/plan-authoring.md`.
 
 **How changes are proposed:** Directly. Plans are ephemeral working memory; they do not need an ADR to edit.
 

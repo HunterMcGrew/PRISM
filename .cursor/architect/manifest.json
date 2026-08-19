@@ -56,7 +56,8 @@
 	".prism/plans/**": [
 		"_toolkit/spec-editing.md",
 		"guides/writing-a-plan.md",
-		"_toolkit/plan-authoring.md"
+		"_toolkit/plan-authoring.md",
+		"_toolkit/audit-workflow.md"
 	],
 	".prism/business/**": "_toolkit/business-layer.md",
 	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
