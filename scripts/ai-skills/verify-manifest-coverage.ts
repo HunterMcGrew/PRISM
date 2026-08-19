@@ -110,21 +110,43 @@ export function loadedDocsForScope(
 }
 
 /**
- * Returns one failure message per manifest route whose compiled matcher
- * accepts the empty string — the computable definition of "this pattern
- * constrains nothing." `compileMatcher("**")` and `compileMatcher("*")` both
- * accept `""`; `compileMatcher(".prism/**")` does not. A catch-all route
- * matches every read in the repo, which makes the write-time deny gate
- * (PR 2D) unconditional rather than scoped — the failure this check exists
- * to prevent before that gate exists. Empty array means no route is a
- * catch-all.
+ * Reports whether a route pattern is anchored to a real location: its first
+ * path segment must carry at least one literal character rather than being
+ * built entirely from wildcards.
+ *
+ * This is the property "the route constrains something," stated directly. The
+ * obvious alternative — probing the compiled matcher with the empty string —
+ * looks computable but tests something narrower. A double-star and a single
+ * star both accept the empty string and are caught by a probe. Three further
+ * spellings are not: a double-star followed by a slash and a single star, a
+ * single star followed by a slash and a double star, and two double-stars
+ * joined by a slash. Each compiles to a regex that requires a separator, so
+ * each rejects the empty string while still matching every nested path in the
+ * repo. Enumerating those spellings in a probe set closes only the ones
+ * someone thought to write down; requiring a leading literal segment closes
+ * the whole family, because a first segment made only of wildcards is exactly
+ * what lets a pattern span the entire tree.
+ *
+ * A catch-all route matches every read in the repo, which would make the
+ * write-time deny gate unconditional rather than scoped.
+ */
+function checkRouteIsAnchored(pattern: string): boolean {
+	const firstSegment = pattern.split("/")[0];
+
+	return firstSegment.replaceAll("*", "").length > 0;
+}
+
+/**
+ * Returns one failure message per manifest route that is not anchored to a
+ * leading literal segment — see `checkRouteIsAnchored`. Empty array means
+ * every route constrains something.
  */
 export function findCatchAllKeys(manifest: Manifest): string[] {
 	return Object.keys(manifest)
-		.filter((key) => compileMatcher(key)(""))
+		.filter((key) => !checkRouteIsAnchored(key))
 		.map(
 			(key) =>
-				`manifest route "${key}" matches the empty string, so it constrains nothing and matches every path — remove it or narrow it to a real prefix.`
+				`manifest route "${key}" opens with a wildcard-only path segment, so it constrains nothing and matches every path — narrow it to a real prefix.`
 		);
 }
 
@@ -163,7 +185,47 @@ export function findMissingCoverage(
 	return failures;
 }
 
+/**
+ * Every manifest the structural checks run against, relative to the repo root.
+ *
+ * All three, not just the repo's own. The `**` catch-all this gate exists to
+ * reject shipped in the consumer-facing stub, so a gate pointed only at
+ * `.prism/architect/manifest.json` would have been aimed at the one file that
+ * did not have the bug. Persona-coverage checking stays on the repo manifest
+ * below — it asserts against PRISM's own persona scopes, which the stub and
+ * the base manifest do not claim to carry.
+ */
+const STRUCTURALLY_CHECKED_MANIFESTS = [
+	".prism/architect/manifest.json",
+	".prism/architect/_toolkit/manifest.base.json",
+	"templates/install/.prism/architect/manifest.stub.json",
+];
+
 async function main(): Promise<void> {
+	const structuralFailures: string[] = [];
+	for (const relativePath of STRUCTURALLY_CHECKED_MANIFESTS) {
+		const absolutePath = path.join(repoRoot, ...relativePath.split("/"));
+		const raw = await fs.readFile(absolutePath, "utf8").catch(() => null);
+		if (raw === null) {
+			continue;
+		}
+
+		const candidate = JSON.parse(raw) as Manifest;
+		structuralFailures.push(
+			...[...findCatchAllKeys(candidate), ...findBraceGlobKeys(candidate)].map(
+				(failure) => `${relativePath}: ${failure}`
+			)
+		);
+	}
+
+	if (structuralFailures.length > 0) {
+		console.error("\nverify-manifest-coverage failed:");
+		for (const failure of structuralFailures) {
+			console.error(`  - ${failure}`);
+		}
+		process.exit(1);
+	}
+
 	const manifestPath = path.join(
 		repoRoot,
 		".prism",
@@ -172,18 +234,6 @@ async function main(): Promise<void> {
 	);
 	const raw = await fs.readFile(manifestPath, "utf8");
 	const manifest = JSON.parse(raw) as Manifest;
-
-	const structuralFailures = [
-		...findCatchAllKeys(manifest),
-		...findBraceGlobKeys(manifest),
-	];
-	if (structuralFailures.length > 0) {
-		console.error("\nverify-manifest-coverage failed:");
-		for (const failure of structuralFailures) {
-			console.error(`  - ${failure}`);
-		}
-		process.exit(1);
-	}
 
 	const result: Record<string, string[]> = {};
 	for (const persona of PERSONA_SCOPES) {

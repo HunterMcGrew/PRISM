@@ -262,6 +262,71 @@ test("runPostCompactArm: with no session id, is a no-op that does not throw", as
 
 // --- Cold-start integration leg ---
 
+/**
+ * Every property an adopted consumer must hold for hook delivery to work:
+ * the `.prism/` content landed, the runtime is present and executable, both
+ * registrations reached the consumer's settings, both state-file globs reached
+ * its `.gitignore`, and the delivered entry point runs under plain `node`.
+ *
+ * A named function rather than a block of inline assertions so the leg's
+ * negative control can break real delivered state and re-run these exact
+ * checks. A control that re-implements the assertions proves only that its
+ * copy fails.
+ */
+async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
+	await fs.access(path.join(consumerRoot, ".prism", "architect", "manifest.json"));
+	await fs.access(path.join(consumerRoot, ".prism", "SPEC.md"));
+
+	const hookPath = path.join(consumerRoot, ".claude", "hooks", "hook.mjs");
+	await fs.access(hookPath);
+	const hookStat = await fs.stat(hookPath);
+	assert.equal(
+		hookStat.mode & 0o111,
+		0o111,
+		"the delivered hook entry point is executable"
+	);
+
+	const settings = JSON.parse(
+		await fs.readFile(path.join(consumerRoot, ".claude", "settings.json"), "utf8")
+	);
+	assert.ok(settings.hooks.PostToolUse, "PostToolUse registration delivered");
+	assert.ok(settings.hooks.PostCompact, "PostCompact registration delivered");
+
+	// Both globs asserted as whole lines. A `match` on the first pattern alone
+	// also matches the `.tmp` line as a substring, so neither line would be
+	// distinctly proven.
+	const gitignoreLines = (
+		await fs.readFile(path.join(consumerRoot, ".gitignore"), "utf8")
+	)
+		.split("\n")
+		.map((line) => line.trim());
+	for (const expected of [
+		".prism/architect-route-state.*.json",
+		".prism/architect-route-state.*.json.tmp",
+	]) {
+		assert.equal(
+			gitignoreLines.filter((line) => line === expected).length,
+			1,
+			`${expected} is present exactly once in the consumer's .gitignore`
+		);
+	}
+
+	const hookInvocation = spawnSync("node", [hookPath, "--tool=claude"], {
+		input: JSON.stringify({
+			session_id: "cold-start-session",
+			cwd: consumerRoot,
+			tool_name: "Read",
+			tool_input: { file_path: path.join(consumerRoot, "README.md") },
+		}),
+		encoding: "utf8",
+	});
+	assert.equal(
+		hookInvocation.status,
+		0,
+		`the delivered hook exited non-zero under plain node: ${hookInvocation.stderr}`
+	);
+}
+
 // The claim this leg proves is POSIX-shaped and cannot hold on Windows:
 // `fs.chmod` there toggles only the read-only attribute, so a delivered
 // `hook.mjs` reports mode `0o100666` and the executable-bit assertion below
@@ -284,9 +349,12 @@ test(
 		const tarballName = packed[0].filename;
 		const tarballPath = path.join(repoRoot, tarballName);
 
-		await withTempRepo(async (extractRoot) => {
-			await withTempRepo(async (consumerRoot) => {
-				try {
+		// The cleanup wraps both `withTempRepo` calls, not the inner body: a
+		// failure inside either `mkdtemp` would otherwise leave the packed
+		// tarball sitting in the repo root.
+		try {
+			await withTempRepo(async (extractRoot) => {
+				await withTempRepo(async (consumerRoot) => {
 					await execFileAsync("tar", ["-xzf", tarballPath, "-C", extractRoot]);
 					const packageRoot = path.join(extractRoot, "package");
 
@@ -326,61 +394,45 @@ test(
 						{ cwd: consumerRoot }
 					);
 
-					await assert.doesNotReject(
-						fs.access(path.join(consumerRoot, ".prism", "architect", "manifest.json"))
-					);
-					await assert.doesNotReject(
-						fs.access(path.join(consumerRoot, ".prism", "SPEC.md"))
-					);
+					await assertAdoptedConsumerState(consumerRoot);
 
-					const hookPath = path.join(consumerRoot, ".claude", "hooks", "hook.mjs");
-					await assert.doesNotReject(fs.access(hookPath));
-					const hookStat = await fs.stat(hookPath);
-					assert.equal(
-						hookStat.mode & 0o111,
-						0o111,
-						"the delivered hook entry point is executable"
-					);
-
-					const settingsRaw = await fs.readFile(
-						path.join(consumerRoot, ".claude", "settings.json"),
+					// The negative control A7 asks for. It breaks real delivered
+					// state and confirms the very same checks that just passed
+					// now fail — so a future regression that stopped delivering
+					// the gitignore lines or the registrations could not slip
+					// past this leg. Asserting that `assert.equal(1, 2)` throws
+					// would only establish that `node:assert` works, and would
+					// still pass with this whole leg deleted.
+					const gitignorePath = path.join(consumerRoot, ".gitignore");
+					const deliveredGitignore = await fs.readFile(gitignorePath, "utf8");
+					await fs.writeFile(
+						gitignorePath,
+						deliveredGitignore
+							.split("\n")
+							.filter((line) => !line.includes("architect-route-state"))
+							.join("\n"),
 						"utf8"
 					);
-					const settings = JSON.parse(settingsRaw);
-					assert.ok(settings.hooks.PostToolUse, "PostToolUse registration delivered");
-					assert.ok(settings.hooks.PostCompact, "PostCompact registration delivered");
-
-					const gitignoreRaw = await fs.readFile(
-						path.join(consumerRoot, ".gitignore"),
-						"utf8"
+					await assert.rejects(
+						assertAdoptedConsumerState(consumerRoot),
+						"removing the delivered gitignore lines must fail this leg"
 					);
-					assert.match(gitignoreRaw, /architect-route-state\.\*\.json/);
+					await fs.writeFile(gitignorePath, deliveredGitignore, "utf8");
 
-					// Runs the delivered hook itself under plain `node`.
-					const hookInvocation = spawnSync("node", [hookPath, "--tool=claude"], {
-						input: JSON.stringify({
-							session_id: "cold-start-session",
-							cwd: consumerRoot,
-							tool_name: "Read",
-							tool_input: { file_path: path.join(consumerRoot, "README.md") },
-						}),
-						encoding: "utf8",
-					});
-					assert.equal(
-						hookInvocation.status,
-						0,
-						`the delivered hook exited non-zero under plain node: ${hookInvocation.stderr}`
+					const settingsPath = path.join(consumerRoot, ".claude", "settings.json");
+					const deliveredSettings = await fs.readFile(settingsPath, "utf8");
+					await fs.writeFile(settingsPath, JSON.stringify({ hooks: {} }), "utf8");
+					await assert.rejects(
+						assertAdoptedConsumerState(consumerRoot),
+						"dropping the delivered registrations must fail this leg"
 					);
-				} finally {
-					await fs.rm(tarballPath, { force: true });
-				}
+					await fs.writeFile(settingsPath, deliveredSettings, "utf8");
+
+					await assertAdoptedConsumerState(consumerRoot);
+				});
 			});
-		});
+		} finally {
+			await fs.rm(tarballPath, { force: true });
+		}
 	}
 );
-
-test("cold-start: deliberately broken assertion fails — a check that cannot fail is not a check", async () => {
-	await assert.rejects(async () => {
-		assert.equal(1, 2, "intentionally false — proves this suite's assertions are live");
-	});
-});

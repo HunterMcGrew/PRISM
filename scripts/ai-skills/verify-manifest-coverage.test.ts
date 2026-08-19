@@ -142,23 +142,33 @@ test("loadedDocsForScope: mixed string and array values across keys", () => {
 	]);
 });
 
-test("findCatchAllKeys: a catch-all pattern matches the empty string and is flagged", () => {
-	assert.equal(compileMatcher("**")(""), true);
-	assert.equal(compileMatcher("*")(""), true);
-	assert.equal(compileMatcher(".prism/**")(""), false);
+test("findCatchAllKeys: every wildcard-only opening segment is flagged, not just the two that match the empty string", () => {
+	// `**` and `*` accept the empty string, so an empty-string probe catches
+	// them. The other three compile to a regex requiring a separator, reject
+	// the empty string, and still match every nested path — which is why the
+	// check is a leading-literal-segment requirement rather than a probe.
+	for (const spelling of ["**", "*", "**/*", "*/**", "**/**"]) {
+		const failures = findCatchAllKeys({ [spelling]: "skills-ecosystem.md" });
+		assert.equal(
+			failures.length,
+			1,
+			`"${spelling}" opens with a wildcard-only segment and must be flagged`
+		);
+	}
 
-	const failures = findCatchAllKeys({
-		"**": "skills-ecosystem.md",
-		".prism/**": "install-layout.md",
-	});
-	assert.equal(failures.length, 1);
-	assert.match(failures[0], /"\*\*"/);
+	assert.equal(compileMatcher("**/*")(""), false);
+	assert.equal(
+		compileMatcher("**/*")("scripts/ai-skills/build.ts"),
+		true,
+		"the spelling an empty-string probe accepts still matches every nested path"
+	);
 });
 
-test("findCatchAllKeys: empty when no route matches the empty string", () => {
+test("findCatchAllKeys: empty when every route opens with a literal segment", () => {
 	const failures = findCatchAllKeys({
 		".prism/**": "install-layout.md",
 		".prism/SPEC.md": "spec-editing.md",
+		"scripts/**/*.ts": "spec-editing.md",
 	});
 	assert.deepEqual(failures, []);
 });
