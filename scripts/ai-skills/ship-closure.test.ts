@@ -17,7 +17,7 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { computeShipClosure, formatShipClosureReport } from "./ship-closure";
+import { computeShipClosure, formatShipClosureReport, resolveDefaultRoots } from "./ship-closure";
 
 const NO_TRACKED_REFS: ReadonlySet<string> = new Set();
 
@@ -264,6 +264,102 @@ test("a relative sibling link is followed, so the sibling it names is not dead w
 				"the sibling is reached through the relative link"
 			);
 			assert.deepEqual(report.shippedButExcluded, []);
+		}
+	);
+});
+
+/**
+ * A fixture pair of shipped routing tables: the consumer stub and the
+ * toolkit's base table, each routing one distinct architect doc.
+ */
+const STUB_MANIFEST_PATH = "templates/install/.prism/architect/manifest.stub.json";
+const BASE_MANIFEST_PATH = ".prism/architect/_toolkit/manifest.base.json";
+
+test("both shipped routing tables seed the closure, so neither routed doc is dead weight", async () => {
+	await withFixtureRepo(
+		{
+			[STUB_MANIFEST_PATH]: JSON.stringify({ "src/**": "stub-routed.md" }),
+			[BASE_MANIFEST_PATH]: JSON.stringify({ "lib/**": "base-routed.md" }),
+			".prism/architect/stub-routed.md": "# Stub routed\n",
+			".prism/architect/base-routed.md": "# Base routed\n",
+		},
+		async (repoRoot) => {
+			const report = await computeShipClosure({
+				repoRoot,
+				curation: { excluded: [] },
+				trackedDanglingRefs: NO_TRACKED_REFS,
+			});
+
+			assert.deepEqual(report.shippableOutsideClosure, []);
+			assert.deepEqual(report.shippedButExcluded, []);
+		}
+	);
+});
+
+test("a routing table left out of the roots strands the doc it routes to", async () => {
+	await withFixtureRepo(
+		{
+			[STUB_MANIFEST_PATH]: JSON.stringify({ "src/**": "stub-routed.md" }),
+			".prism/architect/stub-routed.md": "# Stub routed\n",
+			".prism/architect/base-routed.md": "# Base routed\n",
+		},
+		async (repoRoot) => {
+			const report = await computeShipClosure({
+				repoRoot,
+				curation: { excluded: [] },
+				trackedDanglingRefs: NO_TRACKED_REFS,
+			});
+
+			assert.deepEqual(
+				report.shippableOutsideClosure,
+				["architect/base-routed.md"],
+				"the base table is absent, so nothing reaches the doc it would have routed"
+			);
+		}
+	);
+});
+
+test("a manifest key is a match pattern, not a closure root", async () => {
+	await withFixtureRepo(
+		{
+			[STUB_MANIFEST_PATH]: JSON.stringify({ "docs/": "routed.md" }),
+			".prism/architect/routed.md": "# Routed\n",
+			"docs/site.md": "See [the note](.prism/references/note.md).\n",
+			".prism/references/note.md": "# Note\n",
+		},
+		async (repoRoot) => {
+			const roots = await resolveDefaultRoots(repoRoot);
+			assert.ok(
+				!roots.includes("docs/"),
+				"a key names the paths that trigger a doc load, not content an install contains"
+			);
+
+			const report = await computeShipClosure({
+				repoRoot,
+				curation: { excluded: ["references/note.md"] },
+				trackedDanglingRefs: NO_TRACKED_REFS,
+			});
+
+			assert.deepEqual(
+				report.shippedButExcluded,
+				[],
+				"the documentation site is not shipped, so its links are not ship-surface references"
+			);
+		}
+	);
+});
+
+test("every prism-* skill directory on disk is a root, and nothing else under skills is", async () => {
+	await withFixtureRepo(
+		{
+			".ai-skills/skills/prism-code-dev/SKILL.md": "# Clove\n",
+			".ai-skills/skills/other-tool/SKILL.md": "# Not a persona\n",
+		},
+		async (repoRoot) => {
+			const roots = await resolveDefaultRoots(repoRoot);
+
+			assert.ok(roots.includes(".ai-skills/skills/prism-code-dev"));
+			assert.ok(!roots.includes(".ai-skills/skills/other-tool"));
 		}
 	);
 });

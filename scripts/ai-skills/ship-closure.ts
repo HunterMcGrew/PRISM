@@ -87,11 +87,9 @@ export const SHIP_CLOSURE_TRACKED_DANGLING_REFS: ReadonlySet<string> = new Set([
 	"rules/skill-authoring.md",
 	"spec/adrs/_toolkit/0011-eric-never-approves-prs.md",
 	"spec/adrs/_toolkit/0014-plan-section-ownership.md",
-	"spec/adrs/_toolkit/0035-rule-loading-tiers.md",
 	"spec/adrs/_toolkit/0037-cadence-driven-personas.md",
 	"spec/adrs/_toolkit/0043-parker-prd-persona.md",
 	"spec/adrs/_toolkit/0044-direct-write-tool-outputs.md",
-	"spec/adrs/_toolkit/0045-skill-content-disclosure-model.md",
 	"spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md",
 	"spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md",
 	"spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md",
@@ -127,7 +125,7 @@ export interface ShipClosureOptions {
 	curation: SeedCurationTiers;
 	/**
 	 * Repo-relative closure roots — files are seeded directly, directories are
-	 * walked. Defaults to the four real roots via `resolveDefaultRoots`.
+	 * walked. Defaults to the computed real roots via `resolveDefaultRoots`.
 	 */
 	roots?: string[];
 	/**
@@ -181,11 +179,12 @@ async function listFilesRecursive(dir: string): Promise<string[]> {
 }
 
 /**
- * Reads one shipped routing table as a closure root in both directions: its
- * keys name paths the table points *at*, and its values name the architect
- * docs it routes *to*. Glob keys are skipped — a pattern names no single file
- * — and keys resolving outside the canonical tree drop out on the walk's own
- * existence check.
+ * Reads the architect docs one shipped routing table routes *to*.
+ *
+ * Values only. A manifest key is a match pattern for the working diff, not
+ * content an install has to contain — seeding keys as roots pulled `docs/`
+ * into the closure, and the documentation site's own links then kept tracked
+ * dangling entries alive after their real referrers were gone.
  *
  * Every shipped table is read, not just the consumer stub: a route in any
  * table a consumer receives names a doc that install has to contain, so a
@@ -209,11 +208,7 @@ async function collectManifestRoutedPaths(
 
 	const routed: string[] = [];
 
-	for (const [key, value] of Object.entries(manifest)) {
-		if (!key.includes("*")) {
-			routed.push(key);
-		}
-
+	for (const value of Object.values(manifest)) {
 		for (const doc of Array.isArray(value) ? value : [value]) {
 			if (typeof doc === "string") {
 				routed.push(path.posix.join(".prism/architect", doc));
@@ -225,9 +220,13 @@ async function collectManifestRoutedPaths(
 }
 
 /**
- * The four ship-surface roots, as repo-relative paths: the `prism-*` skills,
- * the rules, the writing guides, and the runtime (hook scripts, both shipped
- * routing tables, and `doctor`).
+ * Computes the ship-surface roots as repo-relative paths.
+ *
+ * Three groups: the fixed set below (the rules, the writing guides, and the
+ * runtime — hook scripts, both shipped routing tables, and `doctor`), every
+ * `prism-*` skill directory found on disk, and every architect doc the two
+ * shipped routing tables route to. The last two are computed, so a new
+ * persona or a new route enters the closure without editing this function.
  */
 export async function resolveDefaultRoots(repoRoot: string): Promise<string[]> {
 	const roots = [

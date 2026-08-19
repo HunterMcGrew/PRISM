@@ -529,27 +529,59 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	return findings;
 }
 
-/** Matches any `hook.mjs` path inside a `.claude/settings.json` hook command string. */
+/** Matches any `hook.mjs` path inside a parsed hook command string. */
 const HOOK_COMMAND_PATH_RE = /(\S*hook\.mjs)/g;
 
 /**
- * Resolves one hook path as written in a `settings.json` command string to an
- * absolute path. Strips the `$CLAUDE_PROJECT_DIR` prefix, which expands to the
- * repo root, along with the quotes Claude Code's command strings carry — the
- * scan reads raw file text, so those quotes arrive backslash-escaped and a
- * path that keeps the escape resolves to a file that can never exist.
+ * Resolves one hook path as written in a hook command string to an absolute
+ * path. Strips the `$CLAUDE_PROJECT_DIR` prefix, which expands to the repo
+ * root, and the quotes that wrap a path with spaces.
  *
- * Only escaped and surrounding quotes come out. A bare backslash is a Windows
- * path separator, and stripping those collapsed such a registration into one
- * token that could never match a file on disk.
+ * The command arrives from `JSON.parse`, so its escapes are already resolved
+ * and only surrounding quotes remain. A bare backslash survives: it is a
+ * Windows path separator, and stripping those collapsed such a registration
+ * into one token that could never match a file on disk.
  */
 function resolveHookCommandPath(rawPath: string, consumerRepoRoot: string): string {
-	const unquoted = rawPath.replace(/\\(["'])/g, "$1").replace(/["']/g, "");
+	const unquoted = rawPath.replace(/["']/g, "");
 	const withoutProjectDir = unquoted
 		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?\//, "")
 		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?/, "");
 
 	return path.resolve(consumerRepoRoot, withoutProjectDir);
+}
+
+/**
+ * Collects every `command` string under a parsed `settings.json`'s `hooks`
+ * block, across every event and every matcher group.
+ *
+ * Walking the parsed shape rather than scanning the file text keeps a hook
+ * path that appears in some unrelated string field out of the count, and
+ * leaves the escape handling to the parser.
+ */
+function collectHookCommands(settings: Record<string, unknown>): string[] {
+	const hooks = settings.hooks;
+	if (typeof hooks !== "object" || hooks === null) {
+		return [];
+	}
+
+	const commands: string[] = [];
+
+	for (const matchers of Object.values(hooks as Record<string, unknown>)) {
+		for (const matcher of Array.isArray(matchers) ? matchers : []) {
+			const entries = (matcher as { hooks?: unknown })?.hooks;
+
+			for (const entry of Array.isArray(entries) ? entries : []) {
+				const command = (entry as { command?: unknown })?.command;
+
+				if (typeof command === "string") {
+					commands.push(command);
+				}
+			}
+		}
+	}
+
+	return commands;
 }
 
 /**
@@ -572,14 +604,29 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
 	const settingsRaw = await readFileIfExists(settingsPath);
 
+	const findings: DoctorFinding[] = [];
 	const registeredPaths = new Set<string>();
+
 	if (settingsRaw !== null) {
-		for (const match of settingsRaw.matchAll(HOOK_COMMAND_PATH_RE)) {
-			registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+		let settings: Record<string, unknown>;
+		try {
+			settings = JSON.parse(settingsRaw) as Record<string, unknown>;
+		} catch (error) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "error",
+					message: `.claude/settings.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			];
+		}
+
+		for (const command of collectHookCommands(settings)) {
+			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
+				registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+			}
 		}
 	}
-
-	const findings: DoctorFinding[] = [];
 
 	if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
 		findings.push({

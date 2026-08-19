@@ -558,13 +558,13 @@ Branch `huntermcgrew/opus5-port-doctor-shipsurface` from PR 2C's head. Independe
 **E3. Add a hook-registration check.** A repo with `.claude/hooks/hook.mjs` present but no matching registration in `.claude/settings.json` — or a registration pointing at an absent file — is a finding. This is ADR-0072's named compensating control: the gate cannot prevent its own removal, so removal becomes visible instead. **Verify:** `doctor.test.ts` cases for both directions.
 
 **E4. Compute and enforce ship-surface closure.** New `scripts/ai-skills/ship-closure.ts`, wired into `pnpm prism:check`.
-   - **Roots:** skills (`prism-*` personas plus `prism-skill-forge`), `.prism/rules/**`, `.prism/architect/guides/**`, and the runtime (`scripts/ai-skills/hooks/**`, the stub, `doctor.ts`).
+   - **Roots are computed, not listed.** `resolveDefaultRoots` returns three groups: a fixed set (`.prism/rules/**`, `.prism/architect/guides/**`, and the runtime — `scripts/ai-skills/hooks/**`, `doctor.ts`, and both shipped routing tables), every `prism-*` skill directory found on disk, and every architect doc those two routing tables route *to*. Route **values** only — a manifest key is a match pattern for the working diff, not content an install has to contain, so seeding keys would pull the documentation site into the closure.
    - Walk repo-root-absolute markdown references transitively from the roots. The resulting closure is the ship set.
    - Fail when a file in the ship set is marked `excluded` in `seed-curation.json` (a shipped file references something consumers cannot reach), and fail when a file marked shippable is outside the closure (dead weight in the seed).
    - Reuse `crossref-lint.ts`'s reference extraction rather than writing a second parser — a second link parser is the dual-source-of-truth defect this plan already records twice.
-   - **Verify:** `pnpm prism:check` green; a unit test with a fixture tree asserting both failure directions plus a clean-closure control.
+   - **Verify:** `pnpm prism:check` green; a unit test with a fixture tree asserting both failure directions plus a clean-closure control; and, because the roots are the definition of the check rather than an argument to it, direct `resolveDefaultRoots` coverage over a fixture repo — both routing tables seeding the closure, a negative control removing one table and asserting the doc it routed becomes dead weight, and an assertion that a non-glob manifest key does **not** become a root.
 
-**E5. Trim the ship surface to the closure E4 computes.** Mark as `excluded` in `seed-curation.json` everything outside it — PRISM's own plans, self-dev ADRs, self-dev references. Everything link-reachable from the four roots ships, including `SPEC.md` (routed by the stub's first key and cited by the shipped `code-standards.md`) and Atlas's onboarding dependencies. **Do the trim after E4 lands and reports**, so the exclusion list is E4's output rather than a hand-guess. `_toolkit/spec-editing.md` is named explicitly: PR 2C left it shipping with no stub route naming it, and E5 is where it either leaves the seed or gets a route. **Verify:** `pnpm prism:check` green (its `ship-closure` stage re-runs the closure over the trimmed curation); every route value in **both** shipped routing tables — `manifest.stub.json` and `manifest.base.json` — names a file the seed contains.
+**E5. Trim the ship surface to the closure E4 computes.** Mark as `excluded` in `seed-curation.json` everything outside it — PRISM's own plans, self-dev ADRs, self-dev references. Everything link-reachable from E4's computed roots ships, including `SPEC.md` (cited by the shipped `code-standards.md`) and Atlas's onboarding dependencies. **Do the trim after E4 lands and reports**, so the exclusion list is E4's output rather than a hand-guess. `_toolkit/spec-editing.md` is named explicitly: PR 2C left it shipping with no stub route naming it, and E5 is where it either leaves the seed or gets a route. **Verify:** `pnpm prism:check` green (its `ship-closure` stage re-runs the closure over the trimmed curation); every route value in **both** shipped routing tables — `manifest.stub.json` and `manifest.base.json` — names a file the seed contains.
 ---
 
 ### PR 3 — Shared core and roster slimming
@@ -789,6 +789,7 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Bounds** — findings in chat and the plan's `## Review Issues`; no code fixes, no GitHub writes, no merge.
   - **Approach** — re-measure each claim against the tree (materialize the seed as a consumer root, run both closure controls by hand, diff every manifest's routed set against disk) rather than re-reading the reasoning that produced it.
   - **Close** — scope held. Two majors neither the brief nor clove named: the seed trim leaves `manifest.base.json` routing to a file it deleted, and the new orphan check warns on a clean install. Both are invisible to the two checks this PR adds, because each reads only one of the two shipped routing tables. Silent decisions: reviewed inline rather than fanning out to slice subagents — the diff is two source files plus their tests and one curation list, small enough that cross-file comparison was the whole job and slicing would have hidden it; did not re-run `pnpm prism:check`, taking Hunter's exit-0 ratification and both green CI legs. Edge recall: measured the both-absent hook state, the empty tracked set, the bogus tracked entry, and a dropped tracked entry — the first is silent by construction and now filed. Verification honesty: 746/746 tests, `ship-closure` exit 0 at 370 files reachable, orphan counts (6 seed / 7 canonical) and both tracked-set controls run here; the ADR-0064 scope claim and the guides twin-identity check verified at source. Not verified: that a real `prism adopt` reproduces the 6-orphan warning — I materialized the seed by hand rather than running adopt.
+- 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface] open: Intent — clear Eric's PR #464 review (2 majors, 2 minors) so the closure's roots mean what the plan says they mean and the function that defines them is exercised; Bounds — `ship-closure.ts`, `doctor.ts`, their tests, and the plan's E4/E5 text; no seed re-trim, no PR 3 work, no action on the 7-orphan follow-up; Approach — drop the key branch, let the check's own report name the tracked entries that fall out, then cover the roots directly · close: scope held. Silent decisions named: E5's "four roots" phrase and its "routed by the stub's first key" clause were corrected in the same pass, because the key branch is what made the second one true and leaving it would have re-stated the defect in prose; the existing Windows-separator test was tightened rather than duplicated, since its `claudehooks` assertion passed on the doubled-separator output it was written to catch; a malformed `settings.json` became an error finding to match `checkArchitectRoutes`, which is a new finding the raw-text scan could not produce. Edge recall: a routing table that fails to parse still degrades to no roots, a manifest value may be a bare string or an array, and a skills dir with no `prism-*` entries yields the fixed roots alone — all covered or unchanged. Verification honesty: `pnpm prism:check` exit 0; the real-repo closure re-run in both directions (336 files, all three report lists empty, `SPEC.md` reached); every new test mutation-checked — reinstating `routed.push(key)`, dropping `manifest.base.json` from the roots, and reverting the hook check to a raw-text scan each kill exactly their intended test and nothing else.
 
 ## History
 
@@ -819,6 +820,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Re-derived every C1-C8 verify line against the class Eric named — the verify line was not re-derived when the task changed underneath it — rather than against any single list. Two amendments beyond the reported findings: C5 gained a route-existence pass (`verify-manifest` is structural only), and C8 widened to `templates/` (a curated twin never regenerates). See the sweep table in `## Review Issues`.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's re-review major and three minors — `SPEC.md.tmpl` received C3's genericizing pass (six `.claude/` paths, the `plan-authoring.md` repoint, the ADR-0047 promotion wording, § Where it lives), `AGENTS.md.tmpl:119` names the `.claude/skills/**` stub key instead of generalizing it, and C3's verify now covers both twins.
 
+- 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Cleared Eric's PR 2E review — the closure now seeds route values only, so a manifest key is no longer mistaken for content and the documentation site stops propping up tracked dangling entries (372 reachable files down to 336, all three report lists empty). `resolveDefaultRoots` gained direct coverage, the hook check parses `settings.json` instead of regexing it, and E4's Roots and Verify lines were re-derived to the computation they describe.
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Cleared Briar's PR 2E review — the closure now walks both shipped routing tables, so a route in either is a promise the seed keeps, and `manifest.stub.json` routes every doc the seed ships, leaving a fresh install with no architect-route warning. Six minors fixed alongside: the unreachable manifest-basename set, the Windows-separator strip, two missing test controls, the hook check's overclaimed scope, and E1's and E5's stale verify lines.
 
 ## Review Issues
@@ -1465,6 +1467,46 @@ All 2 majors and 6 minors verified `fixed` against measurement, not against the 
 - **Sweep:** traced both assertions against the opposite implementation; `shippedButExcluded` is the only assertion `reached.md` participates in, and it would hold with the file absent.
 - **Suggested fix:** drop `reached.md`, or rename it to say it is the excluded control.
 
+### `resolveDefaultRoots` seeds manifest keys as closure roots
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/ship-closure.ts:213`
+- **Problem:** A manifest key is a match pattern for the working diff; only values name content an install must contain. Seeding non-glob keys made `docs/`, `AGENTS.md`, `build.ts`, `path-guard.ts`, `paths.json`, and `.prism/SPEC.md` roots — and `docs/` is a directory the walk expands whole. 372 files reachable with key-roots, 336 without.
+- **Consequence:** `0035-rule-loading-tiers.md` and `0045-skill-content-disclosure-model.md` stayed "still reached" only through `docs/workflow.md:59` and `docs/personas.md:360`, so the property the tracked list depends on — an entry fails as stale once the closure stops reaching it — was false for those two, and PR 3's exit condition would have read as met when it was not.
+- **Suggested fix:** return route values only; delete the two now-stale tracked entries.
+- **Fixed:** 2026-08-19 — `collectManifestRoutedPaths` iterates `Object.values`; both tracked entries removed. Closure re-run over the real repo: 336 files, `shippedButExcluded` empty, `shippableOutsideClosure` empty, `staleTrackedRefs` empty, `SPEC.md` still reached through the shipped `code-standards.md` citation. E5's trim is unchanged.
+
+### `resolveDefaultRoots` had no test coverage
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/ship-closure.test.ts`
+- **Problem:** All 10 tests passed an explicit `roots:` array and nothing in the tree called `resolveDefaultRoots`. Round 1's class fix — reading both shipped routing tables — lives entirely in that function, so a manual negative control was the only thing that had ever verified it. That is also why the Major above survived two review rounds.
+- **Suggested fix:** a fixture test covering both tables, a negative control removing one, and a regression test for the key-vs-value fix.
+- **Fixed:** 2026-08-19 — four tests added. Each was mutation-checked: reinstating `routed.push(key)` kills only the key-vs-value test; dropping `manifest.base.json` from the roots kills only the both-tables test.
+
+### `checkHookRegistration` regexes raw JSON where its sibling parses it
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/doctor.ts:547`
+- **Problem:** Reading `settings.json` as text forced hand-unstripping of escaped quotes, reported a Windows registration as `\\.claude\\hooks\\hook.mjs`, and left a malformed settings file silently miscounted rather than reported — while `checkArchitectRoutes` twenty lines up already parses its manifest and reports a parse error as a finding.
+- **Suggested fix:** `JSON.parse` plus a walk of `hooks.*[].hooks[].command`.
+- **Fixed:** 2026-08-19 — new `collectHookCommands` walks the parsed shape; the escape-stripping regex is gone and a malformed `settings.json` is now an error finding. The existing Windows test's assertion was too loose to catch the doubled separators, so it was tightened; a raw-text mutation now kills it.
+
+### E4's Roots bullet and Verify line were not re-derived when root resolution became a computation
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/opus5-port.md`, PR 2E § E4
+- **Problem:** The Roots bullet described a fixed six-item list after round 1 turned root resolution into a computation, and the Verify line was satisfiable without touching the roots at all — which is precisely why they went untested. Third instance of the class Iris named in the 2C retro.
+- **Fixed:** 2026-08-19 — the Roots bullet now states the three computed groups and the values-only rule with its reason; the Verify line now names direct `resolveDefaultRoots` coverage, the both-tables case, the removal control, and the key-is-not-a-root assertion. E5's "four roots" and its stale "routed by the stub's first key" clause were corrected in the same pass.
+
 ### Angle Coverage — re-review of `c19e03a2..f0f3dc3a`
 
 - **Runtime behavior** — `swept`. `resolveDefaultRoots` and `collectManifestRoutedPaths` (both tables, negative-controlled by a restored base route); `checkArchitectRoutes` (measured on a materialized install and the worktree root); `resolveHookCommandPath` (Windows and POSIX forms traced against both substitutions); `listMarkdownFilesRelative` (the `.md` filter traced against the deleted basename set).
@@ -1481,7 +1523,7 @@ All 2 majors and 6 minors verified `fixed` against measurement, not against the 
 
 ## PR Readiness (PR 2E — Doctor route integrity and ship-surface trim, #464)
 
-- [x] No critical or major issues — both majors verified fixed on re-review of `c19e03a2..f0f3dc3a`; 3 open minors
+- [x] No critical or major issues — Eric's 2 majors and 2 minors fixed; 3 open Briar minors carried
 - [x] Types correct — no `any`, no unsafe `as`; `prism:check-types` clean
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — the relative-link rule and the tracked-suppression path now have discriminating tests; the vacuous manifest-table test was retitled to the behavior it actually covers

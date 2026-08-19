@@ -910,6 +910,28 @@ test("runDoctor keeps Windows path separators in a dead hook registration it rep
 		assert.equal(messages.length, 1);
 		assert.match(messages[0], /\.claude/);
 		assert.doesNotMatch(messages[0], /claudehooks/);
+		assert.doesNotMatch(
+			messages[0],
+			/\\\\/,
+			"the path is reported as the consumer typed it, not with the JSON escapes still in"
+		);
+	});
+});
+
+test("runDoctor reports a settings.json that is not valid JSON", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not valid JSON/);
 	});
 });
 
