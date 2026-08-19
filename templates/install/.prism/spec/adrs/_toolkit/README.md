@@ -61,7 +61,7 @@ This direction matters: if source docs were canonical, a decision would live in 
 
 ## Writing an ADR
 
-Copy `TEMPLATE.md`, fill in the frontmatter, and write the four sections:
+Copy [`TEMPLATE.md`](./TEMPLATE.md), fill in the frontmatter, and write the four sections:
 
 1. **Context** — what forces led to this decision? What problem does it solve?
 2. **Decision** — what was decided, in plain language.
