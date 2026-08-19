@@ -23,6 +23,7 @@ import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
 import {
 	applyFilePass,
 	assertSourceIsPlausible,
+	mergeHookSettingsRegistration,
 	resolvePrismContentRoot,
 	runUpdate,
 } from "./update";
@@ -1410,4 +1411,149 @@ test("runUpdate fails fast when the consumer directory is not inside a git repos
 	} finally {
 		await fs.rm(tempRoot, { force: true, recursive: true });
 	}
+});
+
+// --- mergeHookSettingsRegistration: consumer-hook preservation ---
+
+/**
+ * PRISM's own hook registration block, mirroring
+ * `templates/install/.claude/settings.json` closely enough to exercise the
+ * merge without depending on that file's exact content.
+ */
+const PRISM_HOOK_SETTINGS = {
+	hooks: {
+		PostToolUse: [
+			{
+				matcher: "Read|Grep|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+					},
+				],
+			},
+		],
+		PostCompact: [
+			{
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PostCompact',
+					},
+				],
+			},
+		],
+	},
+};
+
+async function withHookMergeRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-hook-merge-"));
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.claude/settings.json",
+		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	try {
+		await body({ prismRepoRoot, consumerRepoRoot });
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+async function readConsumerSettings(
+	consumerRepoRoot: string
+): Promise<{ hooks?: Record<string, unknown[]> }> {
+	return JSON.parse(
+		await fs.readFile(
+			path.join(consumerRepoRoot, ".claude", "settings.json"),
+			"utf8"
+		)
+	) as { hooks?: Record<string, unknown[]> };
+}
+
+test("mergeHookSettingsRegistration: a consumer's own hook on an event PRISM also registers survives, and PRISM's is added", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		const postToolUse = settings.hooks?.PostToolUse ?? [];
+		assert.deepEqual(
+			postToolUse[0],
+			consumerOwnHook,
+			"the consumer's own PostToolUse entry must survive the merge"
+		);
+		assert.equal(
+			postToolUse.length,
+			2,
+			"PRISM's PostToolUse entry must be added alongside the consumer's"
+		);
+		assert.ok(
+			JSON.stringify(postToolUse[1]).includes(".claude/hooks/hook.mjs"),
+			"the second entry must be PRISM's own registration"
+		);
+		assert.ok(
+			settings.hooks?.PostCompact,
+			"PostCompact is added outright since the consumer never registered it"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: running twice does not duplicate PRISM's entry or drift the consumer's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const firstPass = await readConsumerSettings(consumerRepoRoot);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const secondPass = await readConsumerSettings(consumerRepoRoot);
+
+		assert.deepEqual(
+			secondPass,
+			firstPass,
+			"a repeat merge must be a no-op byte-for-byte, not just entry-count-stable"
+		);
+		assert.equal(
+			secondPass.hooks?.PostToolUse?.length,
+			2,
+			"the consumer entry plus exactly one PRISM entry — no duplicate PRISM registration"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer with no prior settings file receives PRISM's registration untouched", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(settings.hooks?.PostToolUse?.length, 1);
+		assert.equal(settings.hooks?.PostCompact?.length, 1);
+	});
 });

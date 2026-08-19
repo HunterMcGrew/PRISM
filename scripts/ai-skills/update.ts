@@ -1000,15 +1000,70 @@ async function refreshHookRuntime(
 }
 
 /**
- * Merges the hook registration block from `templates/install/.claude/settings.json`
- * into the consumer's `.claude/settings.json` — a shallow merge over the top
- * level `hooks` key, additive only. A consumer's own hooks (any event name
- * other than `PostToolUse`/`PostCompact`, or a `PostToolUse` matcher this
- * merge does not already own) are left untouched; re-running this merge is
- * idempotent because the merged block always replaces its own two keys with
- * the same content rather than appending duplicates.
+ * The path segment that identifies a hook registration entry as PRISM's own.
+ * Every entry point runs through `.claude/hooks/hook.mjs` regardless of
+ * event or matcher, so a command string containing this segment is PRISM's
+ * registration and anything else on the same event key is the consumer's.
  */
-async function mergeHookSettingsRegistration(
+const HOOK_ENTRY_POINT_MARKER = ".claude/hooks/hook.mjs";
+
+/**
+ * Reports whether a `hooks[eventName]` array entry is one of PRISM's own
+ * registrations (identified by `HOOK_ENTRY_POINT_MARKER`), as opposed to a
+ * consumer-authored entry on the same event key.
+ */
+function isPrismOwnedHookEntry(entry: unknown): boolean {
+	if (typeof entry !== "object" || entry === null) {
+		return false;
+	}
+
+	const innerHooks = (entry as { hooks?: unknown }).hooks;
+	if (!Array.isArray(innerHooks)) {
+		return false;
+	}
+
+	return innerHooks.some(
+		(innerHook) =>
+			typeof innerHook === "object" &&
+			innerHook !== null &&
+			typeof (innerHook as { command?: unknown }).command === "string" &&
+			(innerHook as { command: string }).command.includes(
+				HOOK_ENTRY_POINT_MARKER
+			)
+	);
+}
+
+/**
+ * Composes one event key's registration array: the consumer's own entries
+ * (anything that isn't a PRISM-owned entry per `isPrismOwnedHookEntry`),
+ * followed by PRISM's current entries for that event. Dropping the prior
+ * PRISM entries before appending the current ones is what keeps repeat runs
+ * idempotent — a stale PRISM entry never survives alongside its replacement,
+ * and no entry is appended twice.
+ */
+function mergeHookEventEntries(
+	targetEntries: unknown,
+	sourceEntries: unknown[]
+): unknown[] {
+	const consumerEntries = Array.isArray(targetEntries)
+		? targetEntries.filter((entry) => !isPrismOwnedHookEntry(entry))
+		: [];
+
+	return [...consumerEntries, ...sourceEntries];
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.claude/settings.json`
+ * into the consumer's `.claude/settings.json`. The top-level `hooks` key is
+ * additive: an event name the consumer hasn't registered is added outright,
+ * and an event name both sides register (`PostToolUse`, `PostCompact`) is
+ * composed within its array via `mergeHookEventEntries` rather than replaced
+ * — a consumer's own matcher group on that event survives the merge instead
+ * of being overwritten by PRISM's. Re-running this merge is idempotent:
+ * `mergeHookEventEntries` drops PRISM's own prior entries before appending
+ * the current ones, so no entry is ever duplicated.
+ */
+export async function mergeHookSettingsRegistration(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
 	dryRun: boolean
@@ -1026,7 +1081,7 @@ async function mergeHookSettingsRegistration(
 	}
 
 	const sourceSettings = JSON.parse(sourceRaw) as {
-		hooks?: Record<string, unknown>;
+		hooks?: Record<string, unknown[]>;
 	};
 	if (!sourceSettings.hooks) {
 		return;
@@ -1038,7 +1093,15 @@ async function mergeHookSettingsRegistration(
 		targetRaw === null ? {} : JSON.parse(targetRaw)
 	) as { hooks?: Record<string, unknown> };
 
-	const mergedHooks = { ...targetSettings.hooks, ...sourceSettings.hooks };
+	const mergedHooks = { ...targetSettings.hooks };
+	for (const [eventName, sourceEntries] of Object.entries(
+		sourceSettings.hooks
+	)) {
+		mergedHooks[eventName] = mergeHookEventEntries(
+			targetSettings.hooks?.[eventName],
+			sourceEntries
+		);
+	}
 	const merged = { ...targetSettings, hooks: mergedHooks };
 
 	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
