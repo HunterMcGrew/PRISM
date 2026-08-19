@@ -1,3 +1,6 @@
+// @prism-hook-runtime — PRISM delivers this file into a consumer's `.claude/hooks/`.
+// A copy carrying this line is PRISM's own and is replaced in place; one without it
+// is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
  * Compiles a manifest key into a matcher. Three shapes are supported,
  * matching the patterns in use across the current manifest:

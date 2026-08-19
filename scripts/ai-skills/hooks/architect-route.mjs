@@ -1,3 +1,6 @@
+// @prism-hook-runtime — PRISM delivers this file into a consumer's `.claude/hooks/`.
+// A copy carrying this line is PRISM's own and is replaced in place; one without it
+// is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
  * Read-triggered architect-context routing (plan `opus5-port.md` task A2,
  * ADR-0071).
