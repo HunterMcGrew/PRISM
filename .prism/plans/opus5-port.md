@@ -713,3 +713,31 @@ Every evidence command below was reasoned against this plan's own task list befo
 - [ ] Lasting decisions promoted to architect context — all `## Decisions` entries above carry "→ promotion verdict pending close," correctly deferred to plan close rather than PR 1
 
 **Last updated:** 2026-08-13
+
+---
+
+### `refreshHookRuntime`'s settings merge can silently drop a consumer's own `PostToolUse`/`PostCompact` hook
+
+- **Axis:** standards
+- **Severity:** major
+- **Status:** open
+- **File:** `scripts/ai-skills/update.ts:1041` (`mergeHookSettingsRegistration`)
+- **Problem:** the merge is `{ ...targetSettings.hooks, ...sourceSettings.hooks }` — a shallow merge at the top level of `hooks`. For an event name PRISM doesn't register (e.g. a consumer's own `SessionStart` hook), this is additive and safe. For `PostToolUse` and `PostCompact` — the two names PRISM does register — a consumer's own pre-existing array for that same event name is replaced wholesale by PRISM's array, not merged into it. The function's own docstring says "never overwriting an existing registration block," which is true for other event names but false for these two. Task A5's plan text ("merge the registration block … never overwrite it") reads as the same overwrite-anything-existing intent the docstring states, and the current shape doesn't fully deliver it.
+- **Class:** shallow-merge-drops-sibling-array — a two-level structure (`hooks.<eventName>[]`) merged only at the top level, so writing a new value for a key a consumer might already occupy discards their content instead of composing with it.
+- **Sweep:** `grep -rln "mergeHookSettingsRegistration\|refreshHookRuntime" scripts/` returns only `update.ts` itself — no test file references either function, so there is no coverage proving the "never overwrite" claim, and none catching a regression on it. The cold-start integration leg in `hook-gate.test.ts` doesn't reach this either — it runs `adopt` into a fresh consumer with no pre-existing `.claude/settings.json`, so the merge always takes the "target has no `hooks`" branch there.
+- **Suggested fix:** either merge within the event-name array (append PRISM's hook object only if an equivalent one isn't already present) or detect a foreign registration under the same event name and warn/preserve it alongside PRISM's rather than replacing it. Add a test seeding a consumer `.claude/settings.json` with a pre-existing `PostToolUse` array for an unrelated tool and asserting it survives the merge.
+
+### Angle Coverage
+
+- Structural: `swept` — diff limited to the 24 files in the pinned range; no structural surprises beyond the settings-merge finding above.
+- Contract: `swept` — `HarnessSpec`/`HARNESSES`, `compileMatcher`, `resolveArchitectNag`, `runPostToolUseArm`/`runPostCompactArm` signatures inspected directly; match plan A1/A2/A4 specs.
+- Behavioral: `swept` — announce-once, foreign-payload guard, no-session-id no-op, `PRISM_HOOK_DISABLE=1`, catch-all/brace-glob rejection all read and cross-checked against their test cases.
+- State/lifecycle: `swept` — state file location, atomic write, 24h prune, `read`/`announced` array semantics all verified against `architect-route.mjs` directly (unchanged from the pre-existing implementation plus the new `announced` array, per Decision).
+- Security: `swept` — no deny arm shipped (confirmed via grep for `PreToolUse`/`deny` across the hook runtime and both `settings.json` files); `.gitignore` append is append-only and idempotent; no secrets or credentials touched.
+- Performance: `swept` — no new hot paths; hook runs once per matched tool call, same shape as the pre-existing TS version.
+- Test coverage: `swept` — 20/20 tests ported from `architect-route.test.ts`, all 6 folded from `claude-post-read.test.ts` into `hook-gate.test.ts` under new names, cold-start leg genuinely runs `npm pack` output (2.3s in a live run, not a stub) — but see the settings-merge finding above for the one gap this axis found.
+- Spec and doc consistency: `swept` — every A1–A8 citation traced against the landed code; no divergence from plan intent found beyond the merge gap.
+- Citation integrity: `swept` — Decisions' cross-references (ADR-0071, #457, tsconfig measurement) checked against the actual diff; the reversed tsconfig Decision is correctly reflected in the diff (no tsconfig edit present).
+- Docs impact: `n/a` — no `docs/` surface touches this diff.
+
+**Last updated:** 2026-08-18
