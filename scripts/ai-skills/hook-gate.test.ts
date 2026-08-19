@@ -262,9 +262,17 @@ test("runPostCompactArm: with no session id, is a no-op that does not throw", as
 
 // --- Cold-start integration leg ---
 
+// The claim this leg proves is POSIX-shaped and cannot hold on Windows:
+// `fs.chmod` there toggles only the read-only attribute, so a delivered
+// `hook.mjs` reports mode `0o100666` and the executable-bit assertion below
+// can never pass. The leg also shells out to `tar` and spends most of a 120s
+// budget inside `npm pack` (which runs `prepack: prism:bundle`), which is not
+// a budget a Windows runner reliably meets. Both other CI legs run it.
+const skipColdStartOnWindows = process.platform === "win32";
+
 test(
 	"cold-start: a packaged tarball delivers a working hook into a fresh consumer with no node_modules",
-	{ timeout: 120_000 },
+	{ timeout: 120_000, skip: skipColdStartOnWindows },
 	async () => {
 		const packOutput = await execFileAsync("npm", ["pack", "--json"], {
 			cwd: repoRoot,
