@@ -711,6 +711,85 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Review Issues
 
+### `AGENTS.md.tmpl` describes a consumer routing table C4 deleted
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/AGENTS.md.tmpl:119`
+- **Problem:** The consumer's always-read root instruction file tells every new consumer that "manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load [`spec-editing.md`] alongside `.prism/architect/_toolkit/skills-ecosystem.md`." After C4 rewrote `manifest.stub.json`, the consumer stub routes none of those paths to either doc — `spec-editing.md` is named by zero stub routes and `skills-ecosystem.md` was dropped from the `.prism/**` catch-all. The sentence is now false for every fresh install.
+- **Class:** `changed-behavior whose prose home shares no symbol with the change` (`code-standards.md` § Removal and rename completeness)
+- **Sweep:** `grep -rn "spec-editing" templates/ .ai-skills/definitions/seed-curation.json` plus a set-difference of stub route values before/after (`d5f77f13` vs `5b6fd401`). Two more prose homes found, both listed below; `manifest.base.json` also still carries the old routes but is PRISM's own base, not the consumer's, so it is correct as-is.
+- **Suggested fix:** Rewrite the sentence to name the guide routes the stub now carries, or cut the routing-table claim and leave the standards statement.
+
+### `.prism/SPEC.md` points at `skills-ecosystem.md` for a table C1 moved
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/SPEC.md:71`
+- **Problem:** Reads "per the Plan Section Ownership table in `.prism/architect/_toolkit/skills-ecosystem.md`." C1 moved `## Plan Section Ownership` into `_toolkit/plan-authoring.md`; `skills-ecosystem.md` no longer contains it. `SPEC.md` is in this PR's diff (C3) and C3's own framing makes it a shipped, routed, deny-gated document, so the stale pointer is one a forced read will deliver.
+- **Class:** `section moved, file-path reference still resolves` — `crossref-lint` validates paths, not section anchors, which is why the build stayed green.
+- **Sweep:** `grep -rn "skills-ecosystem.md" --include=*.md .prism/ templates/ .ai-skills/ | grep -v /plans/` then matched each hit's named section against the post-split `## ` headings of `skills-ecosystem.md`. All other hits name § Project Context, § Skill Roster, § Cross-skill Handoffs, or § Rules for All Skills — sections that stayed. This is the only miss.
+- **Suggested fix:** Repoint to `_toolkit/plan-authoring.md`.
+
+### Lesson promotion taxonomy is no longer routed to the persona that owns it
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/manifest.json` — the `.prism/plans/**` route
+- **Problem:** C1 moved `## Lessons` and `### Lesson promotion taxonomy` into `_toolkit/audit-workflow.md`, which is routed only from `.prism/lessons.md`, `.prism/archived/**`, `.prism/audit-state.json`, and `.prism/audits/**`. Lesson promotion happens at plan close, editing `.prism/plans/**` — a path that routes to `spec-editing.md`, `writing-a-plan.md`, and `plan-authoring.md`, none of which carry the taxonomy. Pre-split it arrived automatically through `.prism/**` → `skills-ecosystem.md`.
+- **Class:** `content moved out of its reader's route`
+- **Sweep:** Enumerated every route pattern in `.prism/architect/manifest.json` against the four post-split files. `matchDocsForPath` unions all matching patterns rather than most-specific-wins, so this is the only reader whose content set shrank against its job; every other route strictly reduced load without losing a section it needs.
+- **Suggested fix:** Add `_toolkit/audit-workflow.md` to the `.prism/plans/**` route.
+
+### `spec-editing.md` ships to consumers with no route naming it
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/spec-editing.md`
+- **Problem:** C4 removed the only stub routes that named this doc. It still ships in the install seed, so a consumer receives a document the routing layer can never surface. The guide this same PR wrote — `writing-an-architect-doc.md` § Route-add is part of authoring — states a doc under `.prism/architect/` is not done until a route names it, so the PR contradicts its own new rule on the consumer surface.
+- **Class:** `orphaned ship-surface artifact`
+- **Sweep:** Set-differenced every stub route value against every `.md` under `templates/install/.prism/architect/`. `spec-editing.md` is the only doc this PR newly orphaned; `business-layer.md`, `qa-test-planning.md`, `onboarding.md`, `stack-detection.md`, `rule-generation.md`, `anchor-substitution.md`, and `closing-messages.md` were already unrouted in the stub on `main`. The two new curated twins (`ticket-workflows.md`, `plan-authoring.md`) also ship unrouted in the stub.
+- **Suggested fix:** PR 2E's ship-surface trim is the natural home. Either drop it from the seed there or give it a stub route — but record the disposition now so the contradiction is deliberate rather than missed.
+
+### Consumer `business-layer.md` describes the pre-C4 catch-all
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/business-layer.md:107`
+- **Problem:** States "The broader `.prism/**` catch-all still loads `install-layout.md` and `skills-ecosystem.md`; `spec-editing.md` loads via that catch-all too." The consumer stub's `.prism/**` route is now `_toolkit/install-layout.md` alone. The `spec-editing.md` half of the claim was already wrong before this PR (no catch-all ever loaded it); the `skills-ecosystem.md` half is newly wrong.
+- **Class:** same as the `AGENTS.md.tmpl` finding — prose home of a routing fact, no shared symbol with the change.
+- **Sweep:** covered by the `AGENTS.md.tmpl` sweep above.
+- **Suggested fix:** Correct to name only `install-layout.md`, and drop the `spec-editing.md` sentence.
+
+### C6's verify command as written in the plan cannot return empty
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md` — task C6's **Verify:** line
+- **Problem:** Specifies `grep -rn "does not write your \`.gitignore\`" .prism/ templates/` returns nothing. Six hits remain, all inside `.prism/plans/` — append-only `## History`, `## Decisions`, and `## Review Issues` text that quotes the old policy and cannot be edited out. The target files (`install-layout.md` and its seed twin) are clean, so the task is done; the verify text is what is wrong. C8's verify already carries the `| grep -v '/plans/'` exclusion this one omits.
+- **Class:** `verify command scoped wider than the task it gates`
+- **Sweep:** Ran both the plan's literal command and the `/plans/`-excluded form. Excluded form returns nothing; the six remaining hits are in `followup-seed-twin-install-layout.md` (3) and `opus5-port.md` (3), all historical.
+- **Suggested fix:** Append `| grep -v '/plans/'` to C6's verify, matching C8.
+
+### Angle Coverage
+
+- **Correctness / logic:** `swept` — the C4 route fork traced through `filterDocsOnDisk` (`path.join` normalizes `../`, so the route resolves) and `extractArchitectDocPath` (credits only paths under `.prism/architect/`, so a `.prism/references/` guide never enters the `read` array PR 2D clears against). Eli's fallback call is correct and correctly reasoned. One wording note: announce-once bookkeeping means such a guide would announce once per session, not "forever" — the unsatisfiable-deny consequence is the real defect and the plan's Decision states it accurately.
+- **Type safety:** `n/a` — no typed source changed beyond one test file.
+- **Edge cases:** `swept` — empty-string routes (none; every stub key non-empty), routes naming absent docs (none; verified by the new `hook-gate.test.ts` case and independently by set-difference), guide self-announcement (credited before filtering, so it does not fire).
+- **Abstraction / duplication:** `swept` — the four-way split enumerated per route pattern; no route loads three halves, no route loads both `ticket-workflows.md` and `plan-authoring.md`, and every route's load strictly decreased. `output-guards.md` at 44 lines earns its own file because `excluded` is per-file granularity.
+- **Spec and doc consistency:** `swept` — C1–C8 each checked against its own verify. C3 (`grep -c '\.claude/' .prism/SPEC.md` = 0), C6 (target files clean), C7 (curation entries confirmed), C8 (`claude-post-read` gone outside plans) pass. Two stale cross-references found and filed above.
+- **Citation integrity:** `swept` — three ADR citations stripped from the consumer twins, each verified self-contained (the rule and its reason survive in the sentence; only the pointer to the decision record went). `install-adr-gate` confirmed to forbid `/ADR-\d{4}/` on the install surface, so the stripping was forced rather than discretionary. Eli's report said four; the count is three plus one non-ADR path reference to `.prism/skills/**`, which never ships.
+- **Removals and renames:** `swept` — tree-wide search for `skills-ecosystem.md` and `spec-editing.md` across `.md`, `.tmpl`, and `.json`. Three stale prose homes found, all filed above.
+- **Docs impact:** `swept` — this PR is the docs change; three doc corrections filed.
+- **Tests:** `swept` — one new case (`every consumer stub route names a doc the install seed actually carries`). It asserts existence, resolved the way `filterDocsOnDisk` resolves. `pnpm prism:check` exit 0.
+
+
 ### `demand-elegance.md`'s condition-gate rewrite leaves two near-duplicate bullets
 
 - **Severity:** minor
@@ -896,3 +975,16 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 **Last updated:** 2026-08-18
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Closing ceremony — PR 2A decisions swept (2 promoted to `install-layout.md` and its seed twin, 2 promoted to ADR-0071, 9 closed as no-promotion here plus 4 already carrying verdicts, 9 left pending against the PR that resolves each), 1 lesson captured (cross-step contracts), threads clear. Recorded a new Decision deferring Cursor and Codex hook delivery out of this stack with an exit condition, and corrected the announce-once Decision's harness claim, which stated host capability in a way that read as delivery coverage. Task D4 reduced to deny-side coverage — its `PostCompact` reset already shipped in 2A.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: PR 2C — split `skills-ecosystem.md` into `ticket-workflows.md`, `plan-authoring.md`, and `output-guards.md` (Lessons appended to `audit-workflow.md`), wrote the five writing guides, genericized `SPEC.md`, and repointed the stub's routes at the guides. The consumer twin was split to match, and its two new halves are curated twins like their parent. See Decision: guide placement resolves to `.prism/architect/guides/`.
+
+## PR Readiness (PR 2C — Writing guides and doc splits, #463)
+
+- [ ] No critical or major issues — 2 major open (`AGENTS.md.tmpl:119`, `.prism/SPEC.md:71`)
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — one stub-route integrity case; confirmed to fail when a route names a missing doc
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — `pnpm prism:check` exit 0, 2026-08-19
+- [ ] PR description up to date — reconfirm after the two majors land
+- [x] Lasting decisions promoted to architect context — both PR 2C Decisions carry `no promotion needed` verdicts with reasons
+
+**Last updated:** 2026-08-19
