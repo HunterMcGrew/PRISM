@@ -595,6 +595,18 @@ test("parseShellReadTargets: the documented gaps yield no targets rather than a 
 	assert.deepEqual(parseShellReadTargets(undefined), []);
 });
 
+test("parseShellReadTargets: a command separator that is not punctuation still bails", () => {
+	assert.deepEqual(
+		parseShellReadTargets("cat docs/one.md\ngrep alpha docs/two.md"),
+		[]
+	);
+	assert.deepEqual(
+		parseShellReadTargets("cat docs/one.md\r\ngrep alpha docs/two.md"),
+		[]
+	);
+	assert.deepEqual(parseShellReadTargets("cat docs/one.md # a note"), []);
+});
+
 test("runPostToolUseArm: every shell read form announces the routed doc", async () => {
 	for (const form of ["cat", "head -n 20", "tail -20", "sed -n '1,20p'", "less", "more"]) {
 		await withTempRepo(async (repoRoot) => {

@@ -42,12 +42,15 @@
  * share: the target path lives at `tool_input.file_path` on every one of
  * them.
  *
- * Search tools are the one exception — a `Grep` names its haystack at
- * `tool_input.path` and carries no `file_path` at all — so that field is
- * the fallback. It is a fallback rather than a separate accessor because no
- * observed tool sends both, and a search over a routed directory is worth
- * announcing even though it never credits (see `hook.mjs`'s target
- * resolution).
+ * Any tool that names its target at `tool_input.path` instead reaches it
+ * through the fallback — a `Grep` names its haystack there and carries no
+ * `file_path` at all, and so does `Glob` and anything else of that shape.
+ * The fallback is deliberately unconditional rather than scoped to the
+ * search kinds: a tool reaching it through the `write` default is announced
+ * and never credited either way, so the widest form costs announce traffic
+ * over a routed path and nothing else. It is a fallback rather than a
+ * separate accessor because no observed tool sends both fields (see
+ * `hook.mjs`'s target resolution for which kinds credit).
  *
  * @param {HookPayload} payload
  * @returns {string[]}

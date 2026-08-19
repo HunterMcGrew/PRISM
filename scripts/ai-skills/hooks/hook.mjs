@@ -44,9 +44,18 @@ import { HARNESSES, resolveToolKind } from "./harnesses.mjs";
  * is. Pipelines, redirects, chained commands, and command substitution all
  * land here, and they are deliberately out of scope.
  *
+ * Newlines and `#` sit in the set for the same reason, and they matter more
+ * than they look. A newline separates commands, so a multi-line call whose
+ * first line is a bare `cat` would otherwise parse as one `cat` over every
+ * bare token on every later line — crediting as fully read a routed doc that
+ * was only some later `grep`'s haystack. `#` opens a comment, whose words are
+ * not paths either. Multi-line commands are routine agent behavior, and
+ * crediting an unread document is the one direction this channel treats as
+ * unacceptable.
+ *
  * @type {RegExp}
  */
-const SHELL_CONTROL_CHARACTERS = /[|&;<>`]|\$\(/;
+const SHELL_CONTROL_CHARACTERS = /[|&;<>`#\n\r]|\$\(/;
 
 /** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
  * @type {Set<string>}
