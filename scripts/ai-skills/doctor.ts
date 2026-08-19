@@ -450,6 +450,16 @@ async function listMarkdownFilesRelative(dir: string): Promise<string[]> {
 	return found.sort();
 }
 
+/**
+ * The toolkit's base routing table, relative to `.prism/architect/`.
+ *
+ * An install receives two routing tables, and a doc named by either one is
+ * reachable. Reading only `manifest.json` would report every doc the base
+ * table routes as an orphan, and would also let a dead base route pass — the
+ * same split that made `ship-closure` miss a routing surface.
+ */
+const TOOLKIT_BASE_MANIFEST_RELATIVE = "_toolkit/manifest.base.json";
+
 /** Collects every doc path a manifest routes to, flattening single-string and array values. */
 function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
 	const routed = new Set<string>();
@@ -475,6 +485,10 @@ function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
  * and never routed, so nothing ever loads it; without the dead-route half,
  * adding a route at authoring time is aspirational rather than verifiable —
  * a typo'd route reads as healthy.
+ *
+ * "Routed" means named by either shipped table — `manifest.json` or the
+ * toolkit's `_toolkit/manifest.base.json` — so both directions agree with
+ * `ship-closure`, which seeds its roots from the same pair.
  *
  * Returns no findings when the architect tree or its manifest is absent.
  * `checkSeedDelivery` already reports a missing `architect/manifest.json`
@@ -503,6 +517,27 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	}
 
 	const routed = collectRoutedDocs(manifest);
+
+	const baseRaw = await readFileIfExists(path.join(architectDir, TOOLKIT_BASE_MANIFEST_RELATIVE));
+	if (baseRaw !== null) {
+		let base: Record<string, unknown>;
+		try {
+			base = JSON.parse(baseRaw) as Record<string, unknown>;
+		} catch (error) {
+			return [
+				{
+					check: "architect-route",
+					severity: "error",
+					message: `.prism/architect/${TOOLKIT_BASE_MANIFEST_RELATIVE} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			];
+		}
+
+		for (const doc of collectRoutedDocs(base)) {
+			routed.add(doc);
+		}
+	}
+
 	const onDisk = await listMarkdownFilesRelative(architectDir);
 	const onDiskSet = new Set(onDisk);
 

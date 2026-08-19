@@ -817,6 +817,56 @@ test("runDoctor skips non-Markdown files in the architect tree, so a routing tab
 	});
 });
 
+test("runDoctor treats a doc routed only by the toolkit base table as reached, not an orphan", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+			"_toolkit/base-only.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			`${JSON.stringify({ ".prism/templates/**": "_toolkit/base-only.md" })}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			architectMessages(report.findings),
+			[],
+			"the base table's route counts as routed"
+		);
+	});
+});
+
+test("runDoctor reports a base-table route naming a doc that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			`${JSON.stringify({ ".prism/templates/**": "_toolkit/base-gone.md" })}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not on disk/);
+		assert.match(messages[0], /_toolkit\/base-gone\.md/);
+	});
+});
+
 // --- hook registration ---
 
 function hookFindings(findings: Array<{ check: string; message: string }>): string[] {

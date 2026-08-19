@@ -248,20 +248,20 @@ test("a relative sibling link is followed, so the sibling it names is not dead w
 		{
 			".prism/rules/entry.md": "See [the sibling](./sibling.md).\n",
 			".prism/rules/sibling.md": "# Sibling\n",
-			".prism/references/reached.md": "# Reached\n",
+			".prism/rules/unlinked.md": "# Unlinked\n",
 		},
 		async (repoRoot) => {
 			const report = await computeShipClosure({
 				repoRoot,
 				roots: [".prism/rules/entry.md"],
-				curation: { excluded: ["references/reached.md"] },
+				curation: { excluded: [] },
 				trackedDanglingRefs: NO_TRACKED_REFS,
 			});
 
 			assert.deepEqual(
 				report.shippableOutsideClosure,
-				[],
-				"the sibling is reached through the relative link"
+				["rules/unlinked.md"],
+				"the sibling is reached through the relative link; only the unlinked file is dead weight"
 			);
 			assert.deepEqual(report.shippedButExcluded, []);
 		}
