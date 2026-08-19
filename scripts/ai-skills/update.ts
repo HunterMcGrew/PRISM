@@ -535,6 +535,8 @@ export async function runUpdate(
 		dryRun
 	);
 
+	await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, dryRun);
+
 	const ruleLoadScan = await scanConsumerRuleLoad(
 		consumerContentRoot,
 		overlayContentRoot,
@@ -946,6 +948,139 @@ async function refreshPlatformDirs(
 			tokenMap,
 			OVERLAY_SUBPATH
 		);
+	}
+}
+
+/** Entry-point files under the copied hook runtime that need the executable bit. */
+const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
+
+/** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the two hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
+const HOOK_STATE_GITIGNORE_LINES = [
+	".prism/architect-route-state.*.json",
+	".prism/architect-route-state.*.json.tmp",
+];
+
+/**
+ * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`,
+ * merges its registration into the consumer's `.claude/settings.json` (never
+ * overwriting an existing registration block), and appends the two hook
+ * state-file globs to the consumer's `.gitignore`. Shared by `prism:adopt`
+ * and `prism:update` through this one `runUpdate` seam, so both inherit the
+ * same delivery path.
+ *
+ * Before this seam, the hook source lived only in PRISM's own repo — a
+ * consumer running `prism adopt` or `prism update` never received it, so the
+ * registration in `templates/install/.claude/settings.json` pointed at a
+ * file that never existed on their disk. See plan `opus5-port.md` task A5.
+ */
+async function refreshHookRuntime(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const sourceDir = path.join(prismRepoRoot, "scripts", "ai-skills", "hooks");
+	if (!(await pathExists(sourceDir))) {
+		return;
+	}
+
+	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
+
+	if (!dryRun) {
+		await fs.cp(sourceDir, targetDir, { recursive: true });
+		for (const entryPoint of HOOK_RUNTIME_ENTRY_POINTS) {
+			const entryPointPath = path.join(targetDir, entryPoint);
+			if (await pathExists(entryPointPath)) {
+				await fs.chmod(entryPointPath, 0o755);
+			}
+		}
+	}
+
+	await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun);
+	await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.claude/settings.json`
+ * into the consumer's `.claude/settings.json` — a shallow merge over the top
+ * level `hooks` key, additive only. A consumer's own hooks (any event name
+ * other than `PostToolUse`/`PostCompact`, or a `PostToolUse` matcher this
+ * merge does not already own) are left untouched; re-running this merge is
+ * idempotent because the merged block always replaces its own two keys with
+ * the same content rather than appending duplicates.
+ */
+async function mergeHookSettingsRegistration(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const sourcePath = path.join(
+		prismRepoRoot,
+		"templates",
+		"install",
+		".claude",
+		"settings.json"
+	);
+	const sourceRaw = await readFileIfExists(sourcePath);
+	if (sourceRaw === null) {
+		return;
+	}
+
+	const sourceSettings = JSON.parse(sourceRaw) as {
+		hooks?: Record<string, unknown>;
+	};
+	if (!sourceSettings.hooks) {
+		return;
+	}
+
+	const targetPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const targetRaw = await readFileIfExists(targetPath);
+	const targetSettings = (
+		targetRaw === null ? {} : JSON.parse(targetRaw)
+	) as { hooks?: Record<string, unknown> };
+
+	const mergedHooks = { ...targetSettings.hooks, ...sourceSettings.hooks };
+	const merged = { ...targetSettings, hooks: mergedHooks };
+
+	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
+		return;
+	}
+
+	if (!dryRun) {
+		await fs.mkdir(path.dirname(targetPath), { recursive: true });
+		await fs.writeFile(targetPath, `${JSON.stringify(merged, null, "\t")}\n`, "utf8");
+	}
+}
+
+/**
+ * Appends `HOOK_STATE_GITIGNORE_LINES` to the consumer's `.gitignore`,
+ * creating the file if absent. Append-only and idempotent — a line already
+ * present is never duplicated, and nothing else in the file is touched.
+ *
+ * This is a narrow, deliberate reversal of the "PRISM does not write your
+ * `.gitignore` for you" policy (`install-layout.md § Consumer overlay`,
+ * corrected in the same PR stack — task C6): the hook's per-session state
+ * files would otherwise dirty every consumer's working tree on first use.
+ */
+async function appendHookStateGitignoreLines(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const gitignorePath = path.join(consumerRepoRoot, ".gitignore");
+	const current = (await readFileIfExists(gitignorePath)) ?? "";
+	const existingLines = new Set(current.split("\n").map((line) => line.trim()));
+
+	const missing = HOOK_STATE_GITIGNORE_LINES.filter(
+		(line) => !existingLines.has(line)
+	);
+	if (missing.length === 0) {
+		return;
+	}
+
+	const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+	const next = `${current}${separator}${missing.join("\n")}\n`;
+
+	if (!dryRun) {
+		await fs.writeFile(gitignorePath, next, "utf8");
 	}
 }
 

@@ -23,6 +23,7 @@
 		".prism/SPEC.md",
 		".prism/.sync-manifest.json",
 		"templates/install/",
+		"scripts/ai-skills/hooks/",
 		".ai-skills/skills/",
 		".ai-skills/definitions/roles.json",
 		".ai-skills/definitions/paths.json",
