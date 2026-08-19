@@ -54,6 +54,9 @@ const CONSUMER_STUB_PATH = "templates/install/.prism/architect/manifest.stub.jso
  */
 const TOOLKIT_BASE_MANIFEST_PATH = ".prism/architect/_toolkit/manifest.base.json";
 
+/** Every routing table a consumer receives, in the order failures are reported. */
+const SHIPPED_MANIFEST_PATHS = [CONSUMER_STUB_PATH, TOOLKIT_BASE_MANIFEST_PATH] as const;
+
 /**
  * Repo-relative paths the walk never follows into. These are PRISM's own
  * working notes — read by this repo's own sessions, never delivered — and
@@ -118,6 +121,12 @@ export interface ShipClosureReport {
 	shippableOutsideClosure: string[];
 	/** Tracked entries the closure no longer reaches — their tracking is stale. */
 	staleTrackedRefs: string[];
+	/**
+	 * Repo-relative docs a shipped routing table names with no file behind
+	 * them, sorted. The reachable-but-excluded direction cannot see these: a
+	 * doc that does not exist is never reached, so it is never excluded.
+	 */
+	unbackedRoutes: string[];
 }
 
 export interface ShipClosureOptions {
@@ -248,11 +257,33 @@ export async function resolveDefaultRoots(repoRoot: string): Promise<string[]> {
 		}
 	}
 
-	for (const manifestPath of [CONSUMER_STUB_PATH, TOOLKIT_BASE_MANIFEST_PATH]) {
+	for (const manifestPath of SHIPPED_MANIFEST_PATHS) {
 		roots.push(...(await collectManifestRoutedPaths(repoRoot, manifestPath)));
 	}
 
 	return roots;
+}
+
+/**
+ * Lists the docs a shipped routing table routes to that have no file on disk.
+ *
+ * A route promises the install contains the doc it names. When the file is
+ * absent the closure walk drops it silently — `expandRoot` contributes nothing
+ * for a missing path — so the broken promise ships unreported. Checking route
+ * existence directly is the only direction that catches it.
+ */
+async function collectUnbackedRoutes(repoRoot: string): Promise<string[]> {
+	const unbacked = new Set<string>();
+
+	for (const manifestPath of SHIPPED_MANIFEST_PATHS) {
+		for (const routed of await collectManifestRoutedPaths(repoRoot, manifestPath)) {
+			if (!(await pathExists(path.resolve(repoRoot, routed)))) {
+				unbacked.add(routed);
+			}
+		}
+	}
+
+	return [...unbacked].sort();
 }
 
 /** Expands one repo-relative root into the absolute files it contributes. */
@@ -451,6 +482,7 @@ export async function computeShipClosure(options: ShipClosureOptions): Promise<S
 		shippedButExcluded: shippedButExcluded.sort(),
 		shippableOutsideClosure: shippableOutsideClosure.sort(),
 		staleTrackedRefs: [...trackedDanglingRefs].filter((p) => !trackedStillReached.has(p)).sort(),
+		unbackedRoutes: await collectUnbackedRoutes(repoRoot),
 	};
 }
 
@@ -477,6 +509,13 @@ export function formatShipClosureReport(report: ShipClosureReport): string {
 			`${report.staleTrackedRefs.length} entr(y/ies) in SHIP_CLOSURE_TRACKED_DANGLING_REFS are no longer reached — delete them from ship-closure.ts so the tracking cannot mask a regression:`
 		);
 		lines.push(...report.staleTrackedRefs.map((p) => `  .prism/${p}`));
+	}
+
+	if (report.unbackedRoutes.length > 0) {
+		lines.push(
+			`${report.unbackedRoutes.length} route value(s) in a shipped routing table name a doc that does not exist — every install inherits a route to nothing:`
+		);
+		lines.push(...report.unbackedRoutes.map((p) => `  ${p}`));
 	}
 
 	if (lines.length === 0) {
@@ -528,7 +567,8 @@ export async function runShipClosureCli(): Promise<void> {
 	if (
 		report.shippedButExcluded.length > 0 ||
 		report.shippableOutsideClosure.length > 0 ||
-		report.staleTrackedRefs.length > 0
+		report.staleTrackedRefs.length > 0 ||
+		report.unbackedRoutes.length > 0
 	) {
 		process.exitCode = 1;
 	}

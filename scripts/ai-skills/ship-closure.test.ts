@@ -363,3 +363,35 @@ test("every prism-* skill directory on disk is a root, and nothing else under sk
 		}
 	);
 });
+
+test("a route naming a doc that does not exist is reported", async () => {
+	await withFixtureRepo(
+		{
+			[STUB_MANIFEST_PATH]: JSON.stringify({ "src/**": "absent.md" }),
+			[BASE_MANIFEST_PATH]: JSON.stringify({ "lib/**": "base-routed.md" }),
+			".prism/architect/base-routed.md": "# Base routed\n",
+		},
+		async (repoRoot) => {
+			const report = await computeShipClosure({
+				repoRoot,
+				curation: { excluded: [] },
+				trackedDanglingRefs: NO_TRACKED_REFS,
+			});
+
+			assert.deepEqual(
+				report.unbackedRoutes,
+				[".prism/architect/absent.md"],
+				"a route with no file behind it is a promise the install cannot keep"
+			);
+			assert.deepEqual(
+				report.shippedButExcluded,
+				[],
+				"a missing doc is never reached, so the reachable-but-excluded direction cannot see it"
+			);
+			assert.match(
+				formatShipClosureReport(report),
+				/route value\(s\) in a shipped routing table name a doc that does not exist/
+			);
+		}
+	);
+});
