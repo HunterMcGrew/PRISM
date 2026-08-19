@@ -212,7 +212,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Root cause:** the ship surface and the canonical tree are not the same text. A `curated` file's twin is hand-maintained and deliberately shorter — canonical rules cite self-dev ADRs that `crossref-lint`'s install ADR gate keeps out of the twin on purpose. Scanning canonical attributed those citations to the consumer surface.
   - **The three rules:** a curated or renamed file is scanned as its seed twin; the walk records an excluded file as reached but never recurses through it, because consumers never receive it and the self-dev ADRs cite each other densely enough to turn one real dangling reference into a cascade; and a `<repo-root>/`-prefixed target resolves, because that is how every persona cites its startup files and `crossref-lint` rightly treats angle brackets as placeholders.
   - **What the third one nearly cost:** without it, `references/plan-lookup.md` and `references/architect-context.md` — read at startup by Clove, Winston, Sasha, Briar, and Mira — both reported as dead weight, and E5's whole job is to exclude what that report names.
-  - **Implementation guidance:** each rule has a named unit test in `ship-closure.test.ts`. Relative links are followed alongside repo-root-absolute ones even though task E4 names only the latter; `.prism/rules/` files cite each other relatively, so a closure blind to that form trims the documents consumers actually follow.
+  - **Implementation guidance:** each rule has a named unit test in `ship-closure.test.ts`, the relative-link form included. Relative links are followed alongside repo-root-absolute ones even though task E4 names only the latter; `.prism/rules/` files cite each other relatively, so a closure blind to that form trims the documents consumers actually follow.
   - **→ no promotion needed (behavior of one check, documented in its own module header).**
 
 - **`SHIP_CLOSURE_TRACKED_DANGLING_REFS` ships seeded with 14 entries rather than empty.** Every entry is a self-dev ADR cited by path from a `.ai-skills/skills/**` body.
@@ -551,7 +551,7 @@ Branch `huntermcgrew/opus5-port-doctor-shipsurface` from PR 2C's head. Independe
 
 #### Clove (implementation)
 
-**E1. Add an orphan-doc check to `scripts/ai-skills/doctor.ts`.** A doc on disk under `.prism/architect/` (excluding `manifest.json` and `manifest.base.json`) that no route names is a finding. This is half of the route-integrity closure that replaces per-doc frontmatter: docs-on-disk minus the manifest's value set. **Verify:** `pnpm prism:doctor` on this repo reports the current orphan set (expected non-empty until E5 runs); a `doctor.test.ts` case with a fixture manifest and a fixture doc dir asserts one finding, plus a positive control where the doc is routed and no finding is produced.
+**E1. Add an orphan-doc check to `scripts/ai-skills/doctor.ts`.** A doc on disk under `.prism/architect/` that no route names is a finding — routing tables are skipped by the walk's `.md` filter, since neither `manifest.json` nor `manifest.base.json` is Markdown. This is half of the route-integrity closure that replaces per-doc frontmatter: docs-on-disk minus the manifest's value set. **Verify:** a materialized consumer root (the seed copied out, `manifest.stub.json` renamed to `manifest.json`) reports **no** architect-route finding — a consumer's first `doctor` run has nothing to warn about; `prism doctor` on this repo reports PRISM's own unrouted authoring docs, which is the check working rather than a false alarm; a `doctor.test.ts` case with a fixture manifest and a fixture doc dir asserts one finding, plus a positive control where the doc is routed and no finding is produced.
 
 **E2. Add a dead-route check.** A route naming a doc absent from disk is a finding. This is the other half of the closure, and it is what makes route-add-at-authoring (C2) verifiable rather than aspirational. **Verify:** `doctor.test.ts` case with a manifest naming a missing doc asserts one finding, with a positive control.
 
@@ -564,7 +564,7 @@ Branch `huntermcgrew/opus5-port-doctor-shipsurface` from PR 2C's head. Independe
    - Reuse `crossref-lint.ts`'s reference extraction rather than writing a second parser — a second link parser is the dual-source-of-truth defect this plan already records twice.
    - **Verify:** `pnpm prism:check` green; a unit test with a fixture tree asserting both failure directions plus a clean-closure control.
 
-**E5. Trim the ship surface to the closure E4 computes.** Mark as `excluded` in `seed-curation.json` everything outside it — PRISM's own plans, self-dev ADRs, self-dev references. Everything link-reachable from the four roots ships, including `SPEC.md` (routed by the stub's first key and cited by the shipped `code-standards.md`) and Atlas's onboarding dependencies. **Do the trim after E4 lands and reports**, so the exclusion list is E4's output rather than a hand-guess. `_toolkit/spec-editing.md` is named explicitly: PR 2C left it shipping with no stub route naming it, and E5 is where it either leaves the seed or gets a route. **Verify:** `pnpm prism:check` green; `pnpm prism:build` prints no unclassified-file warning.
+**E5. Trim the ship surface to the closure E4 computes.** Mark as `excluded` in `seed-curation.json` everything outside it — PRISM's own plans, self-dev ADRs, self-dev references. Everything link-reachable from the four roots ships, including `SPEC.md` (routed by the stub's first key and cited by the shipped `code-standards.md`) and Atlas's onboarding dependencies. **Do the trim after E4 lands and reports**, so the exclusion list is E4's output rather than a hand-guess. `_toolkit/spec-editing.md` is named explicitly: PR 2C left it shipping with no stub route naming it, and E5 is where it either leaves the seed or gets a route. **Verify:** `pnpm prism:check` green (its `ship-closure` stage re-runs the closure over the trimmed curation); every route value in **both** shipped routing tables — `manifest.stub.json` and `manifest.base.json` — names a file the seed contains.
 ---
 
 ### PR 3 — Shared core and roster slimming
@@ -783,6 +783,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-19 [huntermcgrew/opus5-port-credit-channel] open: Intent — close Briar's PR 2B findings so the credit channel can gate PR 2D; Bounds — `hook.mjs`, `harnesses.mjs`, `hook-gate.test.ts`, and this plan only, no PR 2C/2D lane files; Approach — widen the bail set rather than teach the operand loop what a path is · close: scope held. Silent decisions: kept `less`/`more` in `SHELL_READ_COMMANDS` despite no observed traffic (removing them makes those forms yield zero targets, which is a behavior change without a reason), and bailed on `#` unconditionally, so a path legitimately containing `#` yields no targets — the safe direction. Evidence: `pnpm prism:check` exit 0, 726 pass / 0 fail, new case `ok 327`.
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface] open: Intent — implement PR 2E (tasks E1–E5) so route integrity and ship-surface membership are computed and enforced rather than asserted; Bounds — `doctor.ts`, a new `ship-closure.ts`, their tests, `seed-curation.json`, and whatever the trim orphans; no PR 2D lane files, no skill-body prose sweep; Approach — land E1–E4, run E4, and take its report as E5's exclusion list · close: scope held, with three corrections named. E4 as literally specified reported 43 dangling references; three separate defects in *my* first implementation accounted for 37 of them (recursing through excluded files, scanning canonical instead of the curated twin, and dropping `<repo-root>/`-prefixed reads as placeholders) — each is now a Decision and a test case. Silent decisions named: the walk skips `.prism/lessons.md`, because working notes name paths freely and one passing mention would pull an arbitrary file onto the ship surface; the ADR template gained a real link from the ADR index rather than an exclusion, because ADR-0064 already ratifies that the template ships and the bare filename was simply unreadable to any path scanner. Edge recall: the empty-tracked-set case is exercised by every unit test, and a tracked entry the closure stops reaching fails as stale rather than sitting forever. Verification honesty: `pnpm prism:check` exit 0 and `pnpm prism:build` exit 0 at HEAD; every check negative-controlled by a deliberate break and each control re-run to confirm it fails twice, not once. Two honest gaps — `pnpm prism:doctor` resolves its consumer root to the *parent* checkout from inside a worktree, so the E1 orphan set had to be re-measured with `--consumer`, and the absence of a build unclassified-file warning is weak evidence here because E5 only removed seed files and that warning fires only on a new one.
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]
+- 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface] open: Intent — clear Briar's PR 2E self-review (2 majors, 6 minors) at the class level, not the instance; Bounds — `ship-closure.ts`, `doctor.ts`, their tests, `seed-curation.json`, `manifest.base.json`, `manifest.stub.json`, and the plan; no version-compare fix (filed separately), no PR 2D lane; Approach — add the second shipped routing table to the closure roots and let the check's own report decide each instance · close: scope held. Silent decisions named: `spec-editing.md` returns to the seed rather than losing its base routes, because ~30 base routes name it and stripping them would empty 24 keys; `output-guards.md` loses its one base route instead of shipping, because the seed literal guard rejects its dogfooding literals and no consumer has a `scripts/ai-skills/` tree; the both-halves-absent hook case reconciles the claim down to the check rather than adding a finding that would fire on every Cursor and Codex install. Edge recall: a consumer root with no `.claude/` tree, a routing table that fails to parse (both manifest reads degrade to no roots), and a stub key with a single string value rather than an array — all pre-existing paths, unchanged. Verification honesty: `pnpm prism:check` exit 0; both new tests negative-controlled (the Windows-separator test re-run against the old substitution fails; the relative-link and tracked-suppression fixtures reach their subject only through the mechanism under test); the consumer-clean claim measured on a materialized seed root, not inferred.
   - **Intent** — judge PR #464's five self-flagged claims and its E1–E5 verify lines against measurement, not against clove's report.
   - **Ambiguity** — none load-bearing; assuming the pinned range is `34f0db16..c19e03a2` and that the plan's `## Review Issues` is the durable home even though the section is shared across the whole opus5-port stack.
   - **Bounds** — findings in chat and the plan's `## Review Issues`; no code fixes, no GitHub writes, no merge.
@@ -818,6 +819,8 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Re-derived every C1-C8 verify line against the class Eric named — the verify line was not re-derived when the task changed underneath it — rather than against any single list. Two amendments beyond the reported findings: C5 gained a route-existence pass (`verify-manifest` is structural only), and C8 widened to `templates/` (a curated twin never regenerates). See the sweep table in `## Review Issues`.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's re-review major and three minors — `SPEC.md.tmpl` received C3's genericizing pass (six `.claude/` paths, the `plan-authoring.md` repoint, the ADR-0047 promotion wording, § Where it lives), `AGENTS.md.tmpl:119` names the `.claude/skills/**` stub key instead of generalizing it, and C3's verify now covers both twins.
 
+- 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Cleared Briar's PR 2E review — the closure now walks both shipped routing tables, so a route in either is a promise the seed keeps, and `manifest.stub.json` routes every doc the seed ships, leaving a fresh install with no architect-route warning. Six minors fixed alongside: the unreachable manifest-basename set, the Windows-separator strip, two missing test controls, the hook check's overclaimed scope, and E1's and E5's stale verify lines.
+
 ## Review Issues
 
 <!-- PR 2E (#464) — Briar self-review 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface] -->
@@ -826,89 +829,97 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.ai-skills/definitions/seed-curation.json:6` / `templates/install/.prism/architect/_toolkit/manifest.base.json`
 - **Problem:** E5's own verify line says `_toolkit/spec-editing.md` "either leaves the seed or gets a route"; it left the seed, and the ~40 routes already naming it in the shipped `manifest.base.json` were not removed, so every install now carries a routing table with a route to a file the install does not have.
 - **Class:** a route-integrity check whose root set omits one of the two shipped routing tables.
 - **Sweep:** compared each of the three manifests' routed value set against the files on disk beside it (`python3` over `manifest.base.json`, `manifest.stub.json`, `.prism/architect/manifest.json`). `stub(seed)` and `live(.prism)` are both clean. `base(seed)` names two absent docs: `_toolkit/spec-editing.md` (introduced here) and `_toolkit/output-guards.md` (pre-existing, excluded before this PR). Neither new check sees them — `ship-closure.ts` reads only `CONSUMER_STUB_PATH` as a routing root, and `checkArchitectRoutes` reads only `architect/manifest.json`.
 - **Suggested fix:** add `manifest.base.json` to the closure's routing roots alongside the stub. That either keeps `spec-editing.md` in the closure (so E5 never excludes it) or makes the dangling base route a reported finding. The pre-existing `output-guards.md` route falls out of the same change.
+- **Fixed:** 2026-08-19 — Class closed: `resolveDefaultRoots` now reads both shipped routing tables (`collectManifestRoutedPaths` over `manifest.stub.json` and `manifest.base.json`), so every route in a table a consumer receives is a closure root. With that root added the closure reported both dangling routes. Instance: `architect/_toolkit/spec-editing.md` is no longer excluded — a shipped table routing it is a promise the seed keeps. Pre-existing: the `scripts/ai-skills/**` → `_toolkit/output-guards.md` route is dropped from `manifest.base.json`; the doc carries dogfooding literals the seed guard rejects, and no consumer has a `scripts/ai-skills/` tree to route from.
 
 ### `prism doctor`'s new orphan check warns on the product's own default install state
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:470`
 - **Problem:** a freshly adopted consumer gets `[WARN] architect-route: 6 architect doc(s) on disk are named by no manifest route` with no misconfiguration of their own, so the check's first impression on every install is a false alarm.
 - **Class:** a verify line that was not re-derived when the task it gates changed shape (the class Iris named in the 2C retro).
 - **Sweep:** materialized the seed as a consumer root (`templates/install/.prism` → `/tmp/sc/.prism`, stub renamed to `manifest.json`) and ran `doctor --consumer /tmp/sc`: 6 orphans (`_toolkit/business-layer.md`, `closing-messages.md`, `plan-authoring.md`, `qa-test-planning.md`, `skills-ecosystem.md`, `ticket-workflows.md`). Ran the same against the worktree root: 7 orphans, 5 of them the files E5 just excluded. E1's verify reads "expected non-empty until E5 runs" — E5 trims the seed, not canonical routing, so the emptying it assumed was never possible.
 - **Suggested fix:** route the 6 in `manifest.stub.json`, or scope the orphan check to docs the consumer authored. Then re-derive E1's verify to the condition that actually holds after E5.
+- **Fixed:** 2026-08-19 — `manifest.stub.json` now routes every architect doc the seed ships (skills-ecosystem, ticket-workflows and closing-messages from `.claude/skills/**`, qa-test-planning from the QA skill dir, plan-authoring from plans and templates, business-layer from `.prism/business/**`, spec-editing from the spec surfaces). A materialized consumer root reports zero architect-route findings. The worktree root still reports PRISM's own unrouted authoring docs — a true finding about PRISM's manifest, not a consumer false alarm — and E1's verify now says so.
 
 ### `ARCHITECT_MANIFEST_BASENAMES` is unreachable and its test passes on a different mechanism
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:425,447`
 - **Problem:** the walk filters `entry.name.endsWith(".md") && !ARCHITECT_MANIFEST_BASENAMES.has(entry.name)`, and neither `manifest.json` nor `manifest.base.json` ends in `.md`, so the second clause is always true and the set never excludes anything.
 - **Class:** a test that passes for a reason other than the one it names — the second instance in this PR, after E3's escaped-quote case.
 - **Sweep:** read every membership test against the two-element set; the `.md` filter alone makes `runDoctor treats the manifest tables themselves as unroutable, not as orphans` green. The other three architect-route tests and all four hook-registration tests each have a genuine discriminator (verified by reasoning each fixture against the opposite implementation).
 - **Suggested fix:** delete the set and the clause, and retitle the test to the `.md` filter it actually exercises — or keep the set and widen the walk to non-`.md` files, if routing tables in other formats are expected.
+- **Fixed:** 2026-08-19 — Set and clause deleted; the `.md` filter that was doing the work is documented on `listMarkdownFilesRelative`, and the test is retitled to the filter it exercises.
 
 ### The relative-link closure rule has no unit test, and the Decision says it does
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/ship-closure.test.ts`
 - **Problem:** the plan's Decision states "each rule has a named unit test in `ship-closure.test.ts`" in the same sub-bullet that records following relative links as a deviation from task E4's literal text, but no fixture in the file uses a relative link form.
 - **Class:** a claimed test that does not exist.
 - **Sweep:** grepped the fixture set for `](../`, `](./`, and backtick-relative forms — zero matches; every fixture writes `.prism/…`. The widening itself is right: `resolveRef` resolves any non-repo-root-prefixed target against the referencing file's directory, and `.prism/rules/` files do cite each other that way.
 - **Suggested fix:** add a fixture where a rule cites a sibling as `./sibling.md` and assert the sibling is not reported as dead weight; correct the Decision's claim if any rule is still left unpinned.
+- **Fixed:** 2026-08-19 — Added `a relative sibling link is followed, so the sibling it names is not dead weight`: the sibling enters the closure only through `./sibling.md`, so an implementation that dropped the relative form reports it as dead weight. Decision reworded to name the form.
 
 ### No positive control for the tracked-dangling path
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/ship-closure.test.ts:196`
 - **Problem:** every unit test passes an empty tracked set except the stale case, so nothing asserts that a *still-reached* tracked entry is suppressed rather than reported stale; an implementation that never populated `trackedStillReached` would keep the whole suite green.
 - **Class:** a check tested in one direction only.
 - **Sweep:** ran both controls by hand against the real tree. Adding an untracked-but-reached ADR to the tracked set reports it stale; dropping `rules/skill-authoring.md` from the set surfaces it as `shippedButExcluded`. The mechanism is right in both directions — only the test is missing.
 - **Suggested fix:** one fixture with a reached, excluded, tracked file asserting `shippedButExcluded` and `staleTrackedRefs` are both empty.
+- **Fixed:** 2026-08-19 — Added `a tracked dangling reference the closure still reaches is suppressed`: an implementation that never populated `trackedStillReached` fails both assertions (the entry would appear in `shippedButExcluded` and in `staleTrackedRefs`).
 
 ### The hook-registration check is silent when the runtime and its registration are both gone
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:560`
 - **Problem:** ADR-0072 names visibility as the compensating control for a gate that cannot prevent its own removal, but removing both halves produces no finding, and a test (`runDoctor reports no hook finding for a repo with neither a runtime nor a registration`) records that silence as correct.
 - **Class:** a compensating control that covers each single failure but not their conjunction.
 - **Sweep:** traced all four states. Runtime present + registration absent → reported. Registration present + runtime absent → reported. Both present → silent, correct. Both absent → silent. `checkSeedDelivery` does not cover `.claude/hooks/hook.mjs` either (it iterates `renames` only), so nothing else catches it.
 - **Suggested fix:** if `.sync-manifest.json` records the hook as delivered, treat both-absent as a finding; otherwise state the limit in ADR-0072's `## Consequences` rather than leaving the ADR's claim broader than the check.
+- **Fixed:** 2026-08-19 — Reconciled the claim to the check rather than the reverse. `checkHookRegistration`'s JSDoc now states the limit and its reason: nothing on disk distinguishes a deleted gate from one never delivered, and a Cursor or Codex consumer has no `.claude/` tree, so reporting both-absent would fire on correct installs. The test is retitled to name the limit instead of recording silence as correct. ADR-0072 is not in this branch (no commit on any branch adds it) — the ADR's `## Consequences` carries the same limit when it lands.
 
 ### `resolveHookCommandPath` strips Windows path separators along with JSON escapes
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:545`
 - **Problem:** `rawPath.replace(/[\\"']/g, "")` removes every backslash, so a registration written with Windows separators collapses to one token and can never match a real path.
 - **Class:** one substitution serving two purposes.
 - **Sweep:** checked the other consumers of the raw settings text; `HOOK_COMMAND_PATH_RE`'s `\S*` additionally truncates any registered path containing a space. Both are low blast radius today because installs write `$CLAUDE_PROJECT_DIR/`-prefixed forward-slash paths, which is also what the fixtures use.
 - **Suggested fix:** strip only `\"` and `\'` escape pairs and surrounding quotes, leaving other backslashes intact.
+- **Fixed:** 2026-08-19 — Now `replace(/\\(["'])/g, "$1").replace(/["']/g, "")`: escaped quotes unescape, bare quotes go, other backslashes survive. New test asserts a Windows-separator registration is reported with its separators intact; it fails against the old substitution.
 
 ### E5's `pnpm prism:build` verify gates a condition the task cannot produce
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/opus5-port.md:220`
 - **Problem:** "prints no unclassified-file warning" is evidence of nothing here, because that warning fires only on a newly added file and E5 only removes.
 - **Class:** the same not-re-derived verify class as the orphan-check finding above; clove self-reported this one.
 - **Sweep:** read all five E1–E5 verify lines against what each task landed. E2, E3, and E4's verify lines hold as written. E1's and E5's do not.
 - **Suggested fix:** replace with the check E5 can actually fail — the closure re-run, plus a route-existence assertion over both shipped manifests.
+- **Fixed:** 2026-08-19 — Replaced with the checks E5 can fail: `pnpm prism:check`'s closure stage, and a route-existence assertion over both shipped routing tables.
 
 ### Angle Coverage
 

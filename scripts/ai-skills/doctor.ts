@@ -418,13 +418,13 @@ async function checkRuleLoadDeclarations(
 }
 
 /**
- * Manifest files that live inside the architect tree but are routing tables
- * rather than routable documents. Excluded from the orphan scan so the tables
- * never report themselves.
+ * Lists every `.md` file under `dir`, as paths relative to `dir` with `/`
+ * separators.
+ *
+ * The `.md` filter is also what keeps the routing tables themselves out of the
+ * orphan scan — `manifest.json` and `manifest.base.json` are routing tables,
+ * not routable documents, and neither is Markdown.
  */
-const ARCHITECT_MANIFEST_BASENAMES = new Set(["manifest.json", "manifest.base.json"]);
-
-/** Lists every `.md` file under `dir`, as paths relative to `dir` with `/` separators. */
 async function listMarkdownFilesRelative(dir: string): Promise<string[]> {
 	const found: string[] = [];
 
@@ -439,7 +439,7 @@ async function listMarkdownFilesRelative(dir: string): Promise<string[]> {
 				continue;
 			}
 
-			if (entry.name.endsWith(".md") && !ARCHITECT_MANIFEST_BASENAMES.has(entry.name)) {
+			if (entry.name.endsWith(".md")) {
 				found.push(relative);
 			}
 		}
@@ -538,9 +538,13 @@ const HOOK_COMMAND_PATH_RE = /(\S*hook\.mjs)/g;
  * repo root, along with the quotes Claude Code's command strings carry — the
  * scan reads raw file text, so those quotes arrive backslash-escaped and a
  * path that keeps the escape resolves to a file that can never exist.
+ *
+ * Only escaped and surrounding quotes come out. A bare backslash is a Windows
+ * path separator, and stripping those collapsed such a registration into one
+ * token that could never match a file on disk.
  */
 function resolveHookCommandPath(rawPath: string, consumerRepoRoot: string): string {
-	const unquoted = rawPath.replace(/[\\"']/g, "");
+	const unquoted = rawPath.replace(/\\(["'])/g, "$1").replace(/["']/g, "");
 	const withoutProjectDir = unquoted
 		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?\//, "")
 		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?/, "");
@@ -554,8 +558,14 @@ function resolveHookCommandPath(rawPath: string, consumerRepoRoot: string): stri
  *
  * The write gate cannot prevent its own removal — deleting the runtime or its
  * registration disables it, and neither is prevented (ADR-0072). Visibility is
- * the compensating control the ADR names: a removal becomes a reported finding
- * instead of a silently inert gate.
+ * the compensating control the ADR names, and this check delivers the half of
+ * it that is decidable from the consumer tree alone: each side reports the
+ * other's absence.
+ *
+ * Removing both halves is silent. Nothing on disk then distinguishes a
+ * consumer who deleted the gate from one who never received it — a Cursor or
+ * Codex consumer has no `.claude/` tree at all — so reporting it would fire on
+ * installs that are correct as they stand.
  */
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");

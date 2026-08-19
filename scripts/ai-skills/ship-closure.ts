@@ -44,6 +44,17 @@ const SCANNED_EXTENSIONS = [".md", ".tmpl", ".mdc", ".ts", ".mjs", ".json"];
 const CONSUMER_STUB_PATH = "templates/install/.prism/architect/manifest.stub.json";
 
 /**
+ * The toolkit's base routing table. It ships as-is inside the seed, so a route
+ * it names is a promise the install can keep — the same promise the consumer
+ * stub makes, from a second table.
+ *
+ * The canonical copy is read rather than its seed twin: `build.ts` mirrors one
+ * into the other, so they carry identical routes, and the canonical path is
+ * where a route is authored.
+ */
+const TOOLKIT_BASE_MANIFEST_PATH = ".prism/architect/_toolkit/manifest.base.json";
+
+/**
  * Repo-relative paths the walk never follows into. These are PRISM's own
  * working notes — read by this repo's own sessions, never delivered — and
  * they name paths freely. Following them would let a passing mention in a
@@ -170,28 +181,35 @@ async function listFilesRecursive(dir: string): Promise<string[]> {
 }
 
 /**
- * Reads the consumer's routing stub as a closure root in both directions: its
- * keys name paths the routing table points *at*, and its values name the
- * architect docs it routes *to*. Glob keys are skipped — a pattern names no
- * single file — and keys resolving outside the canonical tree drop out on the
- * walk's own existence check.
+ * Reads one shipped routing table as a closure root in both directions: its
+ * keys name paths the table points *at*, and its values name the architect
+ * docs it routes *to*. Glob keys are skipped — a pattern names no single file
+ * — and keys resolving outside the canonical tree drop out on the walk's own
+ * existence check.
+ *
+ * Every shipped table is read, not just the consumer stub: a route in any
+ * table a consumer receives names a doc that install has to contain, so a
+ * table left out of the roots is a routing surface the closure cannot see.
  */
-async function collectStubRoutedPaths(repoRoot: string): Promise<string[]> {
-	const raw = await readFileIfExists(path.join(repoRoot, CONSUMER_STUB_PATH));
+async function collectManifestRoutedPaths(
+	repoRoot: string,
+	manifestPath: string
+): Promise<string[]> {
+	const raw = await readFileIfExists(path.join(repoRoot, manifestPath));
 	if (raw === null) {
 		return [];
 	}
 
-	let stub: Record<string, unknown>;
+	let manifest: Record<string, unknown>;
 	try {
-		stub = JSON.parse(raw) as Record<string, unknown>;
+		manifest = JSON.parse(raw) as Record<string, unknown>;
 	} catch {
 		return [];
 	}
 
 	const routed: string[] = [];
 
-	for (const [key, value] of Object.entries(stub)) {
+	for (const [key, value] of Object.entries(manifest)) {
 		if (!key.includes("*")) {
 			routed.push(key);
 		}
@@ -208,8 +226,8 @@ async function collectStubRoutedPaths(repoRoot: string): Promise<string[]> {
 
 /**
  * The four ship-surface roots, as repo-relative paths: the `prism-*` skills,
- * the rules, the writing guides, and the runtime (hook scripts, the consumer
- * routing stub, and `doctor`).
+ * the rules, the writing guides, and the runtime (hook scripts, both shipped
+ * routing tables, and `doctor`).
  */
 export async function resolveDefaultRoots(repoRoot: string): Promise<string[]> {
 	const roots = [
@@ -218,6 +236,7 @@ export async function resolveDefaultRoots(repoRoot: string): Promise<string[]> {
 		"scripts/ai-skills/hooks",
 		"scripts/ai-skills/doctor.ts",
 		CONSUMER_STUB_PATH,
+		TOOLKIT_BASE_MANIFEST_PATH,
 	];
 
 	const skillsDir = path.join(repoRoot, ".ai-skills", "skills");
@@ -230,7 +249,9 @@ export async function resolveDefaultRoots(repoRoot: string): Promise<string[]> {
 		}
 	}
 
-	roots.push(...(await collectStubRoutedPaths(repoRoot)));
+	for (const manifestPath of [CONSUMER_STUB_PATH, TOOLKIT_BASE_MANIFEST_PATH]) {
+		roots.push(...(await collectManifestRoutedPaths(repoRoot, manifestPath)));
+	}
 
 	return roots;
 }

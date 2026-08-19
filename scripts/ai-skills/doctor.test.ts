@@ -796,7 +796,7 @@ test("runDoctor reports a manifest route naming a doc that is not on disk", asyn
 	});
 });
 
-test("runDoctor treats the manifest tables themselves as unroutable, not as orphans", async () => {
+test("runDoctor skips non-Markdown files in the architect tree, so a routing table is not an orphan", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
 			"_toolkit/routed.md",
@@ -876,6 +876,43 @@ test("runDoctor reports a hook registration pointing at a file that is not on di
 	});
 });
 
+test("runDoctor keeps Windows path separators in a dead hook registration it reports", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const windowsSettings = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: 'node "$CLAUDE_PROJECT_DIR\\.claude\\hooks\\hook.mjs" --tool=claude',
+							},
+						],
+					},
+				],
+			},
+		};
+
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(windowsSettings, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /\.claude/);
+		assert.doesNotMatch(messages[0], /claudehooks/);
+	});
+});
+
 test("runDoctor reports no hook finding when the runtime and its registration agree", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
@@ -895,7 +932,7 @@ test("runDoctor reports no hook finding when the runtime and its registration ag
 	});
 });
 
-test("runDoctor reports no hook finding for a repo with neither a runtime nor a registration", async () => {
+test("runDoctor stays silent when a repo has neither a hook runtime nor a registration — the check reports each half against the other, so their joint absence is outside what it can see", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		const report = await runDoctor({
 			consumerRepoRoot,

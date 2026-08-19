@@ -221,3 +221,49 @@ test("a tracked dangling reference the closure no longer reaches is reported as 
 		}
 	);
 });
+
+test("a tracked dangling reference the closure still reaches is suppressed, not reported in either direction", async () => {
+	await withFixtureRepo(
+		{
+			".prism/rules/entry.md": "See [the note](.prism/references/note.md).\n",
+			".prism/references/note.md": "# Note\n",
+		},
+		async (repoRoot) => {
+			const report = await computeShipClosure({
+				repoRoot,
+				roots: ROOTS,
+				curation: { excluded: ["references/note.md"] },
+				trackedDanglingRefs: new Set(["references/note.md"]),
+			});
+
+			assert.deepEqual(report.shippedButExcluded, []);
+			assert.deepEqual(report.staleTrackedRefs, []);
+			assert.match(formatShipClosureReport(report), /closure holds/);
+		}
+	);
+});
+
+test("a relative sibling link is followed, so the sibling it names is not dead weight", async () => {
+	await withFixtureRepo(
+		{
+			".prism/rules/entry.md": "See [the sibling](./sibling.md).\n",
+			".prism/rules/sibling.md": "# Sibling\n",
+			".prism/references/reached.md": "# Reached\n",
+		},
+		async (repoRoot) => {
+			const report = await computeShipClosure({
+				repoRoot,
+				roots: [".prism/rules/entry.md"],
+				curation: { excluded: ["references/reached.md"] },
+				trackedDanglingRefs: NO_TRACKED_REFS,
+			});
+
+			assert.deepEqual(
+				report.shippableOutsideClosure,
+				[],
+				"the sibling is reached through the relative link"
+			);
+			assert.deepEqual(report.shippedButExcluded, []);
+		}
+	);
+});
