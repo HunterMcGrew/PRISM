@@ -389,11 +389,16 @@ export async function saveRouteState(repoRoot, sessionId, state) {
  * Two things happen on every call, in order:
  *
  * 1. **Credit a read.** If `filePath` is itself a doc under
- *    `.prism/architect/`, that doc is marked read — an observed effect,
- *    not an assumption. A doc counts as delivered only once its own path is
- *    actually read; naming it in a nag is not delivery, so an unread doc
- *    keeps being named until this fires for it. `read` is the only array a
- *    write-time deny gate ever clears against.
+ *    `.prism/architect/` *and* the caller passed `credit: true`, that doc is
+ *    marked read — an observed effect, not an assumption. A doc counts as
+ *    delivered only once its own path is actually read; naming it in a nag
+ *    is not delivery, so an unread doc keeps being named until this fires
+ *    for it. `read` is the only array a write-time deny gate ever clears
+ *    against. The caller owns the `credit` judgment because only it can see
+ *    whether the observed call read the whole document: a ranged `Read`, a
+ *    `head`, and a `Grep` hit all name a path without delivering it.
+ *    Under-crediting costs one re-read, while over-crediting silently
+ *    defeats the gate, so `credit` defaults to `false`.
  * 2. **Announce the unannounced.** If `filePath` matches one or more
  *    manifest routes, every matched doc that is neither already `read` nor
  *    already `announced` this session, and confirmed to still exist on disk
@@ -413,9 +418,17 @@ export async function saveRouteState(repoRoot, sessionId, state) {
  * @param {string} repoRoot
  * @param {string} filePath
  * @param {string} sessionId
+ * @param {{credit?: boolean}} [options]
  * @returns {Promise<string | null>}
  */
-export async function resolveArchitectNag(repoRoot, filePath, sessionId) {
+export async function resolveArchitectNag(
+	repoRoot,
+	filePath,
+	sessionId,
+	options = {}
+) {
+	const credit = options.credit === true;
+
 	const relativePath = toRepoRelativePath(repoRoot, filePath);
 	if (relativePath === null) {
 		return null;
@@ -432,7 +445,7 @@ export async function resolveArchitectNag(repoRoot, filePath, sessionId) {
 	// already read. The failure mode is a harmless extra nag line, not data
 	// loss or a crash, so this is accepted as a known best-effort signal
 	// rather than serialized.
-	const docJustRead = extractArchitectDocPath(relativePath);
+	const docJustRead = credit ? extractArchitectDocPath(relativePath) : null;
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
 		await saveRouteState(repoRoot, sessionId, {

@@ -5,6 +5,7 @@ export interface HookPayload {
 	tool_name?: string;
 	tool_input?: {
 		file_path?: string;
+		path?: string;
 		command?: string;
 		offset?: number;
 		limit?: number;

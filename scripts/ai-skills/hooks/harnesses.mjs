@@ -20,7 +20,7 @@
  * @property {string} [conversation_id]
  * @property {string} [cwd]
  * @property {string} [tool_name]
- * @property {{file_path?: string, command?: string, offset?: number, limit?: number}} [tool_input]
+ * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number}} [tool_input]
  * @property {string} [hook_event_name]
  */
 
@@ -42,11 +42,18 @@
  * share: the target path lives at `tool_input.file_path` on every one of
  * them.
  *
+ * Search tools are the one exception — a `Grep` names its haystack at
+ * `tool_input.path` and carries no `file_path` at all — so that field is
+ * the fallback. It is a fallback rather than a separate accessor because no
+ * observed tool sends both, and a search over a routed directory is worth
+ * announcing even though it never credits (see `hook.mjs`'s target
+ * resolution).
+ *
  * @param {HookPayload} payload
  * @returns {string[]}
  */
 function filePathFromToolInput(payload) {
-	const filePath = payload.tool_input?.file_path;
+	const filePath = payload.tool_input?.file_path ?? payload.tool_input?.path;
 	return filePath ? [filePath] : [];
 }
 
