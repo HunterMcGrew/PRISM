@@ -564,13 +564,18 @@ test("parseShellReadTargets: each shell read form yields its path, and only bare
 	assert.deepEqual(parseShellReadTargets("cat docs/one.md"), [
 		{ filePath: "docs/one.md", credit: true },
 	]);
+	// A count or script operand rides along as a target that no manifest
+	// route can match, which is cheaper than teaching the parser each
+	// command's operand grammar.
 	assert.deepEqual(parseShellReadTargets("head -n 20 docs/one.md"), [
+		{ filePath: "20", credit: false },
 		{ filePath: "docs/one.md", credit: false },
 	]);
 	assert.deepEqual(parseShellReadTargets("tail -50 docs/one.md"), [
 		{ filePath: "docs/one.md", credit: false },
 	]);
 	assert.deepEqual(parseShellReadTargets("sed -n '1,20p' docs/one.md"), [
+		{ filePath: "1,20p", credit: false },
 		{ filePath: "docs/one.md", credit: false },
 	]);
 	assert.deepEqual(parseShellReadTargets("less docs/one.md"), [
@@ -677,6 +682,56 @@ test("runPostToolUseArm: cat credits the doc it read", async () => {
 
 		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
 		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), [CREDIT_DOC]);
+	});
+});
+
+test("runPostToolUseArm: a relative cat resolves against the payload cwd, not the repo root", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedCreditRepo(repoRoot);
+		const relativeDoc = path.join(".prism", "architect", CREDIT_DOC);
+
+		const fromRoot = JSON.stringify({
+			session_id: "session-root",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${relativeDoc}` },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, fromRoot);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-root"), [
+			CREDIT_DOC,
+		]);
+
+		// The same command issued from a subdirectory fails in the shell, so
+		// crediting it would hand the write gate a doc nobody read.
+		const subdirectory = path.join(repoRoot, "scripts");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const fromSubdirectory = JSON.stringify({
+			session_id: "session-subdir",
+			cwd: subdirectory,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${relativeDoc}` },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, fromSubdirectory);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-subdir"), []);
+	});
+});
+
+test("runPostToolUseArm: a payload naming its path at tool_input.path credits nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Glob",
+			tool_input: { pattern: "**/*.md", path: docPath },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(
+			await readCreditedDocs(repoRoot, "session-1"),
+			[],
+			"the write default announces a routed path without crediting it"
+		);
 	});
 });
 

@@ -747,6 +747,27 @@ Every evidence command below was reasoned against this plan's own task list befo
 - **Sweep:** checked every `toolKinds` entry across the three harnesses plus the `write` default; `Glob` is the only unlisted Claude tool with a `path` field, and `Edit`/`Write`/`Bash` are unaffected.
 - **Suggested fix:** widen the comment to say the fallback covers any tool that names its target at `path`, and that everything reaching it through the `write` default announces without crediting.
 
+### Shell targets resolve relative operands against the repo root, not the command's `cwd`
+
+- **Axis:** `standards`
+- **Severity:** minor
+- **Status:** fixed
+- **Fixed in:** `resolveTargets`'s `shell` branch now resolves each operand against `payload.cwd` before routing, so a repo-root-relative `cat` issued from a subdirectory resolves where the command would have looked and credits nothing. Covered by `runPostToolUseArm: a relative cat resolves against the payload cwd, not the repo root`, which asserts both directions; control checked by reverting the resolution and confirming the subdirectory leg fails.
+- **File:** `scripts/ai-skills/hooks/hook.mjs` (`resolveTargets`, `shell` branch)
+- **Problem:** `parseShellReadTargets` returned the raw operand and `resolveArchitectNag` resolved it against the repo root, so a session rooted in a subdirectory issuing a repo-root-relative `cat` failed the command yet credited the doc — `PostToolUse` fires regardless of exit code.
+- **Class:** relative path resolved against the wrong base; new surface the shell channel introduces, since `Read` always sends absolute paths.
+- **Suggested fix:** `path.resolve(payload.cwd, ...)` in the `shell` branch.
+
+### The operand loop carried per-command grammar for two commands that can never credit
+
+- **Axis:** `simplification`
+- **Severity:** minor
+- **Status:** fixed
+- **Fixed in:** removed the `head`/`tail` `-n` count skip and `sed`'s `operands.slice(1)`. A count or script operand now rides along as a target, costing at most one route lookup that finds nothing — a manifest route never matches a bare number or a `1,5p` script, and A6 rejects catch-all routes. Neither command credits under any circumstances, so the skipped tokens could never have produced an over-credit.
+- **File:** `scripts/ai-skills/hooks/hook.mjs` (`parseShellReadTargets` operand loop)
+- **Problem:** four lines of code plus five of comment encoded two commands' operand grammar to avoid a lookup that would return `null` anyway.
+- **Suggested fix:** delete both branches; update the parser cases that pinned the old single-target shape.
+
 ### A `cat` whose output the host truncates still credits in full
 
 - **Axis:** `standards`
@@ -954,3 +975,4 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 
 **Last updated:** 2026-08-18
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Closing ceremony — PR 2A decisions swept (2 promoted to `install-layout.md` and its seed twin, 2 promoted to ADR-0071, 9 closed as no-promotion here plus 4 already carrying verdicts, 9 left pending against the PR that resolves each), 1 lesson captured (cross-step contracts), threads clear. Recorded a new Decision deferring Cursor and Codex hook delivery out of this stack with an exit condition, and corrected the announce-once Decision's harness claim, which stated host capability in a way that read as delivery coverage. Task D4 reduced to deny-side coverage — its `PostCompact` reset already shipped in 2A.
+- 2026-08-19 [huntermcgrew/opus5-port-credit-channel]: Fixed Eric's PR #462 minor — shell operands now resolve against the payload `cwd`, closing a subdirectory-relative `cat` over-credit. Trimmed the operand loop's `head`/`sed` grammar, which guarded lookups that could never credit. Added the relative-`cwd` and `tool_input.path`-fallback test cases.

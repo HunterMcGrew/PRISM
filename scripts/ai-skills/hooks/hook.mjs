@@ -107,26 +107,21 @@ export function parseShellReadTargets(command) {
 	}
 
 	const operands = [];
-	for (let index = 0; index < args.length; index++) {
-		const arg = args[index];
-
+	for (const arg of args) {
 		if (arg.startsWith("-") && arg !== "-") {
-			// `head -n 20 file` and `tail -n 20 file` put the count in the next
-			// token; `head -20 file` and `head -n20 file` carry it inline.
-			if (/^-n$/.test(arg) && (name === "head" || name === "tail")) {
-				index++;
-			}
 			continue;
 		}
 
 		operands.push(unquote(arg));
 	}
 
-	// `sed`'s first operand is its script (`-n '1,5p'`), not a path.
-	const paths = name === "sed" ? operands.slice(1) : operands;
+	// Only `cat` credits, and only unflagged. Everything else — a `head`
+	// count operand, a `sed` script operand — is a non-path token that can
+	// at worst cost one route lookup that finds nothing, since a manifest
+	// route never matches a bare number or a `1,5p` script.
 	const credit = name === "cat" && !args.some((arg) => arg.startsWith("-"));
 
-	return paths.map((filePath) => ({ filePath, credit }));
+	return operands.map((filePath) => ({ filePath, credit }));
 }
 
 /**
@@ -138,7 +133,8 @@ export function parseShellReadTargets(command) {
  *   `limit`. A `Read(limit: 1)` names the doc and delivers one line of it,
  *   which is exactly the over-credit that would make a write gate
  *   satisfiable without reading anything.
- * - `shell`: whatever `parseShellReadTargets` recovers, on its own terms.
+ * - `shell`: whatever `parseShellReadTargets` recovers, on its own terms,
+ *   with each operand resolved against the command's own working directory.
  * - Everything else, `search` included: announce, never credit. A `Grep`
  *   whose results quote a routed doc has not delivered that doc.
  *
@@ -150,7 +146,15 @@ export function resolveTargets(spec, payload) {
 	const kind = resolveToolKind(spec, payload.tool_name);
 
 	if (kind === "shell") {
-		return parseShellReadTargets(payload.tool_input?.command);
+		// A shell operand is relative to the command's own working directory,
+		// unlike every other channel's path, which arrives absolute. Resolving
+		// it here rather than downstream against the repo root is what keeps a
+		// repo-root-relative `cat` issued from a subdirectory — a command that
+		// fails — from crediting the doc it names.
+		const cwd = payload.cwd ?? process.cwd();
+		return parseShellReadTargets(payload.tool_input?.command).map(
+			(target) => ({ ...target, filePath: path.resolve(cwd, target.filePath) })
+		);
 	}
 
 	const isFullRead =
