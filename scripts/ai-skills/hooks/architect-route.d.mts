@@ -18,7 +18,10 @@ export type Manifest = Record<string, string | string[]>;
 
 export const MAX_EMISSION_BYTES: number;
 
-export function formatNag(unreadDocs: string[]): string;
+export function formatNag(unreadDocs: string[]): {
+	text: string;
+	includedDocs: string[];
+};
 
 export function toRepoRelativePath(
 	repoRoot: string,

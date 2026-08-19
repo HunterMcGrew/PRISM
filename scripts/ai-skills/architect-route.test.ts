@@ -328,6 +328,41 @@ test("resolveArchitectNag: a large matched-doc fan-out stays under the emission 
 	});
 });
 
+test("resolveArchitectNag: a doc dropped behind the truncation tail is named on the next read, not silently marked announced", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docs = Array.from({ length: 500 }, (_, i) => `_toolkit/doc-${i}.md`);
+		await seedManifest(repoRoot, { "scripts/ai-skills/**": docs });
+		await Promise.all(docs.map((doc) => seedDoc(repoRoot, doc)));
+
+		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const first = (await resolveArchitectNag(repoRoot, filePath, "session-1")) as string;
+		const firstNamed: string[] = first.match(/_toolkit\/doc-\d+\.md/g) ?? [];
+		assert.ok(
+			firstNamed.length < docs.length,
+			"this fan-out must truncate for the test to exercise anything"
+		);
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(
+			[...state.announced].sort(),
+			[...firstNamed].sort(),
+			"only the docs the emitted text actually named are marked announced"
+		);
+
+		const second = await resolveArchitectNag(repoRoot, filePath, "session-1");
+		assert.ok(
+			second,
+			"the docs behind the truncation tail are still unannounced, so a later read names them"
+		);
+		const secondNamed: string[] = (second as string).match(/_toolkit\/doc-\d+\.md/g) ?? [];
+		assert.equal(
+			secondNamed.filter((doc) => firstNamed.includes(doc)).length,
+			0,
+			"the second announcement names only docs the first one dropped"
+		);
+	});
+});
+
 test("formatNag: a single doc entry longer than the ceiling is still emitted alone, past the bound", () => {
 	// Tested against `formatNag` directly rather than through
 	// `resolveArchitectNag`'s on-disk path: a doc entry this long could never
@@ -338,13 +373,30 @@ test("formatNag: a single doc entry longer than the ceiling is still emitted alo
 	// (`included = Math.max(included, 1)`), so it's tested at that level —
 	// a future edit that made the ceiling strictly hard would fail this test.
 	const overLongDoc = `_toolkit/${"x".repeat(MAX_EMISSION_BYTES)}.md`;
-	const result = formatNag([overLongDoc]);
+	const { text, includedDocs } = formatNag([overLongDoc]);
 
-	assert.match(result, new RegExp(overLongDoc.replace(/[.+*]/g, "\\$&")));
+	assert.match(text, new RegExp(overLongDoc.replace(/[.+*]/g, "\\$&")));
+	assert.deepEqual(includedDocs, [overLongDoc]);
 	assert.ok(
-		Buffer.byteLength(result, "utf8") > MAX_EMISSION_BYTES,
-		`a single doc entry longer than the ceiling must still be emitted whole, exceeding the ${MAX_EMISSION_BYTES}-byte bound — got ${Buffer.byteLength(result, "utf8")} bytes`
+		Buffer.byteLength(text, "utf8") > MAX_EMISSION_BYTES,
+		`a single doc entry longer than the ceiling must still be emitted whole, exceeding the ${MAX_EMISSION_BYTES}-byte bound — got ${Buffer.byteLength(text, "utf8")} bytes`
 	);
+});
+
+test("formatNag: reports exactly the docs its text names when the list is truncated", () => {
+	const docs = Array.from({ length: 500 }, (_, i) => `_toolkit/doc-${i}.md`);
+	const { text, includedDocs } = formatNag(docs);
+
+	assert.ok(
+		includedDocs.length < docs.length,
+		"this list must truncate for the test to exercise anything"
+	);
+	assert.deepEqual(
+		includedDocs,
+		text.match(/_toolkit\/doc-\d+\.md/g),
+		"includedDocs is what the text names, in the order it names them"
+	);
+	assert.match(text, new RegExp(`\\(\\+${docs.length - includedDocs.length} more matched\\)`));
 });
 
 test("loadRouteState: a corrupt state file is treated as absent, not thrown", async () => {

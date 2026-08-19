@@ -82,13 +82,19 @@ function extractArchitectDocPath(relativePath) {
  * One doc is always named even when its own formatted entry alone exceeds
  * the ceiling — see `MAX_EMISSION_BYTES`.
  *
+ * Returns the docs the text actually named alongside it, not just the text.
+ * Announce-once bookkeeping marks a doc as delivered, and a doc dropped
+ * behind the `(+N more matched)` tail was not delivered — deriving that
+ * boundary a second time at the call site would have to stay in sync with
+ * this function forever, so the boundary is reported from where it is drawn.
+ *
  * @param {string[]} unreadDocs
- * @returns {string}
+ * @returns {{text: string, includedDocs: string[]}}
  */
 export function formatNag(unreadDocs) {
 	const full = `${NAG_PREFIX}${unreadDocs.join(", ")}${NAG_SUFFIX}`;
 	if (Buffer.byteLength(full, "utf8") <= MAX_EMISSION_BYTES) {
-		return full;
+		return { text: full, includedDocs: [...unreadDocs] };
 	}
 
 	let included = 0;
@@ -103,9 +109,14 @@ export function formatNag(unreadDocs) {
 	}
 	included = Math.max(included, 1);
 
+	const includedDocs = unreadDocs.slice(0, included);
 	const remaining = unreadDocs.length - included;
 	const tail = remaining > 0 ? ` (+${remaining} more matched)` : "";
-	return `${NAG_PREFIX}${unreadDocs.slice(0, included).join(", ")}${NAG_SUFFIX}${tail}`;
+
+	return {
+		text: `${NAG_PREFIX}${includedDocs.join(", ")}${NAG_SUFFIX}${tail}`,
+		includedDocs,
+	};
 }
 
 /**
@@ -390,7 +401,12 @@ export async function saveRouteState(repoRoot, sessionId, state) {
  *    is of, and that doc must never announce itself. Each doc is named at
  *    most once per session: once emitted it is added to `announced` and
  *    never emitted again, even if it is never actually read. The payload is
- *    capped at `MAX_EMISSION_BYTES`; see `formatNag`.
+ *    capped at `MAX_EMISSION_BYTES`; see `formatNag`. Only the docs the
+ *    emitted text names enter `announced` — a doc dropped behind the
+ *    `(+N more matched)` tail is still unannounced, so a later read in the
+ *    same session names it. Marking the whole candidate list announced
+ *    would silence the dropped tail for the session without ever naming it,
+ *    which is exactly the honesty the truncation exists to keep.
  *
  * @param {string} repoRoot
  * @param {string} filePath
@@ -437,7 +453,8 @@ export async function resolveArchitectNag(repoRoot, filePath, sessionId) {
 		return null;
 	}
 
-	for (const doc of resolvableDocs) {
+	const { text, includedDocs } = formatNag(resolvableDocs);
+	for (const doc of includedDocs) {
 		announcedSet.add(doc);
 	}
 	await saveRouteState(repoRoot, sessionId, {
@@ -445,5 +462,5 @@ export async function resolveArchitectNag(repoRoot, filePath, sessionId) {
 		announced: [...announcedSet],
 	});
 
-	return formatNag(resolvableDocs);
+	return text;
 }
