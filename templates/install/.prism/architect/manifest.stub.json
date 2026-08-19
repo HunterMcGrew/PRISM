@@ -25,6 +25,5 @@
 	".prism/audits/**": "_toolkit/audit-workflow.md",
 	".prism/**": "_toolkit/install-layout.md",
 	"docs/": "_toolkit/documentation.md",
-	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md",
-	"**": "_toolkit/skills-ecosystem.md"
+	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md"
 }

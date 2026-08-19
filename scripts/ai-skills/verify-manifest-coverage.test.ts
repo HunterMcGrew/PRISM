@@ -7,10 +7,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-	compileMatcher,
+	findBraceGlobKeys,
+	findCatchAllKeys,
 	findMissingCoverage,
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 
 test("compileMatcher: exact path", () => {
 	const matcher = compileMatcher(".prism/SPEC.md");
@@ -138,6 +140,42 @@ test("loadedDocsForScope: mixed string and array values across keys", () => {
 		"skills-ecosystem.md",
 		"spec-editing.md",
 	]);
+});
+
+test("findCatchAllKeys: a catch-all pattern matches the empty string and is flagged", () => {
+	assert.equal(compileMatcher("**")(""), true);
+	assert.equal(compileMatcher("*")(""), true);
+	assert.equal(compileMatcher(".prism/**")(""), false);
+
+	const failures = findCatchAllKeys({
+		"**": "skills-ecosystem.md",
+		".prism/**": "install-layout.md",
+	});
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /"\*\*"/);
+});
+
+test("findCatchAllKeys: empty when no route matches the empty string", () => {
+	const failures = findCatchAllKeys({
+		".prism/**": "install-layout.md",
+		".prism/SPEC.md": "spec-editing.md",
+	});
+	assert.deepEqual(failures, []);
+});
+
+test("findBraceGlobKeys: a brace-glob key is flagged", () => {
+	const failures = findBraceGlobKeys({
+		"scripts/ai-skills/**/*.{ts,tsx}": "spec-editing.md",
+	});
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /brace glob/);
+});
+
+test("findBraceGlobKeys: empty when no key contains braces", () => {
+	const failures = findBraceGlobKeys({
+		".prism/**": "install-layout.md",
+	});
+	assert.deepEqual(failures, []);
 });
 
 test("findMissingCoverage: empty when every expected positive has skills-ecosystem.md", () => {

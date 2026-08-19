@@ -1,6 +1,6 @@
 /**
- * Read-triggered architect-context routing (plan `context-delivery-mechanism.md`
- * task 1, ADR-0071).
+ * Read-triggered architect-context routing (plan `opus5-port.md` task A2,
+ * ADR-0071).
  *
  * Architect-context routing keys on the working diff — `prism-architect`
  * startup step 4 matches the diff against `.prism/architect/manifest.json`.
@@ -16,26 +16,21 @@
  * when nothing matches or every matched doc has already been read this
  * session. It never injects a doc's body — naming is not delivering, so a
  * doc keeps being named until a real `Read` of its own path is observed,
- * which is what actually credits it as delivered. Each platform adapter
- * (`claude-post-read.ts` today; Cursor and Codex in a follow-up PR) owns only
- * the stdin/stdout shape for its host and calls this resolver for the actual
+ * which is what actually credits it as delivered. Each harness's own wire
+ * shape (`hooks/harnesses.mjs`) owns only the stdin/stdout envelope for its
+ * host; `hooks/hook.mjs` dispatches to this resolver for the actual
  * decision, so the routing logic is written and tested once.
+ *
+ * This is a zero-dependency `.mjs` module, converted from the original
+ * `architect-route.ts` so the shipped hook runs under plain `node` with no
+ * `tsx`/`node_modules` requirement in a consumer repo. `architect-route.d.mts`
+ * ships alongside it so `verify-manifest-coverage.ts` and any other
+ * TypeScript importer resolve its types.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { compileMatcher } from "../verify-manifest-coverage";
-
-export interface ArchitectRouteState {
-	/**
-	 * Doc paths (relative to `.prism/architect/`) whose own path has been
-	 * read this session — the observed-effect signal that a doc actually
-	 * reached the model, as opposed to merely being named in a nag.
-	 */
-	read: string[];
-}
-
-type Manifest = Record<string, string | string[]>;
+import { compileMatcher } from "./lib/match.mjs";
 
 const ARCHITECT_DIR_PREFIX = ".prism/architect/";
 
@@ -64,8 +59,11 @@ const MANIFEST_FILE_NAME = "manifest.json";
  * itself returns `null` — it's the routing table, not a doc, and no route's
  * value is ever `"manifest.json"`, so crediting it into the `read` array
  * would add a name that can never mean anything to a caller.
+ *
+ * @param {string} relativePath
+ * @returns {string | null}
  */
-function extractArchitectDocPath(relativePath: string): string | null {
+function extractArchitectDocPath(relativePath) {
 	if (!relativePath.startsWith(ARCHITECT_DIR_PREFIX)) {
 		return null;
 	}
@@ -82,8 +80,11 @@ function extractArchitectDocPath(relativePath: string): string | null {
  * honest about what was dropped; a silently clipped one reads as complete.
  * One doc is always named even when its own formatted entry alone exceeds
  * the ceiling — see `MAX_EMISSION_BYTES`.
+ *
+ * @param {string[]} unreadDocs
+ * @returns {string}
  */
-export function formatNag(unreadDocs: string[]): string {
+export function formatNag(unreadDocs) {
 	const full = `${NAG_PREFIX}${unreadDocs.join(", ")}${NAG_SUFFIX}`;
 	if (Buffer.byteLength(full, "utf8") <= MAX_EMISSION_BYTES) {
 		return full;
@@ -112,11 +113,12 @@ export function formatNag(unreadDocs: string[]): string {
  * slashes regardless of platform. Returns `null` for a path outside the repo
  * — nothing in `manifest.json` can match it, and treating it as a miss here
  * keeps that judgment call in one place instead of leaking into every caller.
+ *
+ * @param {string} repoRoot
+ * @param {string} filePath
+ * @returns {string | null}
  */
-export function toRepoRelativePath(
-	repoRoot: string,
-	filePath: string
-): string | null {
+export function toRepoRelativePath(repoRoot, filePath) {
 	const absoluteFilePath = path.isAbsolute(filePath)
 		? filePath
 		: path.resolve(repoRoot, filePath);
@@ -140,8 +142,11 @@ export function toRepoRelativePath(
  * from the transcript, from a path that genuinely has no manifest route.
  * Resolving the real root first means a missing manifest afterward tells the
  * truth: there really is no manifest to route against.
+ *
+ * @param {string} startDir
+ * @returns {Promise<string | null>}
  */
-export async function findRepoRoot(startDir: string): Promise<string | null> {
+export async function findRepoRoot(startDir) {
 	let dir = path.resolve(startDir);
 
 	while (true) {
@@ -163,8 +168,11 @@ export async function findRepoRoot(startDir: string): Promise<string | null> {
 
 /**
  * Reads and parses `.prism/architect/manifest.json` from the given repo root.
+ *
+ * @param {string} repoRoot
+ * @returns {Promise<Record<string, string | string[]>>}
  */
-async function loadManifest(repoRoot: string): Promise<Manifest> {
+async function loadManifest(repoRoot) {
 	const manifestPath = path.join(
 		repoRoot,
 		".prism",
@@ -172,21 +180,22 @@ async function loadManifest(repoRoot: string): Promise<Manifest> {
 		"manifest.json"
 	);
 	const raw = await fs.readFile(manifestPath, "utf8");
-	return JSON.parse(raw) as Manifest;
+	return JSON.parse(raw);
 }
 
 /**
  * Returns every doc the manifest routes `relativePath` to, in first-match
  * order with duplicates removed. Reuses `compileMatcher` from
- * `verify-manifest-coverage.ts` rather than re-deriving the three matcher
- * shapes (exact, directory-prefix, glob) a second time.
+ * `lib/match.mjs` rather than re-deriving the three matcher shapes (exact,
+ * directory-prefix, glob) a second time.
+ *
+ * @param {Record<string, string | string[]>} manifest
+ * @param {string} relativePath
+ * @returns {string[]}
  */
-export function matchDocsForPath(
-	manifest: Manifest,
-	relativePath: string
-): string[] {
-	const docs: string[] = [];
-	const seen = new Set<string>();
+export function matchDocsForPath(manifest, relativePath) {
+	const docs = [];
+	const seen = new Set();
 
 	for (const [pattern, docOrDocs] of Object.entries(manifest)) {
 		if (!compileMatcher(pattern)(relativePath)) {
@@ -215,11 +224,12 @@ export function matchDocsForPath(
  * produce one. Skipping it here is the fail-open choice consistent with the
  * rest of this hook: a stale manifest entry degrades to silence, not to a
  * permanent unreadable nag.
+ *
+ * @param {string} repoRoot
+ * @param {string[]} docs
+ * @returns {Promise<string[]>}
  */
-async function filterDocsOnDisk(
-	repoRoot: string,
-	docs: string[]
-): Promise<string[]> {
+async function filterDocsOnDisk(repoRoot, docs) {
 	const checked = await Promise.all(
 		docs.map(async (doc) => {
 			const docPath = path.join(repoRoot, ARCHITECT_DIR_PREFIX, doc);
@@ -234,35 +244,44 @@ async function filterDocsOnDisk(
 			}
 		})
 	);
-	return checked.filter((doc): doc is string => doc !== null);
+	return checked.filter((doc) => doc !== null);
 }
 
-function buildStateFilePath(repoRoot: string, sessionId: string): string {
+/**
+ * @param {string} repoRoot
+ * @param {string} sessionId
+ * @returns {string}
+ */
+function buildStateFilePath(repoRoot, sessionId) {
 	const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
 	return path.join(repoRoot, ".prism", `architect-route-state.${safeSessionId}.json`);
 }
 
 /**
- * Loads the per-session read-tracking state. Returns `{ read: [] }` when no
- * state file exists yet — per `lazy-artifacts.md`, this file is created on
- * first write, never seeded — and also when an existing file cannot be read
- * or parsed, or has no `read` array (missing, truncated, hand-edited into
- * invalid JSON, or written under a schema this version doesn't recognize).
- * This state is a cache, not a record: treating unrecognized state the same
- * as absent costs nothing and the worst outcome is one doc getting
- * re-nagged, versus re-throwing and bricking the hook for the rest of the
- * session with no repair path.
+ * Loads the per-session read-tracking state. Returns `{ read: [], announced: [] }`
+ * when no state file exists yet — per `lazy-artifacts.md`, this file is
+ * created on first write, never seeded — and also when an existing file
+ * cannot be read or parsed, or has no `read`/`announced` array (missing,
+ * truncated, hand-edited into invalid JSON, or written under a schema this
+ * version doesn't recognize). This state is a cache, not a record: treating
+ * unrecognized state the same as absent costs nothing and the worst outcome
+ * is one doc getting re-nagged, versus re-throwing and bricking the hook for
+ * the rest of the session with no repair path.
+ *
+ * @param {string} repoRoot
+ * @param {string} sessionId
+ * @returns {Promise<{read: string[], announced: string[]}>}
  */
-export async function loadRouteState(
-	repoRoot: string,
-	sessionId: string
-): Promise<ArchitectRouteState> {
+export async function loadRouteState(repoRoot, sessionId) {
 	try {
 		const raw = await fs.readFile(buildStateFilePath(repoRoot, sessionId), "utf8");
-		const parsed = JSON.parse(raw) as Partial<ArchitectRouteState>;
-		return { read: Array.isArray(parsed.read) ? parsed.read : [] };
+		const parsed = JSON.parse(raw);
+		return {
+			read: Array.isArray(parsed.read) ? parsed.read : [],
+			announced: Array.isArray(parsed.announced) ? parsed.announced : [],
+		};
 	} catch {
-		return { read: [] };
+		return { read: [], announced: [] };
 	}
 }
 
@@ -282,12 +301,15 @@ const STALE_STATE_FILE_AGE_MS = 24 * 60 * 60 * 1000;
  * failures here (a file removed between the listing and the unlink, a
  * permissions error) are swallowed — pruning is best-effort housekeeping,
  * never a reason to fail the save it rides along with.
+ *
+ * @param {string} repoRoot
+ * @returns {Promise<void>}
  */
-async function pruneStaleRouteState(repoRoot: string): Promise<void> {
+async function pruneStaleRouteState(repoRoot) {
 	const stateDir = path.join(repoRoot, ".prism");
 	const now = Date.now();
 
-	let entries: string[];
+	let entries;
 	try {
 		entries = await fs.readdir(stateDir);
 	} catch {
@@ -321,12 +343,13 @@ async function pruneStaleRouteState(repoRoot: string): Promise<void> {
  * mid-write leaves either the prior state or the new one, never a
  * half-written file the next `Read` would choke on. Also prunes stale
  * sibling state files from past sessions (`pruneStaleRouteState`).
+ *
+ * @param {string} repoRoot
+ * @param {string} sessionId
+ * @param {{read: string[], announced: string[]}} state
+ * @returns {Promise<void>}
  */
-export async function saveRouteState(
-	repoRoot: string,
-	sessionId: string,
-	state: ArchitectRouteState
-): Promise<void> {
+export async function saveRouteState(repoRoot, sessionId, state) {
 	const targetPath = buildStateFilePath(repoRoot, sessionId);
 	await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
@@ -346,7 +369,8 @@ export async function saveRouteState(
 /**
  * Resolves what to tell the model about architect context for a file read,
  * or `null` when there is nothing to say — either no manifest route matches
- * the path, or every matching doc has already been read this session.
+ * the path, or every matching doc has already been named this session
+ * (`announced`).
  *
  * Two things happen on every call, in order:
  *
@@ -354,18 +378,25 @@ export async function saveRouteState(
  *    `.prism/architect/`, that doc is marked read — an observed effect,
  *    not an assumption. A doc counts as delivered only once its own path is
  *    actually read; naming it in a nag is not delivery, so an unread doc
- *    keeps being named until this fires for it.
- * 2. **Nag the unread.** If `filePath` matches one or more manifest routes,
- *    every matched doc not yet marked read, and confirmed to still exist on
- *    disk (`filterDocsOnDisk`), is named by path in a single nag payload —
- *    no doc bodies are ever injected. The nag is capped at
- *    `MAX_EMISSION_BYTES`; see `formatNag`.
+ *    keeps being named until this fires for it. `read` is the only array a
+ *    write-time deny gate (PR 2D) ever clears against.
+ * 2. **Announce the unannounced.** If `filePath` matches one or more
+ *    manifest routes, every matched doc that is neither already `read` nor
+ *    already `announced` this session, and confirmed to still exist on disk
+ *    (`filterDocsOnDisk`), is named by path in a single payload — no doc
+ *    bodies are ever injected. Excluding `read` docs here matters for the
+ *    same-call case: step 1 may have just credited the doc this very read
+ *    is of, and that doc must never announce itself. Each doc is named at
+ *    most once per session: once emitted it is added to `announced` and
+ *    never emitted again, even if it is never actually read. The payload is
+ *    capped at `MAX_EMISSION_BYTES`; see `formatNag`.
+ *
+ * @param {string} repoRoot
+ * @param {string} filePath
+ * @param {string} sessionId
+ * @returns {Promise<string | null>}
  */
-export async function resolveArchitectNag(
-	repoRoot: string,
-	filePath: string,
-	sessionId: string
-): Promise<string | null> {
+export async function resolveArchitectNag(repoRoot, filePath, sessionId) {
 	const relativePath = toRepoRelativePath(repoRoot, filePath);
 	if (relativePath === null) {
 		return null;
@@ -373,6 +404,7 @@ export async function resolveArchitectNag(
 
 	const state = await loadRouteState(repoRoot, sessionId);
 	const readSet = new Set(state.read);
+	const announcedSet = new Set(state.announced);
 
 	// Two `Read` calls in the same tool-call batch spawn concurrent hook
 	// processes with no lock between this read and the `saveRouteState` below —
@@ -384,20 +416,33 @@ export async function resolveArchitectNag(
 	const docJustRead = extractArchitectDocPath(relativePath);
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
-		await saveRouteState(repoRoot, sessionId, { read: [...readSet] });
+		await saveRouteState(repoRoot, sessionId, {
+			read: [...readSet],
+			announced: [...announcedSet],
+		});
 	}
 
 	const manifest = await loadManifest(repoRoot);
 	const matchedDocs = matchDocsForPath(manifest, relativePath);
-	const unreadDocs = matchedDocs.filter((doc) => !readSet.has(doc));
-	if (unreadDocs.length === 0) {
+	const unannouncedDocs = matchedDocs.filter(
+		(doc) => !readSet.has(doc) && !announcedSet.has(doc)
+	);
+	if (unannouncedDocs.length === 0) {
 		return null;
 	}
 
-	const resolvableDocs = await filterDocsOnDisk(repoRoot, unreadDocs);
+	const resolvableDocs = await filterDocsOnDisk(repoRoot, unannouncedDocs);
 	if (resolvableDocs.length === 0) {
 		return null;
 	}
+
+	for (const doc of resolvableDocs) {
+		announcedSet.add(doc);
+	}
+	await saveRouteState(repoRoot, sessionId, {
+		read: [...readSet],
+		announced: [...announcedSet],
+	});
 
 	return formatNag(resolvableDocs);
 }

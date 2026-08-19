@@ -21,6 +21,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isDirectCliEntry } from "./lib/cli-entry";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.PRISM_REPO_ROOT
@@ -79,38 +80,6 @@ const EXPECTED_POSITIVES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Compiles a manifest key into a matcher. Three shapes are supported,
- * matching the patterns in use across the current manifest:
- *   - Exact path (no wildcards, no trailing slash): `.prism/SPEC.md`
- *   - Directory prefix (trailing slash, no wildcards):
- *     `.claude/skills/prism-qa-test-plan/`
- *   - Glob: `**` matches across path segments; `*` matches within a single
- *     segment. Other regex metacharacters are escaped.
- */
-export function compileMatcher(pattern: string): (filePath: string) => boolean {
-	if (!pattern.includes("*") && !pattern.endsWith("/")) {
-		return (filePath) => filePath === pattern;
-	}
-
-	if (pattern.endsWith("/") && !pattern.includes("*")) {
-		const prefix = pattern;
-		const exact = pattern.slice(0, -1);
-		return (filePath) => filePath === exact || filePath.startsWith(prefix);
-	}
-
-	const doubleStarToken =
-		String.fromCharCode(0) + "DOUBLE_STAR" + String.fromCharCode(0);
-	const regexBody = pattern
-		.replace(/\*\*/g, doubleStarToken)
-		.replace(/[.+^${}()|[\]\\]/g, "\\$&")
-		.replace(/\*/g, "[^/]*")
-		.split(doubleStarToken)
-		.join(".*");
-	const regex = new RegExp(`^${regexBody}$`);
-	return (filePath) => regex.test(filePath);
-}
-
-/**
  * Resolves the architect docs that would load for a given file scope against
  * the manifest. Iterates every manifest key per file and collects all matches,
  * matching the contract in `.prism/references/architect-context.md`.
@@ -141,6 +110,42 @@ export function loadedDocsForScope(
 }
 
 /**
+ * Returns one failure message per manifest route whose compiled matcher
+ * accepts the empty string — the computable definition of "this pattern
+ * constrains nothing." `compileMatcher("**")` and `compileMatcher("*")` both
+ * accept `""`; `compileMatcher(".prism/**")` does not. A catch-all route
+ * matches every read in the repo, which makes the write-time deny gate
+ * (PR 2D) unconditional rather than scoped — the failure this check exists
+ * to prevent before that gate exists. Empty array means no route is a
+ * catch-all.
+ */
+export function findCatchAllKeys(manifest: Manifest): string[] {
+	return Object.keys(manifest)
+		.filter((key) => compileMatcher(key)(""))
+		.map(
+			(key) =>
+				`manifest route "${key}" matches the empty string, so it constrains nothing and matches every path — remove it or narrow it to a real prefix.`
+		);
+}
+
+/**
+ * Returns one failure message per manifest key containing a brace glob
+ * (`{ts,tsx}`). `compileMatcher` escapes `{` and `}` into a regex literal
+ * class rather than expanding brace alternation, so a route written this way
+ * compiles to a regex that matches only a filename containing literal brace
+ * characters — silently matching nothing real. Empty array means every key
+ * is safe to compile.
+ */
+export function findBraceGlobKeys(manifest: Manifest): string[] {
+	return Object.keys(manifest)
+		.filter((key) => key.includes("{") || key.includes("}"))
+		.map(
+			(key) =>
+				`manifest route "${key}" uses a brace glob; compileMatcher escapes braces as literals rather than expanding them, so this route would silently match nothing. Write one route per extension instead.`
+		);
+}
+
+/**
  * Returns one failure message per expected-positive persona that is missing
  * `skills-ecosystem.md`. Empty array means coverage is preserved.
  */
@@ -167,6 +172,18 @@ async function main(): Promise<void> {
 	);
 	const raw = await fs.readFile(manifestPath, "utf8");
 	const manifest = JSON.parse(raw) as Manifest;
+
+	const structuralFailures = [
+		...findCatchAllKeys(manifest),
+		...findBraceGlobKeys(manifest),
+	];
+	if (structuralFailures.length > 0) {
+		console.error("\nverify-manifest-coverage failed:");
+		for (const failure of structuralFailures) {
+			console.error(`  - ${failure}`);
+		}
+		process.exit(1);
+	}
 
 	const result: Record<string, string[]> = {};
 	for (const persona of PERSONA_SCOPES) {
