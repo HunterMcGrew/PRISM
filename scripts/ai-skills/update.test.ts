@@ -21,12 +21,15 @@ import assert from "node:assert/strict";
 
 import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
 import {
+	appendHookStateGitignoreLines,
 	applyFilePass,
 	assertSourceIsPlausible,
+	mergeHookSettingsRegistration,
+	refreshHookRuntime,
 	resolvePrismContentRoot,
 	runUpdate,
 } from "./update";
-import { hashContent } from "./utils";
+import { hashContent, pathExists } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
@@ -1410,4 +1413,518 @@ test("runUpdate fails fast when the consumer directory is not inside a git repos
 	} finally {
 		await fs.rm(tempRoot, { force: true, recursive: true });
 	}
+});
+
+// --- mergeHookSettingsRegistration: consumer-hook preservation ---
+
+/**
+ * PRISM's own hook registration block, mirroring
+ * `templates/install/.claude/settings.json` closely enough to exercise the
+ * merge without depending on that file's exact content.
+ */
+const PRISM_HOOK_SETTINGS = {
+	hooks: {
+		PostToolUse: [
+			{
+				matcher: "Read|Grep|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+					},
+				],
+			},
+		],
+		PostCompact: [
+			{
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PostCompact',
+					},
+				],
+			},
+		],
+	},
+};
+
+async function withHookMergeRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-hook-merge-"));
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.claude/settings.json",
+		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	try {
+		await body({ prismRepoRoot, consumerRepoRoot });
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+async function readConsumerSettings(
+	consumerRepoRoot: string
+): Promise<{ hooks?: Record<string, unknown[]> }> {
+	return JSON.parse(
+		await fs.readFile(
+			path.join(consumerRepoRoot, ".claude", "settings.json"),
+			"utf8"
+		)
+	) as { hooks?: Record<string, unknown[]> };
+}
+
+test("mergeHookSettingsRegistration: a consumer's own hook on an event PRISM also registers survives, and PRISM's is added", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		const postToolUse = settings.hooks?.PostToolUse ?? [];
+		assert.deepEqual(
+			postToolUse[0],
+			consumerOwnHook,
+			"the consumer's own PostToolUse entry must survive the merge"
+		);
+		assert.equal(
+			postToolUse.length,
+			2,
+			"PRISM's PostToolUse entry must be added alongside the consumer's"
+		);
+		assert.ok(
+			JSON.stringify(postToolUse[1]).includes(".claude/hooks/hook.mjs"),
+			"the second entry must be PRISM's own registration"
+		);
+		assert.ok(
+			settings.hooks?.PostCompact,
+			"PostCompact is added outright since the consumer never registered it"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: running twice does not duplicate PRISM's entry or drift the consumer's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const firstPass = await readConsumerSettings(consumerRepoRoot);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const secondPass = await readConsumerSettings(consumerRepoRoot);
+
+		assert.deepEqual(
+			secondPass,
+			firstPass,
+			"a repeat merge must be a no-op byte-for-byte, not just entry-count-stable"
+		);
+		assert.equal(
+			secondPass.hooks?.PostToolUse?.length,
+			2,
+			"the consumer entry plus exactly one PRISM entry — no duplicate PRISM registration"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer with no prior settings file receives PRISM's registration untouched", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(settings.hooks?.PostToolUse?.length, 1);
+		assert.equal(settings.hooks?.PostCompact?.length, 1);
+	});
+});
+
+const HOOK_RUNTIME_RELATIVE_PATHS = [
+	"hook.mjs",
+	"architect-route.mjs",
+	"harnesses.mjs",
+	"lib/match.mjs",
+];
+
+/** Stand-in for a delivered runtime file — carries the ownership marker `refreshHookRuntime` classifies on. */
+function prismRuntimeSource(label: string): string {
+	return `// @prism-hook-runtime\nexport const label = "${label}";\n`;
+}
+
+/**
+ * Seeds a PRISM source tree carrying both halves `refreshHookRuntime` reads —
+ * the hook runtime files and the settings block it merges — beside an empty
+ * consumer root.
+ */
+async function withHookRuntimeRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(
+		path.join(os.tmpdir(), "prism-hook-runtime-")
+	);
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	// The real consumer root is always an existing git repo — `runUpdate` fails
+	// fast otherwise — so the fixture creates it rather than leaving the seam to
+	// tolerate a root that cannot occur.
+	await fs.mkdir(consumerRepoRoot, { recursive: true });
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.claude/settings.json",
+		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+		await writeFile(
+			prismRepoRoot,
+			`scripts/ai-skills/hooks/${relativePath}`,
+			prismRuntimeSource(relativePath)
+		);
+	}
+	await writeFile(
+		prismRepoRoot,
+		"scripts/ai-skills/hooks/hook.d.mts",
+		"export declare const label: string;\n"
+	);
+	try {
+		await body({ prismRepoRoot, consumerRepoRoot });
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+test("refreshHookRuntime: a consumer's own file at a runtime path is backed up, never silently overwritten", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false
+		);
+
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs.bak"),
+			consumerOwnBody,
+			"the consumer's bytes survive at the .bak path"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			prismRuntimeSource("hook.mjs")
+		);
+
+		const hookOutcome = outcomes.find(
+			(outcome) => outcome.relativePath === ".claude/hooks/hook.mjs"
+		);
+		assert.equal(
+			hookOutcome?.action,
+			"backed-up",
+			"the run summary reports the backup rather than writing silently"
+		);
+		assert.ok(hookOutcome?.backupPath);
+	});
+});
+
+test("refreshHookRuntime: an earlier PRISM copy is replaced in place with no backup", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/hook.mjs",
+			"// @prism-hook-runtime\nexport const label = \"an older version\";\n"
+		);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false
+		);
+
+		assert.equal(
+			outcomes.find((o) => o.relativePath === ".claude/hooks/hook.mjs")?.action,
+			"overwritten",
+			"a marked file is PRISM's own at any version, so a version bump is not a divergence"
+		);
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs.bak")
+			),
+			false,
+			"replacing PRISM's own copy leaves no .bak behind"
+		);
+	});
+});
+
+test("refreshHookRuntime: an already-current file is a no-op", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false);
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false
+		);
+
+		assert.deepEqual(
+			outcomes.map((outcome) => outcome.action),
+			HOOK_RUNTIME_RELATIVE_PATHS.map(() => "no-op"),
+			"a repeat run rewrites nothing"
+		);
+	});
+});
+
+test("refreshHookRuntime: dryRun reports the same outcomes without touching the filesystem", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			true
+		);
+
+		assert.equal(
+			outcomes.find((o) => o.relativePath === ".claude/hooks/hook.mjs")?.action,
+			"backed-up",
+			"the preview names what a real run would do"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			consumerOwnBody,
+			"the consumer's file is left exactly as it was"
+		);
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "architect-route.mjs")
+			),
+			false,
+			"no runtime file is written"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".gitignore")),
+			false,
+			"no .gitignore is created"
+		);
+	});
+});
+
+test("refreshHookRuntime: delivers the runtime modules only, not the type sidecars beside them", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is delivered`
+			);
+		}
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "hook.d.mts")
+			),
+			false,
+			"declaration sidecars exist for PRISM's own type-check and are inert in a consumer"
+		);
+	});
+});
+
+test("refreshHookRuntime: prunes a marked file it no longer ships, backs it up first, and leaves the consumer's own alongside it", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const staleContents = prismRuntimeSource("a runtime file from a past version");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/claude-post-read.mjs",
+			staleContents
+		);
+		const consumerScript = "#!/usr/bin/env node\nconsole.log('mine');\n";
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/consumer-audit.mjs",
+			consumerScript
+		);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false
+		);
+
+		const pruned = outcomes.find(
+			(o) => o.relativePath === ".claude/hooks/claude-post-read.mjs"
+		);
+		assert.equal(pruned?.action, "removed-with-backup");
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "claude-post-read.mjs")
+			),
+			false,
+			"a renamed runtime file does not stay resident forever"
+		);
+		assert.ok(pruned?.backupPath, "the outcome names the backup path");
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/claude-post-read.mjs.bak"),
+			staleContents,
+			"a marked file carried at a path PRISM no longer ships is recoverable, not silently lost — it may be a consumer's own adaptation"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/consumer-audit.mjs"),
+			consumerScript,
+			"an unmarked file sharing the directory is the consumer's and is never removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: the backup of a pruned file is not itself pruned on the next run", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const adapted = prismRuntimeSource("a consumer's adaptation of a delivered file");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/my-adapted-hook.mjs",
+			adapted
+		);
+
+		const backupNamesPerRun: string[][] = [];
+		const prunedPerRun: number[] = [];
+		for (let run = 0; run < 4; run += 1) {
+			const outcomes = await refreshHookRuntime(
+				prismRepoRoot,
+				consumerRepoRoot,
+				false
+			);
+			prunedPerRun.push(
+				outcomes.filter((o) => o.action === "removed-with-backup").length
+			);
+			const names = await fs.readdir(
+				path.join(consumerRepoRoot, ".claude", "hooks")
+			);
+			backupNamesPerRun.push(
+				names.filter((name) => name.startsWith("my-adapted-hook")).sort()
+			);
+		}
+
+		assert.deepEqual(
+			prunedPerRun,
+			[1, 0, 0, 0],
+			"the adaptation is pruned once; the backup PRISM wrote is never a later run's prune target"
+		);
+		for (const names of backupNamesPerRun) {
+			assert.deepEqual(
+				names,
+				["my-adapted-hook.mjs.bak"],
+				"the backup name is stable across runs — a growing `.bak.bak.bak` chain means prune is re-selecting its own output"
+			);
+		}
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/my-adapted-hook.mjs.bak"),
+			adapted,
+			"the recovery guarantee holds past the first update cycle"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer command that merely mentions the entry point is not treated as PRISM's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const wrapper = {
+			matcher: "Read",
+			hooks: [
+				{
+					type: "command",
+					command:
+						"bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'",
+				},
+			],
+		};
+		const backupTwin = {
+			matcher: "Read",
+			hooks: [
+				{
+					type: "command",
+					command:
+						'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs.bak" --tool=claude',
+				},
+			],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [wrapper, backupTwin] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const postToolUse =
+			(await readConsumerSettings(consumerRepoRoot)).hooks?.PostToolUse ?? [];
+		assert.deepEqual(
+			postToolUse.slice(0, 2),
+			[wrapper, backupTwin],
+			"a wrapper command and a .bak-twin registration are the consumer's, not PRISM's"
+		);
+		assert.equal(postToolUse.length, 3, "PRISM's own entry is appended alongside");
+	});
+});
+
+test("appendHookStateGitignoreLines: writes both state-file globs as exact lines", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		assert.ok(lines.includes(".prism/architect-route-state.*.json"));
+		assert.ok(lines.includes(".prism/architect-route-state.*.json.tmp"));
+	});
+});
+
+test("appendHookStateGitignoreLines: appends after a file with no trailing newline without joining lines", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".gitignore", "node_modules");
+
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		assert.ok(lines.includes("node_modules"), "the existing entry stays its own line");
+		assert.ok(lines.includes(".prism/architect-route-state.*.json"));
+	});
+});
+
+test("appendHookStateGitignoreLines: running twice leaves exactly one copy of each line", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		for (const expected of [
+			".prism/architect-route-state.*.json",
+			".prism/architect-route-state.*.json.tmp",
+		]) {
+			assert.equal(
+				lines.filter((line) => line === expected).length,
+				1,
+				`${expected} appears exactly once after a repeat run`
+			);
+		}
+	});
 });

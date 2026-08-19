@@ -7,10 +7,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-	compileMatcher,
+	findBraceGlobKeys,
+	findCatchAllKeys,
 	findMissingCoverage,
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 
 test("compileMatcher: exact path", () => {
 	const matcher = compileMatcher(".prism/SPEC.md");
@@ -138,6 +140,52 @@ test("loadedDocsForScope: mixed string and array values across keys", () => {
 		"skills-ecosystem.md",
 		"spec-editing.md",
 	]);
+});
+
+test("findCatchAllKeys: every wildcard-only opening segment is flagged, not just the two that match the empty string", () => {
+	// `**` and `*` accept the empty string, so an empty-string probe catches
+	// them. The other three compile to a regex requiring a separator, reject
+	// the empty string, and still match every nested path — which is why the
+	// check is a leading-literal-segment requirement rather than a probe.
+	for (const spelling of ["**", "*", "**/*", "*/**", "**/**"]) {
+		const failures = findCatchAllKeys({ [spelling]: "skills-ecosystem.md" });
+		assert.equal(
+			failures.length,
+			1,
+			`"${spelling}" opens with a wildcard-only segment and must be flagged`
+		);
+	}
+
+	assert.equal(compileMatcher("**/*")(""), false);
+	assert.equal(
+		compileMatcher("**/*")("scripts/ai-skills/build.ts"),
+		true,
+		"the spelling an empty-string probe accepts still matches every nested path"
+	);
+});
+
+test("findCatchAllKeys: empty when every route opens with a literal segment", () => {
+	const failures = findCatchAllKeys({
+		".prism/**": "install-layout.md",
+		".prism/SPEC.md": "spec-editing.md",
+		"scripts/**/*.ts": "spec-editing.md",
+	});
+	assert.deepEqual(failures, []);
+});
+
+test("findBraceGlobKeys: a brace-glob key is flagged", () => {
+	const failures = findBraceGlobKeys({
+		"scripts/ai-skills/**/*.{ts,tsx}": "spec-editing.md",
+	});
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /brace glob/);
+});
+
+test("findBraceGlobKeys: empty when no key contains braces", () => {
+	const failures = findBraceGlobKeys({
+		".prism/**": "install-layout.md",
+	});
+	assert.deepEqual(failures, []);
 });
 
 test("findMissingCoverage: empty when every expected positive has skills-ecosystem.md", () => {

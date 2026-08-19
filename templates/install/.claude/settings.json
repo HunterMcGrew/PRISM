@@ -1,1 +1,25 @@
-{}
+{
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Read|Grep|Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs\" --tool=claude"
+					}
+				]
+			}
+		],
+		"PostCompact": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs\" --tool=claude --event=PostCompact"
+					}
+				]
+			}
+		]
+	}
+}

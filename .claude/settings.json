@@ -2,11 +2,21 @@
 	"hooks": {
 		"PostToolUse": [
 			{
-				"matcher": "Read",
+				"matcher": "Read|Grep|Bash",
 				"hooks": [
 					{
 						"type": "command",
-						"command": "\"$CLAUDE_PROJECT_DIR/node_modules/.bin/tsx\" \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/claude-post-read.ts\""
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.mjs\" --tool=claude"
+					}
+				]
+			}
+		],
+		"PostCompact": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$CLAUDE_PROJECT_DIR/scripts/ai-skills/hooks/hook.mjs\" --tool=claude --event=PostCompact"
 					}
 				]
 			}

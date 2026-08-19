@@ -535,6 +535,12 @@ export async function runUpdate(
 		dryRun
 	);
 
+	const hookOutcomes = await refreshHookRuntime(
+		prismRepoRoot,
+		consumerRepoRoot,
+		dryRun
+	);
+
 	const ruleLoadScan = await scanConsumerRuleLoad(
 		consumerContentRoot,
 		overlayContentRoot,
@@ -566,7 +572,22 @@ export async function runUpdate(
 
 	const agentsMdRefresh: AgentsMdRefreshOutcome = { refreshed };
 
-	return { ...summary, agentsMdRefresh, ruleLoadWarnings: ruleLoadScan.warnings };
+	// The hook runtime lands outside the content root the file pass walks, so
+	// its outcomes are folded in here rather than returned by `applyFilePass`.
+	// Without this the seam would write into a consumer's tree without
+	// appearing in the run summary or the `--dry-run` preview at all.
+	return {
+		...summary,
+		outcomes: [...summary.outcomes, ...hookOutcomes],
+		backups: [
+			...summary.backups,
+			...hookOutcomes
+				.filter((outcome) => outcome.backupPath !== undefined)
+				.map((outcome) => outcome.backupPath as string),
+		],
+		agentsMdRefresh,
+		ruleLoadWarnings: ruleLoadScan.warnings,
+	};
 }
 
 /** Rules and per-file `load:` warnings collected by `scanConsumerRuleLoad`. */
@@ -946,6 +967,388 @@ async function refreshPlatformDirs(
 			tokenMap,
 			OVERLAY_SUBPATH
 		);
+	}
+}
+
+/**
+ * The hook runtime files delivered into a consumer's `.claude/hooks/`, named
+ * relative to `scripts/ai-skills/hooks/`.
+ *
+ * Enumerated rather than copied as a tree. A recursive copy delivers whatever
+ * happens to sit in the source directory — which today includes the `.d.mts`
+ * declaration sidecars that exist for PRISM's own `tsc` run and are inert in a
+ * consumer repo — and it silently overwrites whatever sits at the target path,
+ * consumer-authored or not. An explicit list is also what makes
+ * `pruneStaleHookRuntimeFiles` able to tell a file PRISM still ships from one a
+ * past rename left behind.
+ */
+const HOOK_RUNTIME_FILES = [
+	"hook.mjs",
+	"architect-route.mjs",
+	"harnesses.mjs",
+	"lib/match.mjs",
+];
+
+/** Entry-point files under the copied hook runtime that need the executable bit. */
+const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
+
+/**
+ * The line every delivered runtime file carries near its top, identifying the
+ * file as PRISM's own.
+ *
+ * Ownership here is content-keyed, not the hash-keyed guarantee
+ * `applyIncomingFile` gives every other PRISM-owned path. `applyIncomingFile`
+ * preserves a consumer's in-place *edit* to a PRISM file (the consumer bytes
+ * diverge from the recorded hash, so they survive as `.bak`); the marker
+ * carries no such memory. A marked file is treated as PRISM's content at
+ * whatever version wrote it and is replaced without a backup, whether the
+ * existing bytes are an older PRISM copy or a consumer's hand-edit of one —
+ * `.claude/hooks/` sits outside the sync manifest's content root, so there is
+ * no recorded hash to diff an edit against. A file that does not carry the
+ * marker is the consumer's own and is backed up before being replaced.
+ * Adaptations belong in a separate, unmarked wrapper file that calls into the
+ * delivered runtime rather than in edits to the delivered file itself — an
+ * in-place edit to a marked file does not survive the next update.
+ */
+const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
+
+/**
+ * Matches the basenames `backupConsumerFile` produces — `<file>.bak`,
+ * `<file>.bak.1`, `<file>.bak.2`, … — so `pruneStaleHookRuntimeFiles` can
+ * recognize its own recovery copies without reading them.
+ */
+const BACKUP_BASENAME_PATTERN = /\.bak(\.\d+)?$/;
+
+/**
+ * Delivers one runtime file. Absent is a write, byte-identical is a no-op, a
+ * marker-carrying target is an overwrite regardless of its bytes (see
+ * `HOOK_RUNTIME_MARKER`), and anything else is the consumer's and is
+ * preserved as `.bak` before being replaced.
+ */
+async function deliverHookRuntimeFile(
+	sourcePath: string,
+	targetPath: string,
+	relativePath: string,
+	dryRun: boolean
+): Promise<FileOutcome> {
+	const incomingHash = await hashFile(sourcePath);
+	const consumerHash = await hashFileIfExists(targetPath);
+
+	if (consumerHash === null) {
+		await writeIncoming(sourcePath, targetPath, dryRun);
+
+		return { relativePath, action: "written" };
+	}
+
+	if (consumerHash === incomingHash) {
+		return { relativePath, action: "no-op" };
+	}
+
+	const existing = await readFileIfExists(targetPath);
+	if (existing !== null && existing.includes(HOOK_RUNTIME_MARKER)) {
+		await writeIncoming(sourcePath, targetPath, dryRun);
+
+		return { relativePath, action: "overwritten" };
+	}
+
+	const backupPath = await backupConsumerFile(targetPath, dryRun);
+	await writeIncoming(sourcePath, targetPath, dryRun);
+
+	return { relativePath, action: "backed-up", backupPath };
+}
+
+/**
+ * Removes files under the consumer's `.claude/hooks/` that carry
+ * `HOOK_RUNTIME_MARKER` but are no longer in `HOOK_RUNTIME_FILES` — the copy a
+ * rename in an earlier PRISM version left behind. Without this a renamed
+ * runtime file stays resident in every consumer forever.
+ *
+ * Only marked files are removed, so a consumer's own script sharing the
+ * directory is never touched. Backups are skipped by name
+ * (`BACKUP_BASENAME_PATTERN`) rather than by content: `backupConsumerFile`
+ * copies its source byte for byte, so the backup of a marked file carries the
+ * marker too and would re-select here on the next run, each pass backing up
+ * the previous backup one suffix longer. A recovery copy is the consumer's to
+ * read and delete, never PRISM's to reclaim. The marker is a content signal,
+ * not a path signal — a consumer who copies a delivered file elsewhere under
+ * `.claude/hooks/` to adapt it carries the marker along, so this backs up
+ * before removing rather than assuming every marked file at an unrecognized
+ * path is safe to discard outright.
+ */
+async function pruneStaleHookRuntimeFiles(
+	targetDir: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	if (!(await pathExists(targetDir))) {
+		return [];
+	}
+
+	const delivered = new Set(HOOK_RUNTIME_FILES);
+	const entries = await fs.readdir(targetDir, {
+		recursive: true,
+		withFileTypes: true,
+	});
+
+	const outcomes: FileOutcome[] = [];
+	for (const entry of entries) {
+		if (!entry.isFile()) {
+			continue;
+		}
+
+		const absolutePath = path.join(entry.parentPath, entry.name);
+		const relative = path
+			.relative(targetDir, absolutePath)
+			.split(path.sep)
+			.join("/");
+		if (delivered.has(relative)) {
+			continue;
+		}
+
+		if (BACKUP_BASENAME_PATTERN.test(entry.name)) {
+			continue;
+		}
+
+		const contents = await readFileIfExists(absolutePath);
+		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
+			continue;
+		}
+
+		const backupPath = await backupConsumerFile(absolutePath, dryRun);
+		if (!dryRun) {
+			await fs.rm(absolutePath, { force: true });
+		}
+
+		outcomes.push({
+			relativePath: `.claude/hooks/${relative}`,
+			action: "removed-with-backup",
+			backupPath,
+		});
+	}
+
+	return outcomes;
+}
+
+/** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the two hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
+const HOOK_STATE_GITIGNORE_LINES = [
+	".prism/architect-route-state.*.json",
+	".prism/architect-route-state.*.json.tmp",
+];
+
+/**
+ * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`,
+ * merges its registration into the consumer's `.claude/settings.json` (never
+ * overwriting an existing registration block), and appends the two hook
+ * state-file globs to the consumer's `.gitignore`. Shared by `prism:adopt`
+ * and `prism:update` through this one `runUpdate` seam, so both inherit the
+ * same delivery path.
+ *
+ * The registration in `templates/install/.claude/settings.json` names a path
+ * inside the consumer's own repo, so the runtime has to be delivered there
+ * for the registration to point at anything — without this seam the hook is
+ * a silent no-op in every consumer.
+ */
+export async function refreshHookRuntime(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	const sourceDir = path.join(prismRepoRoot, "scripts", "ai-skills", "hooks");
+	if (!(await pathExists(sourceDir))) {
+		return [];
+	}
+
+	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
+
+	const outcomes: FileOutcome[] = [];
+	for (const relative of HOOK_RUNTIME_FILES) {
+		const segments = relative.split("/");
+		const sourcePath = path.join(sourceDir, ...segments);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+
+		outcomes.push(
+			await deliverHookRuntimeFile(
+				sourcePath,
+				path.join(targetDir, ...segments),
+				`.claude/hooks/${relative}`,
+				dryRun
+			)
+		);
+	}
+
+	outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun)));
+
+	if (!dryRun) {
+		for (const entryPoint of HOOK_RUNTIME_ENTRY_POINTS) {
+			const entryPointPath = path.join(targetDir, entryPoint);
+			if (await pathExists(entryPointPath)) {
+				await fs.chmod(entryPointPath, 0o755);
+			}
+		}
+	}
+
+	await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun);
+	await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
+
+	return outcomes;
+}
+
+/**
+ * Matches a command string that *is* one of PRISM's own hook invocations,
+ * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` followed by
+ * PRISM's `--flag=value` arguments and nothing else.
+ *
+ * Anchored at both ends on purpose. A substring test for the entry-point path
+ * also claims a command that merely mentions it — a consumer's wrapper
+ * (`bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'`) or a
+ * registration pointed at a `hook.mjs.bak` twin — and `mergeHookEventEntries`
+ * drops every entry it claims, so a loose match deletes consumer-authored
+ * registrations. Matching the invocation's whole shape rather than the exact
+ * current command strings keeps repeat runs idempotent across versions: a
+ * registration written by an older PRISM whose flags have since changed is
+ * still recognized as PRISM's and replaced, instead of surviving alongside its
+ * own replacement.
+ */
+const PRISM_HOOK_COMMAND_PATTERN =
+	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/hook\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+
+/**
+ * Reports whether a `hooks[eventName]` array entry is one of PRISM's own
+ * registrations, as opposed to a consumer-authored entry on the same event key.
+ */
+function isPrismOwnedHookEntry(entry: unknown): boolean {
+	if (typeof entry !== "object" || entry === null) {
+		return false;
+	}
+
+	const innerHooks = (entry as { hooks?: unknown }).hooks;
+	if (!Array.isArray(innerHooks)) {
+		return false;
+	}
+
+	return innerHooks.some(
+		(innerHook) =>
+			typeof innerHook === "object" &&
+			innerHook !== null &&
+			typeof (innerHook as { command?: unknown }).command === "string" &&
+			PRISM_HOOK_COMMAND_PATTERN.test(
+				(innerHook as { command: string }).command
+			)
+	);
+}
+
+/**
+ * Composes one event key's registration array: the consumer's own entries
+ * (anything that isn't a PRISM-owned entry per `isPrismOwnedHookEntry`),
+ * followed by PRISM's current entries for that event. Dropping the prior
+ * PRISM entries before appending the current ones is what keeps repeat runs
+ * idempotent — a stale PRISM entry never survives alongside its replacement,
+ * and no entry is appended twice.
+ */
+function mergeHookEventEntries(
+	targetEntries: unknown,
+	sourceEntries: unknown[]
+): unknown[] {
+	const consumerEntries = Array.isArray(targetEntries)
+		? targetEntries.filter((entry) => !isPrismOwnedHookEntry(entry))
+		: [];
+
+	return [...consumerEntries, ...sourceEntries];
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.claude/settings.json`
+ * into the consumer's `.claude/settings.json`. The top-level `hooks` key is
+ * additive: an event name the consumer hasn't registered is added outright,
+ * and an event name both sides register (`PostToolUse`, `PostCompact`) is
+ * composed within its array via `mergeHookEventEntries` rather than replaced
+ * — a consumer's own matcher group on that event survives the merge instead
+ * of being overwritten by PRISM's. Re-running this merge is idempotent:
+ * `mergeHookEventEntries` drops PRISM's own prior entries before appending
+ * the current ones, so no entry is ever duplicated.
+ */
+export async function mergeHookSettingsRegistration(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const sourcePath = path.join(
+		prismRepoRoot,
+		"templates",
+		"install",
+		".claude",
+		"settings.json"
+	);
+	const sourceRaw = await readFileIfExists(sourcePath);
+	if (sourceRaw === null) {
+		return;
+	}
+
+	const sourceSettings = JSON.parse(sourceRaw) as {
+		hooks?: Record<string, unknown[]>;
+	};
+	if (!sourceSettings.hooks) {
+		return;
+	}
+
+	const targetPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const targetRaw = await readFileIfExists(targetPath);
+	const targetSettings = (
+		targetRaw === null ? {} : JSON.parse(targetRaw)
+	) as { hooks?: Record<string, unknown> };
+
+	const mergedHooks = { ...targetSettings.hooks };
+	for (const [eventName, sourceEntries] of Object.entries(
+		sourceSettings.hooks
+	)) {
+		mergedHooks[eventName] = mergeHookEventEntries(
+			targetSettings.hooks?.[eventName],
+			sourceEntries
+		);
+	}
+	const merged = { ...targetSettings, hooks: mergedHooks };
+
+	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
+		return;
+	}
+
+	if (!dryRun) {
+		await fs.mkdir(path.dirname(targetPath), { recursive: true });
+		await fs.writeFile(targetPath, `${JSON.stringify(merged, null, "\t")}\n`, "utf8");
+	}
+}
+
+/**
+ * Appends `HOOK_STATE_GITIGNORE_LINES` to the consumer's `.gitignore`,
+ * creating the file if absent. Append-only and idempotent — a line already
+ * present is never duplicated, and nothing else in the file is touched.
+ *
+ * This is a narrow, deliberate reversal of the "PRISM does not write your
+ * `.gitignore` for you" policy (`install-layout.md § Consumer overlay`,
+ * corrected in the same PR stack — task C6): the hook's per-session state
+ * files would otherwise dirty every consumer's working tree on first use.
+ */
+export async function appendHookStateGitignoreLines(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const gitignorePath = path.join(consumerRepoRoot, ".gitignore");
+	const current = (await readFileIfExists(gitignorePath)) ?? "";
+	const existingLines = new Set(current.split("\n").map((line) => line.trim()));
+
+	const missing = HOOK_STATE_GITIGNORE_LINES.filter(
+		(line) => !existingLines.has(line)
+	);
+	if (missing.length === 0) {
+		return;
+	}
+
+	const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+	const next = `${current}${separator}${missing.join("\n")}\n`;
+
+	if (!dryRun) {
+		await fs.writeFile(gitignorePath, next, "utf8");
 	}
 }
 
