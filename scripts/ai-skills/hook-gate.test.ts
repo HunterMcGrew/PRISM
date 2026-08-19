@@ -20,7 +20,11 @@ import { promisify } from "node:util";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { runPostCompactArm, runPostToolUseArm } from "./hooks/hook.mjs";
+import {
+	resolveHarnessFromArgv,
+	runPostCompactArm,
+	runPostToolUseArm,
+} from "./hooks/hook.mjs";
 import { HARNESSES, resolveToolKind } from "./hooks/harnesses.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -261,6 +265,27 @@ test("runPostCompactArm: with no session id, is a no-op that does not throw", as
 	await assert.doesNotReject(runPostCompactArm(JSON.stringify({ cwd: "/repo" })));
 });
 
+// --- Harness resolution ---
+
+test("resolveHarnessFromArgv: a well-formed --tool= flag resolves to its harness", () => {
+	const resolved = resolveHarnessFromArgv(["--tool=claude"]);
+	assert.equal(resolved?.tool, "claude");
+	assert.equal(resolved?.spec, HARNESSES.claude);
+});
+
+test("resolveHarnessFromArgv: an unknown or absent tool returns null", () => {
+	assert.equal(
+		resolveHarnessFromArgv(["--tool=notreal"]),
+		null,
+		"a --tool= value with no matching HARNESSES row resolves to null"
+	);
+	assert.equal(
+		resolveHarnessFromArgv([]),
+		null,
+		"no --tool= flag at all resolves to null"
+	);
+});
+
 // --- Cold-start integration leg ---
 
 /**
@@ -454,4 +479,45 @@ test("resolveToolKind: an unlisted or absent tool name falls back to write", () 
 	assert.equal(resolveToolKind(HARNESSES.cursor, "StrReplace"), "write");
 	assert.equal(resolveToolKind(HARNESSES.claude, "SomeToolNobodyMapped"), "write");
 	assert.equal(resolveToolKind(HARNESSES.claude, undefined), "write");
+});
+
+// --- Standalone process spawn (runs on every platform, including Windows) ---
+
+/**
+ * The cold-start leg above is the only place that spawns `hook.mjs` as its
+ * own process, and it is skipped on `win32` (see `skipColdStartOnWindows`)
+ * because packaging and the executable-bit assertion can't hold there. That
+ * leaves "the delivered entry point runs under plain `node`" with zero
+ * Windows coverage — everything else calls `runPostToolUseArm` in-process.
+ * This spawns `hook.mjs` straight from the source tree, no `npm pack` or
+ * `tar` involved, so it carries that one property on every platform.
+ */
+test("hook.mjs runs as its own process under plain node, from the source tree", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const hookPath = path.join(scriptDirectory, "hooks", "hook.mjs");
+
+		const result = spawnSync("node", [hookPath, "--tool=claude"], {
+			input: JSON.stringify({
+				session_id: "standalone-spawn-session",
+				cwd: repoRoot,
+				tool_name: "Read",
+				tool_input: {
+					file_path: path.join(repoRoot, "scripts", "ai-skills", "build.ts"),
+				},
+			}),
+			encoding: "utf8",
+		});
+
+		assert.equal(
+			result.status,
+			0,
+			`hook.mjs exited non-zero under plain node: ${result.stderr}`
+		);
+	});
 });

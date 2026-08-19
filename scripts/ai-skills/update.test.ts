@@ -1753,12 +1753,13 @@ test("refreshHookRuntime: delivers the runtime modules only, not the type sideca
 	});
 });
 
-test("refreshHookRuntime: prunes a marked file it no longer ships and leaves the consumer's own alongside it", async () => {
+test("refreshHookRuntime: prunes a marked file it no longer ships, backs it up first, and leaves the consumer's own alongside it", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const staleContents = prismRuntimeSource("a runtime file from a past version");
 		await writeFile(
 			consumerRepoRoot,
 			".claude/hooks/claude-post-read.mjs",
-			prismRuntimeSource("a runtime file from a past version")
+			staleContents
 		);
 		const consumerScript = "#!/usr/bin/env node\nconsole.log('mine');\n";
 		await writeFile(
@@ -1773,18 +1774,22 @@ test("refreshHookRuntime: prunes a marked file it no longer ships and leaves the
 			false
 		);
 
-		assert.equal(
-			outcomes.find(
-				(o) => o.relativePath === ".claude/hooks/claude-post-read.mjs"
-			)?.action,
-			"removed"
+		const pruned = outcomes.find(
+			(o) => o.relativePath === ".claude/hooks/claude-post-read.mjs"
 		);
+		assert.equal(pruned?.action, "removed-with-backup");
 		assert.equal(
 			await pathExists(
 				path.join(consumerRepoRoot, ".claude", "hooks", "claude-post-read.mjs")
 			),
 			false,
 			"a renamed runtime file does not stay resident forever"
+		);
+		assert.ok(pruned?.backupPath, "the outcome names the backup path");
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/claude-post-read.mjs.bak"),
+			staleContents,
+			"a marked file carried at a path PRISM no longer ships is recoverable, not silently lost — it may be a consumer's own adaptation"
 		);
 		assert.equal(
 			await readFile(consumerRepoRoot, ".claude/hooks/consumer-audit.mjs"),

@@ -996,22 +996,27 @@ const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
  * The line every delivered runtime file carries near its top, identifying the
  * file as PRISM's own.
  *
- * A file at one of PRISM's runtime paths carrying this marker is PRISM's copy —
- * whatever version wrote it — and is replaced in place. One that does not is
- * the consumer's own file and is backed up first, the same guarantee
- * `applyIncomingFile` gives every other PRISM-owned path. Ownership is
- * established by the marker rather than by a recorded hash because
- * `.claude/hooks/` sits outside the sync manifest's content root: without a
- * recorded hash every version bump would look like a consumer edit and leave a
- * needless `.bak` behind.
+ * Ownership here is content-keyed, not the hash-keyed guarantee
+ * `applyIncomingFile` gives every other PRISM-owned path. `applyIncomingFile`
+ * preserves a consumer's in-place *edit* to a PRISM file (the consumer bytes
+ * diverge from the recorded hash, so they survive as `.bak`); the marker
+ * carries no such memory. A marked file is treated as PRISM's content at
+ * whatever version wrote it and is replaced without a backup, whether the
+ * existing bytes are an older PRISM copy or a consumer's hand-edit of one —
+ * `.claude/hooks/` sits outside the sync manifest's content root, so there is
+ * no recorded hash to diff an edit against. A file that does not carry the
+ * marker is the consumer's own and is backed up before being replaced.
+ * Adaptations belong in a separate, unmarked wrapper file that calls into the
+ * delivered runtime rather than in edits to the delivered file itself — an
+ * in-place edit to a marked file does not survive the next update.
  */
 const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
 
 /**
- * Delivers one runtime file, classifying the target the same way
- * `applyIncomingFile` classifies a PRISM-owned path: absent is a write, byte-
- * identical is a no-op, PRISM's own older copy is an overwrite, and anything
- * else is the consumer's and is preserved as `.bak` before being replaced.
+ * Delivers one runtime file. Absent is a write, byte-identical is a no-op, a
+ * marker-carrying target is an overwrite regardless of its bytes (see
+ * `HOOK_RUNTIME_MARKER`), and anything else is the consumer's and is
+ * preserved as `.bak` before being replaced.
  */
 async function deliverHookRuntimeFile(
 	sourcePath: string,
@@ -1053,7 +1058,11 @@ async function deliverHookRuntimeFile(
  *
  * Only marked files are removed, so a consumer's own script sharing the
  * directory is never touched. A `.bak` this seam wrote is never marked either:
- * a backup is only ever taken of a file that lacked the marker.
+ * a backup is only ever taken of a file that lacked the marker. The marker is
+ * a content signal, not a path signal — a consumer who copies a delivered
+ * file elsewhere under `.claude/hooks/` to adapt it carries the marker along,
+ * so this backs up before removing rather than assuming every marked file at
+ * an unrecognized path is safe to discard outright.
  */
 async function pruneStaleHookRuntimeFiles(
 	targetDir: string,
@@ -1089,13 +1098,15 @@ async function pruneStaleHookRuntimeFiles(
 			continue;
 		}
 
+		const backupPath = await backupConsumerFile(absolutePath, dryRun);
 		if (!dryRun) {
 			await fs.rm(absolutePath, { force: true });
 		}
 
 		outcomes.push({
 			relativePath: `.claude/hooks/${relative}`,
-			action: "removed",
+			action: "removed-with-backup",
+			backupPath,
 		});
 	}
 
