@@ -66,7 +66,7 @@ export interface VersionReport {
 	installed: string;
 	/** `null` when the npm lookup could not complete — network, timeout, 404, or unpublished. */
 	latest: string | null;
-	/** True when both versions are known and differ. */
+	/** True when both versions parse and the installed one is genuinely older. */
 	outOfDate: boolean;
 }
 
@@ -737,6 +737,45 @@ function readInstalledVersion(pkgRaw: string | null): string {
 }
 
 /**
+ * Compares two `major.minor.patch` strings field-by-field as numbers, returning
+ * a negative number when `a` is older, zero when equal, and a positive number
+ * when `a` is newer. Returns `null` when either string is not three numeric
+ * fields — `"unknown"` from a missing `package.json` lands here, and an
+ * unorderable pair produces no staleness claim at all.
+ *
+ * A text compare would order `0.10.0` before `0.9.0`, so the fields are parsed
+ * to numbers before comparison.
+ */
+function compareVersions(a: string, b: string): number | null {
+	const parse = (value: string): number[] | null => {
+		const fields = value.split(".");
+
+		if (fields.length !== 3) {
+			return null;
+		}
+
+		const numbers = fields.map((field) => (/^\d+$/.test(field) ? Number(field) : Number.NaN));
+
+		return numbers.some(Number.isNaN) ? null : numbers;
+	};
+
+	const left = parse(a);
+	const right = parse(b);
+
+	if (left === null || right === null) {
+		return null;
+	}
+
+	for (let index = 0; index < 3; index += 1) {
+		if (left[index] !== right[index]) {
+			return left[index] - right[index];
+		}
+	}
+
+	return 0;
+}
+
+/**
  * Reads the installed PRISM version from `prismSourceRoot`'s own
  * `package.json`, then compares it against npm's `latest` dist-tag via
  * `fetcher` (defaults to `fetchLatestNpmVersion`, overridable so tests never
@@ -750,7 +789,8 @@ async function checkVersion(
 	const installed = readInstalledVersion(pkgRaw);
 
 	const latest = await fetcher(NPM_REGISTRY_URL, NPM_FETCH_TIMEOUT_MS);
-	const outOfDate = latest !== null && latest !== installed;
+	const ordering = latest === null ? null : compareVersions(installed, latest);
+	const outOfDate = ordering !== null && ordering < 0;
 
 	const findings: DoctorFinding[] = [];
 	if (latest === null) {

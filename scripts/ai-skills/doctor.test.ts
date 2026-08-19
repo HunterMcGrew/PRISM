@@ -712,6 +712,48 @@ test("runDoctor reports no version finding when installed matches latest", async
 	});
 });
 
+test("runDoctor reports no out-of-date warning when the installed version is ahead of latest", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const fetchOlder: NpmVersionFetcher = async () => "8.0.0";
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: fetchOlder,
+		});
+
+		assert.equal(report.version.outOfDate, false);
+		assert.equal(
+			report.findings.some((f) => f.check === "version"),
+			false
+		);
+	});
+});
+
+test("runDoctor orders version fields numerically, not as text", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			prismSourceRoot,
+			"package.json",
+			`${JSON.stringify({ name: "@huntermcgrew/prism", version: "0.10.0" }, null, "\t")}\n`
+		);
+		const fetchNineSeries: NpmVersionFetcher = async () => "0.9.0";
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: fetchNineSeries,
+		});
+
+		assert.equal(report.version.installed, "0.10.0");
+		assert.equal(report.version.outOfDate, false);
+		assert.equal(
+			report.findings.some((f) => f.check === "version"),
+			false
+		);
+	});
+});
+
 // --- architect route integrity ---
 
 /** Writes an architect tree: a routing manifest plus the docs listed in `docs`. */
