@@ -12,11 +12,12 @@
  * the doc from disk on every call rather than replaying a cached one.
  *
  * `resolveArchitectNag` is host-agnostic: it takes a file path and a session
- * id and returns a nag naming the unread matched docs by path, or `null`
- * when nothing matches or every matched doc has already been read this
- * session. It never injects a doc's body — naming is not delivering, so a
- * doc keeps being named until a real `Read` of its own path is observed,
- * which is what actually credits it as delivered. Each harness's own wire
+ * id and returns a nag naming the matched docs by path, or `null` when
+ * nothing matches or every matched doc has already been read or announced
+ * this session. It never injects a doc's body, and it names each doc at
+ * most once per session. Reading and announcing are tracked separately:
+ * only a real `Read` of a doc's own path credits it as delivered, because
+ * naming is not delivering. Each harness's own wire
  * shape (`hooks/harnesses.mjs`) owns only the stdin/stdout envelope for its
  * host; `hooks/hook.mjs` dispatches to this resolver for the actual
  * decision, so the routing logic is written and tested once.

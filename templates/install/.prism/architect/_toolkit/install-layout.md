@@ -60,7 +60,7 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
-- `.agents/skills/` is **populated directly, not auto-gitignored** — every `prism adopt`/`prism update` renders the persona roster there directly (see § Steady-state persona-skill distribution below), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM does not write your `.gitignore` for you, and the render regenerates on every `prism update`.
+- `.agents/skills/` is **populated directly, not auto-gitignored** — every `prism adopt`/`prism update` renders the persona roster there directly (see § Steady-state persona-skill distribution below), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM writes nothing into your `.gitignore` except the two hook state-file globs described under § Steady-state persona-skill distribution below, and the render regenerates on every `prism update`.
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See PRISM's internal `.ai-skills/docs/compatibility.md` § Install-Script Scope for the full reasoning (monorepo-only, not shipped to consumers).
@@ -115,6 +115,11 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 **Consumer-authored skills are untouched.** The render writes only to roster-member IDs, and cleanup deletes only marker-bearing directories that are no longer in the roster. A consumer's own skills — whether they use a non-`prism-*` prefix or a custom-prefixed name — are never written or deleted by `prism update`.
 
 **Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism update` run on a repo already at the current PRISM version is a no-op across the roster.
+
+**The hook runtime rides the same update.** Alongside the skill roster, `prism update` copies PRISM's zero-dependency hook runtime into your `.claude/hooks/` and merges its `PostToolUse` and `PostCompact` registrations into your own `.claude/settings.json`. The merge composes within each event's array and replaces only PRISM's own prior entries, so hooks you registered yourself on the same event survive the update. The two hook state-file globs are appended to your `.gitignore` so you never have to add them by hand.
+
+The hook announces; it never blocks. On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today.
+
 
 ## Cross-reference convention
 

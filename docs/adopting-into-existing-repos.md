@@ -27,14 +27,14 @@ The one thing to know going in: **if your repo already has an `AGENTS.md`, PRISM
 | `.prism/**` (rules, architect docs, templates, references) | Skipped, file-by-file | Written from the install seed |
 | `AGENTS.md` | Left alone entirely — no PRISM content is added | Not created by `prism adopt` (see note below) |
 | `CLAUDE.md` | Left alone entirely | Not created by `prism adopt` (see note below) |
-| `.claude/settings.json` | Left alone — your hooks, permissions, and env vars survive | Written as an empty `{}` — PRISM ships no default hooks |
+| `.claude/settings.json` | Your permissions, env vars, and your own hooks survive — PRISM merges only its own hook registration in | Written from PRISM's install seed, carrying the architect-context hook registration |
 | `.claude/skills/`, `.codex/`, `.cursor/skills/` | Existing non-PRISM skills are untouched; PRISM adds its own `prism-*` entries alongside them | `prism-*` skill roster written |
 | `.cursor/rules` | Left alone — no PRISM content merges into it | Not created by `prism adopt` |
 
 **Why `AGENTS.md` and `CLAUDE.md` aren't in the seed step:** the seed pass (`seedConsumerContentRoot` in `scripts/ai-skills/adopt.ts`) only ever writes into `.prism/`. Neither file is part of PRISM's current install seed, so on a fresh repo `prism adopt` doesn't create either — you'd still need to hand-write or generate them yourself (or run Atlas, PRISM's onboarding persona, which does populate rule content for a truly greenfield repo). What adopt guarantees is narrower and more important for coexistence: **if either file already exists, PRISM will never overwrite or append to it during `adopt` or `update`.**
 
 > [!NOTE]
-> `.claude/settings.json` ships from PRISM's install surface as a literal empty object (`templates/install/.claude/settings.json` contains just `{}`). If the file doesn't exist yet, adopt writes that empty shell — it's a placeholder, not a hook definition. If a `.claude/settings.json` already exists, adopt leaves it completely alone, hooks and all.
+> `.claude/settings.json` ships from PRISM's install surface (`templates/install/.claude/settings.json`) carrying the architect-context hook's `PostToolUse` and `PostCompact` registrations. If the file doesn't exist yet, adopt writes that seed. If it already exists, adopt merges PRISM's registration into it rather than replacing it: your permissions and env vars are untouched, and within each hook event your own entries are kept alongside PRISM's. Only PRISM's own prior entries — identified by the `.claude/hooks/hook.mjs` command path — are replaced on a later update.
 
 ## Why a pre-existing AGENTS.md matters most for Codex
 
