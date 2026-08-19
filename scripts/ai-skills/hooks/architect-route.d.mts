@@ -49,5 +49,6 @@ export function saveRouteState(
 export function resolveArchitectNag(
 	repoRoot: string,
 	filePath: string,
-	sessionId: string
+	sessionId: string,
+	options?: { credit?: boolean }
 ): Promise<string | null>;

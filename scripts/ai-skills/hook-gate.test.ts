@@ -20,7 +20,9 @@ import { promisify } from "node:util";
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { loadRouteState } from "./hooks/architect-route.mjs";
 import {
+	parseShellReadTargets,
 	resolveHarnessFromArgv,
 	runPostCompactArm,
 	runPostToolUseArm,
@@ -526,6 +528,243 @@ test("hook.mjs runs as its own process under plain node, from the source tree", 
 			result.stdout,
 			/_toolkit\/spec-editing\.md/,
 			`the spawned hook announced nothing: ${result.stdout || "(empty)"}`
+		);
+	});
+});
+
+// --- Credit channel: shell read forms, Grep, and full-read-only credit ---
+
+const CREDIT_DOC = "_toolkit/spec-editing.md";
+
+/**
+ * The session's `read` array — the only array a write-time deny gate clears
+ * against, which is why these cases assert against it rather than against
+ * whether an announcement was emitted.
+ */
+async function readCreditedDocs(
+	repoRoot: string,
+	sessionId: string
+): Promise<string[]> {
+	const state = await loadRouteState(repoRoot, sessionId);
+	return state.read;
+}
+
+/** Seeds one routed doc and returns its absolute path. */
+async function seedCreditRepo(repoRoot: string): Promise<string> {
+	await seedManifestAndDoc(
+		repoRoot,
+		{ "scripts/ai-skills/**": CREDIT_DOC },
+		CREDIT_DOC,
+		"Spec editing constraints go here."
+	);
+	return path.join(repoRoot, ".prism", "architect", CREDIT_DOC);
+}
+
+test("parseShellReadTargets: each shell read form yields its path, and only bare cat credits", () => {
+	assert.deepEqual(parseShellReadTargets("cat docs/one.md"), [
+		{ filePath: "docs/one.md", credit: true },
+	]);
+	// A count or script operand rides along as a target that no manifest
+	// route can match, which is cheaper than teaching the parser each
+	// command's operand grammar.
+	assert.deepEqual(parseShellReadTargets("head -n 20 docs/one.md"), [
+		{ filePath: "20", credit: false },
+		{ filePath: "docs/one.md", credit: false },
+	]);
+	assert.deepEqual(parseShellReadTargets("tail -50 docs/one.md"), [
+		{ filePath: "docs/one.md", credit: false },
+	]);
+	assert.deepEqual(parseShellReadTargets("sed -n '1,20p' docs/one.md"), [
+		{ filePath: "1,20p", credit: false },
+		{ filePath: "docs/one.md", credit: false },
+	]);
+	assert.deepEqual(parseShellReadTargets("less docs/one.md"), [
+		{ filePath: "docs/one.md", credit: false },
+	]);
+	assert.deepEqual(parseShellReadTargets("more docs/one.md"), [
+		{ filePath: "docs/one.md", credit: false },
+	]);
+});
+
+test("parseShellReadTargets: a flagged cat announces but does not credit", () => {
+	assert.deepEqual(parseShellReadTargets("cat -n docs/one.md"), [
+		{ filePath: "docs/one.md", credit: false },
+	]);
+});
+
+test("parseShellReadTargets: the documented gaps yield no targets rather than a guess", () => {
+	assert.deepEqual(parseShellReadTargets("cat docs/one.md | grep alpha"), []);
+	assert.deepEqual(parseShellReadTargets("cat $(ls docs)"), []);
+	assert.deepEqual(parseShellReadTargets("cat docs/one.md > copy.md"), []);
+	assert.deepEqual(parseShellReadTargets("git status"), []);
+	assert.deepEqual(parseShellReadTargets(undefined), []);
+});
+
+test("parseShellReadTargets: a command separator that is not punctuation still bails", () => {
+	assert.deepEqual(
+		parseShellReadTargets("cat docs/one.md\ngrep alpha docs/two.md"),
+		[]
+	);
+	assert.deepEqual(
+		parseShellReadTargets("cat docs/one.md\r\ngrep alpha docs/two.md"),
+		[]
+	);
+	assert.deepEqual(parseShellReadTargets("cat docs/one.md # a note"), []);
+});
+
+test("runPostToolUseArm: every shell read form announces the routed doc", async () => {
+	for (const form of ["cat", "head -n 20", "tail -20", "sed -n '1,20p'", "less", "more"]) {
+		await withTempRepo(async (repoRoot) => {
+			await seedCreditRepo(repoRoot);
+			const target = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+			const stdin = JSON.stringify({
+				session_id: "session-1",
+				cwd: repoRoot,
+				tool_name: "Bash",
+				tool_input: { command: `${form} ${target}` },
+			});
+
+			const result = await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+			assert.match(
+				String(result),
+				/spec-editing\.md/,
+				`\`${form}\` on a routed path announces its doc`
+			);
+		});
+	}
+});
+
+test("runPostToolUseArm: a Read with no range credits the doc it read", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: docPath },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), [CREDIT_DOC]);
+	});
+});
+
+test("runPostToolUseArm: a Read carrying offset or limit credits nothing", async () => {
+	for (const range of [{ limit: 1 }, { offset: 40 }, { offset: 40, limit: 20 }]) {
+		await withTempRepo(async (repoRoot) => {
+			const docPath = await seedCreditRepo(repoRoot);
+			const stdin = JSON.stringify({
+				session_id: "session-1",
+				cwd: repoRoot,
+				tool_name: "Read",
+				tool_input: { file_path: docPath, ...range },
+			});
+
+			await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+			assert.deepEqual(
+				await readCreditedDocs(repoRoot, "session-1"),
+				[],
+				`a Read of ${JSON.stringify(range)} delivered a slice, not the doc`
+			);
+		});
+	}
+});
+
+test("runPostToolUseArm: cat credits the doc it read", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${docPath}` },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), [CREDIT_DOC]);
+	});
+});
+
+test("runPostToolUseArm: a relative cat resolves against the payload cwd, not the repo root", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedCreditRepo(repoRoot);
+		const relativeDoc = path.join(".prism", "architect", CREDIT_DOC);
+
+		const fromRoot = JSON.stringify({
+			session_id: "session-root",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${relativeDoc}` },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, fromRoot);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-root"), [
+			CREDIT_DOC,
+		]);
+
+		// The same command issued from a subdirectory fails in the shell, so
+		// crediting it would hand the write gate a doc nobody read.
+		const subdirectory = path.join(repoRoot, "scripts");
+		await fs.mkdir(subdirectory, { recursive: true });
+		const fromSubdirectory = JSON.stringify({
+			session_id: "session-subdir",
+			cwd: subdirectory,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${relativeDoc}` },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, fromSubdirectory);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-subdir"), []);
+	});
+});
+
+test("runPostToolUseArm: a payload naming its path at tool_input.path credits nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Glob",
+			tool_input: { pattern: "**/*.md", path: docPath },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(
+			await readCreditedDocs(repoRoot, "session-1"),
+			[],
+			"the write default announces a routed path without crediting it"
+		);
+	});
+});
+
+test("runPostToolUseArm: head over the doc credits nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: { command: `head -20 ${docPath}` },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), []);
+	});
+});
+
+test("runPostToolUseArm: a Grep naming a routed doc credits nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Grep",
+			tool_input: { pattern: "constraints", path: docPath },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(
+			await readCreditedDocs(repoRoot, "session-1"),
+			[],
+			"search results quote a doc without delivering it"
 		);
 	});
 });

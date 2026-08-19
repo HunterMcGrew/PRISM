@@ -20,7 +20,7 @@
  * @property {string} [conversation_id]
  * @property {string} [cwd]
  * @property {string} [tool_name]
- * @property {{file_path?: string, command?: string, offset?: number, limit?: number}} [tool_input]
+ * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number}} [tool_input]
  * @property {string} [hook_event_name]
  */
 
@@ -42,11 +42,21 @@
  * share: the target path lives at `tool_input.file_path` on every one of
  * them.
  *
+ * Any tool that names its target at `tool_input.path` instead reaches it
+ * through the fallback — a `Grep` names its haystack there and carries no
+ * `file_path` at all, and so does `Glob` and anything else of that shape.
+ * The fallback is deliberately unconditional rather than scoped to the
+ * search kinds: a tool reaching it through the `write` default is announced
+ * and never credited either way, so the widest form costs announce traffic
+ * over a routed path and nothing else. It is a fallback rather than a
+ * separate accessor because no observed tool sends both fields (see
+ * `hook.mjs`'s target resolution for which kinds credit).
+ *
  * @param {HookPayload} payload
  * @returns {string[]}
  */
 function filePathFromToolInput(payload) {
-	const filePath = payload.tool_input?.file_path;
+	const filePath = payload.tool_input?.file_path ?? payload.tool_input?.path;
 	return filePath ? [filePath] : [];
 }
 
