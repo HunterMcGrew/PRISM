@@ -697,6 +697,8 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Briar's six findings on PR #463 so every prose claim about routing matches what C4's stub routes; Bounds — the six named sites plus their curated twins, no runtime change, no PR 2D/2E work; Approach — smallest correct edit per finding, then `pnpm prism:check` · close: scope held, with two adjacent corrections named — tasks E4 and the REQ-1 AC evidence command still said `.prism/references/guides/`, the pre-fallback path the guide-placement Decision already superseded, so both were repointed to `.prism/architect/guides/`. Silent decisions named: the lesson-taxonomy route was added to both copies of `manifest.base.json` as well as `manifest.json`, because leaving the base stale reintroduces the gap on the next adopt; the consumer stub's `.prism/plans/**` route was left alone, since stub composition is PR 2E's lane and the same gap there is visible to task E1's orphan check. C2 and C4's original task text still names the pre-fallback path and was left as written — it is the intent the placement Decision records the fork against. Verification honesty: `pnpm prism:check` exit 0; each fix re-read at its site and the corrected C6 command run (no hits outside `/plans/`); the four route tables re-parsed as JSON rather than eyeballed.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Briar's re-review (1 major, 3 minors) so the surface `adopt` ships matches the canonical genericizing pass; Bounds — the four named sites plus the plan's own task text, no build-behavior change; Approach — diff the twin against canonical rather than trusting the finding list, and fix each verify command that let the gap read green · close: scope held. Silent decisions named: the consumer twin drops canonical's `(ADR-0047)` citation, because consumers receive no ADR tree and the citation would be a dead reference; the stale `shipping-flow.md § Per-User Overrides` anchor in the twin was repointed to the file itself, since no such heading exists — the same class of correction the major represents. Verification honesty: `pnpm prism:check` exit 0; `grep -c '.claude/'` returns 0 on both SPEC files. Not fixed, deliberately: the `renames`-never-content-compared gap is a build.ts schema change (a rename needs a per-entry mirrored-vs-curated policy, since `manifest.stub.json` is legitimately divergent) — out of a docs PR's lane and larger than a minor, so it is documented in `lib/seed-curation.ts` and emitted as follow-up work.
 
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — third-pass review of `d541627..d9beb9ff`, judging the deferral's adequacy and hunting a third canonical-only verify defect; Bounds — findings in chat and the plan's `## Review Issues`, no code, no GitHub writes; Approach — verify each of Eli's claims against source rather than the finding list, then enumerate every PR 2C verify line against the curated-twin list · close: scope held. Silent decisions named: C2's verify glob names the superseded guides path and errors rather than passing, judged covered by the supersede clause added in `d9beb9ff` and independently gated by the repointed REQ-1 AC evidence command, so filed as a note inside the Docs-impact angle rather than a separate finding. Edge recall: C1's twin measures 159 lines and passes, so the finding is the missing gate, not a violated bar. Verification honesty: `build.ts`'s 597-before-609 ordering, the shipped ADR set, the `shipping-flow.md` heading absence, and all six twin diffs were run here; `pnpm prism:check` exit 0 is the user's ratification, not my own run.
+
 ## History
 
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Fixed Eric's 3 re-review Minors on PR #461. Rewrote `HOOK_RUNTIME_MARKER`'s doc comment off its false parity claim with `applyIncomingFile` and gave `pruneStaleHookRuntimeFiles` a `.bak`-before-delete step, closing the recoverability gap on a marker-carrying file at a non-standard path; added the two `resolveHarnessFromArgv` cases its own docstring called for; added a source-tree `spawnSync` micro-test so the delivered hook runs as its own process on every platform. `pnpm prism:check` exit 0, 715/715, 0 skipped; see `## Review Issues` for the per-finding table.
@@ -865,6 +867,29 @@ Every evidence command below was reasoned against this plan's own task list befo
 - **Removals and renames:** `swept` — tree-wide `grep` for `references/guides` returns nothing outside `.prism/plans/`; tree-wide `grep` for `skills-ecosystem.md` paired with a moved section name returns exactly one hit, the `SPEC.md.tmpl` Major above.
 - **Docs impact:** `swept` — this range is the docs fix; four findings filed.
 - **Tests:** `swept` — no new test surface in the range. `pnpm prism:build` exit 0 with zero writes on a clean tree, which is itself the evidence for the drift-gate Minor.
+
+### C1's verify checks the canonical `skills-ecosystem.md` only, not the curated twin C1 also splits
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md` — task C1's **Verify:** line
+- **Problem:** C1's verify reads `wc -l .prism/architect/_toolkit/skills-ecosystem.md` under 200. The task also splits the curated seed twin `templates/install/.prism/architect/_toolkit/skills-ecosystem.md` (named as split in the session-close note, and task 29 already warns this twin "does not regenerate and has drifted 65 lines behind canonical before; hand-edit both"). The twin is not measured. This is the third instance of the C6/C3 class: a verify scoped to canonical on a file whose twin the same task edits. The outcome holds — the twin is 159 lines — so the defect is the gate, not the result; it is the same gate shape that let the `SPEC.md.tmpl` major read green.
+- **Class:** `canonical-only verify on a curated twin the task edits`
+- **Sweep:** Enumerated every `**Verify:**` line in the plan's PR 2C block (C1-C8) and checked each against the curated-twin list in `seed-curation.json`. C3 now names both SPEC paths (fixed in `d9beb9ff`); C6 already names `.prism/ templates/`; C7 and C8 are tree-wide or build-level. C1 is the only remaining one that names a canonical path whose twin is `curated`. Confirmed the twin exists and was split (159 lines), and confirmed `crossref-lint` does scan `templates/install/.prism` (`crossref-lint.ts:128`), so the first half of C1's verify is twin-covered and only the `wc -l` half is not.
+- **Suggested fix:** Extend C1's verify to both paths, matching the shape C3 now uses: `wc -l .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md` — both under 200.
+
+### Angle Coverage — third pass of `d541627..d9beb9ff`
+
+- **Correctness / logic:** `swept` — the four changed files re-read at `d9beb9ff`; `build.ts:597` (curated content compare) confirmed to precede `:609` (renames existence check) in the loose-file branch, so the deferral's premise holds and adding `SPEC.md` to `curated` would short-circuit the rename arm.
+- **Type safety:** `n/a` — the only `.ts` change is a JSDoc block.
+- **Edge cases:** `swept` — ran C3's extended verify (0 on both SPEC files) and C1's twin measurement (159 < 200); ran C2's verify literally, which errors on a nonexistent glob (see Docs impact).
+- **Abstraction / duplication:** `swept` — all five guide twins and `closing-messages.md` confirmed byte-identical to canonical by `diff -q`; `plan-authoring.md` differs and is correctly listed under `curated`.
+- **Spec and doc consistency:** `swept` — every one of Eli's 8 claimed hunks verified present in the twin; both unasked calls verified against the install tree (`spec/adrs/_toolkit/` ships README and TEMPLATE only, so the ADR-0047 citation drop is correct; `templates/install/.prism/references/shipping-flow.md` carries the `pauseBeforeCommit` preference but no `## Per-User Overrides` heading, so repointing at the file rather than the anchor is correct). `AGENTS.md.tmpl:119` verified against `manifest.stub.json:3`, whose key is literally `.claude/skills/**`.
+- **Citation integrity:** `swept` — `plan-authoring.md`, `shipping-flow.md`, and the manifest stub key all resolve in the install tree.
+- **Removals and renames:** `swept` — the `.claude/` removal from the twin is complete (grep returns 0), and no dangling reference to the removed `skills-ecosystem.md` pointer remains in either tree.
+- **Docs impact:** `swept` — one finding filed. C2's verify glob names the superseded `.prism/references/guides/` and errors rather than passing; judged not a separate finding because `d9beb9ff` added the supersede clause covering "the path below," and the 120-line bar it would enforce is independently gated by the REQ-1 AC evidence command, which this PR repointed.
+- **Tests:** `swept` — no test surface in the range. `pnpm prism:check` exit 0 and the clean worktree at `d9beb9ff` are the user's ratification, not my own run.
 
 ### `demand-elegance.md`'s condition-gate rewrite leaves two near-duplicate bullets
 
@@ -1054,7 +1079,7 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 
 ## PR Readiness (PR 2C — Writing guides and doc splits, #463)
 
-- [x] No critical or major issues — pass-1's 6 findings verified fixed; the re-review's major and two of its three minors fixed, the third (`renames` has no content gate) deferred to a `build.ts` follow-up with the reason recorded
+- [x] No critical or major issues — pass-1's 6 findings and the re-review's major verified fixed at `d9beb9ff`; the deferred `renames` minor accepted; one new minor open (C1's canonical-only verify), plan text only
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — one stub-route integrity case; confirmed to fail when a route names a missing doc
@@ -1063,4 +1088,4 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context — both PR 2C Decisions carry `no promotion needed` verdicts with reasons
 
-**Last updated:** 2026-08-19 (re-review of `5b6fd401..d541627`)
+**Last updated:** 2026-08-19 (third pass of `d541627..d9beb9ff`)
