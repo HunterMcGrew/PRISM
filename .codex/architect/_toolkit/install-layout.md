@@ -140,6 +140,18 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **Delivery is Claude Code only.** The runtime's `HARNESSES` table in `hooks/harnesses.mjs` reads Cursor and Codex payload shapes, so the resolver itself is host-agnostic — but no install path writes a Cursor or Codex settings file, so those hosts receive nothing today. Wiring them up is follow-up work, not a configuration step a consumer can take.
 
+### Hook-runtime ownership and recovery
+
+**The runtime is zero-dependency `.mjs` because the consumer may have no `node_modules` to point at.** Every module under `scripts/ai-skills/hooks/` imports only `node:` builtins and its own siblings, and the registration invokes plain `node` — an `npx`-installed consumer has no package tree, so a `tsx` or `node_modules` invocation would be a permanent no-op there. Types ride `.d.mts` sidecars beside each module, which is what lets `tsc` resolve a `.mjs` specifier under the root `moduleResolution` with no tsconfig change. `compileMatcher` has exactly one implementation, `hooks/lib/match.mjs`; `verify-manifest-coverage.ts` and `ownership.ts` both import it from there, so a matcher change cannot land in one copy and miss the other.
+
+**Ownership of a delivered file is content-keyed, not path-keyed.** `.claude/hooks/` sits outside the sync manifest's content root, so there is no recorded hash to tell PRISM's older copy from a consumer's hand-edit the way `applyIncomingFile` can. The `HOOK_RUNTIME_MARKER` line the shipped files carry is the only signal available: a marked file is PRISM's content at whatever version wrote it and is replaced unconditionally — by `deliverHookRuntimeFile` at the canonical paths, and by `pruneStaleHookRuntimeFiles` for a marked file anywhere else under `.claude/hooks/`. An unmarked file there is the consumer's and is never written or removed.
+
+The two paths carry different risk and the code treats them differently on purpose: delivery clobbers because it runs on every update, while prune backs the file up first because it fires rarely and a marked file at an unrecognized path is plausibly a consumer's own adaptation that carried the marker along.
+
+**Backups are skipped by name, never by content.** `backupConsumerFile` copies byte for byte, so a `.bak` always inherits its source's marker — content is structurally incapable of separating a backup from the file it copied. `pruneStaleHookRuntimeFiles` therefore excludes backup basenames (`BACKUP_BASENAME_PATTERN`, defined beside `HOOK_RUNTIME_MARKER`) before the marker check. Without that filter prune re-selects the backup it just wrote: measured over four update runs as `.bak` → `.bak.bak` → `.bak.bak.bak` → `.bak.bak.bak.bak`, with run N's recovery copy already gone by run N+1.
+
+**A recovery `.bak` is the consumer's to delete, never PRISM's to reclaim.** The name filter's cost is that a genuinely stale marked `.bak` is left in place rather than swept. That is the intended trade — the backup may be the only surviving copy of consumer-authored bytes, and a sweep that reclaims it defeats the guarantee it exists to provide.
+
 The decision record for this feature is ADR-0062 ("Consumer skill distribution via prism:update").
 
 ## Two substitution passes, two surfaces

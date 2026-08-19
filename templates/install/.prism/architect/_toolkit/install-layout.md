@@ -120,6 +120,8 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 The hook announces; it never blocks. On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today.
 
+**How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours and is never written or removed. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.
+
 
 ## Cross-reference convention
 
