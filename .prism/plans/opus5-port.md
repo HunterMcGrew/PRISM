@@ -1424,12 +1424,67 @@ The two amendments (C5, C8) are the sweep's own yield: neither was a reported fi
 
 ---
 
+### Re-review of `c19e03a2..f0f3dc3a` (PR 2E fix pass)
+
+All 2 majors and 6 minors verified `fixed` against measurement, not against the disposition report. Three new minors below.
+
+**Major 1 — both resolutions correct, and they are not opposite.** The discriminator is whether the doc *can* ship. `spec-editing.md` had no blocker, so un-excluding keeps the promise — verified present at `.prism/architect/_toolkit/spec-editing.md` in a materialized install and named by routes in both shipped tables. `output-guards.md` cannot ship: the seed literal guard rejects its dogfooding literals and `literal-allowlist.json` allowlists it on canonical paths only, so dropping the base route is the only resolution available. The dogfood repo keeps the context regardless — PRISM's live `.prism/architect/manifest.json` still routes `_toolkit/output-guards.md` for `scripts/ai-skills/**`. Negative control run: re-adding the base route made `ship-closure` report `output-guards.md` as reachable-but-excluded, so the class is gated and not merely repaired.
+
+**Major 2 — verified independently.** Materialized a consumer root (`cli.ts init` + `cli.ts adopt` into `/tmp/briar-mat`) and ran `cli.ts doctor --consumer`: zero architect-route findings. Separately parsed both shipped tables in that install and confirmed every route value resolves on disk — zero dangling in either direction.
+
+### `ship-closure` and `doctor` disagree on what counts as routed
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/doctor.ts:486`
+- **Problem:** The fix widened `ship-closure`'s notion of a routing surface to both shipped tables, but `checkArchitectRoutes` still reads only `architect/manifest.json`. A doc routed solely by `manifest.base.json` would be reachable to one shipped tool and an orphan to the other.
+- **Class:** `one arm of a two-arm construct widened, its sibling left at the old width`
+- **Sweep:** `grep -n "manifest" scripts/ai-skills/doctor.ts` — the orphan scan takes a single `manifest.json` path; nothing in `build.ts` merges base into it. Latent today: every base route also has a stub route, and the materialized install reports zero orphans.
+- **Suggested fix:** either read both tables in the orphan scan, or say in `checkArchitectRoutes`'s JSDoc that `manifest.json` is deliberately the only routing surface a consumer's doctor recognizes.
+
+### E5's verify line names a property its nearest test does not enforce
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md:567`
+- **Problem:** The re-derived verify line reads "every route value in both shipped routing tables names a file the seed contains." The test that looks like its enforcer — `hook-gate.test.ts:558` — passes a route naming an `excluded` doc, which is the exact Major 1 condition. The property is genuinely enforced, but by `ship-closure`'s reachable-but-excluded check in a different file.
+- **Class:** `a test passing for a reason other than the one it names` (second instance on this PR)
+- **Sweep:** read `hook-gate.test.ts:558-610` against the verify line; confirmed the property holds empirically in the materialized install (zero dangling, both tables) and confirmed `ship-closure` is what fails when it stops holding.
+- **Suggested fix:** point the verify line at the closure stage as the enforcer, so a reader does not redeem it against the weaker test.
+
+### Relative-link fixture names a file that is not the discriminator
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/ship-closure.test.ts:250`
+- **Problem:** `.prism/references/reached.md` is named as though it is the subject, but it is excluded and unlinked; the file that actually discriminates is `.prism/rules/sibling.md`. The assertion is sound — without relative-link following, `sibling.md` lands in `shippableOutsideClosure` — but the fixture reads as if it tests something it does not.
+- **Class:** `a test passing for a reason other than the one it names` (third instance on this PR)
+- **Sweep:** traced both assertions against the opposite implementation; `shippedButExcluded` is the only assertion `reached.md` participates in, and it would hold with the file absent.
+- **Suggested fix:** drop `reached.md`, or rename it to say it is the excluded control.
+
+### Angle Coverage — re-review of `c19e03a2..f0f3dc3a`
+
+- **Runtime behavior** — `swept`. `resolveDefaultRoots` and `collectManifestRoutedPaths` (both tables, negative-controlled by a restored base route); `checkArchitectRoutes` (measured on a materialized install and the worktree root); `resolveHookCommandPath` (Windows and POSIX forms traced against both substitutions); `listMarkdownFilesRelative` (the `.md` filter traced against the deleted basename set).
+- **Test efficacy** — `swept`. 3 new tests, each reasoned against the opposite implementation: the Windows-separator test discriminates (`claudehooks` appears under the old strip), the tracked-suppression control discriminates, the relative-link test discriminates but on a file its fixture does not name. 41/41 green in the two touched suites.
+- **Spec and doc consistency** — `swept`. E1's and E5's verify lines re-read against measurement — E1's now holds in both halves; E5's overstates its enforcer. The `## Decisions` and `## History` entries match what landed.
+- **Citation integrity** — `swept`. ADR-0072's absence from every branch (verified); the hook check's narrowed claim (verified against all four presence states); the `build.ts`-mirrors rationale in `TOOLKIT_BASE_MANIFEST_PATH`'s JSDoc (verified — the five copies are byte-identical at HEAD).
+- **External-system claims** — `swept`. Claude Code's `$CLAUDE_PROJECT_DIR` quoting and Windows separator form checked against the fixture, not from memory.
+- **Repo writing rules** — `swept`. New and revised JSDoc is why-not-what, no tags, no ALL CAPS; no `any`; verb-first naming on the renamed `collectManifestRoutedPaths`.
+- **Security** — `n/a — read-only filesystem checks and routing-table edits; no auth, input handling, secrets, or trust boundary.`
+- **Docs impact** — `swept`. No shipped doc describes the widened closure roots; acceptable while `ship-closure` is a `prism:check` stage rather than a consumer command.
+- **Accessibility** — `n/a — no UI in the diff.`
+
+---
+
 ## PR Readiness (PR 2E — Doctor route integrity and ship-surface trim, #464)
 
-- [ ] No critical or major issues — 2 open majors: the dangling `manifest.base.json` route to `_toolkit/spec-editing.md`, and the orphan check warning on a clean install
+- [x] No critical or major issues — both majors verified fixed on re-review of `c19e03a2..f0f3dc3a`; 3 open minors
 - [x] Types correct — no `any`, no unsafe `as`; `prism:check-types` clean
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — 746/746 green, but the relative-link rule and the tracked-suppression path have no test, and one manifest-table test is vacuous
+- [x] Tests written for new logic and edge cases — the relative-link rule and the tracked-suppression path now have discriminating tests; the vacuous manifest-table test was retitled to the behavior it actually covers
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-19 (`pnpm prism:build` per clove; `run-tests.ts` and `ship-closure.ts` re-run here)
 - [x] PR description up to date
