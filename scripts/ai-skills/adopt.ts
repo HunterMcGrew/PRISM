@@ -27,6 +27,7 @@ import {
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
 import { loadSyncManifest } from "./sync-manifest";
 import {
 	formatVersionDeltaLine,
@@ -63,16 +64,31 @@ export interface AdoptSummary {
  * `dryRun` still walks the full seed tree and classifies every path as
  * written or skipped, but never touches the consumer filesystem — the same
  * "compute the outcome, then guard the write" split `update.ts` uses.
+ *
+ * `seedToConsumerRenames` maps a seed-relative path to the consumer-relative
+ * path it should land at (e.g. `architect/manifest.stub.json` →
+ * `architect/manifest.json`) — the install-direction inverse of
+ * `seed-curation.json`'s `renames` table. A path absent from the map copies
+ * under its own name, same as before.
  */
 export async function seedConsumerContentRoot(
 	installSeedRoot: string,
 	consumerContentRoot: string,
-	dryRun = false
+	dryRun = false,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<SeedSummary> {
 	const written: string[] = [];
 	const skipped: string[] = [];
 
-	await walkAndSeed(installSeedRoot, installSeedRoot, consumerContentRoot, written, skipped, dryRun);
+	await walkAndSeed(
+		installSeedRoot,
+		installSeedRoot,
+		consumerContentRoot,
+		written,
+		skipped,
+		dryRun,
+		seedToConsumerRenames
+	);
 
 	return { written, skipped };
 }
@@ -83,26 +99,36 @@ async function walkAndSeed(
 	consumerContentRoot: string,
 	written: string[],
 	skipped: string[],
-	dryRun: boolean
+	dryRun: boolean,
+	seedToConsumerRenames: Record<string, string>
 ): Promise<void> {
 	const entries = await fs.readdir(currentDir, { withFileTypes: true });
 
 	for (const entry of entries) {
 		const seedAbsolute = path.join(currentDir, entry.name);
-		const relativePath = path.relative(seedRoot, seedAbsolute).split(path.sep).join("/");
-		const consumerAbsolute = path.join(consumerContentRoot, relativePath);
+		const seedRelativePath = path.relative(seedRoot, seedAbsolute).split(path.sep).join("/");
+		const consumerRelativePath = seedToConsumerRenames[seedRelativePath] ?? seedRelativePath;
+		const consumerAbsolute = path.join(consumerContentRoot, consumerRelativePath);
 
 		if (entry.isDirectory()) {
-			await walkAndSeed(seedRoot, seedAbsolute, consumerContentRoot, written, skipped, dryRun);
+			await walkAndSeed(
+				seedRoot,
+				seedAbsolute,
+				consumerContentRoot,
+				written,
+				skipped,
+				dryRun,
+				seedToConsumerRenames
+			);
 		} else if (entry.isFile()) {
 			if (await pathExists(consumerAbsolute)) {
-				skipped.push(relativePath);
+				skipped.push(consumerRelativePath);
 			} else {
 				if (!dryRun) {
 					await ensureDirectory(path.dirname(consumerAbsolute));
 					await fs.copyFile(seedAbsolute, consumerAbsolute);
 				}
-				written.push(relativePath);
+				written.push(consumerRelativePath);
 			}
 		}
 	}
@@ -210,7 +236,13 @@ export async function runAdopt(options: {
 		dryRun
 	);
 
-	const seed = await seedConsumerContentRoot(installSeedRoot, consumerContentRoot, dryRun);
+	const seedToConsumerRenames = invertRenames(await loadSeedCurationRenames(prismSourceRoot));
+	const seed = await seedConsumerContentRoot(
+		installSeedRoot,
+		consumerContentRoot,
+		dryRun,
+		seedToConsumerRenames
+	);
 	const update = await runUpdate({
 		prismRepoRoot: prismSourceRoot,
 		consumerRepoRoot,

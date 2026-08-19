@@ -36,22 +36,46 @@ export interface GenerateSyncManifestOptions {
 }
 
 /**
- * Returns the `.prism/`-relative paths of every PRISM-owned file under the
- * content root, sorted. Paths are normalized to forward slashes so manifest
- * keys are stable across platforms and match the POSIX-style globs. Ownership
- * is decided by `classifyPath`, so the manifest contains exactly the files the
- * update flow may overwrite — consumer-owned and unknown paths are excluded.
+ * One PRISM-owned file, named on both sides of a possible seed rename:
+ * `sourcePath` is where it lives under the seed (`prismContentRoot`),
+ * `consumerPath` is where it belongs in the consumer's `.prism/` and in the
+ * sync manifest. The two differ only for entries in `seed-curation.json`'s
+ * `renames` table (e.g. seed `SPEC.md.tmpl` → consumer `SPEC.md`); every
+ * other file has `consumerPath === sourcePath`.
+ */
+export interface PrismOwnedPath {
+  consumerPath: string;
+  sourcePath: string;
+}
+
+/**
+ * Returns every PRISM-owned file under the content root, sorted by consumer
+ * path. Paths are normalized to forward slashes so manifest keys are stable
+ * across platforms and match the POSIX-style globs. Ownership is decided by
+ * `classifyPath` against the consumer-facing name, so a renamed seed file
+ * (e.g. `SPEC.md.tmpl`) is classified as if it were already `SPEC.md` —
+ * otherwise it falls outside every glob in `ownership.ts` and the update flow
+ * silently never manages it.
+ *
+ * `seedToConsumerRenames` is the install-direction rename map (seed path →
+ * consumer path) from `lib/seed-curation.ts`'s `invertRenames`; omitted
+ * entries pass through unchanged.
  */
 export async function listPrismOwnedRelativePaths(
   prismContentRoot: string,
-): Promise<string[]> {
+  seedToConsumerRenames: Record<string, string> = {},
+): Promise<PrismOwnedPath[]> {
   const entries = await listRelativeDirectoryEntries(prismContentRoot);
 
   return entries
     .filter((entry) => entry.kind === "file")
     .map((entry) => entry.relativePath.split(path.sep).join("/"))
-    .filter((relativePath) => classifyPath(relativePath) === "prism")
-    .sort((a, b) => a.localeCompare(b));
+    .map((sourcePath) => ({
+      sourcePath,
+      consumerPath: seedToConsumerRenames[sourcePath] ?? sourcePath,
+    }))
+    .filter((owned) => classifyPath(owned.consumerPath) === "prism")
+    .sort((a, b) => a.consumerPath.localeCompare(b.consumerPath));
 }
 
 /**
@@ -67,13 +91,14 @@ export async function listPrismOwnedRelativePaths(
 export async function generateSyncManifest(
   prismContentRoot: string,
   options: GenerateSyncManifestOptions,
+  seedToConsumerRenames: Record<string, string> = {},
 ): Promise<SyncManifest> {
-  const relativePaths = await listPrismOwnedRelativePaths(prismContentRoot);
+  const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
   const files: Record<string, SyncManifestFileEntry> = {};
 
-  for (const relativePath of relativePaths) {
-    const absolutePath = path.join(prismContentRoot, relativePath);
-    files[relativePath] = { contentHash: await hashFile(absolutePath) };
+  for (const { consumerPath, sourcePath } of ownedPaths) {
+    const absolutePath = path.join(prismContentRoot, sourcePath);
+    files[consumerPath] = { contentHash: await hashFile(absolutePath) };
   }
 
   return {

@@ -46,6 +46,7 @@ import {
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
@@ -244,16 +245,21 @@ async function writeIncoming(
  * regardless of whether a manifest exists. This is a documented decision point,
  * not a license to skip `.bak` — a genuinely diverged file (consumer bytes that
  * differ from incoming) is still backed up.
+ *
+ * `consumerRelativePath` and `sourceRelativePath` differ only for a renamed
+ * seed file (e.g. source `SPEC.md.tmpl`, consumer `SPEC.md`) — every other
+ * caller passes the same value for both.
  */
 async function applyIncomingFile(
-	relativePath: string,
+	consumerRelativePath: string,
+	sourceRelativePath: string,
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	recordedHash: string | null,
 	dryRun: boolean
 ): Promise<FileOutcome> {
-	const incomingAbsolute = path.join(prismContentRoot, relativePath);
-	const consumerAbsolute = path.join(consumerContentRoot, relativePath);
+	const incomingAbsolute = path.join(prismContentRoot, sourceRelativePath);
+	const consumerAbsolute = path.join(consumerContentRoot, consumerRelativePath);
 
 	const incomingHash = await hashFile(incomingAbsolute);
 	const consumerHash = await hashFileIfExists(consumerAbsolute);
@@ -261,23 +267,23 @@ async function applyIncomingFile(
 	if (consumerHash === null) {
 		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-		return { relativePath, action: "written" };
+		return { relativePath: consumerRelativePath, action: "written" };
 	}
 
 	if (consumerHash === incomingHash) {
-		return { relativePath, action: "no-op" };
+		return { relativePath: consumerRelativePath, action: "no-op" };
 	}
 
 	if (recordedHash !== null && consumerHash === recordedHash) {
 		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-		return { relativePath, action: "overwritten" };
+		return { relativePath: consumerRelativePath, action: "overwritten" };
 	}
 
 	const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
 	await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-	return { relativePath, action: "backed-up", backupPath };
+	return { relativePath: consumerRelativePath, action: "backed-up", backupPath };
 }
 
 /**
@@ -340,17 +346,24 @@ export async function applyDeletedFile(
  * via `previewVersionDelta`, a read-only counterpart, so `--dry-run` reports
  * the same delta a real run would record). The returned `UpdateSummary` is
  * identical in shape to a real run, so callers print the same report either way.
+ *
+ * `seedToConsumerRenames` (seed path → consumer path, from
+ * `lib/seed-curation.ts`) is threaded into `listPrismOwnedRelativePaths` and
+ * `rewriteConsumerManifest` so a renamed seed file — `SPEC.md.tmpl` on disk,
+ * `SPEC.md` in the consumer and the manifest — is classified, applied, and
+ * recorded under its consumer name throughout the pass. Defaults to `{}` so
+ * a caller with no rename map behaves as if no renames exist.
  */
 export async function applyFilePass(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	preloadedManifest?: SyncManifest | null,
 	dryRun = false,
-	versionMetadata?: VersionMetadata
+	versionMetadata?: VersionMetadata,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<UpdateSummary> {
-	const incomingRelativePaths =
-		await listPrismOwnedRelativePaths(prismContentRoot);
-	const incomingSet = new Set(incomingRelativePaths);
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
+	const incomingSet = new Set(ownedPaths.map((owned) => owned.consumerPath));
 
 	const consumerManifest =
 		preloadedManifest !== undefined
@@ -367,17 +380,18 @@ export async function applyFilePass(
 
 	const outcomes: FileOutcome[] = [];
 
-	for (const relativePath of incomingRelativePaths) {
-		if (classifyPath(relativePath) !== "prism") {
+	for (const { consumerPath, sourcePath } of ownedPaths) {
+		if (classifyPath(consumerPath) !== "prism") {
 			continue;
 		}
 
 		outcomes.push(
 			await applyIncomingFile(
-				relativePath,
+				consumerPath,
+				sourcePath,
 				prismContentRoot,
 				consumerContentRoot,
-				recordedHashes.get(relativePath) ?? null,
+				recordedHashes.get(consumerPath) ?? null,
 				dryRun
 			)
 		);
@@ -403,7 +417,8 @@ export async function applyFilePass(
 				prismContentRoot,
 				consumerContentRoot,
 				consumerManifest,
-				versionMetadata
+				versionMetadata,
+				seedToConsumerRenames
 			);
 
 	const backups = outcomes
@@ -494,7 +509,9 @@ export async function runUpdate(
 			).length
 		: 0;
 
-	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
+	const seedToConsumerRenames = invertRenames(await loadSeedCurationRenames(prismRepoRoot));
+
+	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount, seedToConsumerRenames);
 
 	const versionMetadata: VersionMetadata = {
 		prismVersion: await resolvePrismVersion(prismRepoRoot),
@@ -506,7 +523,8 @@ export async function runUpdate(
 		consumerContentRoot,
 		consumerManifest,
 		dryRun,
-		versionMetadata
+		versionMetadata,
+		seedToConsumerRenames
 	);
 
 	await refreshPlatformDirs(
@@ -700,17 +718,22 @@ async function rewriteConsumerManifest(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	previousConsumerManifest: SyncManifest | null,
-	versionMetadata?: VersionMetadata
+	versionMetadata?: VersionMetadata,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<VersionDelta> {
 	const metadata =
 		versionMetadata ?? (await deriveMetadataFromSourceManifest(prismContentRoot));
 	const versionDelta = computeVersionDelta(metadata.prismVersion, previousConsumerManifest);
 
-	const generated = await generateSyncManifest(prismContentRoot, {
-		prismVersion: versionDelta.current,
-		sourceCommit: metadata.sourceCommit,
-		generatedAt: new Date().toISOString(),
-	});
+	const generated = await generateSyncManifest(
+		prismContentRoot,
+		{
+			prismVersion: versionDelta.current,
+			sourceCommit: metadata.sourceCommit,
+			generatedAt: new Date().toISOString(),
+		},
+		seedToConsumerRenames
+	);
 
 	const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
 	const serialized = `${JSON.stringify(generated, null, "\t")}\n`;
@@ -1039,9 +1062,10 @@ export function resolvePrismContentRoot(prismSourceRoot: string): string {
  */
 export async function assertSourceIsPlausible(
 	prismContentRoot: string,
-	pendingDeletionCount: number
+	pendingDeletionCount: number,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<void> {
-	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot);
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
 
 	if (ownedPaths.length === 0) {
 		throw new Error(
