@@ -65,8 +65,7 @@
 	],
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
-		"_toolkit/skills-ecosystem.md",
-		"_toolkit/output-guards.md"
+		"_toolkit/skills-ecosystem.md"
 	],
 	".prism/lessons.md": "_toolkit/audit-workflow.md",
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",

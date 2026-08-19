@@ -1,6 +1,11 @@
 {
 	"excluded": [
+		"architect/_toolkit/anchor-substitution.md",
+		"architect/_toolkit/onboarding.md",
 		"architect/_toolkit/output-guards.md",
+		"architect/_toolkit/rule-generation.md",
+		"architect/_toolkit/stack-detection.md",
+		"architect/onboarding.md",
 		"rules/skill-authoring.md",
 		"spec/adrs/_toolkit/0001-plan-is-source-of-truth.md",
 		"spec/adrs/_toolkit/0002-skill-auto-routing.md",
@@ -71,7 +76,6 @@
 	"curated": [
 		"architect/_toolkit/documentation.md",
 		"architect/_toolkit/install-layout.md",
-		"architect/_toolkit/onboarding.md",
 		"architect/_toolkit/plan-authoring.md",
 		"architect/_toolkit/qa-test-planning.md",
 		"architect/_toolkit/skills-ecosystem.md",

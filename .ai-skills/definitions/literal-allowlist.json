@@ -269,10 +269,6 @@
 			"reason": "the onboarding question offers Linear as one of the supported ticket systems"
 		},
 		{
-			"path": "templates/install/.prism/architect/onboarding.md",
-			"reason": "documents the Linear team-key gate that only fires for Linear installs"
-		},
-		{
 			"path": ".claude/architect/_toolkit/output-guards.md",
 			"reason": "doc explains the Thrive-literal guard and must name the literals it checks for"
 		},
