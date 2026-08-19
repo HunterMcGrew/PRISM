@@ -173,7 +173,9 @@ test("resolveArchitectNag: a doc that is actually read is credited, independent 
 		const beforeRead = await resolveArchitectNag(repoRoot, sourcePath, "session-1");
 		assert.ok(beforeRead, "unread doc is named before its own path is read");
 
-		const readOfDocItself = await resolveArchitectNag(repoRoot, docPath, "session-1");
+		const readOfDocItself = await resolveArchitectNag(repoRoot, docPath, "session-1", {
+			credit: true,
+		});
 		assert.equal(
 			readOfDocItself,
 			null,
@@ -185,6 +187,32 @@ test("resolveArchitectNag: a doc that is actually read is credited, independent 
 			state.read,
 			["_toolkit/spec-editing.md"],
 			"the doc's own path was read, so it is credited in `read` — the only array a write-time deny gate clears against"
+		);
+	});
+});
+
+test("resolveArchitectNag: without credit, reading a doc's own path credits nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifest(repoRoot, {
+			"scripts/ai-skills/**": "_toolkit/spec-editing.md",
+		});
+		await seedDoc(repoRoot, "_toolkit/spec-editing.md");
+
+		const docPath = path.join(
+			repoRoot,
+			".prism",
+			"architect",
+			"_toolkit",
+			"spec-editing.md"
+		);
+
+		await resolveArchitectNag(repoRoot, docPath, "session-1");
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(
+			state.read,
+			[],
+			"credit defaults off — a caller that saw a partial read must not have to opt out of crediting"
 		);
 	});
 });
@@ -234,7 +262,9 @@ test("resolveArchitectNag: crediting the just-read doc and announcing other unan
 			"_toolkit",
 			"spec-editing.md"
 		);
-		const result = await resolveArchitectNag(repoRoot, docPath, "session-1");
+		const result = await resolveArchitectNag(repoRoot, docPath, "session-1", {
+			credit: true,
+		});
 
 		assert.ok(result, "the read also matches .prism/architect/**, so the still-unannounced sibling doc is announced");
 		assert.match(result as string, /_toolkit\/other-doc\.md/);

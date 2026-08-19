@@ -7,8 +7,10 @@
  * dispatching over `HARNESSES` on the `--tool=` argv flag.
  *
  * Reads the hook's stdin JSON, looks up the harness named by the `--tool=`
- * argv flag, extracts the read path and session id through that harness's
- * own accessors, calls the host-agnostic resolver in `architect-route.mjs`,
+ * argv flag, extracts the read paths and session id through that harness's
+ * own accessors, decides per path whether the observed call earns read
+ * credit (`resolveTargets`), calls the host-agnostic resolver in
+ * `architect-route.mjs`,
  * and writes that harness's own envelope shape to stdout when it returns an
  * announcement. An unrecognized `--tool` value, a payload missing its file
  * path or session id, a payload that belongs to a different host's
@@ -31,7 +33,139 @@ import {
 	MAX_EMISSION_BYTES,
 	resolveArchitectNag,
 } from "./architect-route.mjs";
-import { HARNESSES } from "./harnesses.mjs";
+import { HARNESSES, resolveToolKind } from "./harnesses.mjs";
+
+/**
+ * Shell metacharacters that make a command something other than a single
+ * read of named files. A command carrying any of them parses to zero
+ * targets rather than to a partial guess: `cat a | grep b` reads `a` but
+ * `grep -f patterns b` does not read `patterns` the way `cat` does, and a
+ * parser that tries to tell those apart is wrong more often than silence
+ * is. Pipelines, redirects, chained commands, and command substitution all
+ * land here, and they are deliberately out of scope.
+ *
+ * Newlines and `#` sit in the set for the same reason, and they matter more
+ * than they look. A newline separates commands, so a multi-line call whose
+ * first line is a bare `cat` would otherwise parse as one `cat` over every
+ * bare token on every later line — crediting as fully read a routed doc that
+ * was only some later `grep`'s haystack. `#` opens a comment, whose words are
+ * not paths either. Multi-line commands are routine agent behavior, and
+ * crediting an unread document is the one direction this channel treats as
+ * unacceptable.
+ *
+ * @type {RegExp}
+ */
+const SHELL_CONTROL_CHARACTERS = /[|&;<>`#\n\r]|\$\(/;
+
+/** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
+ * @type {Set<string>}
+ */
+const SHELL_READ_COMMANDS = new Set(["cat", "head", "tail", "sed", "less", "more"]);
+
+/**
+ * Strips one layer of matching surrounding quotes from a token.
+ *
+ * @param {string} token
+ * @returns {string}
+ */
+function unquote(token) {
+	const quoted = /^(["'])(.*)\1$/.exec(token);
+	return quoted ? quoted[2] : token;
+}
+
+/**
+ * Extracts the paths a shell read command names, and whether reading them
+ * that way delivered the whole file.
+ *
+ * Only `cat` with no flags credits. `head`, `tail`, `sed -n`, `less`, and
+ * `more` each announce the path but never credit it, because each of them
+ * can hand back an arbitrary slice of a document the model then treats as
+ * the whole thing. `cat` carrying any flag (`-n`, `-A`) is treated the same
+ * way — the flag does not truncate, but under-crediting costs one re-read
+ * while over-crediting silently defeats the write gate this channel feeds.
+ *
+ * Deliberate parsing gaps, all of which yield zero targets rather than a
+ * guess: pipelines, redirects, and command substitution (see
+ * `SHELL_CONTROL_CHARACTERS`); `xargs` and any other command that names its
+ * files indirectly; and paths containing spaces, since splitting on
+ * whitespace cannot recover them even when they are quoted.
+ *
+ * @param {string | undefined} command
+ * @returns {{filePath: string, credit: boolean}[]}
+ */
+export function parseShellReadTargets(command) {
+	if (typeof command !== "string" || command.trim().length === 0) {
+		return [];
+	}
+	if (SHELL_CONTROL_CHARACTERS.test(command)) {
+		return [];
+	}
+
+	const [name, ...args] = command.trim().split(/\s+/);
+	if (!SHELL_READ_COMMANDS.has(name)) {
+		return [];
+	}
+
+	const operands = [];
+	for (const arg of args) {
+		if (arg.startsWith("-") && arg !== "-") {
+			continue;
+		}
+
+		operands.push(unquote(arg));
+	}
+
+	// Only `cat` credits, and only unflagged. Everything else — a `head`
+	// count operand, a `sed` script operand — is a non-path token that can
+	// at worst cost one route lookup that finds nothing, since a manifest
+	// route never matches a bare number or a `1,5p` script.
+	const credit = name === "cat" && !args.some((arg) => arg.startsWith("-"));
+
+	return operands.map((filePath) => ({ filePath, credit }));
+}
+
+/**
+ * Resolves one payload into the paths to route and whether each one earns
+ * read credit — the single place the credit judgment is made, so every
+ * channel answers it the same way.
+ *
+ * - `read`: credits only when the payload carries neither `offset` nor
+ *   `limit`. A `Read(limit: 1)` names the doc and delivers one line of it,
+ *   which is exactly the over-credit that would make a write gate
+ *   satisfiable without reading anything.
+ * - `shell`: whatever `parseShellReadTargets` recovers, on its own terms,
+ *   with each operand resolved against the command's own working directory.
+ * - Everything else, `search` included: announce, never credit. A `Grep`
+ *   whose results quote a routed doc has not delivered that doc.
+ *
+ * @param {import("./harnesses.mjs").HarnessSpec} spec
+ * @param {import("./harnesses.mjs").HookPayload} payload
+ * @returns {{filePath: string, credit: boolean}[]}
+ */
+export function resolveTargets(spec, payload) {
+	const kind = resolveToolKind(spec, payload.tool_name);
+
+	if (kind === "shell") {
+		// A shell operand is relative to the command's own working directory,
+		// unlike every other channel's path, which arrives absolute. Resolving
+		// it here rather than downstream against the repo root is what keeps a
+		// repo-root-relative `cat` issued from a subdirectory — a command that
+		// fails — from crediting the doc it names.
+		const cwd = payload.cwd ?? process.cwd();
+		return parseShellReadTargets(payload.tool_input?.command).map(
+			(target) => ({ ...target, filePath: path.resolve(cwd, target.filePath) })
+		);
+	}
+
+	const isFullRead =
+		kind === "read" &&
+		payload.tool_input?.offset === undefined &&
+		payload.tool_input?.limit === undefined;
+
+	return spec
+		.filePaths(payload)
+		.map((filePath) => ({ filePath, credit: isFullRead }));
+}
 
 /**
  * Cursor's own hook-config event keys — camelCase, unlike Claude Code and
@@ -114,16 +248,16 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 		}
 
 		const sessionId = spec.sessionId(payload);
-		const filePaths = spec.filePaths(payload);
-		if (!sessionId || filePaths.length === 0) {
+		const targets = resolveTargets(spec, payload);
+		if (!sessionId || targets.length === 0) {
 			return emitNoneOutput(spec);
 		}
 
 		const cwd = payload.cwd ?? process.cwd();
 		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
 
-		// Every path the payload names, not just the first. `filePaths` returns
-		// an array because one Codex `apply_patch` blob can carry several
+		// Every path the payload names, not just the first. `resolveTargets`
+		// returns an array because one Codex `apply_patch` blob can carry several
 		// `*** Update File:` headers, and routing only the first would leave
 		// the architect context for every other file in that patch unnamed.
 		//
@@ -136,12 +270,14 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 		// `formatNag` makes for a single over-length entry.
 		const announcements = [];
 		let remainingBytes = MAX_EMISSION_BYTES;
-		for (const filePath of filePaths) {
+		for (const { filePath, credit } of targets) {
 			if (remainingBytes <= 0) {
 				break;
 			}
 
-			const nag = await resolveArchitectNag(repoRoot, filePath, sessionId);
+			const nag = await resolveArchitectNag(repoRoot, filePath, sessionId, {
+				credit,
+			});
 			if (nag === null) {
 				continue;
 			}
