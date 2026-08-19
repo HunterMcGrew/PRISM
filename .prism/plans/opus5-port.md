@@ -805,6 +805,62 @@ Every evidence command below was reasoned against this plan's own task list befo
 - **Tests:** `swept` — one new case (`every consumer stub route names a doc the install seed actually carries`). It asserts existence, resolved the way `filterDocsOnDisk` resolves. `pnpm prism:check` exit 0.
 
 
+### Consumer `SPEC.md.tmpl` never received C3's genericization
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/.prism/SPEC.md.tmpl`
+- **Problem:** C3 genericized `.prism/SPEC.md`, but `templates/install/.prism/SPEC.md.tmpl` — the file `adopt` installs as the consumer's own `.prism/SPEC.md` — carries none of it. Tier 4 still hardcodes `.claude/skills/<skill>/SKILL.md`; the non-spec list still names `.claude/worktrees/`, `.claude/changelogs/`, and `.claude/docs/qa/`; the Promotion clause still says "Then delete the plan — git history preserves it", which contradicts ADR-0047; the § Where it lives paragraph is absent; and the Plan Section Ownership pointer still names `skills-ecosystem.md` — the identical Major fixed at `.prism/SPEC.md:71` in `d541627`, unfixed on the surface that ships. C3's verify (`grep -c '\.claude/' .prism/SPEC.md` = 0) was scoped to canonical alone, which is why the task read green.
+- **Class:** `curated twin missed by a canonical-only edit and a canonical-only verify`
+- **Sweep:** `diff` of `SPEC.md.tmpl` against `.prism/SPEC.md` — 8 divergent hunks, every one a C3 change absent from the twin. `grep -c '\.claude/'` returns 6 on the twin, 0 on canonical. Ran `pnpm prism:build` on a clean tree: exit 0, zero files changed, so no mirror step regenerates this twin. The other two twins this PR touched (`business-layer.md`, `manifest.base.json`) are byte-identical to canonical and are clean.
+- **Suggested fix:** Apply C3's genericization to `SPEC.md.tmpl`, including the `plan-authoring.md` repoint and the ADR-0047 promotion wording. Extend C3's verify to both paths.
+
+### `SPEC.md.tmpl` has no drift gate, and `seed-curation.json` implies it does
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/definitions/seed-curation.json` — the `renames` entry
+- **Problem:** `SPEC.md` appears only under `renames` (`SPEC.md` -> `SPEC.md.tmpl`), never under `excluded`, `curated`, or `seedOnly`. A plain renamed mirror reads as "kept in parity by the build," but `pnpm prism:build` leaves the twin untouched and `pnpm prism:check` reports no drift against an 8-hunk divergence. Whichever way it is meant — hand-forked or mirrored — the config and the behavior disagree, which is what let the Major above ship silently.
+- **Class:** `curation config states a guarantee the build does not provide`
+- **Sweep:** Enumerated all four `seed-curation.json` keys for any `SPEC` entry; only the rename exists. Confirmed empirically by running `prism:build` on a clean tree and re-checking `git status` — no write.
+- **Suggested fix:** Either mark it `curated` (drift expected, twin maintained by hand) and add it to whatever check covers curated twins, or make the mirror actually regenerate it. Winston's call; PR 2E's ship-surface lane is the natural home.
+
+### Tasks C2 and C4 still specify the superseded guide path with no pointer to the Decision
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md` — tasks C2 (line 384, 391) and C4 (lines 399-404)
+- **Problem:** Both still name `.prism/references/guides/`, and C4 spells six route values as `../references/guides/<guide>.md`. The guide-placement Decision supersedes them, but neither task carries a pointer to it, so a reader reconciling `manifest.stub.json` against C4's list sees a mismatch with no in-place explanation. Leaving executed task text as the recorded intent is a defensible call — the missing piece is the one clause that makes it legible as intent rather than as a stale instruction.
+- **Class:** `superseded instruction with no supersede marker`
+- **Sweep:** `grep -rn "references/guides"` across the tree — every hit outside `.prism/plans/` is gone, so the executed surface is fully repointed and this is plan text only. Tasks E4 and AC-26 were repointed in `d541627` and are correct.
+- **Suggested fix:** Append one clause to C2 and C4: superseded by the guide-placement Decision; guides live at `.prism/architect/guides/`.
+
+### `AGENTS.md.tmpl` states the skills route without its host qualifier
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/AGENTS.md.tmpl:119`
+- **Problem:** The rewritten sentence says "skills to `writing-a-skill.md`", but the only stub key covering skills is `.claude/skills/**`. For a Codex or Cursor consumer reading this same host-agnostic file, no skill path matches. The five other clauses in the sentence are exact against `manifest.stub.json`; this is the one that generalizes a host-specific key. My pass on `5b6fd401` did not flag the stub key itself — that is a miss on my side, not new drift in `d541627`.
+- **Class:** `host-specific route described in host-agnostic prose`
+- **Sweep:** Checked all six clauses of the sentence against every `manifest.stub.json` key. `.prism/templates/**`, `.prism/plans/**`, `.prism/rules/**`, `.prism/SPEC.md`, `.prism/architect/**`, `.prism/references/**`, and `.prism/spec/adrs/**` all match their claimed guide exactly. Only the skills clause has no host-agnostic key behind it.
+- **Suggested fix:** Say "Claude Code skills", or fix the stub key in PR 2E's stub-composition lane and leave the sentence.
+
+### Angle Coverage — re-review of `5b6fd401..d541627`
+
+- **Correctness / logic:** `swept` — all four route tables re-parsed as JSON; `.prism/plans/**` now unions four docs in `manifest.json` and both `manifest.base.json` copies, and the three host mirrors are byte-identical to `.prism/architect/manifest.json`.
+- **Type safety:** `n/a` — no typed source in the range.
+- **Edge cases:** `swept` — C6's corrected verify run literally (no hits outside `/plans/`); guide line counts 75-85, all under AC-26's 120; AC-26's count clause holds at 5 files against 5 distinct stub guide targets.
+- **Abstraction / duplication:** `swept` — the two curated twins Eli edited (`business-layer.md`, `manifest.base.json`) confirmed byte-identical to canonical by `diff -q`. The third twin, `SPEC.md.tmpl`, is not, and is filed above.
+- **Spec and doc consistency:** `swept` — `AGENTS.md.tmpl:119` checked clause-by-clause against the stub; `plan-authoring.md:28` confirmed to carry `## Plan Section Ownership` in canonical and in the seed twin; `business-layer.md`'s "as well" phrasing verified non-exhaustive and true in both trees (`.prism/**` loads `install-layout.md` plus `skills-ecosystem.md` in PRISM, `install-layout.md` alone in the stub).
+- **Citation integrity:** `swept` — every path named in the rewritten `AGENTS.md.tmpl` sentence and in the repointed E4 roots resolves on disk.
+- **Removals and renames:** `swept` — tree-wide `grep` for `references/guides` returns nothing outside `.prism/plans/`; tree-wide `grep` for `skills-ecosystem.md` paired with a moved section name returns exactly one hit, the `SPEC.md.tmpl` Major above.
+- **Docs impact:** `swept` — this range is the docs fix; four findings filed.
+- **Tests:** `swept` — no new test surface in the range. `pnpm prism:build` exit 0 with zero writes on a clean tree, which is itself the evidence for the drift-gate Minor.
+
 ### `demand-elegance.md`'s condition-gate rewrite leaves two near-duplicate bullets
 
 - **Severity:** minor
@@ -993,7 +1049,7 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 
 ## PR Readiness (PR 2C — Writing guides and doc splits, #463)
 
-- [x] No critical or major issues — all 6 of Briar's findings fixed 2026-08-19
+- [ ] No critical or major issues — pass-1's 6 findings all verified fixed; re-review of `5b6fd401..d541627` opened 1 new major (`SPEC.md.tmpl` missed C3) and 3 minors
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — one stub-route integrity case; confirmed to fail when a route names a missing doc
@@ -1002,4 +1058,4 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context — both PR 2C Decisions carry `no promotion needed` verdicts with reasons
 
-**Last updated:** 2026-08-19
+**Last updated:** 2026-08-19 (re-review of `5b6fd401..d541627`)
