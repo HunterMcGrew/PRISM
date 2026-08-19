@@ -9,13 +9,18 @@
  * hardcoding a second copy of the two entries — one table, read by both
  * directions.
  *
- * A `renames` entry is exempt from content comparison. `prism:build` skips it
- * on the write path and checks only that the renamed seed file exists on the
- * drift path, so a renamed twin behaves like a `curated` one: its content is
- * the author's to keep in sync, and divergence from the canonical file is
- * caught in review, not by the build. `SPEC.md` → `SPEC.md.tmpl` is the case
- * where that matters — the two are meant to track each other, and nothing
- * mechanical enforces it.
+ * A `renames` entry is exempt from content comparison on its own. `prism:build`
+ * skips it on the write path and checks only that the renamed seed file exists
+ * on the drift path, so a renamed twin behaves like a `curated` one: its
+ * content is the author's to keep in sync. That is the right default for
+ * `architect/manifest.json` → `architect/manifest.stub.json`, whose seed copy
+ * is a stub and is meant to differ, and the wrong one for a pair like
+ * `SPEC.md` → `SPEC.md.tmpl` that is meant to track its canonical source.
+ *
+ * Listing the canonical path in `mirrored` as well is what turns the gate on
+ * per entry: `prism:build` then writes the twin under its renamed name and
+ * `prism:check` fails when the two diverge. Adding a rename is the moment to
+ * decide which of the two the new pair is.
  */
 import fs from "node:fs/promises";
 import path from "node:path";

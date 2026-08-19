@@ -75,6 +75,18 @@ export { listRelativeDirectoryEntries } from "./utils";
 export interface SeedCuration {
 	excluded: string[];
 	curated: string[];
+	/**
+	 * Files that ship to consumers with their seed twin kept byte-identical to
+	 * canonical. `curated` also ships, but its twin is the author's to maintain
+	 * and the build neither writes nor compares it — so a canonical edit to a
+	 * `curated` file leaves the consumer copy frozen at its old content.
+	 * `mirrored` is the bucket for a file that must not drift: the build writes
+	 * the twin on every run and `prism:check` fails when the two differ. An
+	 * entry that also appears in `renames` is compared against its renamed seed
+	 * path, which is how a renamed twin earns a content gate without forcing
+	 * one on `architect/manifest.stub.json`, whose divergence is intentional.
+	 */
+	mirrored?: string[];
 	seedOnly: string[];
 	renames: Record<string, string>;
 }
@@ -524,6 +536,38 @@ export async function syncAgentsMdTier1Block(
 }
 
 /**
+ * Fails the build when a canonical path lands in more than one of the
+ * shipping-behavior buckets. `excluded`, `curated`, and `mirrored` each ask the
+ * seed writer for something different, and the writer resolves an overlap by
+ * whichever branch it happens to reach first — so an overlap reads as a working
+ * classification while silently doing only one of the two things its author
+ * asked for. `renames` is deliberately not in the check: it names a seed
+ * filename, and pairing it with `mirrored` is how a renamed twin gets compared.
+ */
+export function assertSeedCurationBucketsAreDisjoint(curation: SeedCuration): void {
+	const buckets: [string, string[]][] = [
+		["excluded", curation.excluded],
+		["curated", curation.curated],
+		["mirrored", curation.mirrored ?? []],
+		["seedOnly", curation.seedOnly],
+	];
+
+	const owner = new Map<string, string>();
+
+	for (const [bucketName, paths] of buckets) {
+		for (const relPath of paths) {
+			const previousBucket = owner.get(relPath);
+			if (previousBucket !== undefined) {
+				throw new Error(
+					`Invalid seed-curation.json: "${relPath}" is listed in both "${previousBucket}" and "${bucketName}" — each path belongs to exactly one bucket.`
+				);
+			}
+			owner.set(relPath, bucketName);
+		}
+	}
+}
+
+/**
  * Checks for drift between the canonical content root and the install seed
  * (`templates/install/.prism/`). Check-mode only — never writes, moves, or
  * deletes any file.
@@ -545,6 +589,7 @@ export async function checkSeedDrift(
 
 	const excludedSet = new Set(curation.excluded);
 	const curatedSet = new Set(curation.curated);
+	const mirroredSet = new Set(curation.mirrored ?? []);
 	const seedOnlySet = new Set(curation.seedOnly);
 	const renames = curation.renames;
 	const renameValues = new Set(Object.values(renames));
@@ -568,6 +613,23 @@ export async function checkSeedDrift(
 				if (await pathExists(seedPath)) {
 					changedPathsArg.push(`seed contains excluded file: ${relPath}`);
 				}
+				continue;
+			}
+
+			if (mirroredSet.has(relPath)) {
+				const twinRelPath = renames[relPath] ?? relPath;
+				const twinSeedPath = path.join(seedRoot, twinRelPath);
+				if (!(await pathExists(twinSeedPath))) {
+					changedPathsArg.push(
+						`seed drift: ${relPath} (mirrored file missing from seed as ${twinRelPath})`
+					);
+					continue;
+				}
+
+				if (!(await filesAreEqual(path.join(sourceArea, entry.relativePath), twinSeedPath))) {
+					changedPathsArg.push(`seed drift: ${relPath} (mirrored twin ${twinRelPath} differs)`);
+				}
+
 				continue;
 			}
 
@@ -602,6 +664,29 @@ export async function checkSeedDrift(
 
 	for (const looseFile of COPIED_LOOSE_FILES) {
 		const relPath = looseFile;
+		const sourcePath = path.join(contentRoot, looseFile);
+
+		if (mirroredSet.has(relPath)) {
+			if (!(await pathExists(sourcePath))) {
+				continue;
+			}
+
+			const twinRelPath = renames[relPath] ?? relPath;
+			const twinSeedPath = path.join(seedRoot, twinRelPath);
+			if (!(await pathExists(twinSeedPath))) {
+				changedPathsArg.push(
+					`seed drift: ${relPath} (mirrored file missing from seed as ${twinRelPath})`
+				);
+				continue;
+			}
+
+			if (!(await filesAreEqual(sourcePath, twinSeedPath))) {
+				changedPathsArg.push(`seed drift: ${relPath} (mirrored twin ${twinRelPath} differs)`);
+			}
+
+			continue;
+		}
+
 		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
 			continue;
 		}
@@ -615,7 +700,6 @@ export async function checkSeedDrift(
 			continue;
 		}
 
-		const sourcePath = path.join(contentRoot, looseFile);
 		const seedPath = path.join(seedRoot, looseFile);
 		if (!(await pathExists(sourcePath))) {
 			continue;
@@ -659,7 +743,9 @@ export async function checkSeedDrift(
  * Writes non-curated canonical files to the install seed so prism:build is the
  * single command that keeps templates/install/.prism/ in parity. The build-mode
  * inverse of checkSeedDrift: same classification (excluded / renames / curated
- * skipped), but writes the raw canonical bytes instead of comparing them.
+ * skipped), but writes the raw canonical bytes instead of comparing them. A
+ * `mirrored` file is written too — to its renamed seed name when it has one —
+ * so the twin checkSeedDrift byte-compares is the one this pass produced.
  *
  * Raw bytes, not substituted: the seed ships tokens as literals (ADR-0030), and
  * checkSeedDrift compares raw bytes — so the write path must NOT call
@@ -681,6 +767,7 @@ export async function writeSeedMirror(
 ): Promise<void> {
 	const excludedSet = new Set(curation.excluded);
 	const curatedSet = new Set(curation.curated);
+	const mirroredSet = new Set(curation.mirrored ?? []);
 	const renames = curation.renames;
 
 	for (const area of COPIED_CONTENT_AREAS) {
@@ -698,6 +785,18 @@ export async function writeSeedMirror(
 			const relPath = path.posix.join(area, entry.relativePath.replace(/\\/g, "/"));
 
 			if (excludedSet.has(relPath)) {
+				continue;
+			}
+
+			if (mirroredSet.has(relPath)) {
+				const twinRelPath = renames[relPath] ?? relPath;
+				const raw = await fs.readFile(path.join(sourceArea, entry.relativePath), "utf8");
+				await writeFileIfChanged(
+					path.join(seedRoot, twinRelPath),
+					raw,
+					checkModeArg,
+					changedPathsArg
+				);
 				continue;
 			}
 
@@ -722,6 +821,23 @@ export async function writeSeedMirror(
 	for (const looseFile of COPIED_LOOSE_FILES) {
 		const relPath = looseFile;
 		const seedOnlySet = new Set(curation.seedOnly);
+		const sourcePath = path.join(contentRoot, looseFile);
+
+		if (mirroredSet.has(relPath)) {
+			if (!(await pathExists(sourcePath))) {
+				continue;
+			}
+
+			const twinRelPath = renames[relPath] ?? relPath;
+			const raw = await fs.readFile(sourcePath, "utf8");
+			await writeFileIfChanged(
+				path.join(seedRoot, twinRelPath),
+				raw,
+				checkModeArg,
+				changedPathsArg
+			);
+			continue;
+		}
 
 		if (excludedSet.has(relPath) || seedOnlySet.has(relPath) || curatedSet.has(relPath)) {
 			continue;
@@ -731,7 +847,6 @@ export async function writeSeedMirror(
 			continue;
 		}
 
-		const sourcePath = path.join(contentRoot, looseFile);
 		if (!(await pathExists(sourcePath))) {
 			continue;
 		}
@@ -794,6 +909,7 @@ async function main(): Promise<void> {
 		".ai-skills/definitions/seed-curation.json",
 		"seed curation manifest"
 	);
+	assertSeedCurationBucketsAreDisjoint(seedCuration);
 	const config = loadConfig(repoRoot);
 	const tokenMap = deriveTokenMap(config);
 
