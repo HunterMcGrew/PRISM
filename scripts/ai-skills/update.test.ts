@@ -1799,6 +1799,54 @@ test("refreshHookRuntime: prunes a marked file it no longer ships, backs it up f
 	});
 });
 
+test("refreshHookRuntime: the backup of a pruned file is not itself pruned on the next run", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const adapted = prismRuntimeSource("a consumer's adaptation of a delivered file");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/my-adapted-hook.mjs",
+			adapted
+		);
+
+		const backupNamesPerRun: string[][] = [];
+		const prunedPerRun: number[] = [];
+		for (let run = 0; run < 4; run += 1) {
+			const outcomes = await refreshHookRuntime(
+				prismRepoRoot,
+				consumerRepoRoot,
+				false
+			);
+			prunedPerRun.push(
+				outcomes.filter((o) => o.action === "removed-with-backup").length
+			);
+			const names = await fs.readdir(
+				path.join(consumerRepoRoot, ".claude", "hooks")
+			);
+			backupNamesPerRun.push(
+				names.filter((name) => name.startsWith("my-adapted-hook")).sort()
+			);
+		}
+
+		assert.deepEqual(
+			prunedPerRun,
+			[1, 0, 0, 0],
+			"the adaptation is pruned once; the backup PRISM wrote is never a later run's prune target"
+		);
+		for (const names of backupNamesPerRun) {
+			assert.deepEqual(
+				names,
+				["my-adapted-hook.mjs.bak"],
+				"the backup name is stable across runs — a growing `.bak.bak.bak` chain means prune is re-selecting its own output"
+			);
+		}
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/my-adapted-hook.mjs.bak"),
+			adapted,
+			"the recovery guarantee holds past the first update cycle"
+		);
+	});
+});
+
 test("mergeHookSettingsRegistration: a consumer command that merely mentions the entry point is not treated as PRISM's", async () => {
 	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		const wrapper = {

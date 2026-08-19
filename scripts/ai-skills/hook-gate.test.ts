@@ -519,5 +519,13 @@ test("hook.mjs runs as its own process under plain node, from the source tree", 
 			0,
 			`hook.mjs exited non-zero under plain node: ${result.stderr}`
 		);
+		// Every hook.mjs failure path writes nothing and exits 0, so exit 0
+		// alone cannot tell a completed announce arm from a fail-open early
+		// return. The announcement itself is what proves the arm ran.
+		assert.match(
+			result.stdout,
+			/_toolkit\/spec-editing\.md/,
+			`the spawned hook announced nothing: ${result.stdout || "(empty)"}`
+		);
 	});
 });

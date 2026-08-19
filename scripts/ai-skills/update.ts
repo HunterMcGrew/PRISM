@@ -1013,6 +1013,13 @@ const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
 const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
 
 /**
+ * Matches the basenames `backupConsumerFile` produces — `<file>.bak`,
+ * `<file>.bak.1`, `<file>.bak.2`, … — so `pruneStaleHookRuntimeFiles` can
+ * recognize its own recovery copies without reading them.
+ */
+const BACKUP_BASENAME_PATTERN = /\.bak(\.\d+)?$/;
+
+/**
  * Delivers one runtime file. Absent is a write, byte-identical is a no-op, a
  * marker-carrying target is an overwrite regardless of its bytes (see
  * `HOOK_RUNTIME_MARKER`), and anything else is the consumer's and is
@@ -1057,12 +1064,16 @@ async function deliverHookRuntimeFile(
  * runtime file stays resident in every consumer forever.
  *
  * Only marked files are removed, so a consumer's own script sharing the
- * directory is never touched. A `.bak` this seam wrote is never marked either:
- * a backup is only ever taken of a file that lacked the marker. The marker is
- * a content signal, not a path signal — a consumer who copies a delivered
- * file elsewhere under `.claude/hooks/` to adapt it carries the marker along,
- * so this backs up before removing rather than assuming every marked file at
- * an unrecognized path is safe to discard outright.
+ * directory is never touched. Backups are skipped by name
+ * (`BACKUP_BASENAME_PATTERN`) rather than by content: `backupConsumerFile`
+ * copies its source byte for byte, so the backup of a marked file carries the
+ * marker too and would re-select here on the next run, each pass backing up
+ * the previous backup one suffix longer. A recovery copy is the consumer's to
+ * read and delete, never PRISM's to reclaim. The marker is a content signal,
+ * not a path signal — a consumer who copies a delivered file elsewhere under
+ * `.claude/hooks/` to adapt it carries the marker along, so this backs up
+ * before removing rather than assuming every marked file at an unrecognized
+ * path is safe to discard outright.
  */
 async function pruneStaleHookRuntimeFiles(
 	targetDir: string,
@@ -1090,6 +1101,10 @@ async function pruneStaleHookRuntimeFiles(
 			.split(path.sep)
 			.join("/");
 		if (delivered.has(relative)) {
+			continue;
+		}
+
+		if (BACKUP_BASENAME_PATTERN.test(entry.name)) {
 			continue;
 		}
 
