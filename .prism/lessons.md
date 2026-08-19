@@ -439,3 +439,11 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-18 (opus5-port PR 2A, PR #461) — announce-once marked a doc "announced" from the set the resolver *named*, while `formatNag` then truncated the emission to a byte ceiling. Each function is correct read on its own; together they silenced every truncated doc for the rest of the session without ever emitting its name. Measured on a wide fan-out: 382 named, 500 marked, 118 silenced, and a later read of a silenced doc returned nothing. Self-review, the doc-staleness sweep, and ratification all passed over it — the defect lives in the seam, so no single-function read shows it.
 
 **How to apply:** where one step's full output feeds a second step that caps, filters, or truncates it, read the producing step and the consuming step side by side and name the invariant that ties them ("marked only if emitted"). Then test the boundary, not just the happy path — a fan-out large enough to trigger the cap is the case that separates the two steps' behavior, and every smaller case passes either way.
+
+---
+
+## A defect class enumerated against one list is tested on one axis only
+
+**Why:** 2026-08-19 (opus5-port PR 2C, PR #463) — a self-review found a stale `**Verify:**` line, then swept the plan's other verify lines by walking `seed-curation.json`'s `curated` list and concluded it was the last survivor. PR review found two more the sweep could not see: one named a superseded directory that never got created (the files were not curated at all), and one had the wrong grep scope. The list was a proxy for one axis — canonical measured while a curated twin goes unmeasured — and the real class was broader: the verify line was not re-derived when the task changed underneath it. Re-deriving against the class rather than the list turned up two further instances nobody had reported.
+
+**How to apply:** when a finding suggests a class, name the class in words before enumerating, then check each candidate against the words. If the sweep's method is "grep a list," ask what the list is a proxy for and what a defect on a different axis would look like. And run each verify command literally — a command that errors on a nonexistent path is indistinguishable from one that passes, until you run it.

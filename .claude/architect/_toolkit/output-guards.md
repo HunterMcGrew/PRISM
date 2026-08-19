@@ -1,6 +1,6 @@
 # Output Guards
 
-The two guards that run after skill generation to catch output token
+The two guards that run after skill generation to catch output that token
 substitution did not fully resolve: what each one scans, which surfaces it runs
 on, why the asymmetry between them is deliberate, and the allowlist they share.
 

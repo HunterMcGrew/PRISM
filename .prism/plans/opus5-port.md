@@ -180,6 +180,14 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Exit condition:** task E5 excludes it from the seed or routes it. Task E1's orphan-doc check makes the state visible in `prism doctor` either way, so it cannot stay unrouted silently.
   - **→ no promotion needed (a two-PR sequencing call inside this stack, resolved at PR 2E close).**
 
+- **The five writing guides are classified `curated` in `seed-curation.json`, not left to auto-mirror.**
+  - **Root cause:** C7 requires every new file to carry a classification entry, and `seed-curation.json` has exactly four buckets — `excluded`, `curated`, `seedOnly`, `renames`. There is no bucket meaning "ships, and the build keeps the twin byte-identical." A file in none of them auto-mirrors and counts as unclassified, which is the state C7 exists to forbid.
+  - **Alternatives considered:** leave them unclassified and rely on the build warning; add a `mirrored` bucket to the schema.
+  - **Chosen approach:** `curated`, matching every other consumer-facing architect doc already in the seed (`install-layout.md`, `skills-ecosystem.md`, `plan-authoring.md`, `ticket-workflows.md`). Leaving them unclassified fails C7 outright and rests on a warning that fires once per artifact lifetime. A `mirrored` bucket is the cleaner schema, but it is a `build.ts` change inside a PR whose own scope line reads "content-only — no runtime change."
+  - **The cost this accepts, stated plainly:** `curated` means the build stops comparing canonical against the twin, so a later edit to a canonical guide will not reach the seed and nothing mechanical will say so. The twins are byte-identical today (`diff -q`, all five). This is the same drift the plan already records against `skills-ecosystem.md`, now accepted deliberately for five more files rather than arrived at by accident.
+  - **Follow-up:** a `mirrored` bucket in `seed-curation.json` — one that classifies a file as shipping *and* keeps the build's content comparison on it — would let these five, and any future guide, be both classified and drift-checked. Belongs with E5's ship-surface trim, which is already the task that reasons about seed membership wholesale.
+  - **→ no promotion needed (a classification call inside this stack; the schema gap is recorded as follow-up above).**
+
 
 ---
 
@@ -379,7 +387,7 @@ Branch `huntermcgrew/opus5-port-writing-guides` from PR 2A's head. Content-only 
    - `## Shared Templates`, `## Plan Section Ownership`, `## Acceptance Criteria Format` → new `.prism/architect/_toolkit/plan-authoring.md`.
    - `## Lessons`, `### Lesson promotion taxonomy` → append into the existing `.prism/architect/_toolkit/audit-workflow.md`.
    - `## Output guards` and its four subsections → new `.prism/architect/_toolkit/output-guards.md`. This is build-internal, maintainer-facing content — mark it excluded in `seed-curation.json` per C7.
-   - Each new file opens with a one-paragraph scope statement naming what it covers and what it does not. **Verify:** `pnpm prism:crossref-lint` green (every moved section's inbound references resolve); `wc -l .prism/architect/_toolkit/skills-ecosystem.md` under 200.
+   - Each new file opens with a one-paragraph scope statement naming what it covers and what it does not. **Verify:** `pnpm prism:crossref-lint` green (every moved section's inbound references resolve); `wc -l .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md` — both under 200. The twin is `curated`, so no build step syncs it and only naming it here measures it.
 
 **C2. Write the five writing guides at `.prism/references/guides/`.** *(Superseded on placement: the guides ship at `.prism/architect/guides/` — see the `## Decisions` entry "Guide placement resolves to `.prism/architect/guides/`". The path below is the recorded intent, not the shipped location.)* These are the deny's remedy documents and the stub's route targets. Each is consumer-facing, under 120 lines, and answers one question: how do I author this kind of file here.
    - `writing-a-plan.md` — the plan file shape, one plan per ticket, the `## Decisions` do-not-undo contract, the AC format. Cites `.prism/rules/branch-plan.md` rather than restating it.
@@ -388,7 +396,7 @@ Branch `huntermcgrew/opus5-port-writing-guides` from PR 2A's head. Content-only 
    - `writing-an-adr.md` — Context / Decision / Consequences, the honest-negative requirement, numbering, and the `_toolkit/` ownership split.
    - `writing-a-skill.md` — the skill body layout, `prism-*` namespace ownership, why a consumer's own skills use their own prefix, and where `prism-skill-forge` fits.
    - Every guide closes with a **route-verify** line: when you edit a doc this guide governs, confirm its route still names it, and run `prism doctor` if unsure.
-   - **Verify:** `pnpm prism:crossref-lint` green; `wc -l .prism/references/guides/*.md` — no file over 120 lines.
+   - **Verify:** `pnpm prism:crossref-lint` green; `wc -l .prism/architect/guides/*.md templates/install/.prism/architect/guides/*.md` — no file over 120 lines. The path is the shipped one, not the superseded `.prism/references/guides/` above, which this PR never creates.
 
 **C3. Genericize `.prism/SPEC.md` for LLM-agnosticism.** It becomes a shipped, routed, deny-gated document, so PRISM-internal framing in it is friction a consumer pays for nothing.
    - Retitle `# PRISM Spec` → `# Spec Tiers`.
@@ -405,19 +413,49 @@ Branch `huntermcgrew/opus5-port-writing-guides` from PR 2A's head. Content-only 
    - `.prism/SPEC.md` → `../references/guides/writing-a-rule.md` (the placement test is what a SPEC edit needs)
    - The catch-all route is already gone (A6). No route may match the empty string — A6's validation enforces it, and `pnpm prism:verify-manifest` is the gate.
    - **Route values are resolved relative to `.prism/architect/`.** Confirm the `../references/` form resolves through `filterDocsOnDisk` before committing; if it does not, move the guides under `.prism/architect/guides/` instead and update C2's paths in the same commit rather than shipping routes that silently filter to nothing.
-   - **Verify:** `pnpm prism:verify-manifest` green; a `hook-gate.test.ts` case asserting each stub route resolves to a doc that exists on disk after `runAdopt`.
+   - **Verify:** `pnpm prism:verify-manifest` green; the `hook-gate.test.ts` case "every install-seed route names a doc the seed carries or deliberately withholds", which covers every manifest the seed ships — `manifest.stub.json` and `_toolkit/manifest.base.json` — and treats a `seed-curation.json` `excluded` doc as a permitted absence rather than a dead route.
 
-**C5. Mirror C4's routes into `.prism/architect/manifest.json` and `.prism/architect/_toolkit/manifest.base.json`** so PRISM's own tree is gated by the same routes it ships. Keep PRISM's existing `_toolkit/*` routes alongside — a path may match both a guide route and a toolkit route, and both docs are named. **Verify:** `pnpm prism:verify-manifest` green.
+**C5. Mirror C4's routes into `.prism/architect/manifest.json` and `.prism/architect/_toolkit/manifest.base.json`** so PRISM's own tree is gated by the same routes it ships. Keep PRISM's existing `_toolkit/*` routes alongside — a path may match both a guide route and a toolkit route, and both docs are named. **Verify:** `pnpm prism:verify-manifest` green (structural only — it rejects catch-alls and brace globs, and never checks that a route's doc exists), plus a literal existence pass over PRISM's own two manifests, resolving each route value against `.prism/architect/` rather than against the manifest's own directory:
+
+```bash
+python3 -c "
+import json, os
+for m in ['.prism/architect/manifest.json', '.prism/architect/_toolkit/manifest.base.json']:
+    d = json.load(open(m))
+    for k, v in d.items():
+        for doc in (v if isinstance(v, list) else [v]):
+            if not os.path.exists(os.path.normpath(os.path.join('.prism/architect', doc))):
+                print('MISSING', m, k, '->', doc)
+"
+```
+
+returns nothing. C4's seed-side test covers the shipped manifests; nothing else covers the canonical pair this task edits.
 
 **C6. Correct the `.gitignore` policy statement.** `.prism/architect/_toolkit/install-layout.md` and its curated seed twin `templates/install/.prism/architect/_toolkit/install-layout.md` both state PRISM does not write a consumer's `.gitignore`. A5 makes that false. Replace with the narrow truth: adopt appends two hook-state ignore lines, append-only and idempotent, and touches nothing else. Add a § Hook runtime section to the same doc covering the delivery path, the state file, and the `PRISM_HOOK_DISABLE` / `PRISM_HOOK_DENY_DISABLE` switches. **Verify:** `pnpm prism:check` green; `grep -rn "does not write your \`.gitignore\`" .prism/ templates/ | grep -v '/plans/'` returns nothing.
 
-**C7. Classify every new file in `.ai-skills/definitions/seed-curation.json` before it ships.** The five guides and the three new architect docs from C1 each need an entry; `output-guards.md` is `excluded` (maintainer-facing build internals), the rest ship. An unclassified new file is auto-mirrored verbatim and `prism:build` prints a warning — treat the warning as a failure. **Verify:** `pnpm prism:build` prints no unclassified-file warning; `pnpm prism:check` reports zero seed drift.
+**C7. Classify every new file in `.ai-skills/definitions/seed-curation.json` before it ships.** The five guides and the three new architect docs from C1 each need an entry; `output-guards.md` is `excluded` (maintainer-facing build internals), the rest ship. An unclassified new file is auto-mirrored verbatim and `prism:build` prints a warning.
 
-**C8. Sweep `docs/` and `.prism/` for the stale hook narrative.** The old `tsx`-invoked registration and `claude-post-read` are named in prose that A5 makes false. **Verify:** `grep -rn "claude-post-read" docs/ .prism/ --include="*.md" | grep -v '/plans/'` returns nothing; `pnpm prism:check` green.
+   **The build warning is not the gate.** `build.ts` pushes to `unclassifiedMirrored` only when `seedFileIsNew`, so the warning fires once per artifact lifetime — the run that first mirrors the file — and every run after that is silent whether or not the file was ever classified. A re-run therefore passes vacuously, which is exactly what a verification step must not do. The re-runnable check is the classification itself:
+
+```bash
+for p in architect/guides/writing-a-plan.md architect/guides/writing-a-rule.md \
+         architect/guides/writing-a-skill.md architect/guides/writing-an-adr.md \
+         architect/guides/writing-an-architect-doc.md \
+         architect/_toolkit/ticket-workflows.md architect/_toolkit/plan-authoring.md \
+         architect/_toolkit/output-guards.md; do
+  grep -q "\"$p\"" .ai-skills/definitions/seed-curation.json || echo "UNCLASSIFIED: $p"
+done
+```
+
+   **Verify:** the loop above prints nothing; `pnpm prism:check` reports zero seed drift.
+
+**C8. Sweep `docs/` and `.prism/` for the stale hook narrative.** The old `tsx`-invoked registration and `claude-post-read` are named in prose that A5 makes false. **Verify:** `grep -rn "claude-post-read" docs/ .prism/ templates/ --include="*.md" | grep -v '/plans/'` returns nothing; `pnpm prism:check` green. `templates/` is in scope because a curated seed twin never regenerates from canonical — sweeping `.prism/` alone would leave a stale copy shipping to consumers.
 
 ---
 
 ### PR 2D — The deny gate
+
+**Carried in from PR 2C's review (Eric, #463) — cost of the remedy read, for 2D to weigh.** The consumer stub keeps a `.prism/**` catch-all routing to `install-layout.md`, which C6 grew to 279 lines. A consumer editing `.prism/plans/foo.md` therefore matches both that catch-all and the `.prism/plans/**` guide route, so the deny's remedy is roughly 361 lines of forced reading before the write lands. PR 2C's own opening line is "the deny's remedy is reading these documents, and a forced read has to be cheap" — this is the first place that premise bends, and the call belongs to whoever writes the deny, not to the PR that wrote the guides.
 
 Branch `huntermcgrew/opus5-port-deny-gate` from PR 2C's head, after PR 2B is in `main`. **Do not start D2 until B4's Decision is recorded.** This is the PR that changes behavior for a human at the keyboard, and every earlier PR in the stack exists to make it satisfiable.
 
@@ -698,6 +736,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Briar's re-review (1 major, 3 minors) so the surface `adopt` ships matches the canonical genericizing pass; Bounds — the four named sites plus the plan's own task text, no build-behavior change; Approach — diff the twin against canonical rather than trusting the finding list, and fix each verify command that let the gap read green · close: scope held. Silent decisions named: the consumer twin drops canonical's `(ADR-0047)` citation, because consumers receive no ADR tree and the citation would be a dead reference; the stale `shipping-flow.md § Per-User Overrides` anchor in the twin was repointed to the file itself, since no such heading exists — the same class of correction the major represents. Verification honesty: `pnpm prism:check` exit 0; `grep -c '.claude/'` returns 0 on both SPEC files. Not fixed, deliberately: the `renames`-never-content-compared gap is a build.ts schema change (a rename needs a per-entry mirrored-vs-curated policy, since `manifest.stub.json` is legitimately divergent) — out of a docs PR's lane and larger than a minor, so it is documented in `lib/seed-curation.ts` and emitted as follow-up work.
 
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — third-pass review of `d541627..d9beb9ff`, judging the deferral's adequacy and hunting a third canonical-only verify defect; Bounds — findings in chat and the plan's `## Review Issues`, no code, no GitHub writes; Approach — verify each of Eli's claims against source rather than the finding list, then enumerate every PR 2C verify line against the curated-twin list · close: scope held. Silent decisions named: C2's verify glob names the superseded guides path and errors rather than passing, judged covered by the supersede clause added in `d9beb9ff` and independently gated by the repointed REQ-1 AC evidence command, so filed as a note inside the Docs-impact angle rather than a separate finding. Edge recall: C1's twin measures 159 lines and passes, so the finding is the missing gate, not a violated bar. Verification honesty: `build.ts`'s 597-before-609 ordering, the shipped ADR set, the `shipping-flow.md` heading absence, and all six twin diffs were run here; `pnpm prism:check` exit 0 is the user's ratification, not my own run.
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Eric's four PR #463 minors and re-derive every C1-C8 verify line against the class he named rather than against any single list; Bounds — the plan's verify lines, `seed-curation.json` classification, the route-integrity test, and one prose typo; no runtime change, no PR 2D/2E work, no merge; Approach — reproduce each finding against the live tree first, then run every corrected command literally before claiming it green · close: scope held. Silent decisions named: the five guides went to `curated` rather than a new `mirrored` bucket, which is the cleaner schema but a `build.ts` change inside a content-only PR — the drift cost that choice accepts is stated in the Decision rather than left implied; the route-integrity test gained a deliberate-exclusion carve-out instead of failing on `manifest.base.json`, per Eric's "fix the test, not the entry." Two amendments beyond the four findings, both the same class: C5 had no route-existence check at all (`verify-manifest` is structural only) and C8's grep never reached `templates/`. Edge recall: the empty case — a manifest with zero routes — is asserted against, so the test cannot pass vacuously on an empty seed. Verification honesty: `pnpm prism:build` and `pnpm prism:check` both exit 0; all eight corrected verify commands run literally and shown above; the new test negative-controlled by removing `output-guards.md` from `excluded`, which turns exactly that test red; 717/717, and HEAD measures 717 too, so no test was lost (the plan's earlier `716` was stale). Not verified: that a consumer's real `adopt` run resolves these routes — the test asserts against the seed on disk, which is what `adopt` copies, but no end-to-end adopt was run here.
 
 ## History
 
@@ -721,6 +760,8 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Scope note — the seed twin's "PRISM does not write your `.gitignore` for you" sentence and the missing hook-delivery documentation are task C6's assignment under PR 2C, but task A5 in this PR is what made them false (commit `8e160178` introduced `appendHookStateGitignoreLines`; it is absent on `main`). Fixed here per the `## Decisions` implementation guidance that the doc is corrected in the same PR rather than left contradicting the code. C6 still owns the `PRISM_HOOK_DENY_DISABLE` half, which describes the PR 2D deny arm and is not documented here.
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Fixed all 9 Majors and 8 Minors from Eric's PR #461 review across five staged commits. The two behavioral fixes: announce-once no longer silences docs `formatNag` truncated away (measured 118 of 500 on a fan-out), and the delivery seam no longer overwrites consumer-owned files or deletes their settings entries. `pnpm prism:check` exit 0, 712/712; see `## Review Issues` for the per-finding table.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's six PR 2C findings — three stale routing claims corrected (`AGENTS.md.tmpl`, `.prism/SPEC.md`, `business-layer.md` and its twin), `_toolkit/audit-workflow.md` added to the `.prism/plans/**` route, C6's verify text scoped to exclude `/plans/`. See Decision: `spec-editing.md` ships to consumers unrouted until PR 2E, deliberately.
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Eric's four PR #463 minors — C1 and C2's verify lines corrected, the five guides classified `curated`, C7's verify replaced with a re-runnable classification loop, the route-integrity test widened to every install-seed manifest with a deliberate-exclusion carve-out, and `output-guards.md`'s dropped `that` fixed. See Decision: the five writing guides are classified `curated`.
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Re-derived every C1-C8 verify line against the class Eric named — the verify line was not re-derived when the task changed underneath it — rather than against any single list. Two amendments beyond the reported findings: C5 gained a route-existence pass (`verify-manifest` is structural only), and C8 widened to `templates/` (a curated twin never regenerates). See the sweep table in `## Review Issues`.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's re-review major and three minors — `SPEC.md.tmpl` received C3's genericizing pass (six `.claude/` paths, the `plan-authoring.md` repoint, the ADR-0047 promotion wording, § Where it lives), `AGENTS.md.tmpl:119` names the `.claude/skills/**` stub key instead of generalizing it, and C3's verify now covers both twins.
 
 ## Review Issues
@@ -878,6 +919,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - **Class:** `canonical-only verify on a curated twin the task edits`
 - **Sweep:** Enumerated every `**Verify:**` line in the plan's PR 2C block (C1-C8) and checked each against the curated-twin list in `seed-curation.json`. C3 now names both SPEC paths (fixed in `d9beb9ff`); C6 already names `.prism/ templates/`; C7 and C8 are tree-wide or build-level. C1 is the only remaining one that names a canonical path whose twin is `curated`. Confirmed the twin exists and was split (159 lines), and confirmed `crossref-lint` does scan `templates/install/.prism` (`crossref-lint.ts:128`), so the first half of C1's verify is twin-covered and only the `wc -l` half is not.
 - **Suggested fix:** Extend C1's verify to both paths, matching the shape C3 now uses: `wc -l .prism/architect/_toolkit/skills-ecosystem.md templates/install/.prism/architect/_toolkit/skills-ecosystem.md` — both under 200.
+- **Fixed:** 2026-08-19 — C1's verify now names both paths and says why the twin needs naming (it is `curated`, so no build step syncs it).
 
 ### Angle Coverage — third pass of `d541627..d9beb9ff`
 
@@ -1011,6 +1053,59 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 - **Fixed in:** this session's commit — one `assert.match(result.stdout, /_toolkit\/spec-editing\.md/)`, mirroring what the in-process sibling test already asserts.
 
 716/716, 0 skipped (up from 715 — the prune-stability regression test; the Minor added an assertion to an existing test rather than a new one). Negative control run: removing only the `BACKUP_BASENAME_PATTERN` guard turns exactly one test red, the new one.
+
+### C2's verify names a directory this PR deliberately does not create
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/opus5-port.md` — task C2's **Verify:** line
+- **Problem:** the verify read `wc -l .prism/references/guides/*.md`. C2's body carries a supersession parenthetical moving the guides to `.prism/architect/guides/`, but the verify line under it was never amended, so run literally it errors on a nonexistent glob rather than measuring anything.
+- **Fixed:** 2026-08-19 — the verify names `.prism/architect/guides/*.md` and its seed twin, and says the old path is superseded. Outcome unchanged: 82/85/75/78/78, identical canonical and seed, all under 120.
+
+### The five guides are unclassified in `seed-curation.json`, and C7's verify cannot detect it
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/definitions/seed-curation.json`; `.prism/plans/opus5-port.md` — task C7's **Verify:** line
+- **Problem:** two halves. `grep -c "guides/"` on `seed-curation.json` returned `0`, so C7's own requirement that every new file carry an entry was unmet. And C7's verify rested on the `prism:build` unclassified-file warning, which `build.ts:713-718` emits only when `seedFileIsNew` — once per artifact lifetime, not once per run. A first-run-only warning cannot gate a re-run.
+- **Fixed:** 2026-08-19 — the five guides added to `curated`, and C7's verify replaced with a re-runnable per-path loop over `seed-curation.json` plus an explicit statement that the build warning is not the gate and why.
+
+### The seed's `manifest.base.json` routes to a doc C7 excludes from the seed, and the new route-integrity test does not see it
+
+- **Axis:** `tests`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hook-gate.test.ts`; `templates/install/.prism/architect/_toolkit/manifest.base.json:69`
+- **Problem:** the seed's base manifest routes `scripts/ai-skills/**` to `_toolkit/output-guards.md`, which C7 excludes from the seed. It fails safe — `filterDocsOnDisk` drops it — but the route-integrity test this PR adds asserts exactly the property it violates and was scoped to `manifest.stub.json` alone.
+- **Fixed:** 2026-08-19 — per Eric's call the test changed, not the entry. It now walks every manifest the seed ships and distinguishes the two absences: a doc `seed-curation.json` lists as `excluded` is a permitted withholding, anything else absent is a dead route. Verified as a real gate — this route is the one instance across all four manifests, and canonical's pair is clean.
+
+### `output-guards.md` drops a `that` in its opening sentence
+
+- **Axis:** `docs`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/output-guards.md:3`
+- **Problem:** "to catch output token substitution did not fully resolve" — line 14 of the same file has the clause right.
+- **Fixed:** 2026-08-19 — corrected in canonical; `pnpm prism:build` propagated it to the three platform mirrors.
+
+### Verify-line re-derivation sweep — C1 through C8, against the class rather than a list
+
+Eric refuted the "C1 is the last survivor" enumeration: it tested one axis (canonical measured while a curated twin goes unmeasured) by walking `seed-curation.json`'s `curated` list, which cannot see a defect on any other axis. C2's was a superseded path and the guides are not curated at all; C6's was grep scope. The class is **the verify line was not re-derived when the task changed underneath it**. Every C1-C8 line re-derived against that class and each corrected command run literally:
+
+| Task | Disposition |
+| --- | --- |
+| C1 | Fixed — names both `skills-ecosystem.md` paths. |
+| C2 | Fixed — superseded guide path corrected, twin added. |
+| C3 | Held — already names both SPEC paths (`d9beb9ff`); both return `0`. |
+| C4 | Amended — now names the widened install-seed route test rather than a stub-only one. |
+| C5 | Amended — `verify-manifest` is structural only and never checks that a route's doc exists, so a literal existence pass over PRISM's own two manifests was added. It returns nothing today. |
+| C6 | Held — already scoped `.prism/ templates/` with the `/plans/` filter; returns nothing. |
+| C7 | Fixed — build warning replaced with a re-runnable classification loop. |
+| C8 | Amended — widened to `templates/`, because a curated twin never regenerates from canonical. Returns nothing at both the old and new scope. |
+
+The two amendments (C5, C8) are the sweep's own yield: neither was a reported finding, and both are the same class — a verify line that stopped covering its task's reach.
 
 ---
 
