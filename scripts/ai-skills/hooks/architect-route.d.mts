@@ -37,18 +37,18 @@ export function matchDocsForPath(
 
 export function loadRouteState(
 	repoRoot: string,
-	sessionId: string
+	scopeId: string
 ): Promise<ArchitectRouteState>;
 
 export function saveRouteState(
 	repoRoot: string,
-	sessionId: string,
+	scopeId: string,
 	state: ArchitectRouteState
 ): Promise<void>;
 
 export function resolveArchitectNag(
 	repoRoot: string,
 	filePath: string,
-	sessionId: string,
+	scopeId: string,
 	options?: { credit?: boolean }
 ): Promise<string | null>;

@@ -247,9 +247,9 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 			return null;
 		}
 
-		const sessionId = spec.sessionId(payload);
+		const scopeId = spec.scopeId(payload);
 		const targets = resolveTargets(spec, payload);
-		if (!sessionId || targets.length === 0) {
+		if (!scopeId || targets.length === 0) {
 			return emitNoneOutput(spec);
 		}
 
@@ -275,7 +275,7 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 				break;
 			}
 
-			const nag = await resolveArchitectNag(repoRoot, filePath, sessionId, {
+			const nag = await resolveArchitectNag(repoRoot, filePath, scopeId, {
 				credit,
 			});
 			if (nag === null) {
@@ -335,12 +335,26 @@ export async function runPostCompactArm(rawStdin) {
 
 		const fs = await import("node:fs/promises");
 		const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
-		const statePath = path.join(
-			repoRoot,
-			".prism",
-			`architect-route-state.${safeSessionId}.json`
+		const stateDir = path.join(repoRoot, ".prism");
+
+		// Subagents of this session hold their own state files, named with the
+		// session id as prefix and their agent id after it, so the reset that
+		// follows a compaction has to sweep the whole prefix rather than the
+		// one exact name — a child file left behind would keep suppressing
+		// announcements the compacted context no longer holds.
+		//
+		// The trailing dot is what keeps the sweep inside this session: a bare
+		// prefix test also matches a sibling whose id merely starts with this
+		// one, and resetting a live unrelated session re-announces every doc
+		// it had already delivered. Both `<session>.json` and
+		// `<session>.<agent>.json` clear the dotted form.
+		const prefix = `architect-route-state.${safeSessionId}.`;
+		const entries = await fs.readdir(stateDir).catch(() => []);
+		await Promise.all(
+			entries
+				.filter((name) => name.startsWith(prefix) && name.endsWith(".json"))
+				.map((name) => fs.rm(path.join(stateDir, name), { force: true }))
 		);
-		await fs.rm(statePath, { force: true });
 	} catch (error) {
 		process.stderr.write(
 			`architect-route PostCompact reset failed: ${error instanceof Error ? error.message : String(error)}\n`

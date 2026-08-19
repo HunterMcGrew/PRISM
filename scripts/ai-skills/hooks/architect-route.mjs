@@ -263,16 +263,16 @@ async function filterDocsOnDisk(repoRoot, docs) {
 
 /**
  * @param {string} repoRoot
- * @param {string} sessionId
+ * @param {string} scopeId
  * @returns {string}
  */
-function buildStateFilePath(repoRoot, sessionId) {
-	const safeSessionId = sessionId.replace(/[^a-zA-Z0-9._-]/g, "_");
-	return path.join(repoRoot, ".prism", `architect-route-state.${safeSessionId}.json`);
+function buildStateFilePath(repoRoot, scopeId) {
+	const safeScopeId = scopeId.replace(/[^a-zA-Z0-9._-]/g, "_");
+	return path.join(repoRoot, ".prism", `architect-route-state.${safeScopeId}.json`);
 }
 
 /**
- * Loads the per-session read-tracking state. Returns `{ read: [], announced: [] }`
+ * Loads the per-scope read-tracking state. Returns `{ read: [], announced: [] }`
  * when no state file exists yet — per `lazy-artifacts.md`, this file is
  * created on first write, never seeded — and also when an existing file
  * cannot be read or parsed, or has no `read`/`announced` array (missing,
@@ -283,12 +283,12 @@ function buildStateFilePath(repoRoot, sessionId) {
  * the rest of the session with no repair path.
  *
  * @param {string} repoRoot
- * @param {string} sessionId
+ * @param {string} scopeId
  * @returns {Promise<{read: string[], announced: string[]}>}
  */
-export async function loadRouteState(repoRoot, sessionId) {
+export async function loadRouteState(repoRoot, scopeId) {
 	try {
-		const raw = await fs.readFile(buildStateFilePath(repoRoot, sessionId), "utf8");
+		const raw = await fs.readFile(buildStateFilePath(repoRoot, scopeId), "utf8");
 		const parsed = JSON.parse(raw);
 		return {
 			read: Array.isArray(parsed.read) ? parsed.read : [],
@@ -352,19 +352,19 @@ async function pruneStaleRouteState(repoRoot) {
 }
 
 /**
- * Persists the per-session read-tracking state atomically — a tmp file in
+ * Persists the per-scope read-tracking state atomically — a tmp file in
  * the same directory followed by `rename`, so a hook process killed
  * mid-write leaves either the prior state or the new one, never a
  * half-written file the next `Read` would choke on. Also prunes stale
  * sibling state files from past sessions (`pruneStaleRouteState`).
  *
  * @param {string} repoRoot
- * @param {string} sessionId
+ * @param {string} scopeId
  * @param {{read: string[], announced: string[]}} state
  * @returns {Promise<void>}
  */
-export async function saveRouteState(repoRoot, sessionId, state) {
-	const targetPath = buildStateFilePath(repoRoot, sessionId);
+export async function saveRouteState(repoRoot, scopeId, state) {
+	const targetPath = buildStateFilePath(repoRoot, scopeId);
 	await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
 	const tmpPath = `${targetPath}.tmp`;
@@ -417,14 +417,14 @@ export async function saveRouteState(repoRoot, sessionId, state) {
  *
  * @param {string} repoRoot
  * @param {string} filePath
- * @param {string} sessionId
+ * @param {string} scopeId
  * @param {{credit?: boolean}} [options]
  * @returns {Promise<string | null>}
  */
 export async function resolveArchitectNag(
 	repoRoot,
 	filePath,
-	sessionId,
+	scopeId,
 	options = {}
 ) {
 	const credit = options.credit === true;
@@ -434,7 +434,7 @@ export async function resolveArchitectNag(
 		return null;
 	}
 
-	const state = await loadRouteState(repoRoot, sessionId);
+	const state = await loadRouteState(repoRoot, scopeId);
 	const readSet = new Set(state.read);
 	const announcedSet = new Set(state.announced);
 
@@ -448,7 +448,7 @@ export async function resolveArchitectNag(
 	const docJustRead = credit ? extractArchitectDocPath(relativePath) : null;
 	if (docJustRead !== null && !readSet.has(docJustRead)) {
 		readSet.add(docJustRead);
-		await saveRouteState(repoRoot, sessionId, {
+		await saveRouteState(repoRoot, scopeId, {
 			read: [...readSet],
 			announced: [...announcedSet],
 		});
@@ -472,7 +472,7 @@ export async function resolveArchitectNag(
 	for (const doc of includedDocs) {
 		announcedSet.add(doc);
 	}
-	await saveRouteState(repoRoot, sessionId, {
+	await saveRouteState(repoRoot, scopeId, {
 		read: [...readSet],
 		announced: [...announcedSet],
 	});

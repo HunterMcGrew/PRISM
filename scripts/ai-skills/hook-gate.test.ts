@@ -186,6 +186,71 @@ test("runPostToolUseArm: a doc is announced once per session, then stays silent 
 	});
 });
 
+test("runPostToolUseArm: a subagent's read announces on its own budget, not the parent's", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const filePath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
+		const parentStdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: filePath },
+		});
+		const childStdin = JSON.stringify({
+			session_id: "session-1",
+			agent_id: "agent-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: filePath },
+		});
+
+		const parent = await runPostToolUseArm("claude", HARNESSES.claude, parentStdin);
+		const child = await runPostToolUseArm("claude", HARNESSES.claude, childStdin);
+
+		assert.ok(parent, "the parent's read announces");
+		assert.ok(
+			child,
+			"a subagent shares the parent's session_id but never sees the parent's nag, so it is announced to on its own"
+		);
+	});
+});
+
+test("runPostToolUseArm: a subagent's read of an architect doc does not credit the parent's gate", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const childReadsDoc = JSON.stringify({
+			session_id: "session-1",
+			agent_id: "agent-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: {
+				file_path: path.join(repoRoot, ".prism", "architect", "_toolkit", "spec-editing.md"),
+			},
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, childReadsDoc);
+
+		const parentState = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(
+			parentState.read,
+			[],
+			"the parent never read the doc, so its gate stays unanswered"
+		);
+
+		const childState = await loadRouteState(repoRoot, "session-1.agent-1");
+		assert.deepEqual(childState.read, ["_toolkit/spec-editing.md"], "the child's own read is credited");
+	});
+});
+
 // --- Foreign-payload guard ---
 
 test("runPostToolUseArm: a claude-registered payload carrying a Cursor event name is dropped as foreign", async () => {
@@ -260,6 +325,65 @@ test("runPostCompactArm: with a session id, deletes that session's state file so
 
 		const second = await runPostToolUseArm("claude", HARNESSES.claude, readStdin);
 		assert.ok(second, "the doc re-announces after the compaction reset");
+	});
+});
+
+test("runPostCompactArm: deletes the subagent state files a session spawned, not only its own", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const childStdin = JSON.stringify({
+			session_id: "session-1",
+			agent_id: "agent-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: path.join(repoRoot, "scripts", "ai-skills", "build.ts") },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, childStdin);
+
+		const childStatePath = path.join(
+			repoRoot,
+			".prism",
+			"architect-route-state.session-1.agent-1.json"
+		);
+		await assert.doesNotReject(fs.access(childStatePath), "the subagent has its own state file");
+
+		await runPostCompactArm(JSON.stringify({ session_id: "session-1", cwd: repoRoot }));
+		await assert.rejects(
+			fs.access(childStatePath),
+			"a child file left behind would keep suppressing announcements past the reset"
+		);
+	});
+});
+
+test("runPostCompactArm: leaves a sibling session whose id merely starts with the compacted one", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const siblingStdin = JSON.stringify({
+			session_id: "session-12",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: path.join(repoRoot, "scripts", "ai-skills", "build.ts") },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, siblingStdin);
+
+		await runPostCompactArm(JSON.stringify({ session_id: "session-1", cwd: repoRoot }));
+
+		const second = await runPostToolUseArm("claude", HARNESSES.claude, siblingStdin);
+		assert.equal(
+			second,
+			null,
+			"session-12 never compacted, so its already-delivered announcement stays suppressed"
+		);
 	});
 });
 
@@ -620,9 +744,9 @@ const CREDIT_DOC = "_toolkit/spec-editing.md";
  */
 async function readCreditedDocs(
 	repoRoot: string,
-	sessionId: string
+	scopeId: string
 ): Promise<string[]> {
-	const state = await loadRouteState(repoRoot, sessionId);
+	const state = await loadRouteState(repoRoot, scopeId);
 	return state.read;
 }
 
