@@ -529,3 +529,42 @@ test("hook.mjs runs as its own process under plain node, from the source tree", 
 		);
 	});
 });
+
+// --- Stub-manifest route integrity ---
+
+/**
+ * Every route in the consumer stub manifest names a doc that exists on the
+ * install seed, resolved exactly the way `filterDocsOnDisk` resolves it —
+ * `path.join` against `.prism/architect/`, so a `../`-prefixed value is
+ * normalized rather than treated as a literal segment.
+ *
+ * The seed is what `runAdopt` copies into a consumer's `.prism/`, with the
+ * stub renamed to `manifest.json` on the way. A route pointing at a path the
+ * seed does not carry is silent rather than loud: the resolver logs to stderr
+ * and drops the doc, so the route filters to nothing and no reader ever learns
+ * the doc was supposed to load. That silence is what this asserts against.
+ */
+test("every consumer stub route names a doc the install seed actually carries", async () => {
+	const seedArchitectDir = path.join(
+		repoRoot,
+		"templates",
+		"install",
+		".prism",
+		"architect"
+	);
+	const stub = JSON.parse(
+		await fs.readFile(path.join(seedArchitectDir, "manifest.stub.json"), "utf8")
+	) as Record<string, string | string[]>;
+
+	const routes = Object.entries(stub);
+	assert.ok(routes.length > 0, "the stub manifest carries at least one route");
+
+	for (const [pattern, docOrDocs] of routes) {
+		for (const doc of Array.isArray(docOrDocs) ? docOrDocs : [docOrDocs]) {
+			await assert.doesNotReject(
+				fs.access(path.join(seedArchitectDir, doc)),
+				`stub route "${pattern}" names "${doc}", which is absent from the install seed`
+			);
+		}
+	}
+});

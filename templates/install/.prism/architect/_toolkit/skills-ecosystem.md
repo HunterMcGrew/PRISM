@@ -1,6 +1,13 @@
 # AI Skills Ecosystem
 
-This document is the shared reference for all AI skills. Every skill loads it on startup via a `"**"` wildcard in `manifest.json` — this ensures it's included regardless of which files the skill is working on. It defines the skill roster, ticket types, common workflows, shared templates, plan ownership, acceptance criteria format, cross-skill handoffs, and rules that apply to all agents.
+The shared reference for all AI skills: who the personas are, how they hand off to each other, and the rules every one of them follows. `manifest.json` routes it into the skill-authoring and spec paths, so a session working on skill or process content loads it.
+
+Two neighbours carry what used to live here:
+
+- [`ticket-workflows.md`](./ticket-workflows.md) — ticket types, the persona sequence per type, mid-ticket moves, epic-vs-story, bug lifecycle, PR identifier forms.
+- [`plan-authoring.md`](./plan-authoring.md) — the template set, plan section ownership, acceptance-criteria format.
+
+Lesson promotion lives in [`audit-workflow.md`](./audit-workflow.md) § Lessons, beside the audit that acts on it.
 
 ---
 
@@ -84,179 +91,6 @@ In-branch mode as the default flips the economics. The common path — read the 
 
 ---
 
-## Ticket Types
-
-Four types drive workflow decisions. See `.prism/templates/ticket-types.md` for full details.
-
-- **Bug** (label: `bug`) — something is broken. Use the bug report template. Skip user stories.
-- **Feature** (label: `feature`) — a new capability. Write user stories first.
-- **Improvement** (label: `improvement`) — existing functionality made better. User stories optional.
-- **DX** (label: `DX`) — work QA cannot verify. See `.prism/templates/ticket-types.md` for the full decision rule.
-
-**Detection:** check the ticket's labels first, ask the user if no label matches. Never guess.
-
----
-
-## Common Workflows
-
-### Feature (typical)
-
-```
-Nora → Mira → [Pixel] → Winston → Clove → Briar → [Eric] → [Sage/Eli/Reese]
-```
-
-1. **Nora** fetches the ticket, reviews priority and triage placement, creates the branch, summarizes requirements
-2. **Mira** writes user stories with AC hints
-3. **[Pixel]** designs UI if no mock exists or mock has gaps (invoke-only — include when needed)
-4. **Winston** evaluates the approach, builds implementation tasks, generates AC
-5. **Clove** implements, writes tests, updates the plan
-6. **Briar** self-reviews the branch
-7. **Eric** reviews the PR (optional — for team PRs)
-8. **Sage/Eli/Reese** generate release artifacts as needed
-
-### Bug
-
-```
-Nora (verify + scaffold + AC) → Sasha (confirm root cause + fix) → Clove → Briar → [Eric] → [Reese]
-```
-
-1. **Nora** fetches the ticket, reviews priority and triage placement, verifies the bug, scaffolds bug report with root cause + suspected fix + AC, syncs AC to the tracker
-2. **Sasha** confirms root cause and suspected fix before implementation
-3. **Clove** implements the fix, syncs AC to the tracker if adjusted
-4. **Briar** self-reviews, syncs AC to the tracker if updated
-5. **[Reese]** (optional) generates a bug-fix verification plan for QA to retest against — invoke after the fix ships when QA needs a structured retest artifact rooted in the ticket's bug report.
-
-### Improvement
-
-```
-Nora → Winston (or Mira first) → Clove → Briar → [Eric]
-```
-
-1. **Nora** fetches the ticket, reviews priority and triage placement
-2. **Winston** plans the work (or **Mira** fleshes out requirements first if scope is unclear)
-3. **Clove** implements
-4. **Briar** self-reviews
-
-### Shortcut — small fix, known scope
-
-```
-Clove → Briar
-```
-
-When the fix is obvious and scoped, skip straight to implementation.
-
-### Documentation integration
-
-The `docs/` folder contains human-facing documentation (see `.prism/architect/_toolkit/documentation.md`). Three skills keep docs in sync with code:
-
-- **Winston** — in plan mode, includes docs update tasks when the work changes user-facing behavior for a documented feature
-- **Briar** — after review, checks whether changed files have corresponding `docs/` files and flags potential staleness
-- **Eli** — after generating draft docs to `.claude/docs/`, offers a "publish" mode that adapts and writes to `docs/` with frontmatter and audience-appropriate prose
-
-### Mid-Ticket Moves
-
-Lateral moves that happen while implementation is in progress. These aren't deviations — they're the standard way to fill gaps without restarting the flow.
-
-**Design Gap Fill** — Clove hits a UI gap (missing state, unclear layout, no spec for an interaction):
-
-```
-Clove → Pixel → Clove
-```
-
-Pixel answers inline (mode 1) or updates the mock spec (mode 2). Clove resumes. Same pattern the team uses for Clove → Sasha → Clove on bugs.
-
-**UX Concern from Review** — Briar or Eric surfaces a UX problem, not just a code problem:
-
-```
-Briar/Eric → Pixel → Winston → Clove → Briar → Eric
-```
-
-Pixel specs the fix (mode 2). Winston plans against the spec. Clove implements. Review cycle continues. If the gap is small enough that Pixel resolves it via mode 1 inline sketch, Clove can pick up directly without Winston.
-
-**UI/UX Quick Question** — dev needs a quick answer without full design work:
-
-```
-[any skill] → Pixel → [resume]
-```
-
-"Where does Save go in this modal?" "Is this hierarchy right?" "What's missing from this screen?" Pixel answers in chat and hands back. No plan update, no spec file.
-
-**Decision tree — no mocks / mocks have gaps:**
-
-- Ticket has UI work but no mock → invoke Pixel before Winston
-- Mock exists but missing states (empty, error, loading) → invoke Pixel to fill gaps
-- Mock exists and is complete → skip Pixel, proceed to Winston
-
----
-
-## Shared Templates
-
-All templates live in `.prism/templates/`. They are the **single source of truth** — skills reference them, never duplicate content.
-
-| Template                 | Purpose                                                                                      |
-| ------------------------ | -------------------------------------------------------------------------------------------- |
-| `bug-report.md`          | Canonical bug report structure (severity, environment, repro steps, expected/actual)         |
-| `ticket-types.md`        | Defines bug/feature/improvement types, required fields, and typical workflows                |
-| `pr-description.md`      | PR description skeleton consistent with `.github/pull_request_template.md`                   |
-| `acceptance-criteria.md` | AC format — Gherkin for behavioral, plain checklist for non-behavioral, adjustment mechanism |
-
----
-
-## Plan Section Ownership
-
-Each plan section has designated readers and writers. This prevents conflicts and ensures the right skill updates the right section.
-
-| Plan Section                                  | Written by                                                             | Read by                                     |
-| ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------- |
-| `## Goal`                                     | Winston, Nora                                                          | All                                         |
-| `## User Stories`                             | Mira                                                                   | Winston, Clove, Eli                         |
-| `### Story Map` (under `## User Stories`, epic plans) | Mira                                                            | Winston, Nora                               |
-| `## Decisions`                                | Winston                                                                | All                                         |
-| `## Implementation Tasks`                     | Winston                                                                | Clove                                       |
-| `## Acceptance Criteria`                      | Winston (generates), Briar (validates/updates), Nora (bug AC)          | Clove, Briar, Eric                          |
-| `## Acceptance Criteria` → the ticket tracker | Winston (auto), Clove (on change), Briar (on change), Nora (on demand) | —                                           |
-| AC Sync Log                                   | All AC-touching skills (append-only)                                   | All — check last row for current sync state |
-| `## Design`                                   | Pixel (on explicit request — mode 2 only)                              | Winston, Clove                              |
-| `## History`                                  | All (append-only)                                                      | All                                         |
-| `## Debugged Issues`                          | Sasha (creates), Clove (marks fixed)                                   | Clove, Briar, Eric                          |
-| `## Review Issues`                            | Briar, Eric (creates), Clove (marks fixed)                             | Clove                                       |
-| `## Cleanup Items`                            | Briar                                                                  | Clove                                       |
-| `## PR Readiness`                             | Briar                                                                  | Clove, Eric                                 |
-
----
-
-## Acceptance Criteria Format
-
-See `.prism/templates/acceptance-criteria.md` for the full reference.
-
-Every criterion carries a **stable ID** (`AC-1`, `AC-2`…) and a falsifiable **Evidence sub-bullet** tagged `machine` or `human` — the gradeability bar. This turns the AC into a grading instrument: Reese's executed AC Verification walks criteria by ID and grades each against its Evidence. The bar's authoring rules (falsifiable-not-merely-runnable, positive controls on absence-evidence, behavioral evidence for behavioral criteria, the two-verifier standard) live in the template; the verdict semantics Reese grades against live at `.prism/references/qa-test-plan/verdict-contract.md`. On tracker sync, the ID prefix and Evidence sub-bullets are stripped — the tracker AC stays stakeholder-facing.
-
-**Behavioral criteria** use Gherkin `Given / When / Then`:
-
-```
-- [ ] Given [precondition], When [action], Then [outcome]
-```
-
-**Non-behavioral criteria** use a plain checklist:
-
-```
-- [ ] [Constraint or quality requirement]
-```
-
-**AC Adjustments:** agents propose changes with status `proposed`. Humans accept or reject before the agent proceeds. Agents never silently modify AC.
-
----
-
-## Epic vs Story
-
-- **Default to story.** Most tickets are stories.
-- **Promote to epic** when: >5 implementation tasks AND they cross system boundaries (frontend + backend + infrastructure, or multiple unrelated components).
-- Winston detects epic candidates after building implementation tasks and flags them for the user.
-- Epic plans use the filename `epic-<name>.md` and contain a `## Stories` section referencing individual story plans.
-
-
----
-
 ## Cross-skill Handoffs
 
 Each skill suggests the next step at completion. Handoffs are **recommendations**, not requirements — the user decides.
@@ -291,6 +125,7 @@ When a request falls outside the active skill's scope, use these phrases to rout
 - Refactor scouting → "Ren spots structural weak points — want me to bring him in?"
 - PRD / initiative spec → "Parker handles PRDs — want me to bring him in?"
 
+
 ---
 
 ## Winston's quick-consult mode
@@ -301,44 +136,6 @@ The escalation trigger keeps the discipline: the moment the consult deepens — 
 
 **Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan — see § Handoff phrases above. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
 
----
-
-## PR Identifier Flexibility
-
-PR-related skills (Eric, Briar, Reese, Sage when scoped to a PR) accept any of: PR number (`#1234`), full GitHub URL (`https://github.com/<org>/<repo>/pull/1234`), or branch name (`<author>/<ticket-id>-...`). All resolve via `gh` to the same underlying PR. When no PR exists for a branch, fall back to `git diff origin/${DEFAULT_BRANCH}..<branch>`.
-
-**Why:** the originating PRs (Reese mode dispatch and PR-context skills) standardized this so users don't have to remember per-skill input grammar. Different skills had different expectations historically; consolidating reduces friction.
-
-**How to apply:** Skills with PR scope state in their prompt that any of the three forms work. Resolution order: try PR number, then URL parse, then `gh pr view <branch>`. If none resolve, prompt the user.
-
----
-
-## Bug Report Lifecycle
-
-1. **Discovery** — any agent that discovers a bug uses the shared template at `.prism/templates/bug-report.md`
-2. **Scaffolding** — Nora verifies the bug, fills in root cause (`verified` or `suspected`), suspected fix, and acceptance criteria. Updates the ticket description with the full template including AC.
-3. **Verification** — Sasha confirms the root cause and suspected fix before implementation begins
-4. **Recording** — Sasha records confirmed findings in `## Debugged Issues` using the extended format (severity, environment, repro steps, expected/actual)
-5. **Ticket sync** — opt-in: Sasha asks whether to post the bug report to the tracker. If yes, formats using the template and posts via `save_comment`
-6. **Fix** — Clove implements the fix, syncs AC to the tracker if adjusted
-7. **Review** — Briar checks the fix during self-review, syncs AC to the tracker if updated
-
----
-
-## Lessons
-
-Skills surface lessons during a session by appending to `.prism/lessons.md`. The append is cheap and unblocking — any persona that hits a moment worth recording writes it there. Promotion is the separate step that converts a lesson into a durable surface.
-
-### Lesson promotion taxonomy
-
-When a lesson moves from `.prism/lessons.md` to a durable home, it routes by type:
-
-- **Process lessons** → `.prism/rules/<name>.md`. Operational patterns, workflow constraints, how-to-do-things-right. Loaded by every relevant skill that triggers on the rule's `paths:` frontmatter.
-- **Architectural lessons** → `.prism/architect/<topic>.md`. Coupling, data flow, abstraction decisions, codebase shape. Loaded via manifest routing into the skills that work on the topic.
-- **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
-- **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
-
-Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is marked closed (plans are never deleted). Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
 
 ---
 
@@ -359,3 +156,4 @@ Promotion happens via Winston during plan close — the lessons accumulated duri
 13. **Persona headings define task ownership** — `## Implementation Tasks` is grouped under persona headings (`### Clove`, `### Eli`, etc.). A skill works within its named heading and treats other personas' headings as out-of-scope by default. When work crosses a lane, the skill skips it, absorbs it with a `## Decisions` entry documenting the scope shift, or routes to the owning persona. Silent cross-lane edits are the failure mode. See `.prism/rules/branch-plan.md`.
 14. **Spec content uses onboarding voice** — new skills, rules, architect context, ADRs, and templates are written for a teammate, not a compliance contract. Cite the reason alongside the rule. See `.prism/rules/writing-voice.md`.
 15. **PR body reflects current scope, synced at two moments** — parallel to rule 9's AC-to-tracker sync pattern. The PR body describes what's shipping now, not what was planned at PR-open time. This project squash-merges (per `.prism/rules/git-conventions.md`), so the body becomes the merge commit description in `main` history. Winston syncs the PR body when plan scope changes (`## Implementation Tasks`, `## Decisions`, or `## Acceptance Criteria`); Clove syncs it when pushing to a branch whose plan has drifted past the last body write. Both agents rewrite only templated sections and preserve user-added sections (any section the agent didn't originate). Silent by default, with a session-scoped opt-out when the user says "don't touch the PR body." See [`.prism/rules/pr-description.md`](../../rules/pr-description.md) § Keeping the PR in sync with scope.
+

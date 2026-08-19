@@ -120,6 +120,14 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 The hook announces; it never blocks. On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today.
 
+## Hook runtime
+
+**Delivery path.** `prism update` copies the hook runtime into your `.claude/hooks/` and merges its registrations into your `.claude/settings.json`. Claude Code is the only host that receives it today — no install path writes a Cursor or Codex settings file.
+
+**State file.** The hook tracks which routed docs a session has read in `.prism/architect-route-state.<session-id>.json`, with a `.tmp` sibling while it writes. Both globs are appended to your `.gitignore` on adopt, so the files stay out of your commits. Those two lines are the only thing PRISM writes into your `.gitignore`; nothing else in it is touched. If the file is missing or unreadable the hook treats it as empty, which costs you a repeated announcement and nothing worse.
+
+**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` is reserved for switching off the write gate specifically while leaving announcements on; it does nothing until that gate ships.
+
 **How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours and is never written or removed. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.
 
 

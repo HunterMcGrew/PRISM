@@ -128,7 +128,7 @@ After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and eve
 
 Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into their respective output roots using the same token map. Every written skill directory carries the managed marker (`.ai-skill-generated`) so orphan cleanup knows what to remove — see the § Skill namespace ownership section above.
 
-**The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard (`runLeftoverTokenGuard` in `literal-guard.ts`) runs over the consumer's skill output roots immediately after the render and fails the update if any are found (see the guard details in `skills-ecosystem.md § Output guards`).
+**The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard (`runLeftoverTokenGuard` in `literal-guard.ts`) runs over the consumer's skill output roots immediately after the render and fails the update if any are found (see the guard details in [`output-guards.md`](./output-guards.md)).
 
 **Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism:update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target.
 
@@ -139,6 +139,14 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 **The hook runtime rides the same update.** Alongside the skill roster, `refreshHookRuntime` (`scripts/ai-skills/update.ts`) copies the zero-dependency hook runtime from `scripts/ai-skills/hooks/` into the consumer's `.claude/hooks/`, marks `hook.mjs` executable, merges the `PostToolUse` and `PostCompact` registrations from `templates/install/.claude/settings.json` into the consumer's own `.claude/settings.json`, and appends the two hook state-file globs to their `.gitignore`. The merge composes within each event's array and drops only PRISM's own prior entries, so a consumer's hooks on the same event survive an update.
 
 **Delivery is Claude Code only.** The runtime's `HARNESSES` table in `hooks/harnesses.mjs` reads Cursor and Codex payload shapes, so the resolver itself is host-agnostic — but no install path writes a Cursor or Codex settings file, so those hosts receive nothing today. Wiring them up is follow-up work, not a configuration step a consumer can take.
+
+## Hook runtime
+
+**Delivery path.** `refreshHookRuntime` copies every module under `scripts/ai-skills/hooks/` into the consumer's `.claude/hooks/`, and the registrations merge into their `.claude/settings.json`. Claude Code is the only host that receives it — the resolver reads Cursor and Codex payload shapes, but no install path writes either host's settings file, so wiring them up is follow-up work rather than a setting a consumer can flip.
+
+**State file.** Read-tracking is per session, in `.prism/architect-route-state.<session-id>.json` beside a `.tmp` sibling during the atomic write. It is a cache and not a record: an unreadable or unrecognized file reads as absent, which costs one repeated announcement rather than bricking the hook. `prism adopt` appends both globs to the consumer's `.gitignore` — append-only, skipping lines already present — so the files never reach a commit. Those two lines are the whole of what PRISM writes there; nothing else in a consumer's `.gitignore` is touched.
+
+**Switches.** `PRISM_HOOK_DISABLE=1` makes the runtime inert before it parses stdin, so a session can keep the registration and still run without the hook — one variable changes behavior without touching `.claude/settings.json` or the manifest. `PRISM_HOOK_DENY_DISABLE=1` is reserved for the narrower job of turning off the write gate while leaving announcements on; it has no effect until that gate ships.
 
 ### Hook-runtime ownership and recovery
 

@@ -1,8 +1,20 @@
 {
 	".claude/skills/prism-qa-test-plan/": "_toolkit/qa-test-planning.md",
-	".prism/SPEC.md": "_toolkit/spec-editing.md",
-	".claude/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
-	".prism/templates/**": "_toolkit/spec-editing.md",
+	".prism/SPEC.md": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-a-rule.md"
+	],
+	".claude/skills/**": [
+		"_toolkit/spec-editing.md",
+		"_toolkit/skills-ecosystem.md",
+		"guides/writing-a-skill.md",
+		"_toolkit/ticket-workflows.md"
+	],
+	".prism/templates/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-a-plan.md",
+		"_toolkit/plan-authoring.md"
+	],
 	".prism/rules/acceptance-criteria.md": "_toolkit/spec-editing.md",
 	".prism/rules/accessibility.md": "_toolkit/spec-editing.md",
 	".prism/rules/architect-doc-verification.md": "_toolkit/spec-editing.md",
@@ -29,20 +41,44 @@
 	".prism/rules/verification-commands.md": "_toolkit/spec-editing.md",
 	".prism/rules/worktree-git.md": "_toolkit/spec-editing.md",
 	".prism/rules/writing-voice.md": "_toolkit/spec-editing.md",
-	".prism/spec/adrs/**": "_toolkit/spec-editing.md",
-	".prism/architect/**": "_toolkit/spec-editing.md",
-	".prism/references/**": "_toolkit/spec-editing.md",
-	".prism/plans/**": "_toolkit/spec-editing.md",
+	".prism/spec/adrs/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-an-adr.md"
+	],
+	".prism/architect/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-an-architect-doc.md"
+	],
+	".prism/references/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-an-architect-doc.md"
+	],
+	".prism/plans/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-a-plan.md",
+		"_toolkit/plan-authoring.md"
+	],
 	".prism/business/**": "_toolkit/business-layer.md",
 	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
-	".ai-skills/skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
-	"scripts/ai-skills/**": ["_toolkit/spec-editing.md", "_toolkit/skills-ecosystem.md"],
+	".ai-skills/skills/**": [
+		"_toolkit/spec-editing.md",
+		"_toolkit/skills-ecosystem.md",
+		"_toolkit/ticket-workflows.md"
+	],
+	"scripts/ai-skills/**": [
+		"_toolkit/spec-editing.md",
+		"_toolkit/skills-ecosystem.md",
+		"_toolkit/output-guards.md"
+	],
 	".prism/lessons.md": "_toolkit/audit-workflow.md",
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
 	".prism/audit-state.json": "_toolkit/audit-workflow.md",
 	".prism/audits/**": "_toolkit/audit-workflow.md",
-	".prism/**": ["_toolkit/install-layout.md", "_toolkit/skills-ecosystem.md"],
+	".prism/**": [
+		"_toolkit/install-layout.md",
+		"_toolkit/skills-ecosystem.md"
+	],
 	"scripts/ai-skills/build.ts": "_toolkit/install-layout.md",
 	"scripts/ai-skills/update.ts": "_toolkit/install-layout.md",
 	"scripts/ai-skills/hooks/**": "_toolkit/install-layout.md",
