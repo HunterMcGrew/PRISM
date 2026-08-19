@@ -3,9 +3,8 @@
 // A copy carrying this line is PRISM's own and is replaced in place; one without it
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
- * Multi-host entry point for the architect-context read hook (plan
- * `opus5-port.md` task A4, generalizing the single Claude Code adapter this
- * file replaces into a `--tool=` dispatch over `HARNESSES`).
+ * Multi-host entry point for the architect-context read hook (ADR-0071),
+ * dispatching over `HARNESSES` on the `--tool=` argv flag.
  *
  * Reads the hook's stdin JSON, looks up the harness named by the `--tool=`
  * argv flag, extracts the read path and session id through that harness's
@@ -17,9 +16,9 @@
  * nothing and exit 0 — a `PostToolUse` hook must never block or fail the
  * tool call it observed.
  *
- * This PR ships the announce arm only (`PostToolUse`). The `PreToolUse`
- * deny arm lands in PR 2D, once the credit channel (PR 2B) and the writing
- * guides (PR 2C) make its remedy performable.
+ * `PostToolUse` announces and never blocks. There is no `PreToolUse` arm:
+ * a gate that denies a write has to leave the model a remedy it can
+ * actually perform, and nothing here denies anything.
  *
  * Every safety check lives in this script, never in a host's registration
  * matcher — a matcher-less harness would otherwise silently inherit nothing.
@@ -27,7 +26,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { findRepoRoot, resolveArchitectNag } from "./architect-route.mjs";
+import {
+	findRepoRoot,
+	MAX_EMISSION_BYTES,
+	resolveArchitectNag,
+} from "./architect-route.mjs";
 import { HARNESSES } from "./harnesses.mjs";
 
 /**
@@ -111,20 +114,47 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 		}
 
 		const sessionId = spec.sessionId(payload);
-		const filePath = spec.filePaths(payload)[0];
-		if (!sessionId || !filePath) {
+		const filePaths = spec.filePaths(payload);
+		if (!sessionId || filePaths.length === 0) {
 			return emitNoneOutput(spec);
 		}
 
 		const cwd = payload.cwd ?? process.cwd();
 		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
 
-		const nag = await resolveArchitectNag(repoRoot, filePath, sessionId);
-		if (nag === null) {
+		// Every path the payload names, not just the first. `filePaths` returns
+		// an array because one Codex `apply_patch` blob can carry several
+		// `*** Update File:` headers, and routing only the first would leave
+		// the architect context for every other file in that patch unnamed.
+		//
+		// The budget check runs before resolving the next path rather than
+		// before emitting the one just resolved: `resolveArchitectNag` marks a
+		// doc announced as it names it, so discarding an already-resolved
+		// announcement would silence those docs for the session without ever
+		// naming them. The emission can therefore overshoot by at most one
+		// announcement — the same never-emit-what-you-marked exception
+		// `formatNag` makes for a single over-length entry.
+		const announcements = [];
+		let remainingBytes = MAX_EMISSION_BYTES;
+		for (const filePath of filePaths) {
+			if (remainingBytes <= 0) {
+				break;
+			}
+
+			const nag = await resolveArchitectNag(repoRoot, filePath, sessionId);
+			if (nag === null) {
+				continue;
+			}
+
+			announcements.push(nag);
+			remainingBytes -= Buffer.byteLength(nag, "utf8") + 1;
+		}
+
+		if (announcements.length === 0) {
 			return emitNoneOutput(spec);
 		}
 
-		return JSON.stringify(spec.emitNag(nag));
+		return JSON.stringify(spec.emitNag(announcements.join("\n")));
 	} catch (error) {
 		process.stderr.write(
 			`architect-route hook failed: ${error instanceof Error ? error.message : String(error)}\n`
@@ -297,5 +327,10 @@ const isEntryPoint =
 	fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isEntryPoint) {
-	main();
+	// The file's own contract is that every failure writes nothing and exits 0.
+	// `main` awaits `process.stdout.write`, which rejects on a closed pipe, and
+	// an unhandled rejection would exit 1 with a stack trace instead.
+	main().catch(() => {
+		process.exitCode = 0;
+	});
 }

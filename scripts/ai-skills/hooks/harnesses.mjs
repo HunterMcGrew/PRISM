@@ -2,9 +2,11 @@
 // A copy carrying this line is PRISM's own and is replaced in place; one without it
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
- * Per-host wire contracts for the architect-context read hook (plan
- * `opus5-port.md` task A1, porting `#457`'s harness table into the
- * zero-dependency `.mjs` runtime).
+ * Per-host wire contracts for the architect-context read hook (ADR-0071).
+ *
+ * A zero-dependency `.mjs` module, so the hook delivered into a consumer's
+ * `.claude/hooks/` runs under plain `node` with no `tsx` or `node_modules`
+ * on hand.
  *
  * Each entry in `HARNESSES` owns everything about how one host spells its
  * hook payload: which field carries the session id, which field carries the
@@ -128,7 +130,7 @@ export const HARNESSES = {
  * over-nags rather than under-gates. A tool this table has never classified
  * might still touch a governed path, so treating the unknown as
  * safe-to-ignore would silently drop the nag exactly when the manifest
- * route matters most. The deny arm (PR 2D) narrows this — it only denies on
+ * route matters most. A write-time deny gate narrows this — it denies only on
  * a `write` resolved from an explicitly listed tool name, never the
  * fallback.
  *

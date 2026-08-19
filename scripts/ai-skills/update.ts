@@ -1116,10 +1116,10 @@ const HOOK_STATE_GITIGNORE_LINES = [
  * and `prism:update` through this one `runUpdate` seam, so both inherit the
  * same delivery path.
  *
- * Before this seam, the hook source lived only in PRISM's own repo — a
- * consumer running `prism adopt` or `prism update` never received it, so the
- * registration in `templates/install/.claude/settings.json` pointed at a
- * file that never existed on their disk. See plan `opus5-port.md` task A5.
+ * The registration in `templates/install/.claude/settings.json` names a path
+ * inside the consumer's own repo, so the runtime has to be delivered there
+ * for the registration to point at anything — without this seam the hook is
+ * a silent no-op in every consumer.
  */
 export async function refreshHookRuntime(
 	prismRepoRoot: string,

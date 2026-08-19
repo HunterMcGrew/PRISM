@@ -1,14 +1,15 @@
 /**
- * Regression suite for the multi-host hook entry point (plan `opus5-port.md`
- * task A7). Covers the `PostToolUse` announce arm's contract — announce-once
- * emission, the `PRISM_HOOK_DISABLE` kill switch, the foreign-payload guard,
- * and the early exits on a missing file path or session id — plus the six
- * cases folded in from the retired `claude-post-read.test.ts` and a
- * cold-start integration leg proving the zero-dependency delivery claim
- * against packaged `npm pack` output rather than the source tree.
+ * Regression suite for the multi-host hook entry point. Covers the
+ * `PostToolUse` announce arm's contract — announce-once emission, the
+ * `PRISM_HOOK_DISABLE` kill switch, the foreign-payload guard, the early
+ * exits on a missing file path or session id, and how each harness
+ * classifies a tool name.
  *
- * This PR ships the announce arm only. The `PreToolUse` deny arm (PR 2D)
- * gets its own suite once the credit channel and writing guides land.
+ * The cold-start leg proves the zero-dependency delivery claim against
+ * packaged `npm pack` output rather than the source tree: a leg run under
+ * `tsx` with `node_modules` present could not tell the two apart. It carries
+ * its own negative control, which breaks real delivered state and asserts
+ * the leg's own checks reject it.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -20,7 +21,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { runPostCompactArm, runPostToolUseArm } from "./hooks/hook.mjs";
-import { HARNESSES } from "./hooks/harnesses.mjs";
+import { HARNESSES, resolveToolKind } from "./hooks/harnesses.mjs";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +56,7 @@ async function seedManifestAndDoc(
 	await fs.writeFile(docPath, docBody, "utf8");
 }
 
-// --- Folded from claude-post-read.test.ts (six cases) ---
+// --- Adapter-level payload handling ---
 
 test("runPostToolUseArm: PRISM_HOOK_DISABLE=1 returns null even with a matching doc", async () => {
 	await withTempRepo(async (repoRoot) => {
@@ -154,7 +155,7 @@ test("runPostToolUseArm: malformed stdin JSON is caught and returns null rather 
 	assert.equal(result, null);
 });
 
-// --- Announce-once (task A4) ---
+// --- Announce-once ---
 
 test("runPostToolUseArm: a doc is announced once per session, then stays silent on repeat reads of the matched path", async () => {
 	await withTempRepo(async (repoRoot) => {
@@ -436,3 +437,21 @@ test(
 		}
 	}
 );
+
+// --- Tool-kind classification ---
+
+test("resolveToolKind: a listed tool name resolves to the kind its harness maps it to", () => {
+	assert.equal(resolveToolKind(HARNESSES.claude, "Read"), "read");
+	assert.equal(resolveToolKind(HARNESSES.claude, "Bash"), "shell");
+	assert.equal(resolveToolKind(HARNESSES.claude, "Grep"), "search");
+	assert.equal(resolveToolKind(HARNESSES.codex, "apply_patch"), "write");
+});
+
+test("resolveToolKind: an unlisted or absent tool name falls back to write", () => {
+	// The fallback is the behavior a write-time deny gate narrows against —
+	// it denies only on a `write` resolved from an explicitly listed name, so
+	// what this default returns decides which tools such a gate must ignore.
+	assert.equal(resolveToolKind(HARNESSES.cursor, "StrReplace"), "write");
+	assert.equal(resolveToolKind(HARNESSES.claude, "SomeToolNobodyMapped"), "write");
+	assert.equal(resolveToolKind(HARNESSES.claude, undefined), "write");
+});

@@ -1,17 +1,16 @@
 /**
- * Regression suite for the read-triggered architect-context router (plan
- * `opus5-port.md` tasks A2/A3, porting `context-delivery-mechanism.md`
- * tasks 1 and 18's original coverage onto the `.mjs` runtime). Covers the
- * router's announce-once contract: a matched-but-unread doc is named by
- * path exactly once per session (never by body), a doc is credited as read
- * only once its own path is actually read, and a path with no manifest
- * route is a clean no-op.
+ * Regression suite for the read-triggered architect-context router. Covers
+ * the announce-once contract: a matched-but-unread doc is named by path at
+ * most once per session and never by body, a doc is credited as read only
+ * once its own path is actually read, and a path with no manifest route is
+ * a clean no-op.
  *
- * The announce-once contract (each doc named at most once per session,
- * `announced` tracked alongside `read`) replaces this file's earlier
- * "keeps nagging on repeat reads" behavior — see plan `## Decisions`
- * "Announce once, enforce at write." `read` is untouched by announcement;
- * it is the only array a write-time deny gate (PR 2D) ever clears against.
+ * Reading and announcing are tracked in separate arrays because they mean
+ * different things. Naming a doc is not delivering it, so only a real read
+ * of the doc's own path credits `read` — the array a write-time deny gate
+ * clears against. Announcement fills `announced`, and only with the docs an
+ * emission actually named: a doc dropped behind the truncation tail is
+ * still owed a mention.
  */
 import fs from "node:fs/promises";
 import os from "node:os";

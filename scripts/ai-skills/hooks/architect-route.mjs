@@ -2,8 +2,7 @@
 // A copy carrying this line is PRISM's own and is replaced in place; one without it
 // is the consumer's own file and is backed up to `.bak` before being replaced.
 /**
- * Read-triggered architect-context routing (plan `opus5-port.md` task A2,
- * ADR-0071).
+ * Read-triggered architect-context routing (ADR-0071).
  *
  * Architect-context routing keys on the working diff — `prism-architect`
  * startup step 4 matches the diff against `.prism/architect/manifest.json`.
@@ -25,11 +24,11 @@
  * host; `hooks/hook.mjs` dispatches to this resolver for the actual
  * decision, so the routing logic is written and tested once.
  *
- * This is a zero-dependency `.mjs` module, converted from the original
- * `architect-route.ts` so the shipped hook runs under plain `node` with no
- * `tsx`/`node_modules` requirement in a consumer repo. `architect-route.d.mts`
- * ships alongside it so `verify-manifest-coverage.ts` and any other
- * TypeScript importer resolve its types.
+ * A zero-dependency `.mjs` module, so the hook delivered into a consumer's
+ * `.claude/hooks/` runs under plain `node` with no `tsx` or `node_modules`
+ * on hand. `architect-route.d.mts` ships beside it in PRISM's own tree so
+ * `verify-manifest-coverage.ts` and any other TypeScript importer resolve
+ * its types.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -394,7 +393,7 @@ export async function saveRouteState(repoRoot, sessionId, state) {
  *    not an assumption. A doc counts as delivered only once its own path is
  *    actually read; naming it in a nag is not delivery, so an unread doc
  *    keeps being named until this fires for it. `read` is the only array a
- *    write-time deny gate (PR 2D) ever clears against.
+ *    write-time deny gate ever clears against.
  * 2. **Announce the unannounced.** If `filePath` matches one or more
  *    manifest routes, every matched doc that is neither already `read` nor
  *    already `announced` this session, and confirmed to still exist on disk
