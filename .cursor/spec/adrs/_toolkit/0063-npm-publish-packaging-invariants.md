@@ -44,5 +44,5 @@ Publish `@huntermcgrew/prism` to public npm as a compiled bundle behind an inclu
 - `.prism/plans/prism-248.md` — the plan that built this, including the leak audit, the path-math fix, and the esbuild-over-tsc decision in full.
 - [ADR-0059](./0059-first-contact-adopts-via-seed-and-sync.md) — first-contact `prism:adopt`; the npm path is the new primary front door to the same adopt flow.
 - [ADR-0062](./0062-consumer-skill-distribution-via-prism-update.md) — consumer skill distribution; the persona roster the npm package projects on adopt.
-- `.prism/architect/_toolkit/skills-ecosystem.md` § Output guards — why Thrive/TracTru provenance ships legitimately while operational dev-history does not.
+- `.prism/architect/_toolkit/output-guards.md` — why Thrive/TracTru provenance ships legitimately while operational dev-history does not.
 - `docs/publishing-prism.md` — the maintainer-facing release ritual: version bump → `prism:check` → leak audit → tarball human-review → `npm publish --access public`.

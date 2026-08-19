@@ -24,7 +24,7 @@ A living working-memory document scoped to one ticket or epic, stored at `.prism
 - **Relationships:**
   - One plan per ticket or epic (`.prism/rules/branch-plan.md` § One Plan Per Ticket). Many branches and PRs may reference the same plan.
   - The plan is Tier 5 in the [spec tier hierarchy](#rule-loading-tier). Its `## Decisions` are promoted up to Tier 2/3 at close.
-  - Sections are owned by specific personas — see `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership and ADR-0014.
+  - Sections are owned by specific personas — see `.prism/architect/_toolkit/plan-authoring.md` § Plan Section Ownership and ADR-0014.
 
 ## Branch plan
 
@@ -64,7 +64,7 @@ A durable engineering standard under `.prism/rules/`, loaded as agent context to
 - **Avoid:** "guideline" (too soft — rules are the default authority for project-specific decisions), "convention", "policy" (mandate voice; see `writing-voice.md`), "standard" used loosely (a rule encodes a standard, but "standard" alone is ambiguous with code-style).
 - **Relationships:**
   - Many rules; membership is "every durable engineering standard the team has codified" — not a fixed count.
-  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/_toolkit/skills-ecosystem.md` § Lesson promotion taxonomy).
+  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/_toolkit/audit-workflow.md` § Lesson promotion taxonomy).
   - A rule differs from an [ADR](#adr): the rule encodes behavior; the ADR records the reasoning behind a one-shot decision.
 
 ## Architect doc
@@ -74,7 +74,7 @@ A pattern guide under `.prism/architect/<topic>.md` that carries the durable rea
 - **Avoid:** "design doc", "architecture doc" used to mean the human-facing version (that's the [dev doc](#dev-doc)), "context doc" (ambiguous with this glossary).
 - **Relationships:**
   - One architect doc pairs one-to-one with one [dev doc](#dev-doc) (ADR-0038).
-  - Routed by `.prism/architect/manifest.json`; the catch-all `**` always loads `skills-ecosystem.md`.
+  - Routed by `.prism/architect/manifest.json`; every route names a real path prefix, so a doc loads only where a route points at it.
   - Every claim in an architect doc is source-verified in review (ADR-0023, `architect-doc-verification.md`).
 
 ## Dev doc
@@ -93,16 +93,16 @@ An Architecture Decision Record under `.prism/spec/adrs/NNNN-<slug>.md` — a nu
 - **Avoid:** "decision doc" (ambiguous with a plan's `## Decisions`), "RFC" (an RFC proposes; an ADR records an accepted decision), "spec" used to mean a single ADR.
 - **Relationships:**
   - Many ADRs, numbered sequentially; membership is "every durable cross-cutting decision the team needs to remember the reasoning for."
-  - A [decision](#decision-plan-decision) in a plan that proves durable is promoted to an ADR (decision-class) at close (`skills-ecosystem.md` § Lesson promotion taxonomy).
+  - A [decision](#decision-plan-decision) in a plan that proves durable is promoted to an ADR (decision-class) at close (`audit-workflow.md` § Lesson promotion taxonomy).
   - Distinct from a plan's `## Decisions` — see [Decision](#decision-plan-decision) and [Flagged ambiguities](#flagged-ambiguities).
 
 ## Lesson
 
-A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/_toolkit/skills-ecosystem.md` § Lessons.
+A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/_toolkit/audit-workflow.md` § Lessons.
 
 - **Avoid:** "note", "gotcha" (a gotcha is one kind of lesson, not the category), "learning", "retro item" (retro actions route to Nora; lessons live in `lessons.md`).
 - **Relationships:**
-  - Promotion is recurrence-triggered, not speculative — see the taxonomy in `skills-ecosystem.md`.
+  - Promotion is recurrence-triggered, not speculative — see the taxonomy in `audit-workflow.md`.
   - Process lessons → [rule](#rule); architectural lessons → [architect doc](#architect-doc); decision-class lessons → [ADR](#adr); ephemeral lessons stay in `lessons.md`.
   - Zoe's cadence audit classifies each lesson `live` or `archive-candidate` and moves archive-candidates to `.prism/lessons-archive.md` on confirmation.
 
@@ -143,7 +143,7 @@ An ordered implementation stage of an epic — a self-contained chunk of work th
 
 ## Manifest
 
-The routing table at `.prism/architect/manifest.json` that maps file-path patterns to the [architect docs](#architect-doc) a session should load. When a skill touches a path, the manifest tells it which architect context to pull in; the catch-all `**` always loads `skills-ecosystem.md` so the persona roster is available every session. Owned by `.prism/SPEC.md` § Tier 3 and ADR-0035.
+The routing table at `.prism/architect/manifest.json` that maps file-path patterns to the [architect docs](#architect-doc) a session should load. When a skill touches a path, the manifest tells it which architect context to pull in. Every route is anchored to a real path prefix — there is no catch-all — so a new doc is reachable only once a route names it. Owned by `.prism/SPEC.md` § Tier 3 and ADR-0035.
 
 - **Avoid:** "config" (the manifest is one specific routing file, not general config), "index", "registry" used loosely (`roles.json` is the skill registry — a different file).
 - **Relationships:**

@@ -8,6 +8,14 @@
  * the same table here and invert it with `invertRenames` rather than
  * hardcoding a second copy of the two entries — one table, read by both
  * directions.
+ *
+ * A `renames` entry is exempt from content comparison. `prism:build` skips it
+ * on the write path and checks only that the renamed seed file exists on the
+ * drift path, so a renamed twin behaves like a `curated` one: its content is
+ * the author's to keep in sync, and divergence from the canonical file is
+ * caught in review, not by the build. `SPEC.md` → `SPEC.md.tmpl` is the case
+ * where that matters — the two are meant to track each other, and nothing
+ * mechanical enforces it.
  */
 import fs from "node:fs/promises";
 import path from "node:path";

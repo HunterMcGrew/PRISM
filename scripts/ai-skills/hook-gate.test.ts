@@ -532,6 +532,83 @@ test("hook.mjs runs as its own process under plain node, from the source tree", 
 	});
 });
 
+// --- Install-seed route integrity ---
+
+/**
+ * Every route in every manifest the install seed carries names a doc that
+ * either exists on the seed or is deliberately withheld from it, resolved the
+ * way `filterDocsOnDisk` resolves it — `path.join` against `.prism/architect/`,
+ * so a `../`-prefixed value is normalized rather than treated as a literal
+ * segment, and a `_toolkit/`-prefixed value in the nested base manifest still
+ * resolves from the architect root rather than from its own directory.
+ *
+ * The seed is what `runAdopt` copies into a consumer's `.prism/`, with the
+ * stub renamed to `manifest.json` on the way. A route pointing at a path the
+ * seed does not carry is silent rather than loud: the resolver logs to stderr
+ * and drops the doc, so the route filters to nothing and no reader ever learns
+ * the doc was supposed to load. That silence is what this asserts against.
+ *
+ * Absent-and-deliberate is a distinct outcome from absent-and-accidental, so
+ * it is asserted rather than skipped. A doc `seed-curation.json` lists as
+ * `excluded` is maintainer-facing content the seed is meant to withhold, and
+ * `filterDocsOnDisk` dropping its route is the designed behavior. A doc that
+ * is absent for any other reason is a dead route — a typo, a rename that
+ * missed a manifest, or a file that never shipped.
+ */
+test("every install-seed route names a doc the seed carries or deliberately withholds", async () => {
+	const seedArchitectDir = path.join(
+		repoRoot,
+		"templates",
+		"install",
+		".prism",
+		"architect"
+	);
+	const curation = JSON.parse(
+		await fs.readFile(
+			path.join(
+				repoRoot,
+				".ai-skills",
+				"definitions",
+				"seed-curation.json"
+			),
+			"utf8"
+		)
+	) as { excluded?: string[] };
+	const excluded = new Set(curation.excluded ?? []);
+
+	const manifestPaths = ["manifest.stub.json", "_toolkit/manifest.base.json"];
+	let routeCount = 0;
+
+	for (const manifestPath of manifestPaths) {
+		const manifest = JSON.parse(
+			await fs.readFile(
+				path.join(seedArchitectDir, ...manifestPath.split("/")),
+				"utf8"
+			)
+		) as Record<string, string | string[]>;
+
+		for (const [pattern, docOrDocs] of Object.entries(manifest)) {
+			for (const doc of Array.isArray(docOrDocs) ? docOrDocs : [docOrDocs]) {
+				routeCount += 1;
+				const onDisk = await fs
+					.access(path.join(seedArchitectDir, doc))
+					.then(() => true)
+					.catch(() => false);
+				if (onDisk) {
+					continue;
+				}
+
+				assert.ok(
+					excluded.has(path.posix.join("architect", doc)),
+					`${manifestPath} route "${pattern}" names "${doc}", which the install seed does not carry and seed-curation.json does not list as excluded`
+				);
+			}
+		}
+	}
+
+	assert.ok(routeCount > 0, "the install seed carries at least one route");
+});
+
 // --- Credit channel: shell read forms, Grep, and full-read-only credit ---
 
 const CREDIT_DOC = "_toolkit/spec-editing.md";

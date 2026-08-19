@@ -30,19 +30,19 @@
 		},
 		{
 			"path": ".agents/skills/prism-code-dev/SKILL.md",
-			"reason": "platform-copy mirror of prism-code-dev \u2014 carries the same THR-1881 citation"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".codex/agents/prism-code-dev.toml",
-			"reason": "platform-copy mirror of prism-code-dev \u2014 carries the same THR-1881 citation"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".claude/agents/prism-code-dev.md",
-			"reason": "platform-copy mirror of prism-code-dev \u2014 carries the same THR-1881 citation"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".cursor/skills/prism-code-dev/SKILL.md",
-			"reason": "platform-copy mirror of prism-code-dev \u2014 carries the same THR-1881 citation"
+			"reason": "platform-copy mirror of prism-code-dev — carries the same THR-1881 citation"
 		},
 		{
 			"path": ".claude/spec/adrs/_toolkit/0018-persona-lane-ownership.md",
@@ -214,7 +214,7 @@
 		},
 		{
 			"path": ".claude/architect/_toolkit/skills-ecosystem.md",
-			"reason": "Output guards section explains the Thrive-literal guard and must name the literals it checks for"
+			"reason": "roster doc names the Thrive-literal guard when explaining which provenance strings ship legitimately"
 		},
 		{
 			"path": ".codex/architect/_toolkit/skills-ecosystem.md",
@@ -226,7 +226,7 @@
 		},
 		{
 			"path": ".claude/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
-			"reason": "ADR references skills-ecosystem.md Output guards section which names the Thrive-literal guard"
+			"reason": "ADR references the output-guards doc, which names the Thrive-literal guard"
 		},
 		{
 			"path": ".codex/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",
@@ -271,6 +271,18 @@
 		{
 			"path": "templates/install/.prism/architect/onboarding.md",
 			"reason": "documents the Linear team-key gate that only fires for Linear installs"
+		},
+		{
+			"path": ".claude/architect/_toolkit/output-guards.md",
+			"reason": "doc explains the Thrive-literal guard and must name the literals it checks for"
+		},
+		{
+			"path": ".codex/architect/_toolkit/output-guards.md",
+			"reason": "platform-copy mirror of output-guards"
+		},
+		{
+			"path": ".cursor/architect/_toolkit/output-guards.md",
+			"reason": "platform-copy mirror of output-guards"
 		}
 	]
 }
