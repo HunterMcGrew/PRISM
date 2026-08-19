@@ -1,5 +1,6 @@
 export interface HookPayload {
 	session_id?: string;
+	agent_id?: string;
 	conversation_id?: string;
 	cwd?: string;
 	tool_name?: string;
@@ -15,7 +16,7 @@ export interface HookPayload {
 
 export interface HarnessSpec {
 	toolKinds: Record<string, "read" | "write" | "search" | "shell">;
-	sessionId: (payload: HookPayload) => string | null;
+	scopeId: (payload: HookPayload) => string | null;
 	filePaths: (payload: HookPayload) => string[];
 	emitNag: (text: string) => unknown;
 	emitNone: () => unknown;

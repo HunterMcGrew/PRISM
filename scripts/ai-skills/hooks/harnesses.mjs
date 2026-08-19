@@ -9,7 +9,8 @@
  * on hand.
  *
  * Each entry in `HARNESSES` owns everything about how one host spells its
- * hook payload: which field carries the session id, which field carries the
+ * hook payload: which fields identify the agent whose announce-once state
+ * this event belongs to, which field carries the
  * file path (or, for Codex's `apply_patch`, how to recover one from the
  * patch blob), and the exact envelope shape that host's hook runtime expects
  * back on stdout. `hook.mjs` reads every payload field through these
@@ -17,6 +18,7 @@
  *
  * @typedef {Object} HookPayload
  * @property {string} [session_id]
+ * @property {string} [agent_id]
  * @property {string} [conversation_id]
  * @property {string} [cwd]
  * @property {string} [tool_name]
@@ -31,7 +33,7 @@
  *
  * @typedef {Object} HarnessSpec
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
- * @property {(payload: HookPayload) => string | null} sessionId
+ * @property {(payload: HookPayload) => string | null} scopeId
  * @property {(payload: HookPayload) => string[]} filePaths
  * @property {(text: string) => unknown} emitNag
  * @property {() => unknown} emitNone
@@ -92,7 +94,18 @@ export function extractPatchFilePaths(command) {
 export const HARNESSES = {
 	claude: {
 		toolKinds: { Read: "read", Bash: "shell", Grep: "search" },
-		sessionId: (payload) => payload.session_id ?? null,
+		// A subagent's events carry the parent's `session_id` verbatim and add
+		// an `agent_id` the parent's events never have, so `session_id` alone
+		// pools parent and child into one announce-once budget: the child
+		// burns announcements it is never shown (`additionalContext` does not
+		// cross the agent boundary) and its reads credit a gate it does not
+		// answer to. Appending `agent_id` gives each agent its own state file
+		// while keeping the parent's id as the prefix, which is what lets
+		// `PostCompact` sweep a session's children along with the session.
+		scopeId: (payload) =>
+			payload.agent_id
+				? `${payload.session_id ?? "unknown"}.${payload.agent_id}`
+				: (payload.session_id ?? null),
 		filePaths: filePathFromToolInput,
 		emitNag: (text) => ({
 			hookSpecificOutput: {
@@ -107,7 +120,7 @@ export const HARNESSES = {
 		// "write" default in `resolveToolKind` is what covers it, and listing
 		// it adds a name that has to stay correct for no behavioral gain.
 		toolKinds: { Read: "read", Shell: "shell", Grep: "search" },
-		sessionId: (payload) => payload.conversation_id ?? null,
+		scopeId: (payload) => payload.conversation_id ?? null,
 		filePaths: filePathFromToolInput,
 		emitNag: (text) => ({ additional_context: text }),
 		emitNone: () => ({}),
@@ -117,7 +130,7 @@ export const HARNESSES = {
 		// so every tool that isn't Bash or apply_patch takes the "write"
 		// default — over-nagging rather than under-gating.
 		toolKinds: { Bash: "shell", apply_patch: "write" },
-		sessionId: (payload) => payload.session_id ?? null,
+		scopeId: (payload) => payload.session_id ?? null,
 		filePaths: (payload) =>
 			payload.tool_name === "apply_patch"
 				? extractPatchFilePaths(payload.tool_input?.command)
