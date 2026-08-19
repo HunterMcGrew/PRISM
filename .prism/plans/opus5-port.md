@@ -381,7 +381,7 @@ Branch `huntermcgrew/opus5-port-writing-guides` from PR 2A's head. Content-only 
    - `## Output guards` and its four subsections → new `.prism/architect/_toolkit/output-guards.md`. This is build-internal, maintainer-facing content — mark it excluded in `seed-curation.json` per C7.
    - Each new file opens with a one-paragraph scope statement naming what it covers and what it does not. **Verify:** `pnpm prism:crossref-lint` green (every moved section's inbound references resolve); `wc -l .prism/architect/_toolkit/skills-ecosystem.md` under 200.
 
-**C2. Write the five writing guides at `.prism/references/guides/`.** These are the deny's remedy documents and the stub's route targets. Each is consumer-facing, under 120 lines, and answers one question: how do I author this kind of file here.
+**C2. Write the five writing guides at `.prism/references/guides/`.** *(Superseded on placement: the guides ship at `.prism/architect/guides/` — see the `## Decisions` entry "Guide placement resolves to `.prism/architect/guides/`". The path below is the recorded intent, not the shipped location.)* These are the deny's remedy documents and the stub's route targets. Each is consumer-facing, under 120 lines, and answers one question: how do I author this kind of file here.
    - `writing-a-plan.md` — the plan file shape, one plan per ticket, the `## Decisions` do-not-undo contract, the AC format. Cites `.prism/rules/branch-plan.md` rather than restating it.
    - `writing-a-rule.md` — the placement test (rule vs architect doc vs ADR, citing `.prism/SPEC.md`), the `**Why:** / **How to apply:**` shape, onboarding voice, and the count-rules-not-numbers constraint.
    - `writing-an-architect-doc.md` — what earns a doc (the Deletion Test), the scope statement, and **route-add as part of authoring**: a new doc under `.prism/architect/` is not done until a route names it in `manifest.json`. This is the route-integrity mechanism — no frontmatter, no metadata, the guide carries it.
@@ -393,9 +393,10 @@ Branch `huntermcgrew/opus5-port-writing-guides` from PR 2A's head. Content-only 
 **C3. Genericize `.prism/SPEC.md` for LLM-agnosticism.** It becomes a shipped, routed, deny-gated document, so PRISM-internal framing in it is friction a consumer pays for nothing.
    - Retitle `# PRISM Spec` → `# Spec Tiers`.
    - Replace the six `.claude/`-prefixed paths (`grep -n '\.claude/' .prism/SPEC.md` lists them) with their canonical `.prism/` equivalents, except where the tier table legitimately names a host-specific skill directory — there, name the mechanism ("the host's skill directory") rather than one host's path. This is the same rule `install-layout.md § Cross-reference convention` already enforces, and the build-time path guard will confirm it.
-   - **Verify:** `pnpm prism:check` green (the path guard runs inside it); `grep -c '\.claude/' .prism/SPEC.md` returns `0`.
+   - Apply the same pass to the curated seed twin `templates/install/.prism/SPEC.md.tmpl`, which `adopt` installs as the consumer's own `.prism/SPEC.md`. No build step mirrors it — a `renames` entry is existence-checked, never content-compared — so the twin only changes when the same edit is made there by hand.
+   - **Verify:** `pnpm prism:check` green (the path guard runs inside it); `grep -c '\.claude/' .prism/SPEC.md templates/install/.prism/SPEC.md.tmpl` returns `0` for both.
 
-**C4. Rewrite the consumer stub's routes to point at the guides.** In `templates/install/.prism/architect/manifest.stub.json`, replace the ~20 `_toolkit/spec-editing.md` routes with instruction-layer routes naming the guides:
+**C4. Rewrite the consumer stub's routes to point at the guides.** *(Superseded on placement: the `../references/guides/` route values below became `guides/<guide>.md` — see the `## Decisions` entry "Guide placement resolves to `.prism/architect/guides/`", which C4's own resolve-check clause below produced.)* In `templates/install/.prism/architect/manifest.stub.json`, replace the ~20 `_toolkit/spec-editing.md` routes with instruction-layer routes naming the guides:
    - `.prism/plans/**` → `../references/guides/writing-a-plan.md`
    - `.prism/rules/**` → `../references/guides/writing-a-rule.md`
    - `.prism/architect/**` → `../references/guides/writing-an-architect-doc.md`
@@ -694,6 +695,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime] open: Intent — run PR 2A's closing ceremony (Decision verdict gate, lessons, 2A section close) and answer where Cursor/Codex hook delivery goes; Bounds — plan, the uncommitted retro, lessons, architect docs, an ADR if earned; no code, no deny, no conductor-state edits, no ready/merge/approve; Approach — read each promotion target against the Decision that claims it rather than trusting the plan's own verdict lines · close: scope held — plan, `install-layout.md` and its seed twin, ADR-0071, `manifest.json`, `lessons.md`, retro committed. Silent decisions named: verdicts for Decisions whose PR has not shipped are left pending but now name the PR that resolves them, rather than being forced to a verdict nobody can answer yet; the `.d.mts` sidecar Review Issue is carried to a follow-up PR off `main` rather than a ticket, per `followup-scope.md`; `scripts/ai-skills/update.ts` and `hooks/**` gained architect-manifest routes to `install-layout.md`, because promoting the ownership model into a doc the file's own editor never loads would have been a promotion in name only. Edge recall: the two `OPEN` Decisions took the exit-condition verdict variant rather than a promotion call, since neither has an answer to promote. Verification honesty: `pnpm prism:build` then `pnpm prism:check` exit 0, 716/716, and `pnpm prism:spec-scope-lint` verified to resolve this branch's plan rather than skip. Iris's finding 5 (verification asymmetry) was judged already implied by two existing lessons and not appended — recorded here rather than silently dropped.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — implement PR 2C (writing guides, stub routes, and the doc splits the deny depends on), tasks C1–C8; Bounds — content only, no runtime behavior change, no gate logic, `scripts/ai-skills/hooks/**` untouched and `hook-gate.test.ts` limited to C4's route-resolution case; Approach — resolve C4's route fork empirically before writing a line of the guides, since their location depends on it · close: scope held — C4's fork resolved to the fallback and the guides live at `.prism/architect/guides/` (see the Decision on guide placement). Silent decisions named: the consumer twin of `skills-ecosystem.md` was split the same way as canonical, because a curated twin left whole would have contradicted the canonical docs the guides link to; the two new twins are `curated` like their parent, while `output-guards.md` is `excluded` and the rest ship verbatim; four `_toolkit/` ADR numbers were dropped from moved text rather than kept, because the install-adr-gate forbids them on the consumer surface. Edge recall: a guide read matches `.prism/architect/**` and so would announce itself — crediting fires first in `resolveArchitectNag`, so it never does. Verification honesty: the route fork was measured against the live resolver, not reasoned about; the new stub-route test was confirmed to fail when a route names a missing doc. One self-inflicted incident: a probe cleanup `rm -rf`'d the pre-existing `.prism/references/` tree, caught on the next `git status` and restored from HEAD before anything was committed.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Briar's six findings on PR #463 so every prose claim about routing matches what C4's stub routes; Bounds — the six named sites plus their curated twins, no runtime change, no PR 2D/2E work; Approach — smallest correct edit per finding, then `pnpm prism:check` · close: scope held, with two adjacent corrections named — tasks E4 and the REQ-1 AC evidence command still said `.prism/references/guides/`, the pre-fallback path the guide-placement Decision already superseded, so both were repointed to `.prism/architect/guides/`. Silent decisions named: the lesson-taxonomy route was added to both copies of `manifest.base.json` as well as `manifest.json`, because leaving the base stale reintroduces the gap on the next adopt; the consumer stub's `.prism/plans/**` route was left alone, since stub composition is PR 2E's lane and the same gap there is visible to task E1's orphan check. C2 and C4's original task text still names the pre-fallback path and was left as written — it is the intent the placement Decision records the fork against. Verification honesty: `pnpm prism:check` exit 0; each fix re-read at its site and the corrected C6 command run (no hits outside `/plans/`); the four route tables re-parsed as JSON rather than eyeballed.
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides] open: Intent — clear Briar's re-review (1 major, 3 minors) so the surface `adopt` ships matches the canonical genericizing pass; Bounds — the four named sites plus the plan's own task text, no build-behavior change; Approach — diff the twin against canonical rather than trusting the finding list, and fix each verify command that let the gap read green · close: scope held. Silent decisions named: the consumer twin drops canonical's `(ADR-0047)` citation, because consumers receive no ADR tree and the citation would be a dead reference; the stale `shipping-flow.md § Per-User Overrides` anchor in the twin was repointed to the file itself, since no such heading exists — the same class of correction the major represents. Verification honesty: `pnpm prism:check` exit 0; `grep -c '.claude/'` returns 0 on both SPEC files. Not fixed, deliberately: the `renames`-never-content-compared gap is a build.ts schema change (a rename needs a per-entry mirrored-vs-curated policy, since `manifest.stub.json` is legitimately divergent) — out of a docs PR's lane and larger than a minor, so it is documented in `lib/seed-curation.ts` and emitted as follow-up work.
 
 ## History
 
@@ -717,6 +719,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Scope note — the seed twin's "PRISM does not write your `.gitignore` for you" sentence and the missing hook-delivery documentation are task C6's assignment under PR 2C, but task A5 in this PR is what made them false (commit `8e160178` introduced `appendHookStateGitignoreLines`; it is absent on `main`). Fixed here per the `## Decisions` implementation guidance that the doc is corrected in the same PR rather than left contradicting the code. C6 still owns the `PRISM_HOOK_DENY_DISABLE` half, which describes the PR 2D deny arm and is not documented here.
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Fixed all 9 Majors and 8 Minors from Eric's PR #461 review across five staged commits. The two behavioral fixes: announce-once no longer silences docs `formatNag` truncated away (measured 118 of 500 on a fan-out), and the delivery seam no longer overwrites consumer-owned files or deletes their settings entries. `pnpm prism:check` exit 0, 712/712; see `## Review Issues` for the per-finding table.
 - 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's six PR 2C findings — three stale routing claims corrected (`AGENTS.md.tmpl`, `.prism/SPEC.md`, `business-layer.md` and its twin), `_toolkit/audit-workflow.md` added to the `.prism/plans/**` route, C6's verify text scoped to exclude `/plans/`. See Decision: `spec-editing.md` ships to consumers unrouted until PR 2E, deliberately.
+- 2026-08-19 [huntermcgrew/opus5-port-writing-guides]: Cleared Briar's re-review major and three minors — `SPEC.md.tmpl` received C3's genericizing pass (six `.claude/` paths, the `plan-authoring.md` repoint, the ADR-0047 promotion wording, § Where it lives), `AGENTS.md.tmpl:119` names the `.claude/skills/**` stub key instead of generalizing it, and C3's verify now covers both twins.
 
 ## Review Issues
 
@@ -809,7 +812,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/SPEC.md.tmpl`
 - **Problem:** C3 genericized `.prism/SPEC.md`, but `templates/install/.prism/SPEC.md.tmpl` — the file `adopt` installs as the consumer's own `.prism/SPEC.md` — carries none of it. Tier 4 still hardcodes `.claude/skills/<skill>/SKILL.md`; the non-spec list still names `.claude/worktrees/`, `.claude/changelogs/`, and `.claude/docs/qa/`; the Promotion clause still says "Then delete the plan — git history preserves it", which contradicts ADR-0047; the § Where it lives paragraph is absent; and the Plan Section Ownership pointer still names `skills-ecosystem.md` — the identical Major fixed at `.prism/SPEC.md:71` in `d541627`, unfixed on the surface that ships. C3's verify (`grep -c '\.claude/' .prism/SPEC.md` = 0) was scoped to canonical alone, which is why the task read green.
 - **Class:** `curated twin missed by a canonical-only edit and a canonical-only verify`
@@ -820,18 +823,20 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred`
 - **File:** `.ai-skills/definitions/seed-curation.json` — the `renames` entry
 - **Problem:** `SPEC.md` appears only under `renames` (`SPEC.md` -> `SPEC.md.tmpl`), never under `excluded`, `curated`, or `seedOnly`. A plain renamed mirror reads as "kept in parity by the build," but `pnpm prism:build` leaves the twin untouched and `pnpm prism:check` reports no drift against an 8-hunk divergence. Whichever way it is meant — hand-forked or mirrored — the config and the behavior disagree, which is what let the Major above ship silently.
 - **Class:** `curation config states a guarantee the build does not provide`
 - **Sweep:** Enumerated all four `seed-curation.json` keys for any `SPEC` entry; only the rename exists. Confirmed empirically by running `prism:build` on a clean tree and re-checking `git status` — no write.
 - **Suggested fix:** Either mark it `curated` (drift expected, twin maintained by hand) and add it to whatever check covers curated twins, or make the mirror actually regenerate it. Winston's call; PR 2E's ship-surface lane is the natural home.
 
+- **Deferred because:** the honest fix is a per-entry policy on `renames` (mirrored vs curated), since `manifest.json` → `manifest.stub.json` is legitimately divergent and a blanket content compare would flag it forever. That is a `build.ts` schema change, out of a docs PR's lane. The semantics are now stated in `scripts/ai-skills/lib/seed-curation.ts`, and C3's verify covers both twins so this specific twin is gated by the task that owns it.
+
 ### Tasks C2 and C4 still specify the superseded guide path with no pointer to the Decision
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/opus5-port.md` — tasks C2 (line 384, 391) and C4 (lines 399-404)
 - **Problem:** Both still name `.prism/references/guides/`, and C4 spells six route values as `../references/guides/<guide>.md`. The guide-placement Decision supersedes them, but neither task carries a pointer to it, so a reader reconciling `manifest.stub.json` against C4's list sees a mismatch with no in-place explanation. Leaving executed task text as the recorded intent is a defensible call — the missing piece is the one clause that makes it legible as intent rather than as a stale instruction.
 - **Class:** `superseded instruction with no supersede marker`
@@ -842,7 +847,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/AGENTS.md.tmpl:119`
 - **Problem:** The rewritten sentence says "skills to `writing-a-skill.md`", but the only stub key covering skills is `.claude/skills/**`. For a Codex or Cursor consumer reading this same host-agnostic file, no skill path matches. The five other clauses in the sentence are exact against `manifest.stub.json`; this is the one that generalizes a host-specific key. My pass on `5b6fd401` did not flag the stub key itself — that is a miss on my side, not new drift in `d541627`.
 - **Class:** `host-specific route described in host-agnostic prose`
@@ -1049,7 +1054,7 @@ Three consequences the loop carried, all closed: the run-N backup was gone by ru
 
 ## PR Readiness (PR 2C — Writing guides and doc splits, #463)
 
-- [ ] No critical or major issues — pass-1's 6 findings all verified fixed; re-review of `5b6fd401..d541627` opened 1 new major (`SPEC.md.tmpl` missed C3) and 3 minors
+- [x] No critical or major issues — pass-1's 6 findings verified fixed; the re-review's major and two of its three minors fixed, the third (`renames` has no content gate) deferred to a `build.ts` follow-up with the reason recorded
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — one stub-route integrity case; confirmed to fail when a route names a missing doc
