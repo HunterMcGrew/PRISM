@@ -7,9 +7,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+	collectRoutedDocs,
 	findBraceGlobKeys,
 	findCatchAllKeys,
 	findMissingCoverage,
+	findShipRoutingGaps,
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
 import { compileMatcher } from "./hooks/lib/match.mjs";
@@ -213,4 +215,67 @@ test("findMissingCoverage: reports each expected positive that is missing the do
 	assert.equal(failures.length, 2);
 	assert.ok(failures.some((message) => message.startsWith("zoe ")));
 	assert.ok(failures.some((message) => message.startsWith("eric ")));
+});
+
+test("collectRoutedDocs: flattens the single-doc and multi-doc route forms", () => {
+	const routed = collectRoutedDocs({
+		"docs/": "_toolkit/documentation.md",
+		".claude/skills/**": ["_toolkit/skills-ecosystem.md", "_toolkit/closing-messages.md"],
+	});
+
+	assert.deepEqual(
+		[...routed].sort(),
+		[
+			"_toolkit/closing-messages.md",
+			"_toolkit/documentation.md",
+			"_toolkit/skills-ecosystem.md",
+		]
+	);
+});
+
+test("findShipRoutingGaps: silent when every shipped doc is routed on both sides", () => {
+	const shipped = new Set(["_toolkit/spec-editing.md", "guides/writing-a-rule.md"]);
+
+	assert.deepEqual(findShipRoutingGaps(shipped, shipped, shipped), []);
+});
+
+test("findShipRoutingGaps: reports a doc the stub routes that PRISM's own tables do not", () => {
+	const shipped = new Set(["_toolkit/closing-messages.md"]);
+	const failures = findShipRoutingGaps(shipped, shipped, new Set<string>());
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /^_toolkit\/closing-messages\.md ships to consumers/);
+});
+
+test("findShipRoutingGaps: reports a shipped doc the consumer stub does not route", () => {
+	const shipped = new Set(["_toolkit/spec-editing.md"]);
+	const failures = findShipRoutingGaps(shipped, new Set<string>(), shipped);
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /ships in the install seed but no route/);
+});
+
+test("findShipRoutingGaps: reports a stub route naming a doc the seed does not carry", () => {
+	const failures = findShipRoutingGaps(
+		new Set<string>(),
+		new Set(["_toolkit/absent.md"]),
+		new Set<string>()
+	);
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /that doc is not in the install seed/);
+});
+
+test("findShipRoutingGaps: a doc routed only in PRISM's tables and never shipped is not a gap", () => {
+	const failures = findShipRoutingGaps(
+		new Set<string>(),
+		new Set<string>(),
+		new Set(["_toolkit/output-guards.md"])
+	);
+
+	assert.deepEqual(
+		failures,
+		[],
+		"a PRISM-dev-only doc satisfies the invariant without an exception list"
+	);
 });

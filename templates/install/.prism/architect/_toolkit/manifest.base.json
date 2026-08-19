@@ -8,7 +8,8 @@
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md",
 		"guides/writing-a-skill.md",
-		"_toolkit/ticket-workflows.md"
+		"_toolkit/ticket-workflows.md",
+		"_toolkit/closing-messages.md"
 	],
 	".prism/templates/**": [
 		"_toolkit/spec-editing.md",
@@ -61,7 +62,8 @@
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md",
-		"_toolkit/ticket-workflows.md"
+		"_toolkit/ticket-workflows.md",
+		"_toolkit/closing-messages.md"
 	],
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
@@ -80,7 +82,10 @@
 	"scripts/ai-skills/path-guard.ts": "_toolkit/install-layout.md",
 	".ai-skills/definitions/paths.json": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
-	"docs/": "_toolkit/documentation.md",
+	"docs/": [
+		"_toolkit/documentation.md",
+		"_toolkit/architecture-doc-shape.md"
+	],
 	"AGENTS.md": "_toolkit/skills-ecosystem.md",
 	".codex/agents/**": "_toolkit/skills-ecosystem.md",
 	".cursor/skills/**": "_toolkit/skills-ecosystem.md"
