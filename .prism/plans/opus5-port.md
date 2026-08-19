@@ -672,6 +672,7 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Ambiguity** — none load-bearing; assuming `Grep`'s haystack arrives at `tool_input.path` (Claude's `Grep` carries no `file_path`), and that a shell command containing any control character parses to zero targets rather than being partially parsed.
   - **Bounds** — B1–B3 only, `pnpm prism:check` green, PR opened draft; B4 is `[HITL]` and untouched, and nothing in PR 2C's lane (guides, `SPEC.md`, stub routes, `seed-curation.json`, the skills-ecosystem split).
   - **Approach** — an opt-in `credit` flag on `resolveArchitectNag` plus a `resolveTargets` seam in `hook.mjs`; no new module.
+  - **Briar self-review 2026-08-19** — 1 major, 2 minor; see `## Review Issues`. The major is a confirmed over-credit: a newline in a Bash command is not in the parser's bail set.
   - **Close** — scope held. Two pre-existing `architect-route.test.ts` cases needed `{ credit: true }` added, since they asserted the resolver's old always-credit behavior — the assertions are unchanged, only the opt-in. Edge behavior chosen on purpose: an empty or absent command, an unrecognized command name, and a command carrying a control character each yield zero targets; a flagged `cat` announces without crediting. The suite's own control was run — breaking the `offset`/`limit` check made exactly the intended case fail.
 
 - 2026-08-13 [main] open: Intent — one plan covering three stacked PRs (rules retune, zero-dep hook runtime + authoring deny, roster slimming onto a shared core), with cross-PR file collisions named and owned; Bounds — write only `.prism/plans/opus5-port.md`, no rules/skills/hooks/mirrors, no subagents; Approach — verify every claim against the live tree before writing it, fold `thrive-port.md`'s unbuilt tasks in or defer them with a stated disposition · close: scope held — one file written; five plan-affecting facts corrected against the tree rather than taken from the evidence doc (see `## History`).
@@ -717,6 +718,53 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-18 [huntermcgrew/opus5-port-hook-runtime]: Fixed all 9 Majors and 8 Minors from Eric's PR #461 review across five staged commits. The two behavioral fixes: announce-once no longer silences docs `formatNag` truncated away (measured 118 of 500 on a fan-out), and the delivery seam no longer overwrites consumer-owned files or deletes their settings entries. `pnpm prism:check` exit 0, 712/712; see `## Review Issues` for the per-finding table.
 
 ## Review Issues
+
+### A newline in a Bash command is a command separator `SHELL_CONTROL_CHARACTERS` does not bail on
+
+- **Axis:** `standards`
+- **Severity:** major
+- **Status:** open
+- **File:** `scripts/ai-skills/hooks/hook.mjs:46` (`SHELL_CONTROL_CHARACTERS`), consumed at `parseShellReadTargets`
+- **Problem:** the bail set covers `|&;<>` and `` ` ``/`$(` but not a newline, so a multi-line Bash call whose *first* line is a bare `cat` is parsed as one `cat` over every bare token in every later line — each granted full-read credit.
+- **Repro:** `parseShellReadTargets("cat a.md\ngrep foo .prism/architect/_toolkit/spec-editing.md")` returns four targets, all `credit: true`, including the routed doc that was only a grep haystack. Verified by running the exported function against the committed source.
+- **Why major, not critical:** nothing consumes the `read` array for a deny yet — PR 2D is the first consumer — so no shipped behavior is wrong today. It is the exact over-credit this PR's own Decision calls the unacceptable direction, and this PR is 2D's ship-gate, so it should not cross the merge line open.
+- **Class:** the operand loop treats every non-flag token as a path, so anything that is not a path but is not flag-shaped is credited as one.
+- **Sweep:** exercised the parser against separator and non-path-token forms — newline (over-credits, above); `#` comments (`cat a.md # note` credits `#` and `note`); `cat -- a.md` (`--` suppresses credit, safe direction); `;`, `|`, `>`, `$(` (all correctly bail). Newline and `#` are the two live cases.
+- **Suggested fix:** add `\n` (and `\r`, `#`) to `SHELL_CONTROL_CHARACTERS`, and add the multi-line case to `parseShellReadTargets: the documented gaps yield no targets rather than a guess`.
+
+### The `tool_input.path` fallback is not scoped to search tools, unlike the comment describing it
+
+- **Axis:** `standards`
+- **Severity:** minor
+- **Status:** open
+- **File:** `scripts/ai-skills/hooks/harnesses.mjs:56` (`filePathFromToolInput`)
+- **Problem:** the comment says search tools "are the one exception," but the `?? payload.tool_input?.path` fallback is unconditional — any unlisted tool carrying a `path` (Claude's `Glob`, for one) now resolves a target and resolves to kind `write`, producing announce traffic the comment does not describe. Announce-only, so no credit risk.
+- **Class:** doc comment narrower than the code it describes.
+- **Sweep:** checked every `toolKinds` entry across the three harnesses plus the `write` default; `Glob` is the only unlisted Claude tool with a `path` field, and `Edit`/`Write`/`Bash` are unaffected.
+- **Suggested fix:** widen the comment to say the fallback covers any tool that names its target at `path`, and that everything reaching it through the `write` default announces without crediting.
+
+### A `cat` whose output the host truncates still credits in full
+
+- **Axis:** `standards`
+- **Severity:** minor
+- **Status:** open
+- **File:** `scripts/ai-skills/hooks/hook.mjs` (`parseShellReadTargets` credit rule), `resolveTargets` (`read` credit rule)
+- **Problem:** credit is decided from the *call shape*, never the delivered bytes. A flagless `cat` of a long doc, or a rangeless `Read` past the host's default line cap, is credited as a whole-document read even though the model received a truncated one — the same class of partial delivery the `head`/`offset` rules exist to exclude. It is a narrow gap in practice: routed architect docs are the only credited surface and PR 2C caps the guides at 120 lines.
+- **Class:** call-shape proxy for a delivery fact the payload does not carry.
+- **Sweep:** the only two crediting paths are the flagless `cat` and the unranged `Read`; both are affected identically, and no third channel credits.
+- **Suggested fix:** none required in this PR — record it in PR 2D's ADR-0072 `## Consequences` beside the other named credit-channel gaps, which is where this plan's own Decision already routes coverage-and-gaps content.
+
+### Angle Coverage
+
+- **Correctness** — `swept`; both exported functions exercised against the committed source, all six shell forms plus the four bail forms plus three `Read` range shapes.
+- **Edge cases** — `swept`; empty/absent command, unrecognized command, `-`/`--` operands, `-n20` vs `-n 20` vs `-20`, quoted `sed` scripts, multi-file `cat`, newline and `#` separators.
+- **Type safety** — `swept`; the three `.d.mts` sidecars (`RouteTarget`, the `credit` option, the `path` field) match their `.mjs` JSDoc; `pnpm prism:check` exit 0 (operator-ratified).
+- **Test coverage** — `swept`; every B1/B2 behavior has a case, including B3's Grep negative control. Two gaps named: the newline case above, and no case for multi-file `cat`.
+- **Spec conformance** — `swept`; B1, B2, B3 each satisfied against § PR 2B; B4 correctly untouched as `[HITL]`.
+- **Scope** — `swept`; nine files, all inside PR 2B's collision-table lane; nothing from PR 2C or 2D's lane touched.
+- **Comments and naming** — `swept`; every new comment carries a why, no tags, no ALL CAPS; one inaccuracy found (the `path` fallback comment above).
+- **Citation integrity** — `swept`; the plan's two new Decisions match the code they describe, and the History entry's verification claim reproduces.
+- **Docs impact** — `n/a`; no consumer-facing doc governs the hook internals, and PR 2C owns the guides.
 
 ### `demand-elegance.md`'s condition-gate rewrite leaves two near-duplicate bullets
 
