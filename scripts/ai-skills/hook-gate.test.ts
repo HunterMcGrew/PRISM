@@ -26,8 +26,10 @@ import {
 	saveRouteState,
 } from "./hooks/architect-route.mjs";
 import {
+	GIT_INSPECTION_SUBCOMMANDS,
 	parseShellReadTargets,
 	parseUnprovenShellPaths,
+	SHELL_INSPECTION_COMMANDS,
 	resolveHarnessFromArgv,
 	runPostCompactArm,
 	runPostToolUseArm,
@@ -1785,29 +1787,89 @@ function everyUnprovableShape(target: string): string[] {
 		shapes.push(`cat ${target}${character}`);
 	}
 
+	shapes.push(...everyForgedProof(target));
+
 	return shapes;
 }
 
-/** Commands the arm claims to prove are reads, which is the whole of what it lets past. */
+/**
+ * Every command the arm claims to prove is a read, derived from the lists
+ * rather than restated beside them.
+ *
+ * Derivation is the point. A hand-written sample named 12 of the inspection
+ * commands and 2 of the git subcommands, and every false proof round 4 found
+ * sat in the uncovered remainder. Iterating the constants makes coverage
+ * complete by construction, so adding a command to a list cannot land without
+ * a test row asserting what that addition claims.
+ *
+ * The suite can only ever check the arm against the list, never the list
+ * against reality — see `SHELL_INSPECTION_COMMANDS` for where that judgment
+ * is made.
+ */
 function everyProvableRead(target: string): string[] {
-	return [
-		`cat ${target}`,
+	const shapes: string[] = [];
+
+	for (const name of SHELL_INSPECTION_COMMANDS.keys()) {
+		shapes.push(`${name} ${target}`);
+	}
+
+	for (const subcommand of GIT_INSPECTION_SUBCOMMANDS) {
+		shapes.push(`git ${subcommand} ${target}`);
+	}
+
+	// One flagged spelling per family, so the inert-flag lists are exercised
+	// rather than only the bare forms above.
+	shapes.push(
 		`cat "${target}"`,
 		`cat -n ${target}`,
 		`head -20 ${target}`,
-		`tail -5 ${target}`,
-		`less ${target}`,
-		`grep -n foo ${target}`,
-		`rg foo ${target}`,
+		`tail -n 5 ${target}`,
+		`grep -rn foo ${target}`,
+		`rg -i foo ${target}`,
 		`wc -l ${target}`,
 		`ls -la ${target}`,
-		`diff a.md ${target}`,
-		`sed -n '1,5p' ${target}`,
-		`git diff ${target}`,
-		`git log -p ${target}`,
+		`diff -u a.md ${target}`,
+		`git log --oneline -5 ${target}`,
+		`git diff --stat ${target}`,
 		`cat a.md; cat ${target}`,
 		`cat a.md\ncat ${target}`,
-		`cat ${target}\r\nhead -1 other.md`,
+		`cat ${target}\r\nhead -1 other.md`
+	);
+
+	return shapes;
+}
+
+/**
+ * Commands round 4 drove through the arm, which certified each as a read and
+ * then wrote the named path when run against a real filesystem, plus the two
+ * shapes that executed an arbitrary program under the same proof.
+ *
+ * Kept as inputs rather than as prose because each one passed a green suite
+ * once. They are appended to `everyUnprovableShape` so they run through both
+ * the parser and the end-to-end arm.
+ */
+function everyForgedProof(target: string): string[] {
+	return [
+		`sort -o ${target} in.md`,
+		`sort --output=${target} in.md`,
+		`uniq input.md ${target}`,
+		`xxd input.bin ${target}`,
+		`git diff --output ${target}`,
+		`git log -p --output ${target}`,
+		`git show HEAD --output ${target}`,
+		`git grep -O ./x.sh foo ${target}`,
+		`rg --pre ./x.sh foo ${target}`,
+		`sed -n 'w ${target}' input.md`,
+		`sed s/a/b/w ${target} input.md`,
+		`sed --in ${target}`,
+		`sed --i ${target}`,
+		`sed -n '1,5p' ${target}`,
+		// A listed command carrying a flag its list does not name. The proof
+		// is refused without anyone having to know what the flag does, which
+		// is the property the per-command flag lists exist to provide.
+		`cat --output ${target}`,
+		`grep -o0utput foo ${target}`,
+		`git -C /tmp diff ${target}`,
 	];
 }
 

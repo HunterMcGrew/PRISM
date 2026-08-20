@@ -399,7 +399,21 @@ function skipHeredocBodies(command, index, pendingHeredocs) {
 }
 
 /**
- * Head tokens whose operands a shell command reads rather than writes.
+ * Flags the `grep` family accepts that select, format, or filter matches —
+ * none of them names an output file or hands control to another program.
+ *
+ * @type {string}
+ */
+const GREP_INERT_FLAGS =
+	"-# -i -v -n -H -h -c -l -L -w -x -F -E -G -P -o -q -s -r -R -a -I -m -A -B -C -e -f -z " +
+	"--ignore-case --invert-match --line-number --count --files-with-matches --files-without-match " +
+	"--word-regexp --line-regexp --fixed-strings --extended-regexp --perl-regexp --only-matching " +
+	"--quiet --no-messages --recursive --max-count --after-context --before-context --context " +
+	"--regexp --file --color --colour --with-filename --no-filename --include --exclude --exclude-dir";
+
+/**
+ * Head tokens whose operands a shell command reads rather than writes, each
+ * mapped to the flags that command is known not to write or execute through.
  *
  * This is the whole of what the shell arm claims to model. Everything else —
  * `tee`, `cp`, `dd`, `python`, a binary nobody has heard of, any command
@@ -409,55 +423,74 @@ function skipHeredocBodies(command, index, pendingHeredocs) {
  * write behind a green suite, because a list of write forms is wrong the
  * moment the shell grows a form nobody listed.
  *
- * The two lists' failure directions are what makes this safe. A command
- * missing from here costs one reroute message on a command that only read —
+ * The flag sets carry the same inversion one level down, and they are here
+ * because the command-only form leaked: `sort -o <path> in.md` was certified
+ * a read and wrote the path, as were `git diff --output <path>` and
+ * `rg --pre <program>`. A read-only command's own write mode arrives as a
+ * flag value, so a proof that skips every `-`-prefixed token cannot see it.
+ * An unlisted flag now costs the whole segment its proof.
+ *
+ * The two directions are what makes this safe. A command or flag missing
+ * from here costs one reroute message on a command that only read —
  * recoverable, and only when the command also names a routed path. A command
- * wrongly present costs a silently missed write. So membership asks: is this
- * command read-only on plain operands, with no in-place-write mode? If the
- * answer needs a "usually", it stays out.
+ * or flag wrongly present costs a silently missed write. So membership asks
+ * two questions: is this command read-only on plain operands, and is every
+ * flag listed beside it incapable of naming an output file or running
+ * another program? If either answer needs a "usually", it stays out.
  *
- * `sed` and `git` are deliberately absent — both read or write depending on
- * their arguments, and `checkSegmentOnlyReads` decides them per call.
+ * Membership is the one place in this arm where a mistake is silent. No unit
+ * test can check the list against reality — a test can only confirm the arm
+ * agrees with the list — so the second reading happens here, when an entry is
+ * added.
  *
- * @type {Set<string>}
+ * Absent on purpose, each for the reason beside it: `sort`, `uniq`, and `xxd`
+ * write through an output operand indistinguishable from an input by position
+ * (`uniq in out`); `sed` is an editor whose `w` script command writes an
+ * arbitrary path from inside a data operand, with no `-` prefix to catch;
+ * `git` reads or writes depending on its subcommand and is decided per call
+ * by `checkSegmentOnlyReads`.
+ *
+ * @type {Map<string, Set<string>>}
  */
-const SHELL_INSPECTION_COMMANDS = new Set([
-	"cat",
-	"head",
-	"tail",
-	"less",
-	"more",
-	"grep",
-	"egrep",
-	"fgrep",
-	"rg",
-	"ag",
-	"wc",
-	"nl",
-	"diff",
-	"ls",
-	"stat",
-	"file",
-	"cut",
-	"sort",
-	"uniq",
-	"od",
-	"xxd",
-	"jq",
-	"tr",
-	"echo",
-	"pwd",
-	"basename",
-	"dirname",
-	"which",
-	"true",
-	"false",
-]);
+export const SHELL_INSPECTION_COMMANDS = new Map(
+	Object.entries({
+		cat: "-n -b -s -v -e -t -E -T -A",
+		head: "-# -n -c -q -v",
+		tail: "-# -n -c -q -v -f",
+		less: "-# -N -S -R -F -X",
+		more: "-# -s",
+		nl: "-b -n -w",
+		od: "-# -A -t -N -j -c -x -b",
+		grep: GREP_INERT_FLAGS,
+		egrep: GREP_INERT_FLAGS,
+		fgrep: GREP_INERT_FLAGS,
+		ag: GREP_INERT_FLAGS,
+		rg:
+			`${GREP_INERT_FLAGS} -S -u -g -t -T -p -N ` +
+			"--smart-case --case-sensitive --glob --type --hidden --no-ignore " +
+			"--no-heading --json --stats --files --sort",
+		wc: "-l -w -c -m -L",
+		diff: "-# -u -U -r -q -w -b -B -i -N -a -c -y",
+		ls: "-l -a -A -h -R -t -r -S -1 -d -F -i -n -p",
+		stat: "-c -f -L -t",
+		file: "-b -i -L -h -z",
+		cut: "-d -f -c -b -s",
+		tr: "-d -s -c",
+		jq: "-r -n -c -e -s -S -a -j -M -C",
+		echo: "-n -e -E",
+		basename: "-z -a -s",
+		dirname: "-z",
+		which: "-a",
+		pwd: "-L -P",
+		true: "",
+		false: "",
+	}).map(([name, flags]) => [name, new Set(flags.split(/\s+/).filter(Boolean))])
+);
 
 /** `git` subcommands that only read the working tree.
  * @type {Set<string>}
  */
-const GIT_INSPECTION_SUBCOMMANDS = new Set([
+export const GIT_INSPECTION_SUBCOMMANDS = new Set([
 	"diff",
 	"log",
 	"show",
@@ -470,12 +503,28 @@ const GIT_INSPECTION_SUBCOMMANDS = new Set([
 ]);
 
 /**
- * Maximal runs of path-shaped characters. Deliberately excludes `)`, `;`,
- * `:`, `,`, and `=` so a path fused to a grouping paren, a separator, or a
- * `dd`-style `of=` prefix still yields the bare path.
+ * Flags a read-only `git` subcommand accepts without writing a file.
  *
- * @type {RegExp}
+ * `--output` and `-o` are absent because `git diff|log|show --output <path>`
+ * writes the diff to that path while the subcommand still reads as read-only;
+ * `-O` is absent because `git grep -O <cmd>` opens matches in an arbitrary
+ * pager command; `-C` is absent because it means two different things at the
+ * two positions git accepts it — a working-directory change before the
+ * subcommand, copy detection after it — and the arm resolves paths against
+ * neither.
+ *
+ * @type {Set<string>}
  */
+const GIT_INERT_FLAGS = new Set(
+	(
+		"-# -p -n -1 -l -w -b -s -q -z -L -i -E -F -v " +
+		"--oneline --stat --numstat --shortstat --name-only --name-status --patch --no-patch " +
+		"--graph --pretty --format --abbrev-commit --date --since --until --author --grep " +
+		"--follow --cached --staged --word-diff --color --no-color --unified --reverse " +
+		"--first-parent --merges --no-merges --all --decorate --summary --raw"
+	).split(/\s+/)
+);
+
 const PATH_SHAPED_RUN = /[\w./@~+-]+/g;
 
 /**
@@ -520,13 +569,17 @@ function scanPathShapedTokens(command) {
 }
 
 /**
- * True when a segment's head token names a command that reads its operands
- * and writes nothing.
+ * True when a segment names a command that reads its operands and writes
+ * nothing, carrying only flags that command cannot write or execute through.
  *
- * `sed` and `git` are decided here rather than by list membership because
- * each is read-only or not depending on its own arguments — `sed -i` writes
- * in place, and `git checkout` overwrites files while `git diff` does not.
- * A `git` whose subcommand is not stated (only flags) is not provable.
+ * Both halves are required. The command test alone certified `sort -o <path>`
+ * and `git diff --output <path>` as reads, because the write mode lived in a
+ * flag the proof skipped rather than in the head token.
+ *
+ * `git` is decided here rather than by list membership because it reads or
+ * writes depending on its subcommand — `git checkout` overwrites files while
+ * `git diff` does not. A `git` whose subcommand is not stated (only flags) is
+ * not provable.
  *
  * @param {string[]} tokens
  * @returns {boolean}
@@ -534,16 +587,68 @@ function scanPathShapedTokens(command) {
 function checkSegmentOnlyReads(tokens) {
 	const [name, ...args] = tokens;
 
-	if (name === "sed") {
-		return !checkInPlaceFlag(args, 0);
-	}
-
 	if (name === "git") {
 		const subcommand = args.find((arg) => !arg.startsWith("-"));
-		return subcommand !== undefined && GIT_INSPECTION_SUBCOMMANDS.has(subcommand);
+		return (
+			subcommand !== undefined &&
+			GIT_INSPECTION_SUBCOMMANDS.has(subcommand) &&
+			checkFlagsAreInert(args, GIT_INERT_FLAGS)
+		);
 	}
 
-	return SHELL_INSPECTION_COMMANDS.has(name);
+	const inertFlags = SHELL_INSPECTION_COMMANDS.get(name);
+	return inertFlags !== undefined && checkFlagsAreInert(args, inertFlags);
+}
+
+/**
+ * The flag names one token states — `--color=always` names `--color`, and a
+ * short cluster `-rn` names `-r` and `-n` separately, because a cluster is
+ * exactly as dangerous as its most dangerous letter.
+ *
+ * Digits collapse to `-#` so a count spelled as a flag (`head -20`, `git
+ * log -5`) is one thing to allow rather than ten.
+ *
+ * @param {string} token
+ * @returns {string[]}
+ */
+function resolveFlagNames(token) {
+	if (token.startsWith("--")) {
+		return [token.split("=")[0]];
+	}
+
+	const names = new Set();
+	for (const character of token.slice(1)) {
+		names.add(/\d/.test(character) ? "-#" : `-${character}`);
+	}
+
+	return [...names];
+}
+
+/**
+ * True when every flag in a segment's arguments is on that command's inert
+ * list. An unrecognized flag returns false, which costs the whole command its
+ * proof — the direction this arm fails in everywhere else.
+ *
+ * `-` is a stdin operand and `--` ends option parsing; neither names a flag.
+ *
+ * @param {string[]} args
+ * @param {Set<string>} inertFlags
+ * @returns {boolean}
+ */
+function checkFlagsAreInert(args, inertFlags) {
+	for (const arg of args) {
+		if (!arg.startsWith("-") || arg === "-" || arg === "--") {
+			continue;
+		}
+
+		for (const flag of resolveFlagNames(arg)) {
+			if (!inertFlags.has(flag)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 /**
@@ -566,10 +671,12 @@ function checkSegmentOnlyReads(tokens) {
  * an expansion carrying a separator each fail the class test or the head-token
  * test, so none of them can produce a proof.
  *
- * The one gap that survives by construction: a write whose target path never
- * appears in the command text, because it was assembled from a variable or
- * reached through a `cd`. No scan over the command can see a path the
- * command does not contain.
+ * Two gaps survive. A write whose target path never appears in the command
+ * text — assembled from a variable, or reached through a `cd` — is invisible
+ * to any scan over the command, and no parser short of a shell closes it. The
+ * second is the read-only lists themselves: membership is a human judgment,
+ * and a command or flag wrongly admitted is a silent write. See
+ * `SHELL_INSPECTION_COMMANDS` for the questions membership has to answer.
  *
  * @param {string | undefined} command
  * @returns {string[]}
@@ -609,6 +716,9 @@ function resolveProvenReadPaths(command) {
 		}
 
 		for (const token of tokens.slice(1)) {
+			// Safe to skip only because `checkSegmentOnlyReads` has already
+			// confirmed every flag in this segment is on its command's inert
+			// list, so no flag reaching here names an output file.
 			if (token.startsWith("-") && token !== "-") {
 				continue;
 			}
@@ -625,30 +735,6 @@ function resolveProvenReadPaths(command) {
 	}
 
 	return operands;
-}
-
-/**
- * True when the tokens from `start` onward carry `sed`'s in-place flag, in
- * any of its spellings — `-i`, `-i.bak`, `-ni`, `--in-place`.
- *
- * The scan runs to the end of the array because `splitShellSegments` has
- * already cut the command at its boundaries, so a later pipeline stage's
- * `-i` is in a different array and cannot make an earlier read-only `sed`
- * look like a write.
- *
- * @param {string[]} tokens
- * @param {number} start
- * @returns {boolean}
- */
-function checkInPlaceFlag(tokens, start) {
-	for (let index = start; index < tokens.length; index++) {
-		const token = tokens[index];
-		if (/^--in-place/.test(token) || /^-[a-zA-Z]*i/.test(token)) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 /**
@@ -868,7 +954,8 @@ export function formatShellRerouteMessage(relativePath) {
 		`You're running a shell command that names \`${relativePath}\`, a path with governing architect docs. ` +
 		`The gate clears a shell command only when it can prove the command is a read, so everything else counts as a write — ` +
 		`redo this edit with your file-edit tool so the gate can check its prerequisites. ` +
-		"If the command only reads, spell it as a plain `cat`, `head`, or `grep`."
+		"If the command only reads, spell it as a plain `cat`, `head`, or `grep` with no pipe, " +
+		"redirect, substitution, or unusual flag — the proof covers the whole command, not just its first word."
 	);
 }
 

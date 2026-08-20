@@ -9,6 +9,10 @@ export function parseShellReadTargets(
 	command: string | undefined
 ): RouteTarget[];
 
+export const SHELL_INSPECTION_COMMANDS: Map<string, Set<string>>;
+
+export const GIT_INSPECTION_SUBCOMMANDS: Set<string>;
+
 export function parseUnprovenShellPaths(command: string | undefined): string[];
 
 export function resolveTargets(
