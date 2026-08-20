@@ -129,3 +129,58 @@ Its significance is real and unchanged by the green suite: every leg in `hook-ga
 ## Re-check log
 
 - 2026-08-19 — initial grading at `de3d3430`. 9 MET, 2 UNMET, 0 UNGRADEABLE.
+- 2026-08-19 — targeted re-check of AC-7 and AC-31 at `9a7d1ebd`. Both MET. Detail below.
+
+## AC-7 — MET on re-check
+
+**Evidence procedure:** `pnpm prism:test` exit 0, 798/798, 0 skipped. Read all four `runPostCompactArm` cases (`hook-gate.test.ts:314`, `:341`, `:373`, `:400`) and the arm itself (`hook.mjs:614`).
+
+The Evidence line asks for two things and gets both. The `PostCompact` cases pass with and without a session id, and the no-session case now seeds real state through the announce arm, then asserts the state file survives the reset. Clove's second assertion — a repeat read returns `null`, so the already-delivered announcement stays suppressed — is the right addition: a state file that survives as an empty or corrupted shell would satisfy the file-exists check while re-announcing every doc, which is the destructive outcome the no-session clause exists to prevent. The with-session half is covered end to end at `:314` (delete, then confirm the doc re-announces), `:341` (subagent state files clear with the parent), and `:373` (a sibling whose id merely prefixes the compacted one is left alone).
+
+**On the mutation finding clove surfaced — the conclusion holds, the stated mechanism does not.**
+
+Clove records in `## Sessions` that removing the `if (!sessionId) return` guard leaves the test alive "because an empty session id builds the prefix `architect-route-state..`, which matches nothing." The code does not produce an empty string there. `payload.session_id ?? payload.conversation_id ?? null` on a payload carrying neither key evaluates to `null`, so a guard-free arm reaches `sessionId.replace(...)` and throws a `TypeError`, which the surrounding `catch` swallows into one stderr line. No prefix is ever built. Confirmed directly:
+
+```
+$ node -e 'const p={cwd:"/x"};const s=p.session_id??p.conversation_id??null;
+  try{`architect-route-state.${s.replace(/[^a-zA-Z0-9._-]/g,"_")}.`}catch(e){console.log("THROWS:",e.constructor.name)}'
+THROWS: TypeError
+```
+
+Two things follow. The survival conclusion is correct — the arm is inert on a no-session payload with or without the guard, so that single mutation cannot kill the test. But the killing mutation clove reports, "widening the no-session prefix to `architect-route-state.`", is not a single edit either: with the guard removed the null throws before any prefix exists, so producing that mutant requires *also* introducing a string fallback. The 57→56 measurement is real; the mutant behind it is compound.
+
+**This does not make the test pass for an adjacent reason.** The test asserts an outcome — the file survives and suppression holds — not a code path. That no single mutation reaches the failing outcome is a property of the implementation carrying two independent protections (the explicit guard, and a null that cannot form a matching prefix), not a gap in the assertion. The criterion's Evidence line is satisfied literally and in substance.
+
+**One clause of AC-7 is not test-covered, and was not asked to be.** "No summary file is written" has no assertion behind it; `grep -rn "summary"` over `hook.mjs` and `hook-gate.test.ts` returns nothing, so the clause holds by absence of any summary-writing mechanism rather than by a test. The Evidence line does not name it, so it is not a grading input — recorded so a later reader does not mistake the green suite for coverage of that clause.
+
+## AC-31 — MET on re-check
+
+**Structural half — unchanged and passing.** Both dated sweep tables are still in `## History`, D0's pre-implementation and D10's post-implementation, each with a row per task across D0–D10.
+
+**The D3 defect is closed.** D3's verify line now names `.cursor/rules/context-reuse.mdc`, and its D10 row reads `fixed` with the dead path and its consequence recorded. Re-run literally from the repo root:
+
+```
+$ grep -rln "mechanical enforcer" .prism/rules/context-reuse.md .claude/rules/context-reuse.md \
+    .codex/rules/context-reuse.md .cursor/rules/context-reuse.mdc templates/install/.prism/rules/context-reuse.md
+.claude/rules/context-reuse.md
+.prism/rules/context-reuse.md
+.cursor/rules/context-reuse.mdc
+.codex/rules/context-reuse.md
+templates/install/.prism/rules/context-reuse.md
+exit=0
+```
+
+Five files, exit 0 — what the corrected row claims. The disposition move from `held` to `fixed` is the right call rather than a reword in place: the verify line itself changed, and `held` would have asserted that the line as authored survived the sweep.
+
+**Positive control — two `held` rows re-run, both reproduce.**
+
+```
+$ grep -rn "no \`PreToolUse\` ownership guards on writes" .ai-skills/ .prism/ .claude/ .codex/ .cursor/ | grep -v '^\.prism/plans/'
+(no output, exit 1)          # D6's row: "The re-derived grep returns nothing."
+
+$ grep -c '"PreToolUse"' .claude/settings.json templates/install/.claude/settings.json
+.claude/settings.json:1
+templates/install/.claude/settings.json:1   # D1's row: "→ `1` and `1`."
+```
+
+Both match their recorded results. The remaining non-`held` rows (D5, D9) were verified in the initial grading at `de3d3430` and are untouched by this diff.
