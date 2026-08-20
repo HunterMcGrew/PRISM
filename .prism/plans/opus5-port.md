@@ -2095,6 +2095,82 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 
 ---
 
+## Review Issues (PR 2D round 4 — false-proof hunt over `d7378ab9..7072ff13`, #470)
+
+Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a false proof — a command `parseUnprovenShellPaths` certifies as read-only that actually writes. Driven as real inputs through the exported function in a node harness, then each forged command run against a real filesystem to confirm it writes. Twenty-one inputs; **six confirmed false proofs and one confirmed arbitrary-execution vector**, all from three root causes.
+
+**The refusal mechanism holds.** The controls confirm it: `tee <path>`, `cp a.md <path>`, `sed -i <path>`, `sed --in-place <path>`, and `sort --output=<path>` all reroute. A character outside the class, a head token off the list, and a flag-form output target each cost the command its proof exactly as designed. Every finding below is a leak in *what the list admits*, not in how the proof is enforced — which means each is a membership repair, not a redesign.
+
+**The unifying root cause.** The arm inverted its *command* judgment to an allow-list and left its *flag and operand-position* judgment on allow-everything. `resolveProvenReadPaths` skips any token starting with `-` without asking what that flag means, and `checkSegmentOnlyReads` reads only the head token. So a read-only command's own write mode — expressed as a flag value, a trailing operand, or a script clause — walks through the proof untouched. The command list asks "is this command read-only on plain operands"; nothing asks "are these operands plain."
+
+### `sort -o <path>` is certified read-only and writes the path
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `sort`) and `:604` (`resolveProvenReadPaths`' unconditional flag skip)
+- **Problem:** `sort` is on the read-only list, and `resolveProvenReadPaths` drops `-o` as a flag and then adds the following token to the proven-read set, so `sort -o <routed-path> in.md` proves a write to be a read and the gate never fires.
+- **Class:** `a listed read-only command whose output target arrives as a flag value the proof skips`
+- **Sweep:** `parseUnprovenShellPaths("sort -o .prism/architect/_toolkit/install-layout.md input.md")` → the routed path is absent from the result (proven read-only). Confirmed writing: `sort -o victim1.md in.txt` created and populated `victim1.md`. The `=` spelling is safe by accident — `sort --output=<path>` reroutes, because `PATH_SHAPED_RUN` splits the path off the flag as a candidate while the whole `--output=<path>` token is skipped as an operand and never enters the proven set. Two spellings of one flag, opposite verdicts.
+- **Suggested fix:** remove `sort` from `SHELL_INSPECTION_COMMANDS`. It is not read-only on plain operands — it has an output mode, which is the list's own stated disqualifier ("is this command read-only on plain operands, with no in-place-write mode? If the answer needs a 'usually', it stays out"). The structural fix that closes this whole class is in the last finding below.
+
+### `uniq <in> <out>` and `xxd <in> <out>` are certified read-only and write their second operand
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `uniq` and `xxd`)
+- **Problem:** both take an optional second positional operand that is an *output* file, not an input. The proof treats every non-flag token as a read operand, so the write target is dropped from the candidate set.
+- **Class:** `a listed read-only command whose output target is a trailing positional operand, indistinguishable from an input by position alone`
+- **Sweep:** `parseUnprovenShellPaths("uniq input.md <routed>")` and `("xxd input.bin <routed>")` both certify read-only. Confirmed writing: `uniq u.txt victim2.md` created `victim2.md` holding the deduped input; `xxd h.txt victim3.md` created `victim3.md` holding the hex dump. Swept the rest of the list for the same shape — `od`, `nl`, `cut`, `tr`, `wc`, `file`, `stat`, `diff`, `ls` take no output operand; `tr` takes no file operands at all. `uniq` and `xxd` are the only two.
+- **Suggested fix:** remove both from `SHELL_INSPECTION_COMMANDS`. Neither is recoverable by counting operands — `uniq in` and `uniq in out` differ only in arity, and an arity rule would be one more enumeration of the kind this arm exists to stop making.
+
+### `git diff|log|show --output <path>` is certified read-only and writes the path
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:534` (`checkSegmentOnlyReads`' `git` branch)
+- **Problem:** the `git` branch proves read-only from the subcommand alone. Every subcommand in `GIT_INSPECTION_SUBCOMMANDS` that emits a diff — `diff`, `log`, `show` — accepts git's `--output=<file>` diff option, and in the space-separated spelling the path lands in the proven-read set through the same unconditional flag skip as `sort -o`.
+- **Class:** `a per-call read-only judgment made from the subcommand while the write mode lives in a flag`
+- **Sweep:** all three spellings certify read-only through `parseUnprovenShellPaths`: `git diff --output <routed>`, `git log -p --output <routed>`, `git show HEAD --output <routed>`. Confirmed writing against a real repo: each of the three created the named file carrying the diff or log output. The subcommand resolver itself is sound in the safe direction — `git -C <dir> status` resolves its subcommand to `<dir>`, finds no match, and refuses; a flag-only `git` refuses. The leak is exclusively the flag.
+- **Suggested fix:** refuse the proof for any `git` segment carrying a token matching `/^--output/` or a bare `-o`, in addition to the subcommand test. This is narrower than the structural fix below and is the minimum that closes the confirmed case.
+
+### `sed`'s `w` script command writes, and long-option abbreviation evades `checkInPlaceFlag`
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:527` (`checkSegmentOnlyReads`' `sed` branch) and `:635` (`checkInPlaceFlag`)
+- **Problem:** `sed` is decided per call by in-place *flag* detection alone, but `sed`'s write capability is not confined to a flag. The `w <file>` command and the `s///w <file>` flag inside the *script operand* both write an arbitrary path, carry no `-` prefix, and sit entirely inside `SHELL_READ_SAFE_CHARACTERS`. Separately, `checkInPlaceFlag`'s `/^--in-place/` misses GNU getopt's unambiguous long-option abbreviations, and `/^-[a-zA-Z]*i/` cannot match them either because the second character is `-`.
+- **Class:** `a write mode expressed in a command's data operand rather than its flags, plus a flag matcher pinned to one spelling of a flag the parser accepts under many`
+- **Sweep:** four inputs certified read-only by `parseUnprovenShellPaths`: `sed -n 'w <routed>' input.md`, `sed 's/a/b/w <routed>' input.md`, `sed --in <routed>`, `sed --i <routed>`. Confirmed writing (macOS BSD sed): `sed -n 'w victim4.md' h.txt` created `victim4.md` holding the input; `sed 's/hi/yo/w victim5.md' h.txt` created `victim5.md` holding the substituted line. The `w`-command leak is worse than a spelling gap — the routed path is not merely un-rerouted, it is *added to the proven-read set* by `scanPathShapedTokens` running over the script operand, so the arm actively launders it. **Confidence on the abbreviation half is `Deduced`, not `Confirmed`:** GNU sed is not installed on this machine, so `sed --in` was not run. The deduction is that GNU `getopt_long` accepts any unambiguous prefix and `--in-place` is sed's only long option beginning `--i`; the harness result showing both spellings certified read-only *is* confirmed, only the underlying sed behavior is not. It does not change the fix.
+- **Suggested fix:** two parts, both required. Refuse the proof for any `sed` segment whose non-flag operands contain `w` or `W` adjacent to a path-shaped run — or, simpler and in the arm's own spirit, refuse `sed` outright unless every one of its non-flag operands is a plain path-shaped token with no script punctuation (`s`, `w`, `W`, `/`, `;` inside a quoted operand). And replace `/^--in-place/` with a prefix-of test: any token where `"--in-place".startsWith(token)` and the token is longer than `--` counts as in-place.
+
+### `rg --pre <cmd>` executes an arbitrary program under a read-only proof
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `rg`), same class at `:534` for `git grep -O`
+- **Problem:** `rg --pre <program>` runs `<program>` once per searched file; `git grep -O<cmd>` opens matches in an arbitrary pager command. Both are on the read-only surface and both hand control to a program the arm cannot see, which can write anything.
+- **Class:** `a listed read-only command with a flag that executes another program`
+- **Sweep:** `parseUnprovenShellPaths("rg --pre ./x.sh foo <routed>")` and `("git grep -O ./x.sh foo")` both certify read-only. Confirmed execution: a `--pre` script writing a marker file to `/tmp` was invoked and the marker appeared. `git grep -O` was not driven against a real repo (it wants a pager/tty) — that half is `Deduced` from the documented flag. Held at Major rather than Critical because the write does not come from the command text: it needs a pre-existing executable at a path the model must already control, so the blast radius is narrower than the four Criticals above, where the command alone is sufficient.
+- **Suggested fix:** covered by the structural fix below. A targeted fix would refuse `rg` carrying `--pre`, `--pre-glob`, or `--hostname-bin`, and `git grep` carrying `-O`/`--open-files-in-pager`.
+
+### Structural: the proof allow-lists commands but allow-everythings flags
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:604` (`resolveProvenReadPaths`' `if (token.startsWith("-") && token !== "-") continue;`)
+- **Problem:** four of the six findings above are one defect wearing four hats. The command list was inverted to fail safe; the flag handling was not. An unrecognized flag is silently assumed to be a modifier rather than an output target or an exec hook, which is precisely the deny-list posture the arm's own JSDoc says three earlier rounds proved wrong.
+- **Class:** `an inverted judgment applied at one level of a grammar and not the level below it`
+- **Sweep:** every leak in this pass that is not a positional-operand leak (`sort -o`, `git --output`, `rg --pre`, `git grep -O`) enters through this one line. The two positional leaks (`uniq`, `xxd`) enter through the sibling assumption that a non-flag token is an input.
+- **Suggested fix:** apply the arm's own inversion one level down — refuse the proof whenever a segment carries **any** flag token not on a per-command allow-list of known-inert flags. The existing per-command lists are the natural home: `SHELL_INSPECTION_COMMANDS` becomes a map from command to its allowed flag set (most entries can allow a small fixed set, or none, since a bare `cat`/`grep`/`wc` is the shape this arm actually needs to certify). Cost is one more reroute message on an unusual-but-harmless flag, which is the direction this whole arm is built to fail in; benefit is that the next flag nobody enumerated cannot produce a proof. Combined with dropping `sort`, `uniq`, and `xxd` from the list and hardening `sed`, this closes every finding in this pass by construction rather than one at a time.
+
+---
+
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
 - [x] No critical or major issues — round 3 pass 2's four majors and four minors are all `fixed`, seven of them by construction rather than by repair. Round 1's and round 2's findings remain `fixed` and independently verified.
