@@ -1914,6 +1914,53 @@ Briar self-review of the repair head `0141691e`, 2026-08-20 [huntermcgrew/opus5-
 
 ---
 
+## Review Issues (PR 2D round 3 pass 1 — probes over `0141691e..c628e5f3`, #470)
+
+Pass 1 of a two-pass round: the three probes only, run against the exported
+functions rather than taken from clove's mutation table. The parser hunt on the
+write arm's hand-rolled scanner is pass 2 and is not covered here.
+
+No issues found — 2026-08-19 [huntermcgrew/opus5-port-deny-gate] — pass 1 scope only.
+
+### Probe results — all three green
+
+Harness: direct `await import()` of `scripts/ai-skills/hooks/hook.mjs`, calling
+`parseShellReadTargets` / `parseShellWriteTargets` on literal command strings.
+
+- **Unspaced-separator reroute.** `tee a.md;cat b.md`, `tee a.md&&cat b.md`, and
+  `tee a.md|grep x b.md` each return exactly `["a.md"]` — the write arm cuts at
+  the unspaced separator and no longer claims the following segment's operand.
+  The spaced control `tee a.md ; cat b.md` returns the same, so the two spellings
+  now agree. `sed -i s/x/y/ a.md;cat b.md` returns `["s/x/y/","a.md"]`: the cut
+  holds, and the script operand riding along as a bogus target is the documented
+  trade, not a regression.
+- **Rejoined two-`cat` remedy.** `cat one.md; cat two.md`, the `\n`-joined form,
+  the unspaced `cat one.md;cat two.md`, and the single-command `cat one.md two.md`
+  all return both paths with `credit: true`. The remedy the deny message prints is
+  performable in every spelling a model is likely to paste.
+- **Heredoc credit.** `tee out.md <<'E'\ncat secret.md\nE` returns `[]` from the
+  read arm — the body-named document earns no credit. Confirmed the refusal is by
+  construction and not by heredoc enumeration: `<` is outside
+  `SHELL_READ_SAFE_CHARACTERS`, so the whole command is refused before
+  `splitShellSegments` runs. Appending a genuine `cat real.md` after the delimiter
+  still returns `[]`, which is the whole-command refusal costing a real clause its
+  credit — the intended direction, one re-read.
+  The write arm on the same input returns `["out.md"]`, so the heredoc's own
+  target is still gated.
+
+### Adjudication — clove's override of the regex-split prescription is correct
+
+Round 2 prescribed splitting on `/\s*(?:\|\||&&|[;|&])\s*/`. Run against
+`sed -i 's/a/b/;s/c/d/' out.md`, that regex yields
+`["sed -i 's/a/b/", "s/c/d/' out.md"]` — `out.md` lands in a segment whose head
+token is `s/c/d/'`, which is in neither `SHELL_WRITE_COMMANDS` nor
+`SHELL_READ_COMMANDS`, so the write is never claimed. The character scanner
+returns `["s/a/b/;s/c/d/","out.md"]` and keeps it. A missed real write is the
+worse failure direction than a false deny, so the override stands and the
+round-2 prescription is withdrawn.
+
+---
+
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
 - [x] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2's two majors and one minor are `fixed` in the repair pass below, each covered by a test confirmed failing against the pre-repair `hook.mjs`
