@@ -256,6 +256,15 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
 - **Task D9's `docs/distribution.md` target was wrong, and the correction went to the two files that actually describe the hook.** `docs/distribution.md` contains no hook description at all — `grep -i hook` returns nothing. The registrations are described in `docs/what-prism-writes.md` and `docs/adopting-into-existing-repos.md`, both of which listed `PostToolUse` and `PostCompact` and went stale the moment `PreToolUse` shipped. Writing a new hook section into `distribution.md` to satisfy the task text as written would have created a third home for content that already has two.
   - **→ no promotion needed (a task-text correction inside this PR; D10's sweep table carries the verify-line consequence).**
 
+- **The shell arm reroutes unless it can prove a command is a read. The write parser is deleted, not repaired.**
+  - **Root cause of the question:** three review rounds each found new defects of the same class in the previous round's repair — heredoc terminators, line continuations, retained quote characters, `sudo`/`VAR=value`/paren prefixes — and briar named five more shapes nobody had driven. The scanner was trying to enumerate the ways a shell command can write a file, and that list is wrong the moment the shell grows a form nobody listed. Every miss on it is a silently unfired gate.
+  - **Alternatives considered:** fix the eight findings and drive the five unprobed classes (a fourth round of the same); a real shell tokenizer (a dependency this zero-dependency runtime does not pay for, and still not a shell).
+  - **Chosen approach:** invert the question, the way the read arm already did. Every path-shaped token in the raw command is a candidate; a candidate is dropped only when the whole command is provably a set of read-only commands and the token is one of their operands. The proof reuses `SHELL_READ_SAFE_CHARACTERS` and `splitShellSegments` unchanged, and is all-or-nothing over the whole command. Every one of briar's eight findings and five unprobed classes fails either the character-class test or the head-token test, so none can produce a proof — unreachable by construction rather than handled one at a time.
+  - **Two lists, opposite failure directions, and that is the whole safety argument.** `SHELL_INSPECTION_COMMANDS` misses cost one reroute message on a command that only read; the retired `SHELL_WRITE_COMMANDS` misses cost a silent write. Membership asks whether a command is read-only on plain operands with no in-place mode; `sed` and `git` are decided per call rather than by membership.
+  - **Accepted cost:** the arm over-denies. A pipeline, a `$VAR`, a `find`, or any binary off the list gets rerouted whenever it also names a routed path. The message names two performable remedies — move the edit to the file-edit tool, or respell the read as a plain `cat`/`head`/`grep` — and deliberately names no environment-variable escape, because `PRISM_HOOK_DENY_DISABLE=1` is read from the hook process's own environment and an inline assignment on the denied command never reaches it.
+  - **The one gap that survives:** a write whose target path never appears in the command text, because it was built from a variable or reached by `cd`-ing first. No scan over a command can see a path the command does not contain, and it is named in the ADR rather than left for a later round to rediscover.
+  - **Implementation guidance:** `parseUnprovenShellPaths` is the judgment; `resolveProvenReadPaths` is the proof; `checkInPlaceFlag` survives inside it. `checkPathIsRouted` becomes the batched `filterRoutedPaths` so a command's tokens cost one manifest load rather than one per token.
+  - **→ promoted to ADR-0072 (§ Decision, § Consequences) and `.prism/architect/_toolkit/install-layout.md` § Write gate.**
 
 ---
 
@@ -900,6 +909,13 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Approach** — verify Briar's two structural answers against the code before building on either, then one shared segment splitter rather than two patched arms.
   - **Close** — scope held. One deviation from the prescribed fix, deliberate: Briar's single shared boundary set would have split the read arm on `|`, which credits `cat doc | head -5` as a full read — the exact over-credit the allow-list exists to prevent — so the splitter takes the boundary set as an argument and the read arm passes only `;`. Her inert-`\n` finding checked out and her `:44` correction was honored. Two silent decisions named: the per-rule manifest entries the new `.prism/rules/**` glob subsumes were folded into it rather than left as redundant siblings, and ADR-0072 now *amends* rather than supersedes ADR-0071, because 0071's announce layer still ships. Edge recall: a pipe, a redirect, `&&`, `||`, and `&` each still refuse read credit inside their own segment; an unparseable segment costs only itself; an in-place `sed` in a later segment still yields its own target. Verification honesty: `pnpm prism:check` exit 0 at 805/805, and every claim of coverage above was mutation-confirmed rather than asserted — the whole-command safe-character test, the `filterDocsOnDisk` call, the argv ternary, the install registration, the `.path` fallback, the scope-id guard, the Cursor envelope, and the deny sentence each kill their intended cases and nothing else. Not proven: D8's live-host run, unchanged and outstanding at the merge gate.
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]
+  - **Intent** — stop repairing the write scanner instance by instance and narrow the contract so briar's eight findings and five unprobed classes become unreachable, not handled.
+  - **Ambiguity** — none load-bearing; assumed "provably simple" means provably a *read*, since the gate only ever needs to let a read past, and proving a write is the thing no parser can do.
+  - **Bounds** — PR 2D's file set. Untouched: the read arm and its credit behavior, `checkInPlaceFlag`, the conductor run log, D8, the merge and draft state.
+  - **Approach** — reuse the read arm as the proof rather than building a second notion of a safe command, so there is one character class and one segmenter in the file.
+  - **Close** — scope held. The dispatch carried a design call rather than a repair list, and the write parser is deleted rather than fixed; see Decision: The shell arm reroutes unless it can prove a command is a read. Two silent decisions named: `checkPathIsRouted` was renamed to the batched `filterRoutedPaths` because the new arm asks about every token in a command and a per-path entry point would re-read the manifest once per token, and the reroute message was rewritten because the old wording asserted a write on commands the arm now fires on without one. Edge recall: an empty, whitespace-only, or absent command yields no candidates; a command naming no routed path costs one manifest load and returns null; an unterminated quote swallows its separator, which matches what the shell itself does and costs a proof rather than granting one. Verification honesty: `pnpm prism:check` exit 0 at 812/812, and the generated corpus caught one real defect in my own first cut — `${OUT:-path}` fused the `-` onto the path so the candidate matched no route — which is the coverage claim doing its job rather than an assertion about it. Not proven: D8's live-host run, unchanged and outstanding at the merge gate.
+
 ## History
 
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Implemented PR 2E (E1–E5). `prism doctor` gained orphan-doc, dead-route, and hook-registration checks; new `scripts/ai-skills/ship-closure.ts` computes the ship surface as the dependency closure of its four roots and is wired into `pnpm prism:check`; the six files E4 reported outside that closure are now `excluded`. `pnpm prism:check` exit 0; see Decisions for the three closure-fidelity calls and the tracked-reference deferral.
@@ -983,6 +999,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D self-review. The critical and the write-arm major share one root cause — both arms tokenized a raw multi-line command instead of segmenting it first — and both are closed by a shared `splitShellSegments`; see the Review Issues entries for the per-finding fixes. The routing narrowing now re-routes `.prism/rules/**` and `.prism/skills/**` in all three tables, and the accepted-losses list is measured rather than estimated.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Corrected the `## Sessions` mutation note Reese refuted — removing the `PostCompact` no-session guard throws a swallowed `TypeError` rather than building an empty-prefix sweep. The arm is inert either way, so the survival conclusion is unchanged.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D round-2 review. Replaced the token-comparison segmenter with a quote-, escape-, and heredoc-aware character scan shared by both arms, and moved the read arm's safe-character test back over the whole command with `;` and line breaks admitted as separators. See Decision: Command segmentation is a character scan.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Narrowed the shell arm to refuse-unless-provable and deleted the write parser; closes all eight of briar's round-3 pass-2 findings and her five unprobed classes. Test coverage moved from enumerated forms to a generated shape corpus crossed with every out-of-class metacharacter. See Decision: The shell arm reroutes unless it can prove a command is a read.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -1971,90 +1988,97 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:286` (the unquoted `\\` branch of `splitShellSegments`)
 - **Problem:** the escape branch copies the *next* character into the token verbatim, so a backslash-newline continuation — which the shell deletes outright — becomes a literal newline inside the following token; under CRLF the backslash eats only the `\r` and the surviving `\n` cuts the segment, so the continued command's write target lands in a segment whose head token is the path itself and is never claimed.
 - **Class:** `an escape rule that copies the escaped character instead of interpreting the pair`
 - **Sweep:** three continuation spellings driven through `parseShellWriteTargets`, all against `tee` + a routed path. `tee \\` + `\n` + `.prism/plans/x.md` → `["\n.prism/plans/x.md"]` — a path no manifest route can match, so the gate does not fire. `tee \\` + `\r\n` + `.prism/plans/x.md` → `["\r"]` — the real target is gone completely. The indented form `tee \\` + `\n  .prism/plans/x.md` → `["\n",".prism/plans/x.md"]` survives, because the leading space ends the poisoned token before the path starts; that accident is the only reason the multi-line `sed -i` shape in the suite passes. CRLF is not a hypothetical input class here — `parseShellWriteTargets` already has a passing CRLF separator case, and `tee a.md\r\ntee b.md` resolves both targets correctly, so the same input carrying a continuation is reachable by the same route.
 - **Suggested fix:** treat `\\` immediately followed by `\n`, or by `\r\n`, as consuming both characters and contributing nothing to the token, before the general escape copy. Leave the general branch alone — it is correct for `tee out\;md`, verified → `["out;md"]`.
+- **Fix:** Fixed by construction — `\\` sits outside `SHELL_READ_SAFE_CHARACTERS`, so a continuation costs the command its proof and every routed path it names is rerouted. The candidate scan strips backslashes before matching, so the path survives the continuation intact. Covered by the `tee \\\n<path>` and `\\\r\n` rows of `everyUnprovableShape`.
 
 ### Quote characters are kept in the token and only stripped when they wrap the whole of it
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:281` (quote-open branch appends the quote), `:100` (`unquote`)
 - **Problem:** the scanner tracks quote state per character but writes the quote characters into the token anyway, then re-derives the unquoted form with `unquote`'s `/^(["'])(.*)\1$/`, which only matches a token wrapped end to end. Every partially-quoted path therefore reaches the route matcher with quote characters still in it and matches nothing.
 - **Class:** `information the scanner already has, discarded and then guessed at downstream`
 - **Sweep:** six quoting shapes driven through `parseShellWriteTargets`, all naming the same routed path. Adjacent splice `tee ".prism/plans"/x.md` → `[".prism/plans\"/x.md"]` with both quotes retained. Mid-token `tee .prism/'plans'/x.md` → `[".prism/'plans'/x.md"]`. Unterminated single `tee '.prism/plans/x.md` → `["'.prism/plans/x.md"]`; unterminated double the same shape. Nested `tee ".prism/plans/'x'.md"` → `[".prism/plans/'x'.md"]` — here the outer pair *is* stripped and the inner literal quotes correctly survive, so this one is right and is the control. Escaped quote inside a double quote `tee ".prism/plans/x\\".md"` → `[".prism/plans/x\\\".md"]`, retaining the backslash the shell removes. Controls that behave: `tee ".prism/plans/my plan.md"` and `tee .prism/plans/my\\ plan.md` both → `[".prism/plans/my plan.md"]`, and single-quoted `tee '.prism/plans/x\\.md'` correctly keeps its literal backslash.
 - **Suggested fix:** stop appending the quote character in the quote-open and quote-close branches, so the token carries the shell's own value and `unquote` becomes redundant on splitter output. This is a change to shared code both arms consume, so it needs its own check against the read arm — `parseSegmentReadTargets` calls `unquote` on operands and `SHELL_READ_SAFE_CHARACTERS` admits `"` and `'`, so the read arm's behavior should be re-measured rather than assumed unchanged.
+- **Fix:** Fixed by construction — the candidate scan strips quote characters from the raw command before matching, so an adjacent splice, a mid-token quote, and an unterminated quote all still contain the literal path. `unquote` is unchanged and still serves the read arm. Covered by `QUOTE_SPLICES`.
 
 ### Unquoted `$(…)` and backtick substitution containing a separator cuts the segment and loses the target, which is the opposite of the direction the JSDoc claims
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:203-206` (the JSDoc's "What it still does not model" list), `:267` (the separator branch)
 - **Problem:** the scanner has no substitution state, so a `;`, `&&`, or `|` inside an unquoted `$(…)` or backticks cuts a segment the shell would not cut, and the real write target — which follows the substitution — ends up in a segment whose head token is not a write command. The JSDoc lists this gap but describes it as "costing a missed cut rather than a wrong one"; measured, it is a *spurious* cut, and its cost is a missed real write.
 - **Class:** `a documented gap whose stated failure direction is inverted, in a design that rests on knowing which way each gap fails`
 - **Sweep:** four substitution shapes. `tee $(echo a; echo b)/.prism/plans/x.md` → `["$(echo","a"]`, routed path gone. Backtick equivalent → `["`echo","a"]`, same. `echo hi > $(pwd; :)/.prism/plans/x.md` → `["$(pwd"]`, same. Bounded by quoting: `tee ".prism/plans/$(a; b)x.md"` and the single-quoted twin both return the full token intact, so the break needs the substitution to be *unquoted*, which is why this is Minor and not Major — and `mkdir -p $(dirname x; true) && tee .prism/plans/x.md` survives because the `&&` cut happens to land after the damage. Substitution without a separator is unaffected in either arm.
 - **Suggested fix:** the code gap is a legitimate thing to leave open at this narrowness. The JSDoc line is not — correct it to say that an unquoted substitution containing a separator produces an extra cut and can drop a real write target, so the next reader weighing whether to close it knows it is on the unsafe side of the ledger.
+- **Fix:** Fixed — the code gap stays open and is now unreachable (`$` and `` ` `` are outside the character class both callers test first), and `splitShellSegments`' JSDoc gap list states the correct failure direction for each of its two remaining gaps.
 
 ### An indented delimiter ends a plain `<<` heredoc that bash would not end, and the remaining body is parsed as commands
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:371` (`skipHeredocBodies`, the `.trim()` comparison)
 - **Problem:** the terminator test trims every body line before comparing it to the delimiter, which is `<<-`'s rule applied unconditionally — a plain `<<` heredoc whose body contains an indented copy of its own delimiter terminates there, and every remaining body line is handed to the segmenter as commands.
 - **Class:** `one form's relaxation applied to the strict form it was meant to sit beside`
 - **Sweep:** five heredoc bodies driven through `parseShellWriteTargets`. `tee .prism/plans/x.md <<'E'` with a body of `  E` then `tee .prism/plans/GHOST.md` then `E` → `[".prism/plans/x.md",".prism/plans/GHOST.md"]` — the second target is document text, not a write. The redirect spelling of the same shape yields `.prism/rules/GHOST.md` the same way, so the leak is not specific to `tee`. It needs the post-termination text to itself parse as a write: the same body with `rm -rf .prism/plans/GHOST.md` yields only the real target, which is why this is Minor rather than Major. Controls, all correct: `<<-E` with a tab-indented terminator terminates as it should and the following real command is still claimed; a body line exactly equal to the delimiter with no indentation terminates, which is bash's behavior too, not a bug; and a well-terminated body containing `a; b && c | d` or `echo hi > /etc/passwd` yields nothing extra.
 - **Suggested fix:** compare the raw line to the delimiter for `<<`, and only trim for `<<-`. `readHeredocDelimiter` at `:328` already detects the `-` but discards it — carry that bit onto `pendingHeredocs` alongside the delimiter so `skipHeredocBodies` can honor it. Note `<<-` strips leading *tabs* only, not spaces, so `.trim()` is not the right test for that arm either.
+- **Fix:** Fixed by construction — `<` is outside the character class, so no heredoc reaches the proof, and the redirect target is rerouted along with every other path the command names. Covered by the two heredoc rows of `everyUnprovableShape`.
 
 ### `#` is not a comment, so every word of a trailing comment becomes a write target
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:240` (the `splitShellSegments` character loop has no `#` case), `:475` (the operand-claiming branch of `parseSegmentWriteTargets`)
 - **Problem:** the scanner treats `#` as an ordinary character, so on a `tee`/`sed -i` segment every word after a trailing comment is claimed as a written path — and a comment that names a routed doc produces a reroute for a file the command never touches.
 - **Class:** `a shell metacharacter absent from a scanner that models the others`
 - **Sweep:** `tee .prism/plans/x.md # see .prism/rules/foo.md` → `[".prism/plans/x.md","#","see",".prism/rules/foo.md"]`. The last element is a real routed path and denies on it. Bounded to the trailing-comment position: `tee .prism/plans/x.md\n# see .prism/rules/foo.md` → `[".prism/plans/x.md"]`, because the line break cuts first and the comment line's head token is `#`, which is in neither command set. The `>`-redirect spelling is unaffected — only the `tee`/`sed -i` operand loop claims bare words. This is the same shape as the junk-operand trade the write arm's JSDoc already accepts at `:409` ("a non-flag operand that is not a path … rides along as a target no manifest route can match") — the difference is that a comment can and does contain a path a route *does* match, so the stated reason for accepting the trade does not hold here.
 - **Suggested fix:** cut the segment at an unquoted `#` that begins a token, the same way the loop already cuts at a separator. Naming this in the JSDoc's gap list instead is the cheaper option but a worse one — the gap list's other members cannot produce a matching path, and this one can.
+- **Fix:** Fixed by construction — `#` is outside the character class, so a trailing comment costs the command its proof. A routed path named in the comment now reroutes alongside the real target, which is the safe direction. Covered by the `tee <path> # see the note` row.
 
 ### `<<<` leaves a stray `<` write target
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:275` (the heredoc guard's `command[index + 2] !== "<"` arm)
 - **Problem:** the guard correctly declines to treat `<<<` as a heredoc, but the first two `<` characters have already been consumed by the guard's own lookahead path on the next iteration, leaving a one-character `<` token that the operand loop claims as a write target.
 - **Class:** `a guard that declines a construct without rewinding what it looked at`
 - **Sweep:** `tee .prism/plans/x.md <<<"hi"` → `[".prism/plans/x.md","<"]`. Harmless in effect — `<` matches no manifest route, so no deny fires — which is why this is recorded at Minor and could equally sit under `## Cleanup Items`. Recorded as a finding rather than cleanup because it is evidence the `<`-handling arm has an off-by-one the other heredoc cases do not exercise, and the next edit to that guard should know.
 - **Suggested fix:** consume the whole `<<<` run in the guard and emit nothing, matching how the `<<` arm drops its own introducer.
+- **Fix:** Fixed by construction — `<` is outside the character class. Covered by the `tee <path> <<<"hi"` row.
 
 ### A command prefix hides the write command from the head-token test, and grouping parens ride along into the path
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:461` (`parseSegmentWriteTargets`, the `segmentCommand === null` branch)
 - **Problem:** the segment's *first* token is taken as its command, so anything that legitimately precedes a command — `sudo`, `env`-style `VAR=value` assignments, `nohup`, `time`, `command`, or a `(`/`{` group opener — becomes the head token, `segmentWrites` stays false, and a real `tee` or `sed -i` write is never claimed; separately, a group's closing `)` is not a scanner boundary, so it fuses onto the last operand of a redirect inside the group.
 - **Class:** `a positional assumption about where a command name sits, in a grammar that allows prefixes`
 - **Sweep:** thirteen prefix shapes driven through `parseShellWriteTargets`, every one naming the same routed path. Eight return `[]` — no target, no deny, gate silent: `(tee .prism/plans/x.md)`, `{ tee .prism/plans/x.md; }`, `sudo tee …`, `FOO=bar tee …`, `sudo sed -i 's/a/b/' …`, `echo hi | sudo tee …`, `nohup tee …`, `time tee …`. Two controls behave: bare `tee .prism/plans/x.md` and `echo hi | tee .prism/plans/x.md` both → `[".prism/plans/x.md"]`, so the pipeline cut itself is fine and the prefix is the whole cause. The `>`-redirect spelling is *not* affected by prefixes, because the `>` branch runs before the head-token test — `{ echo hi > .prism/plans/x.md; }` and `FOO=bar echo hi > .prism/plans/x.md` both resolve correctly. The one redirect shape that does break is the paren group: `(echo hi > .prism/plans/x.md)` → `[".prism/plans/x.md)"]`, a path with a trailing paren that matches no route. None of this class appears in the write arm's documented gap list at `:405`, which names word-prefixed redirects, interpreters, and `cp`/`mv`/`dd` — so a reader auditing what the gate misses would not find it.
 - **Suggested fix:** two independent changes. For the prefix class, skip leading tokens that cannot be a command name before fixing `segmentCommand` — a `VAR=value` assignment, and a small set of transparent prefixes (`sudo`, `env`, `command`, `nohup`, `time`) — or, if that list is judged unbounded, state the gap in the JSDoc so it is a known miss rather than an invisible one. For the paren, treat unquoted `(` and `)` as token boundaries in `splitShellSegments` the way `;` already is. Weigh the prefix list against likelihood before expanding it: `sudo tee` is the common idiom in general shell use but rare against a `.prism/` path, while `(`/`{` grouping and `VAR=value` are what a model composing a multi-part command actually emits.
+- **Fix:** Fixed by construction — a prefix cannot make a command *provable*, and only a proof clears a path. `sudo`, `env`-style assignments, `nohup`, `time`, and `command` are generated against `tee`, `tee -a`, and `sed -i` in `COMMAND_PREFIXES`; the paren and brace groups are outside the character class. The write arm's gap list at `:405` is gone with the parser it described.
 
 ### The separator generator closes the axis that already failed and leaves the axes that failed today enumerated
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hook-gate.test.ts:1722` (`everySeparatorSpelling`)
 - **Problem:** the generator is separator × spacing, and only the spacing half is closed by construction — spacing is a genuine closed set of four, but the separator half is still a hand-written array of seven literals, so the enumeration moved up one level rather than going away.
 - **Class:** `a generator that parameterizes the axis that already broke and hardcodes the rest`
 - **Sweep:** the deeper problem is not the separator array's contents but its breadth. `splitShellSegments` now takes seven kinds of input that change segmentation — separators, quoting, escapes, heredocs, command substitution, comments, and command prefixes — and the generator covers exactly one of them, while a green run of it reads as "segmentation is covered." It is not: this pass broke five root causes across four of the six uncovered kinds, all behind 811/811. The JSDoc at `:1714` states the principle exactly right — "a list is only as good as whoever remembers to extend it, and the omission is invisible in a green suite" — and then the array one line below is that list. The assertion shape is fine: one expected value across all 28 spellings is correct for this axis, and the depth is not the weakness.
 - **Suggested fix:** the honest answer is that no generator over separator spellings can cover this, because the scanner's input space is no longer one axis. Add a table-driven case set over the other six kinds — one row per shape with its expected targets — and let each finding above contribute its repro as a row. Generating the separator spellings is still worth keeping; it just should not be read as segmentation coverage, and the JSDoc should say which axis it closes rather than implying it closed the problem.
-
+- **Fix:** Fixed — the generator is replaced. `everyUnprovableShape` generates across every input kind that has broken a hand-rolled parser plus the five unprobed classes, and `CHARACTERS_OUTSIDE_THE_CLASS` crosses every metacharacter with three positions, all asserting one outcome. The separator × spacing axis survives as a matched pair (a write after a separator loses the proof; two reads across it keep it) so a splitter that cut nowhere cannot pass.
 ### Angle Coverage — PR 2D round 3 pass 2, write-arm scanner fuzz
 
 - **Runtime behavior** — `swept` — 7 items enumerated, 7 verdicts, over 51 inputs driven through the exported `parseShellWriteTargets`/`parseShellReadTargets`. Separators (clean, control); quoting (defect: retained quote characters); escapes (defect: line continuation); heredocs (defect: unconditional trim; `<<-`, unterminated bodies, two-heredoc, and delimiter-as-substring all clean); command substitution (defect: unquoted separator cuts, quoted forms clean); comments (defect: `#` not modeled); command prefixes (defect: head-token displacement, plus the paren fusing onto a redirect operand). `checkInPlaceFlag` swept separately across seven `sed` spellings with no false positive or negative found — that arm is correct.
@@ -2067,21 +2091,21 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 - **Docs impact** — `n/a — no doc surface in this pass's scope.`
 - **Accessibility** — `n/a — no UI in the pinned range.`
 
-**Unprobed, handed to clove as gaps rather than findings:** interpreter-mediated writes (`python -c`, `node -e`), `cp`/`mv`/`dd`, process substitution `>(…)`, `exec` redirections, and arithmetic/parameter expansion containing separators. Each is plausibly reachable; none was driven this pass.
+**Unprobed, handed to clove as gaps rather than findings:** interpreter-mediated writes (`python -c`, `node -e`), `cp`/`mv`/`dd`, process substitution `>(…)`, `exec` redirections, and arithmetic/parameter expansion containing separators. Each is plausibly reachable; none was driven this pass. **All five are closed by the contract narrowing** — each fails either the character-class test or the head-token test, so none can produce a proof, and each is now a generated row in `everyUnprovableShape`.
 
 ---
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [ ] No critical or major issues — **four majors open from round 3 pass 2**: three missed-write scanner defects (line continuation, retained quote characters, command-prefix head-token displacement) and the test-efficacy Major on the separator generator. Round 1's and round 2's findings remain `fixed` and independently verified.
+- [x] No critical or major issues — round 3 pass 2's four majors and four minors are all `fixed`, seven of them by construction rather than by repair. Round 1's and round 2's findings remain `fixed` and independently verified.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — the separator × spacing generator closes one of the seven input kinds `splitShellSegments` now takes; five root causes shipped behind a green 811. Needs a table-driven set over quoting, escapes, heredoc terminator strictness, substitution, comments, and command prefixes.
+- [x] Tests written for new logic and edge cases — the enumerated write-form cases are replaced by `everyUnprovableShape` (every input kind that has broken a hand-rolled parser, plus the five unprobed classes) crossed with `CHARACTERS_OUTSIDE_THE_CLASS` × three positions, all asserting one outcome; `everyProvableRead` is the enumerated hole, enumerated because it is the closed set the arm claims.
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-20 (`pnpm prism:build && pnpm prism:check` exit 0, 811/811, at the round-2 repair head)
-- [ ] PR description up to date — needs a line on the round-2 segmenter rewrite
+- [x] Build passes — last run: 2026-08-20 (`pnpm prism:check` exit 0, 812/812)
+- [ ] PR description up to date — needs a line on the round-2 segmenter rewrite and the round-3 contract narrowing
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
 
-**Last updated:** 2026-08-20 (round 3 pass 2)
+**Last updated:** 2026-08-20 (round 3 pass 2 repairs)
