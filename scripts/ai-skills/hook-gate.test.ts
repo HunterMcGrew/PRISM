@@ -27,6 +27,7 @@ import {
 } from "./hooks/architect-route.mjs";
 import {
 	GIT_INSPECTION_SUBCOMMANDS,
+	GIT_TREE_SAFE_SUBCOMMANDS,
 	parseShellReadTargets,
 	parseUnprovenShellPaths,
 	SHELL_INSPECTION_COMMANDS,
@@ -1215,6 +1216,22 @@ function writePayload(
 	});
 }
 
+/**
+ * Every tool name the claude harness classifies `write`, read off its own
+ * table rather than restated here.
+ *
+ * Not the tautology the flag axis would be. The table states which names are
+ * writes; `resolveListedToolKind` and the deny arm decide what happens to
+ * one. Asserting the arm denies on every name the table lists is a claim
+ * about the second half, checkable against the first — patching the arm so
+ * `Edit` resolves to `read` breaks these rows while leaving the table intact.
+ * Before this was derived, `Edit` appeared only in negative rows and that
+ * patch left the suite green with half the gated edit surface dead.
+ */
+const WRITE_TOOL_NAMES = Object.entries(HARNESSES.claude.toolKinds)
+	.filter(([, kind]) => kind === "write")
+	.map(([name]) => name);
+
 /** The deny envelope's reason text, or `null` when the call was allowed. */
 function denyReason(result: string | null): string | null {
 	if (result === null) {
@@ -1227,12 +1244,22 @@ function denyReason(result: string | null): string | null {
 }
 
 // Leg 1 — the deny fires, and names both the doc and the command that clears it.
-test("runPreToolUseArm: a write to a routed path with unread docs is denied, naming the doc and the cat remedy", async () => {
+test("runPreToolUseArm: every write tool on a routed path with unread docs is denied, naming the doc and the cat remedy", async () => {
+	assert.ok(
+		WRITE_TOOL_NAMES.length > 1,
+		"a single-entry table would make the loop below a one-verb test wearing a loop"
+	);
+
+	for (const toolName of WRITE_TOOL_NAMES) {
 	await withTempRepo(async (repoRoot) => {
 		const { target } = await seedGateRepo(repoRoot);
 
 		const reason = denyReason(
-			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target))
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, target, { tool_name: toolName })
+			)
 		);
 
 		// The whole message, not a substring of it. The instruction between
@@ -1243,9 +1270,10 @@ test("runPreToolUseArm: a write to a routed path with unread docs is denied, nam
 			reason,
 			"You're editing `src/index.ts`. Read its governing docs in full first, then retry:\n" +
 				`cat .prism/architect/${GATE_DOC}`,
-			"a message naming a doc without naming how to read it is the unsatisfiable-gate shape"
+			`${toolName} is a write in the harness table, so it earns the same deny`
 		);
 	});
+	}
 });
 
 // Leg 2 — seeded state clears it.
@@ -1324,11 +1352,19 @@ test("runPreToolUseArm: a cat of the named doc clears the deny end to end", asyn
 test("runPreToolUseArm: positive control — with the deny broken, leg 3 fails", async () => {
 	process.env.PRISM_HOOK_DENY_DISABLE = "1";
 	try {
+		// Pinned to the assertion the broken deny actually trips. A bare
+		// string here is a message, not a matcher, so the control passed on
+		// any rejection at all — a `mkdtemp` failure included, which would
+		// have made it green while testing nothing.
 		await assert.rejects(
 			assertRemedyClearsTheGate((docPath) => ({
 				tool_name: "Read",
 				tool_input: { file_path: docPath },
 			})),
+			{
+				name: "AssertionError",
+				message: "the write is denied before the remedy",
+			},
 			"a leg that still passes with the deny disabled is not testing the deny"
 		);
 	} finally {
@@ -1788,6 +1824,7 @@ function everyUnprovableShape(target: string): string[] {
 	}
 
 	shapes.push(...everyForgedProof(target));
+	shapes.push(...everyGitTreeWrite(target));
 
 	return shapes;
 }
@@ -1877,6 +1914,78 @@ function everyForgedProof(target: string): string[] {
 		`git -C /tmp diff ${target}`,
 	];
 }
+
+/**
+ * `git` spellings that reach a working-tree file, or a program, and so must
+ * keep naming their path.
+ *
+ * The counterweight to `GIT_TREE_SAFE_SUBCOMMANDS`. That set exists because
+ * `git commit -m "…AGENTS.md…"` names a routed path in prose and denied with
+ * no reachable remedy; these rows are what stop the set from widening into
+ * the subcommands that genuinely write, and what pin the flags left off
+ * `GIT_TREE_SAFE_FLAGS` on purpose.
+ */
+function everyGitTreeWrite(target: string): string[] {
+	return [
+		`git checkout ${target}`,
+		`git restore ${target}`,
+		`git apply ${target}`,
+		`git stash push ${target}`,
+		`git clone repo ${target}`,
+		`git merge ${target}`,
+		`git commit --template ${target}`,
+		`git commit -t ${target}`,
+		`git commit -C ${target}`,
+		`git -c core.pager=${target} commit -m msg`,
+		`git -p commit -m ${target}`,
+		`git push --receive-pack=${target} origin`,
+		// The tree-safe head token vouches for its own segment only.
+		`git commit -m msg; tee ${target}`,
+	];
+}
+
+/**
+ * Every `git` spelling that writes nothing a manifest route can match, so its
+ * path-shaped tokens are safe to drop.
+ *
+ * Derived over the subcommand axis for the same reason `everyProvableRead`
+ * is: adding a subcommand to the set cannot land without a row asserting what
+ * the addition claims. The hand-written tail carries the commit spellings
+ * `.prism/rules/git-conventions.md` mandates, which is the shape whose denial
+ * had no remedy.
+ */
+function everyTreeSafeGitCommand(target: string): string[] {
+	const shapes: string[] = [];
+
+	for (const subcommand of GIT_TREE_SAFE_SUBCOMMANDS) {
+		shapes.push(`git ${subcommand} ${target}`);
+	}
+
+	shapes.push(
+		`git commit -m "chore: update ${target}"`,
+		`git commit -q -m "PRISM-1: rewrite ${target}"`,
+		`git commit -am "fix ${target}"`,
+		`git commit --amend --no-edit -m "${target}"`,
+		`git commit -F ${target}`,
+		`git add ${target} docs/`,
+		`git tag -a v1 -m "see ${target}"`,
+		`git commit -m msg; git push -q`
+	);
+
+	return shapes;
+}
+
+test("parseUnprovenShellPaths: a git command that writes no working-tree file clears every path it names", () => {
+	for (const command of everyTreeSafeGitCommand(SHELL_ROUTED_PATH)) {
+		assert.deepEqual(
+			parseUnprovenShellPaths(command).filter(
+				(candidate) => candidate === SHELL_ROUTED_PATH
+			),
+			[],
+			`${JSON.stringify(command)} writes the index or a ref, never the working tree`
+		);
+	}
+});
 
 test("parseUnprovenShellPaths: every shape no proof covers keeps naming its path", () => {
 	for (const command of everyUnprovableShape(SHELL_ROUTED_PATH)) {

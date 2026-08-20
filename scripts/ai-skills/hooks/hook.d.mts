@@ -13,6 +13,8 @@ export const SHELL_INSPECTION_COMMANDS: Map<string, Set<string>>;
 
 export const GIT_INSPECTION_SUBCOMMANDS: Set<string>;
 
+export const GIT_TREE_SAFE_SUBCOMMANDS: Set<string>;
+
 export function parseUnprovenShellPaths(command: string | undefined): string[];
 
 export function resolveTargets(

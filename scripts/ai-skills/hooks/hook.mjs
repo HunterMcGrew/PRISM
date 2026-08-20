@@ -190,7 +190,7 @@ function parseSegmentReadTargets(tokens) {
  * every unquoted `;`, `&&`, `||`, `|`, `&`, and line break.
  *
  * Both callers run on this rather than tokenizing the raw command
- * themselves. `resolveProvenReadPaths` needs the cuts so one segment's
+ * themselves. `resolveProvenSafePaths` needs the cuts so one segment's
  * read-only head token cannot vouch for the next command's operands; the read
  * detector needs them so a remedy pasted as several lines into one call
  * credits each line. A shared splitter is what keeps those two answers from
@@ -451,7 +451,7 @@ const GREP_INERT_FLAGS =
  * data operand, because its language has no write or exec builtin and so
  * supplies nothing `sed`'s `w` does;
  * `git` reads or writes depending on its subcommand and is decided per call
- * by `checkSegmentOnlyReads`.
+ * by `checkSegmentWritesNoFile`.
  *
  * @type {Map<string, Set<string>>}
  */
@@ -531,6 +531,62 @@ const GIT_INERT_FLAGS = new Set(
 	).split(/\s+/)
 );
 
+/**
+ * `git` subcommands that write only inside `.git/`, never a working-tree file.
+ *
+ * Separate from `GIT_INSPECTION_SUBCOMMANDS` because these are not reads —
+ * they write the index, a ref, or a remote. What they share with a read is
+ * the only property this arm needs: no spelling of them writes a file a
+ * manifest route can match, so every path-shaped token they name is safe to
+ * drop.
+ *
+ * The arm needs the distinction because `git commit -m "…"` carries its
+ * message as a plain operand, and `scanPathShapedTokens` cannot tell a
+ * filename mentioned in prose from a path the command operates on. Without
+ * this set every commit whose subject names a routed path denies, and none of
+ * `formatShellRerouteMessage`'s remedies reaches it — a commit is not an edit
+ * to redo with a file-edit tool, and it is not a read to respell.
+ *
+ * The failure direction is unchanged by admitting them. A subcommand wrongly
+ * listed here still cannot write a routed path, because a subcommand that
+ * writes the working tree — `checkout`, `restore`, `apply`, `stash`, `clone`,
+ * `merge` — is absent, and each of those is a working-tree write the gate is
+ * meant to see.
+ *
+ * @type {Set<string>}
+ */
+export const GIT_TREE_SAFE_SUBCOMMANDS = new Set([
+	"commit",
+	"add",
+	"push",
+	"fetch",
+	"tag",
+	"remote",
+]);
+
+/**
+ * Flags the tree-safe subcommands accept without naming an output file or
+ * running another program.
+ *
+ * Absent on purpose: `--upload-pack`, `--receive-pack`, and `--exec` each
+ * name a program git runs across a transport; `-c` sets arbitrary config
+ * before the subcommand, `core.pager` included; `-p` is `--paginate` at that
+ * same position, the two-position ambiguity `GIT_INERT_FLAGS` documents for
+ * `-C`; `-t`/`--template` names a path git hands to the editor. `--no-verify`
+ * is absent because `.prism/rules/git-conventions.md` forbids it, so listing
+ * it would widen the proof for a spelling nothing should use.
+ *
+ * @type {Set<string>}
+ */
+const GIT_TREE_SAFE_FLAGS = new Set(
+	(
+		"-# -m -F -a -q -v -n -f -u -d -s -S -e " +
+		"--message --file --all --quiet --verbose --dry-run --force --amend " +
+		"--no-edit --allow-empty --allow-empty-message --set-upstream --delete " +
+		"--annotate --signoff --porcelain --tags --patch --update --intent-to-add"
+	).split(/\s+/)
+);
+
 const PATH_SHAPED_RUN = /[\w./@~+-]+/g;
 
 /**
@@ -575,30 +631,40 @@ function scanPathShapedTokens(command) {
 }
 
 /**
- * True when a segment names a command that reads its operands and writes
- * nothing, carrying only flags that command cannot write or execute through.
+ * True when a segment names a command that cannot write a working-tree file,
+ * carrying only flags that command cannot write or execute through.
  *
  * Both halves are required. The command test alone certified `sort -o <path>`
- * and `git diff --output <path>` as reads, because the write mode lived in a
+ * and `git diff --output <path>` as safe, because the write mode lived in a
  * flag the proof skipped rather than in the head token.
  *
- * `git` is decided here rather than by list membership because it reads or
- * writes depending on its subcommand — `git checkout` overwrites files while
- * `git diff` does not. A `git` whose subcommand is not stated (only flags) is
- * not provable.
+ * Most of the surface is read-only commands, where "writes no file" and
+ * "only reads" are the same claim. `git` is the exception, and it is decided
+ * here rather than by list membership because it does three different things
+ * depending on its subcommand: `git diff` reads, `git commit` writes `.git/`
+ * only, and `git checkout` overwrites working-tree files. The first two are
+ * safe for opposite reasons and the third is the write this arm exists to
+ * catch. A `git` whose subcommand is not stated (only flags) is not provable.
  *
  * @param {string[]} tokens
  * @returns {boolean}
  */
-function checkSegmentOnlyReads(tokens) {
+function checkSegmentWritesNoFile(tokens) {
 	const [name, ...args] = tokens;
 
 	if (name === "git") {
 		const subcommand = args.find((arg) => !arg.startsWith("-"));
+		if (subcommand === undefined) {
+			return false;
+		}
+
+		if (GIT_INSPECTION_SUBCOMMANDS.has(subcommand)) {
+			return checkFlagsAreInert(args, GIT_INERT_FLAGS);
+		}
+
 		return (
-			subcommand !== undefined &&
-			GIT_INSPECTION_SUBCOMMANDS.has(subcommand) &&
-			checkFlagsAreInert(args, GIT_INERT_FLAGS)
+			GIT_TREE_SAFE_SUBCOMMANDS.has(subcommand) &&
+			checkFlagsAreInert(args, GIT_TREE_SAFE_FLAGS)
 		);
 	}
 
@@ -664,9 +730,10 @@ function checkFlagsAreInert(args, inertFlags) {
  *
  * Two steps. First, every path-shaped token in the raw command is a
  * candidate, whatever position it sits in. Second, a candidate is dropped
- * only when the command is *provably* a set of read-only commands and the
- * candidate is one of their operands. Anything the proof does not cover
- * stays, and the caller reroutes it if a manifest route matches.
+ * only when the command is *provably* a set of segments that write no
+ * working-tree file, and the candidate is one of their operands. Anything the
+ * proof does not cover stays, and the caller reroutes it if a manifest route
+ * matches.
  *
  * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
  * `splitShellSegments`, and it is all-or-nothing over the whole command: one
@@ -693,36 +760,37 @@ export function parseUnprovenShellPaths(command) {
 		return [];
 	}
 
-	const provenReads = resolveProvenReadPaths(command);
-	return candidates.filter((candidate) => !provenReads.has(candidate));
+	const provenSafe = resolveProvenSafePaths(command);
+	return candidates.filter((candidate) => !provenSafe.has(candidate));
 }
 
 /**
- * The operands of a command proven to consist only of read-only segments, or
- * an empty set when no such proof holds.
+ * The operands of a command proven to consist only of segments that write no
+ * working-tree file, or an empty set when no such proof holds.
  *
  * Distinct from `parseShellReadTargets`, which answers a different question
  * for the announce arm — which paths were read, and whether the read
  * delivered the whole file. This one asks only whether a mention is safe to
- * ignore, so it takes every operand of a read-only segment and grades none
- * of them.
+ * ignore, so it takes every operand of a safe segment and grades none of
+ * them. That is why a `git commit` message body clears here and earns no read
+ * credit anywhere: safe to ignore is not the same claim as read.
  *
  * @param {string | undefined} command
  * @returns {Set<string>}
  */
-function resolveProvenReadPaths(command) {
+function resolveProvenSafePaths(command) {
 	if (typeof command !== "string" || !SHELL_READ_SAFE_CHARACTERS.test(command)) {
 		return new Set();
 	}
 
 	const operands = new Set();
 	for (const tokens of splitShellSegments(command)) {
-		if (!checkSegmentOnlyReads(tokens)) {
+		if (!checkSegmentWritesNoFile(tokens)) {
 			return new Set();
 		}
 
 		for (const token of tokens.slice(1)) {
-			// Safe to skip only because `checkSegmentOnlyReads` has already
+			// Safe to skip only because `checkSegmentWritesNoFile` has already
 			// confirmed every flag in this segment is on its command's inert
 			// list, so no flag reaching here names an output file.
 			if (token.startsWith("-") && token !== "-") {
@@ -945,12 +1013,18 @@ export function formatDenyMessage(relativePath, unreadDocs) {
  * a surface the gate can actually check rather than told to satisfy a
  * condition through a channel that cannot report satisfying it.
  *
- * Both of its remedies are performable, which matters because the arm fires
- * on commands that only read as well as on writes: an edit moves to the
- * file-edit tool, and a read the arm could not prove is rewritten in a form
- * it can. Naming an environment variable as the third way out would be a
- * false remedy — the deny switch is read from the hook process's own
- * environment, which a command's inline assignment never reaches.
+ * All three of its remedies are performable, which matters because the arm
+ * fires on commands that only read, and on commands that neither read nor
+ * write the path at all, as well as on writes: an edit moves to the file-edit
+ * tool, a read the arm could not prove is rewritten in a form it can, and a
+ * path named only as prose inside a message or body moves into a file passed
+ * by path. The third one exists because the first two are unreachable for a
+ * `git commit -m` whose subject names a routed doc — there is no edit to redo
+ * and no read to respell, which is the unsatisfiable shape this gate is built
+ * to avoid rather than a louder version of the over-refusal ADR-0072 accepts.
+ * Naming an environment variable as a way out would be a false remedy — the
+ * deny switch is read from the hook process's own environment, which a
+ * command's inline assignment never reaches.
  *
  * @param {string} relativePath
  * @returns {string}
@@ -961,7 +1035,9 @@ export function formatShellRerouteMessage(relativePath) {
 		`The gate clears a shell command only when it can prove the command is a read, so everything else counts as a write — ` +
 		`redo this edit with your file-edit tool so the gate can check its prerequisites. ` +
 		"If the command only reads, spell it as a plain `cat`, `head`, or `grep` with no pipe, " +
-		"redirect, substitution, or unusual flag — the proof covers the whole command, not just its first word."
+		"redirect, substitution, or unusual flag — the proof covers the whole command, not just its first word. " +
+		"If the path is only prose inside a message or body, move that text into a file and pass it by path " +
+		"(`git commit -F <file>`, `gh pr create --body-file <file>`), or leave the path out of the message."
 	);
 }
 
