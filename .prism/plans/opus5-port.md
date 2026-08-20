@@ -2221,10 +2221,10 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — round 3 pass 2's four majors and four minors are all `fixed`, seven of them by construction rather than by repair. Round 1's and round 2's findings remain `fixed` and independently verified.
+- [ ] No critical or major issues — **round 4 opened four Criticals and three Majors, all `open`.** Six forged read-only proofs on commands that write (`sort -o`, `uniq <in> <out>`, `xxd <in> <out>`, `git diff|log|show --output`, `sed 'w <path>'`, `sed 's///w <path>'`), each confirmed writing against a real filesystem, plus one confirmed arbitrary-execution vector (`rg --pre`). Round 3 pass 2's findings remain `fixed`; rounds 1 and 2 remain `fixed` and independently verified.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — the enumerated write-form cases are replaced by `everyUnprovableShape` (every input kind that has broken a hand-rolled parser, plus the five unprobed classes) crossed with `CHARACTERS_OUTSIDE_THE_CLASS` × three positions, all asserting one outcome; `everyProvableRead` is the enumerated hole, enumerated because it is the closed set the arm claims.
+- [ ] Tests written for new logic and edge cases — the generated half holds: `everyUnprovableShape` crossed with `CHARACTERS_OUTSIDE_THE_CLASS` × three positions, all asserting one outcome. `everyProvableRead` is a sample rather than the closed set it is described as — it names 12 of 32 inspection commands and 2 of 9 git subcommands, and every round-4 leak sits in the uncovered remainder. Derive it from the constants (round 4 Minor).
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-20 (`pnpm prism:check` exit 0, 812/812)
 - [ ] PR description up to date — needs a line on the round-2 segmenter rewrite and the round-3 contract narrowing
@@ -2232,4 +2232,4 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
 
-**Last updated:** 2026-08-20 (round 3 pass 2 repairs)
+**Last updated:** 2026-08-20 (round 4 false-proof hunt — `pnpm prism:check` re-run green after the plan write, tree clean)
