@@ -825,6 +825,13 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (eli, dispatched — PR 2D doc-staleness audit)
+  - **Intent** — reconcile every prose home of the write gate, and the list-shaped inventories PR 2D moved, with what the shipped code and manifests now do.
+  - **Ambiguity** — none load-bearing; assumed "docs and their seed twins" covers `.prism/architect/**` prose, the ADR index, `docs/**`, and the generated platform mirrors.
+  - **Bounds** — docs and seed twins only. Untouched: runtime, tests, the manifest JSONs, the conductor run log, the draft flag, the merge.
+  - **Approach** — read the shipped runtime and manifests as ground truth first, diff each prose home against it, edit canonical and let `prism:build` carry the mirrors; hand-edit the one curated twin.
+  - **Close** — scope held. Six stale spots fixed across five files; `pnpm prism:build && pnpm prism:check` exit 0. One claim verified against code rather than the ADR (`findCatchAllKeys` in `verify-manifest-coverage.ts`) before it shipped. `install-adr-gate` caught an ADR-0072 citation I added to a file that mirrors into the consumer seed, where that ADR is excluded — the link came back out and the reason stayed. Left alone and reported rather than edited: `install-layout.md` § seed-curation claims the write-deny gate forces a `writing-a-rule.md` read before a rule edit, which holds in the consumer stub but not in PRISM's own manifest, where `.prism/rules/**` routes to `spec-editing.md` alone — pre-existing, not introduced by 2D.
+
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D round 2 repair)
   - **Intent** — close briar's two round-2 majors and the minor at the level of the class, so the segmenter stops producing defects of one shape a third time.
   - **Ambiguity** — none load-bearing; assumed the prescribed regex split is a proposal to verify rather than a specification, per the dispatch, and verified it — it regresses a quoted `sed` script and was replaced.
@@ -2238,6 +2245,68 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
 - **Repo writing rules** — `swept` — `verdict-only`. The new JSDoc is why-first and tag-free; the two prose surfaces carry the quantifier defect recorded above, which is a `writing-voice.md` violation rather than a style nit.
 - **Security** — `swept` — `verdict-only`. Unchanged from round 2 in kind: the gate enforces self-imposed friction, not access, so a false proof costs enforcement rather than a boundary. `rg --pre` is the one finding that touches execution, and it grants nothing the model could not already do directly.
 - **Docs impact** — `swept` — 1 item enumerated, 1 verdict: `install-layout.md` § Write gate needs the same quantifier fix as the ADR, in the canonical file and its three mirrors.
+- **Accessibility** — `n/a — no UI in the pinned range.`
+
+---
+
+## Review Issues (PR 2D round 5 — narrow: does the flag map close the class? over `176f35c5..e5a1c602`, #470)
+
+Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proof still be forged against the per-command flag map, (2) is `everyProvableRead` genuinely derived, (3) does the spec now match. Answers: no forgeable write, derived over commands but not over flags, spec matches except one sentence.
+
+### Concurrent session is writing this worktree mid-review — `pnpm prism:check` is red
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `.prism/architect/_toolkit/business-layer.md`, `.prism/architect/_toolkit/install-layout.md`, `.prism/architect/_toolkit/spec-editing.md`, `.prism/spec/adrs/_toolkit/README.md`, `.prism/spec/adrs/_toolkit/0071-architect-context-read-hook.md`, `templates/install/.prism/architect/_toolkit/install-layout.md`
+- **Problem:** six files carrying substantive round-5 spec prose are uncommitted in the worktree, their `.claude`/`.cursor`/`.codex` mirrors were never regenerated, and `pnpm prism:check` fails at the `build.ts --check` stage naming nine out-of-sync mirrors plus two seed drifts.
+- **Class:** `run-state premise falsified mid-run`
+- **Sweep:** `git status -s` returned empty at session start and six modified paths ~8 minutes later. `ls -lT` puts the mtimes at 11:41:08, 11:41:13, 11:41:25, 11:41:39 and 11:42:09 against a wall clock of 11:42:20 — written seconds apart while this review was running, by a session that is not this one. This review issued no `Edit`, `Write`, or in-tree `sed`. The content is real work, not corruption: `business-layer.md` corrects a claim that a broader `.prism/**` route exists, `spec-editing.md` replaces a stale `**` catch-all reference with the ADR-0072 catch-all rejection, both `install-layout.md` copies add `PreToolUse` to the registration list, and the ADR README row and ADR-0071 cross-link are updated. It belongs to this PR and is stranded uncommitted with mirrors unbuilt.
+- **Suggested fix:** not this review's lane and deliberately untouched — outside the pinned `176f35c5..e5a1c602` range, and reviewers do not ship. Whoever owns the live session runs `pnpm prism:build` and commits all four surfaces together. The dispatch premise "worktree clean; `pnpm prism:check` exit 0" was true at dispatch and is false now; it must not be carried forward to eric as-is. `pnpm run prism:test` alone is green at 812/812 — only the mirror-sync gate is red.
+
+### ADR-0072's compensating control is claimed over flags and delivers only over commands
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:67` (and the `.claude`, `.cursor`, `.codex` mirrors, all four byte-identical)
+- **Problem:** the bullet's closing sentence — "The compensating control is that adding an entry forces a generated test row into existence, so the membership call gets a second reading at the moment it is made" — is true for a command and false for a flag, in a bullet whose own subject is "a command **or flag** wrongly *present* costs a silently missed write."
+- **Class:** `reassurance that introduces a new claim` (`writing-voice.md`), the same shape as round 4's "One gap survives"
+- **Sweep:** `everyProvableRead` (`hook-gate.test.ts:1809`) iterates `SHELL_INSPECTION_COMMANDS.keys()` and `GIT_INSPECTION_SUBCOMMANDS` — the command axis, bare forms only. Nothing iterates the per-command flag `Set`s or `GIT_INERT_FLAGS`; those are exercised by 13 hand-written rows touching 8 of the ~26 commands. Adding `--pre` back to rg's set today lands with zero new rows. The flag axis is the surface clove's fix *introduced*, and it is the half the sentence does not cover. Both prose homes checked: `install-layout.md:163` ("Two gaps survive", all four surfaces) makes no test-coverage claim and is clean; the ADR § Decision paragraph now reads "commands **judged** to read their operands" and is correctly hedged. This one sentence is the whole remainder.
+- **Suggested fix:** fix the sentence, not the test. Scope the claim to what it covers — "adding a *command* forces a generated test row into existence; a flag added to an existing set forces none, and gets no second reading but this one." Do **not** derive a row per flag on the provable side: a generated `cat --output <path>` row would assert the flag is inert, mechanically blessing whatever anyone adds, which is exactly the tautology that would have enshrined `sort -o`. The absence of per-flag derivation is correct; only the claim about it is wrong. `everyProvableRead`'s JSDoc phrase "coverage complete by construction" should likewise name its axis.
+
+### `git -p <subcommand>` proves as a read and runs the pager
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `GIT_INERT_FLAGS`
+- **Problem:** `-p` is listed for `git log -p` (patch), but before the subcommand it means `--paginate`, which executes `core.pager` — a program named by repo-local config, not by the command line. `checkSegmentOnlyReads` finds the subcommand as the first non-`-` arg, so `git -p log <path>` resolves to subcommand `log` with an inert `-p` and proves.
+- **Class:** `flag whose meaning changes with position`
+- **Sweep:** confirmed PROVED by driving `git -p log <routed-path>` through `parseUnprovenShellPaths`. This is the same two-position ambiguity that got `-C` excluded, and `-C`'s exclusion is documented by name in `GIT_INERT_FLAGS`' JSDoc while `-p`'s identical ambiguity is not. It touches the exec half of the stated membership criterion ("incapable of naming an output file **or running another program**"). Impact is low: no tty in a hook subprocess means no pager, and setting `core.pager` is itself a write the gate would see. No other listed git flag changes meaning by position — checked `-n`, `-l`, `-v`, `-i`, `-s`, `-q`, `-b`, `-w`, `-z`, `-L`, `-E`, `-F`.
+- **Suggested fix:** either drop `-p` from `GIT_INERT_FLAGS` (costs one reroute on `git log -p <routed-doc>`, the recoverable direction) or extend the `-C` note to say `-p` is knowingly accepted at both positions because the pager is unreachable without a tty.
+
+### `jq` is listed under the reasoning that refused `sed`
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `SHELL_INSPECTION_COMMANDS` JSDoc, § "Absent on purpose"
+- **Problem:** `sed` is refused because "its `w` script command writes an arbitrary path from inside a data operand, with no `-` prefix to catch." `jq` is also an arbitrary program in an unprefixed data operand, and it is present. The fact that makes jq safe — jq's language has no write or exec primitive — is nowhere stated, so the written criteria do not distinguish the two.
+- **Class:** `stated membership criterion does not explain its own contents`
+- **Sweep:** confirmed `jq -r '.x' <routed-path>` and `jq -n 'input_filename' <routed-path>` both PROVED. jq's flag set is itself clean — `-r -n -c -e -s -S -a -j -M -C` are all output-formatting, and `-f`/`--from-file`, `--rawfile`, `--slurpfile`, `--argfile` are correctly absent. The finding is the reasoning gap, not a leak: a reader applying the written rule consistently either removes jq or re-adds sed.
+- **Suggested fix:** one clause on the jq entry or in the absent-on-purpose paragraph — jq is admitted despite the data-operand-program shape because its language has no write or exec builtin, which is what `sed`'s `w` has and jq lacks.
+
+### Angle Coverage
+
+- **Runtime behavior** — `swept` — 23 items enumerated, 23 verdicts. Every listed command's flag set read against what those flags do, and 23 candidate forge shapes driven through `parseUnprovenShellPaths` against a routed path. **No forgeable write found.** The operand-write class is closed: with `sort`, `uniq`, and `xxd` removed, no remaining entry writes through a trailing operand — checked `cat`, `head`, `tail`, `less`, `more`, `nl`, `od`, the grep family, `wc`, `diff`, `ls`, `stat`, `file`, `cut`, `tr`, `jq`, `echo`, `basename`, `dirname`, `which`, `pwd`, `true`, `false`. The flag-write class is closed for the current sets: every value-taking listed flag was traced to its value's role (`grep -f`/`--file` input, `rg -g`/`-t`/`--sort`, `cut -d/-f`, `od -A/-t`, `stat -c`, `head/tail -n/-c`, `diff -U`, `basename -s`, git's `--pretty`/`--format`/`--date`/`--grep`/`-L`), and none names an output file or a program. Dangerous flags are correctly absent: `file -C` (compiles a magic file) REROUTEs, `less -o` REROUTEs, `rg --pre` and `--pre-glob` unlisted, git's `--output`/`-O`/`-C`/`--git-dir`/`--exec-path` unlisted. `sed -n '1,20p' <path>` REROUTEs as designed. `git -p log` is the one exec-adjacent proof, recorded as a Minor above.
+- **Test efficacy** — `swept` — 3 items enumerated, 3 verdicts. `everyProvableRead` is **derived over the command axis and sampled over the flag axis** — round 4's complaint (12 of 32 commands named) is closed; the flag axis the fix introduced is not, recorded as the Major above. `everyForgedProof` correctly carries 17 rows on the *unprovable* side, where a passing row asserts a reroute rather than blessing an entry — the right direction, and it would fail loudly if `--pre` or `-O` were re-added. Round 4's own test applied to the new shape: a wrongly-inert flag entry produces **no** test row at all, passing or failing, which is a coverage gap rather than an enshrined tautology, and per-flag derivation would convert it into one.
+- **Spec and doc consistency** — `swept` — 4 items enumerated, 4 verdicts. Round 4's "One gap survives" overclaim is genuinely fixed, not reworded: all four `install-layout.md` surfaces and `hook.mjs:674` now read "Two gaps survive" and name list membership as the second; ADR-0072 § Decision drops "a list of commands that read their operands and write nothing" for the hedged "judged to", and its § Consequences gains a dedicated second-gap bullet. The § Consequences description is now true of its own contents, since the three writing members were removed. One sentence remains false — the Major above.
+- **Citation integrity** — `swept` — 1 item enumerated, 1 verdict: ADR-0072 is byte-identical across all four surfaces (md5 `a5d79fd2`), and `install-layout.md`'s three mirrors agree with each other. The canonical `install-layout.md` diverges from its mirrors only because of the uncommitted concurrent edit recorded as the Critical above, not because of anything in the pinned range.
+- **External-system claims** — `swept` — 6 items enumerated, 6 verdicts, all `Deduced` from tool semantics rather than executed, and labelled as such: `git -p` pager behavior, `file -C` magic compilation, `less -o` logging, jq's absence of a write builtin, rg's `--pre` family, and short-cluster getopt resolution. The one thing that *was* executed is the arm's own verdict on each shape.
+- **Repo writing rules** — `swept` — `verdict-only`. The new JSDoc is why-first, tag-free, and states its own failure direction. The one violation is the ADR sentence recorded as the Major.
+- **Security** — `swept` — `verdict-only`. Unchanged in kind from rounds 2 and 4: the gate enforces self-imposed friction, not access, so a false proof costs enforcement rather than a boundary. `git -p`'s pager is the only execution-adjacent surface found this pass and it grants nothing the model could not do directly.
+- **Docs impact** — `swept` — 1 item enumerated, 1 verdict: ADR-0072 § Consequences line 67 needs the Major's sentence fix in the canonical file and its three mirrors.
 - **Accessibility** — `n/a — no UI in the pinned range.`
 
 ---
