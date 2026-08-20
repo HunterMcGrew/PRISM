@@ -35,7 +35,7 @@ import {
 	ARCHITECT_DIR_PREFIX,
 	findRepoRoot,
 	MAX_EMISSION_BYTES,
-	pathIsRouted,
+	checkPathIsRouted,
 	resolveArchitectNag,
 	resolveUnreadDocs,
 	toRepoRelativePath,
@@ -67,9 +67,14 @@ import {
  *
  * What the class refuses, none of it individually enumerated: `$VAR` and
  * `${…}`, backslash escapes, globs, brace expansion, `!` history expansion,
- * newline and carriage return, `#`, every pipeline and redirect form, and
- * whatever metacharacter the next shell introduces. What it costs: a path
- * carrying a space, a `%`, or a non-ASCII character stops crediting.
+ * `#`, every pipeline and redirect form, and whatever metacharacter the next
+ * shell introduces. What it costs: a path carrying a space, a `%`, or a
+ * non-ASCII character stops crediting.
+ *
+ * Line breaks are the one exception, and they are handled before this class
+ * sees anything: `splitShellSegments` cuts on them, and each resulting
+ * segment is tested on its own. A multi-line command is several commands, not
+ * one unparseable one.
  *
  * @type {RegExp}
  */
@@ -109,6 +114,10 @@ function unquote(token) {
  * other command that names its files indirectly; and paths containing spaces,
  * since splitting on whitespace cannot recover them even when they are quoted.
  *
+ * Each segment is judged on its own, so one unparseable segment costs only
+ * itself. `cat a.md` on one line and `echo $VAR` on the next credits `a.md`
+ * and drops the second, rather than refusing both.
+ *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
  */
@@ -116,11 +125,34 @@ export function parseShellReadTargets(command) {
 	if (typeof command !== "string" || command.trim().length === 0) {
 		return [];
 	}
-	if (!SHELL_READ_SAFE_CHARACTERS.test(command)) {
+
+	const targets = [];
+	for (const tokens of splitShellSegments(command, SHELL_SEQUENTIAL_BOUNDARIES)) {
+		targets.push(...parseSegmentReadTargets(tokens));
+	}
+
+	return targets;
+}
+
+/**
+ * One command segment's read targets, or an empty array when the segment
+ * carries anything outside `SHELL_READ_SAFE_CHARACTERS` or names a command
+ * that does not read a file.
+ *
+ * The safe-character test runs per token rather than over the raw command,
+ * because the segment split has already consumed the separators. Every
+ * metacharacter the class refuses still sits inside some token — a `|`, a
+ * `>`, a `$VAR` — so a segment carrying one still parses to nothing.
+ *
+ * @param {string[]} tokens
+ * @returns {{filePath: string, credit: boolean}[]}
+ */
+function parseSegmentReadTargets(tokens) {
+	if (!tokens.every((token) => SHELL_READ_SAFE_CHARACTERS.test(token))) {
 		return [];
 	}
 
-	const [name, ...args] = command.trim().split(/\s+/);
+	const [name, ...args] = tokens;
 	if (!SHELL_READ_COMMANDS.has(name)) {
 		return [];
 	}
@@ -148,6 +180,73 @@ export function parseShellReadTargets(command) {
  */
 const SHELL_SEGMENT_BOUNDARIES = new Set(["|", "||", "&&", ";", "&"]);
 
+/**
+ * The boundaries a read may be credited across — the ones after which the
+ * next command runs unconditionally and prints to the same transcript.
+ *
+ * Only `;` qualifies, and the omissions are the whole point. `|` sends the
+ * first command's output to the second instead of to the model, so crediting
+ * `cat doc | head -5` would mark a document fully read on five lines of it.
+ * `&&` and `||` are conditional — the second command may never have run — and
+ * `&` backgrounds. Each of those still fails the per-token safe-character
+ * test inside its own segment, so the segment yields nothing rather than a
+ * guess.
+ *
+ * Line breaks are not members of either set. `splitShellSegments` splits on
+ * them unconditionally, because a newline separates commands under every
+ * shell and adding `"\n"` here would be inert anyway — the whitespace split
+ * consumes it before any token could equal it.
+ *
+ * @type {Set<string>}
+ */
+const SHELL_SEQUENTIAL_BOUNDARIES = new Set([";"]);
+
+/**
+ * Splits a raw command into one token array per command segment, cutting at
+ * every line break and at each of `boundaries`.
+ *
+ * Both detectors run on this rather than tokenizing the raw command
+ * themselves. The write detector needs the boundaries so a `tee` stops
+ * claiming operands at the end of its own command; the read detector needs
+ * them so a remedy pasted as several lines into one call credits each line.
+ * A shared splitter is what keeps those two answers from drifting: the write
+ * arm previously treated a newline as ordinary whitespace and claimed the
+ * next line's tokens, while the read arm refused the same command outright.
+ *
+ * @param {string} command
+ * @param {Set<string>} boundaries
+ * @returns {string[][]}
+ */
+function splitShellSegments(command, boundaries) {
+	const segments = [];
+	let current = [];
+
+	for (const line of command.split(/[\n\r]+/)) {
+		for (const token of line.trim().split(/\s+/)) {
+			if (token.length === 0) {
+				continue;
+			}
+
+			if (boundaries.has(token)) {
+				if (current.length > 0) {
+					segments.push(current);
+					current = [];
+				}
+				continue;
+			}
+
+			current.push(token);
+		}
+
+		if (current.length > 0) {
+			segments.push(current);
+			current = [];
+		}
+	}
+
+	return segments;
+}
+
 /** Commands that write the files they name, when carrying the flag that makes them do so.
  * @type {Set<string>}
  */
@@ -158,11 +257,13 @@ const SHELL_WRITE_COMMANDS = new Set(["tee", "sed"]);
  * `>`, `>>`, `tee`, `tee -a`, and `sed -i`.
  *
  * This cannot reuse `SHELL_READ_SAFE_CHARACTERS` — `>` sits outside that class
- * by construction, which is the whole point of the class — so it runs on the
- * raw command and admits those five as its only metacharacters. It shares
- * `unquote` and the whitespace split with `parseShellReadTargets` and nothing
- * else. Keeping both in one function family is what stops the write detector
- * from growing a second, looser notion of what a safe command looks like.
+ * by construction, which is the whole point of the class — so it admits those
+ * five as its only metacharacters. It shares `unquote` and
+ * `splitShellSegments` with `parseShellReadTargets` and nothing else. Keeping
+ * both in one function family is what stops the write detector from growing a
+ * second, looser notion of what a safe command looks like — and the shared
+ * splitter is what keeps the two arms answering the same question about where
+ * one command ends.
  *
  * Deliberately open gaps, each of which yields no target rather than a guess:
  * word-prefixed redirects (`echo hello>f`, where the `>` abuts the preceding
@@ -185,18 +286,30 @@ export function parseShellWriteTargets(command) {
 	}
 
 	const targets = [];
+	for (const tokens of splitShellSegments(command, SHELL_SEGMENT_BOUNDARIES)) {
+		targets.push(...parseSegmentWriteTargets(tokens));
+	}
+
+	return targets.filter((target) => target.length > 0);
+}
+
+/**
+ * One command segment's write targets. The segment's first token decides
+ * whether its later operands are written to, so this cannot run over a whole
+ * multi-command string — a `tee` in the first segment would claim the second
+ * segment's filenames and produce a reroute naming a path the command only
+ * reads.
+ *
+ * @param {string[]} tokens
+ * @returns {string[]}
+ */
+function parseSegmentWriteTargets(tokens) {
+	const targets = [];
 	let segmentCommand = null;
 	let segmentWrites = false;
 
-	const tokens = command.trim().split(/\s+/);
 	for (let index = 0; index < tokens.length; index++) {
 		const token = tokens[index];
-
-		if (SHELL_SEGMENT_BOUNDARIES.has(token)) {
-			segmentCommand = null;
-			segmentWrites = false;
-			continue;
-		}
 
 		if (token === ">" || token === ">>") {
 			const operand = tokens[index + 1];
@@ -219,7 +332,7 @@ export function parseShellWriteTargets(command) {
 			// writes, not whether it does.
 			segmentWrites =
 				token === "tee" ||
-				(token === "sed" && segmentHasInPlaceFlag(tokens, index + 1));
+				(token === "sed" && checkInPlaceFlag(tokens, index + 1));
 			continue;
 		}
 
@@ -232,29 +345,30 @@ export function parseShellWriteTargets(command) {
 		}
 	}
 
-	return targets.filter((target) => target.length > 0);
+	return targets;
 }
 
 /**
- * True when the command segment starting at `start` carries `sed`'s in-place
- * flag, in any of its spellings — `-i`, `-i.bak`, `-ni`, `--in-place`. The
- * scan stops at the next segment boundary, so a later pipeline stage's `-i`
- * cannot make an earlier read-only `sed` look like a write.
+ * True when the tokens from `start` onward carry `sed`'s in-place flag, in
+ * any of its spellings — `-i`, `-i.bak`, `-ni`, `--in-place`.
+ *
+ * The scan runs to the end of the array because `splitShellSegments` has
+ * already cut the command at its boundaries, so a later pipeline stage's
+ * `-i` is in a different array and cannot make an earlier read-only `sed`
+ * look like a write.
  *
  * @param {string[]} tokens
  * @param {number} start
  * @returns {boolean}
  */
-function segmentHasInPlaceFlag(tokens, start) {
+function checkInPlaceFlag(tokens, start) {
 	for (let index = start; index < tokens.length; index++) {
 		const token = tokens[index];
-		if (SHELL_SEGMENT_BOUNDARIES.has(token)) {
-			return false;
-		}
 		if (/^--in-place/.test(token) || /^-[a-zA-Z]*i/.test(token)) {
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -582,7 +696,7 @@ async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
 async function resolveShellRerouteReason(repoRoot, cwd, payload) {
 	for (const target of parseShellWriteTargets(payload.tool_input?.command)) {
 		const absolutePath = path.resolve(cwd, target);
-		if (!(await pathIsRouted(repoRoot, absolutePath))) {
+		if (!(await checkPathIsRouted(repoRoot, absolutePath))) {
 			continue;
 		}
 

@@ -54,7 +54,7 @@ export function resolveUnreadDocs(
 	scopeId: string
 ): Promise<string[]>;
 
-export function pathIsRouted(
+export function checkPathIsRouted(
 	repoRoot: string,
 	filePath: string
 ): Promise<boolean>;

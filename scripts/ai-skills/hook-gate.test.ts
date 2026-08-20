@@ -151,19 +151,61 @@ test("runPostToolUseArm: no manifest match returns null", async () => {
 	});
 });
 
-test("runPostToolUseArm: missing file_path returns null — no session id ever denies, and neither does a missing path", async () => {
-	const stdin = JSON.stringify({ session_id: "session-1", cwd: "/repo" });
-	const result = await runPostToolUseArm("claude", HARNESSES.claude, stdin);
-	assert.equal(result, null);
-});
+test("runPostToolUseArm: a payload with no session id announces nothing", async () => {
+	// Against a repo whose manifest does route the named path — pointed at a
+	// root with no manifest, the load failure returns null on its own and the
+	// session-id guard is never what the assertion rests on.
+	await withTempRepo(async (repoRoot) => {
+		await seedCreditRepo(repoRoot);
+		const routedPath = path.join(repoRoot, "scripts", "ai-skills", "build.ts");
 
-test("runPostToolUseArm: missing session_id returns null", async () => {
-	const stdin = JSON.stringify({
-		cwd: "/repo",
-		tool_input: { file_path: "/repo/README.md" },
+		assert.ok(
+			await runPostToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: repoRoot,
+					tool_name: "Read",
+					tool_input: { file_path: routedPath },
+				})
+			),
+			"the same payload with a session id does announce"
+		);
+
+		assert.equal(
+			await runPostToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					cwd: repoRoot,
+					tool_name: "Read",
+					tool_input: { file_path: routedPath },
+				})
+			),
+			null,
+			"with no scope to record against, there is nothing to announce once"
+		);
+
+		// Claude's own "nothing to report" is `null`, which is also what the
+		// outer catch returns — so on Claude alone the guard cannot be told
+		// apart from the TypeError a null scope id would throw downstream.
+		// Cursor's empty envelope is a distinct value, and only the guard
+		// produces it.
+		assert.equal(
+			await runPostToolUseArm(
+				"cursor",
+				HARNESSES.cursor,
+				JSON.stringify({
+					cwd: repoRoot,
+					tool_name: "Read",
+					tool_input: { file_path: routedPath },
+				})
+			),
+			"{}",
+			"the missing scope id returns the harness's own no-op, not a caught failure"
+		);
 	});
-	const result = await runPostToolUseArm("claude", HARNESSES.claude, stdin);
-	assert.equal(result, null);
 });
 
 test("runPostToolUseArm: malformed stdin JSON is caught and returns null rather than throwing", async () => {
@@ -483,6 +525,23 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	);
 	assert.ok(settings.hooks.PostToolUse, "PostToolUse registration delivered");
 	assert.ok(settings.hooks.PostCompact, "PostCompact registration delivered");
+
+	// The gate reaches a real host only through this registration, so its
+	// matcher is asserted rather than just its presence: an entry that fires
+	// on the wrong tool names delivers a hook that never sees a write.
+	const preToolUse = settings.hooks.PreToolUse?.[0];
+	assert.ok(preToolUse, "PreToolUse registration delivered");
+	for (const toolName of ["Write", "Edit", "Bash"]) {
+		assert.match(
+			toolName,
+			new RegExp(preToolUse.matcher),
+			`the PreToolUse matcher selects ${toolName}`
+		);
+	}
+	assert.ok(
+		preToolUse.hooks[0].command.includes("--event=PreToolUse"),
+		"the PreToolUse registration dispatches the deny arm, not the announce arm"
+	);
 
 	// Both globs asserted as whole lines. A `match` on the first pattern alone
 	// also matches the `.tmp` line as a substring, so neither line would be
@@ -841,16 +900,52 @@ test("parseShellReadTargets: the documented gaps yield no targets rather than a 
 	assert.deepEqual(parseShellReadTargets(undefined), []);
 });
 
-test("parseShellReadTargets: a command separator that is not punctuation still bails", () => {
+test("parseShellReadTargets: a line break separates commands rather than voiding them", () => {
+	const credited = [{ filePath: "docs/one.md", credit: true }];
+
 	assert.deepEqual(
 		parseShellReadTargets("cat docs/one.md\ngrep alpha docs/two.md"),
-		[]
+		credited,
+		"the grep segment names no read command, and its presence does not cost the cat"
 	);
 	assert.deepEqual(
 		parseShellReadTargets("cat docs/one.md\r\ngrep alpha docs/two.md"),
-		[]
+		credited
 	);
 	assert.deepEqual(parseShellReadTargets("cat docs/one.md # a note"), []);
+});
+
+test("parseShellReadTargets: the deny message's own multi-doc remedy credits every doc it names", () => {
+	// The gate renders one `cat` per line. Pasted into a single call, every
+	// line has to credit — otherwise the gate re-denies its own remedy.
+	const docs = [
+		".prism/architect/_toolkit/spec-editing.md",
+		".prism/architect/guides/writing-an-adr.md",
+	];
+
+	assert.deepEqual(
+		parseShellReadTargets(docs.map((doc) => `cat ${doc}`).join("\n")),
+		docs.map((filePath) => ({ filePath, credit: true }))
+	);
+});
+
+test("parseShellReadTargets: a pipe or a conditional still refuses the whole segment", () => {
+	// A pipe sends the output somewhere other than the transcript, and a
+	// conditional may never run its second command — crediting either would
+	// mark a document read on a slice of it, or on nothing at all.
+	for (const command of [
+		"cat docs/one.md | head -5",
+		"cat docs/one.md > /dev/null",
+		"cat docs/one.md && cat docs/two.md",
+		"cat docs/one.md || cat docs/two.md",
+		"cat docs/one.md &",
+	]) {
+		assert.deepEqual(
+			parseShellReadTargets(command),
+			[],
+			`${JSON.stringify(command)} does not deliver the whole document to the model`
+		);
+	}
 });
 
 test("runPostToolUseArm: every shell read form announces the routed doc", async () => {
@@ -957,17 +1052,29 @@ test("runPostToolUseArm: a relative cat resolves against the payload cwd, not th
 	});
 });
 
-test("runPostToolUseArm: a payload naming its path at tool_input.path credits nothing", async () => {
+test("runPostToolUseArm: a payload naming its path at tool_input.path announces without crediting", async () => {
 	await withTempRepo(async (repoRoot) => {
-		const docPath = await seedCreditRepo(repoRoot);
+		await seedCreditRepo(repoRoot);
 		const stdin = JSON.stringify({
 			session_id: "session-1",
 			cwd: repoRoot,
 			tool_name: "Glob",
-			tool_input: { pattern: "**/*.md", path: docPath },
+			tool_input: {
+				pattern: "**/*.md",
+				path: path.join(repoRoot, "scripts", "ai-skills", "build.ts"),
+			},
 		});
 
-		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		// The announcement is what proves the `path` fallback resolved the
+		// payload at all. Asserting only that nothing was credited passes just
+		// as well when the path is never found.
+		const result = await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.ok(result, "a tool naming its target at `path` still reaches routing");
+		assert.match(
+			JSON.parse(result).hookSpecificOutput.additionalContext,
+			/_toolkit/,
+			"the routed doc is named"
+		);
 		assert.deepEqual(
 			await readCreditedDocs(repoRoot, "session-1"),
 			[],
@@ -1064,11 +1171,14 @@ test("runPreToolUseArm: a write to a routed path with unread docs is denied, nam
 			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target))
 		);
 
-		assert.ok(reason, "a routed write with unread docs is denied");
-		assert.match(reason, /src\/index\.ts/, "the message names the path being written");
-		assert.match(
+		// The whole message, not a substring of it. The instruction between
+		// the path and the remedy is what tells the model the read has to be
+		// a full one and that the same call should be retried after — a
+		// substring match leaves that sentence free to be rewritten away.
+		assert.equal(
 			reason,
-			/cat \.prism\/architect\/_toolkit\/spec-editing\.md/,
+			"You're editing `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+				`cat .prism/architect/${GATE_DOC}`,
 			"a message naming a doc without naming how to read it is the unsatisfiable-gate shape"
 		);
 	});
@@ -1160,6 +1270,134 @@ test("runPreToolUseArm: positive control — with the deny broken, leg 3 fails",
 	} finally {
 		delete process.env.PRISM_HOOK_DENY_DISABLE;
 	}
+});
+
+test("runPreToolUseArm: a two-doc deny is cleared by its own remedy pasted as one call", async () => {
+	// Twelve of this repo's own routes name two or more docs. The message
+	// renders one `cat` per line, and a model that pastes those lines into a
+	// single Bash call has to earn credit for all of them — otherwise the gate
+	// re-denies the exact remedy it just printed.
+	const secondDoc = "guides/writing-an-adr.md";
+
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "src/**": [GATE_DOC, secondDoc] },
+			secondDoc,
+			"ADR authoring constraints go here."
+		);
+
+		const reason = denyReason(
+			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target))
+		);
+		assert.ok(reason, "the two-doc write is denied before the remedy");
+
+		const remedyLines = reason.split("\n").slice(1);
+		assert.deepEqual(
+			remedyLines,
+			[`cat .prism/architect/${GATE_DOC}`, `cat .prism/architect/${secondDoc}`],
+			"the message names one cat per unread doc"
+		);
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: repoRoot,
+				tool_name: "Bash",
+				tool_input: { command: remedyLines.join("\n") },
+			})
+		);
+
+		assert.equal(
+			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target)),
+			null,
+			"the rendered remedy, run the way it is written, clears the gate"
+		);
+	});
+});
+
+test("runPreToolUseArm: a shell write named on a later line of a multi-line command is not rerouted", async () => {
+	// The write detector once read a whole multi-line command as one command,
+	// so a leading `sed -i` claimed every later line's tokens and the reroute
+	// named a path the command only reads.
+	await withTempRepo(async (repoRoot) => {
+		const { target, docPath } = await seedGateRepo(repoRoot);
+		const command = `sed -i s/a/b/ ${path.join(repoRoot, "elsewhere.ts")}\ncat ${docPath}`;
+
+		assert.equal(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, target, {
+					tool_name: "Bash",
+					tool_input: { command },
+				})
+			),
+			null,
+			"the cat on the second line is a read, and the sed on the first writes elsewhere"
+		);
+	});
+});
+
+test("the spawned entry point routes --event=PreToolUse to the deny arm", async () => {
+	// Every other gate case calls the arm in process, which cannot see the
+	// argv dispatch the registration relies on. Without this, a `main()` that
+	// sent every event to the announce arm would keep the suite green while
+	// the shipped gate never fired.
+	await withTempRepo(async (temporaryRoot) => {
+		const { target } = await seedGateRepo(temporaryRoot);
+		const entryPoint = path.join(scriptDirectory, "hooks", "hook.mjs");
+
+		const denied = spawnSync(
+			"node",
+			[entryPoint, "--tool=claude", "--event=PreToolUse"],
+			{ input: writePayload(temporaryRoot, target), encoding: "utf8" }
+		);
+		assert.equal(denied.status, 0, denied.stderr);
+		assert.match(
+			denyReason(denied.stdout) ?? "",
+			/Read its governing docs in full first/,
+			"the spawned PreToolUse dispatch produces a deny envelope on stdout"
+		);
+
+		const announced = spawnSync("node", [entryPoint, "--tool=claude"], {
+			input: writePayload(temporaryRoot, target),
+			encoding: "utf8",
+		});
+		assert.equal(announced.status, 0, announced.stderr);
+		assert.doesNotMatch(
+			announced.stdout,
+			/permissionDecision/,
+			"the same payload without the event flag reaches the announce arm instead"
+		);
+	});
+});
+
+test("runPreToolUseArm: a route naming a doc that is absent from disk never denies", async () => {
+	// The fifth deny condition. A route can name a doc that was renamed or
+	// deleted, and denying on it would demand a `cat` of a file that does not
+	// exist — a gate nothing can clear.
+	await withTempRepo(async (temporaryRoot) => {
+		await seedManifestAndDoc(
+			temporaryRoot,
+			{ "src/**": "_toolkit/deleted-doc.md" },
+			GATE_DOC,
+			"An unrelated doc that the route does not name."
+		);
+
+		assert.equal(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(temporaryRoot, path.join(temporaryRoot, "src", "index.ts"))
+			),
+			null,
+			"the write proceeds rather than demanding a read of a missing file"
+		);
+	});
 });
 
 // --- The subagent leg (D2's verify points here) ---
@@ -1268,7 +1506,13 @@ test("runPreToolUseArm: a deny writes no state and no announced entry", async ()
 	await withTempRepo(async (repoRoot) => {
 		const { target } = await seedGateRepo(repoRoot);
 
-		await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target));
+		// Asserted, not assumed: `loadRouteState` returns these same empty
+		// arrays for an absent file, so a run where the deny never fired would
+		// satisfy every assertion below.
+		assert.ok(
+			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target)),
+			"the deny fired, so the state below is what a deny left behind"
+		);
 
 		const state = await loadRouteState(repoRoot, "session-1");
 		assert.deepEqual(state.read, [], "a deny credits nothing");
@@ -1343,17 +1587,37 @@ test("runPreToolUseArm: PRISM_HOOK_DENY_DISABLE leaves the announce arm running"
 test("runPreToolUseArm: a harness with no observed deny envelope writes nothing", async () => {
 	await withTempRepo(async (repoRoot) => {
 		const { target } = await seedGateRepo(repoRoot);
+
+		// `Shell` rather than an edit tool: it is the only kind Cursor's table
+		// actually lists, so it is the only payload that reaches `emitDeny` at
+		// all. An unlisted name returns at the kind guard, which would make
+		// this pass without the envelope decision ever being consulted.
 		const stdin = JSON.stringify({
 			conversation_id: "session-1",
 			cwd: repoRoot,
-			tool_name: "StrReplace",
-			tool_input: { file_path: target },
+			tool_name: "Shell",
+			tool_input: { command: `echo hi > ${target}` },
 		});
 
 		assert.equal(
 			await runPreToolUseArm("cursor", HARNESSES.cursor, stdin),
 			null,
 			"guessing an unobserved host's deny shape blocks a write with a message nobody renders"
+		);
+
+		// The positive control: the same shell write under Claude, whose
+		// envelope is observed, does deny — so the null above is Cursor's
+		// envelope decision rather than a payload nothing would act on.
+		assert.ok(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, target, {
+					tool_name: "Bash",
+					tool_input: { command: `echo hi > ${target}` },
+				})
+			),
+			"the same write is a real reroute on a harness whose envelope is known"
 		);
 	});
 });
@@ -1383,6 +1647,34 @@ test("parseShellWriteTargets: the documented gaps yield no target rather than a 
 	);
 	assert.deepEqual(parseShellWriteTargets("cat out.md"), []);
 	assert.deepEqual(parseShellWriteTargets(undefined), []);
+});
+
+test("parseShellWriteTargets: a segment's write command never claims a later segment's operands", () => {
+	// Every separator has to end the claim. A line break is the one that was
+	// missed, because the whitespace split consumes it before any token can
+	// equal it — so adding it to the boundary set alone would change nothing.
+	for (const separator of ["\n", "\r\n", " ; ", " && ", " | ", " & "]) {
+		assert.deepEqual(
+			parseShellWriteTargets(`sed -i s/a/b/ first.ts${separator}cat second.md`),
+			["s/a/b/", "first.ts"],
+			`a ${JSON.stringify(separator)} separator ends the sed's operand claim`
+		);
+	}
+
+	assert.deepEqual(
+		parseShellWriteTargets("tee first.txt\necho hello second.md"),
+		["first.txt"],
+		"the echo's operands belong to the echo, not to the tee above it"
+	);
+});
+
+test("parseShellWriteTargets: an in-place sed after a boundary still yields its own target", () => {
+	// The counterpart to the case above — segmenting must not cost a real
+	// write that happens to sit in a later segment.
+	assert.deepEqual(parseShellWriteTargets("cat a.md\nsed -i s/a/b/ out.md"), [
+		"s/a/b/",
+		"out.md",
+	]);
 });
 
 test("runPreToolUseArm: each of the five shell write forms reroutes on a routed path", async () => {
@@ -1446,8 +1738,6 @@ test("parseShellReadTargets: each class the allow-list closes yields zero target
 		"cat docs/one\\ two.md",
 		"cat *.md",
 		"cat {a,b}.md",
-		"cat docs/one.md\ngrep alpha docs/two.md",
-		"cat docs/one.md\r\ngrep alpha docs/two.md",
 		"cat docs/one.md # a note",
 		"cat !!:1",
 	]) {

@@ -248,7 +248,8 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Root cause of the question:** a consumer editing `.prism/plans/foo.md` matched both the `.prism/plans/**` guide route and a `.prism/**` catch-all routing to `install-layout.md`. Measured on the seed: 334 lines of forced reading, of which `install-layout.md`'s 180 govern nothing about writing a plan. PRISM's own manifest is worse — 839 lines for the same write, `install-layout.md` and `skills-ecosystem.md` contributing 447 of them through the catch-all alone. PR 2C's premise is that the deny's remedy has to be cheap, and this is where it bends.
   - **Alternatives considered:** keep the catch-all and accept the cost (rejected — it is the habituation failure in a new costume, and it lands hardest on a consumer's first gated write); delete the catch-all outright (rejected — `install-layout.md` would lose its only stub route and become an orphan-doc finding on a fresh install, which is E1's check working correctly against a state this PR created); shorten `install-layout.md` (rejected — the doc is not padded, and trimming a doc to fit a route is fixing the wrong end).
   - **Chosen approach:** replace `.prism/**` with `.prism/custom/**` and `.ai-skills/definitions/**` — the consumer overlay and the definitions files `install-layout.md` genuinely documents. Applied to all three tables rather than the stub alone: PRISM's own repo is where the gate gets dogfooded first, and a narrowing that leaves two of three tables contradicting the third is the inconsistency this plan keeps recording against itself.
-  - **What this gives up, stated plainly:** `.prism/design/`, `.prism/retros/`, `.prism/prds/` and their siblings become unrouted, so they are neither announced nor gated. That is the design's own rule rather than an exception to it — a route existing is the opt-in, and a path nobody has written a governing doc for has nothing to force a read of.
+  - **What this gives up, stated plainly:** four path classes become unrouted, so they are neither announced nor gated — `.prism/prds/**`, `.prism/qa/**`, `.prism/retros/**`, and `.prism/iris-state.json`, plus `.prism/design/**`, `.prism/handoffs/**`, `.prism/conductor-state.json`, and `.prism/theo-state.json` where a consumer has them. Every one is persona output or persona state. That is the design's own rule rather than an exception to it — a route existing is the opt-in, and a path nobody has written a governing doc for has nothing to force a read of. The list is measured, not estimated: `matchDocsForPath` run over `git ls-files` against the old and new tables reports the same 29 tracked paths lost in all three tables and nothing else.
+  - **What the narrowing does not give up:** the instruction layer. `.prism/rules/**` → `_toolkit/spec-editing.md` and `.prism/skills/**` → `_toolkit/skills-ecosystem.md` are routed explicitly in all three tables, because those are the paths ADR-0072 names as its motivating case and the catch-all was the only thing covering some of them. `manifest.json` and `manifest.base.json` previously enumerated most rules one file at a time and silently missed the rest; the glob replaces those entries with the rule that defines the set.
   - **Scope note:** § Cross-PR collisions assigns these three tables to 2A (deletion) and 2C (addition), neither of which is 2D. Both have merged, so there is no concurrent editor; the absorption is recorded here rather than left silent.
   - **→ promotion verdict pending — resolves at PR 2D close, alongside ADR-0072's deny-scope statement.**
 
@@ -869,7 +870,14 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface] open: Intent — close Eric's re-review minor so `ship-closure`'s verify claim and its behavior match; Bounds — `ship-closure.ts`, its test, and E5's verify line; no seed re-trim, no prettier sweep; Approach — add the existence check as its own report direction rather than narrowing the prose · close: scope held. Silent decisions named: the check runs unconditionally rather than only on default roots, because a shipped route naming an absent doc is a defect whatever roots a caller passes; the route list is deduped, so one doc named by both tables reports once; E5's sentence was tightened alongside the fix so the plan names both directions. Edge recall: manifest absent or unparseable yields no routes and no finding (unchanged), a value may be a bare string or an array, and a fixture repo with no manifests reports nothing. Verification honesty: `pnpm prism:check` exit 0 with all four report lists empty at 336 files; the new test mutation-checked by stubbing `unbackedRoutes` to `[]`, which kills that test and nothing else (15/15 to 14/15). Not verified: no real shipped route is currently unbacked, so the failing path is exercised only by fixture.
 
-- 2026-08-19 [huntermcgrew/opus5-port-deny-gate] open: Intent — clear the two UNMETs from Reese's PR 2D AC verification and make his report discoverable from the plan; Bounds — `hook-gate.test.ts`, the plan's D3 verify line, D3's D10 row, and the plan's `## History`; no conductor run log, no AC-19 evidence-line fix (Winston's, routed separately), no merge or undraft; Approach — make the no-session `PostCompact` case seed state and assert survival rather than assert non-throw, and correct the dead Cursor mirror path rather than narrow the claim around it · close: scope held. Silent decisions named: the AC-7 case asserts both the file's survival and the still-suppressed second announce, because a surviving file that no longer suppresses would satisfy the narrower assertion while defeating what the criterion protects; D3's D10 disposition moved from `held` to `fixed` rather than being reworded in place, since the verify line itself changed. D4's D10 row still reads accurately and was left alone. Edge recall: the no-session payload carries a real repo root now, so the arm's early return is exercised against a directory that does hold state — the case the old `/repo` path could not reach. Verification honesty: `pnpm prism:check` exit 0, 798/798. The AC-7 assertion was mutation-checked twice, and the first mutation is worth recording: removing the `if (!sessionId) return` guard does not kill the test, because an empty session id builds the prefix `architect-route-state..`, which matches no file — the guard is a readability affordance over a sweep that is already inert without it. The mutation that does kill it, and only it (57 to 56/57), is widening the no-session prefix to `architect-route-state.`, which is the destructive behavior the criterion names. D3's corrected grep run literally from the repo root — exit 0, all five mirrors named.
+- 2026-08-19 [huntermcgrew/opus5-port-deny-gate] open: Intent — clear the two UNMETs from Reese's PR 2D AC verification and make his report discoverable from the plan; Bounds — `hook-gate.test.ts`, the plan's D3 verify line, D3's D10 row, and the plan's `## History`; no conductor run log, no AC-19 evidence-line fix (Winston's, routed separately), no merge or undraft; Approach — make the no-session `PostCompact` case seed state and assert survival rather than assert non-throw, and correct the dead Cursor mirror path rather than narrow the claim around it · close: scope held. Silent decisions named: the AC-7 case asserts both the file's survival and the still-suppressed second announce, because a surviving file that no longer suppresses would satisfy the narrower assertion while defeating what the criterion protects; D3's D10 disposition moved from `held` to `fixed` rather than being reworded in place, since the verify line itself changed. D4's D10 row still reads accurately and was left alone. Edge recall: the no-session payload carries a real repo root now, so the arm's early return is exercised against a directory that does hold state — the case the old `/repo` path could not reach. Verification honesty: `pnpm prism:check` exit 0, 798/798. The AC-7 assertion was mutation-checked twice, and the first mutation is worth recording: removing the `if (!sessionId) return` guard does not kill the test — but not for the reason first recorded here. Corrected on Reese's refutation: the payload yields `null`, not an empty string, so `sessionId.replace` throws a `TypeError` that the surrounding catch swallows, and no prefix is ever built. The survival conclusion stands (the arm deletes nothing either way); the mechanism is a swallowed throw, not an unmatchable prefix. The mutation that does kill it, and only it (57 to 56/57), is widening the no-session prefix to `architect-route-state.`, which is the destructive behavior the criterion names. D3's corrected grep run literally from the repo root — exit 0, all five mirrors named.
+
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D review round 1)
+  - **Intent** — clear Briar's PR 2D self-review (1 critical, 4 majors, 6 minors), correct the two plan claims the record got wrong, and land the branch including her stranded plan commit.
+  - **Ambiguity** — none load-bearing; assumed the ADR index table and ADR-0071's frontmatter are in frame even though neither file was in the original diff, because a new ADR joining its own registration is the same edit as writing it.
+  - **Bounds** — PR 2D's file set plus the three routing tables already absorbed under the catch-all Decision. Untouched: the conductor run log, D8, the merge and draft state.
+  - **Approach** — verify Briar's two structural answers against the code before building on either, then one shared segment splitter rather than two patched arms.
+  - **Close** — scope held. One deviation from the prescribed fix, deliberate: Briar's single shared boundary set would have split the read arm on `|`, which credits `cat doc | head -5` as a full read — the exact over-credit the allow-list exists to prevent — so the splitter takes the boundary set as an argument and the read arm passes only `;`. Her inert-`\n` finding checked out and her `:44` correction was honored. Two silent decisions named: the per-rule manifest entries the new `.prism/rules/**` glob subsumes were folded into it rather than left as redundant siblings, and ADR-0072 now *amends* rather than supersedes ADR-0071, because 0071's announce layer still ships. Edge recall: a pipe, a redirect, `&&`, `||`, and `&` each still refuse read credit inside their own segment; an unparseable segment costs only itself; an in-place `sed` in a later segment still yields its own target. Verification honesty: `pnpm prism:check` exit 0 at 805/805, and every claim of coverage above was mutation-confirmed rather than asserted — the whole-command safe-character test, the `filterDocsOnDisk` call, the argv ternary, the install registration, the `.path` fallback, the scope-id guard, the Cursor envelope, and the deny sentence each kill their intended cases and nothing else. Not proven: D8's live-host run, unchanged and outstanding at the merge gate.
 
 ## History
 
@@ -950,6 +958,9 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - 2026-08-19 [huntermcgrew/opus5-port-deny-gate]: Reese's AC verification of PR 2D — 11 criteria, 9 MET, 2 UNMET — is at `.prism/plans/qa/ac-verification-opus5-port.md`.
 - 2026-08-19 [huntermcgrew/opus5-port-deny-gate]: Cleared Reese's two UNMETs. AC-7: the no-session `PostCompact` case now seeds real state and asserts it survives, where it previously only asserted the call does not throw against a path holding no state. AC-31: D3's verify line named `.cursor/rules/context-reuse.md`, a path that does not exist (the Cursor mirror is `.mdc`), so it exited 2 and reached four of five mirrors; corrected, and D3's D10 row moved from `held` to `fixed`.
+
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D self-review. The critical and the write-arm major share one root cause — both arms tokenized a raw multi-line command instead of segmenting it first — and both are closed by a shared `splitShellSegments`; see the Review Issues entries for the per-finding fixes. The routing narrowing now re-routes `.prism/rules/**` and `.prism/skills/**` in all three tables, and the accepted-losses list is measured rather than estimated.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Corrected the `## Sessions` mutation note Reese refuted — removing the `PostCompact` no-session guard throws a swallowed `TypeError` rather than building an empty-prefix sweep. The arm is inert either way, so the survival conclusion is unchanged.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -1696,7 +1707,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed by `splitShellSegments`, shared by both arms. The read arm now segments on line breaks and `;` before tokenizing, so the rendered remedy pasted as one Bash call credits every `cat` in it. Verified through the shipped arms end to end: a two-doc route denies, the deny's own remedy lines are fed verbatim to `runPostToolUseArm`, and the re-check returns `null`. Mutation-confirmed — restoring the whole-command safe-character test kills that case and two unit cases, nothing else.
 - **File:** `scripts/ai-skills/hooks/hook.mjs:76` (`SHELL_READ_SAFE_CHARACTERS`), message site `hook.mjs:452` (`formatDenyMessage`)
 - **Problem:** `formatDenyMessage` renders one `cat` per line, and the read pre-filter rejects any command containing a newline, so a model that pastes a two-line remedy into one Bash call earns zero credit and receives the identical deny — the unsatisfiable-gate shape this PR exists to prevent.
 - **Class:** `a remedy message whose rendered form is rejected by the channel that must observe it`
@@ -1707,7 +1719,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed by the same `splitShellSegments`. Segment boundaries are `\n \r ; | || && &` for the write arm, so a leading `sed -i` no longer claims a later line's tokens; `checkInPlaceFlag` scans within a segment rather than re-deriving the boundary rule. Covered per separator, with a positive counterpart asserting an in-place `sed` in a later segment still yields its own target.
 - **File:** `scripts/ai-skills/hooks/hook.mjs:149` (`SHELL_SEGMENT_BOUNDARIES`), consumed at `hook.mjs:196` (`command.trim().split(/\s+/)`)
 - **Problem:** a multi-line command whose first segment is `tee` or `sed -i` claims every later non-flag token as a write target, producing a reroute deny that states the command writes to a path it only reads.
 - **Class:** `multi-line shell commands parsed as a single command — the same class as the \n escape D3 closed on the read side`
@@ -1718,7 +1731,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed, and the reach was larger than reported — `manifest.base.json` lost six rules, not four. `.prism/rules/**` and `.prism/skills/**` are now routed explicitly in all three tables, and the per-rule enumerations that the glob subsumes were folded into it rather than left as redundant siblings. Re-measured with `matchDocsForPath` over `git ls-files`: all three tables now lose exactly the same 29 tracked paths, every one persona output or state, and the accepted-losses list in `## Decisions` names all of them.
 - **File:** `.prism/architect/manifest.json:81`, `templates/install/.prism/architect/manifest.stub.json:21`
 - **Problem:** replacing `.prism/**` with `.prism/custom/**` leaves four `.prism/rules/*` files and four `.prism/skills/*` bodies matching zero routes, so the instruction-layer paths ADR-0072 names as its motivating case now get neither a gate nor an announcement.
 - **Class:** `a catch-all narrowed to a replacement set that does not cover the catch-all's load-bearing members`
@@ -1729,7 +1743,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed on both links. `assertAdoptedConsumerState` asserts the `PreToolUse` registration, that its matcher selects `Write`/`Edit`/`Bash`, and that its command carries `--event=PreToolUse`; a new spawned-process case feeds a routed write on stdin and asserts a deny envelope on stdout, with the same payload minus the flag asserted to reach the announce arm instead. Both mutations Briar named now fail the suite.
 - **File:** `scripts/ai-skills/hooks/hook.mjs:728` (`main()` arm dispatch), `templates/install/.claude/settings.json:3` (`PreToolUse` block)
 - **Problem:** every gate test calls `runPreToolUseArm` in process, so neither the `--event=PreToolUse` dispatch nor the install template's registration is covered — the two links that carry the gate from a real host to the code under test.
 - **Class:** `a feature covered only below the seam that delivers it`
@@ -1740,7 +1755,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed. One case seeds a route naming a doc with no file behind it and asserts the write proceeds. Mutation-confirmed: replacing `filterDocsOnDisk(...)` with `unreadDocs` fails exactly that case.
 - **File:** `scripts/ai-skills/hooks/architect-route.mjs:428` (`filterDocsOnDisk` in `resolveUnreadDocs`)
 - **Problem:** `runPreToolUseArm`'s JSDoc enumerates five load-bearing deny conditions and the suite covers four; nothing seeds a route naming a doc absent from disk, so a regression here would ship a deny telling the model to `cat` a file that does not exist.
 - **Class:** `an explicitly enumerated precondition left out of the suite that covers its siblings`
@@ -1751,7 +1767,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed, each with the one variable that moves the assertion. The Cursor envelope case uses `Shell` (its only listed deny path) plus a Claude positive control; the `.path` fallback case asserts the announcement it produces; the missing-`file_path` case is retired as behavior-neutral; leg 1 asserts the whole deny message; the no-state case asserts the deny fired first. The no-session case needed more than the suggested fix — a `null` scope id throws downstream and the outer catch returns `null`, so on Claude the guard is indistinguishable from its own removal; the discriminating leg runs on Cursor, whose no-op is `{}` rather than `null`. All five mutation-confirmed.
 - **File:** `scripts/ai-skills/hook-gate.test.ts:1343`, `:960`, `:994`, `:160`, `:154`, `:1059`, `:1267`
 - **Problem:** each asserts an outcome a second, unrelated cause already produces, so the behavior named in the title is not what the assertion discriminates on.
 - **Class:** `a null/empty assertion satisfied by an earlier guard than the one under test`
@@ -1762,7 +1779,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed — `checkPathIsRouted` and `checkInPlaceFlag`, with the `.d.mts` declaration and both JSDoc references swept. `isForeignPayload` left alone as out of frame.
 - **File:** `scripts/ai-skills/hooks/architect-route.mjs:445` (`pathIsRouted`), `scripts/ai-skills/hooks/hook.mjs:243` (`segmentHasInPlaceFlag`)
 - **Problem:** `.prism/rules/code-standards.md:63-64` requires a verb-first name and forbids `is`/`has` framing outside TypeScript type guards; neither of these is a type guard.
 - **Class:** `predicate helper named as a noun phrase`
@@ -1773,7 +1791,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed. The heading reads "Shell writes ask you to switch tools" and says the write is refused, and the trigger sentence reads "in this scope" with the subagent consequence spelled out.
 - **File:** `templates/install/.prism/architect/_toolkit/install-layout.md` § Write gate
 - **Problem:** the shipped copy says shell writes are "redirected, not blocked" when the runtime returns `permissionDecision: "deny"`, and says a doc must be read "this session" when state is keyed per scope, so a subagent is denied after its parent read the doc.
 - **Class:** `consumer-voiced rewrite that simplifies past the behavior`
@@ -1784,7 +1803,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
+- **Fix:** Fixed. Both ADR-0071 and ADR-0072 join the index table, and `update.ts`'s comment names `PreToolUse`. The supersession claim resolved the other way: ADR-0071's announce layer still ships alongside the gate, so 0072 now says it *amends* 0071 — the `Supersedes:`/`Superseded-by:` frontmatter the README mandates does not apply, and ADR-0070's "Amends ADR-0035" is the precedent.
 - **File:** `.prism/spec/adrs/_toolkit/README.md:124`, `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:1-6`, `scripts/ai-skills/update.ts:1265`
 - **Problem:** ADR-0072 is absent from the ADR index table, claims to supersede ADR-0071 without the frontmatter the README mandates on either side, and `update.ts`'s comment enumerates the events both sides register without the `PreToolUse` this PR adds.
 - **Class:** `a registration or enumeration that a new member did not join`
@@ -1795,7 +1815,8 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred`
+- **Deferred because:** two governing rules prescribe two shapes for a `## Sessions` entry — `branch-plan.md` § Battery Persistence the single line, `_shared/core.md` § Opening Orientation Battery the dated block of four bullets plus a Close. Most of this plan's entries, including three besides the one flagged, use the block. Normalizing the flagged entry alone would move the inconsistency rather than close it, and reconciling the two rules is spec work outside PR 2D's file set. The catch-all Decision's verdict is left to resolve at close, as suggested.
 - **File:** `.prism/plans/opus5-port.md` — `## Sessions`, and the catch-all `## Decisions` entry
 - **Problem:** the two 2026-08-19 `## Sessions` entries use different shapes (multi-line sub-bullets vs. the canonical single-line `open: … · close: …`), and the catch-all Decision's verdict reads "promotion verdict pending — resolves at PR 2D close", which is not one of the three forms `branch-plan.md` § Decision verdict gate defines.
 - **Class:** `bookkeeping written in a shape the governing rule does not define`
@@ -1818,13 +1839,15 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [ ] No critical or major issues — 1 critical, 4 majors open
+- [x] No critical or major issues — the critical and all four majors are `fixed`; one minor deferred with a recorded reason
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — 6 non-discriminating tests, 9 uncovered behaviors, including deny condition 5 and the whole delivery path
+- [x] Tests written for new logic and edge cases — the six non-discriminating tests each gained a moving variable, and deny condition 5, the argv dispatch, and the install registration are all covered and mutation-confirmed
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-19 (`build.ts --check` in sync; `hook-gate.test.ts` 57/57 re-run independently here)
+- [x] Build passes — last run: 2026-08-20 (`pnpm prism:check` exit 0, 805/805)
 - [x] PR description up to date — and honest about D8; the "not proven" section names the gap rather than implying coverage
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 
-**Last updated:** 2026-08-19
+**Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
+
+**Last updated:** 2026-08-20

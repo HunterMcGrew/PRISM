@@ -1,5 +1,8 @@
 {
-	".prism/SPEC.md": ["guides/writing-a-rule.md", "_toolkit/spec-editing.md"],
+	".prism/SPEC.md": [
+		"guides/writing-a-rule.md",
+		"_toolkit/spec-editing.md"
+	],
 	".claude/skills/**": [
 		"guides/writing-a-skill.md",
 		"_toolkit/skills-ecosystem.md",
@@ -7,11 +10,27 @@
 		"_toolkit/closing-messages.md"
 	],
 	".claude/skills/prism-qa-test-plan/**": "_toolkit/qa-test-planning.md",
-	".prism/templates/**": ["guides/writing-a-plan.md", "_toolkit/plan-authoring.md"],
-	".prism/rules/**": ["guides/writing-a-rule.md", "_toolkit/spec-editing.md"],
-	".prism/architect/**": ["guides/writing-an-architect-doc.md", "_toolkit/spec-editing.md"],
-	".prism/references/**": ["guides/writing-an-architect-doc.md", "_toolkit/spec-editing.md"],
-	".prism/plans/**": ["guides/writing-a-plan.md", "_toolkit/plan-authoring.md"],
+	".prism/templates/**": [
+		"guides/writing-a-plan.md",
+		"_toolkit/plan-authoring.md"
+	],
+	".prism/rules/**": [
+		"guides/writing-a-rule.md",
+		"_toolkit/spec-editing.md"
+	],
+	".prism/skills/**": "_toolkit/skills-ecosystem.md",
+	".prism/architect/**": [
+		"guides/writing-an-architect-doc.md",
+		"_toolkit/spec-editing.md"
+	],
+	".prism/references/**": [
+		"guides/writing-an-architect-doc.md",
+		"_toolkit/spec-editing.md"
+	],
+	".prism/plans/**": [
+		"guides/writing-a-plan.md",
+		"_toolkit/plan-authoring.md"
+	],
 	".prism/business/**": "_toolkit/business-layer.md",
 	".prism/lessons.md": "_toolkit/audit-workflow.md",
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",
@@ -22,5 +41,8 @@
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	"docs/": "_toolkit/documentation.md",
 	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md",
-	".prism/spec/adrs/**": ["guides/writing-an-adr.md", "_toolkit/spec-editing.md"]
+	".prism/spec/adrs/**": [
+		"guides/writing-an-adr.md",
+		"_toolkit/spec-editing.md"
+	]
 }

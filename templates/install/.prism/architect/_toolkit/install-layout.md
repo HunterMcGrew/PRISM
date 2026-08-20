@@ -132,11 +132,11 @@ The hook announces; it never blocks. On a read that matches an architect-context
 
 Editing a file your manifest routes to an architect doc is blocked until you have read that doc. Like the rest of the hook runtime, this reaches Claude Code only.
 
-**What triggers it.** A `Write`, `Edit`, or shell write to a path one of your manifest routes matches, where at least one doc that route names has not been read this session. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
+**What triggers it.** A `Write`, `Edit`, or shell write to a path one of your manifest routes matches, where at least one doc that route names has not been read in this scope. A subagent is its own scope and reads for itself, so a doc its parent read still gates the child. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
 
 **What clears it.** Read each doc the message names, in full. The message spells out the exact command — `cat <doc>`, one line per doc — because only a whole-file read counts. A `Read` with a line range, a `head`, or a `grep` that merely names the doc does not clear it. Read it, then retry the same edit.
 
-**Shell writes get redirected, not blocked.** Writing to a routed path with `>`, `>>`, `tee`, or `sed -i` returns a message asking you to redo the edit with your file-edit tool, so the gate can check the same prerequisites it checks everywhere else. Nothing is required of you first.
+**Shell writes ask you to switch tools.** Writing to a routed path with `>`, `>>`, `tee`, or `sed -i` is refused with a message asking you to redo the edit with your file-edit tool, so the gate can check the same prerequisites it checks everywhere else. The refusal is the same kind the gate uses elsewhere — what differs is that nothing is required of you first, so retrying through the other tool is all it asks.
 
 **Turning it off.** Set `PRISM_HOOK_DENY_DISABLE=1`, remove the `PreToolUse` entry from your `.claude/settings.json`, or delete `.claude/hooks/hook.mjs`. Any of the three works, and none of them is prevented — the gate is friction meant to be worth keeping, not a lock. `prism doctor` reports a removed or unregistered hook so the change is visible rather than silent.
 

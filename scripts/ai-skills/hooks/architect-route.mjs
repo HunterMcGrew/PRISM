@@ -438,7 +438,7 @@ export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
  * @param {string} filePath
  * @returns {Promise<boolean>}
  */
-export async function pathIsRouted(repoRoot, filePath) {
+export async function checkPathIsRouted(repoRoot, filePath) {
 	const relativePath = toRepoRelativePath(repoRoot, filePath);
 	if (relativePath === null) {
 		return false;
