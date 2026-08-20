@@ -244,6 +244,18 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **→ promotion pending — ADR-0072 § Consequences (task D5), in the same bullet that states the credit channel's call-shape gap; this narrows that gap and belongs beside it.**
 
 
+- **The `.prism/**` catch-all is narrowed to the paths `install-layout.md` actually governs, in all three routing tables.** This answers the cost-of-the-remedy question PR 2C's review (Eric, #463) handed to whoever writes the deny.
+  - **Root cause of the question:** a consumer editing `.prism/plans/foo.md` matched both the `.prism/plans/**` guide route and a `.prism/**` catch-all routing to `install-layout.md`. Measured on the seed: 334 lines of forced reading, of which `install-layout.md`'s 180 govern nothing about writing a plan. PRISM's own manifest is worse — 839 lines for the same write, `install-layout.md` and `skills-ecosystem.md` contributing 447 of them through the catch-all alone. PR 2C's premise is that the deny's remedy has to be cheap, and this is where it bends.
+  - **Alternatives considered:** keep the catch-all and accept the cost (rejected — it is the habituation failure in a new costume, and it lands hardest on a consumer's first gated write); delete the catch-all outright (rejected — `install-layout.md` would lose its only stub route and become an orphan-doc finding on a fresh install, which is E1's check working correctly against a state this PR created); shorten `install-layout.md` (rejected — the doc is not padded, and trimming a doc to fit a route is fixing the wrong end).
+  - **Chosen approach:** replace `.prism/**` with `.prism/custom/**` and `.ai-skills/definitions/**` — the consumer overlay and the definitions files `install-layout.md` genuinely documents. Applied to all three tables rather than the stub alone: PRISM's own repo is where the gate gets dogfooded first, and a narrowing that leaves two of three tables contradicting the third is the inconsistency this plan keeps recording against itself.
+  - **What this gives up, stated plainly:** `.prism/design/`, `.prism/retros/`, `.prism/prds/` and their siblings become unrouted, so they are neither announced nor gated. That is the design's own rule rather than an exception to it — a route existing is the opt-in, and a path nobody has written a governing doc for has nothing to force a read of.
+  - **Scope note:** § Cross-PR collisions assigns these three tables to 2A (deletion) and 2C (addition), neither of which is 2D. Both have merged, so there is no concurrent editor; the absorption is recorded here rather than left silent.
+  - **→ promotion verdict pending — resolves at PR 2D close, alongside ADR-0072's deny-scope statement.**
+
+- **Task D9's `docs/distribution.md` target was wrong, and the correction went to the two files that actually describe the hook.** `docs/distribution.md` contains no hook description at all — `grep -i hook` returns nothing. The registrations are described in `docs/what-prism-writes.md` and `docs/adopting-into-existing-repos.md`, both of which listed `PostToolUse` and `PostCompact` and went stale the moment `PreToolUse` shipped. Writing a new hook section into `distribution.md` to satisfy the task text as written would have created a third home for content that already has two.
+  - **→ no promotion needed (a task-text correction inside this PR; D10's sweep table carries the verify-line consequence).**
+
+
 ---
 
 ## Cross-PR collisions
@@ -563,7 +575,7 @@ Branch `huntermcgrew/opus5-port-deny-gate` from PR 2C's head, after PR 2B is in 
    - `## Context` carries the full history: ADR-0067's floor was reverted because its gate sat on the report-back channel and a blocked persona fought its own gate; ADR-0069 permanently rejects hooks **on that channel specifically**; `epic-floor-revert.md § Decisions` left a lightweight opt-in open in the same breath as "No hooks survive"; ADR-0071 chose nag over deny, and this ADR supersedes that choice with the operator's measurement — roughly six nags to habituation, and forced reads that changed behavior where nags did not.
    - `## Decision` in one sentence: a write to a path matching any manifest route is denied until the route's docs are read; only the `write` kind from an explicitly listed tool, only with a session id, and the remedy is reading a document.
    - `## Consequences` carries the honest negatives, stated plainly rather than hedged. **The gate is friction, not a wall:** deleting the registration from `.claude/settings.json`, deleting `.claude/hooks/hook.mjs`, or setting `PRISM_HOOK_DENY_DISABLE=1` each disables it; all three are trivial; none is prevented, and routing the hook's own surface was rejected because in a consumer repo `.claude/settings.json` is the consumer's file. The compensating control is visibility — `prism doctor`'s hook-registration check (E3) turns a removed hook into a reported finding. Also name: a doc read through a channel the hook never observed still reads as unread; and that **each agent reads for itself** — a subagent doing routed work pays the read cost fresh even when its parent already read the doc, chosen because a dispatch may be one agent or many and the hook cannot tell which from inside. **The drafted credit-leak-via-subagent consequence is stale and must not be written** — #468 closed that leak, and the honest consequence is its opposite. Name the allow-list pre-filter alongside the call-shape gap: credit is refused for any command outside a positive character class, so a path carrying a space or a `%` under-credits by design.
-   - **Verify:** `pnpm prism:crossref-lint` green; `ls .prism/spec/adrs/_toolkit/0072-*.md` succeeds; and `grep -c '0072-write-gate-on-routed-paths.md' .ai-skills/definitions/seed-curation.json` returns `1`. Every `_toolkit/` ADR is classified individually under `excluded`, and neither of the first two commands can see a missing classification (D0 sweep, axis 1).
+   - **Verify:** `pnpm prism:crossref-lint` green; `ls .prism/spec/adrs/_toolkit/0072-*.md` succeeds; and `grep -rc '0072-write-gate-on-routed-paths.md' .ai-skills/definitions/seed-curation.json scripts/ai-skills/ship-closure.ts` returns `1` for both. Every `_toolkit/` ADR is classified individually under `excluded`, and neither of the first two commands can see a missing classification (D0 sweep, axis 1). The second registration site is `SHIP_CLOSURE_TRACKED_DANGLING_REFS`: task D6 cites the ADR by path from a skill body that ships, so the ADR joins the tracked set the same way its two siblings in that paragraph already have — a fact the implementation surfaced, not one D0 could have predicted (D10 sweep, axis 3).
 
 **D6. Correct the conductor's contradicting line.** `.ai-skills/skills/prism-conductor/shared.md:106` — `### Enforcement is guidance + pipeline stages, never runtime hooks` currently reads *"No `Stop`/`SubagentStop` gates on report-backs, no `PreToolUse` ownership guards on writes."* Replace the second clause: *"No `Stop`/`SubagentStop` gates on report-backs. `PreToolUse` guards are confined to routed paths — a write is held until the route's governing doc is read (ADR-0072); ownership guards on writes stay out."* Adjust the heading if "never runtime hooks" no longer reads true. **PR 3's task 24 also edits this file** — PR 2D owns § Enforcement, PR 3 owns § Talking to the operator. **Verify:** `grep -rn "no \`PreToolUse\` ownership guards on writes" .ai-skills/ .prism/ .claude/ .codex/ .cursor/ | grep -v '^\.prism/plans/'` returns nothing. The original roots missed the four build-managed mirrors carrying the same sentence, and its unfiltered form could never return empty — this plan and `issue-408.md` both quote the old string (D0 sweep, axis 1).
 
@@ -586,7 +598,7 @@ Branch `huntermcgrew/opus5-port-deny-gate` from PR 2C's head, after PR 2B is in 
 
 #### Eli (documentation)
 
-**D9. Document the gate as a consumer-facing surface.** Add a § Write gate section to `.prism/architect/_toolkit/install-layout.md` and its curated seed twin: what triggers a deny, what clears it, the two environment switches, and the honest statement that the gate is friction rather than a wall (pointing at ADR-0072). Say plainly that the gate reaches Claude Code only, alongside the delivery statement already in § Hook-runtime ownership and recovery. Update `docs/distribution.md` where it describes the hook. **Verify:** `pnpm prism:check` green — **and** `grep -c '^## Write gate' .prism/architect/_toolkit/install-layout.md templates/install/.prism/architect/_toolkit/install-layout.md` returns `1` for both, plus `grep -c 'PRISM_HOOK_DENY_DISABLE' docs/distribution.md` returns at least `1`. `install-layout.md` is `curated`, so `checkSeedDrift` tests its twin for existence and never for content; `prism:check` alone cannot see a canonical-only edit or an untouched `docs/distribution.md` (D0 sweep, axis 1).
+**D9. Document the gate as a consumer-facing surface.** Add a § Write gate section to `.prism/architect/_toolkit/install-layout.md` and its curated seed twin: what triggers a deny, what clears it, the two environment switches, and the honest statement that the gate is friction rather than a wall (pointing at ADR-0072). Say plainly that the gate reaches Claude Code only, alongside the delivery statement already in § Hook-runtime ownership and recovery. Update `docs/distribution.md` where it describes the hook. **Verify:** `pnpm prism:check` green — **and** `grep -c '^## Write gate' .prism/architect/_toolkit/install-layout.md templates/install/.prism/architect/_toolkit/install-layout.md` returns `1` for both, plus `grep -c 'PRISM_HOOK_DENY_DISABLE' docs/what-prism-writes.md docs/adopting-into-existing-repos.md` returns at least `1` for both. `install-layout.md` is `curated`, so `checkSeedDrift` tests its twin for existence and never for content, and `prism:check` alone cannot see a canonical-only edit (D0 sweep, axis 1). The task named `docs/distribution.md` as the file describing the hook; it describes none — `what-prism-writes.md` and `adopting-into-existing-repos.md` do, and both listed the pre-2D registrations (D10 sweep, axis 2).
 
 ---
 
@@ -796,6 +808,13 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-19 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D)
+  - **Intent** — ship the write-deny gate end to end: the arm, the parser flip, ADR-0072, the conductor correction, the suite, the consumer docs, and the two sweeps that grade the verify lines.
+  - **Ambiguity** — none load-bearing; assumed D9 is in scope (the dispatch names D0-D10 and no Eli lane exists in this run) and that D8 cannot run from a dispatched session, so it is reported outstanding rather than claimed.
+  - **Bounds** — PR 2D's file set per § Cross-PR collisions, plus the three routing tables absorbed under a recorded Decision. Untouched: the conductor run log, `prism-conductor/shared.md` § Talking to the operator, PR 2E's lane.
+  - **Approach** — reuse the existing state format and the announce arm's credit channel rather than growing a second reader of either; D0 before code, D10 after.
+  - **Close** — scope held, with one recorded absorption (the three routing tables, per the catch-all Decision). Two silent decisions named: `emitDeny` returns `null` on Cursor and Codex rather than guessing an unobserved envelope, and the deny reports only the first gated path in a multi-path payload. Edge inputs chosen on purpose: no session id, no route match, an unlisted tool name, an empty `sed -i ''` operand, and a doc absent from disk all resolve to allow. One claim without proof: D8's live-host run, which is `[HITL]` and unrun — every other claim rests on `pnpm prism:check` exit 0 at 798/798, with the deny deliberately broken to confirm leg 3 fails.
+
 - 2026-08-19 [main] (winston, dispatched — `amend-2d`)
   - **Intent** — settle three plan-level questions so PR 2D starts with no open architectural calls: what B4 established, how the shell parser gates, and how 2D's verify lines stay honest.
   - **Ambiguity** — none load-bearing; assuming ADR-0072 needs no reconciliation because it does not exist yet (task D5 writes it), so the correction lands in D5's task text instead.
@@ -906,6 +925,42 @@ Every evidence command below was reasoned against this plan's own task list befo
 | D8 | `held` | `[HITL]`, human-run, no command by construction. Its artifact is a `## History` entry naming what was observed. |
 | D9 | `amended` | `pnpm prism:check` (exit 0 today) **cannot see** either half of what the task changes: `install-layout.md` is `curated`, so `checkSeedDrift` checks its twin for existence and never for content, and `docs/distribution.md` is not compared against anything. Amended to add a § Write gate heading check across both `install-layout.md` copies plus a gate mention in `docs/distribution.md`; all three return nothing today. |
 | D10 | `held` | Content-only; the artifact is the second table. No command to run. |
+
+- 2026-08-19 [huntermcgrew/opus5-port-deny-gate]: Implemented PR 2D — the `PreToolUse` deny arm, the allow-list pre-filter and shell-write reroute, ADR-0072, the conductor correction, the gate suite, and the consumer-facing gate docs. `pnpm prism:check` exit 0, 798 tests / 798 pass / 0 fail (baseline 775/774); the deny was deliberately disabled to confirm leg 3 fails. D8 is `[HITL]` and unrun — see `## PR Readiness (PR 2D)`.
+- 2026-08-19 [huntermcgrew/opus5-port-deny-gate]: Narrowed the `.prism/**` catch-all in all three routing tables, answering the cost-of-the-remedy question PR 2C's review handed to this PR; see Decision: The `.prism/**` catch-all is narrowed to the paths `install-layout.md` governs.
+- 2026-08-19 [huntermcgrew/opus5-port-deny-gate]: Ran D10's sweep against the implementation as it landed. Two lines moved after D0 had already dispositioned them, both invisible at authoring time: D9's named a file that describes no hook, and D5's mechanism grew a second registration site during implementation.
+
+**D10 sweep — verify lines re-derived against the implementation (2026-08-19, post-implementation)**
+
+| Task | Disposition | What the command returns today |
+| --- | --- | --- |
+| D0 | `held` | Content-only. Its artifact, the first table, is above. |
+| D1 | `held` | `pnpm prism:test` exit 0, 798/798. `grep -c '"PreToolUse"' .claude/settings.json templates/install/.claude/settings.json` → `1` and `1`. The arm gained `resolveListedToolKind` during implementation, but the reach of both commands is unchanged by it. |
+| D2 | `held` | `pnpm prism:test` exit 0 — the subagent leg asserts both directions. D8's subagent step remains outstanding and is not counted as verification. |
+| D3 | `held` | `pnpm prism:test` exit 0. The mirror grep names all five copies of `context-reuse.md`. The write detector grew a segment scanner (`segmentHasInPlaceFlag`) mid-implementation; neither command's reach changed. |
+| D4 | `held` | `pnpm prism:test` exit 0 — the `PostCompact` cases pass with and without a session id. |
+| D5 | `amended` | **Axis 3.** `ls` succeeds and `crossref-lint` is green, but the ADR acquired a *second* registration site during implementation: D6 cites it by path from a skill body that ships, so `ship-closure` failed until the ADR joined `SHIP_CLOSURE_TRACKED_DANGLING_REFS` beside its two siblings in the same paragraph. D0 could not have seen this — the citation did not exist yet. The re-derived command returns `1` for both files. |
+| D6 | `held` | The re-derived grep returns nothing. The five hits D0 measured are all corrected — one source plus four regenerated mirrors. |
+| D7 | `held` | `pnpm prism:test` exit 0, 798 tests / 798 pass / 0 fail, 0 skipped. `hook-gate.test.ts` alone: 57 cases, cold-start leg included and passing. |
+| D8 | `held` | `[HITL]`, human-run, no command. Unrun in this lane — a dispatched session has no live host. |
+| D9 | `amended` | **Axis 2.** `pnpm prism:check` is green and both `## Write gate` headings return `1`, but the task named `docs/distribution.md` as the file describing the hook and it describes none — the description lives in `docs/what-prism-writes.md` and `docs/adopting-into-existing-repos.md`, both of which listed only the two pre-2D registrations. Corrected there; the re-derived command returns `1` for both. |
+| D10 | `held` | Content-only. Its artifact is this table. |
+
+## PR Readiness (PR 2D — The deny gate)
+
+- [x] No critical or major issues known — Briar has not reviewed yet.
+- [x] Types correct — `pnpm prism:check-types` exit 0 across both tsconfigs, including `checkJs` over the `.mjs` runtime.
+- [x] No stray debug artifacts.
+- [x] Tests written for new logic and edge cases — 798/798, `hook-gate.test.ts` at 57 cases with all three required legs, the subagent leg in both directions, and a positive control that fails leg 3 when the deny is disabled.
+- [x] All debugged issues resolved — none opened.
+- [x] Build passes — `pnpm prism:build && pnpm prism:check` exit 0, 2026-08-19.
+- [ ] **D8 is unrun.** The `[HITL]` end-to-end run against a live Claude Code host cannot happen in a dispatched session. Every leg below it synthesizes its own payloads, so the suite cannot catch a payload-shape mistake — that is exactly what D8 exists to catch, and it is the one claim in this PR with no evidence behind it.
+- [ ] PR description — written at push; re-sync if scope moves.
+- [ ] Lasting decisions promoted — deferred to plan close, per the pending verdicts on the deny-scope, friction-not-a-wall, catch-all, and subagent Decisions.
+
+**Last updated:** 2026-08-19
+
+---
 
 ## Review Issues
 
