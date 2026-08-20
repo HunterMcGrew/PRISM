@@ -38,7 +38,11 @@ An inferred remedy is what makes a gate unsatisfiable. Credit lands only on a re
 
 **A deny writes no state.** It never appends to `read` and never appends to `announced`, because a denied write has to be able to produce the same message again after the model's remedy fails.
 
-**A shell write reroutes rather than gating.** When a `Bash` command writes to a routed path through `>`, `>>`, `tee`, `tee -a`, or `sed -i`, the model is told to redo the edit with its file-edit tool. That remedy judges no prerequisites at all, which is what makes it impossible to render unsatisfiable: deny what you can parse, and where you cannot, reroute to a surface that can check. The write detector cannot reuse the read channel's allow-list — `>` sits outside that class by construction — so it runs on the raw command and admits those five forms as its only metacharacters, sharing the read parser's tokenizing helpers and nothing else.
+**A shell command reroutes rather than gating, and it reroutes unless it is provably a read.** No parser short of a real shell can say what an arbitrary `Bash` command writes, so the arm never tries. It collects every path-shaped token in the raw command, and drops a token only when the whole command is provably a set of read-only commands and the token is one of their operands. Whatever survives, and matches a manifest route, is rerouted to the model's file-edit tool. That remedy judges no prerequisites at all, which is what makes it impossible to render unsatisfiable.
+
+The proof is the read channel's own positive character class plus a list of commands that read their operands and write nothing (`cat`, `grep`, `ls`, a `sed` with no in-place flag, a `git` whose subcommand only reads, and their kin). It is all-or-nothing over the whole command: one character outside the class, or one segment whose head is not on that list, and nothing is proven.
+
+Enumerating write forms was tried for three review rounds and abandoned. Each round repaired the forms the last round missed — heredoc terminators, line continuations, retained quote characters, `sudo`/`VAR=value`/paren prefixes — and each repair shipped a fresh missed write behind a green suite, because a list of ways to write a file is wrong the moment the shell grows one nobody listed. Inverting it moves the enumeration to a list whose misses cost a reroute message rather than a silent miss.
 
 Registration is `PreToolUse` matched `Write|Edit|Bash`, in `.claude/settings.json` and in the install seed's copy of it.
 
@@ -56,6 +60,8 @@ Registration is `PreToolUse` matched `Write|Edit|Bash`, in `.claude/settings.jso
 
 - **A doc read through a channel the hook never observed still reads as unread.** Content pasted into the conversation, delivered by a different tool, or carried over from a prior session credits nothing. The remedy is one re-read through an observed channel, and the deny message names it.
 
-- **Shell writes the parser cannot see are not rerouted.** Word-prefixed redirects (`echo hello>f`), `python -c` and every other interpreter writing through its own runtime, and `cp` / `mv` / `dd` all pass. These are recorded as deliberately open rather than closed by guesswork, because a write detector that guesses reroutes edits that were never writes.
+- **The shell arm over-denies, on purpose.** A command that only reads gets rerouted whenever the arm cannot prove it — a pipeline, a `$VAR`, a `find`, any binary not on the read-only list. The cost is one message telling the model to respell the read as a plain `cat`, `head`, or `grep`. The message names no environment-variable escape, because `PRISM_HOOK_DENY_DISABLE=1` is read from the hook process's own environment and an inline assignment on the denied command never reaches it.
+
+- **One gap survives by construction: a write whose target path never appears in the command text.** A path built from a variable, or reached by `cd`-ing first, is invisible to a scan over the command. No parser can close this without being a shell, and it is named here rather than left for a later round to rediscover.
 
 - **Neutral:** whether forced reading changes what the agent produces, rather than only what it has loaded, is measured for the announcement (it did not) and asserted for the deny on operator testing alone. The end-to-end run against a live host is what turns that into an observation.

@@ -1832,16 +1832,53 @@ test("parseUnprovenShellPaths: a provable read clears every path it names", () =
 	}
 });
 
-test("parseUnprovenShellPaths: one unprovable segment costs the whole command its proof", () => {
-	// The counterweight to the case above. A read-only head token vouches for
-	// its own operands only, and the proof is all-or-nothing, so a command
-	// that is half read and half anything else proves nothing.
+/**
+ * Every separator inside the read channel's character class, in every spacing
+ * a caller can write it. Separators outside the class need no spelling axis —
+ * their character alone costs the command its proof, which
+ * `CHARACTERS_OUTSIDE_THE_CLASS` covers.
+ */
+function everyInClassSeparatorSpelling(): string[] {
+	const spellings: string[] = [];
 	for (const separator of [";", "\n", "\r\n"]) {
+		for (const spacing of [
+			(value: string) => value,
+			(value: string) => ` ${value}`,
+			(value: string) => `${value} `,
+			(value: string) => ` ${value} `,
+		]) {
+			spellings.push(spacing(separator));
+		}
+	}
+
+	return spellings;
+}
+
+test("parseUnprovenShellPaths: one unprovable segment costs the whole command its proof", () => {
+	// The counterweight to the provable-read case above. A read-only head
+	// token vouches for its own operands only, and the proof is
+	// all-or-nothing, so a command that is half read and half anything else
+	// proves nothing.
+	for (const separator of everyInClassSeparatorSpelling()) {
 		assert.ok(
 			parseUnprovenShellPaths(
 				`cat a.md${separator}tee ${SHELL_ROUTED_PATH}`
 			).includes(SHELL_ROUTED_PATH),
 			`a ${JSON.stringify(separator)} separator does not let the cat vouch for the tee`
+		);
+	}
+});
+
+test("parseUnprovenShellPaths: a read stays proven across every in-class separator spelling", () => {
+	// Without this, a splitter that cut nowhere would satisfy the case above
+	// by never proving anything at all.
+	for (const separator of everyInClassSeparatorSpelling()) {
+		assert.deepEqual(
+			parseUnprovenShellPaths(
+				`cat a.md${separator}cat ${SHELL_ROUTED_PATH}`
+			).filter((candidate) => candidate === SHELL_ROUTED_PATH),
+			[],
+			`a ${JSON.stringify(separator)} separator joins two reads, not a read and a write`
 		);
 	}
 });
