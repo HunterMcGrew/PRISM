@@ -807,7 +807,21 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Implementation guidance:** `architect/_toolkit/ticket-workflows.md` and `architect/_toolkit/plan-authoring.md` are `curated`; `architect/_toolkit/output-guards.md` is `excluded` as maintainer-facing build internals. The twins carry no `ADR-NNNN` references. Everything else added by this PR ships verbatim through the default mirror.
   - → no promotion needed (curation-boundary tactics for one file set; the general rule already lives in `install-layout.md` § Curated seed twins).
 
+- **Command segmentation is a character scan, and read credit is judged over the whole command rather than per segment.**
+  - **Root cause of the question:** the first segmenter split each line on whitespace and compared whole tokens against a boundary set, so a separator with no space around it (`a;b`, `a&&b`) stayed inside a token and never cut — both round-1 defects recurred in that spelling. Judging each segment's read credit on its own opened a second hole: a heredoc introducer makes the following lines data, so a `tee <<'EOF'` PR body had its own text parsed as commands and credited the docs its prose named.
+  - **Alternatives considered:** a regex split on the separators as delimiters (`/\s*(?:\|\||&&|[;|&])\s*/`), which is what the review prescribed; extending the boundary-set enumeration to the unspaced spellings; a real shell tokenizer as a dependency.
+  - **Chosen approach:** a single quote-, escape-, and heredoc-aware character scan for both arms, plus a whole-command safe-character gate on the read arm. The regex split was measured and rejected: `sed -i 's/a/b/;s/c/d/' out.md` carries a `;` inside the script, and cutting there strands `out.md` in a segment whose first token is not a write command — the gate stops seeing a real write, which is a worse failure than the one being fixed. Extending the enumeration re-runs the process that has already missed three times. A tokenizer dependency is out on the same zero-dependency constraint recorded above.
+  - **Implementation guidance:** the read arm's certainty rule is the whole-command class — `SHELL_READ_SAFE_CHARACTERS` now admits `;` and line breaks as its only separators, and any character outside it refuses the entire command, not the clause carrying it. That is what makes the heredoc unreachable by construction rather than by enumerating `<<`, and it settles the round-2 minor the same way: `cat a && cat b` credits neither, and the JSDoc now says so and says why. The write arm cannot use a class (its whole job is metacharacters), so its correctness rests on the scanner: quotes hold a separator inside a token, and a heredoc body is skipped up to its delimiter.
+  - **→ promotion pending — rides ADR-0072's `## Consequences` with the credit channel's other coverage-and-gaps content.**
+
 ## Sessions
+
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D round 2 repair)
+  - **Intent** — close briar's two round-2 majors and the minor at the level of the class, so the segmenter stops producing defects of one shape a third time.
+  - **Ambiguity** — none load-bearing; assumed the prescribed regex split is a proposal to verify rather than a specification, per the dispatch, and verified it — it regresses a quoted `sed` script and was replaced.
+  - **Bounds** — PR 2D's file set: `hook.mjs`, `hook-gate.test.ts`, this plan. Untouched: the conductor run log, the draft flag, the merge, D8.
+  - **Approach** — one shared character scanner for both arms plus a whole-command certainty gate on the read arm, and a generated separator-spelling set in the suite so the untested-spelling gap cannot reopen by omission.
+  - **Close** — scope held. Six new tests, each confirmed failing against the pre-repair `hook.mjs` and passing after; the three findings are covered end to end through the real arms, not only at the parsers. Two silent decisions named: the heredoc introducer and its delimiter are dropped from the token stream rather than kept (`tee out.md <<'E'` previously yielded `<<'E'` as a phantom write target), and a read command's credit is now refused for the whole command rather than the offending clause, which gives up credit that was previously granted — under-credit costs one re-read. Edge inputs chosen on purpose: unspaced and every-padding separator spelling, `\r\n`, quoted separators, `<<-` and unterminated heredocs, here-strings (`<<<`), and word-prefixed redirects. No claim here is unproven except D8's live-host run, which still goes to the human merge gate.
 
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (briar, dispatched — PR 2D round 2)
   - **Intent** — verify clove's five blocking closures independently rather than accept them, judge the two recorded non-closures, and sweep the repair delta for what the fixes introduced.
@@ -968,6 +982,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D self-review. The critical and the write-arm major share one root cause — both arms tokenized a raw multi-line command instead of segmenting it first — and both are closed by a shared `splitShellSegments`; see the Review Issues entries for the per-finding fixes. The routing narrowing now re-routes `.prism/rules/**` and `.prism/skills/**` in all three tables, and the accepted-losses list is measured rather than estimated.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Corrected the `## Sessions` mutation note Reese refuted — removing the `PostCompact` no-session guard throws a swallowed `TypeError` rather than building an empty-prefix sweep. The arm is inert either way, so the survival conclusion is unchanged.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D round-2 review. Replaced the token-comparison segmenter with a quote-, escape-, and heredoc-aware character scan shared by both arms, and moved the read arm's safe-character test back over the whole command with `;` and line breaks admitted as separators. See Decision: Command segmentation is a character scan.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -1856,34 +1871,34 @@ Briar self-review of the repair head `0141691e`, 2026-08-20 [huntermcgrew/opus5-
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:216` (`splitShellSegments`), boundary sets at `:180` and `:199`
 - **Problem:** `splitShellSegments` splits each line on whitespace and then compares whole tokens against the boundary set, so `a;b`, `a|b`, and `a&&b` carry their separator inside a token and never break a segment — the write arm resumes claiming operands across the separator, and the read arm refuses the segment outright.
 - **Class:** `a shared fix that inherits the tokenizer defect it was extracted to remove`
 - **Sweep:** proven end to end through the real arms, not the parsers. Probe B — `sed -i s/a/b/ /tmp/other.ts;cat src/index.ts` through `runPreToolUseArm` returns "You're writing to `src/index.ts` via a shell write", a false statement about a path the command only reads, and a block on a `cat`; this is round 1's write-arm Major verbatim. Probe C — the deny's own two remedy lines rejoined as `cat <doc>; cat <doc>` through `runPostToolUseArm` earn zero credit and the write re-denies; this is round 1's Critical in a narrower spelling. Parser level, `parseShellWriteTargets("sed -i s/a/b/ first.ts;cat .prism/rules/x.md")` → `["s/a/b/","first.ts;cat",".prism/rules/x.md"]`, and the `|` and `&&` unspaced forms return the same shape. Why the suite is green on it: the separator loop at `hook-gate.test.ts:1656` iterates `["\n","\r\n"," ; "," && "," | "," & "]` — every non-newline member is space-padded, so the tested spelling is the one that works and the common one is untested. Controls: every spaced form and both line-break forms behave correctly, and `SHELL_SEQUENTIAL_BOUNDARIES`' spaced `;` credits both docs as designed.
-- **Suggested fix:** split on the separators as delimiters rather than matching them as tokens — one regex split per line (`/\s*(?:\|\||&&|[;|&])\s*/` for the write arm, `/\s*;\s*/` for the read arm) replaces both the whitespace split and the boundary-set membership test, and the two `Set`s collapse into the two regexes. Extend the `:1656` loop to the unspaced spellings so the gap cannot reopen.
+- **Fix:** `splitShellSegments` is now a character scan that cuts at every unquoted `;`, `&&`, `||`, `|`, `&`, and line break, so spacing is irrelevant; both boundary `Set`s are gone. The prescribed regex split was tried first and rejected on measurement — `sed -i 's/a/b/;s/c/d/' out.md` cuts inside the script and loses `out.md`, turning a false deny into a missed real write. The `:1656` loop is now generated from separator × spacing rather than enumerated, so an untested spelling cannot recur by omission, and the same generator drives a new end-to-end case asserting `sed -i s/a/b/ /tmp/other.ts<sep>cat <routed>` does not reroute. Both new cases fail against the pre-repair `hook.mjs`.
 
 ### Splitting on line breaks credits `cat` lines that are heredoc content, marking an unread doc read
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:125` (`parseShellReadTargets`), `:216` (`splitShellSegments`)
 - **Problem:** every line of a multi-line command is now treated as its own command, so a heredoc body is parsed as commands — a `tee`/`cat` redirect whose document text happens to contain a line beginning `cat <doc>` credits that doc as fully read, and the write gate opens on a document nobody opened.
 - **Class:** `a credit channel that resolves an ambiguity toward crediting, against its own declared fail direction`
 - **Sweep:** proven end to end. Probe A — seed a routed path, confirm the baseline deny, then feed `runPostToolUseArm` a single Bash payload of `tee /tmp/pr-body.md <<'E'` / `cat .prism/architect/<doc>` / `E`; the subsequent `runPreToolUseArm` on the same target returns `null`. The doc was never read. This inverts the direction `SHELL_READ_SAFE_CHARACTERS`' own JSDoc (`hook.mjs:62-66`) gives as the reason the class is an allow-list: "A miss on a deny-list marks an unread document read and opens the write gate on it; a miss on an allow-list costs one re-read." Before this repair, any `\n` refused the whole command, so no heredoc credited anything — the direction was correct and the line-break split reversed it. Reachability is not theoretical here: `.prism/rules/bash-output-minimization.md` prescribes heredoc-to-file for PR bodies, and a PR body about this hook contains exactly such `cat` lines. Controls: the segment holding the `<<'E'` introducer is correctly refused (its `<` fails the per-token class), which is precisely why only the *body* lines get through; `(cat doc)`, `cat doc | head -5`, and `cat -n doc` all behave.
-- **Suggested fix:** refuse the entire command for read credit when any token in any segment contains `<<` — the conservative direction the allow-list doctrine already commits to. A `cat` inside a heredoc is not a read, and no credit is cheaper to give up than one that was never earned.
+- **Fix:** the safe-character test moved back over the whole raw command, with `;` and line breaks admitted to the class so the multi-line remedy still credits. Any `<` refuses the entire command, so the heredoc is unreachable without enumerating `<<` — the certainty rule rather than one more named construct. The scanner also skips heredoc bodies for the write arm, where no class can apply, and drops the introducer instead of yielding `<<'E'` as a phantom target. Covered at the parser and end to end through `runPostToolUseArm`; both cases fail against the pre-repair `hook.mjs`.
 
 ### The read arm drops a segment's unconditional first command along with its conditional second
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:199` (`SHELL_SEQUENTIAL_BOUNDARIES` and its JSDoc)
 - **Problem:** with `&&`, `||`, `|`, and `&` left out of the read boundary set, the separator stays inside the segment and fails the per-token class, so `cat a.md && cat b.md` credits neither — including `cat a.md`, which ran unconditionally.
 - **Class:** `a conservative default applied one clause wider than its own justification`
 - **Sweep:** all four omitted separators checked in both spaced and unspaced form; every one yields `[]` for the whole segment. The JSDoc reads "`&&` and `||` are conditional — the second command may never have run", which justifies dropping the second command and is silent on the first; the code drops both, so the comment describes a narrower behavior than the code has. `;` and the line breaks are the only forms that credit at all.
-- **Suggested fix:** non-blocking. Either credit the pre-`&&` segment (it always runs) or amend the JSDoc to say the whole segment is refused and why that is the cheaper answer. Deciding is worth more than the credit; leaving the comment describing behavior the code does not have is the part that costs a future reader.
+- **Fix:** decided the second way, and the decision now covers more than `&&`. The whole command is refused whenever any part of it leaves the safe class, and the JSDoc says so and gives the reason the heredoc supplied: a construct the class does not model can change what the *following* clauses mean, so no clause's credit is safe once one is unparseable. The test name changed from "segment" to "command" to match.
 
 ### Angle Coverage — PR 2D round 2, `176f35c5..0141691e`
 
@@ -1901,13 +1916,13 @@ Briar self-review of the repair head `0141691e`, 2026-08-20 [huntermcgrew/opus5-
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [ ] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2 opens two new majors, both in the shell-segment splitter the repairs introduced
+- [x] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2's two majors and one minor are `fixed` in the repair pass below, each covered by a test confirmed failing against the pre-repair `hook.mjs`
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — the separator loop at `hook-gate.test.ts:1656` covers space-padded spellings only, and nothing covers a heredoc through the credit channel
+- [x] Tests written for new logic and edge cases — the separator loop is generated from separator × spacing rather than enumerated, and the heredoc is covered at the parser and end to end through `runPostToolUseArm`. 811/811
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-20 (`pnpm prism:build && pnpm prism:check` exit 0, 805/805, re-run independently at `0141691e`)
-- [ ] PR description up to date — needs a line on the two round-2 majors once they are closed
+- [x] Build passes — last run: 2026-08-20 (`pnpm prism:build && pnpm prism:check` exit 0, 811/811, at the round-2 repair head)
+- [ ] PR description up to date — needs a line on the round-2 segmenter rewrite
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.

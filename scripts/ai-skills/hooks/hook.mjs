@@ -47,38 +47,44 @@ import {
 } from "./harnesses.mjs";
 
 /**
- * The characters a command may contain and still be considered for read
+ * The characters a whole command may contain and still be considered for read
  * credit: letters, digits, `_ . / - @ + = , : ~`, both quote characters (so
- * `unquote` keeps working), and space and tab as the only separators. A
- * command carrying anything else parses to zero targets.
+ * `unquote` keeps working), space and tab, and `;` and line breaks as the only
+ * command separators. A command carrying anything else parses to zero targets,
+ * in its entirety.
  *
  * The direction matters more than the contents. This was a deny-list of shell
  * metacharacters, and the enumeration escaped twice inside the single PR that
- * wrote it — `\n` was missing, so a multi-line command whose first line was a
- * bare `cat` credited every bare token on every later line as fully read, and
- * `#` was added in the same pass. Two escapes from one enumeration is a defect
- * in the shape rather than two defects in the contents.
+ * wrote it. An allow-list fails the other way: a miss on a deny-list marks an
+ * unread document read and opens the write gate on it; a miss on an allow-list
+ * costs one re-read. Every other credit judgment in this channel already
+ * resolves that direction — `{ credit: false }` by default, only `cat`
+ * credits, a flagged `cat` does not.
  *
- * An allow-list fails the other way. A miss on a deny-list marks an unread
- * document read and opens the write gate on it; a miss on an allow-list costs
- * one re-read. Every other credit judgment in this channel already resolves
- * that direction — `{ credit: false }` by default, only `cat` credits, a
- * flagged `cat` does not — and this was the last place resolved the other way.
+ * The test runs over the whole command rather than per segment, and that is
+ * the load it carries. A construct this class does not model can change what
+ * the *following* lines mean: a heredoc introducer turns every line up to its
+ * delimiter into data, so a body line reading `cat <doc>` is text being
+ * written, not a document being read. Judging segments independently credited
+ * exactly that. Refusing the whole command whenever any part of it is outside
+ * the class is the only rule that cannot be fooled by a construct nobody
+ * enumerated, and its cost is one re-read.
  *
  * What the class refuses, none of it individually enumerated: `$VAR` and
  * `${…}`, backslash escapes, globs, brace expansion, `!` history expansion,
- * `#`, every pipeline and redirect form, and whatever metacharacter the next
- * shell introduces. What it costs: a path carrying a space, a `%`, or a
- * non-ASCII character stops crediting.
+ * `#`, every pipeline, redirect, and heredoc form, `&&`, `||`, and `&`. What
+ * it costs: a path carrying a space, a `%`, or a non-ASCII character stops
+ * crediting, and one unparseable clause costs the whole command rather than
+ * itself.
  *
- * Line breaks are the one exception, and they are handled before this class
- * sees anything: `splitShellSegments` cuts on them, and each resulting
- * segment is tested on its own. A multi-line command is several commands, not
- * one unparseable one.
+ * `;` and line breaks are in the class because `splitShellSegments` cuts on
+ * them and the commands they separate each run unconditionally, printing to
+ * the same transcript. A multi-line remedy is several commands, not one
+ * unparseable one.
  *
  * @type {RegExp}
  */
-const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t-]*$/;
+const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t;\r\n-]*$/;
 
 /** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
  * @type {Set<string>}
@@ -108,15 +114,16 @@ function unquote(token) {
  * while over-crediting silently defeats the write gate this channel feeds.
  *
  * Deliberate parsing gaps, all of which yield zero targets rather than a
- * guess: every command form carrying a character outside
+ * guess: every command carrying a character outside
  * `SHELL_READ_SAFE_CHARACTERS`, which covers pipelines, redirects,
- * substitution, globs, and variable expansion in one rule; `xargs` and any
- * other command that names its files indirectly; and paths containing spaces,
- * since splitting on whitespace cannot recover them even when they are quoted.
+ * substitution, heredocs, globs, and variable expansion in one rule; `xargs`
+ * and any other command that names its files indirectly; and unquoted paths
+ * containing spaces.
  *
- * Each segment is judged on its own, so one unparseable segment costs only
- * itself. `cat a.md` on one line and `echo $VAR` on the next credits `a.md`
- * and drops the second, rather than refusing both.
+ * The class is tested once, over the raw command, and a failure costs every
+ * segment rather than the offending one. Segment-independent judgment is what
+ * let a heredoc body credit the documents its own text named — see the class's
+ * own JSDoc for why the whole-command form is the only one that holds.
  *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
@@ -126,8 +133,12 @@ export function parseShellReadTargets(command) {
 		return [];
 	}
 
+	if (!SHELL_READ_SAFE_CHARACTERS.test(command)) {
+		return [];
+	}
+
 	const targets = [];
-	for (const tokens of splitShellSegments(command, SHELL_SEQUENTIAL_BOUNDARIES)) {
+	for (const tokens of splitShellSegments(command)) {
 		targets.push(...parseSegmentReadTargets(tokens));
 	}
 
@@ -136,22 +147,14 @@ export function parseShellReadTargets(command) {
 
 /**
  * One command segment's read targets, or an empty array when the segment
- * carries anything outside `SHELL_READ_SAFE_CHARACTERS` or names a command
- * that does not read a file.
- *
- * The safe-character test runs per token rather than over the raw command,
- * because the segment split has already consumed the separators. Every
- * metacharacter the class refuses still sits inside some token — a `|`, a
- * `>`, a `$VAR` — so a segment carrying one still parses to nothing.
+ * names a command that does not read a file. The caller has already tested
+ * the whole command against `SHELL_READ_SAFE_CHARACTERS`, so a segment
+ * reaching here carries nothing outside that class.
  *
  * @param {string[]} tokens
  * @returns {{filePath: string, credit: boolean}[]}
  */
 function parseSegmentReadTargets(tokens) {
-	if (!tokens.every((token) => SHELL_READ_SAFE_CHARACTERS.test(token))) {
-		return [];
-	}
-
 	const [name, ...args] = tokens;
 	if (!SHELL_READ_COMMANDS.has(name)) {
 		return [];
@@ -175,76 +178,207 @@ function parseSegmentReadTargets(tokens) {
 	return operands.map((filePath) => ({ filePath, credit }));
 }
 
-/** Tokens that end one command and start the next, so a `tee` or `sed -i` stops claiming operands at them.
- * @type {Set<string>}
- */
-const SHELL_SEGMENT_BOUNDARIES = new Set(["|", "||", "&&", ";", "&"]);
-
-/**
- * The boundaries a read may be credited across — the ones after which the
- * next command runs unconditionally and prints to the same transcript.
- *
- * Only `;` qualifies, and the omissions are the whole point. `|` sends the
- * first command's output to the second instead of to the model, so crediting
- * `cat doc | head -5` would mark a document fully read on five lines of it.
- * `&&` and `||` are conditional — the second command may never have run — and
- * `&` backgrounds. Each of those still fails the per-token safe-character
- * test inside its own segment, so the segment yields nothing rather than a
- * guess.
- *
- * Line breaks are not members of either set. `splitShellSegments` splits on
- * them unconditionally, because a newline separates commands under every
- * shell and adding `"\n"` here would be inert anyway — the whitespace split
- * consumes it before any token could equal it.
- *
- * @type {Set<string>}
- */
-const SHELL_SEQUENTIAL_BOUNDARIES = new Set([";"]);
-
 /**
  * Splits a raw command into one token array per command segment, cutting at
- * every line break and at each of `boundaries`.
+ * every unquoted `;`, `&&`, `||`, `|`, `&`, and line break.
  *
  * Both detectors run on this rather than tokenizing the raw command
- * themselves. The write detector needs the boundaries so a `tee` stops
- * claiming operands at the end of its own command; the read detector needs
- * them so a remedy pasted as several lines into one call credits each line.
- * A shared splitter is what keeps those two answers from drifting: the write
- * arm previously treated a newline as ordinary whitespace and claimed the
- * next line's tokens, while the read arm refused the same command outright.
+ * themselves. The write detector needs the cuts so a `tee` stops claiming
+ * operands at the end of its own command; the read detector needs them so a
+ * remedy pasted as several lines into one call credits each line. A shared
+ * splitter is what keeps those two answers from drifting.
+ *
+ * This scans characters rather than splitting on whitespace and comparing
+ * whole tokens against a separator set. The token form could only see a
+ * separator that had space on both sides, so `a;b` and `a&&b` never cut — the
+ * write arm resumed claiming operands past the separator and named a path the
+ * command only read. Two things make the character form worth its length over
+ * a regex split on the separators:
+ *
+ * - **Quotes.** `sed -i 's/a/b/;s/c/d/' out.md` carries a `;` that is part of
+ *   the script, not a separator. Cutting there loses `out.md` — a real write
+ *   the gate then never sees.
+ * - **Heredocs.** A `<<DELIM` introducer makes every line up to `DELIM` data
+ *   rather than commands, so the body is skipped whole. Without that, a PR
+ *   body written through `tee <<'E'` has its own text parsed as commands.
+ *
+ * What it still does not model, each costing a missed cut rather than a wrong
+ * one: `$(…)` and backtick substitution containing a separator, and a
+ * separator inside an unterminated quote.
  *
  * @param {string} command
- * @param {Set<string>} boundaries
  * @returns {string[][]}
  */
-function splitShellSegments(command, boundaries) {
+function splitShellSegments(command) {
+	/** @type {string[][]} */
 	const segments = [];
-	let current = [];
+	/** @type {string[]} */
+	const pendingHeredocs = [];
+	/** @type {string[]} */
+	let tokens = [];
+	let token = "";
+	let started = false;
+	/** @type {string | null} */
+	let quote = null;
 
-	for (const line of command.split(/[\n\r]+/)) {
-		for (const token of line.trim().split(/\s+/)) {
-			if (token.length === 0) {
-				continue;
+	const endToken = () => {
+		if (started) {
+			tokens.push(token);
+			token = "";
+			started = false;
+		}
+	};
+
+	const endSegment = () => {
+		endToken();
+		if (tokens.length > 0) {
+			segments.push(tokens);
+			tokens = [];
+		}
+	};
+
+	for (let index = 0; index < command.length; index++) {
+		const char = command[index];
+
+		if (quote !== null) {
+			token += char;
+			if (char === "\\" && quote === '"' && index + 1 < command.length) {
+				token += command[index + 1];
+				index++;
+			} else if (char === quote) {
+				quote = null;
 			}
-
-			if (boundaries.has(token)) {
-				if (current.length > 0) {
-					segments.push(current);
-					current = [];
-				}
-				continue;
-			}
-
-			current.push(token);
+			continue;
 		}
 
-		if (current.length > 0) {
-			segments.push(current);
-			current = [];
+		if (char === "\n" || char === "\r") {
+			endSegment();
+			if (pendingHeredocs.length > 0) {
+				index = skipHeredocBodies(command, index, pendingHeredocs);
+			}
+			continue;
 		}
+
+		if (char === " " || char === "\t") {
+			endToken();
+			continue;
+		}
+
+		if (char === ";" || char === "&" || char === "|") {
+			if (char !== ";" && command[index + 1] === char) {
+				index++;
+			}
+			endSegment();
+			continue;
+		}
+
+		if (char === "<" && command[index + 1] === "<" && command[index + 2] !== "<") {
+			endToken();
+			index = readHeredocDelimiter(command, index, pendingHeredocs);
+			continue;
+		}
+
+		if (char === "'" || char === '"') {
+			quote = char;
+			token += char;
+			started = true;
+			continue;
+		}
+
+		if (char === "\\" && index + 1 < command.length) {
+			token += command[index + 1];
+			index++;
+			started = true;
+			continue;
+		}
+
+		token += char;
+		started = true;
 	}
 
+	endSegment();
+
 	return segments;
+}
+
+/**
+ * Records the delimiter word of the heredoc introduced at `index` and returns
+ * the index of its last consumed character.
+ *
+ * The introducer and its delimiter are dropped rather than kept as tokens —
+ * neither is an operand of the command, and `tee out.md <<'E'` previously
+ * yielded `<<'E'` as a write target alongside the real one.
+ *
+ * @param {string} command
+ * @param {number} index index of the first `<` of the `<<`
+ * @param {string[]} pendingHeredocs delimiters awaiting their body, in order
+ * @returns {number}
+ */
+function readHeredocDelimiter(command, index, pendingHeredocs) {
+	let cursor = index + 2;
+	if (command[cursor] === "-") {
+		cursor++;
+	}
+
+	while (command[cursor] === " " || command[cursor] === "\t") {
+		cursor++;
+	}
+
+	let delimiter = "";
+	while (cursor < command.length && !/[\s;&|<>]/.test(command[cursor])) {
+		if (command[cursor] !== "'" && command[cursor] !== '"') {
+			delimiter += command[cursor];
+		}
+		cursor++;
+	}
+
+	if (delimiter.length > 0) {
+		pendingHeredocs.push(delimiter);
+	}
+
+	return cursor - 1;
+}
+
+/**
+ * Skips the bodies of every heredoc awaiting one, starting from the line break
+ * at `index`, and returns the index of the last consumed character.
+ *
+ * A body line is data the command writes, not a command. An unterminated
+ * heredoc consumes the rest of the input, which is what the shell does too.
+ *
+ * @param {string} command
+ * @param {number} index
+ * @param {string[]} pendingHeredocs
+ * @returns {number}
+ */
+function skipHeredocBodies(command, index, pendingHeredocs) {
+	let cursor = index;
+
+	while (pendingHeredocs.length > 0 && cursor < command.length) {
+		while (
+			cursor < command.length &&
+			(command[cursor] === "\n" || command[cursor] === "\r")
+		) {
+			cursor++;
+		}
+
+		let lineEnd = cursor;
+		while (
+			lineEnd < command.length &&
+			command[lineEnd] !== "\n" &&
+			command[lineEnd] !== "\r"
+		) {
+			lineEnd++;
+		}
+
+		if (command.slice(cursor, lineEnd).trim() === pendingHeredocs[0]) {
+			pendingHeredocs.shift();
+		}
+
+		cursor = lineEnd;
+	}
+
+	return cursor - 1;
 }
 
 /** Commands that write the files they name, when carrying the flag that makes them do so.
@@ -286,7 +420,7 @@ export function parseShellWriteTargets(command) {
 	}
 
 	const targets = [];
-	for (const tokens of splitShellSegments(command, SHELL_SEGMENT_BOUNDARIES)) {
+	for (const tokens of splitShellSegments(command)) {
 		targets.push(...parseSegmentWriteTargets(tokens));
 	}
 

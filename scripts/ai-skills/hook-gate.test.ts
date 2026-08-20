@@ -929,16 +929,20 @@ test("parseShellReadTargets: the deny message's own multi-doc remedy credits eve
 	);
 });
 
-test("parseShellReadTargets: a pipe or a conditional still refuses the whole segment", () => {
+test("parseShellReadTargets: a pipe or a conditional refuses the whole command", () => {
 	// A pipe sends the output somewhere other than the transcript, and a
-	// conditional may never run its second command — crediting either would
-	// mark a document read on a slice of it, or on nothing at all.
+	// conditional may never run its second command. The refusal covers the
+	// whole command rather than the offending clause — `cat docs/one.md` before
+	// an `&&` did run, and its credit is given up on purpose, because a
+	// construct the safe-character class does not model can change what the
+	// rest of the command means.
 	for (const command of [
 		"cat docs/one.md | head -5",
 		"cat docs/one.md > /dev/null",
 		"cat docs/one.md && cat docs/two.md",
 		"cat docs/one.md || cat docs/two.md",
 		"cat docs/one.md &",
+		"cat docs/one.md&&cat docs/two.md",
 	]) {
 		assert.deepEqual(
 			parseShellReadTargets(command),
@@ -946,6 +950,44 @@ test("parseShellReadTargets: a pipe or a conditional still refuses the whole seg
 			`${JSON.stringify(command)} does not deliver the whole document to the model`
 		);
 	}
+});
+
+test("parseShellReadTargets: a heredoc credits nothing, whatever its body says", () => {
+	// The body is text being written, not documents being read. Judged as
+	// commands, a PR body drafted through `tee` credits every doc its own prose
+	// names and opens the write gate on documents nobody opened.
+	for (const command of [
+		"tee /tmp/pr-body.md <<'EOF'\ncat docs/one.md\nEOF",
+		"cat > /tmp/pr-body.md <<-EOF\n\tcat docs/one.md\n\tEOF",
+		"cat docs/one.md <<< inline",
+	]) {
+		assert.deepEqual(
+			parseShellReadTargets(command),
+			[],
+			`${JSON.stringify(command)} carries a redirect, so no part of it credits`
+		);
+	}
+});
+
+test("parseShellReadTargets: every sequential spelling credits both documents", () => {
+	const credited = [
+		{ filePath: "docs/one.md", credit: true },
+		{ filePath: "docs/two.md", credit: true },
+	];
+
+	for (const separator of [";", " ;", "; ", " ; ", "\n", " \n", "\r\n"]) {
+		assert.deepEqual(
+			parseShellReadTargets(`cat docs/one.md${separator}cat docs/two.md`),
+			credited,
+			`a ${JSON.stringify(separator)} separator runs both commands into the same transcript`
+		);
+	}
+
+	assert.deepEqual(
+		parseShellReadTargets("cat 'docs/one;two.md'"),
+		[{ filePath: "docs/one;two.md", credit: true }],
+		"a quoted separator is part of the path, not a cut"
+	);
 });
 
 test("runPostToolUseArm: every shell read form announces the routed doc", async () => {
@@ -1018,6 +1060,26 @@ test("runPostToolUseArm: cat credits the doc it read", async () => {
 
 		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
 		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), [CREDIT_DOC]);
+	});
+});
+
+test("runPostToolUseArm: a cat inside a heredoc body credits nothing", async () => {
+	// End to end, because the parser-level case cannot show the consequence:
+	// crediting a body line marks the doc read, and the write gate then opens
+	// on a document nobody opened.
+	await withTempRepo(async (repoRoot) => {
+		const docPath = await seedCreditRepo(repoRoot);
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: {
+				command: `tee /tmp/pr-body.md <<'EOF'\ncat ${docPath}\nEOF`,
+			},
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), []);
 	});
 });
 
@@ -1649,11 +1711,32 @@ test("parseShellWriteTargets: the documented gaps yield no target rather than a 
 	assert.deepEqual(parseShellWriteTargets(undefined), []);
 });
 
+/**
+ * Every command separator, in every spacing a caller can write it.
+ *
+ * The spellings are generated rather than listed. An enumerated list held only
+ * the space-padded forms, so `a;b` and `a&&b` went untested and the splitter
+ * shipped seeing neither — a list is only as good as whoever remembers to
+ * extend it, and the omission is invisible in a green suite.
+ */
+function everySeparatorSpelling(): string[] {
+	const spellings: string[] = [];
+	for (const separator of [";", "&&", "||", "|", "&", "\n", "\r\n"]) {
+		for (const spacing of [
+			(value: string) => value,
+			(value: string) => ` ${value}`,
+			(value: string) => `${value} `,
+			(value: string) => ` ${value} `,
+		]) {
+			spellings.push(spacing(separator));
+		}
+	}
+
+	return spellings;
+}
+
 test("parseShellWriteTargets: a segment's write command never claims a later segment's operands", () => {
-	// Every separator has to end the claim. A line break is the one that was
-	// missed, because the whitespace split consumes it before any token can
-	// equal it — so adding it to the boundary set alone would change nothing.
-	for (const separator of ["\n", "\r\n", " ; ", " && ", " | ", " & "]) {
+	for (const separator of everySeparatorSpelling()) {
 		assert.deepEqual(
 			parseShellWriteTargets(`sed -i s/a/b/ first.ts${separator}cat second.md`),
 			["s/a/b/", "first.ts"],
@@ -1665,6 +1748,40 @@ test("parseShellWriteTargets: a segment's write command never claims a later seg
 		parseShellWriteTargets("tee first.txt\necho hello second.md"),
 		["first.txt"],
 		"the echo's operands belong to the echo, not to the tee above it"
+	);
+});
+
+test("parseShellWriteTargets: a separator inside quotes is script text, not a cut", () => {
+	// The counterweight to the case above. Cutting on the `;` here would strand
+	// `out.md` in a segment whose first token is not a write command, and the
+	// gate would never see a write it is meant to catch.
+	assert.deepEqual(parseShellWriteTargets("sed -i 's/a/b/;s/c/d/' out.md"), [
+		"s/a/b/;s/c/d/",
+		"out.md",
+	]);
+	assert.deepEqual(parseShellWriteTargets('sed -i "s/a|b/c/" out.md'), [
+		"s/a|b/c/",
+		"out.md",
+	]);
+});
+
+test("parseShellWriteTargets: a heredoc body is data, and its redirect target still counts", () => {
+	// `.prism/rules/bash-output-minimization.md` prescribes exactly this shape
+	// for PR bodies, so a body whose text contains shell-looking lines is a
+	// routine input rather than a contrived one.
+	assert.deepEqual(
+		parseShellWriteTargets("tee out.md <<'EOF'\nsed -i s/a/b/ inner.ts\nEOF"),
+		["out.md"],
+		"the body's sed names no file the command writes"
+	);
+	assert.deepEqual(
+		parseShellWriteTargets("cat > out.md <<-EOF\n\techo hi > inner.ts\n\tEOF"),
+		["out.md"]
+	);
+	assert.deepEqual(
+		parseShellWriteTargets("tee out.md <<'EOF'\nunterminated body\n"),
+		["out.md"],
+		"an unterminated heredoc consumes the rest of the input, as the shell does"
 	);
 });
 
@@ -1703,6 +1820,32 @@ test("runPreToolUseArm: each of the five shell write forms reroutes on a routed 
 				reason,
 				/redo this edit with your file-edit tool/,
 				"the reroute judges no prerequisites, so it cannot be made unsatisfiable"
+			);
+		});
+	}
+});
+
+test("runPreToolUseArm: a write in one segment never reroutes a later segment's read", async () => {
+	// Round 1's write-arm defect in its unspaced spelling. The `sed` writes a
+	// file outside the repo; only the `cat` names the routed path, and a
+	// reroute here would tell the model it is writing a file it only reads.
+	for (const separator of everySeparatorSpelling()) {
+		await withTempRepo(async (repoRoot) => {
+			const { target } = await seedGateRepo(repoRoot);
+
+			assert.equal(
+				await runPreToolUseArm(
+					"claude",
+					HARNESSES.claude,
+					writePayload(repoRoot, target, {
+						tool_name: "Bash",
+						tool_input: {
+							command: `sed -i s/a/b/ /tmp/other.ts${separator}cat ${target}`,
+						},
+					})
+				),
+				null,
+				`a ${JSON.stringify(separator)} separator keeps the sed's claim off the cat's operand`
 			);
 		});
 	}
