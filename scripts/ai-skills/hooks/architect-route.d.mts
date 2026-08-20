@@ -54,10 +54,10 @@ export function resolveUnreadDocs(
 	scopeId: string
 ): Promise<string[]>;
 
-export function checkPathIsRouted(
+export function filterRoutedPaths(
 	repoRoot: string,
-	filePath: string
-): Promise<boolean>;
+	filePaths: string[]
+): Promise<string[]>;
 
 export function resolveArchitectNag(
 	repoRoot: string,

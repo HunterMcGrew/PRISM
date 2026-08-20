@@ -27,7 +27,7 @@ import {
 } from "./hooks/architect-route.mjs";
 import {
 	parseShellReadTargets,
-	parseShellWriteTargets,
+	parseUnprovenShellPaths,
 	resolveHarnessFromArgv,
 	runPostCompactArm,
 	runPostToolUseArm,
@@ -1684,174 +1684,249 @@ test("runPreToolUseArm: a harness with no observed deny envelope writes nothing"
 	});
 });
 
-// --- Shell write reroute ---
-
-test("parseShellWriteTargets: each of the five write forms yields its target", () => {
-	assert.deepEqual(parseShellWriteTargets("cat a.md > out.md"), ["out.md"]);
-	assert.deepEqual(parseShellWriteTargets("cat a.md >> out.md"), ["out.md"]);
-	assert.deepEqual(parseShellWriteTargets("echo hi | tee out.md"), ["out.md"]);
-	assert.deepEqual(parseShellWriteTargets("echo hi | tee -a out.md"), ["out.md"]);
-	assert.deepEqual(parseShellWriteTargets("sed -i '' out.md"), ["out.md"]);
-});
-
-test("parseShellWriteTargets: the documented gaps yield no target rather than a guess", () => {
-	assert.deepEqual(
-		parseShellWriteTargets("echo hello>out.md"),
-		[],
-		"a word-prefixed redirect is a recorded gap, not a silent miss"
-	);
-	assert.deepEqual(parseShellWriteTargets("cp a.md out.md"), []);
-	assert.deepEqual(parseShellWriteTargets("mv a.md out.md"), []);
-	assert.deepEqual(
-		parseShellWriteTargets("sed -n '1,5p' out.md"),
-		[],
-		"sed without an in-place flag writes nothing"
-	);
-	assert.deepEqual(parseShellWriteTargets("cat out.md"), []);
-	assert.deepEqual(parseShellWriteTargets(undefined), []);
-});
+// --- The shell arm: reroute unless the command is provably a read ---
 
 /**
- * Every command separator, in every spacing a caller can write it.
- *
- * The spellings are generated rather than listed. An enumerated list held only
- * the space-padded forms, so `a;b` and `a&&b` went untested and the splitter
- * shipped seeing neither — a list is only as good as whoever remembers to
- * extend it, and the omission is invisible in a green suite.
+ * The routed path every shell case below names. Long enough that a splice
+ * inside it still leaves both halves recognizable in a failure message.
  */
-function everySeparatorSpelling(): string[] {
-	const spellings: string[] = [];
-	for (const separator of [";", "&&", "||", "|", "&", "\n", "\r\n"]) {
-		for (const spacing of [
-			(value: string) => value,
-			(value: string) => ` ${value}`,
-			(value: string) => `${value} `,
-			(value: string) => ` ${value} `,
-		]) {
-			spellings.push(spacing(separator));
-		}
+const SHELL_ROUTED_PATH = "src/nested/index.ts";
+
+/**
+ * Every command prefix that legitimately precedes a command name, so a shape
+ * generated over these covers the head-token position rather than assuming
+ * the command sits first.
+ */
+const COMMAND_PREFIXES = [
+	"",
+	"sudo ",
+	"FOO=bar ",
+	"nohup ",
+	"time ",
+	"command ",
+];
+
+/** Spellings of the same path that a token-level parser reads differently. */
+const QUOTE_SPLICES: ((target: string) => string)[] = [
+	(target) => `"${target}"`,
+	(target) => `'${target}`,
+	(target) => `"${target.slice(0, 4)}"${target.slice(4)}`,
+	(target) => `${target.slice(0, 4)}'${target.slice(4)}'`,
+	(target) => `${target.slice(0, 4)}"${target.slice(4)}"`,
+];
+
+/**
+ * Characters outside the read channel's positive class, each of which should
+ * cost a command its proof wherever it appears.
+ *
+ * Spelled as a string rather than a list so adding one is a single character
+ * and forgetting to add a case is impossible — the cross-product below
+ * generates a case per character per position.
+ */
+const CHARACTERS_OUTSIDE_THE_CLASS = "<>|&$`(){}#*?![]%\\";
+
+/**
+ * Commands that write, or that no proof covers, each spelled against a
+ * caller-supplied path.
+ *
+ * Generated across the axes that have each independently broken a
+ * hand-rolled write parser — redirect spelling, command prefix, grouping,
+ * quoting, heredoc form, substitution, comments — plus the interpreter,
+ * copy-family, process-substitution, and `exec` classes a parser cannot see
+ * into at all. Every entry asserts the same expected outcome, so the list
+ * grows by appending a shape rather than by working out what a parser would
+ * return for it.
+ */
+function everyUnprovableShape(target: string): string[] {
+	const shapes: string[] = [
+		`echo hi > ${target}`,
+		`echo hi >> ${target}`,
+		`echo hi>${target}`,
+		`exec > ${target}`,
+		`echo hi > >(tee ${target})`,
+		`cp a.md ${target}`,
+		`mv a.md ${target}`,
+		`dd if=a.md of=${target}`,
+		`install -m644 a.md ${target}`,
+		`rsync a.md ${target}`,
+		`truncate -s0 ${target}`,
+		`python -c "open('${target}','w')"`,
+		`node -e "require('fs').writeFileSync('${target}','')"`,
+		`perl -pi -e s/a/b/ ${target}`,
+		`awk '{print}' a.md > ${target}`,
+		`find . -name x -exec cp {} ${target} ;`,
+		`tee ${target} # see the note`,
+		`tee ${target} <<<"hi"`,
+		`tee ${target} $(echo a; echo b)`,
+		`tee ${target} $((1 + 1))`,
+		`tee \${OUT:-${target}}`,
+		`tee ${target} <<'E'\nbody line\nE`,
+		`cat > ${target} <<-E\n\tbody line\n\tE`,
+		`tee \\\n${target}`,
+		`tee \\\r\n${target}`,
+		`(echo hi > ${target})`,
+		`{ tee ${target}; }`,
+	];
+
+	for (const prefix of COMMAND_PREFIXES) {
+		shapes.push(`${prefix}tee ${target}`);
+		shapes.push(`${prefix}tee -a ${target}`);
+		shapes.push(`${prefix}sed -i s/a/b/ ${target}`);
+		shapes.push(`echo hi | ${prefix}tee ${target}`);
 	}
 
-	return spellings;
+	for (const splice of QUOTE_SPLICES) {
+		shapes.push(`tee ${splice(target)}`);
+	}
+
+	for (const character of CHARACTERS_OUTSIDE_THE_CLASS) {
+		shapes.push(`${character}cat ${target}`);
+		shapes.push(`cat ${character} ${target}`);
+		shapes.push(`cat ${target}${character}`);
+	}
+
+	return shapes;
 }
 
-test("parseShellWriteTargets: a segment's write command never claims a later segment's operands", () => {
-	for (const separator of everySeparatorSpelling()) {
-		assert.deepEqual(
-			parseShellWriteTargets(`sed -i s/a/b/ first.ts${separator}cat second.md`),
-			["s/a/b/", "first.ts"],
-			`a ${JSON.stringify(separator)} separator ends the sed's operand claim`
+/** Commands the arm claims to prove are reads, which is the whole of what it lets past. */
+function everyProvableRead(target: string): string[] {
+	return [
+		`cat ${target}`,
+		`cat "${target}"`,
+		`cat -n ${target}`,
+		`head -20 ${target}`,
+		`tail -5 ${target}`,
+		`less ${target}`,
+		`grep -n foo ${target}`,
+		`rg foo ${target}`,
+		`wc -l ${target}`,
+		`ls -la ${target}`,
+		`diff a.md ${target}`,
+		`sed -n '1,5p' ${target}`,
+		`git diff ${target}`,
+		`git log -p ${target}`,
+		`cat a.md; cat ${target}`,
+		`cat a.md\ncat ${target}`,
+		`cat ${target}\r\nhead -1 other.md`,
+	];
+}
+
+test("parseUnprovenShellPaths: every shape no proof covers keeps naming its path", () => {
+	for (const command of everyUnprovableShape(SHELL_ROUTED_PATH)) {
+		assert.ok(
+			parseUnprovenShellPaths(command).includes(SHELL_ROUTED_PATH),
+			`${JSON.stringify(command)} is not provably a read, so its path stays a candidate`
 		);
 	}
-
-	assert.deepEqual(
-		parseShellWriteTargets("tee first.txt\necho hello second.md"),
-		["first.txt"],
-		"the echo's operands belong to the echo, not to the tee above it"
-	);
 });
 
-test("parseShellWriteTargets: a separator inside quotes is script text, not a cut", () => {
-	// The counterweight to the case above. Cutting on the `;` here would strand
-	// `out.md` in a segment whose first token is not a write command, and the
-	// gate would never see a write it is meant to catch.
-	assert.deepEqual(parseShellWriteTargets("sed -i 's/a/b/;s/c/d/' out.md"), [
-		"s/a/b/;s/c/d/",
-		"out.md",
-	]);
-	assert.deepEqual(parseShellWriteTargets('sed -i "s/a|b/c/" out.md'), [
-		"s/a|b/c/",
-		"out.md",
-	]);
+test("parseUnprovenShellPaths: a provable read clears every path it names", () => {
+	for (const command of everyProvableRead(SHELL_ROUTED_PATH)) {
+		assert.deepEqual(
+			parseUnprovenShellPaths(command).filter(
+				(candidate) => candidate === SHELL_ROUTED_PATH
+			),
+			[],
+			`${JSON.stringify(command)} reads its operands and writes nothing`
+		);
+	}
 });
 
-test("parseShellWriteTargets: a heredoc body is data, and its redirect target still counts", () => {
-	// `.prism/rules/bash-output-minimization.md` prescribes exactly this shape
-	// for PR bodies, so a body whose text contains shell-looking lines is a
-	// routine input rather than a contrived one.
-	assert.deepEqual(
-		parseShellWriteTargets("tee out.md <<'EOF'\nsed -i s/a/b/ inner.ts\nEOF"),
-		["out.md"],
-		"the body's sed names no file the command writes"
-	);
-	assert.deepEqual(
-		parseShellWriteTargets("cat > out.md <<-EOF\n\techo hi > inner.ts\n\tEOF"),
-		["out.md"]
-	);
-	assert.deepEqual(
-		parseShellWriteTargets("tee out.md <<'EOF'\nunterminated body\n"),
-		["out.md"],
-		"an unterminated heredoc consumes the rest of the input, as the shell does"
-	);
+test("parseUnprovenShellPaths: one unprovable segment costs the whole command its proof", () => {
+	// The counterweight to the case above. A read-only head token vouches for
+	// its own operands only, and the proof is all-or-nothing, so a command
+	// that is half read and half anything else proves nothing.
+	for (const separator of [";", "\n", "\r\n"]) {
+		assert.ok(
+			parseUnprovenShellPaths(
+				`cat a.md${separator}tee ${SHELL_ROUTED_PATH}`
+			).includes(SHELL_ROUTED_PATH),
+			`a ${JSON.stringify(separator)} separator does not let the cat vouch for the tee`
+		);
+	}
 });
 
-test("parseShellWriteTargets: an in-place sed after a boundary still yields its own target", () => {
-	// The counterpart to the case above — segmenting must not cost a real
-	// write that happens to sit in a later segment.
-	assert.deepEqual(parseShellWriteTargets("cat a.md\nsed -i s/a/b/ out.md"), [
-		"s/a/b/",
-		"out.md",
-	]);
+test("parseUnprovenShellPaths: an empty or absent command names nothing", () => {
+	assert.deepEqual(parseUnprovenShellPaths(undefined), []);
+	assert.deepEqual(parseUnprovenShellPaths(""), []);
+	assert.deepEqual(parseUnprovenShellPaths("   "), []);
 });
 
-test("runPreToolUseArm: each of the five shell write forms reroutes on a routed path", async () => {
-	for (const buildCommand of [
-		(target: string) => `echo hi > ${target}`,
-		(target: string) => `echo hi >> ${target}`,
-		(target: string) => `echo hi | tee ${target}`,
-		(target: string) => `echo hi | tee -a ${target}`,
-		(target: string) => `sed -i s/a/b/ ${target}`,
-	]) {
-		await withTempRepo(async (repoRoot) => {
-			const { target } = await seedGateRepo(repoRoot);
+test("runPreToolUseArm: a shell command that names a routed path it cannot prove it reads is rerouted", async () => {
+	// The end-to-end half of the generator above: the same shapes, driven
+	// through the arm, so a candidate list that is right cannot pair with a
+	// route lookup or a message that is not.
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		for (const command of everyUnprovableShape(target)) {
 			const reason = denyReason(
 				await runPreToolUseArm(
 					"claude",
 					HARNESSES.claude,
 					writePayload(repoRoot, target, {
 						tool_name: "Bash",
-						tool_input: { command: buildCommand(target) },
+						tool_input: { command },
 					})
 				)
 			);
 
-			assert.ok(reason, `\`${buildCommand("<path>")}\` on a routed path reroutes`);
+			assert.ok(reason, `${JSON.stringify(command)} reroutes on a routed path`);
 			assert.match(
 				reason,
 				/redo this edit with your file-edit tool/,
 				"the reroute judges no prerequisites, so it cannot be made unsatisfiable"
 			);
-		});
-	}
+		}
+	});
 });
 
-test("runPreToolUseArm: a write in one segment never reroutes a later segment's read", async () => {
-	// Round 1's write-arm defect in its unspaced spelling. The `sed` writes a
-	// file outside the repo; only the `cat` names the routed path, and a
-	// reroute here would tell the model it is writing a file it only reads.
-	for (const separator of everySeparatorSpelling()) {
-		await withTempRepo(async (repoRoot) => {
-			const { target } = await seedGateRepo(repoRoot);
+test("runPreToolUseArm: the same shapes pass untouched when no route matches the path", async () => {
+	// Route existence is the opt-in. Without this, a reroute that fired on
+	// every shell command naming any path would pass the case above.
+	await withTempRepo(async (repoRoot) => {
+		await seedGateRepo(repoRoot);
+		const unroutedTarget = path.join(repoRoot, "vendor", "bundle.js");
 
+		for (const command of everyUnprovableShape(unroutedTarget)) {
+			assert.equal(
+				await runPreToolUseArm(
+					"claude",
+					HARNESSES.claude,
+					writePayload(repoRoot, unroutedTarget, {
+						tool_name: "Bash",
+						tool_input: { command },
+					})
+				),
+				null,
+				`${JSON.stringify(command)} names no routed path`
+			);
+		}
+	});
+});
+
+test("runPreToolUseArm: a provable read of a routed path is not rerouted", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		for (const command of everyProvableRead(target)) {
 			assert.equal(
 				await runPreToolUseArm(
 					"claude",
 					HARNESSES.claude,
 					writePayload(repoRoot, target, {
 						tool_name: "Bash",
-						tool_input: {
-							command: `sed -i s/a/b/ /tmp/other.ts${separator}cat ${target}`,
-						},
+						tool_input: { command },
 					})
 				),
 				null,
-				`a ${JSON.stringify(separator)} separator keeps the sed's claim off the cat's operand`
+				`${JSON.stringify(command)} only reads the routed path`
 			);
-		});
-	}
+		}
+	});
 });
 
-test("runPreToolUseArm: a shell write reroutes even when the docs are already read", async () => {
+test("runPreToolUseArm: a shell reroute fires even when the docs are already read", async () => {
 	// The reroute judges no prerequisites by design — it points at a surface
 	// the gate can check rather than asking for a condition first.
 	await withTempRepo(async (repoRoot) => {
@@ -1868,6 +1943,41 @@ test("runPreToolUseArm: a shell write reroutes even when the docs are already re
 				})
 			),
 			"a shell write is rerouted on the strength of the route alone"
+		);
+	});
+});
+
+test("runPreToolUseArm: a shell reroute resolves its path against the command's own directory", async () => {
+	// A relative operand from a subdirectory names a different file than the
+	// same operand from the repo root, and rerouting the repo-root reading of
+	// it would name a path the command never touches.
+	await withTempRepo(async (repoRoot) => {
+		await seedGateRepo(repoRoot);
+
+		assert.ok(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, path.join(repoRoot, "src", "index.ts"), {
+					tool_name: "Bash",
+					cwd: path.join(repoRoot, "src"),
+					tool_input: { command: "tee index.ts" },
+				})
+			),
+			"`tee index.ts` from `src/` writes the routed `src/index.ts`"
+		);
+
+		assert.equal(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, path.join(repoRoot, "src", "index.ts"), {
+					tool_name: "Bash",
+					tool_input: { command: "tee index.ts" },
+				})
+			),
+			null,
+			"the same operand from the repo root writes an unrouted `index.ts`"
 		);
 	});
 });

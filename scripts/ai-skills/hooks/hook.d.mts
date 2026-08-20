@@ -9,7 +9,7 @@ export function parseShellReadTargets(
 	command: string | undefined
 ): RouteTarget[];
 
-export function parseShellWriteTargets(command: string | undefined): string[];
+export function parseUnprovenShellPaths(command: string | undefined): string[];
 
 export function resolveTargets(
 	spec: HarnessSpec,

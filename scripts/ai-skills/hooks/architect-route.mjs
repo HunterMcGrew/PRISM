@@ -429,23 +429,32 @@ export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
 }
 
 /**
- * Reports whether any manifest route matches `filePath` at all, without
- * regard to what has been read — the question the shell-write reroute asks,
- * which deliberately judges no prerequisites (see `hook.mjs`'s write
- * detector). A path no route matches is never denied on any verb.
+ * Narrows `filePaths` to the ones a manifest route matches, preserving input
+ * order — the question the shell reroute asks, which deliberately judges no
+ * prerequisites (see `hook.mjs`'s § The shell arm). A path no route matches
+ * is never denied on any verb.
+ *
+ * Batched rather than one-path-at-a-time because the shell arm asks about
+ * every path-shaped token in a command, and a per-path entry point would
+ * re-read and re-parse the manifest once per token.
  *
  * @param {string} repoRoot
- * @param {string} filePath
- * @returns {Promise<boolean>}
+ * @param {string[]} filePaths
+ * @returns {Promise<string[]>}
  */
-export async function checkPathIsRouted(repoRoot, filePath) {
-	const relativePath = toRepoRelativePath(repoRoot, filePath);
-	if (relativePath === null) {
-		return false;
+export async function filterRoutedPaths(repoRoot, filePaths) {
+	if (filePaths.length === 0) {
+		return [];
 	}
 
 	const manifest = await loadManifest(repoRoot);
-	return matchDocsForPath(manifest, relativePath).length > 0;
+
+	return filePaths.filter((filePath) => {
+		const relativePath = toRepoRelativePath(repoRoot, filePath);
+		return (
+			relativePath !== null && matchDocsForPath(manifest, relativePath).length > 0
+		);
+	});
 }
 
 /**

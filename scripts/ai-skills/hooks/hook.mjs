@@ -25,6 +25,13 @@
  * announce arm's credit channel observes exactly those reads — which is why
  * the two arms live in one file and share one state format.
  *
+ * A `Bash` call cannot be judged that way, because no parser short of a real
+ * shell can say what an arbitrary command writes. So the shell arm inverts
+ * the question: it reroutes every routed path a command names *unless* it can
+ * prove the command only reads it (`parseUnprovenShellPaths`). Refusing what
+ * it cannot prove is what makes an unmodelled shell form a re-spelled command
+ * rather than a silently missed write.
+ *
  * Every safety check lives in this script, never in a host's registration
  * matcher — a matcher-less harness would otherwise silently inherit nothing.
  */
@@ -35,7 +42,7 @@ import {
 	ARCHITECT_DIR_PREFIX,
 	findRepoRoot,
 	MAX_EMISSION_BYTES,
-	checkPathIsRouted,
+	filterRoutedPaths,
 	resolveArchitectNag,
 	resolveUnreadDocs,
 	toRepoRelativePath,
@@ -182,11 +189,12 @@ function parseSegmentReadTargets(tokens) {
  * Splits a raw command into one token array per command segment, cutting at
  * every unquoted `;`, `&&`, `||`, `|`, `&`, and line break.
  *
- * Both detectors run on this rather than tokenizing the raw command
- * themselves. The write detector needs the cuts so a `tee` stops claiming
- * operands at the end of its own command; the read detector needs them so a
- * remedy pasted as several lines into one call credits each line. A shared
- * splitter is what keeps those two answers from drifting.
+ * Both callers run on this rather than tokenizing the raw command
+ * themselves. `resolveProvenReadPaths` needs the cuts so one segment's
+ * read-only head token cannot vouch for the next command's operands; the read
+ * detector needs them so a remedy pasted as several lines into one call
+ * credits each line. A shared splitter is what keeps those two answers from
+ * drifting.
  *
  * This scans characters rather than splitting on whitespace and comparing
  * whole tokens against a separator set. The token form could only see a
@@ -202,9 +210,18 @@ function parseSegmentReadTargets(tokens) {
  *   rather than commands, so the body is skipped whole. Without that, a PR
  *   body written through `tee <<'E'` has its own text parsed as commands.
  *
- * What it still does not model, each costing a missed cut rather than a wrong
- * one: `$(…)` and backtick substitution containing a separator, and a
- * separator inside an unterminated quote.
+ * Two things it still does not model:
+ *
+ * - **Substitution containing a separator** — `$(a; b)` and its backtick
+ *   twin. This produces an *extra* cut the shell would not make, stranding
+ *   the token after it in a segment whose head is not a command. Unreachable
+ *   in practice: `$` and `` ` `` sit outside `SHELL_READ_SAFE_CHARACTERS`,
+ *   and every caller tests the whole command against that class first.
+ * - **A separator inside an unterminated quote**, which is swallowed rather
+ *   than cut. Quotes are in the class, so this one is reachable — and it
+ *   matches what the shell itself does with an unterminated quote, which is
+ *   to treat the rest of the line as one quoted word rather than as further
+ *   commands.
  *
  * @param {string} command
  * @returns {string[][]}
@@ -381,105 +398,233 @@ function skipHeredocBodies(command, index, pendingHeredocs) {
 	return cursor - 1;
 }
 
-/** Commands that write the files they name, when carrying the flag that makes them do so.
+/**
+ * Head tokens whose operands a shell command reads rather than writes.
+ *
+ * This is the whole of what the shell arm claims to model. Everything else —
+ * `tee`, `cp`, `dd`, `python`, a binary nobody has heard of, any command
+ * behind a `sudo`/`nohup`/`VAR=value` prefix — is treated as a write, so the
+ * arm never has to enumerate the ways a command can write a file. Three
+ * earlier rounds tried the other direction, each one shipping a new missed
+ * write behind a green suite, because a list of write forms is wrong the
+ * moment the shell grows a form nobody listed.
+ *
+ * The two lists' failure directions are what makes this safe. A command
+ * missing from here costs one reroute message on a command that only read —
+ * recoverable, and only when the command also names a routed path. A command
+ * wrongly present costs a silently missed write. So membership asks: is this
+ * command read-only on plain operands, with no in-place-write mode? If the
+ * answer needs a "usually", it stays out.
+ *
+ * `sed` and `git` are deliberately absent — both read or write depending on
+ * their arguments, and `checkSegmentOnlyReads` decides them per call.
+ *
  * @type {Set<string>}
  */
-const SHELL_WRITE_COMMANDS = new Set(["tee", "sed"]);
+const SHELL_INSPECTION_COMMANDS = new Set([
+	"cat",
+	"head",
+	"tail",
+	"less",
+	"more",
+	"grep",
+	"egrep",
+	"fgrep",
+	"rg",
+	"ag",
+	"wc",
+	"nl",
+	"diff",
+	"ls",
+	"stat",
+	"file",
+	"cut",
+	"sort",
+	"uniq",
+	"od",
+	"xxd",
+	"jq",
+	"tr",
+	"echo",
+	"pwd",
+	"basename",
+	"dirname",
+	"which",
+	"true",
+	"false",
+]);
+
+/** `git` subcommands that only read the working tree.
+ * @type {Set<string>}
+ */
+const GIT_INSPECTION_SUBCOMMANDS = new Set([
+	"diff",
+	"log",
+	"show",
+	"status",
+	"blame",
+	"grep",
+	"ls-files",
+	"cat-file",
+	"rev-parse",
+]);
 
 /**
- * Extracts the paths a shell command writes to, across exactly five forms:
- * `>`, `>>`, `tee`, `tee -a`, and `sed -i`.
+ * Maximal runs of path-shaped characters. Deliberately excludes `)`, `;`,
+ * `:`, `,`, and `=` so a path fused to a grouping paren, a separator, or a
+ * `dd`-style `of=` prefix still yields the bare path.
  *
- * This cannot reuse `SHELL_READ_SAFE_CHARACTERS` — `>` sits outside that class
- * by construction, which is the whole point of the class — so it admits those
- * five as its only metacharacters. It shares `unquote` and
- * `splitShellSegments` with `parseShellReadTargets` and nothing else. Keeping
- * both in one function family is what stops the write detector from growing a
- * second, looser notion of what a safe command looks like — and the shared
- * splitter is what keeps the two arms answering the same question about where
- * one command ends.
+ * @type {RegExp}
+ */
+const PATH_SHAPED_RUN = /[\w./@~+-]+/g;
+
+/**
+ * Every path-shaped token a command names, anywhere in its text, with quote
+ * and backslash characters removed first.
  *
- * Deliberately open gaps, each of which yields no target rather than a guess:
- * word-prefixed redirects (`echo hello>f`, where the `>` abuts the preceding
- * token), `python -c` and every other interpreter writing through its own
- * runtime, and `cp` / `mv` / `dd`. The remedy this feeds judges no
- * prerequisites at all, so an unparsed write is simply not rerouted — deny
- * what you can parse, and where you cannot, stay out of the way.
+ * Stripping those two before scanning is what makes the scan see through the
+ * spellings a token-level parser gets wrong: `tee ".prism/x"/y.md`,
+ * `tee .prism/'x'/y.md`, an unterminated quote, and a backslash-newline
+ * continuation all still contain the literal path once the punctuation is
+ * gone. The scan runs over the raw command rather than over parsed tokens
+ * precisely so that no parsing mistake can hide a path from it.
  *
- * A non-flag operand that is not a path — `sed`'s script, `tee`'s `-a` value
- * if one is ever written detached — rides along as a target no manifest route
- * can match, the same trade `parseShellReadTargets` already makes rather than
- * teaching the parser each command's operand grammar.
+ * Junk tokens ride along — `tee`, `-i`, a `sed` script. They cost one route
+ * lookup each and match nothing, which is cheaper than teaching the scanner
+ * which words are paths and being wrong about it.
  *
  * @param {string | undefined} command
  * @returns {string[]}
  */
-export function parseShellWriteTargets(command) {
+function scanPathShapedTokens(command) {
 	if (typeof command !== "string" || command.trim().length === 0) {
 		return [];
 	}
 
-	const targets = [];
-	for (const tokens of splitShellSegments(command)) {
-		targets.push(...parseSegmentWriteTargets(tokens));
+	const stripped = command.replace(/["'\\]/g, "");
+	const tokens = new Set();
+	for (const run of stripped.match(PATH_SHAPED_RUN) ?? []) {
+		tokens.add(run);
+
+		// `-` belongs inside a path (`context-reuse.md`) but not at its front,
+		// where it is a flag marker or the tail of an expansion operator —
+		// `${OUT:-src/x.ts}` otherwise yields `-src/x.ts`, which matches no
+		// route. Both spellings ride along rather than choosing between them.
+		const unprefixed = run.replace(/^[-+]+/, "");
+		if (unprefixed.length > 0) {
+			tokens.add(unprefixed);
+		}
 	}
 
-	return targets.filter((target) => target.length > 0);
+	return [...tokens];
 }
 
 /**
- * One command segment's write targets. The segment's first token decides
- * whether its later operands are written to, so this cannot run over a whole
- * multi-command string — a `tee` in the first segment would claim the second
- * segment's filenames and produce a reroute naming a path the command only
- * reads.
+ * True when a segment's head token names a command that reads its operands
+ * and writes nothing.
+ *
+ * `sed` and `git` are decided here rather than by list membership because
+ * each is read-only or not depending on its own arguments — `sed -i` writes
+ * in place, and `git checkout` overwrites files while `git diff` does not.
+ * A `git` whose subcommand is not stated (only flags) is not provable.
  *
  * @param {string[]} tokens
+ * @returns {boolean}
+ */
+function checkSegmentOnlyReads(tokens) {
+	const [name, ...args] = tokens;
+
+	if (name === "sed") {
+		return !checkInPlaceFlag(args, 0);
+	}
+
+	if (name === "git") {
+		const subcommand = args.find((arg) => !arg.startsWith("-"));
+		return subcommand !== undefined && GIT_INSPECTION_SUBCOMMANDS.has(subcommand);
+	}
+
+	return SHELL_INSPECTION_COMMANDS.has(name);
+}
+
+/**
+ * The paths a command names that it cannot be proven to only read — the
+ * shell arm's whole judgment, and the inverse of what earlier rounds tried
+ * to compute.
+ *
+ * Two steps. First, every path-shaped token in the raw command is a
+ * candidate, whatever position it sits in. Second, a candidate is dropped
+ * only when the command is *provably* a set of read-only commands and the
+ * candidate is one of their operands. Anything the proof does not cover
+ * stays, and the caller reroutes it if a manifest route matches.
+ *
+ * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
+ * `splitShellSegments`, and it is all-or-nothing over the whole command: one
+ * character outside the class, or one segment whose head is not a known
+ * read-only command, and nothing is proven. That is what makes the five
+ * shapes this arm used to miss unreachable rather than handled — an
+ * interpreter write, a `cp`, a process substitution, an `exec` redirect, and
+ * an expansion carrying a separator each fail the class test or the head-token
+ * test, so none of them can produce a proof.
+ *
+ * The one gap that survives by construction: a write whose target path never
+ * appears in the command text, because it was assembled from a variable or
+ * reached through a `cd`. No scan over the command can see a path the
+ * command does not contain.
+ *
+ * @param {string | undefined} command
  * @returns {string[]}
  */
-function parseSegmentWriteTargets(tokens) {
-	const targets = [];
-	let segmentCommand = null;
-	let segmentWrites = false;
+export function parseUnprovenShellPaths(command) {
+	const candidates = scanPathShapedTokens(command);
+	if (candidates.length === 0) {
+		return [];
+	}
 
-	for (let index = 0; index < tokens.length; index++) {
-		const token = tokens[index];
+	const provenReads = resolveProvenReadPaths(command);
+	return candidates.filter((candidate) => !provenReads.has(candidate));
+}
 
-		if (token === ">" || token === ">>") {
-			const operand = tokens[index + 1];
-			if (operand !== undefined) {
-				targets.push(unquote(operand));
-				index++;
+/**
+ * The operands of a command proven to consist only of read-only segments, or
+ * an empty set when no such proof holds.
+ *
+ * Distinct from `parseShellReadTargets`, which answers a different question
+ * for the announce arm — which paths were read, and whether the read
+ * delivered the whole file. This one asks only whether a mention is safe to
+ * ignore, so it takes every operand of a read-only segment and grades none
+ * of them.
+ *
+ * @param {string | undefined} command
+ * @returns {Set<string>}
+ */
+function resolveProvenReadPaths(command) {
+	if (typeof command !== "string" || !SHELL_READ_SAFE_CHARACTERS.test(command)) {
+		return new Set();
+	}
+
+	const operands = new Set();
+	for (const tokens of splitShellSegments(command)) {
+		if (!checkSegmentOnlyReads(tokens)) {
+			return new Set();
+		}
+
+		for (const token of tokens.slice(1)) {
+			if (token.startsWith("-") && token !== "-") {
+				continue;
 			}
-			continue;
-		}
 
-		if (token.startsWith(">")) {
-			targets.push(unquote(token.replace(/^>>?/, "")));
-			continue;
-		}
-
-		if (segmentCommand === null) {
-			segmentCommand = token;
-			// `sed` writes only in place. `tee` writes on every invocation, so
-			// `tee -a` needs no separate case — the append flag changes how it
-			// writes, not whether it does.
-			segmentWrites =
-				token === "tee" ||
-				(token === "sed" && checkInPlaceFlag(tokens, index + 1));
-			continue;
-		}
-
-		if (
-			segmentWrites &&
-			SHELL_WRITE_COMMANDS.has(segmentCommand) &&
-			!token.startsWith("-")
-		) {
-			targets.push(unquote(token));
+			// Both the whole operand and its path-shaped runs, so an operand
+			// carrying a space still matches the runs `scanPathShapedTokens`
+			// recovered from the same text.
+			const operand = unquote(token);
+			operands.add(operand);
+			for (const run of scanPathShapedTokens(operand)) {
+				operands.add(run);
+			}
 		}
 	}
 
-	return targets;
+	return operands;
 }
 
 /**
@@ -703,16 +848,28 @@ export function formatDenyMessage(relativePath, unreadDocs) {
 }
 
 /**
- * The shell-write reroute's message. It judges no prerequisites at all,
- * which is what makes it impossible to render unsatisfiable — the model is
- * pointed at a surface the gate can actually check rather than told to
- * satisfy a condition through a channel that cannot report satisfying it.
+ * The shell reroute's message. It judges no prerequisites at all, which is
+ * what makes it impossible to render unsatisfiable — the model is pointed at
+ * a surface the gate can actually check rather than told to satisfy a
+ * condition through a channel that cannot report satisfying it.
+ *
+ * Both of its remedies are performable, which matters because the arm fires
+ * on commands that only read as well as on writes: an edit moves to the
+ * file-edit tool, and a read the arm could not prove is rewritten in a form
+ * it can. Naming an environment variable as the third way out would be a
+ * false remedy — the deny switch is read from the hook process's own
+ * environment, which a command's inline assignment never reaches.
  *
  * @param {string} relativePath
  * @returns {string}
  */
 export function formatShellRerouteMessage(relativePath) {
-	return `You're writing to \`${relativePath}\` via a shell write — redo this edit with your file-edit tool so the gate can check its prerequisites.`;
+	return (
+		`You're running a shell command that names \`${relativePath}\`, a path with governing architect docs. ` +
+		`The gate clears a shell command only when it can prove the command is a read, so everything else counts as a write — ` +
+		`redo this edit with your file-edit tool so the gate can check its prerequisites. ` +
+		"If the command only reads, spell it as a plain `cat`, `head`, or `grep`."
+	);
 }
 
 /**
@@ -818,9 +975,10 @@ async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
 }
 
 /**
- * The reroute reason for a shell command writing to a routed path, or `null`
- * when it writes nowhere routed. Operands resolve against the command's own
- * working directory, the same way `resolveTargets` resolves a shell read.
+ * The reroute reason for a shell command naming a routed path it cannot be
+ * proven to only read, or `null` when it names no such path. Tokens resolve
+ * against the command's own working directory, the same way `resolveTargets`
+ * resolves a shell read.
  *
  * @param {string} repoRoot
  * @param {string} cwd
@@ -828,17 +986,18 @@ async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
  * @returns {Promise<string | null>}
  */
 async function resolveShellRerouteReason(repoRoot, cwd, payload) {
-	for (const target of parseShellWriteTargets(payload.tool_input?.command)) {
-		const absolutePath = path.resolve(cwd, target);
-		if (!(await checkPathIsRouted(repoRoot, absolutePath))) {
-			continue;
-		}
-
-		const relativePath = toRepoRelativePath(repoRoot, absolutePath) ?? target;
-		return formatShellRerouteMessage(relativePath);
+	const unproven = parseUnprovenShellPaths(payload.tool_input?.command);
+	const routed = await filterRoutedPaths(
+		repoRoot,
+		unproven.map((target) => path.resolve(cwd, target))
+	);
+	if (routed.length === 0) {
+		return null;
 	}
 
-	return null;
+	return formatShellRerouteMessage(
+		toRepoRelativePath(repoRoot, routed[0]) ?? routed[0]
+	);
 }
 
 /**
