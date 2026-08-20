@@ -1685,3 +1685,146 @@ All 2 majors and 6 minors verified `fixed` against measurement, not against the 
 - [x] Lasting decisions promoted to architect context — four new Decisions, each carrying a `no promotion needed` verdict with a reason
 
 **Last updated:** 2026-08-19
+
+---
+
+## Review Issues (PR 2D — the deny gate on routed paths, #470)
+
+Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-deny-gate]. `9d97eb67` landed during the pass and is Reese's AC-report append only — no source, outside the pinned range.
+
+### The gate's own multi-doc remedy, run as one Bash call, credits nothing and re-denies identically
+
+- **Axis:** `standards`
+- **Severity:** `critical`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:76` (`SHELL_READ_SAFE_CHARACTERS`), message site `hook.mjs:452` (`formatDenyMessage`)
+- **Problem:** `formatDenyMessage` renders one `cat` per line, and the read pre-filter rejects any command containing a newline, so a model that pastes a two-line remedy into one Bash call earns zero credit and receives the identical deny — the unsatisfiable-gate shape this PR exists to prevent.
+- **Class:** `a remedy message whose rendered form is rejected by the channel that must observe it`
+- **Sweep:** Reproduced end to end against the shipped arms — `runPreToolUseArm` on an `Edit` to `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md` (route names 2 docs) → deny; the two `cat` lines fed verbatim as one `runPostToolUseArm` Bash payload → no credit; re-deny byte-identical. Control: the same two `cat`s as separate calls → cleared. Blast radius counted with `compileMatcher` over all three tables: 12 of 61 routes in `.prism/architect/manifest.json`, 10 of 49 in `manifest.base.json`, 8 of 19 in `manifest.stub.json` name 2+ docs — so this reaches consumers, not only PRISM.
+- **Suggested fix:** shared with the Major below — segment the command before tokenizing, so a multi-line `cat a` / `cat b` credits per segment. Do not fix by collapsing the message to one line: the one-`cat`-per-line shape is what makes the remedy legible, and the defect is on the read side.
+
+### `parseShellWriteTargets` treats a newline as ordinary whitespace, so one segment's command claims later lines' tokens
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:149` (`SHELL_SEGMENT_BOUNDARIES`), consumed at `hook.mjs:196` (`command.trim().split(/\s+/)`)
+- **Problem:** a multi-line command whose first segment is `tee` or `sed -i` claims every later non-flag token as a write target, producing a reroute deny that states the command writes to a path it only reads.
+- **Class:** `multi-line shell commands parsed as a single command — the same class as the \n escape D3 closed on the read side`
+- **Sweep:** `parseShellWriteTargets` exercised over 14 command shapes. Firing cases: `"sed -i 's/a/b/' foo.ts\ncat .prism/rules/code-standards.md"` → `["s/a/b/","foo.ts","cat",".prism/rules/code-standards.md"]`; `"tee /tmp/a.txt\necho hello .prism/architect/manifest.json"` → 4 targets. Through the real arm, `"sed -i 's/a/b/' foo.ts\ncat .prism/architect/_toolkit/install-layout.md"` denies with "You're writing to `.prism/architect/_toolkit/install-layout.md`" — a false statement, and a block on a `cat` the gate elsewhere prescribes. Non-firing controls: `;`-separated equivalent → `null`; `sed` without `-i` → `[]`; `grep -i` → `[]`. The read arm is **not** exposed: `SHELL_READ_SAFE_CHARACTERS` excludes `\n`, so `"cat a.md\ncat b.md"` → `[]` — it fails safe by refusing, which is what produces the Critical above.
+- **Suggested fix:** the fix belongs at a shared segment-splitting layer, not in either detector. Adding `"\n"` to `SHELL_SEGMENT_BOUNDARIES` is **inert** — confirmed by mutation: `.split(/\s+/)` consumes the newline before any token can equal `"\n"`, and the mutated build returns the same four targets. Introduce one `splitShellSegments(rawCommand)` splitting on `\n \r ; | || && &` and returning token arrays, then have both arms consume it: the write detector stops crossing segments, and the read arm can credit a per-segment bare `cat` instead of refusing every multi-line command. Patching the two arms separately leaves the next arm exposed, which is the drift `parseShellWriteTargets`'s own JSDoc says the shared helpers exist to prevent.
+
+### The narrowing unroutes four rules and four skill bodies, contradicting ADR-0072's stated purpose
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/architect/manifest.json:81`, `templates/install/.prism/architect/manifest.stub.json:21`
+- **Problem:** replacing `.prism/**` with `.prism/custom/**` leaves four `.prism/rules/*` files and four `.prism/skills/*` bodies matching zero routes, so the instruction-layer paths ADR-0072 names as its motivating case now get neither a gate nor an announcement.
+- **Class:** `a catch-all narrowed to a replacement set that does not cover the catch-all's load-bearing members`
+- **Sweep:** old and new tables both evaluated with the repo's own `compileMatcher` over `git ls-files`. Newly unrouted and tracked: `.prism/rules/{design-governance,lazy-artifacts,session-orientation,skill-routing}.md` (the other rules are enumerated individually at `manifest.json:19-44`; these four were not); `.prism/skills/{prism-doc-walker,prism-prd,prism-refactor-scout,prism-retro}/**` (only `prism-conductor` is enumerated, `:64`); plus `.prism/prds/**`, `.prism/qa/**`, `.prism/retros/**`, `.prism/iris-state.json`. Consumer stub additionally loses `.prism/skills/**`, `.prism/design/**`, `.prism/handoffs/**`, `.prism/conductor-state.json`, `.prism/theo-state.json`. `_toolkit/skills-ecosystem.md` itself stays routed in all three tables (`.claude/skills/**` and others), so the PR body's orphan-doc claim holds for both docs — the loss is path coverage, not doc reachability. No mechanical check sees this: `verify-manifest-coverage.ts:40-72` tests six hardcoded probes and `doctor.ts:546` scans orphaned docs, not orphaned paths; `pnpm prism:check` is green on this branch.
+- **Suggested fix:** re-add explicit routes rather than restoring the catch-all — at minimum `.prism/rules/**` → `_toolkit/spec-editing.md` in `manifest.json`, and `.prism/skills/**` → `_toolkit/skills-ecosystem.md` in all three tables. Name the remaining accepted losses in the plan's "What this gives up", which currently lists `.prism/design/`, `.prism/retros/`, `.prism/prds/` but not the rules or the skill bodies.
+
+### Nothing tests the delivery path, so the shipped gate could be unreachable end to end
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:728` (`main()` arm dispatch), `templates/install/.claude/settings.json:3` (`PreToolUse` block)
+- **Problem:** every gate test calls `runPreToolUseArm` in process, so neither the `--event=PreToolUse` dispatch nor the install template's registration is covered — the two links that carry the gate from a real host to the code under test.
+- **Class:** `a feature covered only below the seam that delivers it`
+- **Sweep:** mutation, empirically confirmed on a scratch copy — replacing the `eventName === "PreToolUse" ? … : …` ternary with an unconditional `runPostToolUseArm` keeps 57/57 green; deleting the whole `PreToolUse` block from `templates/install/.claude/settings.json` also keeps it green, because `assertAdoptedConsumerState` asserts `PostToolUse` and `PostCompact` only and the negative control rejects on `PostToolUse`. No test in the suite passes `--event=` to a spawned `hook.mjs` at all. This compounds with D8 being unrun: neither the synthetic layer nor a live host currently exercises registration → dispatch.
+- **Suggested fix:** extend `assertAdoptedConsumerState` to assert the `PreToolUse` registration and its matcher, and add one spawned-process case passing `--event=PreToolUse` on stdin that asserts a deny envelope on stdout.
+
+### Condition 5 of the deny — the doc still exists on disk — has no test
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.mjs:428` (`filterDocsOnDisk` in `resolveUnreadDocs`)
+- **Problem:** `runPreToolUseArm`'s JSDoc enumerates five load-bearing deny conditions and the suite covers four; nothing seeds a route naming a doc absent from disk, so a regression here would ship a deny telling the model to `cat` a file that does not exist.
+- **Class:** `an explicitly enumerated precondition left out of the suite that covers its siblings`
+- **Sweep:** mutation, empirically confirmed — replacing `return filterDocsOnDisk(repoRoot, unreadDocs)` with `return unreadDocs` keeps 57/57 green. The four sibling conditions each do have a killing test (kill-switch, scope id, listed tool kind, route match), so this is a single gap in an otherwise complete set, not a pattern of thin coverage.
+- **Suggested fix:** one case seeding a manifest route to a doc name with no file behind it, asserting the write proceeds.
+
+### Six tests pass for a reason other than the one they name
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hook-gate.test.ts:1343`, `:960`, `:994`, `:160`, `:154`, `:1059`, `:1267`
+- **Problem:** each asserts an outcome a second, unrelated cause already produces, so the behavior named in the title is not what the assertion discriminates on.
+- **Class:** `a null/empty assertion satisfied by an earlier guard than the one under test`
+- **Sweep:** mutation on a scratch copy, all empirically confirmed except the last. `:1343` "a harness with no observed deny envelope writes nothing" — the payload's `tool_name: "StrReplace"` is unlisted, so the arm returns at the kind guard and `emitDeny` is never called; both making cursor's `emitDeny` return an envelope and dropping the `envelope === null` check survive (cursor lists no `write` tool at all — its only reachable deny path is `Shell`). `:960` and `:994` — deleting the `?? payload.tool_input?.path` fallback survives; nothing asserts it positively. `:160` "missing session_id returns null" — the fixture's `cwd: "/repo"` has no manifest, so `loadManifest` throws and the catch returns `null` regardless. `:154` "missing file_path returns null" — the guard is behavior-neutral; the empty loop falls through to the same result. `:1059` leg 1 — rewriting the deny message to bare path plus remedies survives, so "Read its governing docs in full first, then retry" is uncovered. `:1267` "a deny writes no state" asserts `loadRouteState`'s absent-file defaults and would pass if the deny never fired (reasoned, not mutated; backstopped by leg 1). **Premise correction for the run record:** the `runPreToolUseArm: no session id` test at `:44` is *not* in this set — deleting `if (!scopeId) return null;` does fail the suite, because `loadRouteState` swallows the resulting TypeError and returns empty state, so the deny fires and the null assertion breaks.
+- **Suggested fix:** give each a positive counterpart differing in exactly one variable — for `:1343` use a `tool_name` cursor's table lists; for `:960`/`:994` assert the `.path` fallback announces on a routed path; for `:160` point the fixture at a repo root with a manifest; retire `:154` or assert the guard's short-circuit directly; extend `:1059` to the full message.
+
+### Two new function names are noun-first, against the repo's verb-first rule
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/architect-route.mjs:445` (`pathIsRouted`), `scripts/ai-skills/hooks/hook.mjs:243` (`segmentHasInPlaceFlag`)
+- **Problem:** `.prism/rules/code-standards.md:63-64` requires a verb-first name and forbids `is`/`has` framing outside TypeScript type guards; neither of these is a type guard.
+- **Class:** `predicate helper named as a noun phrase`
+- **Sweep:** every function declaration added by the diff — `git diff … | grep -E '^\+(export )?(async )?function '` over `scripts/ai-skills/hooks/`. Ten new functions; the other eight are verb-first (`resolveUnreadDocs`, `resolveListedToolKind`, `parseShellWriteTargets`, `formatDenyMessage`, `formatShellRerouteMessage`, `runPreToolUseArm`, `resolveWriteDenyReason`, `resolveShellRerouteReason`). Pre-existing precedent in the same file: `isForeignPayload` (`hook.mjs:332`), unchanged by this diff and equally against the rule.
+- **Suggested fix:** `checkPathIsRouted` / `findInPlaceFlag`, or whatever reads best — the rename touches `pathIsRouted`'s `.d.mts` declaration and two JSDoc references. Leave `isForeignPayload` alone; it is outside the local frame.
+
+### Consumer twin overstates two behaviors of the gate
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/install-layout.md` § Write gate
+- **Problem:** the shipped copy says shell writes are "redirected, not blocked" when the runtime returns `permissionDecision: "deny"`, and says a doc must be read "this session" when state is keyed per scope, so a subagent is denied after its parent read the doc.
+- **Class:** `consumer-voiced rewrite that simplifies past the behavior`
+- **Sweep:** every sentence of the new § Write gate section compared against the runtime. The other four claims hold — trigger set, clear-by-full-read, the three disable routes, and the `prism doctor` visibility control all match. The canonical copy says "this scope" and is correct, so the drift is twin-only; the rest of the mirror set is byte-clean (`build.ts --check` reports outputs in sync).
+- **Suggested fix:** "Shell writes ask you to switch tools" for the heading, and "has not been read in this session — and a subagent reads for itself" for the trigger sentence.
+
+### ADR and spec registration hygiene
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/README.md:124`, `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:1-6`, `scripts/ai-skills/update.ts:1265`
+- **Problem:** ADR-0072 is absent from the ADR index table, claims to supersede ADR-0071 without the frontmatter the README mandates on either side, and `update.ts`'s comment enumerates the events both sides register without the `PreToolUse` this PR adds.
+- **Class:** `a registration or enumeration that a new member did not join`
+- **Sweep:** grepped every registration surface for `0072` and for `0071` — `seed-curation.json:74` and `ship-closure.ts:102` are both correctly updated; the README table ends at `0070`, and ADR-0071 is missing from it too, so the index gap is pre-existing and repeated rather than introduced. `0071-architect-context-read-hook.md:4` still reads `Status: accepted` with no `Superseded-by:`. The `update.ts` merge code itself is generic over event names and handles `PreToolUse` correctly — only the prose drifted, which is `code-standards.md` § Removal and rename completeness on a changed behavior with no token to grep.
+- **Suggested fix:** add both ADRs to the index table; add `Supersedes: 0071` to 0072 and the matching `Superseded-by:` to 0071, or soften 0072's body to "narrows" if the supersession is partial; add `PreToolUse` to the `update.ts` comment.
+
+### Plan bookkeeping shape
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md` — `## Sessions`, and the catch-all `## Decisions` entry
+- **Problem:** the two 2026-08-19 `## Sessions` entries use different shapes (multi-line sub-bullets vs. the canonical single-line `open: … · close: …`), and the catch-all Decision's verdict reads "promotion verdict pending — resolves at PR 2D close", which is not one of the three forms `branch-plan.md` § Decision verdict gate defines.
+- **Class:** `bookkeeping written in a shape the governing rule does not define`
+- **Sweep:** every `## Sessions` line and every `## Decisions` verdict sub-bullet in the plan checked against `branch-plan.md` § Battery Persistence and § Decision verdict gate. All five new `## History` entries are within the 3-sentence cap; both new Decisions carry the required Root cause / Alternatives considered / Chosen approach depth shape; the catch-all entry's "What this gives up" and "Scope note" are the documented-absorption shape `followup-scope.md` asks for.
+- **Suggested fix:** normalize the first Sessions entry to the single-line form; the verdict resolves at close, so leave it and let the gate catch it there.
+
+### Angle Coverage — PR 2D, `176f35c5..9a7d1ebd`
+
+- **Runtime behavior** — `swept` — 13 items enumerated, 13 verdicts. `runPreToolUseArm` (traced against all five documented conditions, each toggled); `parseShellWriteTargets` (14 command shapes, 2 defects); `segmentHasInPlaceFlag` (four `-i` spellings plus the boundary stop); `parseShellReadTargets` under the new positive class (`\n`, `%`, quoted-space, and `$VAR` forms — the quoted-space case yields two fragment targets, not the zero its JSDoc claims, harmless since no route matches a fragment); `resolveUnreadDocs` (read-only confirmed, `announced` correctly ignored); `pathIsRouted`; `resolveListedToolKind` and `resolveToolKind` (fallback reaches announce only); `formatDenyMessage` (defect above); `formatShellRerouteMessage`; `resolveWriteDenyReason` (first-gated-path only, as documented); `resolveShellRerouteReason` (operands resolved against payload `cwd`); `main()` dispatch. Fail-open on every throw confirmed; no state written on any deny path.
+- **Test efficacy** — `swept` — 20 items enumerated, 20 verdicts. 6 tests that survive mutation of the line they name, 9 behaviors with no test, 5 mutations correctly killed (the `PreToolUse` scope-id guard, the segment-boundary reset, the `PostCompact` prefix, the `announced`-ignored rule, and the shell reroute's prerequisite-free remedy). Legs 1–3 of the PR's own claim check out structurally: `assertRemedyClearsTheGate` seeds nothing, denies through the real `PreToolUse` arm, remedies through the real `PostToolUse` arm, and re-denies. Suite re-run independently here: 57/57.
+- **Spec and doc consistency** — `swept` — 16 items enumerated, 16 verdicts. Canonical and consumer `install-layout.md`, `docs/adopting-into-existing-repos.md`, `docs/what-prism-writes.md`, `AGENTS.md`, `context-reuse.md` and its four mirrors, the conductor skill and agent adapters, both `settings.json`, three routing tables, `seed-curation.json`, `ship-closure.ts`, `update.ts`, and the plan. Two drifts found (consumer twin, `update.ts` comment); the rest match the code.
+- **Citation integrity** — `swept` — 14 items enumerated, 14 verdicts. Every factual claim in ADR-0072 resolved against the runtime line it describes, plus `install-layout.md:155`'s § Hook runtime cross-reference (heading exists at `:145`) and the ADR index table. All content claims hold; the two failures are registration, not content.
+- **External-system claims** — `swept` — 11 items enumerated, 11 verdicts. Claude Code's `PreToolUse` event name, `hookSpecificOutput.hookEventName`, `permissionDecision: "deny"`, `permissionDecisionReason`, matcher regex semantics (unanchored, so `NotebookEdit` matches `Edit` and correctly falls through the unlisted-name guard to no deny), `$CLAUDE_PROJECT_DIR`, the tool names `Write`/`Edit`/`Bash`/`Read`/`Grep`, Cursor's `additional_context`, Codex's envelope, `PostCompact`. Ten verified against the repo's own fixtures and the settings contract. **One unverified:** the deny envelope's shape is asserted from a live probe recorded in `## Decisions`, not from a run of this code, and D8 has not run — carried to the human merge gate, not closable from a dispatched session.
+- **Repo writing rules** — `swept` — `verdict-only`.
+- **Security** — `swept` — 2 items enumerated, 2 verdicts. The permission-decision boundary (the gate is self-imposed friction with three documented disable routes, no auth or secret surface, and it fails open on every error) and the shell-command parsing surface (path text is interpolated into a model-facing message only, never executed; the `sed` flag regex backtracks on a long `-`-prefixed token but the input is agent-authored and local).
+- **Docs impact** — `swept` — 3 items enumerated, 3 verdicts. Hook runtime → `install-layout.md` (canonical updated, twin drifts per the Minor above); `docs/adopting-into-existing-repos.md` and `docs/what-prism-writes.md` both correctly extended.
+- **Accessibility** — `n/a — no UI in the pinned range.`
+
+---
+
+## PR Readiness (PR 2D — the deny gate on routed paths, #470)
+
+- [ ] No critical or major issues — 1 critical, 4 majors open
+- [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
+- [x] No stray console.logs or debug artifacts
+- [ ] Tests written for new logic and edge cases — 6 non-discriminating tests, 9 uncovered behaviors, including deny condition 5 and the whole delivery path
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-08-19 (`build.ts --check` in sync; `hook-gate.test.ts` 57/57 re-run independently here)
+- [x] PR description up to date — and honest about D8; the "not proven" section names the gap rather than implying coverage
+- [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
+
+**Last updated:** 2026-08-19
