@@ -18,9 +18,12 @@
  * nothing and exit 0 — a `PostToolUse` hook must never block or fail the
  * tool call it observed.
  *
- * `PostToolUse` announces and never blocks. There is no `PreToolUse` arm:
- * a gate that denies a write has to leave the model a remedy it can
- * actually perform, and nothing here denies anything.
+ * `PostToolUse` announces and never blocks. `PreToolUse` is the arm that
+ * blocks: a write to a path a manifest route matches is denied until the
+ * route's docs have been read, and the message names the literal `cat`
+ * command that clears it (ADR-0072). The remedy is performable because the
+ * announce arm's credit channel observes exactly those reads — which is why
+ * the two arms live in one file and share one state format.
  *
  * Every safety check lives in this script, never in a host's registration
  * matcher — a matcher-less harness would otherwise silently inherit nothing.
@@ -29,33 +32,48 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+	ARCHITECT_DIR_PREFIX,
 	findRepoRoot,
 	MAX_EMISSION_BYTES,
+	pathIsRouted,
 	resolveArchitectNag,
+	resolveUnreadDocs,
+	toRepoRelativePath,
 } from "./architect-route.mjs";
-import { HARNESSES, resolveToolKind } from "./harnesses.mjs";
+import {
+	HARNESSES,
+	resolveListedToolKind,
+	resolveToolKind,
+} from "./harnesses.mjs";
 
 /**
- * Shell metacharacters that make a command something other than a single
- * read of named files. A command carrying any of them parses to zero
- * targets rather than to a partial guess: `cat a | grep b` reads `a` but
- * `grep -f patterns b` does not read `patterns` the way `cat` does, and a
- * parser that tries to tell those apart is wrong more often than silence
- * is. Pipelines, redirects, chained commands, and command substitution all
- * land here, and they are deliberately out of scope.
+ * The characters a command may contain and still be considered for read
+ * credit: letters, digits, `_ . / - @ + = , : ~`, both quote characters (so
+ * `unquote` keeps working), and space and tab as the only separators. A
+ * command carrying anything else parses to zero targets.
  *
- * Newlines and `#` sit in the set for the same reason, and they matter more
- * than they look. A newline separates commands, so a multi-line call whose
- * first line is a bare `cat` would otherwise parse as one `cat` over every
- * bare token on every later line — crediting as fully read a routed doc that
- * was only some later `grep`'s haystack. `#` opens a comment, whose words are
- * not paths either. Multi-line commands are routine agent behavior, and
- * crediting an unread document is the one direction this channel treats as
- * unacceptable.
+ * The direction matters more than the contents. This was a deny-list of shell
+ * metacharacters, and the enumeration escaped twice inside the single PR that
+ * wrote it — `\n` was missing, so a multi-line command whose first line was a
+ * bare `cat` credited every bare token on every later line as fully read, and
+ * `#` was added in the same pass. Two escapes from one enumeration is a defect
+ * in the shape rather than two defects in the contents.
+ *
+ * An allow-list fails the other way. A miss on a deny-list marks an unread
+ * document read and opens the write gate on it; a miss on an allow-list costs
+ * one re-read. Every other credit judgment in this channel already resolves
+ * that direction — `{ credit: false }` by default, only `cat` credits, a
+ * flagged `cat` does not — and this was the last place resolved the other way.
+ *
+ * What the class refuses, none of it individually enumerated: `$VAR` and
+ * `${…}`, backslash escapes, globs, brace expansion, `!` history expansion,
+ * newline and carriage return, `#`, every pipeline and redirect form, and
+ * whatever metacharacter the next shell introduces. What it costs: a path
+ * carrying a space, a `%`, or a non-ASCII character stops crediting.
  *
  * @type {RegExp}
  */
-const SHELL_CONTROL_CHARACTERS = /[|&;<>`#\n\r]|\$\(/;
+const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t-]*$/;
 
 /** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
  * @type {Set<string>}
@@ -85,10 +103,11 @@ function unquote(token) {
  * while over-crediting silently defeats the write gate this channel feeds.
  *
  * Deliberate parsing gaps, all of which yield zero targets rather than a
- * guess: pipelines, redirects, and command substitution (see
- * `SHELL_CONTROL_CHARACTERS`); `xargs` and any other command that names its
- * files indirectly; and paths containing spaces, since splitting on
- * whitespace cannot recover them even when they are quoted.
+ * guess: every command form carrying a character outside
+ * `SHELL_READ_SAFE_CHARACTERS`, which covers pipelines, redirects,
+ * substitution, globs, and variable expansion in one rule; `xargs` and any
+ * other command that names its files indirectly; and paths containing spaces,
+ * since splitting on whitespace cannot recover them even when they are quoted.
  *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
@@ -97,7 +116,7 @@ export function parseShellReadTargets(command) {
 	if (typeof command !== "string" || command.trim().length === 0) {
 		return [];
 	}
-	if (SHELL_CONTROL_CHARACTERS.test(command)) {
+	if (!SHELL_READ_SAFE_CHARACTERS.test(command)) {
 		return [];
 	}
 
@@ -122,6 +141,121 @@ export function parseShellReadTargets(command) {
 	const credit = name === "cat" && !args.some((arg) => arg.startsWith("-"));
 
 	return operands.map((filePath) => ({ filePath, credit }));
+}
+
+/** Tokens that end one command and start the next, so a `tee` or `sed -i` stops claiming operands at them.
+ * @type {Set<string>}
+ */
+const SHELL_SEGMENT_BOUNDARIES = new Set(["|", "||", "&&", ";", "&"]);
+
+/** Commands that write the files they name, when carrying the flag that makes them do so.
+ * @type {Set<string>}
+ */
+const SHELL_WRITE_COMMANDS = new Set(["tee", "sed"]);
+
+/**
+ * Extracts the paths a shell command writes to, across exactly five forms:
+ * `>`, `>>`, `tee`, `tee -a`, and `sed -i`.
+ *
+ * This cannot reuse `SHELL_READ_SAFE_CHARACTERS` — `>` sits outside that class
+ * by construction, which is the whole point of the class — so it runs on the
+ * raw command and admits those five as its only metacharacters. It shares
+ * `unquote` and the whitespace split with `parseShellReadTargets` and nothing
+ * else. Keeping both in one function family is what stops the write detector
+ * from growing a second, looser notion of what a safe command looks like.
+ *
+ * Deliberately open gaps, each of which yields no target rather than a guess:
+ * word-prefixed redirects (`echo hello>f`, where the `>` abuts the preceding
+ * token), `python -c` and every other interpreter writing through its own
+ * runtime, and `cp` / `mv` / `dd`. The remedy this feeds judges no
+ * prerequisites at all, so an unparsed write is simply not rerouted — deny
+ * what you can parse, and where you cannot, stay out of the way.
+ *
+ * A non-flag operand that is not a path — `sed`'s script, `tee`'s `-a` value
+ * if one is ever written detached — rides along as a target no manifest route
+ * can match, the same trade `parseShellReadTargets` already makes rather than
+ * teaching the parser each command's operand grammar.
+ *
+ * @param {string | undefined} command
+ * @returns {string[]}
+ */
+export function parseShellWriteTargets(command) {
+	if (typeof command !== "string" || command.trim().length === 0) {
+		return [];
+	}
+
+	const targets = [];
+	let segmentCommand = null;
+	let segmentWrites = false;
+
+	const tokens = command.trim().split(/\s+/);
+	for (let index = 0; index < tokens.length; index++) {
+		const token = tokens[index];
+
+		if (SHELL_SEGMENT_BOUNDARIES.has(token)) {
+			segmentCommand = null;
+			segmentWrites = false;
+			continue;
+		}
+
+		if (token === ">" || token === ">>") {
+			const operand = tokens[index + 1];
+			if (operand !== undefined) {
+				targets.push(unquote(operand));
+				index++;
+			}
+			continue;
+		}
+
+		if (token.startsWith(">")) {
+			targets.push(unquote(token.replace(/^>>?/, "")));
+			continue;
+		}
+
+		if (segmentCommand === null) {
+			segmentCommand = token;
+			// `sed` writes only in place. `tee` writes on every invocation, so
+			// `tee -a` needs no separate case — the append flag changes how it
+			// writes, not whether it does.
+			segmentWrites =
+				token === "tee" ||
+				(token === "sed" && segmentHasInPlaceFlag(tokens, index + 1));
+			continue;
+		}
+
+		if (
+			segmentWrites &&
+			SHELL_WRITE_COMMANDS.has(segmentCommand) &&
+			!token.startsWith("-")
+		) {
+			targets.push(unquote(token));
+		}
+	}
+
+	return targets.filter((target) => target.length > 0);
+}
+
+/**
+ * True when the command segment starting at `start` carries `sed`'s in-place
+ * flag, in any of its spellings — `-i`, `-i.bak`, `-ni`, `--in-place`. The
+ * scan stops at the next segment boundary, so a later pipeline stage's `-i`
+ * cannot make an earlier read-only `sed` look like a write.
+ *
+ * @param {string[]} tokens
+ * @param {number} start
+ * @returns {boolean}
+ */
+function segmentHasInPlaceFlag(tokens, start) {
+	for (let index = start; index < tokens.length; index++) {
+		const token = tokens[index];
+		if (SHELL_SEGMENT_BOUNDARIES.has(token)) {
+			return false;
+		}
+		if (/^--in-place/.test(token) || /^-[a-zA-Z]*i/.test(token)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -300,6 +434,166 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 }
 
 /**
+ * Builds the deny message for a write to a routed path with unread docs.
+ *
+ * The literal `cat` command is the message's whole job. A gate whose remedy
+ * has to be inferred is a gate the model cannot reliably clear, and the
+ * credit channel only credits a flagless `cat` or a rangeless `Read` — so
+ * naming the doc without naming how to read it in full is the unsatisfiable
+ * shape this wording exists to avoid. One line per unread doc, because the
+ * model performs them one at a time.
+ *
+ * @param {string} relativePath
+ * @param {string[]} unreadDocs
+ * @returns {string}
+ */
+export function formatDenyMessage(relativePath, unreadDocs) {
+	const remedies = unreadDocs
+		.map((doc) => `cat ${ARCHITECT_DIR_PREFIX}${doc}`)
+		.join("\n");
+	return `You're editing \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}`;
+}
+
+/**
+ * The shell-write reroute's message. It judges no prerequisites at all,
+ * which is what makes it impossible to render unsatisfiable — the model is
+ * pointed at a surface the gate can actually check rather than told to
+ * satisfy a condition through a channel that cannot report satisfying it.
+ *
+ * @param {string} relativePath
+ * @returns {string}
+ */
+export function formatShellRerouteMessage(relativePath) {
+	return `You're writing to \`${relativePath}\` via a shell write — redo this edit with your file-edit tool so the gate can check its prerequisites.`;
+}
+
+/**
+ * `PreToolUse` arm — denies a write to a routed path whose governing docs
+ * this scope has not read, and reroutes a shell write on a routed path to a
+ * file-edit tool. Returns the JSON string to write to stdout, or `null` when
+ * the write proceeds.
+ *
+ * Five conditions all hold before anything is denied, and each one is
+ * load-bearing:
+ *
+ * 1. Neither `PRISM_HOOK_DISABLE=1` nor `PRISM_HOOK_DENY_DISABLE=1` is set.
+ * 2. The payload carries a scope id. No id, no deny — the gate has no state
+ *    to judge against and would block every write in a session it cannot
+ *    identify.
+ * 3. `resolveListedToolKind` returns a kind the harness's table actually
+ *    states. The unlisted-name fallback is right for announce and wrong here
+ *    (see `harnesses.mjs`).
+ * 4. A manifest route matches the path. A route existing is the opt-in; an
+ *    unrouted path is never denied, which is what keeps a consumer's first
+ *    edit to their own application code from being blocked.
+ * 5. A doc that route names is absent from this scope's `read` array and
+ *    still exists on disk.
+ *
+ * Nothing here writes state. A denied write must be able to produce the same
+ * message again after the model's remedy fails, and appending to `announced`
+ * would silence the very doc the deny is asking for.
+ *
+ * @param {string} tool
+ * @param {import("./harnesses.mjs").HarnessSpec} spec
+ * @param {string} rawStdin
+ * @returns {Promise<string | null>}
+ */
+export async function runPreToolUseArm(tool, spec, rawStdin) {
+	if (
+		process.env.PRISM_HOOK_DISABLE === "1" ||
+		process.env.PRISM_HOOK_DENY_DISABLE === "1"
+	) {
+		return null;
+	}
+
+	try {
+		const payload = JSON.parse(rawStdin);
+
+		if (isForeignPayload(tool, payload)) {
+			return null;
+		}
+
+		const scopeId = spec.scopeId(payload);
+		if (!scopeId) {
+			return null;
+		}
+
+		const kind = resolveListedToolKind(spec, payload.tool_name);
+		if (kind !== "write" && kind !== "shell") {
+			return null;
+		}
+
+		const cwd = payload.cwd ?? process.cwd();
+		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
+
+		const reason =
+			kind === "shell"
+				? await resolveShellRerouteReason(repoRoot, cwd, payload)
+				: await resolveWriteDenyReason(repoRoot, scopeId, spec.filePaths(payload));
+		if (reason === null) {
+			return null;
+		}
+
+		const envelope = spec.emitDeny(reason);
+		return envelope === null ? null : JSON.stringify(envelope);
+	} catch (error) {
+		process.stderr.write(
+			`architect-route deny arm failed: ${error instanceof Error ? error.message : String(error)}\n`
+		);
+		return null;
+	}
+}
+
+/**
+ * The deny reason for a file-edit write, or `null` when every path it names
+ * is clear. Only the first gated path is reported: the model retries the same
+ * call after reading, so naming one path's docs is what it can act on, and a
+ * multi-path patch surfaces its next gate on the next attempt.
+ *
+ * @param {string} repoRoot
+ * @param {string} scopeId
+ * @param {string[]} filePaths
+ * @returns {Promise<string | null>}
+ */
+async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
+	for (const filePath of filePaths) {
+		const unreadDocs = await resolveUnreadDocs(repoRoot, filePath, scopeId);
+		if (unreadDocs.length === 0) {
+			continue;
+		}
+
+		const relativePath = toRepoRelativePath(repoRoot, filePath) ?? filePath;
+		return formatDenyMessage(relativePath, unreadDocs);
+	}
+
+	return null;
+}
+
+/**
+ * The reroute reason for a shell command writing to a routed path, or `null`
+ * when it writes nowhere routed. Operands resolve against the command's own
+ * working directory, the same way `resolveTargets` resolves a shell read.
+ *
+ * @param {string} repoRoot
+ * @param {string} cwd
+ * @param {import("./harnesses.mjs").HookPayload} payload
+ * @returns {Promise<string | null>}
+ */
+async function resolveShellRerouteReason(repoRoot, cwd, payload) {
+	for (const target of parseShellWriteTargets(payload.tool_input?.command)) {
+		const absolutePath = path.resolve(cwd, target);
+		if (!(await pathIsRouted(repoRoot, absolutePath))) {
+			continue;
+		}
+
+		const relativePath = toRepoRelativePath(repoRoot, absolutePath) ?? target;
+		return formatShellRerouteMessage(relativePath);
+	}
+
+	return null;
+}
+
+/**
  * `PostCompact` arm — deletes the session's state file so docs re-announce
  * and re-gate after compaction. Compaction can drop the conversation
  * history that made a doc "read"; leaving the state intact would silence
@@ -431,14 +725,17 @@ async function main() {
 		return;
 	}
 
-	const output = await runPostToolUseArm(tool, spec, rawStdin);
+	const output =
+		eventName === "PreToolUse"
+			? await runPreToolUseArm(tool, spec, rawStdin)
+			: await runPostToolUseArm(tool, spec, rawStdin);
 	if (output !== null) {
 		process.stdout.write(output);
 	}
 	process.exitCode = 0;
 }
 
-/** Parses an optional `--event=<name>` argv flag distinguishing `PostCompact` from `PostToolUse`.
+/** Parses an optional `--event=<name>` argv flag selecting the arm; absent means `PostToolUse`.
  * @param {string[]} argv
  * @returns {string | undefined}
  */

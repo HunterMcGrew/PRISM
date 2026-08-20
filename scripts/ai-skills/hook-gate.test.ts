@@ -20,14 +20,24 @@ import { promisify } from "node:util";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { loadRouteState } from "./hooks/architect-route.mjs";
+import {
+	loadRouteState,
+	matchDocsForPath,
+	saveRouteState,
+} from "./hooks/architect-route.mjs";
 import {
 	parseShellReadTargets,
+	parseShellWriteTargets,
 	resolveHarnessFromArgv,
 	runPostCompactArm,
 	runPostToolUseArm,
+	runPreToolUseArm,
 } from "./hooks/hook.mjs";
-import { HARNESSES, resolveToolKind } from "./hooks/harnesses.mjs";
+import {
+	HARNESSES,
+	resolveListedToolKind,
+	resolveToolKind,
+} from "./hooks/harnesses.mjs";
 
 const execFileAsync = promisify(execFile);
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -968,4 +978,502 @@ test("runPostToolUseArm: a Grep naming a routed doc credits nothing", async () =
 			"search results quote a doc without delivering it"
 		);
 	});
+});
+
+// --- The write gate: PreToolUse deny, remedy, and reroute ---
+
+const GATE_DOC = "_toolkit/spec-editing.md";
+
+/** Seeds one routed doc and returns the routed write target plus the doc's own path. */
+async function seedGateRepo(
+	repoRoot: string
+): Promise<{ target: string; docPath: string }> {
+	await seedManifestAndDoc(
+		repoRoot,
+		{ "src/**": GATE_DOC },
+		GATE_DOC,
+		"Spec editing constraints go here."
+	);
+	return {
+		target: path.join(repoRoot, "src", "index.ts"),
+		docPath: path.join(repoRoot, ".prism", "architect", GATE_DOC),
+	};
+}
+
+function writePayload(
+	repoRoot: string,
+	filePath: string,
+	overrides: Record<string, unknown> = {}
+): string {
+	return JSON.stringify({
+		session_id: "session-1",
+		cwd: repoRoot,
+		tool_name: "Write",
+		tool_input: { file_path: filePath },
+		...overrides,
+	});
+}
+
+/** The deny envelope's reason text, or `null` when the call was allowed. */
+function denyReason(result: string | null): string | null {
+	if (result === null) {
+		return null;
+	}
+	const parsed = JSON.parse(result);
+	assert.equal(parsed.hookSpecificOutput.hookEventName, "PreToolUse");
+	assert.equal(parsed.hookSpecificOutput.permissionDecision, "deny");
+	return parsed.hookSpecificOutput.permissionDecisionReason;
+}
+
+// Leg 1 — the deny fires, and names both the doc and the command that clears it.
+test("runPreToolUseArm: a write to a routed path with unread docs is denied, naming the doc and the cat remedy", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		const reason = denyReason(
+			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target))
+		);
+
+		assert.ok(reason, "a routed write with unread docs is denied");
+		assert.match(reason, /src\/index\.ts/, "the message names the path being written");
+		assert.match(
+			reason,
+			/cat \.prism\/architect\/_toolkit\/spec-editing\.md/,
+			"a message naming a doc without naming how to read it is the unsatisfiable-gate shape"
+		);
+	});
+});
+
+// Leg 2 — seeded state clears it.
+test("runPreToolUseArm: the same write is allowed once the doc is in the read array", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		await saveRouteState(repoRoot, "session-1", { read: [GATE_DOC], announced: [] });
+
+		const result = await runPreToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			writePayload(repoRoot, target)
+		);
+		assert.equal(result, null, "every matched doc is read, so nothing gates the write");
+	});
+});
+
+/**
+ * Leg 3 — a remedy performed through the shipped `PostToolUse` arm clears a
+ * real deny. Seeding is leg 2's job: a suite that only seeds cannot detect a
+ * remedy that does not work, which is how thrive shipped an unsatisfiable gate
+ * that passed 70 of 70.
+ *
+ * A named function rather than inline assertions so the positive control below
+ * can break the deny and re-run these exact checks. A control that
+ * re-implements the assertions proves only that its copy fails.
+ */
+async function assertRemedyClearsTheGate(
+	remedy: (docPath: string) => Record<string, unknown>
+): Promise<void> {
+	await withTempRepo(async (repoRoot) => {
+		const { target, docPath } = await seedGateRepo(repoRoot);
+
+		const denied = await runPreToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			writePayload(repoRoot, target)
+		);
+		assert.ok(denied, "the write is denied before the remedy");
+
+		await runPostToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			JSON.stringify({
+				session_id: "session-1",
+				cwd: repoRoot,
+				...remedy(docPath),
+			})
+		);
+
+		const afterRemedy = await runPreToolUseArm(
+			"claude",
+			HARNESSES.claude,
+			writePayload(repoRoot, target)
+		);
+		assert.equal(afterRemedy, null, "the performed remedy cleared the gate");
+	});
+}
+
+test("runPreToolUseArm: a full Read of the named doc clears the deny end to end", async () => {
+	await assertRemedyClearsTheGate((docPath) => ({
+		tool_name: "Read",
+		tool_input: { file_path: docPath },
+	}));
+});
+
+test("runPreToolUseArm: a cat of the named doc clears the deny end to end", async () => {
+	// This repo's own output style reads files with `cat`, so a gate only the
+	// `Read` path can clear is a gate its own agents cannot satisfy.
+	await assertRemedyClearsTheGate((docPath) => ({
+		tool_name: "Bash",
+		tool_input: { command: `cat ${docPath}` },
+	}));
+});
+
+test("runPreToolUseArm: positive control — with the deny broken, leg 3 fails", async () => {
+	process.env.PRISM_HOOK_DENY_DISABLE = "1";
+	try {
+		await assert.rejects(
+			assertRemedyClearsTheGate((docPath) => ({
+				tool_name: "Read",
+				tool_input: { file_path: docPath },
+			})),
+			"a leg that still passes with the deny disabled is not testing the deny"
+		);
+	} finally {
+		delete process.env.PRISM_HOOK_DENY_DISABLE;
+	}
+});
+
+// --- The subagent leg (D2's verify points here) ---
+
+test("runPreToolUseArm: a subagent's deny consults its own state, not its parent's", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		const childPayload = writePayload(repoRoot, target, { agent_id: "agent-1" });
+
+		// Direction 1: the parent read the doc; the child did not.
+		await saveRouteState(repoRoot, "session-1", { read: [GATE_DOC], announced: [] });
+		assert.ok(
+			await runPreToolUseArm("claude", HARNESSES.claude, childPayload),
+			"a doc the parent read does not satisfy the child's gate"
+		);
+
+		// Direction 2: the child's own state clears it. Required alongside the
+		// first — direction 1 alone also passes if the deny never finds any
+		// state file at all.
+		await saveRouteState(repoRoot, "session-1.agent-1", {
+			read: [GATE_DOC],
+			announced: [],
+		});
+		assert.equal(
+			await runPreToolUseArm("claude", HARNESSES.claude, childPayload),
+			null,
+			"the child's own read clears the child's gate"
+		);
+	});
+});
+
+// --- Coverage set ---
+
+test("runPreToolUseArm: an unrouted path is never denied, on any verb", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedGateRepo(repoRoot);
+		const unrouted = path.join(repoRoot, "README.md");
+
+		for (const toolInput of [
+			{ tool_name: "Write", tool_input: { file_path: unrouted } },
+			{ tool_name: "Edit", tool_input: { file_path: unrouted } },
+			{ tool_name: "Bash", tool_input: { command: `echo hi > ${unrouted}` } },
+		]) {
+			const stdin = JSON.stringify({
+				session_id: "session-1",
+				cwd: repoRoot,
+				...toolInput,
+			});
+			assert.equal(
+				await runPreToolUseArm("claude", HARNESSES.claude, stdin),
+				null,
+				`${toolInput.tool_name} on an unrouted path must not be denied`
+			);
+		}
+	});
+});
+
+test("runPreToolUseArm: a read-kind tool is never denied, even on a routed path", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		for (const toolName of ["Read", "Grep"]) {
+			assert.equal(
+				await runPreToolUseArm(
+					"claude",
+					HARNESSES.claude,
+					writePayload(repoRoot, target, { tool_name: toolName })
+				),
+				null,
+				`${toolName} is not a write and must never be denied`
+			);
+		}
+	});
+});
+
+test("runPreToolUseArm: an unlisted tool name is never denied, unlike the announce fallback", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		assert.equal(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, target, { tool_name: "SomeToolNobodyMapped" })
+			),
+			null,
+			"the next read-shaped tool a vendor ships must not be denied through the write default"
+		);
+	});
+});
+
+test("runPreToolUseArm: no session id never denies", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		const stdin = JSON.stringify({
+			cwd: repoRoot,
+			tool_name: "Write",
+			tool_input: { file_path: target },
+		});
+
+		assert.equal(await runPreToolUseArm("claude", HARNESSES.claude, stdin), null);
+	});
+});
+
+test("runPreToolUseArm: a deny writes no state and no announced entry", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target));
+
+		const state = await loadRouteState(repoRoot, "session-1");
+		assert.deepEqual(state.read, [], "a deny credits nothing");
+		assert.deepEqual(
+			state.announced,
+			[],
+			"appending to announced would silence the very doc the deny is asking for"
+		);
+	});
+});
+
+test("runPreToolUseArm: a doc announced but never read still denies", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		await saveRouteState(repoRoot, "session-1", { read: [], announced: [GATE_DOC] });
+
+		assert.ok(
+			await runPreToolUseArm("claude", HARNESSES.claude, writePayload(repoRoot, target)),
+			"naming a doc is not delivering it — only the read array clears a gate"
+		);
+	});
+});
+
+test("runPreToolUseArm: each kill switch makes the gate inert", async () => {
+	for (const variable of ["PRISM_HOOK_DISABLE", "PRISM_HOOK_DENY_DISABLE"]) {
+		await withTempRepo(async (repoRoot) => {
+			const { target } = await seedGateRepo(repoRoot);
+
+			process.env[variable] = "1";
+			try {
+				assert.equal(
+					await runPreToolUseArm(
+						"claude",
+						HARNESSES.claude,
+						writePayload(repoRoot, target)
+					),
+					null,
+					`${variable}=1 leaves the gate registered and inert`
+				);
+			} finally {
+				delete process.env[variable];
+			}
+		});
+	}
+});
+
+test("runPreToolUseArm: PRISM_HOOK_DENY_DISABLE leaves the announce arm running", async () => {
+	// The two switches differ in exactly this: the narrow one turns off the
+	// gate, not the hook. A test asserting only inertness cannot tell them apart.
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		process.env.PRISM_HOOK_DENY_DISABLE = "1";
+		try {
+			const announced = await runPostToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				JSON.stringify({
+					session_id: "session-1",
+					cwd: repoRoot,
+					tool_name: "Read",
+					tool_input: { file_path: target },
+				})
+			);
+			assert.ok(announced, "the deny switch must not silence announcements");
+		} finally {
+			delete process.env.PRISM_HOOK_DENY_DISABLE;
+		}
+	});
+});
+
+test("runPreToolUseArm: a harness with no observed deny envelope writes nothing", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		const stdin = JSON.stringify({
+			conversation_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "StrReplace",
+			tool_input: { file_path: target },
+		});
+
+		assert.equal(
+			await runPreToolUseArm("cursor", HARNESSES.cursor, stdin),
+			null,
+			"guessing an unobserved host's deny shape blocks a write with a message nobody renders"
+		);
+	});
+});
+
+// --- Shell write reroute ---
+
+test("parseShellWriteTargets: each of the five write forms yields its target", () => {
+	assert.deepEqual(parseShellWriteTargets("cat a.md > out.md"), ["out.md"]);
+	assert.deepEqual(parseShellWriteTargets("cat a.md >> out.md"), ["out.md"]);
+	assert.deepEqual(parseShellWriteTargets("echo hi | tee out.md"), ["out.md"]);
+	assert.deepEqual(parseShellWriteTargets("echo hi | tee -a out.md"), ["out.md"]);
+	assert.deepEqual(parseShellWriteTargets("sed -i '' out.md"), ["out.md"]);
+});
+
+test("parseShellWriteTargets: the documented gaps yield no target rather than a guess", () => {
+	assert.deepEqual(
+		parseShellWriteTargets("echo hello>out.md"),
+		[],
+		"a word-prefixed redirect is a recorded gap, not a silent miss"
+	);
+	assert.deepEqual(parseShellWriteTargets("cp a.md out.md"), []);
+	assert.deepEqual(parseShellWriteTargets("mv a.md out.md"), []);
+	assert.deepEqual(
+		parseShellWriteTargets("sed -n '1,5p' out.md"),
+		[],
+		"sed without an in-place flag writes nothing"
+	);
+	assert.deepEqual(parseShellWriteTargets("cat out.md"), []);
+	assert.deepEqual(parseShellWriteTargets(undefined), []);
+});
+
+test("runPreToolUseArm: each of the five shell write forms reroutes on a routed path", async () => {
+	for (const buildCommand of [
+		(target: string) => `echo hi > ${target}`,
+		(target: string) => `echo hi >> ${target}`,
+		(target: string) => `echo hi | tee ${target}`,
+		(target: string) => `echo hi | tee -a ${target}`,
+		(target: string) => `sed -i s/a/b/ ${target}`,
+	]) {
+		await withTempRepo(async (repoRoot) => {
+			const { target } = await seedGateRepo(repoRoot);
+			const reason = denyReason(
+				await runPreToolUseArm(
+					"claude",
+					HARNESSES.claude,
+					writePayload(repoRoot, target, {
+						tool_name: "Bash",
+						tool_input: { command: buildCommand(target) },
+					})
+				)
+			);
+
+			assert.ok(reason, `\`${buildCommand("<path>")}\` on a routed path reroutes`);
+			assert.match(
+				reason,
+				/redo this edit with your file-edit tool/,
+				"the reroute judges no prerequisites, so it cannot be made unsatisfiable"
+			);
+		});
+	}
+});
+
+test("runPreToolUseArm: a shell write reroutes even when the docs are already read", async () => {
+	// The reroute judges no prerequisites by design — it points at a surface
+	// the gate can check rather than asking for a condition first.
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+		await saveRouteState(repoRoot, "session-1", { read: [GATE_DOC], announced: [] });
+
+		assert.ok(
+			await runPreToolUseArm(
+				"claude",
+				HARNESSES.claude,
+				writePayload(repoRoot, target, {
+					tool_name: "Bash",
+					tool_input: { command: `echo hi > ${target}` },
+				})
+			),
+			"a shell write is rerouted on the strength of the route alone"
+		);
+	});
+});
+
+// --- The allow-list pre-filter (D3) ---
+
+test("parseShellReadTargets: each class the allow-list closes yields zero targets", () => {
+	for (const command of [
+		"cat $DOC",
+		"cat ${DOC}",
+		"cat docs/one\\ two.md",
+		"cat *.md",
+		"cat {a,b}.md",
+		"cat docs/one.md\ngrep alpha docs/two.md",
+		"cat docs/one.md\r\ngrep alpha docs/two.md",
+		"cat docs/one.md # a note",
+		"cat !!:1",
+	]) {
+		assert.deepEqual(
+			parseShellReadTargets(command),
+			[],
+			`${JSON.stringify(command)} carries a character outside the safe class`
+		);
+	}
+});
+
+test("parseShellReadTargets: positive control — a plain cat of a routed doc still credits", () => {
+	// Without this, a class typo rejecting every command passes every case
+	// above and reports a healthy suite over a dead credit channel.
+	assert.deepEqual(
+		parseShellReadTargets("cat .prism/architect/_toolkit/install-layout.md"),
+		[{ filePath: ".prism/architect/_toolkit/install-layout.md", credit: true }]
+	);
+});
+
+// --- Live manifest routing ---
+
+/**
+ * Two cases against this repo's own `.prism/architect/manifest.json`, so a
+ * manifest edit that breaks routing fails here rather than in a session.
+ * Scoped to routing — that an instruction-layer path routes somewhere and an
+ * unroutable path routes nowhere — never to which paths deny, which is a
+ * policy question the manifest is allowed to answer differently over time.
+ */
+test("the live manifest routes an instruction-layer path and leaves an unroutable one alone", async () => {
+	const manifest = JSON.parse(
+		await fs.readFile(
+			path.join(repoRoot, ".prism", "architect", "manifest.json"),
+			"utf8"
+		)
+	) as Record<string, string | string[]>;
+
+	assert.ok(
+		matchDocsForPath(manifest, ".prism/rules/code-standards.md").length > 0,
+		"an always-on rule is instruction-layer content and must route somewhere"
+	);
+	assert.deepEqual(
+		matchDocsForPath(manifest, "some/unrelated/app/file.ts"),
+		[],
+		"no route may match an arbitrary application path — that is the catch-all the deny cannot ship with"
+	);
+});
+
+test("resolveListedToolKind: only a name the table states resolves, so the deny never rides the fallback", () => {
+	assert.equal(resolveListedToolKind(HARNESSES.claude, "Write"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.claude, "Edit"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.claude, "SomeToolNobodyMapped"), null);
+	assert.equal(resolveListedToolKind(HARNESSES.claude, undefined), null);
+	assert.equal(
+		resolveToolKind(HARNESSES.claude, "SomeToolNobodyMapped"),
+		"write",
+		"the announce fallback is unchanged — only the deny narrows"
+	);
 });

@@ -18,6 +18,8 @@ export type Manifest = Record<string, string | string[]>;
 
 export const MAX_EMISSION_BYTES: number;
 
+export const ARCHITECT_DIR_PREFIX: string;
+
 export function formatNag(unreadDocs: string[]): {
 	text: string;
 	includedDocs: string[];
@@ -45,6 +47,17 @@ export function saveRouteState(
 	scopeId: string,
 	state: ArchitectRouteState
 ): Promise<void>;
+
+export function resolveUnreadDocs(
+	repoRoot: string,
+	filePath: string,
+	scopeId: string
+): Promise<string[]>;
+
+export function pathIsRouted(
+	repoRoot: string,
+	filePath: string
+): Promise<boolean>;
 
 export function resolveArchitectNag(
 	repoRoot: string,

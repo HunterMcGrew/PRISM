@@ -35,7 +35,14 @@ import path from "node:path";
 
 import { compileMatcher } from "./lib/match.mjs";
 
-const ARCHITECT_DIR_PREFIX = ".prism/architect/";
+/**
+ * Where every manifest route value resolves from. Exported because the deny
+ * arm's remedy names a `cat`-able repo-relative path while the `read` array
+ * and the routes themselves speak in values relative to this directory —
+ * spelling the prefix a second time at the message site is how the two
+ * notions drift apart.
+ */
+export const ARCHITECT_DIR_PREFIX = ".prism/architect/";
 
 const NAG_PREFIX = "Architect context for this path is unread: ";
 const NAG_SUFFIX = " (under .prism/architect/).";
@@ -378,6 +385,67 @@ export async function saveRouteState(repoRoot, scopeId, state) {
 	}
 
 	await pruneStaleRouteState(repoRoot);
+}
+
+/**
+ * Returns the docs a write to `filePath` is gated on — every doc a manifest
+ * route names for that path that this scope has not read and that still
+ * exists on disk — or an empty array when the write is clear. Values are
+ * relative to `ARCHITECT_DIR_PREFIX`, the same shape the `read` array and the
+ * routes themselves use.
+ *
+ * Read-only by construction, and that is the point rather than an
+ * incidental property. `resolveArchitectNag` above writes state on every
+ * call; a deny must not, because a denied write has to be able to produce the
+ * same message again after the model's remedy fails. `announced` is ignored
+ * here for the same reason the announce arm tracks it separately: naming a
+ * doc is not delivering it, so an announced-but-unread doc still gates.
+ *
+ * @param {string} repoRoot
+ * @param {string} filePath
+ * @param {string} scopeId
+ * @returns {Promise<string[]>}
+ */
+export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
+	const relativePath = toRepoRelativePath(repoRoot, filePath);
+	if (relativePath === null) {
+		return [];
+	}
+
+	const manifest = await loadManifest(repoRoot);
+	const matchedDocs = matchDocsForPath(manifest, relativePath);
+	if (matchedDocs.length === 0) {
+		return [];
+	}
+
+	const state = await loadRouteState(repoRoot, scopeId);
+	const readSet = new Set(state.read);
+	const unreadDocs = matchedDocs.filter((doc) => !readSet.has(doc));
+	if (unreadDocs.length === 0) {
+		return [];
+	}
+
+	return filterDocsOnDisk(repoRoot, unreadDocs);
+}
+
+/**
+ * Reports whether any manifest route matches `filePath` at all, without
+ * regard to what has been read — the question the shell-write reroute asks,
+ * which deliberately judges no prerequisites (see `hook.mjs`'s write
+ * detector). A path no route matches is never denied on any verb.
+ *
+ * @param {string} repoRoot
+ * @param {string} filePath
+ * @returns {Promise<boolean>}
+ */
+export async function pathIsRouted(repoRoot, filePath) {
+	const relativePath = toRepoRelativePath(repoRoot, filePath);
+	if (relativePath === null) {
+		return false;
+	}
+
+	const manifest = await loadManifest(repoRoot);
+	return matchDocsForPath(manifest, relativePath).length > 0;
 }
 
 /**

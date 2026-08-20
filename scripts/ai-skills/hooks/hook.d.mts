@@ -9,10 +9,25 @@ export function parseShellReadTargets(
 	command: string | undefined
 ): RouteTarget[];
 
+export function parseShellWriteTargets(command: string | undefined): string[];
+
 export function resolveTargets(
 	spec: HarnessSpec,
 	payload: HookPayload
 ): RouteTarget[];
+
+export function formatDenyMessage(
+	relativePath: string,
+	unreadDocs: string[]
+): string;
+
+export function formatShellRerouteMessage(relativePath: string): string;
+
+export function runPreToolUseArm(
+	tool: string,
+	spec: HarnessSpec,
+	rawStdin: string
+): Promise<string | null>;
 
 export function runPostToolUseArm(
 	tool: string,
