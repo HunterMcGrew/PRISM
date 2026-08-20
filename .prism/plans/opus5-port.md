@@ -809,6 +809,13 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (briar, dispatched — PR 2D round 2)
+  - **Intent** — verify clove's five blocking closures independently rather than accept them, judge the two recorded non-closures, and sweep the repair delta for what the fixes introduced.
+  - **Ambiguity** — none load-bearing; assumed the subject surface is `176f35c5..0141691e` reviewed at the full bar and the repair delta gets the regression sweep on top, per review-loop admissibility.
+  - **Bounds** — findings to chat and to `## Review Issues`, plus a plan-only commit pushed. Untouched: source, the PR's GitHub surface, the draft flag, the merge.
+  - **Approach** — re-derive each claim from the code and from measurement rather than from clove's prose: four mutations run here, three end-to-end probes through the real arms, and the routing loss re-measured with `matchDocsForPath` over `git ls-files`.
+  - **Close** — scope held. Round 1's five blocking findings all verify as genuinely closed, and both deferrals hold on their recorded reasons (prettier on a stronger reason than the one given — it is not a dependency of this repo). Two new majors and one minor opened, all three in the shell-segment splitter the repairs introduced, all three reproduced end to end rather than reasoned. Edge inputs chosen on purpose in the probes: unspaced separators, heredoc bodies, `\r\n`, subshells, trailing separators, and quoted-space paths were each exercised deliberately, because the repair's whole surface is where one command ends and the next begins. One claim without proof, unchanged: D8's live-host run, which goes to the human merge gate.
+
 - 2026-08-19 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D)
   - **Intent** — ship the write-deny gate end to end: the arm, the parser flip, ADR-0072, the conductor correction, the suite, the consumer docs, and the two sweeps that grade the verify lines.
   - **Ambiguity** — none load-bearing; assumed D9 is in scope (the dispatch names D0-D10 and no Eli lane exists in this run) and that D8 cannot run from a dispatched session, so it is reported outstanding rather than claimed.
@@ -1837,15 +1844,70 @@ Briar self-review of `176f35c5..9a7d1ebd`, 2026-08-19 [huntermcgrew/opus5-port-d
 
 ---
 
+## Review Issues (PR 2D round 2 — `176f35c5..0141691e`, #470)
+
+Briar self-review of the repair head `0141691e`, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. Round 1's five blocking findings re-verified independently rather than accepted; two of the repairs introduced new defects of the same class they closed.
+
+**Round 1 closures verified.** The critical (multi-doc remedy earns no credit) reproduces as fixed — a two-line remedy fed to the real `PostToolUse` arm credits both docs. The routing narrowing re-measured independently with `matchDocsForPath` over `git ls-files`: all three tables lose exactly the same 29 tracked paths, every one under `.prism/prds/`, `.prism/qa/`, `.prism/retros/`, or `.prism/iris-state.json`, and each table gains the `.ai-skills/definitions/**` widening the plan's `## Decisions` names — clove's count and characterization both hold. The remaining three closures were mutation-checked here, not read: dropping the `!scopeId` guard in `runPostToolUseArm`, replacing the `PreToolUse` dispatch ternary with an unconditional `runPostToolUseArm`, swapping `filterDocsOnDisk(...)` for `unreadDocs`, and deleting the `PreToolUse` block from `templates/install/.claude/settings.json` each fail the suite. Suite re-run here: 805/805, `pnpm prism:build && pnpm prism:check` exit 0.
+
+**Deferred items — both reasons hold.** Plan bookkeeping: `branch-plan.md` § Battery Persistence and `_shared/core.md` § Opening Orientation Battery genuinely prescribe two different `## Sessions` shapes, and `followup-scope.md` § Spec content never rides an unrelated ticket forbids folding that reconciliation into 2D without a `## Decisions` entry naming it — so deferring is not merely defensible, it is what the rule asks for. Prettier: the stated reason understates the case; prettier is not a dependency of this repo at all (`pnpm exec prettier` → command not found, no `format` script in `package.json`), so there is nothing to run rather than drift to weigh.
+
+### A separator with no surrounding whitespace is invisible to `splitShellSegments`, so both round-1 defects recur in that spelling
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:216` (`splitShellSegments`), boundary sets at `:180` and `:199`
+- **Problem:** `splitShellSegments` splits each line on whitespace and then compares whole tokens against the boundary set, so `a;b`, `a|b`, and `a&&b` carry their separator inside a token and never break a segment — the write arm resumes claiming operands across the separator, and the read arm refuses the segment outright.
+- **Class:** `a shared fix that inherits the tokenizer defect it was extracted to remove`
+- **Sweep:** proven end to end through the real arms, not the parsers. Probe B — `sed -i s/a/b/ /tmp/other.ts;cat src/index.ts` through `runPreToolUseArm` returns "You're writing to `src/index.ts` via a shell write", a false statement about a path the command only reads, and a block on a `cat`; this is round 1's write-arm Major verbatim. Probe C — the deny's own two remedy lines rejoined as `cat <doc>; cat <doc>` through `runPostToolUseArm` earn zero credit and the write re-denies; this is round 1's Critical in a narrower spelling. Parser level, `parseShellWriteTargets("sed -i s/a/b/ first.ts;cat .prism/rules/x.md")` → `["s/a/b/","first.ts;cat",".prism/rules/x.md"]`, and the `|` and `&&` unspaced forms return the same shape. Why the suite is green on it: the separator loop at `hook-gate.test.ts:1656` iterates `["\n","\r\n"," ; "," && "," | "," & "]` — every non-newline member is space-padded, so the tested spelling is the one that works and the common one is untested. Controls: every spaced form and both line-break forms behave correctly, and `SHELL_SEQUENTIAL_BOUNDARIES`' spaced `;` credits both docs as designed.
+- **Suggested fix:** split on the separators as delimiters rather than matching them as tokens — one regex split per line (`/\s*(?:\|\||&&|[;|&])\s*/` for the write arm, `/\s*;\s*/` for the read arm) replaces both the whitespace split and the boundary-set membership test, and the two `Set`s collapse into the two regexes. Extend the `:1656` loop to the unspaced spellings so the gap cannot reopen.
+
+### Splitting on line breaks credits `cat` lines that are heredoc content, marking an unread doc read
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:125` (`parseShellReadTargets`), `:216` (`splitShellSegments`)
+- **Problem:** every line of a multi-line command is now treated as its own command, so a heredoc body is parsed as commands — a `tee`/`cat` redirect whose document text happens to contain a line beginning `cat <doc>` credits that doc as fully read, and the write gate opens on a document nobody opened.
+- **Class:** `a credit channel that resolves an ambiguity toward crediting, against its own declared fail direction`
+- **Sweep:** proven end to end. Probe A — seed a routed path, confirm the baseline deny, then feed `runPostToolUseArm` a single Bash payload of `tee /tmp/pr-body.md <<'E'` / `cat .prism/architect/<doc>` / `E`; the subsequent `runPreToolUseArm` on the same target returns `null`. The doc was never read. This inverts the direction `SHELL_READ_SAFE_CHARACTERS`' own JSDoc (`hook.mjs:62-66`) gives as the reason the class is an allow-list: "A miss on a deny-list marks an unread document read and opens the write gate on it; a miss on an allow-list costs one re-read." Before this repair, any `\n` refused the whole command, so no heredoc credited anything — the direction was correct and the line-break split reversed it. Reachability is not theoretical here: `.prism/rules/bash-output-minimization.md` prescribes heredoc-to-file for PR bodies, and a PR body about this hook contains exactly such `cat` lines. Controls: the segment holding the `<<'E'` introducer is correctly refused (its `<` fails the per-token class), which is precisely why only the *body* lines get through; `(cat doc)`, `cat doc | head -5`, and `cat -n doc` all behave.
+- **Suggested fix:** refuse the entire command for read credit when any token in any segment contains `<<` — the conservative direction the allow-list doctrine already commits to. A `cat` inside a heredoc is not a read, and no credit is cheaper to give up than one that was never earned.
+
+### The read arm drops a segment's unconditional first command along with its conditional second
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:199` (`SHELL_SEQUENTIAL_BOUNDARIES` and its JSDoc)
+- **Problem:** with `&&`, `||`, `|`, and `&` left out of the read boundary set, the separator stays inside the segment and fails the per-token class, so `cat a.md && cat b.md` credits neither — including `cat a.md`, which ran unconditionally.
+- **Class:** `a conservative default applied one clause wider than its own justification`
+- **Sweep:** all four omitted separators checked in both spaced and unspaced form; every one yields `[]` for the whole segment. The JSDoc reads "`&&` and `||` are conditional — the second command may never have run", which justifies dropping the second command and is silent on the first; the code drops both, so the comment describes a narrower behavior than the code has. `;` and the line breaks are the only forms that credit at all.
+- **Suggested fix:** non-blocking. Either credit the pre-`&&` segment (it always runs) or amend the JSDoc to say the whole segment is refused and why that is the cheaper answer. Deciding is worth more than the credit; leaving the comment describing behavior the code does not have is the part that costs a future reader.
+
+### Angle Coverage — PR 2D round 2, `176f35c5..0141691e`
+
+- **Runtime behavior** — `swept` — 9 items enumerated, 9 verdicts. `splitShellSegments` (both boundary sets, spaced and unspaced, `\n`/`\r\n`, heredoc, subshell, trailing separator — 2 defects); `parseSegmentReadTargets` (per-token class equivalence with the old whole-command test confirmed: the union of a segment's token characters is the command's characters minus whitespace, and whitespace was already in the class); `parseSegmentWriteTargets` (fresh state per segment, `>`/`>>`/`tee`/`tee -a`/`sed -i` all still resolve); `checkInPlaceFlag` (end-of-array scan equivalent to the old boundary-stopped scan, since the splitter has already cut); `parseShellReadTargets` and `parseShellWriteTargets` end to end through `runPostToolUseArm`/`runPreToolUseArm`; `checkPathIsRouted` rename (call sites and `.d.mts` swept); `matchDocsForPath` accumulate-all semantics confirmed, so `.prism/skills/prism-conductor/**` keeps `spec-editing.md` and gains `skills-ecosystem.md`.
+- **Test efficacy** — `swept` — 5 items enumerated, 5 verdicts. Four mutations run here and all killed (`!scopeId` guard, `PreToolUse` ternary, `filterDocsOnDisk`, install-template `PreToolUse` block). The fifth is the `:1656` separator loop, which passes on space-padded spellings only — the gap behind the Major above. The suite as shipped: 805/805 here, independently.
+- **Spec and doc consistency** — `swept` — 6 items enumerated, 6 verdicts. Consumer `install-layout.md` § Write gate (heading now "Shell writes ask you to switch tools", trigger reads "in this scope" with the subagent consequence stated — both round-1 drifts closed); `update.ts` comment; the ADR index rows; the three routing tables against each other; `manifest.stub.json`'s reformat is whitespace-only against its content change. The `.ai-skills/definitions/**` widening is documented at the plan's `## Decisions` and is not an undeclared scope change.
+- **Citation integrity** — `swept` — 3 items enumerated, 3 verdicts. ADR-0072's amends-not-supersedes resolution matches ADR-0070's "Amends ADR-0035" precedent and needs no `Supersedes:` frontmatter; both ADR rows carry accurate summaries; the round-1 finding's own claim that the index gap predated this PR holds — 0071's row is new here too.
+- **External-system claims** — `not reached — unchanged since round 1, which swept 11 items.` The one unverified item there, the live deny envelope, is D8 and still goes to the human merge gate.
+- **Repo writing rules** — `swept` — `verdict-only`. The renamed `checkPathIsRouted`/`checkInPlaceFlag` satisfy `code-standards.md` § Naming; the new JSDoc blocks are why-first and tag-free; one comment describes narrower behavior than its code, recorded as the Minor above.
+- **Security** — `swept` — 1 item enumerated, 1 verdict. The heredoc over-credit is a correctness defect in self-imposed friction, not a privilege boundary — the gate has three documented disable routes and fails open on every throw, so a false credit costs enforcement, not access.
+- **Docs impact** — `n/a — the repair delta touches no doc surface the round-1 sweep did not already cover.`
+- **Accessibility** — `n/a — no UI in the pinned range.`
+
+---
+
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — the critical and all four majors are `fixed`; one minor deferred with a recorded reason
+- [ ] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2 opens two new majors, both in the shell-segment splitter the repairs introduced
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — the six non-discriminating tests each gained a moving variable, and deny condition 5, the argv dispatch, and the install registration are all covered and mutation-confirmed
+- [ ] Tests written for new logic and edge cases — the separator loop at `hook-gate.test.ts:1656` covers space-padded spellings only, and nothing covers a heredoc through the credit channel
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-20 (`pnpm prism:check` exit 0, 805/805)
-- [x] PR description up to date — and honest about D8; the "not proven" section names the gap rather than implying coverage
+- [x] Build passes — last run: 2026-08-20 (`pnpm prism:build && pnpm prism:check` exit 0, 805/805, re-run independently at `0141691e`)
+- [ ] PR description up to date — needs a line on the two round-2 majors once they are closed
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
