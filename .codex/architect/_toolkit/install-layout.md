@@ -148,7 +148,19 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **State file.** Read-tracking is per session, in `.prism/architect-route-state.<session-id>.json` beside a `.tmp` sibling during the atomic write. It is a cache and not a record: an unreadable or unrecognized file reads as absent, which costs one repeated announcement rather than bricking the hook. `prism adopt` appends both globs to the consumer's `.gitignore` — append-only, skipping lines already present — so the files never reach a commit. Those two lines are the whole of what PRISM writes there; nothing else in a consumer's `.gitignore` is touched.
 
-**Switches.** `PRISM_HOOK_DISABLE=1` makes the runtime inert before it parses stdin, so a session can keep the registration and still run without the hook — one variable changes behavior without touching `.claude/settings.json` or the manifest. `PRISM_HOOK_DENY_DISABLE=1` is reserved for the narrower job of turning off the write gate while leaving announcements on; it has no effect until that gate ships.
+**Switches.** `PRISM_HOOK_DISABLE=1` makes the runtime inert before it parses stdin, so a session can keep the registration and still run without the hook — one variable changes behavior without touching `.claude/settings.json` or the manifest. `PRISM_HOOK_DENY_DISABLE=1` is the narrower switch: it turns off the write gate while leaving announcements on.
+
+## Write gate
+
+A write to a path matching any manifest route is denied until the route's docs have been read ([ADR-0072](../../spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md)). The registration is `PreToolUse` matched `Write|Edit|Bash`, and it reaches Claude Code only — the same delivery gap § Hook runtime states, for the same reason.
+
+**What triggers a deny.** All five of: no kill switch set, a scope id on the payload, a tool whose kind the harness's table explicitly lists as `write`, a manifest route matching the path, and at least one of that route's docs neither read this scope nor missing from disk. An unrouted path is never denied on any verb — a route existing is the opt-in, which is what keeps a fresh install from blocking a consumer's first edit to their own code.
+
+**What clears it.** Reading each doc the message names, in full, through a channel the credit channel observes: a `Read` with no `offset` or `limit`, or a flagless `cat`. The message names the literal `cat` command per doc, because credit turns on the shape of the call and a remedy the model has to infer is one it cannot reliably perform. A `head`, a ranged `Read`, or a `Grep` naming the doc credits nothing.
+
+**Shell writes reroute rather than gate.** A `Bash` command writing to a routed path via `>`, `>>`, `tee`, `tee -a`, or `sed -i` is told to redo the edit with a file-edit tool. That remedy judges no prerequisites, so it cannot be rendered unsatisfiable. Forms the parser deliberately does not see — word-prefixed redirects, interpreters writing through their own runtime, `cp`/`mv`/`dd` — pass unrerouted.
+
+**The gate is friction, not a wall.** Deleting the registration, deleting `.claude/hooks/hook.mjs`, or setting `PRISM_HOOK_DENY_DISABLE=1` each disables it; all three are trivial and none is prevented. The hook's own surface is deliberately unrouted, because in a consumer repo `.claude/settings.json` is the consumer's file. The compensating control is visibility: `prism doctor`'s hook-registration check turns a removed hook into a reported finding rather than a silent absence.
 
 ### Hook-runtime ownership and recovery
 

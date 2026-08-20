@@ -853,7 +853,9 @@ The pattern is "read once, refer many" — not "read every step."
 
 Architect-context routing keys on the working diff (`prism-architect` startup step 4 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. When a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing.
 
-A `PostToolUse` hook on `Read` backs this up on hosts that expose the event (Claude Code today): when a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — nothing is denied, and reading the named doc is still yours to do. This clause is the fallback that runs everywhere else, including hosts without a hook yet.
+A `PostToolUse` hook on `Read` backs this up on hosts that expose the event (Claude Code today): when a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — reading the named doc is still yours to do.
+
+The announcement now has a mechanical enforcer behind it. A `PreToolUse` arm denies a write to a routed path until the route's docs have been read, and the deny names the literal `cat` command that clears it (see [`install-layout.md` § Write gate](../architect/_toolkit/install-layout.md)). It reaches Claude Code only, it is friction rather than a wall, and it never fires on a path no route matches — so this clause remains the fallback that runs everywhere else, including hosts with no hook.
 
 ## Citation list — skills that load this rule
 

@@ -126,7 +126,19 @@ The hook announces; it never blocks. On a read that matches an architect-context
 
 **State file.** The hook tracks which routed docs a session has read in `.prism/architect-route-state.<session-id>.json`, with a `.tmp` sibling while it writes. Both globs are appended to your `.gitignore` on adopt, so the files stay out of your commits. Those two lines are the only thing PRISM writes into your `.gitignore`; nothing else in it is touched. If the file is missing or unreadable the hook treats it as empty, which costs you a repeated announcement and nothing worse.
 
-**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` is reserved for switching off the write gate specifically while leaving announcements on; it does nothing until that gate ships.
+**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` switches off the write gate specifically, leaving announcements on.
+
+## Write gate
+
+Editing a file your manifest routes to an architect doc is blocked until you have read that doc. Like the rest of the hook runtime, this reaches Claude Code only.
+
+**What triggers it.** A `Write`, `Edit`, or shell write to a path one of your manifest routes matches, where at least one doc that route names has not been read this session. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
+
+**What clears it.** Read each doc the message names, in full. The message spells out the exact command — `cat <doc>`, one line per doc — because only a whole-file read counts. A `Read` with a line range, a `head`, or a `grep` that merely names the doc does not clear it. Read it, then retry the same edit.
+
+**Shell writes get redirected, not blocked.** Writing to a routed path with `>`, `>>`, `tee`, or `sed -i` returns a message asking you to redo the edit with your file-edit tool, so the gate can check the same prerequisites it checks everywhere else. Nothing is required of you first.
+
+**Turning it off.** Set `PRISM_HOOK_DENY_DISABLE=1`, remove the `PreToolUse` entry from your `.claude/settings.json`, or delete `.claude/hooks/hook.mjs`. Any of the three works, and none of them is prevented — the gate is friction meant to be worth keeping, not a lock. `prism doctor` reports a removed or unregistered hook so the change is visible rather than silent.
 
 **How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours and is never written or removed. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.
 
