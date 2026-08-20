@@ -2033,6 +2033,17 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 - **Sweep:** `tee .prism/plans/x.md <<<"hi"` → `[".prism/plans/x.md","<"]`. Harmless in effect — `<` matches no manifest route, so no deny fires — which is why this is recorded at Minor and could equally sit under `## Cleanup Items`. Recorded as a finding rather than cleanup because it is evidence the `<`-handling arm has an off-by-one the other heredoc cases do not exercise, and the next edit to that guard should know.
 - **Suggested fix:** consume the whole `<<<` run in the guard and emit nothing, matching how the `<<` arm drops its own introducer.
 
+### A command prefix hides the write command from the head-token test, and grouping parens ride along into the path
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:461` (`parseSegmentWriteTargets`, the `segmentCommand === null` branch)
+- **Problem:** the segment's *first* token is taken as its command, so anything that legitimately precedes a command — `sudo`, `env`-style `VAR=value` assignments, `nohup`, `time`, `command`, or a `(`/`{` group opener — becomes the head token, `segmentWrites` stays false, and a real `tee` or `sed -i` write is never claimed; separately, a group's closing `)` is not a scanner boundary, so it fuses onto the last operand of a redirect inside the group.
+- **Class:** `a positional assumption about where a command name sits, in a grammar that allows prefixes`
+- **Sweep:** thirteen prefix shapes driven through `parseShellWriteTargets`, every one naming the same routed path. Eight return `[]` — no target, no deny, gate silent: `(tee .prism/plans/x.md)`, `{ tee .prism/plans/x.md; }`, `sudo tee …`, `FOO=bar tee …`, `sudo sed -i 's/a/b/' …`, `echo hi | sudo tee …`, `nohup tee …`, `time tee …`. Two controls behave: bare `tee .prism/plans/x.md` and `echo hi | tee .prism/plans/x.md` both → `[".prism/plans/x.md"]`, so the pipeline cut itself is fine and the prefix is the whole cause. The `>`-redirect spelling is *not* affected by prefixes, because the `>` branch runs before the head-token test — `{ echo hi > .prism/plans/x.md; }` and `FOO=bar echo hi > .prism/plans/x.md` both resolve correctly. The one redirect shape that does break is the paren group: `(echo hi > .prism/plans/x.md)` → `[".prism/plans/x.md)"]`, a path with a trailing paren that matches no route. None of this class appears in the write arm's documented gap list at `:405`, which names word-prefixed redirects, interpreters, and `cp`/`mv`/`dd` — so a reader auditing what the gate misses would not find it.
+- **Suggested fix:** two independent changes. For the prefix class, skip leading tokens that cannot be a command name before fixing `segmentCommand` — a `VAR=value` assignment, and a small set of transparent prefixes (`sudo`, `env`, `command`, `nohup`, `time`) — or, if that list is judged unbounded, state the gap in the JSDoc so it is a known miss rather than an invisible one. For the paren, treat unquoted `(` and `)` as token boundaries in `splitShellSegments` the way `;` already is. Weigh the prefix list against likelihood before expanding it: `sudo tee` is the common idiom in general shell use but rare against a `.prism/` path, while `(`/`{` grouping and `VAR=value` are what a model composing a multi-part command actually emits.
+
 ---
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
