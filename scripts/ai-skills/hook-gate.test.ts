@@ -397,8 +397,38 @@ test("runPostCompactArm: leaves a sibling session whose id merely starts with th
 	});
 });
 
-test("runPostCompactArm: with no session id, is a no-op that does not throw", async () => {
-	await assert.doesNotReject(runPostCompactArm(JSON.stringify({ cwd: "/repo" })));
+test("runPostCompactArm: with no session id, leaves existing state files in place", async () => {
+	await withTempRepo(async (repoRoot) => {
+		await seedManifestAndDoc(
+			repoRoot,
+			{ "scripts/ai-skills/**": "_toolkit/spec-editing.md" },
+			"_toolkit/spec-editing.md",
+			"Spec editing constraints go here."
+		);
+		const readStdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Read",
+			tool_input: { file_path: path.join(repoRoot, "scripts", "ai-skills", "build.ts") },
+		});
+		await runPostToolUseArm("claude", HARNESSES.claude, readStdin);
+
+		const statePath = path.join(repoRoot, ".prism", "architect-route-state.session-1.json");
+		await assert.doesNotReject(fs.access(statePath), "state file exists after the first announce");
+
+		await assert.doesNotReject(runPostCompactArm(JSON.stringify({ cwd: repoRoot })));
+
+		await assert.doesNotReject(
+			fs.access(statePath),
+			"a compaction naming no session identifies nothing to reset, so it clears nothing"
+		);
+		const second = await runPostToolUseArm("claude", HARNESSES.claude, readStdin);
+		assert.equal(
+			second,
+			null,
+			"the surviving state keeps the already-delivered announcement suppressed"
+		);
+	});
 });
 
 // --- Harness resolution ---
