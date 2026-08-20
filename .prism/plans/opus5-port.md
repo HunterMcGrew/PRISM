@@ -1920,7 +1920,7 @@ Pass 1 of a two-pass round: the three probes only, run against the exported
 functions rather than taken from clove's mutation table. The parser hunt on the
 write arm's hand-rolled scanner is pass 2 and is not covered here.
 
-No issues found — 2026-08-19 [huntermcgrew/opus5-port-deny-gate] — pass 1 scope only.
+No issues found — 2026-08-20 [huntermcgrew/opus5-port-deny-gate] — pass 1 scope only.
 
 ### Probe results — all three green
 
