@@ -446,7 +446,10 @@ const GREP_INERT_FLAGS =
  * Absent on purpose, each for the reason beside it: `sort`, `uniq`, and `xxd`
  * write through an output operand indistinguishable from an input by position
  * (`uniq in out`); `sed` is an editor whose `w` script command writes an
- * arbitrary path from inside a data operand, with no `-` prefix to catch;
+ * arbitrary path from inside a data operand, with no `-` prefix to catch —
+ * `jq` is listed despite the same shape, a whole program in an unprefixed
+ * data operand, because its language has no write or exec builtin and so
+ * supplies nothing `sed`'s `w` does;
  * `git` reads or writes depending on its subcommand and is decided per call
  * by `checkSegmentOnlyReads`.
  *
@@ -511,13 +514,16 @@ export const GIT_INSPECTION_SUBCOMMANDS = new Set([
  * pager command; `-C` is absent because it means two different things at the
  * two positions git accepts it — a working-directory change before the
  * subcommand, copy detection after it — and the arm resolves paths against
- * neither.
+ * neither. `-p` is absent for the same positional reason: after the
+ * subcommand it selects patch output, but `git -p log <path>` reads it as
+ * `--paginate` and runs the program `core.pager` names. `--patch` stays,
+ * because it means the diff format at either position.
  *
  * @type {Set<string>}
  */
 const GIT_INERT_FLAGS = new Set(
 	(
-		"-# -p -n -1 -l -w -b -s -q -z -L -i -E -F -v " +
+		"-# -n -1 -l -w -b -s -q -z -L -i -E -F -v " +
 		"--oneline --stat --numstat --shortstat --name-only --name-status --patch --no-patch " +
 		"--graph --pretty --format --abbrev-commit --date --since --until --author --grep " +
 		"--follow --cached --staged --word-diff --color --no-color --unified --reverse " +

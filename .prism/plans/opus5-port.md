@@ -944,6 +944,12 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Approach** — read each flag set against the command it is attached to, then drive candidate forge shapes through the real `parseUnprovenShellPaths` rather than reasoning about what it would return; apply round 4's own passes-and-enshrines test to the derived suite.
   - **Close** — scope held; no source touched, no GitHub write. Drift reported rather than absorbed: a concurrent session began writing this worktree mid-review (six files, mtimes 11:41–11:42 against a clean tree at start), turning the dispatch's "clean, exit 0" premise false and leaving `pnpm prism:check` red; recorded as a Critical and deliberately not committed or reverted, being outside the pinned range and outside a reviewer's lane. Unproven claims labelled: the six external-tool semantics in the Angle Coverage block are `Deduced` from documented behavior, not executed — only the arm's own verdict on each shape was run. Edge recall — the boundary inputs this pass hits are the empty flag sets (`true`, `false`), the bare no-operand forms, single-dash spellings of long flags, and short clusters with attached values; the clustering direction was confirmed conservative (an attached value only adds letters that must all be allowed, so it can refuse but never admit).
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D round 5 fixes)
+  - **Intent** — clear briar's round-5 remainder and make PR #470 readable cold by a reviewer who was not present for rounds 2 through 4.
+  - **Ambiguity** — none load-bearing; read the eli side-finding as in scope on the "clean manifest edit" branch, since the consumer stub already routes `guides/writing-a-rule.md` from `.prism/rules/**` and every other guide is routed from the surface it governs, which makes the omission an oversight rather than a routing design call.
+  - **Bounds** — PR 2D's file set plus the PR body. Untouched: the conductor run log, the draft flag, the merge, and D8.
+  - **Approach** — take the recoverable direction on `-p` rather than documenting an exception to the membership criterion; fix the ADR claim with prose rather than a derived flag row, per briar's blessing argument.
+  - **Close** — scope held. Silent decisions named: dropped `-p` rather than annotating it (the criterion stays literally true, and `--patch` keeps the capability); put the jq clause on the `sed` sentence rather than the jq entry (the two are compared there); routed the rule guide in all three tables rather than only the one eli named, since `manifest.base.json` carried the same gap on both surfaces. The third coverage option briar invited was looked for and rejected in writing — every generated assertion on the provable side has to claim the flag is inert. Edge recall — `git log --patch`, `git log -p`, `git -p log`, and bare `git log` were each driven through `parseUnprovenShellPaths` against a routed path rather than reasoned about; the empty-flag entries (`true`, `false`) and the `jq` shapes are unchanged by this pass. Verification is `pnpm prism:build && pnpm prism:check` exit 0 at 812/812, not an assertion.
 ## History
 
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Implemented PR 2E (E1–E5). `prism doctor` gained orphan-doc, dead-route, and hook-registration checks; new `scripts/ai-skills/ship-closure.ts` computes the ship surface as the dependency closure of its four roots and is wired into `pnpm prism:check`; the six files E4 reported outside that closure are now `excluded`. `pnpm prism:check` exit 0; see Decisions for the three closure-fidelity calls and the tracked-reference deferral.
@@ -1029,6 +1035,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D round-2 review. Replaced the token-comparison segmenter with a quote-, escape-, and heredoc-aware character scan shared by both arms, and moved the read arm's safe-character test back over the whole command with `;` and line breaks admitted as separators. See Decision: Command segmentation is a character scan.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Narrowed the shell arm to refuse-unless-provable and deleted the write parser; closes all eight of briar's round-3 pass-2 findings and her five unprobed classes. Test coverage moved from enumerated forms to a generated shape corpus crossed with every out-of-class metacharacter. See Decision: The shell arm reroutes unless it can prove a command is a read.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared briar's PR 2D round-4 review. The read-only proof now allow-lists each command's flags as well as the command, `sort`/`uniq`/`xxd`/`sed` leave the list, and the read test cases are derived from the constants. ADR-0072 and `install-layout.md` drop the "One gap" quantifier and name list membership as the second gap.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared briar's PR 2D round-5 review. ADR-0072's compensating-control sentence is scoped per axis, `-p` leaves `GIT_INERT_FLAGS`, and jq's admission states the reason that refuses `sed`. Also routed `guides/writing-a-rule.md` from `.prism/rules/**` in all three tables, and rewrote the PR body for the round 2-4 design changes.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -2264,45 +2271,49 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/_toolkit/business-layer.md`, `.prism/architect/_toolkit/install-layout.md`, `.prism/architect/_toolkit/spec-editing.md`, `.prism/spec/adrs/_toolkit/README.md`, `.prism/spec/adrs/_toolkit/0071-architect-context-read-hook.md`, `templates/install/.prism/architect/_toolkit/install-layout.md`
 - **Problem:** six files carrying substantive round-5 spec prose are uncommitted in the worktree, their `.claude`/`.cursor`/`.codex` mirrors were never regenerated, and `pnpm prism:check` fails at the `build.ts --check` stage naming nine out-of-sync mirrors plus two seed drifts.
 - **Class:** `run-state premise falsified mid-run`
 - **Sweep:** `git status -s` returned empty at session start and six modified paths ~8 minutes later. `ls -lT` puts the mtimes at 11:41:08, 11:41:13, 11:41:25, 11:41:39 and 11:42:09 against a wall clock of 11:42:20 — written seconds apart while this review was running, by a session that is not this one. This review issued no `Edit`, `Write`, or in-tree `sed`. The content is real work, not corruption: `business-layer.md` corrects a claim that a broader `.prism/**` route exists, `spec-editing.md` replaces a stale `**` catch-all reference with the ADR-0072 catch-all rejection, both `install-layout.md` copies add `PreToolUse` to the registration list, and the ADR README row and ADR-0071 cross-link are updated. It belongs to this PR and is stranded uncommitted with mirrors unbuilt.
 - **Suggested fix:** not this review's lane and deliberately untouched — outside the pinned `176f35c5..e5a1c602` range, and reviewers do not ship. Whoever owns the live session runs `pnpm prism:build` and commits all four surfaces together. The dispatch premise "worktree clean; `pnpm prism:check` exit 0" was true at dispatch and is false now; it must not be carried forward to eric as-is. `pnpm run prism:test` alone is green at 812/812 — only the mirror-sync gate is red.
+- **Fixed:** 2026-08-20 — landed before this session opened. `5bb61a7b` committed the six canonical files and `aaddba90` propagated the mirrors and seed twins; the tree is clean and `pnpm prism:build && pnpm prism:check` is exit 0 again.
 
 ### ADR-0072's compensating control is claimed over flags and delivers only over commands
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:67` (and the `.claude`, `.cursor`, `.codex` mirrors, all four byte-identical)
 - **Problem:** the bullet's closing sentence — "The compensating control is that adding an entry forces a generated test row into existence, so the membership call gets a second reading at the moment it is made" — is true for a command and false for a flag, in a bullet whose own subject is "a command **or flag** wrongly *present* costs a silently missed write."
 - **Class:** `reassurance that introduces a new claim` (`writing-voice.md`), the same shape as round 4's "One gap survives"
 - **Sweep:** `everyProvableRead` (`hook-gate.test.ts:1809`) iterates `SHELL_INSPECTION_COMMANDS.keys()` and `GIT_INSPECTION_SUBCOMMANDS` — the command axis, bare forms only. Nothing iterates the per-command flag `Set`s or `GIT_INERT_FLAGS`; those are exercised by 13 hand-written rows touching 8 of the ~26 commands. Adding `--pre` back to rg's set today lands with zero new rows. The flag axis is the surface clove's fix *introduced*, and it is the half the sentence does not cover. Both prose homes checked: `install-layout.md:163` ("Two gaps survive", all four surfaces) makes no test-coverage claim and is clean; the ADR § Decision paragraph now reads "commands **judged** to read their operands" and is correctly hedged. This one sentence is the whole remainder.
 - **Suggested fix:** fix the sentence, not the test. Scope the claim to what it covers — "adding a *command* forces a generated test row into existence; a flag added to an existing set forces none, and gets no second reading but this one." Do **not** derive a row per flag on the provable side: a generated `cat --output <path>` row would assert the flag is inert, mechanically blessing whatever anyone adds, which is exactly the tautology that would have enshrined `sort -o`. The absence of per-flag derivation is correct; only the claim about it is wrong. `everyProvableRead`'s JSDoc phrase "coverage complete by construction" should likewise name its axis.
+- **Fixed:** 2026-08-20 — sentence scoped to what it covers in ADR-0072 § Consequences and its three mirrors: a command forces a derived row, a flag added to an existing set forces none, and per-flag derivation is named and rejected as the tautology that would have certified `sort -o`. `everyProvableRead`'s JSDoc now says "complete over the command axis" and carries the same rejection. No test row added — the third option was looked for and there isn't one: any generated assertion on the provable side has to claim the flag is inert, which is the blessing; a denylist of dangerous flag spellings is a second hand-written judgment with false positives on `-w` and `-f`, so it moves the judgment rather than checking it.
 
 ### `git -p <subcommand>` proves as a read and runs the pager
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs` — `GIT_INERT_FLAGS`
 - **Problem:** `-p` is listed for `git log -p` (patch), but before the subcommand it means `--paginate`, which executes `core.pager` — a program named by repo-local config, not by the command line. `checkSegmentOnlyReads` finds the subcommand as the first non-`-` arg, so `git -p log <path>` resolves to subcommand `log` with an inert `-p` and proves.
 - **Class:** `flag whose meaning changes with position`
 - **Sweep:** confirmed PROVED by driving `git -p log <routed-path>` through `parseUnprovenShellPaths`. This is the same two-position ambiguity that got `-C` excluded, and `-C`'s exclusion is documented by name in `GIT_INERT_FLAGS`' JSDoc while `-p`'s identical ambiguity is not. It touches the exec half of the stated membership criterion ("incapable of naming an output file **or running another program**"). Impact is low: no tty in a hook subprocess means no pager, and setting `core.pager` is itself a write the gate would see. No other listed git flag changes meaning by position — checked `-n`, `-l`, `-v`, `-i`, `-s`, `-q`, `-b`, `-w`, `-z`, `-L`, `-E`, `-F`.
 - **Suggested fix:** either drop `-p` from `GIT_INERT_FLAGS` (costs one reroute on `git log -p <routed-doc>`, the recoverable direction) or extend the `-C` note to say `-p` is knowingly accepted at both positions because the pager is unreachable without a tty.
+- **Fixed:** 2026-08-20 — dropped, and the `-C` JSDoc note extended to name `-p` and its two positions. Taking the recoverable direction keeps the stated membership criterion literally true rather than carrying a documented exception to it. `--patch` stays and means the diff format at either position, so `git log --patch <path>` still proves; verified against `parseUnprovenShellPaths` — `git -p log <path>` and `git log -p <path>` now leave the path unproven, `git log --patch <path>` and `git log <path>` still prove.
 
 ### `jq` is listed under the reasoning that refused `sed`
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs` — `SHELL_INSPECTION_COMMANDS` JSDoc, § "Absent on purpose"
 - **Problem:** `sed` is refused because "its `w` script command writes an arbitrary path from inside a data operand, with no `-` prefix to catch." `jq` is also an arbitrary program in an unprefixed data operand, and it is present. The fact that makes jq safe — jq's language has no write or exec primitive — is nowhere stated, so the written criteria do not distinguish the two.
 - **Class:** `stated membership criterion does not explain its own contents`
 - **Sweep:** confirmed `jq -r '.x' <routed-path>` and `jq -n 'input_filename' <routed-path>` both PROVED. jq's flag set is itself clean — `-r -n -c -e -s -S -a -j -M -C` are all output-formatting, and `-f`/`--from-file`, `--rawfile`, `--slurpfile`, `--argfile` are correctly absent. The finding is the reasoning gap, not a leak: a reader applying the written rule consistently either removes jq or re-adds sed.
 - **Suggested fix:** one clause on the jq entry or in the absent-on-purpose paragraph — jq is admitted despite the data-operand-program shape because its language has no write or exec builtin, which is what `sed`'s `w` has and jq lacks.
+- **Fixed:** 2026-08-20 — the clause is on the `sed` sentence in the absent-on-purpose paragraph, where the two are compared, so a reader meets the distinction at the point of confusion rather than having to hold `sed`'s reason in mind until the `jq` entry.
 
 ### Angle Coverage
 
@@ -2325,7 +2336,7 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — `everyProvableRead` iterates `SHELL_INSPECTION_COMMANDS` and `GIT_INSPECTION_SUBCOMMANDS` rather than restating a sample, so a new *command* cannot land untested (a flag added to an existing set still can — see round 5's Major); `everyForgedProof` carries round 4's confirmed leaks as regression rows through both the parser and the end-to-end arm.
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-20. `pnpm run prism:test` green at 812/812. `pnpm prism:check` **fails** at `build.ts --check` on nine out-of-sync mirrors plus two seed drifts, caused entirely by the uncommitted concurrent-session edits recorded as round 5's Critical — nothing in the pinned `176f35c5..e5a1c602` range. A `pnpm prism:build` plus commit of all four surfaces clears it.
+- [x] Build passes — last run: 2026-08-20, `pnpm prism:build && pnpm prism:check` exit 0, 812/812. Round 5's Critical is cleared: the concurrent-session edits landed in `5bb61a7b` and their mirrors in `aaddba90`.
 - [ ] PR description up to date — needs a line on the round-2 segmenter rewrite, the round-3 contract narrowing, and the round-4 flag inversion
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 

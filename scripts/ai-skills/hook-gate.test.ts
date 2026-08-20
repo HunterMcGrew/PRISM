@@ -1799,8 +1799,13 @@ function everyUnprovableShape(target: string): string[] {
  * Derivation is the point. A hand-written sample named 12 of the inspection
  * commands and 2 of the git subcommands, and every false proof round 4 found
  * sat in the uncovered remainder. Iterating the constants makes coverage
- * complete by construction, so adding a command to a list cannot land without
- * a test row asserting what that addition claims.
+ * complete over the command axis, so adding a command to a list cannot land
+ * without a test row asserting what that addition claims.
+ *
+ * The flag axis is not derived, on purpose. A generated `cat --output <path>`
+ * row would assert the flag is inert and so bless whatever was just added,
+ * which is the tautology that would have certified `sort -o`. Flags are
+ * sampled by the hand-written rows and judged where they are written.
  *
  * The suite can only ever check the arm against the list, never the list
  * against reality — see `SHELL_INSPECTION_COMMANDS` for where that judgment

@@ -16,7 +16,10 @@
 		"guides/writing-a-plan.md",
 		"_toolkit/plan-authoring.md"
 	],
-	".prism/rules/**": "_toolkit/spec-editing.md",
+	".prism/rules/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-a-rule.md"
+	],
 	".prism/spec/adrs/**": [
 		"_toolkit/spec-editing.md",
 		"guides/writing-an-adr.md"
