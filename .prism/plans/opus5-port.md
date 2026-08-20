@@ -923,6 +923,13 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Approach** — drive forged commands through the exported function in a node harness rather than reading the source for candidates, then run every command that certified clean against a real filesystem to confirm it writes. Reading alone would have produced hypotheses; execution produced evidence.
   - **Close** — scope held. Four Criticals and three Majors, all open; six false proofs confirmed by execution, two claims labelled `Deduced` rather than confirmed because GNU sed is absent from this machine and `git grep -O` wants a tty. The refusal mechanism itself holds — every control (`tee`, `cp`, `sed -i`, `sed --in-place`, `sort --output=`) reroutes correctly, so every finding is a membership repair rather than a redesign. Edge recall: an empty or whitespace-only command yields no candidates; a quoted head token refuses; an env-var prefix refuses; a `git` with only flags refuses — all four fail toward refusal, which is the designed direction. Verification honesty: `pnpm prism:check` re-run green after the plan write with a clean tree; the six write confirmations are filesystem observations, not inferences; D8's live-host run is unchanged and outstanding.
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — PR 2D review round 4)
+  - **Intent** — close briar's six confirmed false proofs by repairing what the read-only list admits, applying the inversion the commands already have to their flags and operands.
+  - **Ambiguity** — none load-bearing; assumed a "membership repair" licenses removing commands from the list and refusing unlisted flags, since both fail toward one extra reroute, and assumed the inert-flag sets should cover realistic usage rather than every flag each command accepts, since an unlisted flag costs a message and a wrongly-listed one costs a silent write.
+  - **Bounds** — PR 2D's file set. Untouched: `filterRoutedPaths` and the env-var omission, both judged sound; the read arm's credit behavior; the conductor run log; D8; the merge and draft state.
+  - **Approach** — one structural change rather than five patches: `SHELL_INSPECTION_COMMANDS` becomes command → inert-flag set, and the segment loses its proof on any flag not named there.
+  - **Close** — scope held. Two silent decisions named. `sed` is refused outright rather than by briar's narrower "no script punctuation in a non-flag operand" test, because the `w` command lives in a data operand and any rule that finds it is the enumeration this arm exists to avoid — the cost is that `sed -n '1,20p' <routed-doc>` now reroutes. And the inert-flag sets are deliberately partial: they cover the spellings real reads use, and an unusual-but-harmless flag costs one message. Edge recall: `-` stays a stdin operand and `--` still ends option parsing, neither treated as a flag; a short cluster is judged per letter so `-rn` cannot hide a write letter behind an inert one; digits collapse to `-#`; an empty or absent command still yields no candidates; `true`/`false` carry empty flag sets, so any flag on them refuses. Verification honesty: `pnpm prism:check` exit 0 at 812/812, and all fifteen forged commands — briar's six plus `git -C`, `git grep -O`, and two unlisted-flag probes — were driven through the exported `parseUnprovenShellPaths` and confirmed unproven, with ten realistic flagged reads confirmed still proven. Not re-run: the filesystem write confirmations, which were briar's evidence that the commands write and are unaffected by this change; and GNU sed's long-option abbreviation, still `Deduced` and now moot, since `sed` reroutes under every spelling. D8's live-host run is unchanged and outstanding at the merge gate.
+
 ## History
 
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Implemented PR 2E (E1–E5). `prism doctor` gained orphan-doc, dead-route, and hook-registration checks; new `scripts/ai-skills/ship-closure.ts` computes the ship surface as the dependency closure of its four roots and is wired into `pnpm prism:check`; the six files E4 reported outside that closure are now `excluded`. `pnpm prism:check` exit 0; see Decisions for the three closure-fidelity calls and the tracked-reference deferral.
@@ -1007,6 +1014,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Corrected the `## Sessions` mutation note Reese refuted — removing the `PostCompact` no-session guard throws a swallowed `TypeError` rather than building an empty-prefix sweep. The arm is inert either way, so the survival conclusion is unchanged.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared Briar's PR 2D round-2 review. Replaced the token-comparison segmenter with a quote-, escape-, and heredoc-aware character scan shared by both arms, and moved the read arm's safe-character test back over the whole command with `;` and line breaks admitted as separators. See Decision: Command segmentation is a character scan.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Narrowed the shell arm to refuse-unless-provable and deleted the write parser; closes all eight of briar's round-3 pass-2 findings and her five unprobed classes. Test coverage moved from enumerated forms to a generated shape corpus crossed with every out-of-class metacharacter. See Decision: The shell arm reroutes unless it can prove a command is a read.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared briar's PR 2D round-4 review. The read-only proof now allow-lists each command's flags as well as the command, `sort`/`uniq`/`xxd`/`sed` leave the list, and the read test cases are derived from the constants. ADR-0072 and `install-layout.md` drop the "One gap" quantifier and name list membership as the second gap.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -2114,95 +2122,103 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `sort`) and `:604` (`resolveProvenReadPaths`' unconditional flag skip)
 - **Problem:** `sort` is on the read-only list, and `resolveProvenReadPaths` drops `-o` as a flag and then adds the following token to the proven-read set, so `sort -o <routed-path> in.md` proves a write to be a read and the gate never fires.
 - **Class:** `a listed read-only command whose output target arrives as a flag value the proof skips`
 - **Sweep:** `parseUnprovenShellPaths("sort -o .prism/architect/_toolkit/install-layout.md input.md")` → the routed path is absent from the result (proven read-only). Confirmed writing: `sort -o victim1.md in.txt` created and populated `victim1.md`. The `=` spelling is safe by accident — `sort --output=<path>` reroutes, because `PATH_SHAPED_RUN` splits the path off the flag as a candidate while the whole `--output=<path>` token is skipped as an operand and never enters the proven set. Two spellings of one flag, opposite verdicts.
 - **Suggested fix:** remove `sort` from `SHELL_INSPECTION_COMMANDS`. It is not read-only on plain operands — it has an output mode, which is the list's own stated disqualifier ("is this command read-only on plain operands, with no in-place-write mode? If the answer needs a 'usually', it stays out"). The structural fix that closes this whole class is in the last finding below.
+- **Fix:** `sort` is off `SHELL_INSPECTION_COMMANDS`. Both spellings now reroute, and the `=` form no longer depends on the accident that made it safe. Regression rows: `sort -o <path> in.md` and `sort --output=<path> in.md` in `everyForgedProof`.
 
 ### `uniq <in> <out>` and `xxd <in> <out>` are certified read-only and write their second operand
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `uniq` and `xxd`)
 - **Problem:** both take an optional second positional operand that is an *output* file, not an input. The proof treats every non-flag token as a read operand, so the write target is dropped from the candidate set.
 - **Class:** `a listed read-only command whose output target is a trailing positional operand, indistinguishable from an input by position alone`
 - **Sweep:** `parseUnprovenShellPaths("uniq input.md <routed>")` and `("xxd input.bin <routed>")` both certify read-only. Confirmed writing: `uniq u.txt victim2.md` created `victim2.md` holding the deduped input; `xxd h.txt victim3.md` created `victim3.md` holding the hex dump. Swept the rest of the list for the same shape — `od`, `nl`, `cut`, `tr`, `wc`, `file`, `stat`, `diff`, `ls` take no output operand; `tr` takes no file operands at all. `uniq` and `xxd` are the only two.
 - **Suggested fix:** remove both from `SHELL_INSPECTION_COMMANDS`. Neither is recoverable by counting operands — `uniq in` and `uniq in out` differ only in arity, and an arity rule would be one more enumeration of the kind this arm exists to stop making.
+- **Fix:** both are off `SHELL_INSPECTION_COMMANDS`, for the reason the finding gives — arity is the only thing separating their output operand from an input, and an arity rule is the enumeration this arm exists to stop making. Regression rows: `uniq input.md <path>` and `xxd input.bin <path>`.
 
 ### `git diff|log|show --output <path>` is certified read-only and writes the path
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:534` (`checkSegmentOnlyReads`' `git` branch)
 - **Problem:** the `git` branch proves read-only from the subcommand alone. Every subcommand in `GIT_INSPECTION_SUBCOMMANDS` that emits a diff — `diff`, `log`, `show` — accepts git's `--output=<file>` diff option, and in the space-separated spelling the path lands in the proven-read set through the same unconditional flag skip as `sort -o`.
 - **Class:** `a per-call read-only judgment made from the subcommand while the write mode lives in a flag`
 - **Sweep:** all three spellings certify read-only through `parseUnprovenShellPaths`: `git diff --output <routed>`, `git log -p --output <routed>`, `git show HEAD --output <routed>`. Confirmed writing against a real repo: each of the three created the named file carrying the diff or log output. The subcommand resolver itself is sound in the safe direction — `git -C <dir> status` resolves its subcommand to `<dir>`, finds no match, and refuses; a flag-only `git` refuses. The leak is exclusively the flag.
 - **Suggested fix:** refuse the proof for any `git` segment carrying a token matching `/^--output/` or a bare `-o`, in addition to the subcommand test. This is narrower than the structural fix below and is the minimum that closes the confirmed case.
+- **Fix:** the `git` branch now also requires every flag in the segment to be on `GIT_INERT_FLAGS`, which omits `--output`, `-o`, `-O`, and `-C`. All three subcommand spellings reroute, as does `git grep -O` and `git -C <dir> diff`.
 
 ### `sed`'s `w` script command writes, and long-option abbreviation evades `checkInPlaceFlag`
 
 - **Axis:** `standards`
 - **Severity:** `critical`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:527` (`checkSegmentOnlyReads`' `sed` branch) and `:635` (`checkInPlaceFlag`)
 - **Problem:** `sed` is decided per call by in-place *flag* detection alone, but `sed`'s write capability is not confined to a flag. The `w <file>` command and the `s///w <file>` flag inside the *script operand* both write an arbitrary path, carry no `-` prefix, and sit entirely inside `SHELL_READ_SAFE_CHARACTERS`. Separately, `checkInPlaceFlag`'s `/^--in-place/` misses GNU getopt's unambiguous long-option abbreviations, and `/^-[a-zA-Z]*i/` cannot match them either because the second character is `-`.
 - **Class:** `a write mode expressed in a command's data operand rather than its flags, plus a flag matcher pinned to one spelling of a flag the parser accepts under many`
 - **Sweep:** four inputs certified read-only by `parseUnprovenShellPaths`: `sed -n 'w <routed>' input.md`, `sed 's/a/b/w <routed>' input.md`, `sed --in <routed>`, `sed --i <routed>`. Confirmed writing (macOS BSD sed): `sed -n 'w victim4.md' h.txt` created `victim4.md` holding the input; `sed 's/hi/yo/w victim5.md' h.txt` created `victim5.md` holding the substituted line. The `w`-command leak is worse than a spelling gap — the routed path is not merely un-rerouted, it is *added to the proven-read set* by `scanPathShapedTokens` running over the script operand, so the arm actively launders it. **Confidence on the abbreviation half is `Deduced`, not `Confirmed`:** GNU sed is not installed on this machine, so `sed --in` was not run. The deduction is that GNU `getopt_long` accepts any unambiguous prefix and `--in-place` is sed's only long option beginning `--i`; the harness result showing both spellings certified read-only *is* confirmed, only the underlying sed behavior is not. It does not change the fix.
 - **Suggested fix:** two parts, both required. Refuse the proof for any `sed` segment whose non-flag operands contain `w` or `W` adjacent to a path-shaped run — or, simpler and in the arm's own spirit, refuse `sed` outright unless every one of its non-flag operands is a plain path-shaped token with no script punctuation (`s`, `w`, `W`, `/`, `;` inside a quoted operand). And replace `/^--in-place/` with a prefix-of test: any token where `"--in-place".startsWith(token)` and the token is longer than `--` counts as in-place.
+- **Fix:** `sed` is refused outright — its branch and `checkInPlaceFlag` are both deleted. A flag test cannot reach a write expressed in a data operand, and once the `w` command has to be caught by inspecting the script, `sed` fails the list's own membership question. This closes the abbreviation half without depending on it: `sed --in` and `sed --i` reroute because `sed` reroutes, whatever GNU getopt does with the prefix. The `Deduced` label stands as briar wrote it — GNU sed is still absent from this machine and the underlying getopt behavior remains unverified. Cost: `sed -n '1,20p' <routed-doc>` now reroutes, which is the arm's designed direction. Regression rows: five `sed` spellings in `everyForgedProof`.
 
 ### `rg --pre <cmd>` executes an arbitrary program under a read-only proof
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:445` (`SHELL_INSPECTION_COMMANDS` membership of `rg`), same class at `:534` for `git grep -O`
 - **Problem:** `rg --pre <program>` runs `<program>` once per searched file; `git grep -O<cmd>` opens matches in an arbitrary pager command. Both are on the read-only surface and both hand control to a program the arm cannot see, which can write anything.
 - **Class:** `a listed read-only command with a flag that executes another program`
 - **Sweep:** `parseUnprovenShellPaths("rg --pre ./x.sh foo <routed>")` and `("git grep -O ./x.sh foo")` both certify read-only. Confirmed execution: a `--pre` script writing a marker file to `/tmp` was invoked and the marker appeared. `git grep -O` was not driven against a real repo (it wants a pager/tty) — that half is `Deduced` from the documented flag. Held at Major rather than Critical because the write does not come from the command text: it needs a pre-existing executable at a path the model must already control, so the blast radius is narrower than the four Criticals above, where the command alone is sufficient.
 - **Suggested fix:** covered by the structural fix below. A targeted fix would refuse `rg` carrying `--pre`, `--pre-glob`, or `--hostname-bin`, and `git grep` carrying `-O`/`--open-files-in-pager`.
+- **Fix:** closed by the structural fix below. `--pre`, `--pre-glob`, and `--hostname-bin` are absent from `rg`'s inert-flag list, so the segment loses its proof without anyone having to know what those flags do.
 
 ### Structural: the proof allow-lists commands but allow-everythings flags
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:604` (`resolveProvenReadPaths`' `if (token.startsWith("-") && token !== "-") continue;`)
 - **Problem:** four of the six findings above are one defect wearing four hats. The command list was inverted to fail safe; the flag handling was not. An unrecognized flag is silently assumed to be a modifier rather than an output target or an exec hook, which is precisely the deny-list posture the arm's own JSDoc says three earlier rounds proved wrong.
 - **Class:** `an inverted judgment applied at one level of a grammar and not the level below it`
 - **Sweep:** every leak in this pass that is not a positional-operand leak (`sort -o`, `git --output`, `rg --pre`, `git grep -O`) enters through this one line. The two positional leaks (`uniq`, `xxd`) enter through the sibling assumption that a non-flag token is an input.
 - **Suggested fix:** apply the arm's own inversion one level down — refuse the proof whenever a segment carries **any** flag token not on a per-command allow-list of known-inert flags. The existing per-command lists are the natural home: `SHELL_INSPECTION_COMMANDS` becomes a map from command to its allowed flag set (most entries can allow a small fixed set, or none, since a bare `cat`/`grep`/`wc` is the shape this arm actually needs to certify). Cost is one more reroute message on an unusual-but-harmless flag, which is the direction this whole arm is built to fail in; benefit is that the next flag nobody enumerated cannot produce a proof. Combined with dropping `sort`, `uniq`, and `xxd` from the list and hardening `sed`, this closes every finding in this pass by construction rather than one at a time.
+- **Fix:** `SHELL_INSPECTION_COMMANDS` is a `Map` from command to its inert-flag set, and `checkFlagsAreInert` refuses the segment on any flag not on that set. `resolveFlagNames` splits short clusters per letter and collapses digits to `-#`, so `-rn` is judged as `-r` and `-n` and `head -20` needs one entry rather than ten. The unconditional flag skip in `resolveProvenReadPaths` stays, now safe because the flags reaching it are vetted.
 
 ### The ADR and install-layout both bound the surviving gaps at "One", which the six Criticals above refute
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:64` (§ Consequences) and `.prism/architect/_toolkit/install-layout.md:161` (§ Write gate), plus the three build-managed mirrors of each
 - **Problem:** the gap statement itself is honest and correctly reasoned — a path built from a variable or reached by `cd` genuinely cannot be seen by a scan over the command text, and naming it beats letting a later round rediscover it. What is not honest is the quantifier. Both files say **"One** gap survives by construction," and the ADR describes the proof's basis as "a list of commands that read their operands and write nothing." Three members of that list write, so the description is false of its own contents and the count is false of the design.
 - **Class:** `an admitted limitation immediately bounded by a completeness claim nobody verified` — `.prism/rules/writing-voice.md` § Anti-pattern: Reassurance that introduces a new claim, which names this exact shape: the sentence right after an admission is the likeliest place to assert something unproven
 - **Sweep:** both prose homes of the claim, canonical and mirrored — `grep -rn "One gap survives by construction"` returns the ADR and `install-layout.md` in all four surfaces. The variable/`cd` gap is the only one either file names. The two gaps this pass confirmed are of a different kind and neither is mentioned: a command wrongly on `SHELL_INSPECTION_COMMANDS`, and a write mode reached through a flag value or a trailing operand the proof skips. A reader auditing the arm against this ADR would conclude the list needs no per-entry scrutiny, which is precisely the audit that finds `sort -o`.
 - **Suggested fix:** two edits, and the second survives the Criticals being fixed. Drop "One" — the variable/`cd` gap is *a* gap that survives by construction, not the only one. Then add the gap that is structural rather than incidental: membership on the read-only list is a human judgment, and a command wrongly admitted is a silent write. That is the ADR's own stated failure-direction argument turned honestly on itself — it currently says a list miss "costs one reroute message," which is true of a command *missing* from the list and false of one wrongly *on* it. Both directions belong in the same bullet.
+- **Fix:** both edits made, in the canonical files and their build-managed mirrors. The quantifier is gone, and the second gap is named as its own § Consequences bullet: membership is a human judgment, a wrongly-admitted entry is a silent write rather than an extra message, and no test can close it because a unit test checks the arm against the list and never the list against reality. ADR-0072's § Decision paragraph carried the same false description of the list and was corrected in the same pass.
 
 ### The reroute message states its remedy as a command swap when the real constraint is whole-command
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:866` (`formatShellRerouteMessage`)
 - **Problem:** "If the command only reads, spell it as a plain `cat`, `head`, or `grep`" reads as a head-token swap, but the proof is all-or-nothing over the whole command. `cat <doc> | head -5` and `grep foo <doc> > /tmp/out` both start with a named command and both still reroute, because the pipe and the redirect sit outside the character class. A model that follows the message literally and adds a pipe gets the identical message back with no new information, which is a remedy loop the message could have prevented in one clause.
 - **Class:** `a remedy stated at the wrong grammatical scope — token-level advice for a whole-command rule`
 - **Sweep:** the message's other claims check out. It no longer asserts a write — "so everything else counts as a write" is framing, not an assertion about this command — which was the round-1 defect and is genuinely closed. The three named commands are all on `SHELL_INSPECTION_COMMANDS`, so the advice is sound as far as it goes; the list is much wider, and under-promising is the right direction. "Redo this edit" does presume an edit one clause before the hedge arrives, which is a wording nit rather than a second finding.
 - **Suggested fix:** add the scope to the last sentence — "spell it as a plain `cat`, `head`, or `grep` with no pipe, redirect, or substitution."
+- **Fix:** the last sentence now reads "with no pipe, redirect, substitution, or unusual flag — the proof covers the whole command, not just its first word."
 
 ### Judgments on the three unasked questions — all three hold
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hook-gate.test.ts:1792` (`everyProvableRead`)
 - **Problem:** two of the three hold outright and are recorded here as verdicts rather than defects. The third — clove's argument that `everyProvableRead`'s enumeration "is now the specification rather than a list someone must remember to extend" — does not hold, and this pass's six Criticals are the evidence against it.
 - **Class:** `a test whose passing direction is the one that can be wrong`
@@ -2211,7 +2227,7 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
   - **The env-var omission is correctly reasoned.** Verified against the code rather than the claim: `PRISM_HOOK_DENY_DISABLE` is read at `hook.mjs:909` via `process.env` inside `runPreToolUseArm`, which runs in the hook process the host spawns with the host's own environment. A `PRISM_HOOK_DENY_DISABLE=1 tee <path>` inline assignment would scope to the denied command's own subshell, which never runs because the call is denied. Naming it in the message would have been a false remedy. The escape stays documented in the ADR's § Consequences, where it *is* true — the reader there is a human who can export it.
   - **`everyProvableRead` is a sample, not a specification.** The generated half of the claim holds: `CHARACTERS_OUTSIDE_THE_CLASS` produces three cases per character, and `everyUnprovableShape` crosses six command prefixes and five quote splices against a shared expected outcome, so adding a shape is one appended string. The enumerated half does not. The actual specification of what the arm lets past is `SHELL_INSPECTION_COMMANDS` ∪ `GIT_INSPECTION_SUBCOMMANDS` ∪ the `sed` rule; `everyProvableRead` names 12 of the 32 inspection commands and 2 of the 9 git subcommands, and every leak this pass found sits in the uncovered remainder — `sort`, `uniq`, `xxd`, `git show`, and `sed` with a script operand. The list is precisely the artifact whose non-extension hid them. **The deeper problem is that extending it would not have helped.** A passing `everyProvableRead` row asserts "the arm certifies this command as read-only," which is the *provable* direction — a row reading `sort -o <path> in.md` would pass today and enshrine the defect. The suite has no assertion anywhere that a listed command actually writes nothing, because no unit test can have one.
 - **Suggested fix:** derive the read cases from the constants instead of restating them — iterate `SHELL_INSPECTION_COMMANDS` and `GIT_INSPECTION_SUBCOMMANDS` directly, asserting each certifies a bare `<command> <path>`. That makes coverage complete by construction, which is the property clove is claiming and the current shape does not have. It also does the thing the enumeration cannot: adding a command to the list forces a test row into existence, so the membership judgment gets a second human reading at the moment it is made. Pair it with a comment on each list stating that membership is the one place in this arm where a mistake is silent, since the test can only ever check the arm against the list and never the list against reality.
-
+- **Fix:** `everyProvableRead` is derived — it iterates `SHELL_INSPECTION_COMMANDS.keys()` and `GIT_INSPECTION_SUBCOMMANDS` directly, so coverage is complete by construction and a new list entry cannot land without a row asserting what it claims. Both constants are exported for it. The comment briar asked for lives on `SHELL_INSPECTION_COMMANDS`' JSDoc, stating that membership is the one place in this arm where a mistake is silent. The two judgments that hold are left as recorded.
 ### Angle Coverage
 
 - **Runtime behavior** — `swept` — 7 items enumerated, 7 verdicts. `parseUnprovenShellPaths` driven over 21 forged commands (6 false proofs, 1 exec vector, 6 controls behaving correctly); `checkSegmentOnlyReads` across all 32 `SHELL_INSPECTION_COMMANDS` entries and all 9 `GIT_INSPECTION_SUBCOMMANDS` entries for output-operand and output-flag capability; `resolveProvenReadPaths`' flag skip and operand collection; `checkInPlaceFlag` against four in-place spellings plus two long-option abbreviations; `scanPathShapedTokens`' quote/backslash stripping (confirmed it cannot admit an out-of-class character, because the class test runs on the raw command and over-generating candidates is the safe direction); `filterRoutedPaths` per-path equivalence; `formatShellRerouteMessage`. Six forged commands additionally run against a real filesystem and confirmed to write.
@@ -2228,15 +2244,13 @@ Briar round 4, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: forge a 
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [ ] No critical or major issues — **round 4 opened four Criticals and three Majors, all `open`.** Six forged read-only proofs on commands that write (`sort -o`, `uniq <in> <out>`, `xxd <in> <out>`, `git diff|log|show --output`, `sed 'w <path>'`, `sed 's///w <path>'`), each confirmed writing against a real filesystem, plus one confirmed arbitrary-execution vector (`rg --pre`). Round 3 pass 2's findings remain `fixed`; rounds 1 and 2 remain `fixed` and independently verified.
-- [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
+- [x] No critical or major issues — round 4's four Criticals and three Majors are `fixed`. The six forged read-only proofs (`sort -o`, `uniq <in> <out>`, `xxd <in> <out>`, `git diff|log|show --output`, `sed 'w <path>'`, `sed 's///w <path>'`) and the `rg --pre` execution vector all reroute, confirmed by driving each through `parseUnprovenShellPaths`. Rounds 1 through 3 remain `fixed`.
+- [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations, including the two newly exported constants
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — the generated half holds: `everyUnprovableShape` crossed with `CHARACTERS_OUTSIDE_THE_CLASS` × three positions, all asserting one outcome. `everyProvableRead` is a sample rather than the closed set it is described as — it names 12 of 32 inspection commands and 2 of 9 git subcommands, and every round-4 leak sits in the uncovered remainder. Derive it from the constants (round 4 Minor).
+- [x] Tests written for new logic and edge cases — `everyProvableRead` iterates `SHELL_INSPECTION_COMMANDS` and `GIT_INSPECTION_SUBCOMMANDS` rather than restating a sample, so a list entry cannot land untested; `everyForgedProof` carries round 4's confirmed leaks as regression rows through both the parser and the end-to-end arm.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-20 (`pnpm prism:check` exit 0, 812/812)
-- [ ] PR description up to date — needs a line on the round-2 segmenter rewrite and the round-3 contract narrowing
+- [ ] PR description up to date — needs a line on the round-2 segmenter rewrite, the round-3 contract narrowing, and the round-4 flag inversion
 - [ ] Lasting decisions promoted to architect context — the catch-all Decision's verdict resolves at plan close
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
-
-**Last updated:** 2026-08-20 (round 4 false-proof hunt — `pnpm prism:check` re-run green after the plan write, tree clean)
