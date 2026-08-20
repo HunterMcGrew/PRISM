@@ -2000,6 +2000,39 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 - **Sweep:** four substitution shapes. `tee $(echo a; echo b)/.prism/plans/x.md` → `["$(echo","a"]`, routed path gone. Backtick equivalent → `["`echo","a"]`, same. `echo hi > $(pwd; :)/.prism/plans/x.md` → `["$(pwd"]`, same. Bounded by quoting: `tee ".prism/plans/$(a; b)x.md"` and the single-quoted twin both return the full token intact, so the break needs the substitution to be *unquoted*, which is why this is Minor and not Major — and `mkdir -p $(dirname x; true) && tee .prism/plans/x.md` survives because the `&&` cut happens to land after the damage. Substitution without a separator is unaffected in either arm.
 - **Suggested fix:** the code gap is a legitimate thing to leave open at this narrowness. The JSDoc line is not — correct it to say that an unquoted substitution containing a separator produces an extra cut and can drop a real write target, so the next reader weighing whether to close it knows it is on the unsafe side of the ledger.
 
+### An indented delimiter ends a plain `<<` heredoc that bash would not end, and the remaining body is parsed as commands
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:371` (`skipHeredocBodies`, the `.trim()` comparison)
+- **Problem:** the terminator test trims every body line before comparing it to the delimiter, which is `<<-`'s rule applied unconditionally — a plain `<<` heredoc whose body contains an indented copy of its own delimiter terminates there, and every remaining body line is handed to the segmenter as commands.
+- **Class:** `one form's relaxation applied to the strict form it was meant to sit beside`
+- **Sweep:** five heredoc bodies driven through `parseShellWriteTargets`. `tee .prism/plans/x.md <<'E'` with a body of `  E` then `tee .prism/plans/GHOST.md` then `E` → `[".prism/plans/x.md",".prism/plans/GHOST.md"]` — the second target is document text, not a write. The redirect spelling of the same shape yields `.prism/rules/GHOST.md` the same way, so the leak is not specific to `tee`. It needs the post-termination text to itself parse as a write: the same body with `rm -rf .prism/plans/GHOST.md` yields only the real target, which is why this is Minor rather than Major. Controls, all correct: `<<-E` with a tab-indented terminator terminates as it should and the following real command is still claimed; a body line exactly equal to the delimiter with no indentation terminates, which is bash's behavior too, not a bug; and a well-terminated body containing `a; b && c | d` or `echo hi > /etc/passwd` yields nothing extra.
+- **Suggested fix:** compare the raw line to the delimiter for `<<`, and only trim for `<<-`. `readHeredocDelimiter` at `:328` already detects the `-` but discards it — carry that bit onto `pendingHeredocs` alongside the delimiter so `skipHeredocBodies` can honor it. Note `<<-` strips leading *tabs* only, not spaces, so `.trim()` is not the right test for that arm either.
+
+### `#` is not a comment, so every word of a trailing comment becomes a write target
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:240` (the `splitShellSegments` character loop has no `#` case), `:475` (the operand-claiming branch of `parseSegmentWriteTargets`)
+- **Problem:** the scanner treats `#` as an ordinary character, so on a `tee`/`sed -i` segment every word after a trailing comment is claimed as a written path — and a comment that names a routed doc produces a reroute for a file the command never touches.
+- **Class:** `a shell metacharacter absent from a scanner that models the others`
+- **Sweep:** `tee .prism/plans/x.md # see .prism/rules/foo.md` → `[".prism/plans/x.md","#","see",".prism/rules/foo.md"]`. The last element is a real routed path and denies on it. Bounded to the trailing-comment position: `tee .prism/plans/x.md\n# see .prism/rules/foo.md` → `[".prism/plans/x.md"]`, because the line break cuts first and the comment line's head token is `#`, which is in neither command set. The `>`-redirect spelling is unaffected — only the `tee`/`sed -i` operand loop claims bare words. This is the same shape as the junk-operand trade the write arm's JSDoc already accepts at `:409` ("a non-flag operand that is not a path … rides along as a target no manifest route can match") — the difference is that a comment can and does contain a path a route *does* match, so the stated reason for accepting the trade does not hold here.
+- **Suggested fix:** cut the segment at an unquoted `#` that begins a token, the same way the loop already cuts at a separator. Naming this in the JSDoc's gap list instead is the cheaper option but a worse one — the gap list's other members cannot produce a matching path, and this one can.
+
+### `<<<` leaves a stray `<` write target
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:275` (the heredoc guard's `command[index + 2] !== "<"` arm)
+- **Problem:** the guard correctly declines to treat `<<<` as a heredoc, but the first two `<` characters have already been consumed by the guard's own lookahead path on the next iteration, leaving a one-character `<` token that the operand loop claims as a write target.
+- **Class:** `a guard that declines a construct without rewinding what it looked at`
+- **Sweep:** `tee .prism/plans/x.md <<<"hi"` → `[".prism/plans/x.md","<"]`. Harmless in effect — `<` matches no manifest route, so no deny fires — which is why this is recorded at Minor and could equally sit under `## Cleanup Items`. Recorded as a finding rather than cleanup because it is evidence the `<`-handling arm has an off-by-one the other heredoc cases do not exercise, and the next edit to that guard should know.
+- **Suggested fix:** consume the whole `<<<` run in the guard and emit nothing, matching how the `<<` arm drops its own introducer.
+
 ---
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
