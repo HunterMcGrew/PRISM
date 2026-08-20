@@ -18,7 +18,8 @@
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
 	".prism/audit-state.json": "_toolkit/audit-workflow.md",
 	".prism/audits/**": "_toolkit/audit-workflow.md",
-	".prism/**": "_toolkit/install-layout.md",
+	".prism/custom/**": "_toolkit/install-layout.md",
+	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	"docs/": "_toolkit/documentation.md",
 	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md",
 	".prism/spec/adrs/**": ["guides/writing-an-adr.md", "_toolkit/spec-editing.md"]

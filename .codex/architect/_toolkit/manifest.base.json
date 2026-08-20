@@ -74,13 +74,10 @@
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
 	".prism/audit-state.json": "_toolkit/audit-workflow.md",
 	".prism/audits/**": "_toolkit/audit-workflow.md",
-	".prism/**": [
-		"_toolkit/install-layout.md",
-		"_toolkit/skills-ecosystem.md"
-	],
+	".prism/custom/**": "_toolkit/install-layout.md",
 	"scripts/ai-skills/build.ts": "_toolkit/install-layout.md",
 	"scripts/ai-skills/path-guard.ts": "_toolkit/install-layout.md",
-	".ai-skills/definitions/paths.json": "_toolkit/install-layout.md",
+	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": [
 		"_toolkit/documentation.md",
