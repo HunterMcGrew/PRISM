@@ -2044,14 +2044,39 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 - **Sweep:** thirteen prefix shapes driven through `parseShellWriteTargets`, every one naming the same routed path. Eight return `[]` — no target, no deny, gate silent: `(tee .prism/plans/x.md)`, `{ tee .prism/plans/x.md; }`, `sudo tee …`, `FOO=bar tee …`, `sudo sed -i 's/a/b/' …`, `echo hi | sudo tee …`, `nohup tee …`, `time tee …`. Two controls behave: bare `tee .prism/plans/x.md` and `echo hi | tee .prism/plans/x.md` both → `[".prism/plans/x.md"]`, so the pipeline cut itself is fine and the prefix is the whole cause. The `>`-redirect spelling is *not* affected by prefixes, because the `>` branch runs before the head-token test — `{ echo hi > .prism/plans/x.md; }` and `FOO=bar echo hi > .prism/plans/x.md` both resolve correctly. The one redirect shape that does break is the paren group: `(echo hi > .prism/plans/x.md)` → `[".prism/plans/x.md)"]`, a path with a trailing paren that matches no route. None of this class appears in the write arm's documented gap list at `:405`, which names word-prefixed redirects, interpreters, and `cp`/`mv`/`dd` — so a reader auditing what the gate misses would not find it.
 - **Suggested fix:** two independent changes. For the prefix class, skip leading tokens that cannot be a command name before fixing `segmentCommand` — a `VAR=value` assignment, and a small set of transparent prefixes (`sudo`, `env`, `command`, `nohup`, `time`) — or, if that list is judged unbounded, state the gap in the JSDoc so it is a known miss rather than an invisible one. For the paren, treat unquoted `(` and `)` as token boundaries in `splitShellSegments` the way `;` already is. Weigh the prefix list against likelihood before expanding it: `sudo tee` is the common idiom in general shell use but rare against a `.prism/` path, while `(`/`{` grouping and `VAR=value` are what a model composing a multi-part command actually emits.
 
+### The separator generator closes the axis that already failed and leaves the axes that failed today enumerated
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hook-gate.test.ts:1722` (`everySeparatorSpelling`)
+- **Problem:** the generator is separator × spacing, and only the spacing half is closed by construction — spacing is a genuine closed set of four, but the separator half is still a hand-written array of seven literals, so the enumeration moved up one level rather than going away.
+- **Class:** `a generator that parameterizes the axis that already broke and hardcodes the rest`
+- **Sweep:** the deeper problem is not the separator array's contents but its breadth. `splitShellSegments` now takes seven kinds of input that change segmentation — separators, quoting, escapes, heredocs, command substitution, comments, and command prefixes — and the generator covers exactly one of them, while a green run of it reads as "segmentation is covered." It is not: this pass broke five root causes across four of the six uncovered kinds, all behind 811/811. The JSDoc at `:1714` states the principle exactly right — "a list is only as good as whoever remembers to extend it, and the omission is invisible in a green suite" — and then the array one line below is that list. The assertion shape is fine: one expected value across all 28 spellings is correct for this axis, and the depth is not the weakness.
+- **Suggested fix:** the honest answer is that no generator over separator spellings can cover this, because the scanner's input space is no longer one axis. Add a table-driven case set over the other six kinds — one row per shape with its expected targets — and let each finding above contribute its repro as a row. Generating the separator spellings is still worth keeping; it just should not be read as segmentation coverage, and the JSDoc should say which axis it closes rather than implying it closed the problem.
+
+### Angle Coverage — PR 2D round 3 pass 2, write-arm scanner fuzz
+
+- **Runtime behavior** — `swept` — 7 items enumerated, 7 verdicts, over 51 inputs driven through the exported `parseShellWriteTargets`/`parseShellReadTargets`. Separators (clean, control); quoting (defect: retained quote characters); escapes (defect: line continuation); heredocs (defect: unconditional trim; `<<-`, unterminated bodies, two-heredoc, and delimiter-as-substring all clean); command substitution (defect: unquoted separator cuts, quoted forms clean); comments (defect: `#` not modeled); command prefixes (defect: head-token displacement, plus the paren fusing onto a redirect operand). `checkInPlaceFlag` swept separately across seven `sed` spellings with no false positive or negative found — that arm is correct.
+- **Test efficacy** — `swept` — 1 item enumerated, 1 verdict: the separator × spacing generator, recorded as the Major above. Five root causes shipped behind a green 811.
+- **Spec and doc consistency** — `swept` — 2 items enumerated, 2 verdicts. `splitShellSegments`' JSDoc gap list states the substitution gap's failure direction backwards; the write arm's gap list at `:405` omits the command-prefix class entirely. Both recorded above.
+- **Citation integrity** — `n/a — this pass added no citations and re-read none.`
+- **External-system claims** — `n/a — bash's own semantics were the reference for every expected value, and each is stated inline in its finding rather than cited.`
+- **Repo writing rules** — `not reached — out of pass scope; swept at round 3 pass 1 and round 2, and this pass touched no prose.`
+- **Security** — `swept` — `verdict-only`. The missed-write classes cost enforcement of self-imposed friction, not access — unchanged from round 2's verdict.
+- **Docs impact** — `n/a — no doc surface in this pass's scope.`
+- **Accessibility** — `n/a — no UI in the pinned range.`
+
+**Unprobed, handed to clove as gaps rather than findings:** interpreter-mediated writes (`python -c`, `node -e`), `cp`/`mv`/`dd`, process substitution `>(…)`, `exec` redirections, and arithmetic/parameter expansion containing separators. Each is plausibly reachable; none was driven this pass.
+
 ---
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2's two majors and one minor are `fixed` in the repair pass below, each covered by a test confirmed failing against the pre-repair `hook.mjs`
+- [ ] No critical or major issues — **four majors open from round 3 pass 2**: three missed-write scanner defects (line continuation, retained quote characters, command-prefix head-token displacement) and the test-efficacy Major on the separator generator. Round 1's and round 2's findings remain `fixed` and independently verified.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — the separator loop is generated from separator × spacing rather than enumerated, and the heredoc is covered at the parser and end to end through `runPostToolUseArm`. 811/811
+- [ ] Tests written for new logic and edge cases — the separator × spacing generator closes one of the seven input kinds `splitShellSegments` now takes; five root causes shipped behind a green 811. Needs a table-driven set over quoting, escapes, heredoc terminator strictness, substitution, comments, and command prefixes.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-20 (`pnpm prism:build && pnpm prism:check` exit 0, 811/811, at the round-2 repair head)
 - [ ] PR description up to date — needs a line on the round-2 segmenter rewrite
@@ -2059,4 +2084,4 @@ Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `sp
 
 **Outstanding for the human merge gate:** D8's live-host run. It needs a real Claude Code session and cannot be closed from a dispatched one.
 
-**Last updated:** 2026-08-20
+**Last updated:** 2026-08-20 (round 3 pass 2)
