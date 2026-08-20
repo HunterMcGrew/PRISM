@@ -14,7 +14,7 @@ The "include, but aren't limited to" framing is load-bearing — don't collapse 
 
 ## Why this file exists
 
-The `**` catch-all in `manifest.json` routes spec edits to `skills-ecosystem.md`, which covers the skill roster and lifecycle — not the voice or reasoning rules. Without a dedicated spec-content route, writing-voice and explain-the-why only reach the agent via preload context (CLAUDE.md / AGENTS.md), which is easy to pattern-match around when an agent is mid-edit on an existing spec file. Routing through the manifest puts these rules in the same context window as the file being edited, at the moment of the edit.
+The skill routes in `manifest.json` load `skills-ecosystem.md`, which covers the skill roster and lifecycle — not the voice or reasoning rules. No broad route backfills the gap, and none can: `manifest.json` rejects a catch-all pattern at validation time, because a route matching every path would make the write gate deny every write ([ADR-0072](../../spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md)). So each spec path is routed here by name. Without that dedicated spec-content route, writing-voice and explain-the-why would only reach the agent via preload context (CLAUDE.md / AGENTS.md), which is easy to pattern-match around when an agent is mid-edit on an existing spec file. Routing through the manifest puts these rules in the same context window as the file being edited, at the moment of the edit.
 
 Onboarding voice (humane language over mandates) — absolute mandates invert across models, so the voice itself carries the constraint. Explaining the why alongside every rule means a rule without its reason doesn't get treated as arbitrary and skipped in edge cases. Both of these are in `.prism/rules/writing-voice.md`.
 
