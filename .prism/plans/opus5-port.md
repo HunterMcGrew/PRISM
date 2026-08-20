@@ -1961,6 +1961,47 @@ round-2 prescription is withdrawn.
 
 ---
 
+## Review Issues (PR 2D round 3 pass 2 — scanner fuzz over `0141691e..c628e5f3`, #470)
+
+Briar pass 2, 2026-08-20 [huntermcgrew/opus5-port-deny-gate]. One job: break `splitShellSegments`. Driven as real inputs through the exported `parseShellWriteTargets`/`parseShellReadTargets` in a node harness, not read from the source. 51 inputs across seven shape classes; five root causes found, three of which fail toward a missed real write.
+
+**Failure direction is the organizing axis.** A false deny costs one re-read and a reroute message. A missed real write is the gate silently not firing on a routed path, which is the failure this whole arm exists to prevent. The three missed-write causes are recorded first.
+
+### Line continuation injects the newline into the path, and under CRLF drops the write target entirely
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:286` (the unquoted `\\` branch of `splitShellSegments`)
+- **Problem:** the escape branch copies the *next* character into the token verbatim, so a backslash-newline continuation — which the shell deletes outright — becomes a literal newline inside the following token; under CRLF the backslash eats only the `\r` and the surviving `\n` cuts the segment, so the continued command's write target lands in a segment whose head token is the path itself and is never claimed.
+- **Class:** `an escape rule that copies the escaped character instead of interpreting the pair`
+- **Sweep:** three continuation spellings driven through `parseShellWriteTargets`, all against `tee` + a routed path. `tee \\` + `\n` + `.prism/plans/x.md` → `["\n.prism/plans/x.md"]` — a path no manifest route can match, so the gate does not fire. `tee \\` + `\r\n` + `.prism/plans/x.md` → `["\r"]` — the real target is gone completely. The indented form `tee \\` + `\n  .prism/plans/x.md` → `["\n",".prism/plans/x.md"]` survives, because the leading space ends the poisoned token before the path starts; that accident is the only reason the multi-line `sed -i` shape in the suite passes. CRLF is not a hypothetical input class here — `parseShellWriteTargets` already has a passing CRLF separator case, and `tee a.md\r\ntee b.md` resolves both targets correctly, so the same input carrying a continuation is reachable by the same route.
+- **Suggested fix:** treat `\\` immediately followed by `\n`, or by `\r\n`, as consuming both characters and contributing nothing to the token, before the general escape copy. Leave the general branch alone — it is correct for `tee out\;md`, verified → `["out;md"]`.
+
+### Quote characters are kept in the token and only stripped when they wrap the whole of it
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:281` (quote-open branch appends the quote), `:100` (`unquote`)
+- **Problem:** the scanner tracks quote state per character but writes the quote characters into the token anyway, then re-derives the unquoted form with `unquote`'s `/^(["'])(.*)\1$/`, which only matches a token wrapped end to end. Every partially-quoted path therefore reaches the route matcher with quote characters still in it and matches nothing.
+- **Class:** `information the scanner already has, discarded and then guessed at downstream`
+- **Sweep:** six quoting shapes driven through `parseShellWriteTargets`, all naming the same routed path. Adjacent splice `tee ".prism/plans"/x.md` → `[".prism/plans\"/x.md"]` with both quotes retained. Mid-token `tee .prism/'plans'/x.md` → `[".prism/'plans'/x.md"]`. Unterminated single `tee '.prism/plans/x.md` → `["'.prism/plans/x.md"]`; unterminated double the same shape. Nested `tee ".prism/plans/'x'.md"` → `[".prism/plans/'x'.md"]` — here the outer pair *is* stripped and the inner literal quotes correctly survive, so this one is right and is the control. Escaped quote inside a double quote `tee ".prism/plans/x\\".md"` → `[".prism/plans/x\\\".md"]`, retaining the backslash the shell removes. Controls that behave: `tee ".prism/plans/my plan.md"` and `tee .prism/plans/my\\ plan.md` both → `[".prism/plans/my plan.md"]`, and single-quoted `tee '.prism/plans/x\\.md'` correctly keeps its literal backslash.
+- **Suggested fix:** stop appending the quote character in the quote-open and quote-close branches, so the token carries the shell's own value and `unquote` becomes redundant on splitter output. This is a change to shared code both arms consume, so it needs its own check against the read arm — `parseSegmentReadTargets` calls `unquote` on operands and `SHELL_READ_SAFE_CHARACTERS` admits `"` and `'`, so the read arm's behavior should be re-measured rather than assumed unchanged.
+
+### Unquoted `$(…)` and backtick substitution containing a separator cuts the segment and loses the target, which is the opposite of the direction the JSDoc claims
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:203-206` (the JSDoc's "What it still does not model" list), `:267` (the separator branch)
+- **Problem:** the scanner has no substitution state, so a `;`, `&&`, or `|` inside an unquoted `$(…)` or backticks cuts a segment the shell would not cut, and the real write target — which follows the substitution — ends up in a segment whose head token is not a write command. The JSDoc lists this gap but describes it as "costing a missed cut rather than a wrong one"; measured, it is a *spurious* cut, and its cost is a missed real write.
+- **Class:** `a documented gap whose stated failure direction is inverted, in a design that rests on knowing which way each gap fails`
+- **Sweep:** four substitution shapes. `tee $(echo a; echo b)/.prism/plans/x.md` → `["$(echo","a"]`, routed path gone. Backtick equivalent → `["`echo","a"]`, same. `echo hi > $(pwd; :)/.prism/plans/x.md` → `["$(pwd"]`, same. Bounded by quoting: `tee ".prism/plans/$(a; b)x.md"` and the single-quoted twin both return the full token intact, so the break needs the substitution to be *unquoted*, which is why this is Minor and not Major — and `mkdir -p $(dirname x; true) && tee .prism/plans/x.md` survives because the `&&` cut happens to land after the damage. Substitution without a separator is unaffected in either arm.
+- **Suggested fix:** the code gap is a legitimate thing to leave open at this narrowness. The JSDoc line is not — correct it to say that an unquoted substitution containing a separator produces an extra cut and can drop a real write target, so the next reader weighing whether to close it knows it is on the unsafe side of the ledger.
+
+---
+
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
 - [x] No critical or major issues — round 1's critical and four majors are `fixed` and independently verified; round 2's two majors and one minor are `fixed` in the repair pass below, each covered by a test confirmed failing against the pre-repair `hook.mjs`
