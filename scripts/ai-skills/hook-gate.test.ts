@@ -1830,6 +1830,162 @@ function everyUnprovableShape(target: string): string[] {
 }
 
 /**
+ * The executable half of the membership judgment: every command on a
+ * read-only list, actually run against a scratch file, with the file asserted
+ * unmodified afterwards.
+ *
+ * `everyProvableRead` below iterates the same constant the implementation
+ * reads, so a row it generates cannot disagree with the implementation —
+ * adding `patch` to the map auto-generated a passing row asserting `patch`
+ * proves a read, and `patch <file>` writes the file. This turns list
+ * membership from a self-signed claim into a checked one, on the only axis
+ * where the check is possible: run the command and look at the disk.
+ *
+ * Stdin carries a unified diff rather than nothing, because several writers
+ * take their payload from stdin and are inert without one — `patch <file>`
+ * with empty stdin applies no hunks and writes nothing, so a probe that fed
+ * it nothing would have passed. Two operand shapes cover the two ways a write
+ * hides in operand position: an in-place edit of the only operand, and an
+ * output file trailing an input (`uniq in out`, `cp in out`).
+ *
+ * Its own limit, stated rather than hidden: a command this machine does not
+ * have is reported `unavailable` and proves nothing. The two mutations that
+ * exposed the tautology — `patch` and `cp` — are present everywhere the suite
+ * runs, so the gap is real but does not reach the defect class it was built
+ * for.
+ */
+const PROBE_VICTIM = "victim.md";
+const PROBE_SOURCE = "source.md";
+const PROBE_VICTIM_CONTENT = "victim line\n";
+const PROBE_SOURCE_CONTENT = "source line\n";
+
+const PROBE_STDIN = [
+	`--- ${PROBE_VICTIM}`,
+	`+++ ${PROBE_VICTIM}`,
+	"@@ -1 +1 @@",
+	`-${PROBE_VICTIM_CONTENT.trim()}`,
+	"+patched line",
+	"",
+].join("\n");
+
+const PROBE_ENV = {
+	...process.env,
+	GIT_CONFIG_GLOBAL: os.devNull,
+	GIT_CONFIG_SYSTEM: os.devNull,
+	GIT_AUTHOR_NAME: "probe",
+	GIT_AUTHOR_EMAIL: "probe@example.invalid",
+	GIT_COMMITTER_NAME: "probe",
+	GIT_COMMITTER_EMAIL: "probe@example.invalid",
+	GIT_TERMINAL_PROMPT: "0",
+	GIT_PAGER: "cat",
+	PAGER: "cat",
+};
+
+/** Every working-tree entry and its bytes, so a probe cannot write unseen. */
+async function snapshotWorkingTree(dir: string): Promise<string> {
+	const names = (await fs.readdir(dir)).filter((name) => name !== ".git").sort();
+	const parts: string[] = [];
+	for (const name of names) {
+		const stat = await fs.stat(path.join(dir, name));
+		parts.push(
+			stat.isDirectory()
+				? `${name}/`
+				: `${name}:${await fs.readFile(path.join(dir, name), "utf8")}`
+		);
+	}
+
+	return parts.join("\n");
+}
+
+function runProbe(dir: string, command: string, args: string[]) {
+	return spawnSync(command, args, {
+		cwd: dir,
+		input: PROBE_STDIN,
+		encoding: "utf8",
+		timeout: 10_000,
+		env: PROBE_ENV,
+	});
+}
+
+/** True when the command is not installed, so the probe proved nothing. */
+function checkProbeRan(result: ReturnType<typeof runProbe>): boolean {
+	return (result.error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT";
+}
+
+test("SHELL_INSPECTION_COMMANDS: every listed command leaves a scratch file unmodified when run", async () => {
+	const wrote: string[] = [];
+	const clean: string[] = [];
+	const unavailable: string[] = [];
+
+	for (const name of SHELL_INSPECTION_COMMANDS.keys()) {
+		await withTempRepo(async (dir) => {
+			await fs.writeFile(path.join(dir, PROBE_VICTIM), PROBE_VICTIM_CONTENT);
+			await fs.writeFile(path.join(dir, PROBE_SOURCE), PROBE_SOURCE_CONTENT);
+			const before = await snapshotWorkingTree(dir);
+
+			let ran = false;
+			for (const args of [[PROBE_VICTIM], [PROBE_SOURCE, PROBE_VICTIM]]) {
+				ran = checkProbeRan(runProbe(dir, name, args)) || ran;
+			}
+
+			if (!ran) {
+				unavailable.push(name);
+				return;
+			}
+
+			((await snapshotWorkingTree(dir)) === before ? clean : wrote).push(name);
+		});
+	}
+
+	assert.deepEqual(
+		wrote,
+		[],
+		`a command on the read-only list changed the scratch tree when run (unavailable on this machine: ${unavailable.join(", ") || "none"})`
+	);
+	assert.ok(
+		clean.length > 0,
+		"every listed command was unavailable, so this control proved nothing"
+	);
+});
+
+test("the git subcommand sets: every listed subcommand leaves the working tree unmodified when run", async () => {
+	const subcommands = [...GIT_INSPECTION_SUBCOMMANDS, ...GIT_TREE_SAFE_SUBCOMMANDS];
+
+	for (const subcommand of subcommands) {
+		await withTempRepo(async (dir) => {
+			await fs.writeFile(path.join(dir, PROBE_SOURCE), PROBE_SOURCE_CONTENT);
+			await fs.writeFile(path.join(dir, PROBE_VICTIM), "committed line\n");
+			for (const setup of [
+				["init", "-q"],
+				["add", "."],
+				["commit", "-q", "-m", "seed"],
+			]) {
+				const result = runProbe(dir, "git", setup);
+				assert.equal(
+					result.status,
+					0,
+					`probe setup \`git ${setup.join(" ")}\` failed: ${result.stderr}`
+				);
+			}
+
+			// Dirty the file, so a subcommand that restores it from the index
+			// or from HEAD shows up as a working-tree change rather than as a
+			// no-op against an already-clean tree.
+			await fs.writeFile(path.join(dir, PROBE_VICTIM), PROBE_VICTIM_CONTENT);
+			const before = await snapshotWorkingTree(dir);
+
+			runProbe(dir, "git", [subcommand, PROBE_VICTIM]);
+
+			assert.equal(
+				await snapshotWorkingTree(dir),
+				before,
+				`\`git ${subcommand}\` is on a list that says it writes no working-tree file`
+			);
+		});
+	}
+});
+
+/**
  * Every command the arm claims to prove is a read, derived from the lists
  * rather than restated beside them.
  *
@@ -1844,9 +2000,10 @@ function everyUnprovableShape(target: string): string[] {
  * which is the tautology that would have certified `sort -o`. Flags are
  * sampled by the hand-written rows and judged where they are written.
  *
- * The suite can only ever check the arm against the list, never the list
- * against reality — see `SHELL_INSPECTION_COMMANDS` for where that judgment
- * is made.
+ * These rows check the arm against the list. The list is checked against
+ * reality by the executable probe above, which runs each listed command and
+ * asserts the disk is unchanged — the two are complements, and neither alone
+ * would have caught `patch`.
  */
 function everyProvableRead(target: string): string[] {
 	const shapes: string[] = [];

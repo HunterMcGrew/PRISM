@@ -438,10 +438,17 @@ const GREP_INERT_FLAGS =
  * flag listed beside it incapable of naming an output file or running
  * another program? If either answer needs a "usually", it stays out.
  *
- * Membership is the one place in this arm where a mistake is silent. No unit
- * test can check the list against reality — a test can only confirm the arm
- * agrees with the list — so the second reading happens here, when an entry is
- * added.
+ * Membership is checked on two axes, and only one of them is executable.
+ * `hook-gate.test.ts` runs every command on this list against a scratch file
+ * and asserts the file is unmodified, so a command that writes cannot be
+ * added silently — that check is what `patch` would have failed, and a
+ * derived test row asserting the arm agrees with the list would have passed.
+ * Its own limit is a command the test machine does not have, which the
+ * failure message names.
+ *
+ * The flag sets have no such check. An assertion over a flag can only claim
+ * the flag is inert, which blesses whatever was just added, so the second
+ * reading for a flag happens here, when the entry is written.
  *
  * Absent on purpose, each for the reason beside it: `sort`, `uniq`, and `xxd`
  * write through an output operand indistinguishable from an input by position
@@ -747,8 +754,10 @@ function checkFlagsAreInert(args, inertFlags) {
  * Two gaps survive. A write whose target path never appears in the command
  * text — assembled from a variable, or reached through a `cd` — is invisible
  * to any scan over the command, and no parser short of a shell closes it. The
- * second is the read-only lists themselves: membership is a human judgment,
- * and a command or flag wrongly admitted is a silent write. See
+ * second is narrower than it used to be: a *command* wrongly admitted to a
+ * read-only list is caught by the executable probe in `hook-gate.test.ts`,
+ * which runs each listed command and looks at the disk, but a *flag* wrongly
+ * admitted stays a human judgment and a silent write. See
  * `SHELL_INSPECTION_COMMANDS` for the questions membership has to answer.
  *
  * @param {string | undefined} command

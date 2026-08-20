@@ -25,6 +25,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
@@ -495,6 +496,30 @@ function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
  * with the remedy attached, so reporting it here too would double-count one
  * problem.
  */
+/**
+ * The structural faults in one manifest's route keys — a route anchored to
+ * nothing, or one written with a brace glob that compiles to a literal.
+ *
+ * `error`, not `warning`, because an unanchored route matches every path in
+ * the repo and so makes the write-time deny gate unconditional rather than
+ * scoped: every edit in the tree is denied until its docs are read.
+ * `pnpm prism:check` rejects both faults, but that gate is a development
+ * script and never runs in a consumer's repo, where the manifest is the
+ * consumer's own file to edit.
+ */
+function findStructuralRouteFaults(
+	relativePath: string,
+	manifest: Record<string, unknown>
+): DoctorFinding[] {
+	return [...findCatchAllKeys(manifest), ...findBraceGlobKeys(manifest)].map(
+		(message) => ({
+			check: "architect-route" as const,
+			severity: "error" as const,
+			message: `${relativePath}: ${message}`,
+		})
+	);
+}
+
 async function checkArchitectRoutes(consumerContentRoot: string): Promise<DoctorFinding[]> {
 	const architectDir = path.join(consumerContentRoot, "architect");
 	const manifestPath = path.join(architectDir, "manifest.json");
@@ -517,6 +542,10 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	}
 
 	const routed = collectRoutedDocs(manifest);
+	const structural: DoctorFinding[] = findStructuralRouteFaults(
+		".prism/architect/manifest.json",
+		manifest
+	);
 
 	const baseRaw = await readFileIfExists(path.join(architectDir, TOOLKIT_BASE_MANIFEST_RELATIVE));
 	if (baseRaw !== null) {
@@ -536,12 +565,19 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 		for (const doc of collectRoutedDocs(base)) {
 			routed.add(doc);
 		}
+
+		structural.push(
+			...findStructuralRouteFaults(
+				`.prism/architect/${TOOLKIT_BASE_MANIFEST_RELATIVE}`,
+				base
+			)
+		);
 	}
 
 	const onDisk = await listMarkdownFilesRelative(architectDir);
 	const onDiskSet = new Set(onDisk);
 
-	const findings: DoctorFinding[] = [];
+	const findings: DoctorFinding[] = [...structural];
 
 	const orphans = onDisk.filter((doc) => !routed.has(doc));
 	if (orphans.length > 0) {
