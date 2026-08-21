@@ -32,6 +32,8 @@ Atlas treats every existing file as load-bearing until proven otherwise. The ski
 
 **The run, in order:** opening orientation → survey the repo (Batch 1 + Batch 2) → surface findings and STOP to confirm detection → interactive question flow → generate rules and populate anchors → validate and write config → build → closing re-orientation.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any session work begins.

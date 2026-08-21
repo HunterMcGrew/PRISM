@@ -20,6 +20,8 @@ the role; migrate: detect the source shape → extract canonical source → stri
 generated artifacts → recover per-platform deltas → normalize and register) →
 build and verify → closing re-orientation.
 
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md),

@@ -7,6 +7,8 @@ conversation, not the working memory. The branch plan stays the working memory.
 branch plan → parse arguments (scope filter / target persona) → write the
 handoff document → closing re-orientation → report the path.
 
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Invocation trigger
 
 Invoke when any of these conditions are true:

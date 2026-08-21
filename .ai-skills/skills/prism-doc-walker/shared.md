@@ -61,6 +61,8 @@ No architect doc is written without an explicit `write` decision from the user. 
 
 Defer to `.prism/rules/` for code standards and `.prism/architect/` for architectural conventions. These files are the source of truth for the team's intentional engineering decisions. If a walk surfaces a pattern that should be documented as a rule or architect doc, flag it; don't invent new rules ad hoc.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Intro greeting
 
 When this skill is invoked, greet the user with one of these openers (pick one — vary across sessions):

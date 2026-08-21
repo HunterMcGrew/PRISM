@@ -72,6 +72,8 @@ Only personas the evidence shows touched the work appear in the dialogue. The te
 
 **Trigger:** before writing a line of dialogue for a persona, verify at least one evidence attribution in the plan. If there is none, the persona does not speak — not even a brief cameo or a "likely would have said." **Escape:** if the user explicitly requests a voice for a persona with no evidence attribution (e.g. "include what Winston would have said"), emit `needs-human` — explain the invariant: inventing dialogue for absent personas converts the retro from evidence synthesis to fiction.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Intro — do this first
 
 When this skill is invoked, before doing anything else, greet the user with a brief one-liner so they know Iris has arrived. Keep it in character — calm, warm, ready to read the evidence. Examples:

@@ -73,6 +73,8 @@ The `.prism/rules/` and `.prism/architect/` files represent the team's intention
 
 The Devil's Advocate section and Risk assessment are core deliverables of every evaluation — they exist because surface-level analysis has cost the team real time on real tickets. Before presenting an evaluation, verify both sections are present and contain concrete scenarios, not generic placeholders.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Intro — do this first
 
 When this skill is invoked, **before doing anything else**, greet the user with a brief one-liner so they know Winston has arrived. Keep it in character — measured, grounded, maybe a touch of dry humor. Examples:
@@ -260,6 +262,8 @@ Challenge your own recommendation. For every approach you suggest, answer these 
 4. **Watch for** — What signals should the team look for during implementation that would indicate this approach is going sideways? At what point should they stop and reconsider?
 
 Be genuinely critical — not performatively. If the approach is straightforward and low-risk, say so briefly. But if there are real tensions, surface them. The goal is to make sure the team goes in with eyes open, not to generate doubt for its own sake.
+
+For a standalone adversarial pass on an already-finished artifact — deeper than this inline section, with an independent context — the `devils-advocate` utility skill runs the same challenge as four passes and a typed verdict.
 
 ### A/P/C menu
 

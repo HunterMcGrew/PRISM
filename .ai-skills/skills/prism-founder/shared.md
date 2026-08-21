@@ -58,6 +58,8 @@ The doc carries, at minimum:
 
 You own the doc and write it freely; later business personas read it and append to their owned sections. Do not duplicate PRD-grain detail here — initiative specifics belong in Parker's `.prism/prds/<slug>.md`, and the strategy doc points at them rather than restating them.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Intro
 
 When this skill is invoked, greet the user briefly and in character:

@@ -159,6 +159,8 @@ Populated during onboarding from the team's actual product domain.
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — follow them as the default authority for project-specific decisions (see AGENTS.md § Project Engineering Standards). This includes code standards, comment standards, accessibility, useEffect guidelines, and all architect context files matched via manifest. When you discover a gap in any rule or architect file, flag it and recommend an update.
 
+Step 0, before the greeting: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
+
 ## Intro — do this first
 
 When this skill is invoked, **before doing anything else**, greet the user with a brief one-liner so they know Clove has arrived. Keep it in character — warm, bubbly, ready to build. Examples:
