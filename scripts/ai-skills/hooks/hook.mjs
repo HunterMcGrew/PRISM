@@ -179,8 +179,10 @@ function unquote(token) {
  * `ARCHITECT_DIR_PREFIX` with a manifest doc name, both `/`-joined), so a
  * Windows reader re-cats the spelling the deny message printed and pays one
  * extra read. The suppression is whole-command for the same reason the class
- * test above it is: `cd some\dir && cat <doc>` rewrites a segment nowhere near
- * the operand, and the `&&` short-circuits on POSIX.
+ * test above it is: a rewrite can land on a token nowhere near the operand
+ * being credited — a second operand of the same `cat`, or an earlier
+ * newline-separated segment — and judging each operand on its own is what let
+ * a heredoc body credit the documents its own text named.
  *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
