@@ -959,6 +959,13 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Approach** — grow the proof side per eric's prescription rather than narrowing the candidate scan, and reach for execution wherever a control was asserting rather than checking: mutation-verify every new guard, and drive the deny messages through the shipped hook instead of through the test harness.
   - **Close** — scope held. Silent decisions named, each recorded in `## Review Issues` round 6 rather than only here: the character class was deliberately not widened to admit substitutions and heredocs, because a substitution runs an arbitrary command and admitting it would make a real write provable — the heredoc commit form keeps denying and gains a named remedy instead; `checkSegmentOnlyReads` was renamed rather than left alone, since it no longer judges what its name says; `git --no-verify` and `-t`/`-C`/`-p`/`-c` are off the tree-safe flag set on purpose; and AC-25 is flagged rather than graded, because reese owns the verdict and this lane wrote the code it would grade. Edge recall — the boundary inputs this pass hits are a `git` with flags but no subcommand (unprovable, unchanged), a subcommand on neither git set (unprovable), a tree-safe head followed by a real write after a separator (denies), a command the probe machine does not have (reported `unavailable`, and the assertion says so rather than passing quietly), and a single-entry write-tool table (rejected by a vacuity guard). Verification honesty: `pnpm prism:build && pnpm prism:check` exit 0 is the gate, and six mutations were re-run individually — `checkout` admitted to the tree-safe set, `commit` removed from it, `Edit` resolved to `read`, `patch` and `cp` added to the read-only map, and `checkout` again against the executable probe — each failing the suite. The shipped `dist/cli.js` was grepped for both doctor message strings rather than assumed to carry them. Not verified: D8's live-host run, and the AC re-grade.
 
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (briar, dispatched — round 7 adversarial read of `2d106cf7..f20ec266`)
+  - **Intent** — attack the three things in eric's answer-set that have never had an adversarial read: the `GIT_TREE_SAFE_SUBCOMMANDS` membership judgment, the executable probe that replaced the tautological control, and the route-anchoring check now shipping in `prism doctor`.
+  - **Ambiguity** — none load-bearing; read "attack the probe" as executing it rather than reading it, since the defect class under review is a control that passes without checking anything and only a run distinguishes that from one that checks.
+  - **Bounds** — findings in chat and in `## Review Issues`, plus a plan-only commit. Untouched: the code, the ADR, GitHub, the merge, the AC re-grade, and everything before `2d106cf7`.
+  - **Approach** — try to admit something the probe should reject, and run every claimed-safe spelling through the shipped arm rather than reasoning about the regex.
+  - **Close** — scope held. Four majors and three minors, all recorded in `## Review Issues` round 7. Silent decisions: severity on the `git commit` hook finding was set from consumer exposure rather than this repo's, because `refreshHookRuntime` ships the hook and PRISM's own tree having no hooks is not the population the claim covers; and the probe finding and its ADR sentence are filed as two entries on one root cause because they land on different axes and different owners. Edge recall — the boundary inputs this pass exercised are a git subcommand that exits non-zero before touching the tree (the whole first finding), a flag whose short and long spellings disagree (`-n`), a command whose write path is a configured hook rather than an argv (`git commit`), and a mandated spelling carrying characters outside the class (the heredoc). Verification honesty: the twelve-subcommand probe replay and the seven-spelling arm replay were executed and their output is quoted in the findings; `pnpm prism:build && pnpm prism:check` was not re-run by this lane and is cited to sol's ratification, not claimed as observed here.
+
 ## History
 
 - 2026-08-19 [huntermcgrew/opus5-port-doctor-shipsurface]: Implemented PR 2E (E1–E5). `prism doctor` gained orphan-doc, dead-route, and hook-registration checks; new `scripts/ai-skills/ship-closure.ts` computes the ship surface as the dependency closure of its four roots and is wired into `pnpm prism:check`; the six files E4 reported outside that closure are now `excluded`. `pnpm prism:check` exit 0; see Decisions for the three closure-fidelity calls and the tracked-reference deferral.
@@ -2341,14 +2348,16 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — **eric's PR review opened one Critical and seven Majors; all eight are `fixed`.** The Critical was the shell arm denying `git commit -m` on a routed path named in prose, with no reachable remedy. Rounds 1 through 5 remain `fixed`; round 5's Critical was run-state (a concurrent session in the worktree) and cleared in `5bb61a7b`/`aaddba90`. The six forged read-only proofs and the `rg --pre` execution vector still reroute, and are now backed by an executable probe that runs each listed command against a scratch file rather than by a generated row that could not disagree with the implementation.
+- [ ] No critical or major issues — **briar's round 7 opened four Majors and three Minors over `2d106cf7..f20ec266`, all `open`.** No Critical: the arm's behaviour is correct on every spelling tested, and the four Majors are a probe that passes vacuously for two thirds of the git set it guards, two ADR sentences claiming more than was measured, and an unqualified no-write claim over `git commit`, which runs hooks. Eric's PR review opened one Critical and seven Majors; all eight are `fixed`.  The Critical was the shell arm denying `git commit -m` on a routed path named in prose, with no reachable remedy. Rounds 1 through 5 remain `fixed`; round 5's Critical was run-state (a concurrent session in the worktree) and cleared in `5bb61a7b`/`aaddba90`. The six forged read-only proofs and the `rg --pre` execution vector still reroute, and are now backed by an executable probe that runs each listed command against a scratch file rather than by a generated row that could not disagree with the implementation.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations, including the two newly exported constants
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — the command axis is now checked by execution: every entry on the read-only lists and both git sets is run against a scratch file and the disk is compared. Adding `patch` or `cp` to the map fails the suite, and so does admitting `checkout` to the tree-safe set. A flag added to an existing set still lands untested, and ADR-0072 § Consequences states why an executable probe does not transfer to that axis. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm; the write-tool deny row is derived from the harness's own table, so `Edit` is no longer assertion-free.
+- [x] Tests written for new logic and edge cases — the command axis is now checked by execution: every entry on the read-only lists and both git sets is run against a scratch file and the disk is compared. Adding `patch` or `cp` to the map fails the suite, and so does admitting `checkout` to the tree-safe set — but briar's round 7 executed the git half and found four of the six admitted subcommands never run under the probe's argv, so `apply`, `stash`, `clone`, and `merge` would be admitted silently. A flag added to an existing set still lands untested, and ADR-0072 § Consequences states why an executable probe does not transfer to that axis. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm; the write-tool deny row is derived from the harness's own table, so `Edit` is no longer assertion-free.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-20, `pnpm prism:build && pnpm prism:check` exit 0.
 - [x] PR description up to date — carries the round-2 segmenter rewrite, the round-3 contract narrowing, the round-4 flag inversion, the tree-safe git set, the executable membership probe, and the shipped route-anchoring check
 - [x] Lasting decisions promoted to architect context — every 2D `## Decisions` entry carries a promotion verdict; the scoping entry is promoted as corrected, per its own reversal note
+
+**Last updated:** 2026-08-20 (briar, round 7).
 
 **Outstanding for the human merge gate:** D8's live-host run, which needs a real Claude Code session and cannot be closed from a dispatched one. **AC-25 has never been graded and this is the PR that makes it consequential** — it deletes the catch-all from all three tables and ships the rejection that replaces it. Reese owns the verdict; grading it from this lane would be the author grading his own code.
 
@@ -2434,3 +2443,78 @@ Eric's findings, one entry each, in his severity order. Every entry is `fixed` i
 ### Not this PR's — recorded, not fixed
 
 - `AGENTS.md:858`'s inlined relative link resolves outside the repo. Fifth instance of a pre-existing inliner pattern, so the fix belongs in the inliner, not in a hand edit to generated output.
+
+---
+
+## Review Issues (PR 2D round 7 — briar, adversarial read of `2d106cf7..f20ec266`, #470)
+
+Scope: the four commits answering eric's critical and both axes' majors. Everything before `2d106cf7` is out of range.
+
+### The git half of the executable probe passes vacuously
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hook-gate.test.ts` — test `the git subcommand sets: every listed subcommand leaves the working tree unmodified when run`
+- **Problem:** the probe runs `git <subcommand> victim.md` and discards `result.status`, so a subcommand that fails before reaching any write path is recorded as clean. Executed against a temp repo built to the probe's own fixture, four of the six admitted subcommands never run: `commit` exits 1 (`Aborting commit due to empty commit message`), `push` 128 (`no upstream branch`), `fetch` 128 (`invalid gitfile format`), `remote` 129 (`unknown subcommand`). Only `add` and `tag` exit 0. The failure direction is worse: of the six working-tree writers the `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc names as deliberately absent, only `checkout` and `restore` would be caught by this probe — `apply` (exit 128, no valid patch), `stash` (128, subcommand not specified), `clone` (128, destination exists), and `merge` (1, not something we can merge) all leave the tree unchanged and would be admitted silently. The mechanism that is supposed to turn membership into a checked claim checks nothing for two thirds of the set it guards.
+- **Class:** a control that passes because the subject did nothing.
+- **Sweep:** ran all twelve subcommands (the six admitted plus the six named-absent) by hand under the probe's exact env and argv shape; compared against the sibling `SHELL_INSPECTION_COMMANDS` probe, which does carry two guards this one lacks — `checkProbeRan` for ENOENT and `assert.ok(clean.length > 0)` for total vacuity — and whose JSDoc states its own limit. The git probe has neither guard and states no limit.
+- **Suggested fix:** give each subcommand an argv that reaches its work (`commit -m msg`, `apply <a real patch>`, `stash push`, `tag -a v1 -m msg`), and assert the invocation actually ran before crediting the unchanged tree. Where no argv can make a subcommand run in a bare temp repo — `push` with no remote — report it `unproven` in the failure message the way the shell probe reports `unavailable`, rather than counting it toward the clean set.
+
+### ADR-0072 states the git probe as a closed gap it does not close
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:70`, `scripts/ai-skills/hooks/hook.mjs` (`SHELL_INSPECTION_COMMANDS` JSDoc)
+- **Problem:** the same root cause as the finding above, on the durable surface. The ADR's new § Consequences prose reads "the git sets get the same probe inside a temp repo holding a dirty file. Adding `patch` or `cp` to the list fails the suite." The git sets get the same *code shape*, not the same *proof* — and neither `patch` nor `cp` is a git subcommand, so the sentence's evidence is drawn entirely from the shell half and then extended over the git half by adjacency. The hook.mjs JSDoc carries the same extension: "a command that writes cannot be added silently." Third round in which the sentence immediately after an admitted gap asserts a property nobody verified.
+- **Class:** reassurance that introduces a new claim (`.prism/rules/writing-voice.md`).
+- **Sweep:** read every sentence following an admitted gap in the ADR's § Consequences and in the three JSDoc blocks the range rewrote. The flag-axis paragraph is clean — it admits the gap and ends on the admission. The command-axis paragraph and the `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc both close on an unverified extension.
+- **Suggested fix:** scope the claim to the axis it was measured on — the shell command list — and state the git probe's coverage as what it is once the finding above is fixed. Cutting the extension is the stronger edit.
+
+### `git commit` runs hooks, and the proof text says it cannot write
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc; `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:30`
+- **Problem:** the claimed criterion is that "no spelling of them writes a file a manifest route can match." `git commit` runs `pre-commit` and `commit-msg` hooks, and a formatting hook — husky plus lint-staged running prettier `--write` over `.prism/**/*.md` — is an ordinary consumer setup. That write happens inside the admitted command, so the gate never sees it. PRISM's own tree is safe today (`.git/hooks` holds only samples, no husky, no lint-staged in `package.json`), but `refreshHookRuntime` ships this hook into consumer repos, and the claim is stated without qualification on three surfaces. The exclusion of `--no-verify` from the flag set makes the exposure certain rather than conditional: the one spelling that would disable hooks is the one spelling the set refuses.
+- **Class:** an unqualified universal in a proof whose correctness is a chain of exactly these claims.
+- **Sweep:** walked each of the six admitted subcommands for a hook or filter that reaches the working tree. `commit` is the only one — `add`, `push`, `fetch`, `tag`, and `remote` run hooks that write refs, the index, or nothing, and `pre-push`/`post-fetch` cannot touch tracked content.
+- **Suggested fix:** qualify the claim where it is written — the subcommands write no working-tree file *of their own*, and `git commit` additionally runs whatever hooks the repo configures. Then decide the consumer exposure deliberately: either accept it in ADR-0072 § Consequences beside the variable-path gap it resembles, or drop `commit` back out and rely on the `-F` remedy alone.
+
+### The commit form this repo mandates still denies, and the ADR says it clears
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:67`, `scripts/ai-skills/hook-gate.test.ts` (`everyTreeSafeGitCommand` JSDoc)
+- **Problem:** `.prism/rules/git-conventions.md` § Formatting reads "Always pass the commit message via HEREDOC to preserve formatting" — `git commit -m "$(cat <<'EOF' … EOF)"`. Both `$` and `(` sit outside `SHELL_READ_SAFE_CHARACTERS`, so `resolveProvenSafePaths` returns the empty set and every path-shaped token in the body stays unproven. Executed against the shipped arm: the plain `-m` form clears, `-F` clears, and the mandated heredoc form denies. The ADR's new bullet says the tree-safe subcommands "clear the common spelling outright"; the common spelling in this repo is the one that still denies. `everyTreeSafeGitCommand`'s JSDoc compounds it — "the hand-written tail carries the commit spellings `.prism/rules/git-conventions.md` mandates" — while the tail carries eight non-heredoc spellings and none of the mandated one. The honest version exists, but only in the session log: clove's own Close bullet records "the heredoc commit form keeps denying and gains a named remedy instead." That disclosure never reached the durable artifact.
+- **Class:** citation integrity — a rule cited as satisfied by prose that contradicts it.
+- **Sweep:** read `git-conventions.md` § Commit Messages end to end for every mandated spelling, then ran each through `parseUnprovenShellPaths` against a routed path. The heredoc form is the only mandated one that denies; the `-F` remedy the deny message names does clear it, so the gate is not unsatisfiable — the claim about it is just false.
+- **Suggested fix:** say what happens instead of what was hoped — the plain `-m` spelling clears, the mandated heredoc spelling still denies and routes to the `-F` remedy the message now names. Add the heredoc form to `everyTreeSafeGitCommand`'s counterweight (`everyGitTreeWrite`) so the denial is pinned rather than inferred, or fix the JSDoc's claim about what the tail carries.
+
+### Minors
+
+- **`-n` clears where `--no-verify` denies** (`scripts/ai-skills/hooks/hook.mjs`, `GIT_TREE_SAFE_FLAGS`). The JSDoc states `--no-verify` is absent on purpose, "because `.prism/rules/git-conventions.md` forbids it, so listing it would widen the proof for a spelling nothing should use." `-n` is on the set two lines above, and for `git commit` `-n` *is* `--no-verify`. Executed: `git commit -n -m "…<routed path>…"` clears, `git commit --no-verify -m "…"` denies. `checkFlagsAreInert` has no per-subcommand partition, so the set cannot express the exclusion it claims — `-n` is there because `add`/`push`/`tag` read it as `--dry-run`. Fix: drop `-n` and keep `--dry-run` long-form only, or drop the sentence, since the set cannot honour it as written.
+- **Orphaned JSDoc in `scripts/ai-skills/doctor.ts:498`.** The new `findStructuralRouteFaults` block was inserted between `checkArchitectRoutes`'s JSDoc and `checkArchitectRoutes` itself, so two JSDoc blocks now sit back to back and the orphan-and-dead-route paragraph reads as documentation for the wrong function. Fix: move the new function above the existing block, or the existing block down to its function.
+- **Duplicate `Manifest` type in `scripts/ai-skills/verify-manifest-coverage.ts:32`.** The file both re-exports `Manifest` from `./lib/manifest-routes` and declares a private `type Manifest = Record<string, string | string[]>` with the same body. Two definitions of one type drift independently. Fix: import the lib type and re-export it, dropping the local copy.
+
+### Clove's two declined items — judged
+
+- **`gh pr comment --body` still denying: agree, and the reasoning holds in the code.** `checkSegmentWritesNoFile` resolves a subcommand as the first non-flag argument, so `gh pr comment` and `gh pr checkout` both resolve to `pr`. A one-token `gh` set cannot separate them, and admitting `pr` admits `gh pr checkout` and `gh repo clone`, both of which write the tree. That is decisive on its own. The stated asymmetry ("a `gh` body has a reachable respelling while a commit message has none") is the weaker half of the argument now that remedy 3 ships `-F`, but the subcommand-arity reason does not depend on it.
+- **AC-25 flagged rather than graded: agree.** Grading a criterion from the lane that wrote the code satisfying it is the self-signed proof this PR has spent three rounds removing everywhere else. `_shared/ac-verdicts.md` is read by eric, iris, reese, and sol — not clove. Correct to leave it for reese.
+
+### Angle Coverage — PR 2D round 7, `2d106cf7..f20ec266`
+
+- **Correctness / logic** — `swept`; the four commits' code hunks in `hook.mjs`, `doctor.ts`, `manifest-routes.ts`, `verify-manifest-coverage.ts`.
+- **Types** — `swept`; `hook.d.mts`'s new export, `findStructuralRouteFaults`'s signature, the `Manifest` re-export and its private twin.
+- **Tests** — `swept`; both new probes, the derived `WRITE_TOOL_NAMES` loop, the pinned positive control, `everyGitTreeWrite`, `everyTreeSafeGitCommand`. Two findings above are test-quality findings.
+- **Security / injection** — `swept`; the six admitted subcommands and the `GIT_TREE_SAFE_FLAGS` set, each walked for a spelling reaching a working-tree file or another program. One finding (`git commit` hooks); the flag set is otherwise clean, `-c`, `-p`, `-t`, `-C`, `--exec`, `--upload-pack`, and `--receive-pack` all correctly absent and pinned by `everyGitTreeWrite`.
+- **Performance** — `n/a`; nothing in range sits on a hot path.
+- **Accessibility** — `n/a`; no UI in range.
+- **Spec and doc consistency** — `swept`; ADR-0072's five reconciled claims, ADR-0071's amendment note, `context-reuse.md` and its four mirrors, `AGENTS.md`. Two findings.
+- **Citation integrity** — `swept`; every rule and ADR cited in the new prose was opened and read against the claim made about it. One finding (`git-conventions.md` § Formatting).
+- **Docs impact** — `swept`; `install-layout.md` § Write gate is the only doc the range's behaviour change touches, and the reroute-message change does not alter what it describes. No update owed.
+
+**Verification run this pass:** the twelve-subcommand probe replay and the seven-spelling `parseUnprovenShellPaths` replay above, both executed. `pnpm prism:build && pnpm prism:check` was not re-run by this lane — sol ratified it at exit 0, 817/817, at this head.
