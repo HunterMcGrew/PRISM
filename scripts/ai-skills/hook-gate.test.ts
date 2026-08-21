@@ -2845,6 +2845,26 @@ test("parseUnprovenShellPaths: colon-separated paths are each recovered", () => 
 	assert.ok(candidates.includes(".prism/rules/context-reuse.md"));
 });
 
+test("parseUnprovenShellPaths: a path whose own name carries a `:` survives an expansion operand", () => {
+	// `compileMatcher` turns `*` into `[^/]*` and `**` into `.*`, and both
+	// match `:`, so a colon-named POSIX file is routable wherever a consumer's
+	// manifest routes its directory. Reading the colon only as a separator
+	// yields `OUT`, `src/nested/a`, and `b.ts` — none of them the path.
+	assert.ok(
+		parseUnprovenShellPaths("tee ${OUT:-src/nested/a:b.ts}").includes(
+			"src/nested/a:b.ts"
+		)
+	);
+});
+
+test("parseUnprovenShellPaths: a leading dash on the run does not cost a drive-qualified path its drive", () => {
+	assert.ok(
+		parseUnprovenShellPaths(String.raw`tee -C:\repo\src\index.ts`).includes(
+			"C:/repo/src/index.ts"
+		)
+	);
+});
+
 test("parseUnprovenShellPaths: a drive-qualified path keeps its drive letter", () => {
 	// Dropping the `C:` leaves `/repo/src/index.ts`, which `path.resolve`
 	// re-qualifies with whichever drive the process sits on — correct on the

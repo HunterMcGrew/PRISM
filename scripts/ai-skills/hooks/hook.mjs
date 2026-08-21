@@ -744,27 +744,36 @@ function scanPathShapedTokens(command) {
 		// alone would be re-qualified with whatever drive the process is on
 		// and resolve elsewhere. Keeping it also glues a path to whatever
 		// shares its run: an expansion operand (`OUT:-src/x.ts`), a `sed -i`
-		// backup suffix (`a.md:orig`), or a second path. So every colon-piece
-		// rides along beside the whole run rather than choosing between the
-		// readings. A leading `-`/`+` comes off each piece because `-` belongs
-		// inside a path (`context-reuse.md`) but not at its front, where it is
-		// a flag marker or the tail of `${OUT:-…}`.
+		// backup suffix (`a.md:orig`), or a second path.
 		//
-		// Stripping per piece rather than off the whole run drops one reading:
-		// a token that keeps a `:` inside it, `C:/repo/x.ts` out of
-		// `-C:/repo/x.ts`. Every piece of it and the raw run stay candidates,
-		// so the drop can hide a route only where the routed path spans the
-		// `:` itself — on Windows, the drive prefix. That prefix is not needed
-		// here, because `repoRoot` is `findRepoRoot(cwd)` and so always sits
-		// on cwd's drive. Same drive, and the driveless twin `/repo/x.ts` is a
-		// piece of its own that `path.win32.resolve` sends to the identical
-		// file. Another drive, and the path is outside `repoRoot`, where
-		// `toRepoRelativePath` returns `null` and the candidate drops however
-		// it was spelled.
+		// So each colon is read both ways, from every boundary. Read as a
+		// separator it ends the path at the next colon — the piece. Read as a
+		// character inside the path it carries through to the end of the run —
+		// the tail. Both readings reach a route, because `compileMatcher`
+		// turns `*` into `[^/]*` and `**` into `.*` and each of those matches
+		// `:`, so a colon-named POSIX file is as routable as the Windows drive
+		// prefix. Pieces alone lose `${OUT:-src/a:b.ts}`, whose pieces are
+		// `OUT`, `src/a`, and `b.ts` — none of them the path a route matches.
+		// A leading `-`/`+` comes off both readings because `-` belongs inside
+		// a path (`context-reuse.md`) but not at its front, where it is a flag
+		// marker or the tail of `${OUT:-…}`.
+		//
+		// What the two readings miss is a colon-spanning path that another
+		// colon-separated field follows: `src/a:b.ts:orig` yields `src/a` and
+		// `b.ts:orig`, never `src/a:b.ts`. Recovering it means every span
+		// between two boundaries, quadratic in a run's colon count, for a
+		// shape that needs a colon inside the filename and a second colon
+		// after it.
+		let offset = 0;
 		for (const piece of run.split(":")) {
-			const unprefixed = piece.replace(/^[-+]+/, "");
-			if (unprefixed.length > 0) {
-				tokens.add(unprefixed);
+			const tail = run.slice(offset);
+			offset += piece.length + 1;
+
+			for (const reading of [piece, tail]) {
+				const unprefixed = reading.replace(/^[-+]+/, "");
+				if (unprefixed.length > 0) {
+					tokens.add(unprefixed);
+				}
 			}
 		}
 	}
