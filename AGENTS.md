@@ -323,7 +323,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** Winston runs this gate during plan close. Briar surfaces missing verdicts as a Minor in self-review when a plan is being closed. Eric surfaces missing verdicts during PR review when the PR is the close-out PR for a ticket.
+**How to apply:** Winston runs this gate during plan close. A missing verdict is his to fill, not a reviewer finding — Briar and Eric file a plan observation only when the plan contradicts the diff, per each reviewer skill's § Plan-file scope. The same holds for a missing `> Retro:` line under § Before Closing above.
 
 ---
 
