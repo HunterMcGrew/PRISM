@@ -1188,6 +1188,11 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Bounds** — the verification report and this plan's record. Untouched: source, tests, manifests, the PR, the merge.
   - **Approach** — attack the mechanism by brute-forcing the route language against both head and the pre-fix parent, so the sweep's null result carries a positive control rather than standing alone.
   - **Close** — scope held. Two prior-pass claims were found wrong and corrected in place rather than overwritten; the wrong one about the stub's history came from generalizing a range-bounded search past its bound, which is the same shape as the refuted MET.
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim] open: Intent — execute PR 3B (shared core, Step-0 pointer, roster slim, tdd + devils-advocate) from the committed foreclosure table, 27 unheld files first, held four after #470/#471 merged; Bounds — canonical sources only until the terminal mirror commit, no held file touched before both merges, reversal-list items untouchable; Approach — one commit per deletion class with its foreclosure slice in the commit message, build+check green at every step · close: scope held — two sanctioned additions beyond the brief (Hunter's mid-run ruling deleting every atlas:specializes-in anchor plus the generator-lane retirement it forced, and a routing-test extractor fix for non-prefixed skill ids), each recorded in its commit message.
+
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim] open: Intent — Briar self-review of PR 3B over fd689bcc..461d23e9, diff-vs-foreclosure-table conformance + reversal-list control + AC-P3 grading; Bounds — findings to this plan only, plan-only commit, no GitHub writes, no source fixes; Approach — six file-surface slices + one cross-cutting subagent over the 54 canonical sources, mirrors verified by parent rebuild, per-commit crossref runs · close: scope held — one deviation: per-commit full-check evidence for AC-P3-6 exposed the AC's structural conflict with AC-P3-7 rather than a code defect; four out-of-range residue sites (bom-guard comments, two ADRs) filed as removal-completeness follow-up, not in-range findings.
+
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim] open: Intent — Briar delta re-sweep of the PR 3B fix pass over f439a7ea..35b99e95; Bounds — repair surface only per follow-up scoping, plan writes + plan-only commit, no GitHub writes; Approach — inline verification of each round-1 finding against its fix diff, gates re-run at fix head · close: scope held — 14 of 15 findings verified fixed; one minor residual (Clove Test Coverage duplicate) left open as follow-up-class and named in the delta record.
 
 ## History
 
@@ -1300,6 +1305,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Resolved the Windows `\` `OPEN` Decision — normalize separators in shell text keyed on the following character, not on the platform, so both legs run one code path. Measured at 822/822 with the change applied and reverted; the seven red rows go green unedited. See Decision: `\` in shell-command text is rewritten to `/`.
 
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Implemented the separator rewrite on both shell arms, plus the `:` companion in the path-shaped run and its both-spellings recovery. Added four literal-backslash rows so the backslash reading runs on every CI leg rather than only Windows, and recorded the rule and its fourth gap in ADR-0072 and `install-layout.md`. 826/826 with `pnpm prism:check` exit 0; see Decision: `\` in shell-command text is rewritten to `/`.
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim]: PR 3B executed from `.prism/plans/pr3b-foreclosure-table.md` — tasks 20–29 (28b included), N3/N4, and the D5–D8 classes across all 31 bodies; every atlas:specializes-in anchor and its generator lane removed per Hunter's 2026-08-21 ruling. Seven previously-undeclared persona pronouns added. Mirrors land in the branch's terminal commit; review pass next.
 
 ## PR Readiness (PR 2D — The deny gate)
 
@@ -3160,3 +3166,252 @@ No issues found — 2026-08-21 [huntermcgrew/opus5-port-deny-gate]. The round-14
 - **Security** — `swept` — 1 item enumerated, 1 verdict. The write-deny trust boundary: candidate widening closes the round-14 under-deny; the over-deny direction probed clean on proven-read shapes, and unprovable shapes (expansions) failing the character class is the pre-existing fail-closed default.
 - **Docs impact** — `swept` — 1 item enumerated, 1 verdict. `hook.mjs` routes to `_toolkit/install-layout.md`, which carries no scanner-colon prose (grepped); the tree-wide sweep for the predicate's prose homes (`grep -rln colon` over rules and architect docs) hits only git-conventions' unrelated commit-format text.
 - **Accessibility** — `n/a` — no UI in the pinned range.
+
+## Review Issues (PR 3B — roster slim, briar self-review of `fd689bcc..461d23e9`, #472)
+
+Review executed as six file-surface slices plus one cross-cutting sweep over the ~54 canonical
+sources; the 144 generated mirrors verified mechanically (rebuild at parent `3402c385`,
+byte-identical to `461d23e9`'s tree). `pnpm prism:build` and `pnpm prism:check` exit 0 at head;
+`crossref-lint` exit 0 at every 3B commit individually.
+
+### Spec findings
+
+### Conductor `## Per-team orchestration notes` deleted with no foreclosure-table row
+
+- **Axis:** `spec`
+- **Severity:** `critical`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-conductor/shared.md` (section absent at head; was ~108–113 at base)
+- **Problem:** The table's D5-a row names this exact block as one of three operational-content anchor regions with the instruction "do not sweep it," and no other row authorizes the deletion — yet the section (Atlas's onboarding injection point for team-specific phase ordering and dispatch defaults) is gone.
+- **Class:** unauthorized deletion of a table-protected block — superseded-authority variant
+- **Sweep:** `git diff fd689bcc..461d23e9 -- .ai-skills/skills/prism-conductor/shared.md`; `grep -rn "Per-team orchestration\|team-specific phase ordering\|dispatch defaults" .ai-skills/skills/prism-conductor/` at head — nothing, confirming no relocation.
+- **Supersession evidence:** the deletion was executed under Hunter's 2026-08-21 mid-run ruling removing every `atlas:specializes-in` anchor (recorded in commit messages `1dbcf81a`, `0a9a0fa2`, and the generator retirement `2396c3bb`), which post-dates the foreclosure table; the table's D5-a row was never amended after the ruling. The defect is table/ruling divergence, not an unsanctioned cut.
+- **Suggested fix:** amend the foreclosure table (D5-a + Observations) to record the ruling and this block's removal; no restore. If Atlas still needs a per-team conductor injection point, that is a `found-followup-work` item, not a 3B restore.
+
+### Winston's lens-1 failure-mode-replication `needs-human` escape dropped instead of folded
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:9`
+- **Problem:** The D8 delete verdict for lens 1 was conditioned on "its needs-human escape folds into lens 2's sentence," but the fold never landed — the surviving lens-2 `needs-human` covers only undeterminable convention rationale, a different trigger, so a reversal-list-protected escape (proposal replicates a documented failure mode Winston cannot resolve architecturally) no longer routes anywhere.
+- **Class:** compress/delete row whose surviving bound was dropped anyway
+- **Sweep:** `grep -n "needs-human\|needs-replan\|found-followup" .ai-skills/skills/prism-architect/shared.md` — five hits (9, 11, 13, 70, 141), none carrying the failure-mode-replication trigger; same grep over code-dev and debugger found all table-listed escapes present.
+- **Suggested fix:** one sentence into the compressed lens-2 paragraph restoring the trigger and its `needs-human` routing.
+
+### D7 (stack/domain leakage) not closed — the leak moved one pointer away, not out
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.prism/references/pixel/frameworks.md`, `.prism/references/pixel/pattern-vocabulary.md`, `.prism/references/changelog/frameworks.md`, `.prism/references/ticket-start/assessment-frameworks.md`, `.prism/references/qa-test-plan/shared-mechanics.md`, `.prism/references/user-doc-template.md`, `.prism/references/dev-doc-template.md`, `.prism/architect/_toolkit/qa-test-planning.md`
+- **Problem:** D7 stripped dealership/WordPress strings from the skill bodies, but the bodies now point at reference files still carrying them (e.g. `changelog/frameworks.md:15-18` has a "Dealer support" audience row; `pixel/pattern-vocabulary.md` is the named owner of Pixel's mobile tactics after this PR), so on a consumer install the leak is one pointer-follow away while the D7 commit message reads as if the class closed.
+- **Class:** sanctioned-deletion sweep boundary stopped at skill bodies; the bound moved, the leak didn't
+- **Sweep:** `grep -rli "dealer\|wordpress" .prism/references/ .prism/architect/_toolkit/qa-test-planning.md` — 8 files, none in the pinned range (`git diff --stat` empty on them).
+- **Suggested fix:** these files are outside 3B's diff, so either a `found-followup-work` ticket sweeping the reference tree, or a PR-body scope note stating D7 closed the body surface only. The commit-message overclaim is what needs correcting in-PR.
+
+### AC evidence specs don't model 3B's own commit strategy (AC-P3-6 vs AC-P3-7; curated-twin carve-out)
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.prism/plans/opus5-port-pr3-redesign.md:1046-1056`
+- **Problem:** AC-P3-6 ("build && check green at every commit") and AC-P3-7 ("no generated mirror before the terminal commit") are mutually unsatisfiable — `prism:check` includes mirror parity, so every post-additive commit is structurally red until the terminal build (measured: full check RED at all 13 intermediates, mirror-drift the only failure; `crossref-lint` alone GREEN at every commit); separately, AC-P3-7's evidence line reads any `templates/install/` path as UNMET, which falsely trips on the two hand-curated seed-twin commits (`ededff41`, `3402c385`).
+- **Class:** acceptance-criterion evidence spec contradicting a sibling criterion's mandated commit shape
+- **Sweep:** per-commit `pnpm prism:check` and `crossref-lint` runs in a detached worktree over all non-terminal commits; `git show --stat` mirror-path count per commit (0 everywhere except the two seed-twin edits; terminal = 148, positive control).
+- **Suggested fix:** amend AC-P3-6 to "crossref-lint green at every commit; full build+check green at the terminal head," and AC-P3-7's evidence to exclude the curated seed twins (the curation manifest's `curated` bucket) from the mirror-path probe.
+
+### DoD survivor-list drift in three files (Ren/Theo overshoot, Lex undershoot)
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-refactor-scout/shared.md:120-121`, `.ai-skills/skills/prism-doc-walker/shared.md:147-148`, `.ai-skills/skills/prism-legal/shared.md:129-136`
+- **Problem:** D3 declares its survivor lists exhaustive, but Ren and Theo each kept one DoD item beyond their named survivors (Ren: grilled-candidate plan-or-decline; Theo: write/skip/defer recorded + idle currentPhase), while Lex dropped the capability-degradation-stated bullet all 8 sibling business files kept (behavior still gated by Procedure B in the body — checklist inconsistency only).
+- **Class:** compress executed against a drifted survivor list — overshoot and undershoot in one class
+- **Sweep:** per-file DoD census against the D3 rows across the S5 slice; business-9 uniformity check across all nine files.
+- **Suggested fix:** amend the table rows to sanction the two kept items (they are real policy bounds) and restore Lex's bullet — table amendment over trimming.
+
+### Sage's jargon bound lost its owner — the claimed owner doesn't own it
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-changelog/shared.md:11` (and `:50`)
+- **Problem:** D8 deleted the jargon-leakage anti-pattern on the claim that lens 1's audience test owns the bound, but lens 1 is the omission test, not the translation test — the bound's only surviving home is the changelog frameworks reference § Entry Writing, and the body's line-50 read trigger for that reference doesn't fire on entry writing, so nothing routes the writer there when it matters.
+- **Class:** delete row whose claimed surviving owner doesn't own the bound
+- **Sweep:** `grep -n -i "non-technical\|jargon\|translate" .ai-skills/skills/prism-changelog/shared.md` — zero hits at head; same grep on the reference found the bound only under Entry Writing.
+- **Suggested fix:** add "writing entry descriptions" to the line-50 read trigger, or keep one translation-test sentence in lens 1.
+
+### Winston's manifest-completeness clause dropped its table-mandated verbatim shape
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:35`
+- **Problem:** D4 marked the clause "every matching pattern must be loaded — partial loads produce wrong recommendations" as keep-verbatim-shape; the head paraphrases it while always-on `context-reuse.md` still quotes the original wording, so the two surfaces drift.
+- **Class:** compress that kept the bound but not the table-specified verbatim shape
+- **Sweep:** `grep -n "unanswerable"` across the three D4 files — the other verbatim-protected string is intact verbatim in all three.
+- **Suggested fix:** restore the original clause wording in the startup question.
+
+### skill-core.md install twin cites a path consumers never receive
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.prism/references/skill-core.md:38-39` (byte-identical install twin)
+- **Problem:** The "Reporting back" section names the conductor's `lib/report-back.md` under `.prism/skills/**` as the schema owner, but that tree never ships to a consumer install, so the install-twin copy carries an unresolvable citation — mitigated because the schema is quoted verbatim immediately below.
+- **Class:** dangling reference in a mirrored (byte-identical) seed file
+- **Sweep:** checked the curation manifest — `skill-core.md` is classified `mirrored` (exact copy, curation filtering never applies); three pre-existing mirrored files cite the same conductor-lib paths — established pattern, not introduced here.
+- **Suggested fix:** follow-up: either curate the twin or genericize the citation ("the conductor's report-back contract").
+
+### Standards findings
+
+### Deletion residue: double blank lines and EOF-whitespace drift across the roster
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** repo-wide across `.ai-skills/skills/*/shared.md` — architect EOF, debugger 205-206, lilac 31/184/212(EOF), sage 45/275(EOF), mira 76/247/272(EOF), nora 371/398(EOF), pixel 332(EOF), eli 239(EOF), reese 224(EOF), refactor-scout 111, doc-walker 3/136, prd 187, surface-audit 301/319(EOF), founder 148-150(EOF), plus all 9 business files above `## Definition of Done`
+- **Problem:** The D1/D2 heading folds deleted sections without collapsing surrounding blank lines, leaving double blanks mid-file and inconsistent EOF whitespace — `code-standards.md` § Whitespace violations, confirmed independently by three slices as a uniform mechanical artifact.
+- **Class:** deletion hygiene — whitespace residue of a scripted section fold
+- **Sweep:** `awk 'prev=="" && $0=="" {print FILENAME" "FNR}{prev=$0}'` over every slice's head files; union of three slices' site lists above.
+- **Suggested fix:** one mechanical pass collapsing double blanks and normalizing EOF newlines across the roster; mirrors regenerate on the next build.
+
+### Dedupe rows partially executed — duplicate copies survive outside the named owner
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open` — 3 of 4 sites fixed in `bdf357fe` (Lilac lenses 6/7 → pointers, Parker Voice cites lens 4, Mira Voice cites Path B); residual: `prism-code-dev/shared.md:168` § Test Coverage still restates lens 6's behavior-first bound (line 23 is the owner) — follow-up-class
+- **File:** `.ai-skills/skills/prism-code-dev/shared.md:169`; `.ai-skills/skills/prism-standup-summary/shared.md:40,42,46-48`; `.ai-skills/skills/prism-prd/shared.md:5`; `.ai-skills/skills/prism-user-stories/shared.md` (Voice)
+- **Problem:** Four D6/D8 dedupe rows landed half-way — Clove's § Test Coverage still restates lens 6's behavior-first bound instead of citing it; Lilac's lenses 6/7 restate mrkdwn, schema-at-runtime, and confirm-before-post beside their owning anti-pattern entries; Parker's and Mira's Voice paragraphs restate clauses the table assigns to lens 4 / Path B — no bound lost anywhere, direction benign.
+- **Class:** dedupe row half-executed (duplicate copy outside the named owner)
+- **Sweep:** per-bound census greps in each file (e.g. `grep -n "behavior, not implementation\|user notice"` — exactly two sites; Lilac bound census — every contract bound present, three at 2×).
+- **Suggested fix:** compress the four duplicate copies to citations of their owners.
+
+### Winston's quick-consult gate contradicts its own layout after the D4 rewrite
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.ai-skills/skills/prism-architect/shared.md:47`
+- **Problem:** The gate ends "skip the plan-lookup step below entirely" while the same sentence opens with "(question 2 above)" — the directional tail is residue of the deleted Batch layout where plan lookup followed the gate.
+- **Class:** sentence that lost its antecedent after the D4 rewrite
+- **Sweep:** `grep -n "below\|above"` over all three D4 startup regions — only this occurrence points at a moved target.
+- **Suggested fix:** "skip the plan lookup (question 2) entirely."
+
+### Retired `atlas:specializes-in` anchor still described as live outside the diff
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `scripts/ai-skills/bom-guard.ts:5`, `scripts/ai-skills/bom-guard.test.ts:6`, ADR-0041:52, ADR-0042:56
+- **Problem:** The anchor retirement (`2396c3bb`) swept its three prose homes but left two doc comments and two ADRs describing `atlas:specializes-in` as the live mechanism — removal-completeness (`code-standards.md` § Removal and rename completeness) calls for the tree-wide sweep; these four sites sit outside the pinned range, which is exactly how they were missed.
+- **Class:** removal completeness — references to a removed concept in files the change never opened
+- **Sweep:** `grep -rn "specializes-in"` over scripts, templates, skills, and spec trees — remaining hits triaged: test fixtures and the retired-lane test are legitimate; plans/lessons historical; these four are the stale set.
+- **Suggested fix:** genericize the bom-guard comments ("anchor substitution"); add a superseding note to ADR-0041/0042 — follow-up scope since the files are outside 3B's diff.
+
+### routing-coverage extractor comment overstates the "harmless" claim
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `scripts/ai-skills/routing-coverage.test.ts:48-52`
+- **Problem:** The comment says over-extraction of backticked words is harmless, but the ghost-route loop asserts every extracted token exists in roles.json — a future backticked non-id token in either skill-routing.md fails the gate with a misleading error; it passes today only because all 33 current tokens are real ids.
+- **Class:** comment accuracy over a fragile coupling between an extractor and the prose it scans
+- **Sweep:** backtick-token extraction over both skill-routing.md copies — 33 unique tokens, all roles.json ids.
+- **Suggested fix:** correct the comment to name the ghost-check constraint, or scope the ghost check to the four extracted sections.
+
+### Hard count "31 times" in the shared-core rationale
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `fixed` — 2026-08-21, verified in delta re-sweep of `f439a7ea..35b99e95`
+- **File:** `.prism/architect/_toolkit/skills-ecosystem.md` (+ install twin), shared-skill-core section
+- **Problem:** "lands once instead of 31 times" states a roster count that drifts on the next persona — `writing-voice.md` § Count rules, not numbers.
+- **Class:** count stated where the membership rule belongs
+- **Sweep:** `grep -rn "31 times" .prism/ templates/` — both copies only.
+- **Suggested fix:** "once instead of in every skill body."
+
+### Angle Coverage — PR 3B, `fd689bcc..461d23e9`
+
+- **Runtime behavior** — `swept` — 6 items enumerated, 6 verdicts. The three D4 startup rewrites (exit-condition + escape routing per file — the architect lens-1 escape loss is the one routing defect), the onboarding-run generator-lane removal (dead-code grep clean, types green), the routing-coverage extractor widening (token enumeration above), the review-loop 28a / conductor 28b additions (coherent, contracts intact).
+- **Test efficacy** — `swept` — 2 items enumerated, 2 verdicts. routing-coverage: mutation-tested (deleting the `tdd` row turns it red with the correct named-only assertion); rule-generators retired-lane test: touched-anchors equality plus untouched-default both fail if the lane returns — retargeted, not loosened. Full suite 834/834. Skill prose has no test surface.
+- **Spec and doc consistency** — `swept` — table-vs-diff row-by-row across all seven slices (D1–D8 classes, ~54 canonical files) plus redesign-plan tasks 20–28/N3/N4 each verified landed-or-recorded; the spec findings above are the mismatches; both Sessions-close sanctioned additions verified in their commit messages.
+- **Citation integrity** — `swept` — every deleted heading from the canonical diff (Personality ×26, run-order ×22, battery ×30, Intro ×22, DoD ×7, ~45 lens/anti-pattern headings) grepped for surviving citations across skills, references, and rules — none dangle; per-slice reference-target checks all resolve; Dark Patterns repoint verified.
+- **External-system claims** — `swept` — 1 item enumerated, 1 verdict. Lilac's Slack contract (mrkdwn, blocks, U+200B spacer, schema-at-runtime) survives verbatim in its anti-pattern owners; no new external identifiers introduced by the range.
+- **Repo writing rules** — `swept` — verdict-only.
+- **Security** — `swept` — 1 item enumerated, 1 verdict. The extractor-regex change operates on trusted repo files only; no credential, injection, or path surface in the changed code.
+- **Docs impact** — `swept` — 3 items enumerated, 3 verdicts. skills-ecosystem + skill-routing updated consistently with the roster change; the generator retirement's three prose homes updated per `2396c3bb`; the D7 reference-tree leak is the one docs-impact defect (Major above).
+- **Accessibility** — `n/a` — no UI in the pinned range (prose and build tooling only); Pixel's a11y bounds verified intact under spec consistency.
+
+### AC grading — PR 3B
+
+- **AC-P3-1** (commit messages carry table slices): **MET** — all seven deletion commits verified; every stat file maps to a row; no delete-verdict row carries a non-empty Foreclosure.
+- **AC-P3-2** (Eric Angle Coverage block): not gradeable from this diff — behavioral, needs a live Eric run.
+- **AC-P3-3** (no plan-hygiene findings): consistent with this review's own conduct — no verdict-sub-bullet finding filed; full grade needs the deliberate-incomplete-plan probe.
+- **AC-P3-4** (Pixel cites principles): **MET** — `grep -c "Nielsen"` = 9 on the body; rationale line present at prism-design:126.
+- **AC-P3-5** (reversal list intact): **MET** — token table: Battery 64, Diff-only 1, Closing 36, dispatched 67, gradeability 2, needs-replan 40, loopBase 8, conductor-state 7, `description:` in all 33 frontmatter files; positive control "The run, in order" = 0.
+- **AC-P3-6** (green at every commit): **UNMET as written / intent held** — full check RED at all 13 intermediates on mirror parity alone (structural conflict with AC-P3-7, see spec finding); crossref-lint GREEN at every commit; build+check GREEN at head.
+- **AC-P3-7** (no mirrors before terminal): **MET in intent** — 0 generated-mirror paths in every non-terminal commit; the two `templates/install` touches are curated seed twins; terminal commit lists 148 (positive control). Evidence-wording gap filed under the AC spec finding.
+
+## Cleanup Items (PR 3B)
+
+- `.ai-skills/skills/prism-changelog/shared.md:11` — lens 1 example "Fixed equipment filters…" is equipment-dealership residue no D7 row covers; genericize while in the file.
+- EOF trailing-newline drift across the files listed in the whitespace finding — fold into the same mechanical pass.
+- Diff-insufficiency reads: none — the diff was reviewable without unchanged-file reads beyond declared reference-target verification.
+
+## Review Issues (PR 3B delta re-sweep — briar, repair surface `f439a7ea..35b99e95`, #472)
+
+Follow-up review per delta scoping: repair surface only (`bdf357fe` fixes, `0d50a131` post-fix
+mirror rebuild, `35b99e95` ADR supersession notes). Each round-1 finding verified against its
+fix in the diff; no new findings on the repair surface.
+
+- **Critical (conductor):** fixed as table amendment — D5-a now carries the 2026-08-21
+  supersession blockquote with a real foreclosure sentence for the deleted section (the dead
+  Atlas-injection promise); matches the prescribed remedy exactly.
+- **Major (Winston lens-1 escape):** fixed — the failure-mode-replication trigger folded into
+  the convention lens with `needs-human` naming the failure mode, the codebase analog, and the
+  missing fact.
+- **Major (D7 reference tree):** fixed — `grep -rli "dealer|wordpress"` over `.prism/references/`
+  + `qa-test-planning.md` now hits only the two doc templates, whose Gutenberg/WordPress
+  mentions are stack-applicability conditionals ("applies to teams with Gutenberg/WordPress
+  blocks in their stack"), not source-project leakage — a legitimate keep.
+- **Minors:** whitespace pass verified (double-blank awk scan over all 33 bodies: zero hits);
+  Ren/Theo DoD survivors amended into the table with foreclosures; Lex capability bullet
+  restored (line 135); Sage translation test in lens 1 + entry-writing read trigger + residue
+  genericized; Winston manifest clause verbatim + quick-consult gate sentence fixed; skill-core
+  owner path marked monorepo-only in both copies; "31 times" → "in every skill body" both
+  copies; routing-coverage comment now names the ghost-check constraint; bom-guard comments
+  retargeted; ADR-0041:52 / ADR-0042:56 carry superseded-in-part notes; AC-P3-6/7 tension
+  recorded in the table's Observations.
+- **Residual (minor, open):** `prism-code-dev/shared.md:168` — § Test Coverage still restates
+  lens 6's behavior-first bound; 3 of 4 dedupe sites fixed. Follow-up-class, non-blocking.
+
+Gates at `35b99e95`: `pnpm prism:build` exit 0 with clean tree (mirror parity at post-fix
+head), `pnpm prism:check` exit 0, 834/834 tests.
+
+### Angle Coverage — PR 3B delta re-sweep, `f439a7ea..35b99e95`
+
+- **Runtime behavior** — `swept` — 2 items enumerated, 2 verdicts. Winston's folded escape sentence (routing restored, trigger distinct from the convention escape); routing-coverage comment change (comment-only, no behavior delta).
+- **Test efficacy** — `swept` — 1 item enumerated, 1 verdict. No assertions changed in the repair surface (comment-only test edits); 834/834 green.
+- **Spec and doc consistency** — `swept` — all 15 round-1 findings diffed against their fixes; the one partial is recorded above; table amendments carry foreclosure sentences per the table's own format.
+- **Citation integrity** — `swept` — 4 items enumerated, 4 verdicts. ADR-0041/0042 supersession notes point at the live mechanism; skill-core monorepo-only note accurate (path exists in-repo, excluded from seed); Sage's frameworks.md trigger now names entry writing; Parker/Mira Voice citations resolve to lens 4 / Path B.
+- **External-system claims** — `n/a` — no external identifiers in the repair surface.
+- **Repo writing rules** — `swept` — verdict-only.
+- **Security** — `n/a` — no trust-boundary content in the repair surface.
+- **Docs impact** — `swept` — 2 items enumerated, 2 verdicts. Reference-tree D7 genericization consistent with the bodies pointing at it; skills-ecosystem count fix landed in both copies.
+- **Accessibility** — `n/a` — no UI in the repair surface.
+
+## PR Readiness (PR 3B — roster slim, #472)
+
+- [x] No critical or major issues — round-1 Critical and both Majors verified fixed in `bdf357fe..35b99e95`; one Minor residual (Clove § Test Coverage duplicate, follow-up-class)
+- [x] Types correct — `pnpm prism:check` green at fix head `35b99e95`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — 834/834 at fix head
+- [x] All debugged issues resolved (no `open` entries for this PR)
+- [x] Build passes — last run: 2026-08-21 at `35b99e95` (`pnpm prism:build` + `pnpm prism:check` exit 0; working tree clean after rebuild, so mirror parity holds at the post-fix head)
+- [ ] PR description up to date — sync before merge: D7 closure now covers the reference tree (template Gutenberg/WordPress mentions kept as stack-applicability conditionals), AC-P3-6/7 tension recorded in the foreclosure table
+- [ ] Lasting decisions promoted to architect context — n/a this pass (review, not close)
+
+**Last updated:** 2026-08-21 (delta re-sweep)

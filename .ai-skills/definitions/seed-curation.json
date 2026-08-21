@@ -100,7 +100,8 @@
 		"architect/guides/writing-a-skill.md",
 		"architect/guides/writing-an-adr.md",
 		"architect/guides/writing-an-architect-doc.md",
-		"references/review-angles.md"
+		"references/review-angles.md",
+		"references/skill-core.md"
 	],
 	"seedOnly": [],
 	"renames": {

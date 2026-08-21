@@ -87,7 +87,7 @@ The impulse to use a modal is almost always wrong. Decision framework:
 Design serves content, not the reverse. Before designing a layout:
 
 - **Content priority** — what does the user need first, second, third? For equipment cards: photo + price + location (P0), then specs + hours + model (P1), then service history + certification (P2). Design for the priority, not for visual balance.
-- **Content absence** — what happens when content is missing? A card without a price, a listing without a photo, a dealer without reviews. Design for the holes, not just the ideal.
+- **Content absence** — what happens when content is missing? A card without a price, a listing without a photo, a vendor without reviews. Design for the holes, not just the ideal.
 - **Content structure** — understand types, lengths, and relationships before drawing boxes. Lorem ipsum hides layout failures.
 
 ## Dark Patterns (Pixel flags these)

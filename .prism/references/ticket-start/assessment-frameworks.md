@@ -10,25 +10,25 @@ Nora uses this scale for bugs. She cites the level by name and defends the class
 
 | Level | Label | Criteria | Example |
 |-------|-------|----------|---------|
-| **S1** | Critical | System down or data integrity at risk. No workaround. Affects all/most users or dealers. Revenue-impacting or data-corrupting. | Inventory sync deleting records. Checkout flow crashing on all sites. |
-| **S2** | High | Major feature broken. Workaround exists but is painful or non-obvious. Affects many users. Core workflow degraded. | Filters return wrong results. Quote form submits but doesn't reach dealer. Equipment images not loading on mobile. |
+| **S1** | Critical | System down or data integrity at risk. No workaround. Affects all/most users or customers. Revenue-impacting or data-corrupting. | Inventory sync deleting records. Checkout flow crashing on all sites. |
+| **S2** | High | Major feature broken. Workaround exists but is painful or non-obvious. Affects many users. Core workflow degraded. | Filters return wrong results. Quote form submits but never reaches the recipient. Product images not loading on mobile. |
 | **S3** | Medium | Feature degraded. Reasonable workaround exists. Affects some users. Non-core workflow. | Sort order resets on page reload. Admin settings don't save on first try (works on retry). Slow image gallery on one browser. |
 | **S4** | Low | Cosmetic or minor inconvenience. Easy workaround or negligible impact. Affects few users. | Button alignment off by 4px. Placeholder text typo. Tooltip shows on wrong side on one breakpoint. |
 
-**Priority ≠ Severity.** A Low-severity bug on every dealer's homepage (blast radius: thousands of visitors daily) is higher priority than a High-severity bug in an admin tool used by three people. Nora always assesses both dimensions before recommending priority.
+**Priority ≠ Severity.** A Low-severity bug on every customer site's homepage (blast radius: thousands of visitors daily) is higher priority than a High-severity bug in an admin tool used by three people. Nora always assesses both dimensions before recommending priority.
 
 ## Impact Assessment
 
 For any ticket — bug, feature, or improvement — Nora assesses impact across four dimensions:
 
-- **Reach** — how many users, dealers, or sites are affected? All sites vs one site? All users vs admin-only? End customers vs internal staff?
+- **Reach** — how many users, customers, or sites are affected? All sites vs one site? All users vs admin-only? End customers vs internal staff?
 - **Severity/Value** — how badly affected (bugs) or how much value delivered (features)? Can they work around it?
 - **Frequency** — how often does this occur or how often will this be used? Every page load vs once a month? Daily workflow vs annual configuration?
-- **Business cost** — revenue risk? Dealer churn risk? Compliance risk? Reputation risk? Does this block other work?
+- **Business cost** — revenue risk? Customer churn risk? Compliance risk? Reputation risk? Does this block other work?
 
 **Quick prioritization:** Impact = Reach × Severity × Frequency. Layer business cost on top. High reach + high severity + high frequency = drop everything. Low reach + low severity + low frequency = backlog.
 
-When Nora recommends a priority, she shows the reasoning: "Putting this at High — it's S2 severity affecting all dealers (high reach), happens on every inventory page load (high frequency), and there's no workaround. The only reason it's not Urgent is that it's a degradation, not a total failure."
+When Nora recommends a priority, she shows the reasoning: "Putting this at High — it's S2 severity affecting all customers (high reach), happens on every catalog page load (high frequency), and there's no workaround. The only reason it's not Urgent is that it's a degradation, not a total failure."
 
 ## Definition of Ready
 
@@ -98,9 +98,9 @@ Tickets that are "bigger than they look." Nora flags these when she spots them:
 - Has no existing pattern to follow (novel architecture)
 - Crosses the server/client boundary in a new way
 - Affects both the block editor AND the frontend rendering
-- Modifies behavior of a block that's used on every dealer site
+- Modifies behavior of a shared component used on every customer site
 
-When Nora spots complexity signals, she flags them in the summary: "Heads up — this touches the mega menu block, which is on every dealer site. Complexity signal: high blast radius, shared component, editor + frontend rendering. The estimate may need revision."
+When Nora spots complexity signals, she flags them in the summary: "Heads up — this touches the shared navigation component, which is on every customer site. Complexity signal: high blast radius, shared component, editor + frontend rendering. The estimate may need revision."
 
 ## Requirements Quality
 
@@ -129,7 +129,7 @@ When Nora spots these, she pins them: "The description says 'handle errors appro
 
 For bugs, Nora maps blast radius before recommending priority:
 
-1. **Which sites?** All dealer sites, or specific ones? Is the bug in shared code (affects everyone) or site-specific config (affects one)?
+1. **Which sites?** All customer sites, or specific ones? Is the bug in shared code (affects everyone) or site-specific config (affects one)?
 2. **Which pages/features?** Just this page, or anything that uses the same component or block?
 3. **Which users?** All visitors, logged-in users, admin users, specific roles?
 4. **What shares the code path?** If the bug is in a shared component (SlidingPanel, SearchBox, mega menu, carousel), other features using it may be affected.

@@ -18,7 +18,7 @@ No `.ai-skills/config.json` exists. Run the full guided flow:
 8. Collect Slack channel (optional).
 9. Collect documentation setup via the documentation question set (§ question-flow.md → Documentation question set).
 10. Run `runRuleGenerators(config, repoRoot)` — code-standards → security → framework-guidelines, skip-if-exists by default. Offer the `acceptance-criteria` format choice once (skip-if-exists on re-run; not re-offered on reconfigure).
-11. Run `runAnchorSubstitution(config, repoRoot)` — populates `atlas:specializes-in`, `atlas:domain-context`; leaves `atlas:examples` / `atlas:workflow-example` empty in v1. Appends a one-line applicability declaration to `accessibility.md` and `design-governance.md` when the detected stack includes UI file types — idempotent (skipped if declaration already present).
+11. Run `runAnchorSubstitution(config, repoRoot)` — populates `atlas:domain-context`; leaves `atlas:examples` / `atlas:workflow-example` empty in v1 (the former `atlas:specializes-in` lane is retired — specialization blocks were removed from the skill bodies, since the team's stack facts live in its generated rules and repo map). Appends a one-line applicability declaration to `accessibility.md` and `design-governance.md` when the detected stack includes UI file types — idempotent (skipped if declaration already present).
 12. Write `.ai-skills/config.json` atomically via `writeOnboardingConfig` after explicit user acceptance.
 13. Run `pnpm prism:build` to regenerate platform mirrors.
 14. Emit the closing summary (see § output-contract.md → Closing summary shape).
