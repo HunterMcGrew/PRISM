@@ -179,10 +179,11 @@ function unquote(token) {
  * `ARCHITECT_DIR_PREFIX` with a manifest doc name, both `/`-joined), so a
  * Windows reader re-cats the spelling the deny message printed and pays one
  * extra read. The suppression is whole-command for the same reason the class
- * test above it is: a rewrite can land on a token nowhere near the operand
- * being credited — a second operand of the same `cat`, or an earlier
- * newline-separated segment — and judging each operand on its own is what let
- * a heredoc body credit the documents its own text named.
+ * test above it is: a rewrite is a property of the command text rather than
+ * of any one operand, so only a whole-command test sees a `\` sitting outside
+ * the operand being credited. `cat <doc> other\x.md` is the shortest example,
+ * and every separator `splitShellSegments` cuts on puts the same `\` a whole
+ * segment away.
  *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
@@ -748,6 +749,18 @@ function scanPathShapedTokens(command) {
 		// readings. A leading `-`/`+` comes off each piece because `-` belongs
 		// inside a path (`context-reuse.md`) but not at its front, where it is
 		// a flag marker or the tail of `${OUT:-…}`.
+		//
+		// Stripping per piece rather than off the whole run drops one reading:
+		// a token that keeps a `:` inside it, `C:/repo/x.ts` out of
+		// `-C:/repo/x.ts`. Every piece of it and the raw run stay candidates,
+		// so the drop can hide a route only where the routed path spans the
+		// `:` itself — on Windows, the drive prefix. That prefix is not needed
+		// here, because `repoRoot` is `findRepoRoot(cwd)` and so always sits
+		// on cwd's drive. Same drive, and the driveless twin `/repo/x.ts` is a
+		// piece of its own that `path.win32.resolve` sends to the identical
+		// file. Another drive, and the path is outside `repoRoot`, where
+		// `toRepoRelativePath` returns `null` and the candidate drops however
+		// it was spelled.
 		for (const piece of run.split(":")) {
 			const unprefixed = piece.replace(/^[-+]+/, "");
 			if (unprefixed.length > 0) {

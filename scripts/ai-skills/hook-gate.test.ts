@@ -2793,6 +2793,31 @@ test("parseShellReadTargets: a forward-slash `cat` of the same doc credits it", 
 	);
 });
 
+/**
+ * The two rows above agree with a per-operand suppression as well as with the
+ * whole-command one, because both put the rewritten `\` inside the operand
+ * being judged. These shapes put it somewhere else — a sibling operand, a
+ * later `;` segment, an earlier line — so a rule that asked only whether the
+ * credited path itself was rewritten credits the doc and this row fails.
+ */
+test("parseShellReadTargets: a rewrite outside the credited operand still costs credit", () => {
+	const doc = ".prism/architect/_toolkit/install-layout.md";
+
+	for (const command of [
+		String.raw`cat ${doc} other\x.md`,
+		String.raw`cat ${doc}; ls other\x.md`,
+		String.raw`ls other\x.md` + `\ncat ${doc}`,
+	]) {
+		assert.deepEqual(
+			parseShellReadTargets(command).find(
+				(target) => target.filePath === doc
+			),
+			{ filePath: doc, credit: false },
+			`${JSON.stringify(command)} rewrites a token outside the credited operand`
+		);
+	}
+});
+
 test("parseUnprovenShellPaths: a backslash-spelled write target stays one path rather than gluing into a word", () => {
 	assert.ok(
 		parseUnprovenShellPaths(
