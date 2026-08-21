@@ -130,6 +130,35 @@ runs.
     the unchanged twin hash rather than a diff — all five buckets hash `9d276415` before and
     after.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, Briar dispatched by Sol under run
+  `architect-gate-port`, lane 3a, re-review]
+  - **Intent** — re-review the pinned range `176f35c5..8c82764f` at full bar and settle the one
+    judgment Sol reserved: whether round-1 Major 3's direction half was correctly rejected.
+  - **Ambiguity** — none load-bearing; assuming "confirm or overturn" asks whether `below`
+    resolves for a cold reader, not whether the rewrite is an improvement — it is one either way.
+  - **Bounds** — done = verdict on Major 3 recorded, range swept at full bar, `## Review Issues`
+    plus a round-2 `### Angle Coverage` block written, plan-only commit landed. Untouchable =
+    every file under review, `.claude/worktrees/agent-a507b79a93c90415f`, the deny-gate branch,
+    `.prism/plans/opus5-port.md`.
+  - **Approach** — verify clove's two flagged claims at source before accepting either, and read
+    the two Ledger references in the order a cold reader hits them rather than in the order I hit
+    them last pass.
+  - **Close** — scope held. I overturned my own round-1 finding: `below` resolved correctly, and
+    both the word *row* and the paraphrased cell text point at the Disposition table. Two silent
+    decisions named: I graded the new bounded-angle finding Major rather than Minor because
+    Eric's own lightweight path mandates three bounded angles on every docs-only PR, so it fires
+    by construction rather than occasionally; and I did not file the `skills-ecosystem.md`
+    omission, because the plan's cut table assigns that file to task 29 in PR 3B. One place I
+    went past clove's stated evidence rather than accepting it: `unclassifiedMirrored` warns only
+    when `seedFileIsNew` (`build.ts:816`, `:859`), so the build-time warning fires once and is
+    silent forever after — the registration is still correct, but the warning is not what makes
+    it correct. Edge recall: a clean pass and a bounded angle both still emit all nine statuses;
+    `n/a` on the two triggered angles here is a legal status with its reason named. Verification
+    honesty: `pnpm prism:build` and `pnpm prism:check` re-run by me at exit 0 with a clean tree
+    afterwards; the platform question answered empirically by `gh pr checks 471` (both legs pass)
+    rather than by reasoning about line endings; the new Major read from file content at head,
+    with the literal searches that produced it recorded in its `Sweep`.
+
 ---
 
 ## Decisions
@@ -1009,7 +1038,83 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 - **Suggested fix:** drop the parenthetical and leave the sentence conditional, or wire the loop
   and keep it. Do not leave it naming a consumer that is not one.
 
-### Angle Coverage
+---
+
+Briar re-review of PR #471, 2026-08-21, pinned range `176f35c5..8c82764f`. All six
+round-1 findings verified `fixed` at source. One new Major, and the round-1 Major 3
+direction half overturned by its own author.
+
+### Round-1 Major 3, direction half — overturned; Clove's partial rejection is upheld
+
+- **Axis:** `spec`
+- **Severity:** `major` (round-1 grading, retained for the record)
+- **Status:** `fixed` — the scope half was real and is fixed; the direction half was my error.
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:60`
+- **Problem:** I wrote that *"the Ledger row **below**"* pointed the wrong way, having read it
+  against the Ledger bullet in § Review surfaces at `:27`, which sits above the sentence.
+- **Why the rejection is correct:** two independent cues both resolve `below` to the Disposition
+  table at `:102-106`, which is genuinely below. First, *row* is the word for a table line —
+  § Review surfaces is a bulleted list and has no rows, and the Disposition table is the only
+  table in the section. Second, the sentence paraphrases that row's own cell text: the pre-fix
+  wording *"swept once at close and never drive another pass"* tracks the cell *"not raised
+  during the loop; swept once at close"* at `:106`. A cold reader following either cue lands on
+  the table; my reading required ignoring both.
+- **What stands from the finding:** the scope half — the Ledger row caps what the plan-scope
+  rule *filters out*, not what it *keeps*, because the survivors are Subject content. Clove
+  accepted and fixed that, and the rewrite now names `**Disposition**` explicitly so two
+  same-named references stop competing for a bare direction word. That naming is an
+  improvement, not a repair: `below` resolved correctly before it.
+- **Class:** reviewer resolved a relative direction word against the nearest same-named
+  reference rather than against the one the surrounding prose paraphrases.
+- **Sweep:** `grep -n "Ledger" .ai-skills/skills/prism-review-loop/shared.md` — two references
+  (`:27` bullet, `:106` table row) plus the new `:60` pointer; read both against the paragraph
+  at head, and only the table row matches the paraphrase.
+- **Suggested fix:** none — no change owed. Recorded so the record says which way this went.
+
+### The bounded-angle verdict cap has no slot in either reviewer's verdict surface
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/references/review-angles.md:52` (§ Status vocabulary), against
+  `.ai-skills/skills/prism-code-review-self/shared.md:315` and
+  `.prism/references/code-review-pr/summary-template.md` § PR Readiness
+- **Problem:** the new fragment states *"A bounded angle — any angle whose status is not
+  `swept` or `n/a` — caps the reviewer's own verdict: the reviewer does not report an
+  unqualified ready state while one stands, and the best available verdict names the angle and
+  the specific check still owed."* Neither reviewer's verdict surface can express that. Briar's
+  is binary — `**Verdict:** Ready for PR (or: N Major, M Minor to fix)` — so a zero-findings
+  pass carrying one bounded angle has to emit *Ready for PR*, the unqualified ready state the
+  fragment forbids, in exactly the case where zero findings is least informative. Eric's
+  `## PR Readiness` checklist carries no bounded-angle line; his `## Summary` paragraph is free
+  prose that *may* carry the qualification but is never required to, and nothing connects the
+  `## Angle Coverage` block's bounded statuses to the readiness statement.
+- **Why this fires deterministically rather than occasionally:** Eric's lightweight path, added
+  in this range at `prism-code-review-pr/shared.md:198`, mandates that the three Spec-axis
+  angles report `not reached — lightweight path, Spec axis skipped`. Every docs-only PR
+  therefore carries three bounded angles by construction, and Eric's readiness surface has no
+  way to say so. That is the lightweight path's normal output, not a rare edge.
+- **Why it lands in this range rather than pre-existing:** `review-angles.md` is new here, so
+  the obligation is new. Task N1 listed § Status vocabulary among the sections to port and the
+  verdict-cap sentence rode along inside it; task N2 wired the coverage *block* into both bodies
+  but named no change to either verdict line. The gap sits between the two tasks, not against
+  either one as written.
+- **Class:** a ported fragment states an obligation on an output surface the same range left
+  unchanged — the identical defect class as round-1's *"the file described a table nothing
+  caused"*, one section over.
+- **Sweep:** `grep -rn "bounded" .ai-skills/skills/prism-code-review-self/shared.md
+  .ai-skills/skills/prism-code-review-pr/shared.md
+  .prism/references/code-review-pr/summary-template.md` — zero hits in all three; the word lives
+  only in `review-angles.md`. `sed -n '/^## Review format/,/^## /p'` on Briar's body confirms
+  the two-state verdict line, and a full read of `summary-template.md` confirms no readiness
+  line for coverage.
+- **Suggested fix:** one clause each side. Briar's `**Verdict:**` line gains a third state —
+  `Ready except <angle> — needs <specific check>`, valid at zero findings while a bounded angle
+  stands. Eric's `## PR Readiness` gains one checkbox: *No bounded angle stands in
+  `## Angle Coverage` (a bounded angle names the check still owed in the Summary)*. Both cite
+  `review-angles.md` § Status vocabulary rather than restating the cap.
+
+### Angle Coverage — round 1 (range `176f35c5..343588ab`)
 
 Briar sweeps all nine in one pass; no line carries an axis attribution.
 
@@ -1067,6 +1172,83 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
     reviewer plan-hygiene content — clean.
 - **Accessibility** — `n/a — no UI in the pinned range`
 
+### Angle Coverage — round 2 (range `176f35c5..8c82764f`)
+
+Briar sweeps all nine in one pass; no line carries an axis attribution.
+
+- **Runtime behavior** — `swept` — 3 items enumerated, 3 verdicts
+  - `seed-curation.json` `mirrored` gains `references/review-angles.md` — routes the file to
+    `checkSeedDrift`'s mirrored branch at `build.ts:619` instead of the unclassified fall-through
+    at `:653`. Both byte-compare for a non-renamed path, so the registration is behaviorally
+    neutral; what it buys is a declared classification — clean, and clove's claim confirmed.
+  - Five copies of `review-angles.md` byte-identical after the rebuild — `shasum` `9d276415` on
+    all five — clean.
+  - `pnpm prism:build` and `pnpm prism:check` re-run by me — exit 0 both, `git status -s` empty
+    afterwards, so the mirrors are deterministic against this tree — clean.
+- **Test efficacy** — `swept` — 2 items enumerated, 2 verdicts
+  - The `mirrored` classification — exercised by the bucket's five pre-existing non-renamed
+    entries through `checkSeedDrift` inside `pnpm prism:check`; a per-entry test would add
+    nothing — adequate.
+  - `unclassifiedMirrored` as a regression guard for a forgotten registration — inadequate, and
+    worth naming precisely because clove cited the gating as evidence: `build.ts:816` and `:859`
+    push to that list only when `seedFileIsNew`, so the warning fires once, on the build that
+    creates the twin, and is silent on every build after. It could not have caught this file
+    after round 1. The registration is still right; the warning is not the thing that makes it
+    right, the declared bucket is.
+- **Spec and doc consistency** — `swept` — 7 items enumerated, 7 verdicts
+  - Round-1 Major 1 (`Meta` cited, nonexistent) — both bodies now cite the surface-provenance
+    split — fixed.
+  - Round-1 Major 2 (composition paragraph) — rewritten to "two filters aimed at different
+    sets"; scope corrected — fixed.
+  - Round-1 Major 3 — scope half fixed; direction half overturned above — resolved.
+  - Round-1 Major 4 (`seed-curation.json` registration) — present in `mirrored` — fixed.
+  - Round-1 Minor 5 (chat-side coverage surface unreachable) — Briar's `## Review format` gains
+    the `**Angle Coverage:**` slot and the plan write gains the `### Angle Coverage` block;
+    both match `review-angles.md` § Enumeration *Where it goes* — fixed.
+  - Round-1 Minor 6 (parenthetical naming the review loop as a coverage-gating consumer) —
+    parenthetical dropped, sentence left conditional — fixed, and it is the drop that leaves the
+    reviewer itself as the only consumer gating on coverage, which is what the new Major turns on.
+  - 28a Decision *Chosen approach* amendment — checked against the `1d1e0374..cec5368b` diff
+    clause by clause: exempt surface gains the PR body and the loop's readiness line, third
+    incident recorded, composition line corrected in-PR. The amendment describes what happened
+    and does not overclaim — met.
+- **Citation integrity** — `swept` — 8 items enumerated, 8 verdicts
+  - *"the Ledger row under **Disposition** below"* — Disposition table at `:102-106`, below the
+    sentence at `:60` — resolves.
+  - `branch-plan.md` § Decision verdict gate → *"each reviewer skill's § Plan-file scope"* —
+    both exist (`self:72`, `pr:76`) — resolves.
+  - `branch-plan.md` → *"§ Before Closing above"* — exists at `:190` — resolves.
+  - Eric lightweight path → `review-angles.md` § Status vocabulary structural class — the class
+    is defined there and the reason given names a diff property (docs-only) — resolves.
+  - `[review-angles.md](../review-angles.md)` from `summary-template.md` — resolves in all five
+    buckets — clean.
+  - `[review-angles.md](../../../.prism/references/review-angles.md)` from both reviewer bodies,
+    four sites — `crossref-lint` green inside `prism:check` — clean.
+  - `review-angles.md`'s three rule citations (`code-comments.md`, `code-standards.md`,
+    `writing-voice.md`) — all three files exist — resolve.
+  - Removal completeness for the four deleted plan-hygiene instructions — tree-wide
+    `grep -rn "surfaces missing verdicts\|missing verdicts as a Minor\|surface it as Minor"`
+    over the whole repo returns only two hits, both in `.prism/plans/`: a `> Closed:` historical
+    plan and this proposal quoting the old text as the thing it replaces. Neither is a surviving
+    mandate — clean.
+- **External-system claims** — `swept` — 2 items enumerated, 2 verdicts
+  - Clove's *"`checkSeedDrift` now gates the file explicitly rather than letting it fall through
+    unclassified"* — verified at `build.ts:619` against the fall-through at `:653-661` —
+    confirmed, with the qualification recorded under Test efficacy above.
+  - Windows line-ending sensitivity of the byte-exact seed compare — `.gitattributes` pins
+    `* text=auto eol=lf` repo-wide with a comment naming this exact failure, so a Windows
+    checkout cannot introduce CRLF asymmetry — confirmed, and confirmed empirically by
+    `gh pr checks 471`: both `prism-check (ubuntu-latest)` and `prism-check (windows-latest)`
+    pass on head `8c82764f`.
+- **Repo writing rules** — `swept` — `verdict-only`
+- **Security** — `n/a — no auth, input handling, secrets, permissions, or trust boundary in the
+  pinned range`
+- **Docs impact** — `swept` — 1 item enumerated, 1 verdict
+  - `.prism/architect/_toolkit/skills-ecosystem.md` does not yet name `review-angles.md` as a
+    fragment two personas read. Task 29 (PR 3B) owns that file by the plan's own cut table, so
+    this is scheduled work rather than a gap — clean.
+- **Accessibility** — `n/a — no UI in the pinned range`
+
 ---
 
 ## Cleanup Items
@@ -1083,7 +1265,8 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
 
 ## PR Readiness
 
-- [x] No critical or major issues — all 4 Major and both Minor `fixed`
+- [ ] No critical or major issues — round 1's 4 Major and 2 Minor all `fixed`; round 2 opens one
+      new Major (bounded-angle verdict cap has no slot in either reviewer's verdict surface)
 - [x] Types correct — no `any`, no unsafe `as` — n/a, no TypeScript in the diff
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — no new logic; existing seed-drift and
@@ -1122,3 +1305,7 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
   the `mirrored` registration, Briar's unadapted disposition sentence, and the non-gating
   consumer parenthetical. Major 3 is upheld on scope only; see Decision: Briar's Major 3.
   Declined the § Plan-file scope fold for this PR; see Decision: § Plan-file scope stays inline.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Briar re-reviewed the range
+  `176f35c5..8c82764f`; all six round-1 findings verified fixed at source, and Major 3's
+  direction half overturned in Clove's favour. One new Major opened — the bounded-angle verdict
+  cap in `review-angles.md` has no slot in either reviewer's verdict surface.
