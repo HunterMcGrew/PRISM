@@ -323,7 +323,7 @@ For every meaningful change:
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
-**Verdict:** Ready for PR (or: N Major, M Minor to fix) — the first line of the chat output.
+**Verdict:** Ready for PR (or: N Major, M Minor to fix) — the first line of the chat output. A third state covers zero findings while a bounded angle stands: `Ready except <angle> — needs <specific check>`. `Ready for PR` is unavailable until every angle reports `swept` or `n/a`, per the verdict cap in [`review-angles.md`](../../../.prism/references/review-angles.md) § Status vocabulary.
 
 **Issues:** (grouped Critical → Major → Minor, or "None")
 

@@ -99,6 +99,10 @@ Everything after that is banned — no caveat, no second sentence, no explanatio
 
 The coverage block is exempt from conditional emit: report all nine angles' statuses every pass, including a clean pass with zero findings. A gap typed into the output is harder to skip than a gap only implied by silence.
 
+A pass reports once, after every angle has been swept across the whole reviewed range — not angle by angle as each finishes, and not on the first defect found. The contract is coverage before reporting, not finding everything: a pass that swept all nine over the full range and still missed a defect has met it, and a pass that reported after three has not. An angle the pass genuinely could not reach is not a reason to withhold the report — it reports `not reached` with its reason, and the verdict cap in § Status vocabulary qualifies the verdict instead. This section governs when a pass may report; § Re-sweep obligation below governs what a later pass re-runs.
+
+**Why:** a partial sweep reported as a verdict costs a full repair-and-re-review cycle, and the lane pays that cost rather than the reviewer. PRISM PR #471's first review pass reported four Majors, and its re-review found a fifth of the same class — a spec clause with no consumer — one section over; PRISM PR #470 ran ten rounds, several of which found the prior round's defect shape in a new place.
+
 ---
 
 ## Re-sweep obligation

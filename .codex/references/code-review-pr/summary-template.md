@@ -40,6 +40,7 @@ Structural simplifications worth considering — reach for [`structural-remedies
 ## PR Readiness
 
 - [ ] No critical or major issues found
+- [ ] No bounded angle stands in `## Angle Coverage` — leave this unchecked while one does, and name the angle and the check still owed in `## Summary`, per the verdict cap in [`review-angles.md`](../review-angles.md) § Status vocabulary
 - [ ] Type-checks clean — no unsafe casts or escape-hatch types
 - [ ] No stray debug output or artifacts
 - [ ] Accessibility requirements met for UI changes
