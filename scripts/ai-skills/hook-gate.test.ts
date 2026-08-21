@@ -1856,6 +1856,7 @@ function everyUnprovableShape(target: string): string[] {
  */
 const PROBE_VICTIM = "victim.md";
 const PROBE_SOURCE = "source.md";
+const PROBE_PATCH = "probe.patch";
 const PROBE_VICTIM_CONTENT = "victim line\n";
 const PROBE_SOURCE_CONTENT = "source line\n";
 
@@ -1948,17 +1949,109 @@ test("SHELL_INSPECTION_COMMANDS: every listed command leaves a scratch file unmo
 	);
 });
 
-test("the git subcommand sets: every listed subcommand leaves the working tree unmodified when run", async () => {
-	const subcommands = [...GIT_INSPECTION_SUBCOMMANDS, ...GIT_TREE_SAFE_SUBCOMMANDS];
+/**
+ * How the probe invokes one `git` subcommand so the invocation reaches the
+ * subcommand's own work.
+ *
+ * A bare `git <subcommand> victim.md` was the first shape, and it proved
+ * nothing for two thirds of the set: `commit` exits 1 on an empty message,
+ * `push` 128 with no upstream, `fetch` 128 on a path that is not a remote,
+ * and `remote` 129 on an unknown subcommand. A subcommand that stops before
+ * its work leaves the tree unchanged for the same reason a read does, so the
+ * probe recorded four refusals as four proofs. Every invocation below is
+ * required to exit 0, which is what makes the unchanged tree evidence.
+ *
+ * `prepare` runs after the repo is seeded and before the victim is dirtied,
+ * so a case may build whatever its subcommand needs — a patch to apply, a
+ * branch to merge — without that setup counting as the subcommand's write.
+ */
+type GitProbeCase = {
+	argv: string[];
+	prepare?: (dir: string) => Promise<void>;
+};
 
-	for (const subcommand of subcommands) {
-		await withTempRepo(async (dir) => {
+/** Every subcommand on the two lists, in the spelling that reaches its work. */
+const GIT_PROBE_CASES: Record<string, GitProbeCase> = {
+	diff: { argv: ["diff", PROBE_VICTIM] },
+	log: { argv: ["log", PROBE_VICTIM] },
+	show: { argv: ["show", `HEAD:${PROBE_VICTIM}`] },
+	status: { argv: ["status", PROBE_VICTIM] },
+	blame: { argv: ["blame", PROBE_VICTIM] },
+	grep: { argv: ["grep", "line", "--", PROBE_VICTIM] },
+	"ls-files": { argv: ["ls-files", PROBE_VICTIM] },
+	"cat-file": { argv: ["cat-file", "-p", `HEAD:${PROBE_VICTIM}`] },
+	"rev-parse": { argv: ["rev-parse", "HEAD"] },
+	commit: { argv: ["commit", "-q", "-m", "probe", PROBE_VICTIM] },
+	add: { argv: ["add", PROBE_VICTIM] },
+	push: { argv: ["push", "-q", "origin", "HEAD:refs/heads/probe"] },
+	fetch: { argv: ["fetch", "-q", "origin"] },
+	tag: { argv: ["tag", "-a", "probe-tag", "-m", "probe"] },
+	remote: { argv: ["remote", "-v"] },
+};
+
+/**
+ * The six working-tree writers `GIT_TREE_SAFE_SUBCOMMANDS`'s JSDoc names as
+ * deliberately absent, each in a spelling that reaches its write.
+ *
+ * These are the probe's negative control. Without one, a probe that reports
+ * every subcommand clean is indistinguishable from a probe that checks
+ * nothing, which is exactly what the bare-argv shape turned out to be. Each
+ * row below has to exit 0 *and* change the tree, so the machinery is shown
+ * detecting the writes the admitted set is claimed not to perform.
+ */
+const GIT_TREE_WRITER_CASES: Record<string, GitProbeCase> = {
+	checkout: { argv: ["checkout", "--", PROBE_VICTIM] },
+	restore: { argv: ["restore", PROBE_VICTIM] },
+	apply: {
+		prepare: (dir) =>
+			fs.writeFile(
+				path.join(dir, PROBE_PATCH),
+				[
+					"diff --git a/probe-applied.md b/probe-applied.md",
+					"new file mode 100644",
+					"--- /dev/null",
+					"+++ b/probe-applied.md",
+					"@@ -0,0 +1 @@",
+					"+applied",
+					"",
+				].join("\n")
+			),
+		argv: ["apply", PROBE_PATCH],
+	},
+	stash: { argv: ["stash", "push", "-q"] },
+	clone: { argv: ["clone", "-q", ".", "probe-clone"] },
+	merge: {
+		prepare: async (dir) => {
+			const branch = runProbe(dir, "git", [
+				"rev-parse",
+				"--abbrev-ref",
+				"HEAD",
+			]).stdout.trim();
+			runProbe(dir, "git", ["checkout", "-q", "-b", "probe-branch"]);
+			await fs.writeFile(path.join(dir, "merged.md"), "merged\n");
+			runProbe(dir, "git", ["add", "merged.md"]);
+			runProbe(dir, "git", ["commit", "-q", "-m", "branch"]);
+			runProbe(dir, "git", ["checkout", "-q", branch]);
+		},
+		argv: ["merge", "-q", "probe-branch"],
+	},
+};
+
+/** Runs one probe case against a fresh repo and reports what it did. */
+async function probeGitSubcommand(
+	probe: GitProbeCase
+): Promise<{ exitCode: number | null; changed: boolean; stderr: string }> {
+	return withTempRepo(async (remote) => {
+		runProbe(remote, "git", ["init", "-q", "--bare", "."]);
+
+		return withTempRepo(async (dir) => {
 			await fs.writeFile(path.join(dir, PROBE_SOURCE), PROBE_SOURCE_CONTENT);
 			await fs.writeFile(path.join(dir, PROBE_VICTIM), "committed line\n");
 			for (const setup of [
 				["init", "-q"],
 				["add", "."],
 				["commit", "-q", "-m", "seed"],
+				["remote", "add", "origin", remote],
 			]) {
 				const result = runProbe(dir, "git", setup);
 				assert.equal(
@@ -1968,21 +2061,75 @@ test("the git subcommand sets: every listed subcommand leaves the working tree u
 				);
 			}
 
+			await probe.prepare?.(dir);
+
 			// Dirty the file, so a subcommand that restores it from the index
 			// or from HEAD shows up as a working-tree change rather than as a
 			// no-op against an already-clean tree.
 			await fs.writeFile(path.join(dir, PROBE_VICTIM), PROBE_VICTIM_CONTENT);
 			const before = await snapshotWorkingTree(dir);
 
-			runProbe(dir, "git", [subcommand, PROBE_VICTIM]);
+			const result = runProbe(dir, "git", probe.argv);
 
-			assert.equal(
-				await snapshotWorkingTree(dir),
-				before,
-				`\`git ${subcommand}\` is on a list that says it writes no working-tree file`
-			);
+			return {
+				changed: (await snapshotWorkingTree(dir)) !== before,
+				exitCode: result.status,
+				stderr: result.stderr,
+			};
 		});
+	});
+}
+
+test("the git subcommand sets: every listed subcommand runs and leaves the working tree unmodified", async () => {
+	const subcommands = [...GIT_INSPECTION_SUBCOMMANDS, ...GIT_TREE_SAFE_SUBCOMMANDS];
+	const unproven: string[] = [];
+	const wrote: string[] = [];
+
+	for (const subcommand of subcommands) {
+		const probe = GIT_PROBE_CASES[subcommand];
+		assert.ok(
+			probe,
+			`\`git ${subcommand}\` is on a list the probe covers but has no invocation in \`GIT_PROBE_CASES\``
+		);
+
+		const result = await probeGitSubcommand(probe);
+		if (result.exitCode !== 0) {
+			unproven.push(`${subcommand} (exit ${result.exitCode}: ${result.stderr.trim()})`);
+			continue;
+		}
+
+		if (result.changed) {
+			wrote.push(subcommand);
+		}
 	}
+
+	assert.deepEqual(
+		unproven,
+		[],
+		"a listed subcommand never reached its work, so its unchanged tree proves nothing"
+	);
+	assert.deepEqual(
+		wrote,
+		[],
+		"a subcommand on a list that says it writes no working-tree file changed the tree"
+	);
+});
+
+test("the git subcommand probe catches every working-tree writer the tree-safe set excludes", async () => {
+	const missed: string[] = [];
+
+	for (const [subcommand, probe] of Object.entries(GIT_TREE_WRITER_CASES)) {
+		const result = await probeGitSubcommand(probe);
+		if (result.exitCode !== 0 || !result.changed) {
+			missed.push(`${subcommand} (exit ${result.exitCode}: ${result.stderr.trim()})`);
+		}
+	}
+
+	assert.deepEqual(
+		missed,
+		[],
+		"the probe did not detect a write it must detect, so a clean report from it means nothing"
+	);
 });
 
 /**
@@ -2081,6 +2228,14 @@ function everyForgedProof(target: string): string[] {
  * no reachable remedy; these rows are what stop the set from widening into
  * the subcommands that genuinely write, and what pin the flags left off
  * `GIT_TREE_SAFE_FLAGS` on purpose.
+ *
+ * The last two rows pin denials the tree-safe set does not reach at all. A
+ * command substitution puts `$` and `(` outside `SHELL_READ_SAFE_CHARACTERS`,
+ * so the heredoc commit form `.prism/rules/git-conventions.md` § Formatting
+ * mandates denies before any subcommand is resolved — the `-F` remedy the
+ * deny message names is what clears it. And `git commit -n` denies because
+ * `-n` is `--no-verify` at that subcommand, which is why `GIT_TREE_SAFE_FLAGS`
+ * carries `--dry-run` in long form only.
  */
 function everyGitTreeWrite(target: string): string[] {
 	return [
@@ -2098,6 +2253,8 @@ function everyGitTreeWrite(target: string): string[] {
 		`git push --receive-pack=${target} origin`,
 		// The tree-safe head token vouches for its own segment only.
 		`git commit -m msg; tee ${target}`,
+		`git commit -m "$(cat <<'EOF'\nPRISM-1: rewrite ${target}\nEOF\n)"`,
+		`git commit -n -m "fix ${target}"`,
 	];
 }
 
@@ -2107,9 +2264,14 @@ function everyGitTreeWrite(target: string): string[] {
  *
  * Derived over the subcommand axis for the same reason `everyProvableRead`
  * is: adding a subcommand to the set cannot land without a row asserting what
- * the addition claims. The hand-written tail carries the commit spellings
- * `.prism/rules/git-conventions.md` mandates, which is the shape whose denial
- * had no remedy.
+ * the addition claims. The hand-written tail samples the flagged commit
+ * spellings, which is the shape whose denial had no remedy.
+ *
+ * The heredoc form `.prism/rules/git-conventions.md` § Formatting mandates is
+ * not among them, and does not clear: its `$(` puts the command outside the
+ * read-safe character class before any of this is consulted. That spelling is
+ * pinned as a denial in `everyGitTreeWrite`, and the `-F` row below is the
+ * remedy the deny message names for it.
  */
 function everyTreeSafeGitCommand(target: string): string[] {
 	const shapes: string[] = [];

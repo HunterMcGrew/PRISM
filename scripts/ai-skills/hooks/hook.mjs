@@ -543,9 +543,17 @@ const GIT_INERT_FLAGS = new Set(
  *
  * Separate from `GIT_INSPECTION_SUBCOMMANDS` because these are not reads —
  * they write the index, a ref, or a remote. What they share with a read is
- * the only property this arm needs: no spelling of them writes a file a
- * manifest route can match, so every path-shaped token they name is safe to
- * drop.
+ * the only property this arm needs: no spelling of them writes a working-tree
+ * file *of its own*, so every path-shaped token they name is safe to drop.
+ *
+ * "Of its own" is the whole qualification, and `git commit` is why it is
+ * there. A `pre-commit` hook is arbitrary repo-configured code — husky plus
+ * lint-staged running a formatter over the repo's markdown is an ordinary
+ * consumer setup — and that write lands whether or not this set admits the
+ * subcommand, because a `git commit` whose text names no routed path is
+ * outside the gate either way. It is the same shape as the variable-path gap
+ * ADR-0072 § Consequences already admits: a write whose path never appears in
+ * the command text is invisible to a scan over the command text.
  *
  * The arm needs the distinction because `git commit -m "…"` carries its
  * message as a plain operand, and `scanPathShapedTokens` cannot tell a
@@ -554,11 +562,11 @@ const GIT_INERT_FLAGS = new Set(
  * `formatShellRerouteMessage`'s remedies reaches it — a commit is not an edit
  * to redo with a file-edit tool, and it is not a read to respell.
  *
- * The failure direction is unchanged by admitting them. A subcommand wrongly
- * listed here still cannot write a routed path, because a subcommand that
- * writes the working tree — `checkout`, `restore`, `apply`, `stash`, `clone`,
- * `merge` — is absent, and each of those is a working-tree write the gate is
- * meant to see.
+ * The six working-tree writers — `checkout`, `restore`, `apply`, `stash`,
+ * `clone`, `merge` — are absent, and their absence is checked rather than
+ * asserted. `hook-gate.test.ts` runs each of them in a spelling that reaches
+ * its write and requires the probe to see the tree change, so the probe that
+ * reports this set clean is shown to be capable of reporting a writer dirty.
  *
  * @type {Set<string>}
  */
@@ -579,15 +587,22 @@ export const GIT_TREE_SAFE_SUBCOMMANDS = new Set([
  * name a program git runs across a transport; `-c` sets arbitrary config
  * before the subcommand, `core.pager` included; `-p` is `--paginate` at that
  * same position, the two-position ambiguity `GIT_INERT_FLAGS` documents for
- * `-C`; `-t`/`--template` names a path git hands to the editor. `--no-verify`
- * is absent because `.prism/rules/git-conventions.md` forbids it, so listing
- * it would widen the proof for a spelling nothing should use.
+ * `-C`; `-t`/`--template` names a path git hands to the editor.
+ *
+ * `-n` is absent for a third kind of ambiguity — the same spelling means
+ * different things to different subcommands. `git add -n`, `git push -n`, and
+ * `git tag -n` read it as `--dry-run`; `git commit -n` reads it as
+ * `--no-verify`. `checkFlagsAreInert` partitions by neither, so admitting the
+ * dry-run meaning would admit the other one too. `--dry-run` stays, because
+ * the long form means one thing everywhere. `--no-verify` is absent for its
+ * own reason: `.prism/rules/git-conventions.md` forbids it, so listing it
+ * would widen the proof for a spelling nothing should use.
  *
  * @type {Set<string>}
  */
 const GIT_TREE_SAFE_FLAGS = new Set(
 	(
-		"-# -m -F -a -q -v -n -f -u -d -s -S -e " +
+		"-# -m -F -a -q -v -f -u -d -s -S -e " +
 		"--message --file --all --quiet --verbose --dry-run --force --amend " +
 		"--no-edit --allow-empty --allow-empty-message --set-upstream --delete " +
 		"--annotate --signoff --porcelain --tags --patch --update --intent-to-add"

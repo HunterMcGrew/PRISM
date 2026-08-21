@@ -477,26 +477,6 @@ function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
 }
 
 /**
- * Reports both halves of architect-route integrity: docs on disk that no
- * manifest route names (orphans), and routes naming a doc that is not on disk
- * (dead routes).
- *
- * The two directions together are what replaces per-doc frontmatter as the
- * route-integrity mechanism. Without the orphan half, a doc can be authored
- * and never routed, so nothing ever loads it; without the dead-route half,
- * adding a route at authoring time is aspirational rather than verifiable —
- * a typo'd route reads as healthy.
- *
- * "Routed" means named by either shipped table — `manifest.json` or the
- * toolkit's `_toolkit/manifest.base.json` — so both directions agree with
- * `ship-closure`, which seeds its roots from the same pair.
- *
- * Returns no findings when the architect tree or its manifest is absent.
- * `checkSeedDelivery` already reports a missing `architect/manifest.json`
- * with the remedy attached, so reporting it here too would double-count one
- * problem.
- */
-/**
  * The structural faults in one manifest's route keys — a route anchored to
  * nothing, or one written with a brace glob that compiles to a literal.
  *
@@ -520,6 +500,26 @@ function findStructuralRouteFaults(
 	);
 }
 
+/**
+ * Reports both halves of architect-route integrity: docs on disk that no
+ * manifest route names (orphans), and routes naming a doc that is not on disk
+ * (dead routes).
+ *
+ * The two directions together are what replaces per-doc frontmatter as the
+ * route-integrity mechanism. Without the orphan half, a doc can be authored
+ * and never routed, so nothing ever loads it; without the dead-route half,
+ * adding a route at authoring time is aspirational rather than verifiable —
+ * a typo'd route reads as healthy.
+ *
+ * "Routed" means named by either shipped table — `manifest.json` or the
+ * toolkit's `_toolkit/manifest.base.json` — so both directions agree with
+ * `ship-closure`, which seeds its roots from the same pair.
+ *
+ * Returns no findings when the architect tree or its manifest is absent.
+ * `checkSeedDelivery` already reports a missing `architect/manifest.json`
+ * with the remedy attached, so reporting it here too would double-count one
+ * problem.
+ */
 async function checkArchitectRoutes(consumerContentRoot: string): Promise<DoctorFinding[]> {
 	const architectDir = path.join(consumerContentRoot, "architect");
 	const manifestPath = path.join(architectDir, "manifest.json");

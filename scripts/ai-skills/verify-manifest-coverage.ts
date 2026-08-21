@@ -22,17 +22,15 @@ import { fileURLToPath } from "node:url";
 
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { compileMatcher } from "./hooks/lib/match.mjs";
-import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
+import { type Manifest, findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.PRISM_REPO_ROOT
 	? path.resolve(process.env.PRISM_REPO_ROOT)
 	: path.resolve(scriptDirectory, "../..");
 
-export type { Manifest } from "./lib/manifest-routes";
+export type { Manifest };
 export { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
-
-type Manifest = Record<string, string | string[]>;
 
 export interface PersonaScope {
 	name: string;
