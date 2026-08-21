@@ -2769,16 +2769,26 @@ test("runPreToolUseArm: a shell deny resolves its path against the command's own
 /**
  * Every row here spells its separator as a literal `\`, which means the same
  * thing on every platform. The end-to-end rows above reach the same code by
- * building their paths with `path.join`, so on macOS and ubuntu they exercise
- * the forward-slash spelling and only the Windows leg sees a backslash. These
- * rows put the backslash reading on all three legs, so the next regression is
- * caught where most runs happen rather than on the one leg nobody watches.
+ * building their paths with `path.join`, so a POSIX host exercises the
+ * forward-slash spelling and only the Windows leg sees a backslash. These rows
+ * put the backslash reading on every leg that runs the suite, so the next
+ * regression is caught where most runs happen rather than on the one leg
+ * nobody watches.
  */
-test("parseShellReadTargets: a backslash-spelled path credits the same doc as its forward-slash twin", () => {
+test("parseShellReadTargets: a backslash-spelled path announces its doc without crediting it", () => {
 	assert.deepEqual(
 		parseShellReadTargets(
 			String.raw`cat .prism\architect\_toolkit\install-layout.md`
 		),
+		[{ filePath: ".prism/architect/_toolkit/install-layout.md", credit: false }]
+	);
+});
+
+// The positive control for the row above: credit survives when no rewrite
+// happened, so a change that kills every credit cannot pass on that row alone.
+test("parseShellReadTargets: a forward-slash `cat` of the same doc credits it", () => {
+	assert.deepEqual(
+		parseShellReadTargets("cat .prism/architect/_toolkit/install-layout.md"),
 		[{ filePath: ".prism/architect/_toolkit/install-layout.md", credit: true }]
 	);
 });
@@ -2790,6 +2800,24 @@ test("parseUnprovenShellPaths: a backslash-spelled write target stays one path r
 		).includes("scripts/ai-skills/build.ts"),
 		"a separator read as an escape deletes itself and the path matches no route"
 	);
+});
+
+test("parseUnprovenShellPaths: a routed path carrying a trailing `:` stays a candidate", () => {
+	assert.ok(
+		parseUnprovenShellPaths(
+			"tee .prism/architect/_toolkit/install-layout.md:orig"
+		).includes(".prism/architect/_toolkit/install-layout.md"),
+		"a `sed -i` backup suffix must not glue the path into a token no route matches"
+	);
+});
+
+test("parseUnprovenShellPaths: colon-separated paths are each recovered", () => {
+	const candidates = parseUnprovenShellPaths(
+		"tee .prism/architect/_toolkit/install-layout.md:.prism/rules/context-reuse.md"
+	);
+
+	assert.ok(candidates.includes(".prism/architect/_toolkit/install-layout.md"));
+	assert.ok(candidates.includes(".prism/rules/context-reuse.md"));
 });
 
 test("parseUnprovenShellPaths: a drive-qualified path keeps its drive letter", () => {

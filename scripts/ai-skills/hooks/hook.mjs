@@ -116,9 +116,10 @@ const SHELL_READ_COMMANDS = new Set(["cat", "head", "tail", "sed", "less", "more
  * a quote, a `$`, or a line break. `cat foo\ bar.md` keeps its backslash,
  * keeps failing the class, and keeps yielding zero targets. The one case that
  * reads wrong is a no-op escape of a word character — `cat foo\bar.md` becomes
- * `foo/bar.md`, which credits if a routed doc happens to sit there. It needs a
- * spelling nobody writes plus a doc at the rewritten path, and the alternative
- * of stripping every `\` is what produced the bypass above.
+ * `foo/bar.md`, and if a routed doc sits there the read arm announces it. It
+ * costs a nag line rather than a credit, because `parseShellReadTargets`
+ * withholds credit from any command this rewrite changed. The alternative of
+ * stripping every `\` is what produced the bypass above.
  *
  * Nothing here keys on `path.sep`. Node reports `\` on Windows whatever shell
  * is in front of it, so a platform branch would mis-parse Git Bash — where the
@@ -168,6 +169,19 @@ function unquote(token) {
  * let a heredoc body credit the documents its own text named — see the class's
  * own JSDoc for why the whole-command form is the only one that holds.
  *
+ * A command the separator rewrite changed announces its targets and credits
+ * none of them. Credit banks on the observed call rather than on the delivered
+ * bytes, so a Windows-spelled `cat .prism\architect\x.md` would otherwise
+ * credit a doc that a POSIX shell — macOS, Linux, Git Bash — never opens: it
+ * reads the glued `.prismarchitectx.md`, fails, and delivers nothing. Nothing
+ * is lost by refusing, because the remedy this channel exists to serve is
+ * spelled with forward slashes on every platform (`formatDenyMessage` composes
+ * `ARCHITECT_DIR_PREFIX` with a manifest doc name, both `/`-joined), so a
+ * Windows reader re-cats the spelling the deny message printed and pays one
+ * extra read. The suppression is whole-command for the same reason the class
+ * test above it is: `cd some\dir && cat <doc>` rewrites a segment nowhere near
+ * the operand, and the `&&` short-circuits on POSIX.
+ *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
  */
@@ -186,7 +200,12 @@ export function parseShellReadTargets(command) {
 		targets.push(...parseSegmentReadTargets(tokens));
 	}
 
-	return targets;
+	const rewritten = normalized !== command;
+
+	return targets.map((target) => ({
+		...target,
+		credit: target.credit && !rewritten,
+	}));
 }
 
 /**
@@ -717,24 +736,21 @@ function scanPathShapedTokens(command) {
 	for (const run of stripped.match(PATH_SHAPED_RUN) ?? []) {
 		tokens.add(run);
 
-		// `-` belongs inside a path (`context-reuse.md`) but not at its front,
-		// where it is a flag marker or the tail of an expansion operator —
-		// `${OUT:-src/x.ts}` otherwise yields `-src/x.ts`, which matches no
-		// route. Both spellings ride along rather than choosing between them.
-		const unprefixed = run.replace(/^[-+]+/, "");
-		if (unprefixed.length > 0) {
-			tokens.add(unprefixed);
-		}
-
 		// `:` is in the run so a Windows absolute path stays one token —
 		// `C:/repo/x.ts` resolves to the drive it names, while `/repo/x.ts`
-		// would be re-qualified with whatever drive the process is on and
-		// resolve elsewhere. Keeping it also glues an expansion to its
-		// operand, so `${OUT:-src/x.ts}` yields `OUT:-src/x.ts`; both
-		// spellings ride along, the same way the `-` strip above handles it.
-		const unqualified = run.replace(/^[^/:]*:[-+]*/, "");
-		if (unqualified.length > 0) {
-			tokens.add(unqualified);
+		// alone would be re-qualified with whatever drive the process is on
+		// and resolve elsewhere. Keeping it also glues a path to whatever
+		// shares its run: an expansion operand (`OUT:-src/x.ts`), a `sed -i`
+		// backup suffix (`a.md:orig`), or a second path. So every colon-piece
+		// rides along beside the whole run rather than choosing between the
+		// readings. A leading `-`/`+` comes off each piece because `-` belongs
+		// inside a path (`context-reuse.md`) but not at its front, where it is
+		// a flag marker or the tail of `${OUT:-…}`.
+		for (const piece of run.split(":")) {
+			const unprefixed = piece.replace(/^[-+]+/, "");
+			if (unprefixed.length > 0) {
+				tokens.add(unprefixed);
+			}
 		}
 	}
 
