@@ -39,6 +39,13 @@ it, and every pass reviews them at different bars:
   — reviewing it at Subject bar would flag the loop's own bookkeeping as a
   finding on every pass.
 
+The PR body is exempt *during* the loop, not permanently — a standalone
+review pass checks it once, out of loop, before the human gate. Its
+verification block is what a human reads instead of re-running the probes, so
+the loop can converge clean while that block states counts and hashes an
+earlier round moved. PRISM PR #471 did exactly that, and the out-of-loop pass
+is what caught it.
+
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
 reviewed. A loop that reviews its own output cannot converge; it generates

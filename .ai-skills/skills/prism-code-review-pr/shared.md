@@ -347,6 +347,8 @@ Eric evaluates the PR and lands in exactly one of three states:
    - `confidence:needs-judgment` — both axes ran but a judgment call remains (UX tradeoff, untestable behavior, ambiguous requirement).
    - `confidence:standards-only` — Spec axis was skipped (no plan / AC / architect context); Standards axis cleared. Treated as state #3 for ready-flip purposes — a Spec-axis skip is a transparency label, not a blocking finding.
 
+**While any angle in `## Angle Coverage` is pass-bounded, state #3 may not resolve to `confidence:high`** — it resolves to `confidence:needs-judgment` instead, and the ready-flip does not fire. A pass-bounded angle is an unfinished check, which is what `confidence:needs-judgment` already means ("behavior Eric couldn't verify"), and `confidence:high` is exactly the unqualified ready state the verdict cap forbids while one stands. A **structurally** bounded angle is unaffected — `confidence:standards-only` already covers that case and is honest as written. Both classes are defined in [`review-angles.md`](../../../.prism/references/review-angles.md) § Status vocabulary.
+
 Every PR that receives labels gets exactly two. Never one, never three.
 
 **How Eric detects "developer-acknowledged":** For each unresolved review thread that Eric posted as a minor — if the PR author replied as the last comment on that thread, treat it as acknowledged. The act of responding is sufficient; no magic words required.
@@ -393,8 +395,8 @@ If only minor issues remain and the dev hasn't addressed them yet, apply effort 
 
 If everything looks good — zero issues, or all minors have been addressed — apply effort + confidence. Pick the confidence label by axis state:
 
-- Both axes ran clean → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
-- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`."
+- Both axes ran clean and no angle is pass-bounded → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
+- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`." This is also the label a pass-bounded angle forces per § Decision gate — name the angle and the specific check still owed as the concern.
 - Spec axis was skipped (no plan / AC / architect context for the touched paths) and Standards axis cleared → `confidence:standards-only`. Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
 
 When the clean pass is a re-review, append the resolved-thread count to whichever closing line applies ("4 prior threads resolved") — the same count that went into the summary comment per § Decision gate.
