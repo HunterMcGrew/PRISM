@@ -27,8 +27,9 @@ it, and every pass reviews them at different bars:
 - **Ledger** — a section a persona appends findings to, as opposed to a
   section an author writes to declare scope: the plan's `## Review Issues`,
   `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and
-  `## PR Readiness` entries, plus `.prism/lessons.md`. Not a review target
-  during the loop at any bar. Everything else in the plan file —
+  `## PR Readiness` entries, plus `.prism/lessons.md`, the PR body, and the
+  readiness line the loop itself emits. Not a review target during the loop
+  at any bar. Everything else in the plan file —
   `## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria` — is
   Subject content when it falls inside the diff being reviewed; Ledger names
   only bookkeeping, never the whole plan file. `## PR Readiness` is
@@ -38,6 +39,13 @@ it, and every pass reviews them at different bars:
   — reviewing it at Subject bar would flag the loop's own bookkeeping as a
   finding on every pass.
 
+The PR body is exempt *during* the loop, not permanently — a standalone
+review pass checks it once, out of loop, before the human gate. Its
+verification block is what a human reads instead of re-running the probes, so
+the loop can converge clean while that block states counts and hashes an
+earlier round moved. PRISM PR #471 carried exactly that drift twice — outside
+a loop run, caught by a review pass over the body itself.
+
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
 reviewed. A loop that reviews its own output cannot converge; it generates
@@ -46,7 +54,20 @@ one spent consecutive passes finding nothing in the feature under review
 while still producing findings, all of them in text the cycle had written;
 PRISM's own PR #446 (merged as `d28f2aaf`) recorded the same species three
 passes running against its plan file. The ledger for that run is at
-`.prism/plans/response-shape-contract.md` § Review Issues.
+`.prism/plans/response-shape-contract.md` § Review Issues. A third run
+outside this repo spent five of nine passes on meta churn before anyone
+noticed the subject had stopped producing findings.
+
+Two rules meet here and neither replaces the other. Each reviewer's
+§ Plan-file scope shrinks the set of plan observations that are findings at
+all — a plan is a finding only when it contradicts the diff. What survives
+that filter is mostly a contradiction in `## Implementation Tasks`,
+`## Decisions`, or `## Acceptance Criteria`, which the list above already
+calls Subject content — so the loop reviews it at the Subject bar like any
+other finding rather than capping it. The capping belongs to the Ledger row
+under **Disposition** below, and it runs over the bookkeeping sections
+whether or not § Plan-file scope would have called them findings. Two filters
+aimed at different sets, not an upstream filter feeding a downstream cap.
 
 **The repair bar — four anchors, name one or it is not a finding.** A
 repair-surface finding is admissible only when the reviewer names, and the

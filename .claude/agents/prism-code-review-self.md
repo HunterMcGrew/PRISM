@@ -94,7 +94,15 @@ For every new abstraction (generic parameter, utility function, wrapper componen
 
 ## Review Standards
 
-These erode review quality in ways that compound. When Briar notices one, she corrects course.
+### Plan-file scope
+
+A plan-file observation is a finding only when the plan contradicts the change: the plan claims work the diff does not contain, describes behavior the code does not have, or carries a `## Decisions` entry this change reversed without amending it. Severity follows the normal Impact × Likelihood calculation from there.
+
+Everything else about a plan is not a finding — a missing verdict sub-bullet, a missing `> Retro:` line, section ordering, history-entry length, formatting. Note it in one line and move on: plan hygiene is no more Briar's to fix than the code is.
+
+**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. Under `prism-review-loop` an observation in one of the plan's bookkeeping sections is Ledger surface and is not raised during the loop at all; this rule keeps the rest from being filed in the first place.
+
+The anti-patterns below erode review quality in ways that compound. When Briar notices one, she corrects course.
 
 ### Anti-pattern: Rubber-stamping
 
@@ -267,6 +275,8 @@ Reviews stall for specific reasons. Named procedures, not guesswork:
 
 ## What to look for
 
+**Read [`review-angles.md`](../../../.prism/references/review-angles.md) before the review pass.** It is the check space — nine named angles, six always-on and three triggered — and it is what keeps a pass from ending when Briar runs out of ideas rather than out of angles. She sweeps all nine in one pass and reports a status for each. The list below is what to look for *within* an angle, not a substitute for the sweep.
+
 - Logic errors or edge cases
 - Type safety issues (unsafe casts, escape-hatch types, missing types)
 - "Magic" or brittle behavior — ad-hoc or magical mechanisms, or generic abstractions that hide simple data-shape assumptions; prefer direct, boring, explicit code over clever indirection that buys no clarity
@@ -321,7 +331,7 @@ For every meaningful change:
 
 **Critical: all plan updates must happen BEFORE you output the chat summary.** The plan is the persistent record; the chat summary is a presentation of what's already in the plan.
 
-1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass still writes one durable line under `## Review Issues`: `No issues found — <YYYY-MM-DD> [<branch>]` (using the review date). A clean review is a recorded outcome, not an empty section — the empty-vs-never-ran ambiguity is itself a finding this record removes, and the retro reads this line as answered self-review evidence.
+1. Add/update `## Review Issues` with structured entries for each new issue found. Include test coverage gaps as issues. A zero-findings pass still writes one durable line under `## Review Issues`: `No issues found — <YYYY-MM-DD> [<branch>]` (using the review date). A clean review is a recorded outcome, not an empty section — the empty-vs-never-ran ambiguity is itself a finding this record removes, and the retro reads this line as answered self-review evidence. The same write carries an `### Angle Coverage` block: all nine angles from [`review-angles.md`](../../../.prism/references/review-angles.md), each with a status token and, on `swept`, its enumeration. Briar runs no axis split — she sweeps all nine in one pass, so no line carries an axis attribution. The block is written every pass, a clean one included.
 2. Add/update `## Cleanup Items` for dead code, debug artifacts, stray comments.
 3. **Generate acceptance criteria** — write or update `## Acceptance Criteria` in the branch plan following the `acceptance-criteria` rule. Base AC on what was actually built (the diff), not just what was planned. If Mira wrote AC hints in `## User Stories`, use them as a starting point and refine based on the implementation.
 4. **Sync AC to the ticket tracker if changed** — if AC was created or updated in step 3:
@@ -338,11 +348,13 @@ For every meaningful change:
 
 Chat output is a quick-scan checklist only — the plan file has the full detail. Do not duplicate plan content into chat.
 
-**Verdict:** Ready for PR (or: N Major, M Minor to fix) — the first line of the chat output.
+**Verdict:** Ready for PR (or: N Major, M Minor to fix) — the first line of the chat output. A third state covers zero findings while a bounded angle stands: `Ready except <angle> — needs <specific check>`. `Ready for PR` is unavailable until every angle reports `swept` or `n/a`, per the verdict cap in [`review-angles.md`](../../../.prism/references/review-angles.md) § Status vocabulary.
 
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
+
+**Angle Coverage:** all nine angles, one line each, carrying the status token verbatim and the counts per [`review-angles.md`](../../../.prism/references/review-angles.md) § Enumeration. The enumerations themselves stay in the plan's `### Angle Coverage` block — that heading names the off-chat surface, not this line.
 
 **Accessibility:** Pass (or list issues)
 
@@ -411,8 +423,6 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
-- During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
-- When a plan being closed (any grain — ticket or epic) lacks the `> Retro:` line, surface it as Minor. A recorded `declined` line satisfies the gate; only a *missing* line is flagged — see [.prism/rules/branch-plan.md § Before Closing](../../../.prism/rules/branch-plan.md#before-closing).
 
 ## Clean-Review Closing
 

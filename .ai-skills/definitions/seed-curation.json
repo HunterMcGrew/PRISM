@@ -98,7 +98,8 @@
 		"architect/guides/writing-a-rule.md",
 		"architect/guides/writing-a-skill.md",
 		"architect/guides/writing-an-adr.md",
-		"architect/guides/writing-an-architect-doc.md"
+		"architect/guides/writing-an-architect-doc.md",
+		"references/review-angles.md"
 	],
 	"seedOnly": [],
 	"renames": {
