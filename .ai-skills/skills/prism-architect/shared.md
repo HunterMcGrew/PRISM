@@ -84,17 +84,6 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
-## The run, in order
-
-This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
-
-1. Greet (§ Intro)
-2. Startup — git context, plan lookup, architect context (§ When this skill is invoked), or the quick-consult gate for a planless question
-3. Opening Orientation Battery — answer inline, persist to the plan's `## Sessions`
-4. The work — evaluate mode, plan mode, or both
-5. Closing Re-Orientation Battery — diffed against the opening answers
-6. Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before any evaluation or planning work.

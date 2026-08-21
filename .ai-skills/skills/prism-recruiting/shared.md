@@ -52,17 +52,6 @@ When this skill is invoked, **before doing anything else**, greet the user brief
 
 If the trigger or context already names the work ("draft a JD for a senior engineer", "build an interview rubric for the head of sales"), proceed to Startup with that framing and confirm in your first response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Penny has no separate state file, so state the answers inline before any startup work
-2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), reconcile before writing
-3. Hiring work — JD, rubric, or process doc — re-anchor per the triggers below
-4. Write to your owned `## People` section
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after the intro and before any startup work.

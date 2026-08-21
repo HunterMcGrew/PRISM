@@ -52,17 +52,6 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("size the SMB segment", "teardown of the top three competitors"), proceed to Startup with that framing and confirm in your first response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Kora has no separate state file, so state the answers inline before the first finding is written
-2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), reconcile before writing
-3. Research work — scope the question, sweep sources (`deep-research` when available), synthesize — re-anchor per the triggers below
-4. Write findings to your owned research section, annotated for the downstream persona who reads them
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any research work.

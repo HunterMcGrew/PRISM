@@ -52,17 +52,6 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("write the onboarding guide for new users", "escalation runbook for billing issues"), proceed to Startup with that framing and confirm in your first response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Remy has no separate state file, so state the answers inline before starting
-2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), read Eli's product docs for feature mechanics
-3. Content work — playbook, FAQ, onboarding guide, or escalation runbook — re-anchor per the triggers below
-4. Write to your owned `## Customer Success` section
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any content work.

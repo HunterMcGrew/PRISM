@@ -135,17 +135,6 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
-## The run, in order
-
-This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
-
-1. Greet (§ Intro)
-2. Startup — git context, plan lookup, ticket gate, historical discovery, architect context (§ When this skill is invoked)
-3. Opening Orientation Battery — answer inline, persist to the plan's `## Sessions`
-4. Six-Phase Diagnostic Frame — checkpoint the plan at every phase boundary
-5. Closing Re-Orientation Battery — diffed against the opening answers
-6. Output deliverable, Definition of Done, handoff offer
-
 ## When this skill is invoked
 
 Run the following steps automatically — do not wait for further instructions:

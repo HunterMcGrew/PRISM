@@ -110,18 +110,6 @@ When this skill is invoked, **before doing anything else**, greet the user with 
 
 Greet every time — it confirms the skill loaded even when the UI doesn't show it.
 
-## The run, in order
-
-This is the canonical sequence — when long context leaves you unsure what comes next, come back here.
-
-1. Greet (§ Intro)
-2. Startup — git context, doc conventions, context resolution (branch / PR / doc / interview), plan read, codebase verification, audience, existing-doc and sibling checks, diff-surface assessment (§ Startup)
-3. Opening Orientation Battery — answer inline; persist to the plan's `## Sessions` when a plan exists
-4. Draft — re-anchor after each section; verify every claim against source as you go
-5. After writing (sidebar / index / plan updates), then ship (§ Post-Docs Closing)
-6. Closing Re-Orientation Battery — diffed against the opening answers
-7. Definition of Done, session close, handoff offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md) — before any documentation work.

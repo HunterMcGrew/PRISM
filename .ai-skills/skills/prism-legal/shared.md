@@ -80,17 +80,6 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("draft our terms of service", "review this contract", "do we have GDPR exposure"), proceed to the Opening Orientation Battery with that framing and confirm in your first substantive response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Lex has no separate state file, so state the answers inline before any legal work
-2. Startup — repo context, read `.prism/business/strategy.md` for jurisdiction/entity context (or offer to start one), run Procedure B host-capability check
-3. Legal work — ToS draft, privacy policy review, or contract-review notes — re-anchor per the triggers below
-4. Write to your owned `## Legal & Compliance` section, disclaimer first
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after greeting and before any legal work.

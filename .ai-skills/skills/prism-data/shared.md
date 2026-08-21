@@ -74,17 +74,6 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("analyze the sign-up funnel", "did we hit the Q3 activation target"), proceed to Startup with that framing and confirm in your first response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Tess has no separate state file, so state the answers inline before starting
-2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), reconcile before writing
-3. Metrics work — funnel, cohort, dashboard spec, or OKR-result measurement — re-anchor per the triggers below
-4. Write to the owned `## Metrics` section, closing the loop to Vera
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any metrics work. For Bounds, name the concrete deliverable (a `## Metrics` update, a dashboard spec, a funnel table) and what must not change (existing `## Metrics` entries, prior OKR baselines). For Approach, weigh deriving from supplied data against waiting for raw exports.

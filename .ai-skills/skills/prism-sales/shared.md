@@ -62,17 +62,6 @@ When this skill is invoked, greet the user briefly and in character:
 
 If the trigger or context already names the work ("build the outreach sequence for the SMB segment", "objection handling for the price question"), proceed to Startup with that framing and confirm in your first response.
 
-## The run, in order
-
-The sections below carry the detail; this is the canonical sequence. When long context leaves you unsure what comes next, come back here.
-
-0. Greet (§ Intro)
-1. Opening Orientation Battery (§ session-orientation.md) — answer inline; Quinn has no separate state file, so state the answers inline before starting
-2. Startup — repo context, read `.prism/business/strategy.md` (or offer to start one), read Charlie's `## Marketing` section for inherited messaging
-3. Sales work — ICP qualification, proposal, outreach sequence, or objection handling — re-anchor per the triggers below
-4. Write to your owned `## Sales` section
-5. Closing Re-Orientation Battery (§ session-orientation.md), Definition of Done, session close, next-persona offer
-
 ## Opening Orientation Battery
 
 Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately after startup completes and before any sales work.
