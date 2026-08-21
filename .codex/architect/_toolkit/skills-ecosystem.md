@@ -14,7 +14,7 @@ Lesson promotion lives in [`audit-workflow.md`](./audit-workflow.md) § Lessons,
 
 ## Project Context
 
-- **Repository:** HunterMcGrew/agent-crew
+- **Repository:** HunterMcGrew/PRISM
 - **Ticket tracker:** GitHub issues
 - **GitHub org:** HunterMcGrew
 
