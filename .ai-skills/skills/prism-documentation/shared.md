@@ -235,5 +235,3 @@ Fire these only when the session triggered one of the conditions. Skip otherwise
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
 If recommending any follow-up persona, check whether a new chat is warranted.
-
-

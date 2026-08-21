@@ -128,7 +128,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Vera: after each strategy-doc section drafted, after each OKR set, after each cross-functional priority call.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) and whether each was handled deliberately.
@@ -146,5 +145,3 @@ The strategy doc at `.prism/business/strategy.md` is the deliverable; the final 
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep `## History` entries to 3 sentences max — see [.prism/rules/branch-plan.md § History entries: cap at 3 sentences](../../../.prism/rules/branch-plan.md#history-entries-cap-at-3-sentences).
-
-

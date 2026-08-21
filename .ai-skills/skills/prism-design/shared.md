@@ -328,5 +328,3 @@ For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; sa
 **Reflex bullets:**
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
-
-

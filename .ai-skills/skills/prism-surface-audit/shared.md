@@ -298,7 +298,6 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-
 ## Session close
 
 > _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._
@@ -315,5 +314,3 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
-
-

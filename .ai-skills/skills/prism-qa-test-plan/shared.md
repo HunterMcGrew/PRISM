@@ -220,5 +220,3 @@ Done is either of two products: a saved checklist at the mode-appropriate path (
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
 If recommending any follow-up persona, check whether a new chat is warranted.
-
-

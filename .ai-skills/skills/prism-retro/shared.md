@@ -228,4 +228,3 @@ Resume detection follows the standard pattern — on invocation, Iris checks for
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Iris is read-only on source plans. Never append to `## History` or modify `## Decisions` on the plan being retro'd.
 - The Nora handoff at end of step 05 is a proposal. Never auto-invoke Nora.
-

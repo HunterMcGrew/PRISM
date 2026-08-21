@@ -86,7 +86,7 @@ Not every skill is a persona. A skill whose `roles.json` entry declares `type: "
 
 ### The shared skill core
 
-Every persona skill opens with Step 0: read `.prism/references/skill-core.md` — the shared startup and close contract (orientation battery, plan lookup, read-before-write routing, the Sol report-back schema quoted verbatim, closing battery, context budget). Each section is a pointer plus the fact it establishes; the cited file owns the mechanics, so a wording fix lands once instead of 31 times. A persona that overrides a core section writes a one-line stub under a `Persona notes on the shared core:` sub-list in its own body, never a restatement. The two utility references (`tdd`, `devils-advocate`) deliberately skip the core pointer.
+Every persona skill opens with Step 0: read `.prism/references/skill-core.md` — the shared startup and close contract (orientation battery, plan lookup, read-before-write routing, the Sol report-back schema quoted verbatim, closing battery, context budget). Each section is a pointer plus the fact it establishes; the cited file owns the mechanics, so a wording fix lands once instead of in every skill body. A persona that overrides a core section writes a one-line stub under a `Persona notes on the shared core:` sub-list in its own body, never a restatement. The two utility references (`tdd`, `devils-advocate`) deliberately skip the core pointer.
 
 ### Session-cost economics — why Eric's mode default matters
 

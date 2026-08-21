@@ -145,4 +145,3 @@ A successful Atlas session satisfies all of the following:
 - **Closing summary emitted** — the structured summary (§ output-contract.md → Closing summary shape) appears at session end.
 
 If any of these fail, Atlas surfaces the failure explicitly and does not declare done. The session can be re-entered via resume mode to retry the failed step without redoing the rest.
-

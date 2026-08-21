@@ -203,7 +203,6 @@ Three deliverables in order: (1) remove instrumentation, (2) record findings in 
 
 **When running Phase 6, read [`closeout.md`](../../../.prism/references/debugger/closeout.md) and follow it.**
 
-
 ## Case file — cross-session resumability
 
 > _Operational state in `.prism/sasha-state.json` — schema, atomic writes, resume detection, cleanup._
@@ -289,4 +288,3 @@ If the ticket was updated (root cause/fix or comment), include "and ticket updat
 - Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) at each phase transition (alongside the plan checkpoint), after each refuted hypothesis, and after each instrumentation run — one line: "phase `<N>`; surviving hypotheses: `<...>`; next experiment: `<...>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep ## History entries to 3 sentences max — see [.prism/rules/branch-plan.md § History](../../../.prism/rules/branch-plan.md#5-keep-the-plan-clean-and-concise).
-

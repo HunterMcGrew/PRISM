@@ -86,7 +86,7 @@ listed deletes.
 | prism-standup-summary | compress hard | deliverable sentence; confirm-before-post + paste-fallback (forecloses an unconfirmed Slack post). The other ~21 boxes are the *third* copy of the formatting contract (lenses + anti-patterns) — delete; single owner decided in D8. |
 | prism-conductor | keep | the four run-completion states are the run-state contract (forecloses declaring a run done with goal-state unsaved or a source write). |
 | prism-surface-audit | keep | already the target shape — two boxes, both worktree-lane safety invariants (forecloses removing RED/YELLOW; forecloses stale-classification removal). |
-| prism-retro, prism-refactor-scout, prism-doc-walker, prism-onboarding, prism-prd | compress | deliverable sentence + the genuinely non-restated policy rows (Theo: "no doc without an explicit `write` decision" — forecloses fabricated consent; Ren: "no consumer source modified"; Atlas: idempotency + validate-before-write + anchors-populated; Parker: assumption tags enumerated + decision-log-at-stakes; Iris: read-only on source plan). Phase-echo checkboxes delete. |
+| prism-retro, prism-refactor-scout, prism-doc-walker, prism-onboarding, prism-prd | compress | deliverable sentence + the genuinely non-restated policy rows (Theo: "no doc without an explicit `write` decision" — forecloses fabricated consent — plus every presented candidate has a recorded `write`/`skip`/`defer` and `currentPhase` idle on a clean close — forecloses closing a walk with un-adjudicated candidates; Ren: "no consumer source modified", plus every grilled candidate has a plan or a recorded decline — forecloses a grill pass that leaves candidates in limbo; Atlas: idempotency + validate-before-write + anchors-populated; Parker: assumption tags enumerated + decision-log-at-stakes; Iris: read-only on source plan). Phase-echo checkboxes delete. |
 | 9 business personas | compress (one edit ×9) | deliverable sentence; lazy-creation ("never seeded empty" — forecloses placeholder strategy docs); capability-degradation-stated (forecloses silently pretending a host capability ran); persona-specific one-offs (Vera: OKRs-as-outcomes → owner: lens 2, cite; Lex: disclaimer present — forecloses an output without the not-legal-advice line). |
 | prism-handoff, prism-review-loop, prism-skill-forge | n/a — no DoD header | — |
 
@@ -135,8 +135,18 @@ named hazard; note the region name lies on three files — see D5-a).
 credentials in 11 files, but wraps *operational content* in three: `prism-refactor-scout`
 (the entire Heuristics section), `prism-conductor` (Per-team orchestration notes), and
 `prism-onboarding` (a stub at file bottom). In those three the region is not a credential
-block — do not sweep it. Read `prism-onboarding/shared.md` for the anchor contract before
-any in-region edit, per task N3.
+block — do not sweep its *content*. Read `prism-onboarding/shared.md` for the anchor
+contract before any in-region edit, per task N3.
+
+> **Amended 2026-08-21, superseding the do-not-sweep for the anchors themselves.** Hunter's
+> mid-run ruling removed every `atlas:specializes-in` anchor roster-wide and retired the
+> generator lane (commits `1dbcf81a`, `0a9a0fa2`, `2396c3bb`). Under that ruling: Ren's
+> Heuristics *content* was kept (markers stripped), Atlas's stub deleted, and conductor's
+> `## Per-team orchestration notes` section deleted outright — its one line promised "Atlas
+> injects team-specific phase ordering and dispatch defaults here," a promise the retired
+> generator can no longer keep, so keeping the section would ship a false claim
+> (foreclosure: none — the section carried no content beyond the dead promise). If
+> per-team orchestration content returns it needs its own named anchor and generator lane.
 
 **D5-b — pronoun gaps: resolved by Hunter, 2026-08-21.** Seven opening lines declared no
 pronoun; Hunter supplied the declarations. Add each to the opening line in the standard
@@ -292,3 +302,8 @@ a routing sentence in D8), `description` frontmatter (out of scope entirely — 
 3. **Pronoun gaps** — resolved; add the seven declarations per D5-b.
 4. **Atlas anchor name lies on three files** (D5-a); the N3 hazard check is mandatory
    before any in-region edit.
+5. **AC-P3-6 and AC-P3-7 are mutually unsatisfiable as written** — check-green at every
+   commit requires rebuilt mirrors, which P3-7 forbids before the terminal commit. Graded
+   intent-held per Briar's review: crossref/lint/tests green at every commit, the full
+   check green at the terminal mirror commit. Recorded here rather than silently
+   reinterpreted.

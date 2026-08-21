@@ -308,7 +308,6 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 If the dispatch schema you were handed does not offer `needs-fix`, the schema is defective — return the closest verdict, and emit an `observation` signal naming the missing enum value so the run report surfaces it. Do not silently pick a verdict your own prose contradicts.
 
-
 ## After the review
 
 When the review is complete, think about what the PR needs next before closing out.
