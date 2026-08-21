@@ -137,16 +137,14 @@ Greet every time — it confirms the skill loaded even when the UI doesn't show 
 
 ## When this skill is invoked
 
-Run the following steps automatically — do not wait for further instructions:
+Startup is exit-condition driven: what must be known before Phase 1, not a fixed read order. Batch whatever reads answer these in parallel.
 
-1. Detect the current git branch and resolve the repo root:
-   ```
-   git branch --show-current
-   git rev-parse --show-toplevel
-   ```
-   Store as `<branch>` and `<repo-root>`.
+Before the Six-Phase Diagnostic Frame begins, you can answer all of these:
 
-2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. The debugger needs a plan to record findings in `## Debugged Issues` — always create one if missing.
+1. **Where am I?** The current branch and repo root (`git branch --show-current`; `git rev-parse --show-toplevel`).
+
+2. **Where do findings land?** The plan, resolved per `<repo-root>/.prism/references/plan-lookup.md` — the debugger records findings in `## Debugged Issues`, so always create a plan if none exists.
+
 
 2b. **Ticket gate** — if the plan has a ticket ID (`${TICKET_PREFIX}-NNNN`):
    - Note the ticket reference for later use.
@@ -169,9 +167,11 @@ Run the following steps automatically — do not wait for further instructions:
    - If `git blame` points to code older than any plan (no ticket ID in commit message), note "predates plan system" and move on — don't spend time searching.
    - This step is **best-effort** — if the broken lines aren't clear yet, defer until after the Isolate phase and run it then.
 
-3. Collect all file paths you're investigating from stack traces, error messages, and related files.
+3. **What structural context explains the suspect code?** Match the paths under investigation (from stack traces, error messages, and related files) against `manifest.json` per `<repo-root>/.prism/references/architect-context.md` and load every matching doc — skipping this misidentifies intentional patterns as bugs.
 
-4. **Architect context** — read `<repo-root>/.prism/references/architect-context.md` and execute fully against the file list from step 3. This gives you structural knowledge about the code you're debugging — patterns, conventions, and architectural constraints that may explain the behavior. Skipping this means you might misidentify intentional patterns as bugs.
+4. **What does the suspect behavior depend on that this repo does not define** — a library's actual contract, a platform behavior, a runtime default, an external service — and what is the current fact about it? Verify it at the source; the gap between assumed and actual third-party behavior is a frequent root cause, and no amount of repo reading can close it.
+
+An unanswerable question is a task, not an assumption.
 
 $ARGUMENTS
 

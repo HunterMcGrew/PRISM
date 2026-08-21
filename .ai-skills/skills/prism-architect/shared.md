@@ -90,41 +90,31 @@ Run the Opening Orientation Battery per [session-orientation.md](../../../.prism
 
 ## When this skill is invoked
 
-Run the following steps automatically — do not wait for further instructions. Execute in two parallel batches — **do not read sequentially**.
+Startup is exit-condition driven: what must be known before evaluating, not a fixed read order. Batch whatever reads answer these questions in parallel; a question already answered in context needs no read.
 
-### Batch 1 — fire all in parallel immediately
+Before any evaluation or planning begins, you can answer all four:
 
-1. **Git context** — run together:
-   ```
-   git branch --show-current && git rev-parse --show-toplevel
-   git diff HEAD~1 HEAD
-   git diff origin/${DEFAULT_BRANCH}...HEAD --stat
-   ```
-   Store branch as `<branch>`, repo root as `<repo-root>`. The `HEAD~1` diff gives recent changes and the full file list in one shot. The `--stat` gives branch-wide scope.
+1. **Where am I, and what changed?** The current branch, repo root, and the branch-wide diff (`git branch --show-current && git rev-parse --show-toplevel`; `git diff HEAD~1 HEAD`; `git diff origin/${DEFAULT_BRANCH}...HEAD --stat`) — without the diff you cannot know which architect context applies or what scope you are evaluating.
 
-2. **Reference files** — read all three in parallel:
-   - `<repo-root>/.prism/references/plan-lookup.md`
-   - `<repo-root>/.prism/references/architect-context.md`
-   - `<repo-root>/.prism/architect/manifest.json`
+2. **What is the plan, and what has it already decided?** Resolve it per `<repo-root>/.prism/references/plan-lookup.md` — documented decisions are intentional constraints, and an evaluation that contradicts one is wrong on arrival (flag any whose original rationale no longer holds). The quick-consult gate below is the one exception.
+
+3. **What constraints govern the touched paths?** Match every file from the diff against `<repo-root>/.prism/architect/manifest.json` (per `.prism/references/architect-context.md`) and load every matching doc — a partial load misses constraints and produces a confidently wrong recommendation. If no context exists for the area, read the codebase files directly to infer patterns and note the gap. Read further source files only where the diff alone can't explain them.
+
+4. **What does this change depend on that this repo does not define** — a vendor API, a host runtime, a platform behavior, an upstream contract — and what is the current fact about it? Verify it at the source rather than from memory before the recommendation rests on it.
+
+An unanswerable question is a task, not an assumption.
 
 ### Quick-consult mode gate
 
-Before Batch 2 fires, check whether this is a planless quick architecture question — no ticket, no multi-task scope, just "does this fit?" or "is this the right approach?" If so, run quick-consult mode: state the Opening Orientation Battery answers inline in chat and evaluate without any plan ceremony — skip the plan-lookup step below entirely.
+Before resolving the plan (question 2 above), check whether this is a planless quick architecture question — no ticket, no multi-task scope, just "does this fit?" or "is this the right approach?" If so, run quick-consult mode: state the Opening Orientation Battery answers inline in chat and evaluate without any plan ceremony — skip the plan-lookup step below entirely.
 
-**Escalation trigger:** the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — shift into full mode: resolve or create the plan (Batch 2, step 3 below) and retroactively record in `## Decisions` any decisions already made during the consult.
+**Escalation trigger:** the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — shift into full mode: resolve or create the plan (question 2 above) and retroactively record in `## Decisions` any decisions already made during the consult.
 
-If the question already needs full mode (a ticket is named, task decomposition is requested, multi-step planning is implied), skip this gate and proceed straight to Batch 2.
+If the question already needs full mode (a ticket is named, task decomposition is requested, multi-step planning is implied), skip this gate and resolve the plan.
 
-### Batch 2 — fire all in parallel once Batch 1 completes
+### Architect-doc lane (triggered mode)
 
-3. **Plan** — execute the plan lookup steps using `<branch>` from Batch 1. No evaluation or planning begins without a resolved plan, except in quick-consult mode (see the gate above), where the consult runs planless until the escalation trigger fires. Treat documented decisions as intentional constraints — do not second-guess them, but flag any whose original rationale no longer holds.
-
-4. **Architect context** — match every file from the diff against `manifest.json`. Load all matched architect docs in parallel. Every matching pattern must be loaded — partial loads miss constraints and produce wrong recommendations.
-   - If **none** of the context files exist for the relevant area: read the actual codebase files directly to infer patterns. Note which context files are missing so they can be created after this session.
-
-5. **Touched source files** — read any files from the diff that need deeper context beyond what the diff itself provides. If the diff is small and self-contained, skip this — the diff is sufficient. Do not re-read files you already understand from the diff.
-
-6. **Architect-doc lane** — when the diff includes `.prism/architect/**` files (or paired dev docs when `documentation.keepsDevDocs` is `true`), activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
+When the diff includes `.prism/architect/**` files (or paired dev docs when `documentation.keepsDevDocs` is `true`), activate source-verification mode. Walk every claim in the doc against the cited source — anything `manifest.json` can route to (YAML, Dockerfiles, schemas, scripts, components, blocks, hooks, services, PHP classes). Classify each claim as **verified** (matches source), **diverged** (contradicts source), or **missing** (references something that doesn't exist). Surface diverged and missing claims as Structural Concerns in the evaluate-mode output. See [`architect-doc-verification.md`](../../rules/architect-doc-verification.md) for the rule.
 
 $ARGUMENTS
 

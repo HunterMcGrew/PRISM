@@ -177,32 +177,21 @@ Run the Opening Orientation Battery per [session-orientation.md](../../../.prism
 
 ## Startup
 
-Run these steps automatically before any implementation work. **Maximize parallelism** — steps 1, 2, and 3 are independent and should be batched into a single parallel call.
+Startup is exit-condition driven: what must be known before implementing, not a fixed read order. Batch whatever reads answer these questions in parallel; skip a read whose answer is already in context.
 
-1. Detect the current git branch and resolve the repo root:
+Before any implementation begins, you can answer all five:
 
-   ```
-   git branch --show-current
-   git rev-parse --show-toplevel
-   ```
+1. **Where am I?** The current branch and repo root (`git branch --show-current`; `git rev-parse --show-toplevel`).
 
-   Store as `<branch>` and `<repo-root>`.
+2. **What is the plan, and what is open in it?** Resolve it per `<repo-root>/.prism/references/plan-lookup.md` — no implementation begins without a resolved plan. Present any `Status: open` entries in `## Debugged Issues` or `## Review Issues` before starting. If the user says anything like "I updated the plan", "there's something in the plan", or "check the plan" — re-read the plan immediately, before anything else; acting on a stale plan builds the wrong thing.
 
-2. **Plan lookup** — read `<repo-root>/.prism/references/plan-lookup.md` and execute every step. No implementation begins without a resolved plan.
-   - **If the user says anything like "I updated the plan", "there's something in the plan", "I added issues to the plan", or "check the plan" — re-read the plan file immediately before doing anything else.**
-   - Check `## Debugged Issues` and `## Review Issues` for any `Status: open` entries — present them to the user before starting.
+3. **What constraints govern the files I'll touch?** Collect the paths from the plan's implementation tasks, match them against `manifest.json` per `<repo-root>/.prism/references/architect-context.md`, and load every matching doc — partial loads miss constraints. Read the source files named by open issues or `$ARGUMENTS` in the same parallel batch, not after startup — every deferred read that could have been parallel is a wasted round trip.
 
-3. Collect all file paths you'll be working on from the plan's implementation tasks and any files already identified.
+4. **What does the AC require, and is it current?** If `## Acceptance Criteria` exists, acknowledge it ("I see N acceptance criteria — the implementation will cover these") and check the `AC Sync Log`: AC modified after the last `synced` entry gets flagged for a post-implementation sync. No AC section is fine — note it and proceed; generate AC only if asked.
 
-4. **Architect context** — read `<repo-root>/.prism/references/architect-context.md` and execute fully against the file list from step 3. Every matching pattern in `manifest.json` must be loaded — partial loads miss constraints and produce wrong recommendations.
+5. **What does this change depend on that this repo does not define** — a vendor API, a framework behavior, a platform contract, an upstream service — and what is the current fact about it? Verify it at the source before building on it. Don't write tests that pin third-party behavior, but do confirm that behavior before the implementation assumes it.
 
-4b. **Early file reads** — after reading the plan, identify all source files referenced in open `## Review Issues` and `## Debugged Issues` (or in `$ARGUMENTS`). Read these files in the **same parallel batch** as step 3 (architect context). Do not wait until after startup to read files you already know you'll need — every deferred read that could have been parallel is a wasted round trip.
-
-4c. **Acceptance criteria check** — after reading the plan, check `## Acceptance Criteria`:
-
-- If AC exists: acknowledge it to the user — "I see N acceptance criteria. I'll make sure the implementation covers these." List any Gherkin (`Given/When/Then`) items briefly so the user knows you've internalized them.
-- **Sync status check:** Review the `## Acceptance Criteria > AC Sync Log` table. If the most recent entry shows AC was modified after the last `synced` entry, flag: "AC was updated since the last ticket sync — I'll sync it after implementation if needed."
-- If no AC section or it's empty: note it but proceed — AC is not required for every ticket — only generate AC if the user asks.
+An unanswerable question is a task, not an assumption.
 
 ## Task
 
