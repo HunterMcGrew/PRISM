@@ -194,6 +194,42 @@ runs.
     and `pnpm prism:check` re-run at exit 0; five-way mirror parity confirmed by hash on both
     edited references rather than asserted.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, dispatched by Sol under run
+  `architect-gate-port`, lane 3a]
+  - **Intent** — close Eric's two Majors and two Minors on PR #471 so the bounded-angle cap
+    reaches every surface that can emit a ready state, and `review-angles.md` stops carrying two
+    clauses that contradict each other.
+  - **Ambiguity** — none load-bearing; assuming Major 1's fix extends to Eric's § After the
+    review closing lines as well as § Decision gate, since the portable source carries the cap in
+    both and porting one would leave the reporting surface stating the label the gate had just
+    been taught not to emit.
+  - **Bounds** — done = both Majors and both Minors fixed at canonical source, mirrors rebuilt,
+    PR body resynced, PR still draft. Untouchable = `.claude/worktrees/agent-a507b79a93c90415f`,
+    the deny-gate branch, every 3B task.
+  - **Approach** — take Eric's Major 2 shape whole and move only its placement, so the new rule
+    sits in the paragraph that already owns the adjacent one instead of becoming a second copy.
+  - **Close** — scope held, with one absorption recorded as a Decision: Eric's cross-cutting
+    observation on the review loop's exempt PR body said *no change requested for 3A*, and it is
+    folded in anyway as one sentence, because `followup-scope.md` makes fold-in the default for
+    same-scope work pre-merge on a file already in the diff. Two silent decisions named. Briar's
+    third verdict state is *not* narrowed to pass-bounded alongside Eric's checkbox — the only
+    structural producer this fragment names is Eric's lightweight-path axis skip, and Briar runs
+    no axis split, so narrowing hers would add a distinction she cannot produce. And the round-2
+    plan entry's stale `4b7624af` hash is left standing: it is a historical snapshot in a
+    bookkeeping section, which the § Plan-file scope rule this PR ships says is not a finding —
+    the same call Eric made on the same file. One prior reading is retired rather than carried:
+    the last session's edge recall defended a permanently-unchecked checkbox on every docs-only
+    PR as intended, and the pass-bounded narrowing removes the case that needed defending. Edge
+    recall for this pass: an angle swept end to end that finds nothing still reports `swept` with
+    `— no items`, and a short enumeration over a full range is a finished sweep — both are stated
+    in § Enumeration rather than left to the reviewer, because the deleted thinness heuristic
+    invites exactly the opposite reading. Verification honesty: `pnpm prism:build` and
+    `pnpm prism:check` re-run at exit 0; `pass-bounded` confirmed to have consumers by tree-wide
+    grep where it previously had none; `thinnest` confirmed absent from all five
+    `review-angles.md` copies; five-way mirror parity confirmed by hash. The PR body resync is
+    verified by re-reading the body back from the API after the `PATCH`, since `gh pr edit` fails
+    on this repo and is silent about whether the write landed.
+
 ---
 
 ## Decisions
@@ -594,6 +630,30 @@ verdict instead.
 preference — PRISM PR #471's re-review finding a fifth defect of the round-1 class, and PR #470's
 ten rounds. Both are qualified by repo, matching how `writing-voice.md` and `code-standards.md`
 cite `thrive#2196` on the same consumer-shipped surface.
+
+→ promotion verdict pending — resolves at PR 3A close.
+
+### The loop's exempt PR body is absorbed into 3A rather than deferred
+
+Eric's cross-cutting observation on the review loop — that the newly-exempted PR body is where
+both stale verification claims lived, and the loop by design cannot catch them — carried a named
+remedy and an explicit "no change requested for 3A." It is absorbed anyway, as one sentence on
+the Ledger row saying the body is checked once, out of loop, before the human gate.
+
+- **Root cause.** The exemption is scoped to *during the loop*, which is correct: reviewing the
+  body every pass is the meta-churn the exemption exists to stop. What the row did not say is
+  that the check still has to happen somewhere, so a reader could take the exemption as
+  permanent. This PR is the demonstration — the loop converged clean with two of four
+  verification probes no longer reproducing, and only a standalone pass caught them.
+- **Alternatives considered.** A follow-up ticket, per Eric's "no change requested."
+- **Chosen approach.** Fold in. `.prism/rules/followup-scope.md` makes fold-in the default for
+  same-scope work pre-merge, and all four signals point that way: the file is already in this
+  diff, the exemption is this PR's own addition, the change is one sentence, and it is the same
+  persona's lane. A ticket carrying one sentence is the overhead that rule exists to refuse.
+- **Implementation guidance.** The sentence sits directly under the Ledger bullet rather than
+  inside it — the bullet already runs eleven lines, and the out-of-loop check is a different
+  claim from the during-loop exemption it qualifies. It cites PR #471 as the incident, matching
+  how the surrounding `**Why:**` cites #446.
 
 → promotion verdict pending — resolves at PR 3A close.
 
@@ -1320,6 +1380,120 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
     this is scheduled work rather than a gap — clean.
 - **Accessibility** — `n/a — no UI in the pinned range`
 
+### The bounded-angle cap reached only one of Eric's two verdict surfaces
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `fixed` — the portable clause is ported into § Decision gate state `#3`, the
+  closing lines that report the label carry the same qualification, and the readiness checkbox
+  is narrowed to pass-bounded.
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md:345-348` (§ Decision gate) and
+  `:396-397` (§ After the review), against
+  `.prism/references/code-review-pr/summary-template.md:43`
+- **Problem:** round 2 gave the cap a slot on Eric's `## PR Readiness` checkbox, but Eric has
+  two verdict surfaces and the decision gate — the one that emits labels and fires the
+  ready-flip — was untouched. On the full path with a pass-bounded angle, Eric landed zero
+  findings, both axes clean, checkbox unchecked, and still applied `confidence:high`: the
+  unqualified ready state the cap forbids, and the signal a human scans to merge without
+  reading. The port dropped the clause *and* its pass-bounded scoping, which is why the
+  checkbox read "No bounded angle" and the PR body had to defend a permanently-unchecked box
+  on every docs-only PR.
+- **Class:** third instance in this PR of a spec clause added to one consumer surface while a
+  sibling surface with the same authority is left unreconciled.
+- **Why the round-2 third-instance search missed it:** the search ran inside
+  `review-angles.md`. A clause with no consumer has its other half in the consumer file by
+  construction, so a search scoped to the clause's own file can only ever find half the class.
+  The reusable form: when the class is "X has no consumer," sweep the consumers, not X.
+- **Fix as applied, and where it goes past Eric's prescription:** Eric named § Decision gate
+  and the checkbox. The closing lines in § After the review are a third site reading
+  "Both axes ran clean → `confidence:high`" with no bounded qualification — the portable source
+  carries the cap there too (`~/.claude/skills/eric/SKILL.md:316`), and porting only the gate
+  would leave the reporting surface stating the label the gate had just been taught not to
+  emit. All three landed together.
+
+### § Reporting orphans § Re-sweep obligation's thinnest-enumeration trigger
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed` — the enumeration is now the evidence of range coverage, and § Re-sweep's
+  trigger collapses to the bounded set alone.
+- **File:** `.prism/references/review-angles.md:102` against `:110`
+- **Problem:** the sweep-before-report clause declares that a pass may not report until every
+  angle has been swept across the whole reviewed range. § Re-sweep obligation, eight lines
+  below, still triggered on "the ones whose enumeration was thinnest" — a proxy for
+  *probably under-swept*, which § Reporting had just declared impossible. For a compliant pass
+  the trigger was unreachable; for a non-compliant one § Reporting was already violated. The
+  trailing sentence named the division of labour but asserted the composition rather than
+  showing it.
+- **Class:** newly-added absolute clause invalidates the premise of an existing clause in the
+  same file, left unreconciled — `.prism/rules/code-standards.md` § Removal and rename
+  completeness biting on its own terms, since the flipped predicate shares no symbol with the
+  prose that reads it.
+- **Fix as applied, and the one placement change from Eric's prescription:** Eric's shape is
+  taken whole — an angle whose enumeration reaches only part of the reviewed range reports
+  `not reached`, not `swept`. It lands in § Enumeration's **Status interaction** paragraph
+  rather than in § Reporting, because that paragraph already owns the adjacent rule (a `swept`
+  with *no* enumeration reads as bounded) and already carries the `verdict-only` carve-out that
+  keeps Repo writing rules out of the new rule's reach. § Reporting then gains its observable
+  by citation instead of a second copy. Two clarifications ride along, both against misreadings
+  the deleted "thinnest" heuristic invites: an angle swept end to end that turned nothing up
+  reports `swept — no items`, and a short enumeration over a full range is a finished sweep.
+
+### "One section over" is a spatial claim that was never resolved against the file
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — the phrase is dropped, and the `**Why:**` now cites the third instance
+  Eric's own pass found.
+- **File:** `.prism/references/review-angles.md:104`
+- **Problem:** round-1's Major landed at `prism-code-review-self/SKILL.md:347` and round-2's at
+  `:341` — six lines apart inside the same `## Review format` section, with the other half of
+  round-2's fix in a different file. Neither reading makes it "one section over." The detail
+  was true in the writer's working set mid-run and ships to consumer repos via
+  `templates/install/.prism/references/review-angles.md`, which is
+  `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage.
+- **Suggested fix:** dropped rather than corrected to "six lines from the first" — the sentence
+  lands harder without the spatial detail, and "a spec clause with no consumer" already carries
+  the point.
+
+### Two of the PR body's four verification probes no longer reproduce
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — both literals are replaced with claims that survive the next edit.
+- **File:** PR #471 body, `## Verification`
+- **Problem:** the `not reached` count read `7` against an actual `8`, and the five-copy hash
+  read `4b7624af` against an actual `3fdb2231` — both stale since round 2 landed, one root
+  cause. The verification block's job is to let a reader skip re-running the probes, so two of
+  four returning different values costs more trust than a shorter block would have.
+- **Fix as applied:** resynced as rules rather than literals, per
+  `.prism/rules/writing-voice.md` § Count rules, not numbers — a presence probe for the third
+  status token, and byte-identity verified by `checkSeedDrift` rather than a hash literal. A
+  literal count would have gone stale inside this same pass: the § Enumeration fix adds another
+  `not reached` occurrence.
+
+### Eric's qualification on the two round-2 not-a-defect gradings
+
+Both gradings hold, and Eric confirmed them rather than re-deriving. One qualification on the
+always-on `n/a` discrepancy: Briar's coverage blocks carry `n/a` only on Security and
+Accessibility, both *triggered* angles, so the always-on path has never been exercised. **That
+one stays argument, not evidence, and no cheap observation converts it** — an emission would
+require a real pass on a diff where one of the six always-on angles genuinely does not apply,
+and manufacturing a synthetic one would be a fabricated observation rather than a check. The
+slot argument itself is verified: § Enumeration requires the status token verbatim including
+its `— <reason>` on both surfaces.
+
+### Briar's verdict state is not narrowed to pass-bounded — checked, not overlooked
+
+Eric's Major narrows Eric's checkbox from "bounded" to "pass-bounded" because a structural bound
+is honest as `confidence:standards-only`. Briar's third verdict state
+(`prism-code-review-self/shared.md:326`) keeps the wider "bounded" reading deliberately. The
+only structural `not reached` producer this fragment names is Eric's lightweight-path Spec-axis
+skip (`review-angles.md:37`, `prism-code-review-pr/shared.md:194`), and Briar runs no axis
+split — so for her, bounded and pass-bounded name the same set today. Narrowing her clause would
+add a distinction she has no way to produce. This is a producer enumeration against the file,
+not a reading.
+
 ---
 
 ## Cleanup Items
@@ -1336,16 +1510,17 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
 
 ## PR Readiness
 
-- [ ] No critical or major issues — round 1's 4 Major and 2 Minor all `fixed`; round 2 opens one
-      new Major (bounded-angle verdict cap has no slot in either reviewer's verdict surface)
+- [x] No critical or major issues — round 1's 4 Major and 2 Minor, round 2's 1 Major, and Eric's
+      round-3 2 Major and 2 Minor are all `fixed`
 - [x] Types correct — no `any`, no unsafe `as` — n/a, no TypeScript in the diff
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — no new logic; existing seed-drift and
       crossref-lint coverage carries the diff
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-21 post-fix, `pnpm prism:build` exit 0 and
-      `pnpm prism:check` exit 0, `git status -s` clean afterwards
-- [x] PR description up to date — re-synced 2026-08-21 with the review-fix pass
+- [x] Build passes — last run: 2026-08-21 after Eric's round-3 fixes, `pnpm prism:build` exit 0
+      and `pnpm prism:check` exit 0, `git status -s` clean afterwards
+- [x] PR description up to date — re-synced 2026-08-21 after Eric's round-3 pass, with the two
+      stale verification literals replaced by claims that survive the next edit
 - [ ] Lasting decisions promoted to architect context — three Decisions carry
       `→ promotion verdict pending — resolves at PR 3A close`
 
@@ -1384,3 +1559,13 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
   clause on each reviewer's verdict surface, and added Hunter's sweep-before-report rule as a
   clause on § Reporting; see Decision: Sweep-before-report. The invited third-instance check came
   back negative on two examined candidates, recorded in this run's `## Sessions` close.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Eric PR-reviewed the pinned range
+  `176f35c5..6dfa25d7` — 2 Major, 2 Minor, no critical. The third instance of the no-consumer
+  class is his Major 1, in Eric's own § Decision gate; the round-2 search missed it by scoping to
+  `review-angles.md`, and a clause with no consumer has its other half in the consumer file.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Closed all four of Eric's findings —
+  the bounded-angle cap ported into § Decision gate and the closing lines with the checkbox
+  narrowed to pass-bounded, the enumeration made the evidence of range coverage so § Re-sweep's
+  trigger collapses to the bounded set, the unverified spatial detail dropped, and the PR body's
+  two stale literals replaced with rules. Absorbed Eric's review-loop observation as one
+  sentence; see Decision: The loop's exempt PR body.
