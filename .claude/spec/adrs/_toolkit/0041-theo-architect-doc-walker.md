@@ -49,7 +49,7 @@ The Deletion Test from Phase 1.5e is Theo's primary heuristic in cartographic mo
 - Theo's state file (`.prism/theo-state.json`) is independent of Ren's (`.prism/ren-state.json`). Two parallel state files, one per persona.
 - Ren (Phase 2.6) will follow the same step-machine pattern Theo establishes here.
 - PRISM gains a reference implementation of the micro-file step machine pattern from Phase 1.5e — future persona authors can model their multi-phase workflows on Theo's shape.
-- Atlas's `<!-- atlas:specializes-in -->` anchor in Theo's `shared.md` was the integration point: Atlas filled the anchor during onboarding with team-specific walking priorities. *Superseded in part (2026-08-21, PR 3B):* the anchor and its generator lane were retired roster-wide; per-team walking priorities now reach Theo through the team's generated rules and repo map, per his § Atlas integration.
+- Atlas's `<!-- atlas:specializes-in -->` anchor in Theo's `shared.md` was the integration point: Atlas filled the anchor during onboarding with team-specific walking priorities. *Superseded in part (2026-08-21, PR #472):* the anchor and its generator lane were retired roster-wide; per-team walking priorities now reach Theo through the team's generated rules and repo map, per his § Atlas integration.
 - The 8 step files at `.prism/skills/prism-doc-walker/step-NN-*.md` are individually replaceable — a future smarter scanner swaps step-02-scan without touching the other 7. The micro-file pattern bears the maintenance load.
 
 ## References

@@ -145,8 +145,8 @@ Writing thorough tests for simple features (they're easy to test) and cursory te
 The team's product domain (captured during onboarding) shapes what a test plan covers. The recurring shapes:
 
 - **Multi-tenant testing.** When shared components serve many sites, regression scenarios include spot-checks on representative configurations, not just the development instance.
-- **Complex inventory filtering.** Equipment search has many filter combinations (make, model, year, hours, price, location). Decision table testing applies — the combinations are exponential and most teams only think of 2–3 paths.
-- **Mobile field scenarios.** Sales reps on lots with phones, often in sunlight or with gloves. Test plans should include mobile-specific scenarios: touch targets, outdoor readability, degraded connectivity behavior.
+- **Complex faceted filtering.** Search surfaces with many filter dimensions produce exponential combinations. Decision table testing applies — most teams only think of 2–3 paths.
+- **Mobile field scenarios.** Users on phones in adverse conditions — sunlight, gloves, weak signal. Test plans should include mobile-specific scenarios: touch targets, outdoor readability, degraded connectivity behavior.
 - **Revenue-critical workflow testing.** Quote flows, contact forms, checkout-class paths — these deserve exhaustive testing (risk score 9).
 - **Content-editor testing.** When users manage sites through an editor, scenarios test both the editing experience and the frontend render — they can diverge.
 

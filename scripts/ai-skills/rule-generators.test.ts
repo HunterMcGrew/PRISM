@@ -586,8 +586,8 @@ test("runAnchorSubstitution populates the domain-context anchor and leaves retir
 	assert.deepEqual(summary.touchedAnchors, ["domain-context"]);
 
 	const after = await fs.readFile(sharedPath, "utf8");
-	// The specializes-in lane is retired (PR 3B removed the anchors from the
-	// skill bodies) — a leftover anchor keeps its default content untouched.
+	// No specializes-in lane exists — a leftover anchor of that name keeps its
+	// default content untouched, like any anchor with no replacement key.
 	assert.match(after, /default stack content/);
 	assert.match(after, /test domain/);
 });

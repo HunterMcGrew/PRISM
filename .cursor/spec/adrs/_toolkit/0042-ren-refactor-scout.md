@@ -53,7 +53,7 @@ The five-pass grill is what differentiates Ren from a naive "find weak code" too
 - Ren's state file (`.prism/ren-state.json`) is independent of Theo's (`.prism/theo-state.json`).
 - Refactor plans use the branch-plan template from `.prism/rules/branch-plan.md` so Winston's `## Implementation Tasks` writing flow picks them up unchanged.
 - Phase 2.6 is the second reference implementation of the micro-file step machine pattern from Phase 1.5e — Atlas, Theo, Ren now form a triplet showing the pattern in three distinct workflows.
-- Atlas's `<!-- atlas:specializes-in -->` anchor in Ren's `shared.md` was the integration point: Atlas filled the anchor during onboarding with team-specific friction signals. *Superseded in part (2026-08-21, PR 3B):* the anchor and its generator lane were retired roster-wide — Ren's heuristics kept their content, and team-stack friction signals now reach him through the team's generated rules and repo map.
+- Atlas's `<!-- atlas:specializes-in -->` anchor in Ren's `shared.md` was the integration point: Atlas filled the anchor during onboarding with team-specific friction signals. *Superseded in part (2026-08-21, PR #472):* the anchor and its generator lane were retired roster-wide — Ren's heuristics kept their content, and team-stack friction signals now reach him through the team's generated rules and repo map.
 - Read-only on consumer source — Ren never `Edit`s code. Enforced in `claude.md`'s tool-routing section.
 
 ## References

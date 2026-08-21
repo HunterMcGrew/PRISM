@@ -3,7 +3,7 @@
  * a UTF-8 BOM (0xEF 0xBB 0xBF) at any byte offset. Catches the recurring
  * defect where an editor saves a canonical `.ai-skills/**` file as "UTF-8
  * with BOM", which corrupts the `<!-- atlas:domain-context -->` anchor
- * substitution on the four core personas and breaks direct Unix shebang
+ * substitution on the skill bodies that carry it and breaks direct Unix shebang
  * execution on generated hooks (the kernel sees `\xEF\xBB\xBF#!`, not `#!`).
  * A trailing or embedded BOM is as damaging as a leading one and shipped to
  * npm in 0.7.3 under the older leading-bytes-only check — see issue #430.

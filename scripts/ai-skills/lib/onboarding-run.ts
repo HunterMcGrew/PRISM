@@ -116,11 +116,10 @@ export interface AnchorSubstitutionSummary {
  * `contentByAnchor` map from `OnboardingConfig` — `domain-context` from the
  * captured product domain — and runs `substituteAnchorsAcrossSkills` against
  * the canonical persona-source surface. Examples-class anchors stay empty in
- * v1 (future Atlas iterations fill them from team artifacts). The former
- * `specializes-in` lane was retired with the anchors it targeted:
- * specialization blocks were removed from the skill bodies (PR 3B) because
- * the consumer's stack facts already live in its generated rules and repo
- * map.
+ * v1 (future Atlas iterations fill them from team artifacts). There is no
+ * `specializes-in` lane: the consumer's stack facts reach skills through its
+ * generated rules and repo map, and any leftover anchor of that name is
+ * preserved as an orphan.
  *
  * The shape mirrors `runRuleGenerators` so the orchestration code at the
  * Atlas-shared.md level can compose the two in a uniform way — one call per
