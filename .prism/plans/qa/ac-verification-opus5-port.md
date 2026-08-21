@@ -6,6 +6,8 @@
 - **Environment:** worktree `.claude/worktrees/agent-a507b79a93c90415f`, macOS (darwin 25.5.0), node via `pnpm`. Tree clean before and after; `pnpm prism:build` and `pnpm prism:check` both left `git status --porcelain` empty.
 - **Scope:** the criteria PR 2D is responsible for (tasks D0–D10). AC-6, AC-8 through AC-18, AC-22 through AC-29 belong to other PRs in the stack and are not graded here.
 
+> **This grading is stale, and it is published as a record of that pass rather than as a grading of the PR.** The graded SHA sits more than twenty commits behind the branch head and predates the inversion that deleted the write parser the graded suite was built around, so **every line citation in the verdict table below points at a line that no longer exists.** PR review re-executed the substantive citations against head and no verdict flipped — the report is out of date, not wrong. A re-grade at head is Reese's to run, and it owes two things this pass does not have: current citations, and **AC-25**, which was excluded as another PR's and is not — this is the PR that deletes the catch-all from all three tables and ships the rejection that makes the criterion consequential.
+
 ## Verdict table
 
 | ID | Verdict | Evidence type | Citation |
