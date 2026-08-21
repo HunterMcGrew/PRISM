@@ -110,6 +110,26 @@ runs.
     positive control; the four Major findings are read from file content, not inferred — each
     carries the literal search that produced it.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, dispatched by Sol under run `architect-gate-port`]
+  - **Intent** — close Briar's six findings on PR #471 so the reviewer-scope port stops citing
+    mechanisms that do not exist and the new reference file is declared rather than defaulted.
+  - **Ambiguity** — none load-bearing; assuming the cleaner path is mine to judge and declining
+    it, since Sol asked for the judgement rather than the fold.
+  - **Bounds** — done = six findings fixed in canonical files, mirrors regenerated, build and
+    check green, PR still draft. Untouchable = `.prism/plans/opus5-port.md`, the deny-gate branch
+    and its worktree, every 3B task.
+  - **Approach** — canonical-only edits, one build to regenerate all mirrors, and verify each
+    finding's claim at source before applying its fix rather than after.
+  - **Close** — scope held. One deviation from the brief, recorded as a Decision: Major 3's
+    direction half is not upheld, and the rewrite fixes the scope error instead. Two silent
+    decisions worth naming: Eric's copy of the *"Fix it inline"* sentence is left alone, which
+    the finding offered as its second option, and the `Meta` replacement sentence names
+    `prism-review-loop` in prose rather than linking it, because the loop's file name differs
+    across generated layouts and a relative link would not resolve in all five. Edge recall: the
+    `mirrored` registration is byte-neutral by construction, so the evidence that it worked is
+    the unchanged twin hash rather than a diff — all five buckets hash `9d276415` before and
+    after.
+
 ---
 
 ## Decisions
@@ -130,8 +150,10 @@ genuinely absent.
 
 **Chosen approach.** Ship what 28a adds that the section did not already have: the exempt
 surface gains the PR body and the loop's own readiness line, the third measured incident is
-recorded, and the composition with the new plan-file scope is stated — that rule shrinks the set
-of plan observations that are findings; the Ledger row caps what the survivors cost.
+recorded, and the composition with the new plan-file scope is stated. That composition as first
+written was wrong and was corrected inside the same PR after self-review: the Ledger disposition
+does not cap what the plan-scope rule keeps, because the survivors are Subject content. The two
+rules aim at different sets.
 
 **Implementation guidance.** A future change wanting a severity token here repeals the
 no-new-vocabulary paragraph explicitly rather than adding a token beside it.
@@ -433,6 +455,53 @@ land rather than concurrently with them.
 → no promotion needed (branch-shaping for one PR; rules 1 and 3 are worth promoting to
 `.prism/rules/git-conventions.md` § Commit Granularity if a second large generated-mirror PR
 ever wants them, and that is a separate call on a second instance, not this one).
+
+---
+
+### § Plan-file scope stays inline in both reviewer bodies for PR 3A
+
+Briar's non-blocking cleaner path: the section is byte-identical in both bodies, and
+`.prism/references/review-frameworks.md` is already the shared catalog both consume and already
+owns § Severity Classification, which is where this plan's own Decision promotes the rule at
+close.
+
+**Chosen approach.** Decline for this PR. Two reasons, and the first is the one that decides it.
+The two copies are no longer byte-identical: fixing Briar's unadapted *"Fix it inline if you own
+the branch"* gave her a disposition sentence Eric does not share, so the fold is no longer a lift
+— it needs a shared body plus a per-persona carve-out on exactly the clause whose one-size
+wording caused the finding. Second, the promotion is already scheduled for close, when the text
+has stopped moving; folding mid-port means editing the same paragraphs twice.
+
+**Alternatives considered.** Fold now with a carve-out — rejected on the reason above. Fold now
+and revert Briar's adaptation to keep the copies identical — rejected outright; that trades a
+real contradiction in her bounds for a structural convenience.
+
+**Implementation guidance.** At close, promote the shared three paragraphs into
+`review-frameworks.md` and leave each reviewer the one disposition sentence its write bounds
+require.
+
+→ no promotion needed (the promotion this Decision defers *is* the close-time action; recorded
+here so the close does not re-litigate it).
+
+---
+
+### Briar's Major 3 is upheld on scope and not upheld on direction
+
+**Finding as filed.** *"The Ledger row **below**"* points up, and the paragraph's cap claim is
+false.
+
+**What the check found.** The cap claim is real and is fixed. The direction claim is not: the
+file carries two Ledger references, a surfaces bullet at `:27` and a **Disposition** table row at
+`:101`, and the paragraph paraphrases the table row's cell text (*"swept once at close"*)
+verbatim — so `below` resolved correctly to the row and Briar read it against the bullet.
+
+**Chosen approach.** Fix the scope error, and name the **Disposition** table explicitly in the
+rewrite rather than leaving a bare directional word for two same-named references to compete
+over. A reviewer who misread it once will not be the last.
+
+→ no promotion needed (a correction to one paragraph in one skill body; the general form —
+a bare `above`/`below` where two references share a name — is already covered by
+`.prism/rules/writing-voice.md` § Every reference carries its own content in spirit).
 
 ---
 
@@ -812,7 +881,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed` — both bodies now cite the mechanism that exists — under `prism-review-loop` a bookkeeping-section observation is Ledger surface and is not raised during the loop at all.
 - **File:** `.ai-skills/skills/prism-code-review-self/shared.md:78`,
   `.ai-skills/skills/prism-code-review-pr/shared.md:82` (+5 generated mirrors each)
 - **Problem:** § Plan-file scope closes with *"The `Meta` severity the review loop applies caps
@@ -832,7 +901,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed` — paragraph rewritten to the composition that holds: the survivors are Subject content and are reviewed at the Subject bar; the Ledger disposition runs over the bookkeeping sections instead. The `below` half of the finding is not upheld — see the Decision below.
 - **File:** `.ai-skills/skills/prism-review-loop/shared.md:55-59` (+5 mirrors)
 - **Problem:** two errors from one cause. The paragraph says *"The Ledger row **below**"* while
   the Ledger bullet sits ~30 lines above it; and it says the Ledger *"caps what the survivors
@@ -857,7 +926,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `standards`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed` — Briar's copy now reads *"Note it in one line and move on: plan hygiene is no more Briar's to fix than the code is."* Eric's copy left as-is, per the finding's own second option.
 - **File:** `.ai-skills/skills/prism-code-review-self/shared.md:74` (+5 mirrors)
 - **Problem:** *"Fix it inline if you own the branch"* is Eric's sentence copied into Briar's
   body unadapted. `:110` of the same file reads *"Briar reviews and flags issues — Clove fixes
@@ -874,7 +943,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed` — `references/review-angles.md` added to the `mirrored` bucket; rebuilt, and all five seed twins hash `9d276415`, unchanged from before the registration.
 - **File:** `.ai-skills/definitions/seed-curation.json`
 - **Problem:** task N1 ends *"Register in `.ai-skills/definitions/seed-curation.json` as
   non-curated — it should mirror verbatim"*, and the file carries no entry in any bucket.
@@ -898,7 +967,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed` — `**Angle Coverage:**` added to Briar's `## Review format` between **Issues:** and **Accessibility:**, carrying status tokens and counts with the enumerations left in the plan block.
 - **File:** `.prism/references/review-angles.md` § Enumeration, *Where it goes* (+4 mirrors)
 - **Problem:** the section specifies a chat-side shape — *"The chat-side line carries the angle,
   its status token verbatim, and the counts"*, with three worked examples — and nothing routes
@@ -925,7 +994,7 @@ Briar self-review of PR #471, 2026-08-21, pinned range
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed` — the `(the review loop's convergence check)` parenthetical is dropped; the sentence stands conditional on a consumer that gates, and none is named.
 - **File:** `.prism/references/review-angles.md` § Status vocabulary and § Enumeration
   (*Status interaction*) (+4 mirrors)
 - **Problem:** both sections assert a consumer gating on coverage, the second naming it — *"(the
@@ -1014,14 +1083,15 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
 
 ## PR Readiness
 
-- [ ] No critical or major issues — **4 Major open**
+- [x] No critical or major issues — all 4 Major and both Minor `fixed`
 - [x] Types correct — no `any`, no unsafe `as` — n/a, no TypeScript in the diff
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — no new logic; existing seed-drift and
       crossref-lint coverage carries the diff
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-21, `pnpm prism:build && pnpm prism:check` exit 0
-- [ ] PR description up to date — not re-verified this pass
+- [x] Build passes — last run: 2026-08-21 post-fix, `pnpm prism:build` exit 0 and
+      `pnpm prism:check` exit 0, `git status -s` clean afterwards
+- [x] PR description up to date — re-synced 2026-08-21 with the review-fix pass
 - [ ] Lasting decisions promoted to architect context — three Decisions carry
       `→ promotion verdict pending — resolves at PR 3A close`
 
@@ -1047,3 +1117,8 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
   are the dropped `Meta` token still cited by both reviewer bodies, the review-loop composition
   paragraph contradicting its own Ledger bullet, the missing `seed-curation.json` registration
   task N1 asked for, and a chat-side coverage line `review-angles.md` defines with no consumer.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Closed all six review findings —
+  the `Meta` citations, the loop's composition paragraph, Briar's chat-side Angle Coverage slot,
+  the `mirrored` registration, Briar's unadapted disposition sentence, and the non-gating
+  consumer parenthetical. Major 3 is upheld on scope only; see Decision: Briar's Major 3.
+  Declined the § Plan-file scope fold for this PR; see Decision: § Plan-file scope stays inline.
