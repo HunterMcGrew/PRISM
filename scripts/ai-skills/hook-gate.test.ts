@@ -12,6 +12,7 @@
  * the leg's own checks reject it.
  */
 import fs from "node:fs/promises";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFile, spawnSync } from "node:child_process";
@@ -1890,10 +1891,33 @@ const PROBE_STDIN = [
 	"",
 ].join("\n");
 
+/**
+ * An empty config file both `GIT_CONFIG_*` variables point at, so neither
+ * developer nor system git configuration reaches a probe.
+ *
+ * An ordinary empty file rather than a null device. Git documents the
+ * literal string `/dev/null` for this, and `os.devNull` spells it `\\.\nul`
+ * on Windows, which git cannot open: `fatal: unable to access '//./nul':
+ * Invalid argument`, before a probe runs at all. An empty file asks git for
+ * no sentinel handling on any platform.
+ *
+ * The isolation is also what keeps a system-level `core.autocrlf` away from
+ * the probe, so an assertion that the working tree is unmodified measures
+ * the subcommand rather than what checkout did to the line endings.
+ */
+const PROBE_GIT_CONFIG_DIR = mkdtempSync(
+	path.join(os.tmpdir(), "prism-hook-gate-gitconfig-")
+);
+const PROBE_GIT_CONFIG = path.join(PROBE_GIT_CONFIG_DIR, "config");
+writeFileSync(PROBE_GIT_CONFIG, "");
+process.on("exit", () => {
+	rmSync(PROBE_GIT_CONFIG_DIR, { force: true, recursive: true });
+});
+
 const PROBE_ENV = {
 	...process.env,
-	GIT_CONFIG_GLOBAL: os.devNull,
-	GIT_CONFIG_SYSTEM: os.devNull,
+	GIT_CONFIG_GLOBAL: PROBE_GIT_CONFIG,
+	GIT_CONFIG_SYSTEM: PROBE_GIT_CONFIG,
 	GIT_AUTHOR_NAME: "probe",
 	GIT_AUTHOR_EMAIL: "probe@example.invalid",
 	GIT_COMMITTER_NAME: "probe",
