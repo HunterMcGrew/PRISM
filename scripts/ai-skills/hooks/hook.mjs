@@ -487,7 +487,7 @@ export const SHELL_INSPECTION_COMMANDS = new Map(
 			"--no-heading --json --stats --files --sort",
 		wc: "-l -w -c -m -L",
 		diff: "-# -u -U -r -q -w -b -B -i -N -a -c -y",
-		ls: "-l -a -A -h -R -t -r -S -1 -d -F -i -n -p",
+		ls: "-# -l -a -A -h -R -t -r -S -d -F -i -n -p",
 		stat: "-c -f -L -t",
 		file: "-b -i -L -h -z",
 		cut: "-d -f -c -b -s",
@@ -536,7 +536,7 @@ export const GIT_INSPECTION_SUBCOMMANDS = new Set([
  */
 const GIT_INERT_FLAGS = new Set(
 	(
-		"-# -n -1 -l -w -b -s -q -z -L -i -E -F -v " +
+		"-# -n -l -w -b -s -q -z -L -i -E -F -v " +
 		"--oneline --stat --numstat --shortstat --name-only --name-status --patch --no-patch " +
 		"--graph --pretty --format --abbrev-commit --date --since --until --author --grep " +
 		"--follow --cached --staged --word-diff --color --no-color --unified --reverse " +

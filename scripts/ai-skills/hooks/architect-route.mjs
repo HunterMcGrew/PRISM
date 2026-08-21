@@ -205,6 +205,30 @@ async function loadManifest(repoRoot) {
 }
 
 /**
+ * One compiled matcher per route pattern, for the life of the process.
+ *
+ * `compileMatcher` builds a fresh `RegExp` on every call, and the shell arm
+ * asks about every path-shaped token in a command — a long `git commit -m`
+ * yields hundreds of tokens, each one walking the whole manifest, all of it
+ * on the synchronous `PreToolUse` path. Keyed by the pattern string and
+ * bounded by the manifest's route count, which is small and fixed.
+ *
+ * @type {Map<string, (filePath: string) => boolean>}
+ */
+const matcherCache = new Map();
+
+/** @param {string} pattern @returns {(filePath: string) => boolean} */
+function resolveMatcher(pattern) {
+	let matcher = matcherCache.get(pattern);
+	if (matcher === undefined) {
+		matcher = compileMatcher(pattern);
+		matcherCache.set(pattern, matcher);
+	}
+
+	return matcher;
+}
+
+/**
  * Returns every doc the manifest routes `relativePath` to, in first-match
  * order with duplicates removed. Reuses `compileMatcher` from
  * `lib/match.mjs` rather than re-deriving the three matcher shapes (exact,
@@ -219,7 +243,7 @@ export function matchDocsForPath(manifest, relativePath) {
 	const seen = new Set();
 
 	for (const [pattern, docOrDocs] of Object.entries(manifest)) {
-		if (!compileMatcher(pattern)(relativePath)) {
+		if (!resolveMatcher(pattern)(relativePath)) {
 			continue;
 		}
 
@@ -436,7 +460,10 @@ export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
  *
  * Batched rather than one-path-at-a-time because the shell arm asks about
  * every path-shaped token in a command, and a per-path entry point would
- * re-read and re-parse the manifest once per token.
+ * re-read and re-parse the manifest once per token. Batching hoists the read
+ * and the parse only — each token still walks every route, which is why
+ * `matchDocsForPath` compiles each route's matcher once per process rather
+ * than once per token.
  *
  * @param {string} repoRoot
  * @param {string[]} filePaths

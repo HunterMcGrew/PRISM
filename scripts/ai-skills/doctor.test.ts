@@ -863,6 +863,7 @@ test("runDoctor reports a consumer manifest route written as a brace glob", asyn
 		);
 		assert.equal(braces.length, 1);
 		assert.match(braces[0].message, /brace glob/);
+		assert.equal(report.healthy, false);
 	});
 });
 
