@@ -32,12 +32,14 @@ This is a utility skill — it carries no persona. It runs in the active persona
 voice and adds no identity of its own (per
 [ADR-0046](../../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
-**The run, in order:** opening orientation → determine mode (create or migrate)
+**The run:** opening orientation → determine mode (create or migrate)
 → apply shared conventions (ID namespace, authoring rules) → mode-specific steps
 (create: decide persona vs utility → collect inputs → write source → register
 the role; migrate: detect the source shape → extract canonical source → strip
 generated artifacts → recover per-platform deltas → normalize and register) →
 build and verify → closing re-orientation.
+
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
 
 ## Opening Orientation Battery
 
@@ -270,15 +272,5 @@ frontmatter) into a canonical `.prism/rules/<name>.md` requires the reverse of
 capability, not part of this skill's v1. Flag it if a user asks; route to a
 follow-up.
 
-## Closing Re-Orientation Battery
 
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md),
-immediately before reporting the skill as complete, so the scope and
-correctness are confirmed before stopping. For Scope boundary, confirm the
-touch stayed within the source dir, `roles.json`, and build verification. For
-Unasked assumptions, name each silent decision — persona vs utility choice,
-namespace prefix, which platform files were omitted. For Edge recall, name
-which of empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at
-the line-count limit, or a TOML source with no persona opener applied. For
-Verification honesty, the evidence is `pnpm prism:build` exiting clean, `pnpm
-prism:build --check` reporting no drift, or `pnpm prism:crossref-lint` passing.
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before reporting the skill as complete, so the scope and correctness are confirmed before stopping. For Scope boundary, confirm the touch stayed within the source dir, `roles.json`, and build verification. For Unasked assumptions, name each silent decision — persona vs utility choice, namespace prefix, which platform files were omitted. For Edge recall, name which of empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at the line-count limit, or a TOML source with no persona opener applied. For Verification honesty, the evidence is `pnpm prism:build` exiting clean, `pnpm prism:build --check` reporting no drift, or `pnpm prism:crossref-lint` passing.
