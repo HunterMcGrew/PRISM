@@ -159,6 +159,41 @@ runs.
     rather than by reasoning about line endings; the new Major read from file content at head,
     with the literal searches that produced it recorded in its `Sweep`.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, dispatched by Sol under run
+  `architect-gate-port`, lane 3a]
+  - **Intent** — close the bounded-angle verdict gap on both reviewer surfaces, and give
+    `review-angles.md` a durable home for Hunter's sweep-before-report instruction.
+  - **Ambiguity** — none load-bearing; taking § Reporting as the home for the completeness
+    clause rather than a new section, since that section already owns reporting obligations and
+    sits directly above § Re-sweep obligation, which owns the after-a-fix half.
+  - **Bounds** — done = three clauses in canonical files, mirrors regenerated, build and check
+    green, PR still draft. Untouchable = `.prism/plans/opus5-port.md`, the deny-gate branch and
+    its worktree, every 3B task.
+  - **Approach** — canonical-only edits, one build for all mirrors, and settle the consumer-facing
+    citation question by precedent before writing PR numbers into a file that ships.
+  - **Close** — scope held. The third-instance check Sol asked for came back negative, with two
+    candidates examined rather than dismissed. First, § Status vocabulary's *"expect a consumer to
+    record it"* on an always-on `n/a`: routed, because the coverage block carries the status token
+    verbatim including its reason, so the discrepancy lands in a slot that exists — which is what
+    separates it from the Major, where the slot did not. Second, § Enumeration calls `verdict-only`
+    *"a shape on both surfaces"* while Briar's plan-write instruction reads *"on `swept`, its
+    enumeration"*, which does not accommodate an angle with no unit; graded not-a-defect on
+    evidence rather than on reading, since Briar emitted `Repo writing rules — swept —
+    verdict-only` correctly in both rounds (plan `:1165`, `:1243`), resolving it from the file her
+    instruction cites. Left alone deliberately: the plan template's own `## PR Readiness` in
+    `branch-plan.md` gained no bounded-angle line — it is a shared living checklist, not a verdict
+    surface, and the finding named two surfaces. Two corrections carried from Briar's re-review
+    rather than left in my prior chat: the `mirrored` registration is correct because the bucket
+    is declared, not because a build warning would have caught it — `unclassifiedMirrored` pushes
+    only when `seedFileIsNew`, so that warning fires once and is silent forever after; and the
+    § Plan-file scope fold is declined primarily because the promotion is already scheduled for
+    close, which is the stronger reason and now leads that Decision. Edge recall: a docs-only PR
+    on Eric's lightweight path leaves the new checkbox permanently unchecked with three
+    structurally-bounded angles, and that is the intended reading rather than a defect — the
+    verdict is qualified, which is what the cap asks for. Verification honesty: `pnpm prism:build`
+    and `pnpm prism:check` re-run at exit 0; five-way mirror parity confirmed by hash on both
+    edited references rather than asserted.
+
 ---
 
 ## Decisions
@@ -494,12 +529,13 @@ Briar's non-blocking cleaner path: the section is byte-identical in both bodies,
 owns § Severity Classification, which is where this plan's own Decision promotes the rule at
 close.
 
-**Chosen approach.** Decline for this PR. Two reasons, and the first is the one that decides it.
-The two copies are no longer byte-identical: fixing Briar's unadapted *"Fix it inline if you own
-the branch"* gave her a disposition sentence Eric does not share, so the fold is no longer a lift
-— it needs a shared body plus a per-persona carve-out on exactly the clause whose one-size
-wording caused the finding. Second, the promotion is already scheduled for close, when the text
-has stopped moving; folding mid-port means editing the same paragraphs twice.
+**Chosen approach.** Decline for this PR. Two reasons. The one that decides it: this plan's own
+Decision already schedules the promotion for close, so folding inside 3A absorbs scope that is
+already parked, and does it while the text is still moving — the same paragraphs get edited
+twice. Second, the two copies are no longer byte-identical; fixing Briar's unadapted *"Fix it
+inline if you own the branch"* gave her a disposition sentence Eric does not share, so the fold
+is no longer a lift — it needs a shared body plus a per-persona carve-out on exactly the clause
+whose one-size wording caused the finding.
 
 **Alternatives considered.** Fold now with a carve-out — rejected on the reason above. Fold now
 and revert Briar's adaptation to keep the copies identical — rejected outright; that trades a
@@ -531,6 +567,35 @@ over. A reviewer who misread it once will not be the last.
 → no promotion needed (a correction to one paragraph in one skill body; the general form —
 a bare `above`/`below` where two references share a name — is already covered by
 `.prism/rules/writing-voice.md` § Every reference carries its own content in spirit).
+
+---
+
+### Sweep-before-report is a clause on § Reporting, not a new section or a body-level rule
+
+**Root cause of the question.** Hunter's instruction — a reviewer sweeps the whole range against
+every angle before reporting, and reports only when that is complete — arrived as a dispatch
+brief, which dies with the run. It needed a durable home, and three placements were available.
+
+**Alternatives considered.** A new top-level section — rejected, because § Reporting already owns
+when and how a pass reports, and a second reporting section invites the two to drift. The two
+reviewer bodies instead of the shared fragment — rejected, because both reviewers load this file
+and a rule stated twice is a rule that disagrees with itself after the first edit; the file also
+already carries the shared angle set both readers use, so the completeness rule belongs beside it.
+
+**Chosen approach.** A clause on § Reporting, placed directly above § Re-sweep obligation, with
+one sentence naming how the two compose — § Reporting governs when a pass may report, § Re-sweep
+governs what a later pass re-runs. Two boundaries are stated in the clause itself because both
+are misreadable: the contract is coverage before reporting rather than finding everything, so a
+complete sweep that still misses a defect has met it; and an angle the pass genuinely could not
+reach does not withhold the report, it reports `not reached` and the verdict cap qualifies the
+verdict instead.
+
+**Implementation guidance.** The `**Why:**` cites two measured incidents rather than asserting a
+preference — PRISM PR #471's re-review finding a fifth defect of the round-1 class, and PR #470's
+ten rounds. Both are qualified by repo, matching how `writing-voice.md` and `code-standards.md`
+cite `thrive#2196` on the same consumer-shipped surface.
+
+→ promotion verdict pending — resolves at PR 3A close.
 
 ---
 
@@ -1075,7 +1140,13 @@ direction half overturned by its own author.
 
 - **Axis:** `spec`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed` — one clause each side, both citing the cap rather than restating it.
+  Briar's `**Verdict:**` line gains a third state, `Ready except <angle> — needs <specific
+  check>`, and states that `Ready for PR` is unavailable until every angle reports `swept` or
+  `n/a`. Eric's `## PR Readiness` gains a second checkbox obliging the `## Summary` to name the
+  angle and the check still owed while the box is unchecked. Both fixes landed in canonical
+  files and rebuilt; the five `review-angles.md` twins hash `4b7624af` and the five
+  `summary-template.md` twins hash `1d6b21ab`.
 - **File:** `.prism/references/review-angles.md:52` (§ Status vocabulary), against
   `.ai-skills/skills/prism-code-review-self/shared.md:315` and
   `.prism/references/code-review-pr/summary-template.md` § PR Readiness
@@ -1309,3 +1380,7 @@ Briar sweeps all nine in one pass; no line carries an axis attribution.
   `176f35c5..8c82764f`; all six round-1 findings verified fixed at source, and Major 3's
   direction half overturned in Clove's favour. One new Major opened — the bounded-angle verdict
   cap in `review-angles.md` has no slot in either reviewer's verdict surface.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Closed the bounded-angle Major with one
+  clause on each reviewer's verdict surface, and added Hunter's sweep-before-report rule as a
+  clause on § Reporting; see Decision: Sweep-before-report. The invited third-instance check came
+  back negative on two examined candidates, recorded in this run's `## Sessions` close.
