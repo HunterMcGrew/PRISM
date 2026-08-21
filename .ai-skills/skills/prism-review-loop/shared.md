@@ -27,8 +27,9 @@ it, and every pass reviews them at different bars:
 - **Ledger** — a section a persona appends findings to, as opposed to a
   section an author writes to declare scope: the plan's `## Review Issues`,
   `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and
-  `## PR Readiness` entries, plus `.prism/lessons.md`. Not a review target
-  during the loop at any bar. Everything else in the plan file —
+  `## PR Readiness` entries, plus `.prism/lessons.md`, the PR body, and the
+  readiness line the loop itself emits. Not a review target during the loop
+  at any bar. Everything else in the plan file —
   `## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria` — is
   Subject content when it falls inside the diff being reviewed; Ledger names
   only bookkeeping, never the whole plan file. `## PR Readiness` is
@@ -46,7 +47,15 @@ one spent consecutive passes finding nothing in the feature under review
 while still producing findings, all of them in text the cycle had written;
 PRISM's own PR #446 (merged as `d28f2aaf`) recorded the same species three
 passes running against its plan file. The ledger for that run is at
-`.prism/plans/response-shape-contract.md` § Review Issues.
+`.prism/plans/response-shape-contract.md` § Review Issues. A third run
+outside this repo spent five of nine passes on meta churn before anyone
+noticed the subject had stopped producing findings.
+
+Two rules meet here and neither replaces the other. Each reviewer's
+§ Plan-file scope shrinks the set of plan observations that are findings at
+all — a plan is a finding only when it contradicts the diff. The Ledger row
+below caps what the survivors can cost inside a loop: they are swept once at
+close and never drive another pass. Upstream filter, downstream cap.
 
 **The repair bar — four anchors, name one or it is not a finding.** A
 repair-surface finding is admissible only when the reviewer names, and the
