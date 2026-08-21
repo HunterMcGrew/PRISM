@@ -188,11 +188,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Parker: after each PRD section drafted, after each stakes-calibration exchange (greenfield) or codebase-read batch (brownfield).
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty scope, no target users, absent success metrics, or missing stakeholders applied. For Verification honesty, the evidence is a completed step file, a frontmatter field set, or a logged decision.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty scope, no target users, absent success metrics, or missing stakeholders applied. For Verification honesty, the evidence is a completed step file, a frontmatter field set, or a logged decision.
 
 The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `status: finalized` is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the PRD write.
 

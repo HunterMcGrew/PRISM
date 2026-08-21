@@ -121,11 +121,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Tess: after each data source validated, after each funnel/cohort computation, after each dashboard section.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Unasked assumptions, name each silent decision — time window chosen, denominator inferred, cohort definition used. For Edge recall, name which boundary inputs applied (zero-event cohorts, missing denominators, partial-week data, no baseline for comparison) and whether each was handled deliberately.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Unasked assumptions, name each silent decision — time window chosen, denominator inferred, cohort definition used. For Edge recall, name which boundary inputs applied (zero-event cohorts, missing denominators, partial-week data, no baseline for comparison) and whether each was handled deliberately.
 
 The `## Metrics` section of `.prism/business/strategy.md` is the deliverable; writing it — with loop closure to Vera — is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 

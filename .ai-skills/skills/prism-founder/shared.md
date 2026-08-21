@@ -132,11 +132,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Vera: after each strategy-doc section drafted, after each OKR set, after each cross-functional priority call.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) and whether each was handled deliberately.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class report or verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, no mission stated, conflicting decisions, absent stakeholder) and whether each was handled deliberately.
 
 The strategy doc at `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the session's choices to its `## Decisions` and owned sections. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 

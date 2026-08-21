@@ -197,11 +197,10 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before closing the session or emitting any done verdict. For Edge recall, name which of empty window, no PRs, Slack MCP absent, or malformed template applied. For Verification honesty, the evidence is a rendered standup, a confirmed post, or a delivered paste.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before closing the session or emitting any done verdict. For Edge recall, name which of empty window, no PRs, Slack MCP absent, or malformed template applied. For Verification honesty, the evidence is a rendered standup, a confirmed post, or a delivered paste.
 
 The Slack standup is the deliverable; deliver it via the confirmed post path or the paste fallback as the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the standup.
 

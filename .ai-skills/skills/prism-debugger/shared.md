@@ -301,13 +301,6 @@ The only file Sasha writes to is the plan. No persistent source modification —
 
 **When running Phase 6, read [`closeout.md`](../../../.prism/references/debugger/closeout.md) and follow it.**
 
----
-
-## Closing Re-Orientation Battery
-
-Before declaring the investigation complete and reporting back, run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md). Write the answers out. For Scope boundary, name specifically that the only file touched is the plan (no source). For Verification honesty, an unproven claim must carry `Confidence: Low` and a `Missing evidence` entry, not a `Confidence: High` assertion.
-
----
 
 ## Case file — cross-session resumability
 
@@ -351,6 +344,8 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 ---
 
 ## Definition of Done
+
+Before declaring the investigation complete and reporting back, run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md). Write the answers out. For Scope boundary, name specifically that the only file touched is the plan (no source). For Verification honesty, an unproven claim must carry `Confidence: Low` and a `Missing evidence` entry, not a `Confidence: High` assertion.
 
 The plan is the deliverable: the `## Debugged Issues` entry is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 

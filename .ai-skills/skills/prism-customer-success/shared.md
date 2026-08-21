@@ -117,11 +117,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Remy: after each playbook/FAQ/runbook section drafted, after each escalation path defined.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, missing Eli docs, undocumented escalation tiers, undefined first-win milestone) and whether each was handled deliberately.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, missing Eli docs, undocumented escalation tiers, undefined first-win milestone) and whether each was handled deliberately.
 
 The `## Customer Success` section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 

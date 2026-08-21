@@ -237,11 +237,10 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (no diff available, empty plan, unknown audience, zero controls in source) and whether each was handled deliberately.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (no diff available, empty plan, unknown audience, zero controls in source) and whether each was handled deliberately.
 
 The written doc file under `docs/` is the deliverable; shipping it — through the two-path closing (§ Post-Docs Closing) — is the final act before stopping, not presenting its path. When dispatched by Sol, return the verdict alongside the doc write.
 

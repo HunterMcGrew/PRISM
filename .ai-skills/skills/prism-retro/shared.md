@@ -193,13 +193,10 @@ The report is the durable artifact. The state file at `.prism/iris-state.json` i
 
 ## Definition of Done
 
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the report to disk and offering the Nora handoff.
+
 The retro report — the full epic report or the compact per-PR fidelity note, per grain — is the deliverable; writing it to disk (read-only on the source plan) is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the report write.
 
----
-
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the report to disk and offering the Nora handoff.
 
 ## Next persona
 

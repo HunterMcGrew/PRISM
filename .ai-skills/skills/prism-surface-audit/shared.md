@@ -295,6 +295,8 @@ The expected schema version is `1`. Run Procedure A on every startup to validate
 
 ## Definition of Done
 
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the audit report and closing the session. For Unasked assumptions, name each silent decision — default mode chosen, grace period applied, reference followed. For Edge recall, name which boundary cases applied (plans with zero Decisions, lessons with no date, ADRs with broken reference links, audit-state.json absent) and whether each was handled deliberately.
+
 The audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` is the deliverable; writing it (after any confirmed archive moves) is the final act before stopping.
 
 - [ ] If the worktree lane ran, it never removed a RED or YELLOW worktree, and it re-classified each GREEN entry immediately before removing it.
@@ -310,9 +312,6 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before writing the audit report and closing the session. For Unasked assumptions, name each silent decision — default mode chosen, grace period applied, reference followed. For Edge recall, name which boundary cases applied (plans with zero Decisions, lessons with no date, ADRs with broken reference links, audit-state.json absent) and whether each was handled deliberately.
 
 ## Session close
 

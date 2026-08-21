@@ -123,11 +123,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Penny: after each JD section drafted, after each rubric dimension defined, after each process stage documented.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict or handoff. For Edge recall, name which boundary inputs applied (no strategy doc, empty OKRs, undefined role scope, missing brand-voice) and whether each was handled deliberately.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict or handoff. For Edge recall, name which boundary inputs applied (no strategy doc, empty OKRs, undefined role scope, missing brand-voice) and whether each was handled deliberately.
 
 Your `## People` section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the job description, rubric, or hiring-process work to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 

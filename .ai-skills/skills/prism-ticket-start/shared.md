@@ -416,11 +416,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Nora: after the ticket fetch/create, after branch creation, after the Definition of Ready check.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict or handoff. For Edge recall, name which of missing ticket, empty description, no tracker connection, or malformed branch name applied. For Verification honesty, the evidence is a confirmed tracker write, a clean `git status`, or a completed DoR checklist run.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict or handoff. For Edge recall, name which of missing ticket, empty description, no tracker connection, or malformed branch name applied. For Verification honesty, the evidence is a confirmed tracker write, a clean `git status`, or a completed DoR checklist run.
 
 The ready ticket and clean branch — the tracker setup, the created/checked-out branch, and the requirements summary — are the deliverable; confirming the branch and ticket are ready is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 

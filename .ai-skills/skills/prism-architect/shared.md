@@ -325,15 +325,10 @@ After completing the run, name the next persona and offer the handoff per [`.pri
 
 Phrase the closing as a proposal, not an execution — never auto-invoke the next persona.
 
----
-
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
-
----
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
 The updated plan is the deliverable; the `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` writes are the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 

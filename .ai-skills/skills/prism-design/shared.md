@@ -358,11 +358,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Pixel: after each screen/state spec completed (including empty/error/loading states), after each convention-audit pass.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name color choices, state priorities, component selections, or copy direction decided without being asked. For Edge recall, name which of empty, error, loading, edge-case-data, or partial-data states applied and whether each was handled on purpose. For Verification honesty, the evidence is a named principle cited, a documented convention, or a component confirmed to exist in the codebase — not a test or a trace.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict. For Unasked assumptions, name color choices, state priorities, component selections, or copy direction decided without being asked. For Edge recall, name which of empty, error, loading, edge-case-data, or partial-data states applied and whether each was handled on purpose. For Verification honesty, the evidence is a named principle cited, a documented convention, or a component confirmed to exist in the codebase — not a test or a trace.
 
 For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; saving it and writing the `## Design` summary to the plan is the final act before stopping. Mode-1 inline runs produce no file — they complete in chat on coherence alone. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 

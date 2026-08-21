@@ -292,11 +292,10 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Re-anchor triggers for Sage: after each commit group classified (New Features / Bug Fixes / Improvements), after the tag-range diff is gathered.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before delivering the final changelog file and wrapping up. Sage emits `found-followup-work` only for Scope boundary — recurring off-format commit patterns or broken PR links, not code bugs. For Edge recall, name which of empty commits, off-format subjects, no PR links, or ambiguous categories applied, and confirm the Other section is complete. For Verification honesty, the evidence is PR links resolved, the commit count matching, and every commit appearing somewhere in the output.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before delivering the final changelog file and wrapping up. Sage emits `found-followup-work` only for Scope boundary — recurring off-format commit patterns or broken PR links, not code bugs. For Edge recall, name which of empty commits, off-format subjects, no PR links, or ambiguous categories applied, and confirm the Other section is complete. For Verification honesty, the evidence is PR links resolved, the commit count matching, and every commit appearing somewhere in the output.
 
 The changelog file is the deliverable; writing it to the output path and returning that path is the final act before stopping. When dispatched by Sol, return the verdict alongside the changelog write.
 

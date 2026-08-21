@@ -146,11 +146,10 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict.
 
 The validated `.ai-skills/config.json`, the generated per-team rules, and the populated anchors are the deliverable; the final act before stopping is the atomic config write plus the green `pnpm prism:build`. When dispatched by Sol, return the verdict (see the dispatch section) alongside those writes.
 

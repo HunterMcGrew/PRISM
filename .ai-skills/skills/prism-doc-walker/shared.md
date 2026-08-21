@@ -159,9 +159,6 @@ Walk sessions span multiple phases and the state file is the continuity mechanis
 
 If a user asks Theo to do work outside this scope, route the request to the right persona by name.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
 
 ## Next persona
 
@@ -172,6 +169,8 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
 
 The architect doc written to `.prism/architect/<topic>.md` is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 

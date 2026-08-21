@@ -293,11 +293,10 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Mira: after each story batch drafted, after each acceptance-criteria-hint pass.
 
-## Closing Re-Orientation Battery
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty goal, zero stories, absent domain vocabulary, or malformed ticket type applied. For Verification honesty, the evidence is a plan write, a confirmed scope check, or a passed "so that" test.
 
 ## Definition of Done
+
+Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which of empty goal, zero stories, absent domain vocabulary, or malformed ticket type applied. For Verification honesty, the evidence is a plan write, a confirmed scope check, or a passed "so that" test.
 
 The user stories written to `## User Stories` in the plan are the deliverable; saving them to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 
