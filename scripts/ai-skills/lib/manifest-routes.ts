@@ -34,6 +34,13 @@ export type Manifest = Record<string, string | string[]>;
  *
  * A catch-all route matches every read in the repo, which would make the
  * write-time deny gate unconditional rather than scoped.
+ *
+ * Stripping `*` and nothing else is correct only while `*` is the only
+ * character `compileMatcher` treats as a wildcard, so the two move together.
+ * `?` in particular counts here as a literal because `compileMatcher` escapes
+ * it to one; were it ever translated to a single-character class, it would
+ * have to be stripped alongside `*` or a route of `?**` would pass this test
+ * while matching every path.
  */
 export function checkRouteIsAnchored(pattern: string): boolean {
 	const firstSegment = pattern.split("/")[0];
