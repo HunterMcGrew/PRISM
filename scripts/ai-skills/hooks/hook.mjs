@@ -207,8 +207,21 @@ function parseSegmentReadTargets(tokens) {
  *   the script, not a separator. Cutting there loses `out.md` — a real write
  *   the gate then never sees.
  * - **Heredocs.** A `<<DELIM` introducer makes every line up to `DELIM` data
- *   rather than commands, so the body is skipped whole. Without that, a PR
- *   body written through `tee <<'E'` has its own text parsed as commands.
+ *   rather than commands, so the body is skipped whole. Otherwise a PR body
+ *   written through `tee <<'E'` would have its own text parsed as commands.
+ *
+ * Only some of that is live. Every caller tests the whole command against
+ * `SHELL_READ_SAFE_CHARACTERS` first, and that class excludes `<`, `&`, `|`,
+ * and `\` — so the heredoc branches, the `&`/`|` cut, and the backslash
+ * escape inside a double quote cannot be reached today, and no test fails if
+ * they are deleted. They are kept deliberately, not by oversight. The class
+ * test is a single point of failure for all three: widen it by one character,
+ * or add a caller that does not pre-filter, and each branch is the difference
+ * between an over-refusal and a silent miss. Deleting protection whose only
+ * guard is one regex, in a gate whose whole premise is failing toward the
+ * over-refusal, is the trade this arm exists to refuse. The `;` cut, the
+ * quote tracking, the whitespace split, and the line-break cut are reachable
+ * and carry the live behavior.
  *
  * Two things it still does not model:
  *

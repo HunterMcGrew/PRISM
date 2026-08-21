@@ -36,7 +36,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Alternatives considered:** keep crediting inside the resolver and pass the range fields down to it; add a separate `creditRead` entry point beside `resolveArchitectNag`.
   - **Chosen approach:** a fourth `{ credit }` options argument, defaulting to `false`. Passing the range fields down would give the resolver a Claude-shaped payload concern it has no other reason to know, and a second entry point splits one decision across two call sites that then have to stay in step. Defaulting to `false` means a channel added later under-credits until someone thinks about it — the direction whose cost is one re-read rather than a silently-defeated gate.
   - **Implementation guidance:** `hook.mjs`'s `resolveTargets` is the one place that decides. `read` credits only with no `offset` and no `limit`; `shell` credits only a flagless `cat`; `search` and everything else announce and never credit.
-  - **→ promotion pending — PR 2D's ADR-0072 (`## Consequences`) is where the credit channel's coverage and its gaps belong, since they are what makes the deny satisfiable.**
+  - **→ promoted to ADR-0072 § Consequences** — the "Credit is decided from the shape of the call" bullet.
 
 - **A shell command carrying any pipeline, redirect, or substitution character parses to zero targets.**
   - **Root cause of the question:** `cat a | grep b` reads `a`, but `grep -f patterns b` does not read `patterns`, and a parser that tries to tell those apart from a token stream is wrong more often than silence is.
@@ -148,7 +148,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Second root cause:** no `offset`/`limit` handling exists anywhere in `scripts/ai-skills/hooks/` — `extractArchitectDocPath` (`architect-route.ts:68-75`) inspects the path only, so `Read(limit=1)` credits a whole doc today.
   - **Chosen approach:** one rule covers both. **Credit lands only on a read with no range restriction.** For `Read`, that means `tool_input.offset` and `tool_input.limit` are both absent. For Bash, that means a bare `cat <path>` — `head`, `tail`, and `sed -n 'X,Yp'` extract the path for *announce* purposes but never credit. `Grep` is registered as `search`: it extracts paths, never credits.
   - **Implementation guidance:** this only works if the remedy is stated, not inferred, so the deny message names the literal command: ``read these in full first, then retry: `cat <path>` ``. That is a three-line predicate, not a heuristic, and it fails safe — an under-credited read costs one re-read, while an over-credited one silently defeats the gate. This closes the `Read(limit=1)` gap the earlier draft accepted; it was cheap once the Bash-credit rule forced the same question.
-  - **→ promotion verdict pending — resolves at PR 2B close.**
+  - **→ promotion verdict pending — resolves at plan close.** PR 2B merged without resolving it, so the gate it named has passed.
 
 - **The gate is friction, not a wall — ADR-0072 says so plainly rather than pretending otherwise.**
   - **Root cause of the question:** `.claude/settings.json`, `.claude/hooks/`, and `scripts/ai-skills/hooks/**` are unrouted, so the hook's registration, its source, and its delivered artifact are each editable ungated. Routing them was the obvious repair.
@@ -161,13 +161,13 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Root cause:** if a subagent shares its parent's session id, a child's read credits the parent and the gate is silently defeated. If it gets a distinct id, a child wedges against a deny whose remedy the parent already performed, invisibly. Both are real; nothing in this tree establishes which one Claude Code does.
   - **Chosen approach:** task B4 runs the probe against a live host and records the answer as a Decision. The design branches are pre-specified so the probe's outcome selects a branch rather than reopening the design — shared id means the deny arm keys on the id plus the transcript-visible agent identity where the harness exposes one, and the ADR names credit-leak as a known consequence; distinct id means the parent's `read` array is inherited by the child at first use, keyed on a parent-session field in the payload.
   - **Implementation guidance:** the probe is a `[HITL]` task — it needs a live session with a real subagent dispatch and cannot be synthesized from fixtures. Task D2 does not start until B4's Decision is recorded, and whichever branch is taken gets its own test leg.
-  - **→ promotion verdict pending — resolves at PR 2B close, on task B4's recorded probe result.**
+  - **→ promotion verdict pending — resolves at plan close**, on task B4's recorded probe result. PR 2B merged without resolving it.
 
 - **Writing guides, the stub's route targets, and `skills-ecosystem.md` split now rather than on touch.** File grain otherwise keys on load mechanism: always-on rules may group (`code-standards-js` stays one file), and routed docs split until the "and" test passes, on touch. These three are the exception because they are the deny's remedy documents — a forced read has to be cheap, and `skills-ecosystem.md` is 404 lines covering the roster, ticket types, workflows, plan-section ownership, AC format, handoffs, and two build-time output guards. Making someone read all of it to edit one skill file is the habituation failure in a new costume.
-  - **→ promotion verdict pending — resolves at PR 2C close.**
+  - **→ promotion verdict pending — resolves at plan close.** PR 2C merged without resolving it.
 
 - **The ship surface is four things plus dependency closure, enforced mechanically.** Skills (personas plus skill-forge), rules, writing guides, and the runtime (hooks, stub, doctor). Everything link-reachable from those ships; everything else — PRISM's own plans, self-dev ADRs, self-dev references — stays home. `SPEC.md` earns its place through closure: it is the tier-system meta-doc, cited by the shipped `code-standards.md` and routed by the stub's first key. Atlas's onboarding dependencies ride the same closure. Closure is computed and enforced in `pnpm prism:check`, not asserted in prose — an unenforced closure claim goes stale on the first new cross-reference.
-  - **→ promotion verdict pending — resolves at PR 2E close.**
+  - **→ promotion verdict pending — resolves at plan close.** PR 2E merged without resolving it.
 
 - **PR 2 splits into five stacked PRs (2A–2E) and its tasks are lettered, not renumbered.** The single PR 2 carried a runtime port, a delivery fix, a credit-channel widening, a documentation set, an enforcement gate, and two new validation surfaces. Reviewed as one diff it is unreviewable, and the ordering constraints between its parts are real safety constraints rather than preferences — the credit channel has to be in `main` before the deny is, or the remedy is unperformable.
   - **Alternatives considered:** renumbering tasks 10–29 continuously across the new stack.
@@ -233,7 +233,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **The consequence is chosen, not incidental.** A subagent doing routed work pays the read cost fresh even when its parent already read the same doc. That is the trade accepted for the guarantee that no agent's gate is satisfied by reads it never performed.
   - **The datum nobody was probing for, and the strongest one in the run:** the subagent received the nag verbatim and did nothing with it — read no architect doc, changed no behavior. The nag-habituation thesis measured rather than argued, and the clearest evidence that the write-deny is the enforcement and the announce is a courtesy.
   - **Implementation guidance:** D2 no longer implements anything — #468 shipped the keying, so D2 becomes coverage of it under the deny arm. ADR-0072 needs no reconciliation because it is not written yet; its drafted credit-leak-via-subagent consequence is stale and must never be written, and D5's task text is amended to name this consequence in its place.
-  - **→ promotion pending — ADR-0072 § Consequences (task D5) is where this lands, alongside the credit channel's other honest negatives.**
+  - **→ promoted to ADR-0072 § Consequences** — the "Each agent reads for itself" bullet.
 
 - **The shell read parser gates on an allow-list of safe characters, not a deny-list of shell metacharacters.**
   - **Root cause of the question:** `SHELL_CONTROL_CHARACTERS` enumerates what makes a command something other than a plain read. The enumeration already failed twice inside the PR that wrote it — `\n` was missing, so a multi-line command whose first line was a bare `cat` credited every bare token on every later line as fully read (`## Review Issues` § A newline in a Bash command is a command separator), and `#` was added in the same pass. Two escapes from one enumeration is a defect in the shape, not two defects in the contents.
@@ -243,7 +243,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Chosen approach:** a positive character class tested against the whole command string before tokenizing; anything outside it yields zero targets, which is the existing contract. The class is letters, digits, `_ . / - @ + = , : ~`, both quote characters (so `unquote` keeps working), and space and tab as separators. Newline and carriage return sit outside the class by construction — which is exactly what the deny-list had to remember, and did not.
   - **What it costs, stated plainly:** a path carrying any character outside the class — a `%`, a `#`, a space, a non-ASCII filename — stops crediting. That is under-credit, it costs one re-read, and it is the direction this channel is built to fail in.
   - **Implementation guidance:** fold into D3 rather than opening its own task — same function family, same PR, one verify line. Replace the constant with the positive class and rewrite its JSDoc to say what is allowed rather than what is denied; leave `SHELL_READ_COMMANDS` and the bail-to-zero-targets contract untouched. D3's write-form parser (`>`, `>>`, `tee`, `tee -a`, `sed -i`) is built on the same class rather than a second pre-filter, so the two halves of the parser cannot drift apart.
-  - **→ promotion pending — ADR-0072 § Consequences (task D5), in the same bullet that states the credit channel's call-shape gap; this narrows that gap and belongs beside it.**
+  - **→ promoted to ADR-0072 § Consequences** — the credit bullet names the positive class and what falls outside it.
 
 
 - **The `.prism/**` catch-all is narrowed to the paths `install-layout.md` actually governs, in all three routing tables.** This answers the cost-of-the-remedy question PR 2C's review (Eric, #463) handed to whoever writes the deny.
@@ -830,9 +830,11 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Alternatives considered:** a regex split on the separators as delimiters (`/\s*(?:\|\||&&|[;|&])\s*/`), which is what the review prescribed; extending the boundary-set enumeration to the unspaced spellings; a real shell tokenizer as a dependency.
   - **Chosen approach:** a single quote-, escape-, and heredoc-aware character scan for both arms, plus a whole-command safe-character gate on the read arm. The regex split was measured and rejected: `sed -i 's/a/b/;s/c/d/' out.md` carries a `;` inside the script, and cutting there strands `out.md` in a segment whose first token is not a write command — the gate stops seeing a real write, which is a worse failure than the one being fixed. Extending the enumeration re-runs the process that has already missed three times. A tokenizer dependency is out on the same zero-dependency constraint recorded above.
   - **Implementation guidance:** the read arm's certainty rule is the whole-command class — `SHELL_READ_SAFE_CHARACTERS` now admits `;` and line breaks as its only separators, and any character outside it refuses the entire command, not the clause carrying it. That is what makes the heredoc unreachable by construction rather than by enumerating `<<`, and it settles the round-2 minor the same way: `cat a && cat b` credits neither, and the JSDoc now says so and says why. The write arm cannot use a class (its whole job is metacharacters), so its correctness rests on the scanner: quotes hold a separator inside a token, and a heredoc body is skipped up to its delimiter.
-  - **→ promotion pending — rides ADR-0072's `## Consequences` with the credit channel's other coverage-and-gaps content.**
+  - **→ promoted to ADR-0072 § Decision** — the all-or-nothing paragraph, which states the segment contract; § Consequences was the drafted target and § Decision is where the substance landed.
 
 ## Sessions
+
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — round 10) open: Intent — close eric's PR 2D review and both axes that reported after he filed; Ambiguity — none load-bearing; assuming every finding is a proposal to judge on its merits, not an instruction, and that a reasoned decline is an acceptable outcome; Bounds — the deny gate's code, its tests, ADR-0072 and its mirrors, the always-on rule text, and this plan; no merge, no ready, PR stays draft; Approach — bank the runtime hole first, then the flag set and the probe, then prose, sweeping each finding's class rather than only the instance named · close: scope held. Silent decisions named: escaped `?` rather than translating it to a single-character class, because the route language is the two star forms and single-char globbing is a feature no route uses; widened the flag cut from the four named to six after checking `tag`'s readings of `-s`, `-v`, and `-u` against the man page, since each reaches `gpg.program` by the same route; kept the unreachable splitter branches as defense behind the class test rather than deleting them, on the grounds that the class test is their single point of failure; declined the `NotebookEdit` gate as a widening that earns its own decision, fixing only the stale prose beside it. Edge recall: `false` can never exit 0, so its probe row declares an expected exit of 1 rather than being exempted from the requirement; `diff` compares two identical operands because a difference and a refusal are both non-zero; an absent command still reports `unavailable` and proves nothing. Verification honesty: `pnpm prism:check` exit 0, 822 tests / 822 pass / 0 fail, run in this worktree at this head. The six removed flags are pinned as denial rows and the `?` fix carries three regression rows, so both are checked rather than asserted. AC-25 is not re-graded here — reese owns that, and the `?` fix is what he re-grades against. D8 remains `[HITL]` and unrun.
 
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate] (eli, dispatched — PR 2D doc-staleness audit)
   - **Intent** — reconcile every prose home of the write gate, and the list-shaped inventories PR 2D moved, with what the shipped code and manifests now do.
@@ -1100,6 +1102,8 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared briar's PR 2D round-5 review. ADR-0072's compensating-control sentence is scoped per axis, `-p` leaves `GIT_INERT_FLAGS`, and jq's admission states the reason that refuses `sed`. Also routed `guides/writing-a-rule.md` from `.prism/rules/**` in all three tables, and rewrote the PR body for the round 2-4 design changes.
 
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared briar's PR 2D round-8 review. `GIT_PROBE_CASES.remote` and `.fetch` now reach the writes the tree-safe set claims are harmless, and a new `confirmWork` hook reads each write back because exit 0 cannot tell doing-the-work from succeeding-at-nothing. ADR-0072's git-hook paragraph drops the falsified absolute, both new arms gain a vacuity guard, and the "six writers" phrasings name a sample rather than a roster.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Cleared eric's PR 2D review and both of his late-reporting axes — one Critical, six Majors, four Minors. The Critical was `compileMatcher` leaving `?` unescaped, so a route could match every path while clearing the anchor test; see the Review Issues entry. `pnpm prism:check` exit 0, 822/822.
+- 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Widened eric's flag finding from two flags to six and gave the shell probe the exit-code requirement the git probe already had, closing the sibling of briar's round-7 defect. Kept the unreachable splitter branches and corrected their JSDoc instead of deleting them; deferred the `NotebookEdit` gate as its own call.
 
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Reese re-grounded the PR 2D AC verification at head — full re-grade at `3e2fba3a`, 12 criteria, 12 MET / 0 UNMET / 0 UNGRADEABLE, with AC-25 graded for the first time. Report at `.prism/plans/qa/ac-verification-opus5-port.md`.
 
@@ -1108,7 +1112,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - [x] No critical or major issues known — Briar has not reviewed yet.
 - [x] Types correct — `pnpm prism:check-types` exit 0 across both tsconfigs, including `checkJs` over the `.mjs` runtime.
 - [x] No stray debug artifacts.
-- [x] Tests written for new logic and edge cases — the command axis is checked by execution on both halves. The shell list runs every entry against a scratch file; the git sets run each subcommand in a spelling that reaches its work, require exit 0 before crediting an unchanged tree, and carry a negative control running six excluded working-tree writers and requiring the probe to see each tree change. Adding `patch` or `cp` to the shell map fails the suite; reverting `commit` to a bare argv trips `unproven`; softening `stash push` to `stash list` trips the negative control — all three re-run individually in round 8. Round 8 found two of the fifteen git rows (`remote`, `fetch`) exiting 0 without reaching their write path; both now perform their write and read it back, so exit 0 is no longer the only evidence behind them. A flag added to an existing set still lands untested, and ADR-0072 § Consequences states why an executable probe does not transfer to that axis. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm; the write-tool deny row is derived from the harness's own table, so `Edit` is no longer assertion-free.
+- [x] Tests written for new logic and edge cases — the command axis is checked by execution on both arms and to the same standard: each command runs in a spelling that reaches its own work, is required to exit its expected code, and has the disk compared. Each arm carries a negative control — `checkout`/`restore`/`apply`/`stash`/`clone`/`merge` on the git arm, `patch`/`cp` on the shell arm — so a clean report from the positive half means something. What execution still does not cover is a write reached through a flag: the probe runs no flags, so `sort` would pass it clean, and ADR-0072 states why an executable probe does not transfer to that axis. The partial remedy is a denial row per excluded flag in `everyGitTreeWrite`, which pins an exclusion once made but cannot surface the next wrong admission. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm.
 - [x] All debugged issues resolved — none opened.
 - [x] Build passes — `pnpm prism:build && pnpm prism:check` exit 0, 2026-08-20.
 - [ ] **D8 is unrun.** The `[HITL]` end-to-end run against a live Claude Code host cannot happen in a dispatched session. Every leg below it synthesizes its own payloads, so the suite cannot catch a payload-shape mistake — that is exactly what D8 exists to catch, and it is the one claim in this PR with no evidence behind it.
@@ -2381,6 +2385,107 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 - **Suggested fix:** one clause on the jq entry or in the absent-on-purpose paragraph — jq is admitted despite the data-operand-program shape because its language has no write or exec builtin, which is what `sed`'s `w` has and jq lacks.
 - **Fixed:** 2026-08-20 — the clause is on the `sed` sentence in the absent-on-purpose paragraph, where the two are compared, so a reader meets the distinction at the point of confusion rather than having to hold `sed`'s reason in mind until the `jq` entry.
 
+### A `?` in a manifest route compiles to a quantifier, so a route can match every path
+
+- **Axis:** `runtime`
+- **Severity:** `critical`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/lib/match.mjs` — `compileMatcher`; `scripts/ai-skills/lib/manifest-routes.ts` — `checkRouteIsAnchored`
+- **Problem:** `?` was neither escaped nor translated, so it survived into the compiled regex as a quantifier. Route `a?**` compiled to `/^a?.*$/`, matched every sampled path, and cleared `checkRouteIsAnchored` because that test strips only `*` and read the `?` as the required literal — the unconditional-deny state ADR-0072 says is impossible and `prism doctor` reports as an error. A first segment of `?*` before a slash and a double star produced a regex `RegExp` rejects, which `runPreToolUseArm` swallows as a fail-open and the two development gates hit as an uncaught crash.
+- **Fixed:** 2026-08-20 — `?` escaped rather than translated to a single-character class. The route language is the two star forms, and single-char globbing is a feature no route uses. A literal `?` is a genuine anchor character, so `checkRouteIsAnchored` keeps stripping `*` alone and its reading becomes true rather than accidental; both prose homes say so. Three regression rows in `verify-manifest-coverage.test.ts`. AC-25 was graded MET against the parsed manifests, which is true and answers a narrower question than the criterion asks — the re-grade is reese's.
+
+### Six flags in `GIT_TREE_SAFE_FLAGS` reach a program, which the set's own definition excludes
+
+- **Axis:** `runtime`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `GIT_TREE_SAFE_FLAGS`
+- **Problem:** the set is defined as flags accepted "without naming an output file or running another program," and six members failed the second half. `-e` is `--edit` and launches `core.editor`; `--patch` makes `git add` interactive and its `e` action spawns the editor on the hunk; `-S` is `--gpg-sign`. Three more are the exact two-position ambiguity the set already rejects `-n` for — on `tag`, `-s` is `--sign`, `-v` is `--verify`, and `-u` is `--local-user`, each running `gpg.program`, while on `commit`/`push`/`add` all three are inert. None appeared anywhere in the suite.
+- **Fixed:** 2026-08-20 — all six dropped; each inert meaning is carried by its long form, which means one thing everywhere. Each is pinned as a denial row in `everyGitTreeWrite`, the flag axis's only executable check. Removing `-e` does not close the editor route and the JSDoc no longer implies it does: `git commit` with no message launches `core.editor` with no flag at all, which belongs with the pre-commit-hook exposure the subcommand set already admits. What the exclusions do close is gpg.
+
+### The tree-safe subcommand JSDoc still carried the pre-commit claim `22f98196` retracted
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc
+- **Problem:** the paragraph still read that a `pre-commit` hook's write "lands whether or not this set admits the subcommand, because a `git commit` whose text names no routed path is outside the gate either way." That is the claim `22f98196` was written to retract, and the conditional is the error — the case at issue is a commit whose text *does* name a routed path, where membership is the difference between the command running and never running. The commit fixed the ADR's copy and left this one standing.
+- **Class:** a changed behavior reconciled in one prose home and not the other — `.prism/rules/code-standards.md` § Removal and rename completeness.
+- **Sweep:** every prose home of the predicate. Four found: ADR-0072 § Consequences (corrected by `22f98196`), this JSDoc (not corrected), `GIT_TREE_SAFE_SUBCOMMANDS`'s opening paragraph (carries no claim about hooks, correct as written), and this plan's `## Decisions` (corrected version).
+- **Fixed:** 2026-08-20 — brought in line with the ADR, and the editor admission folded in beside the hook admission since both arrive through the same membership.
+
+### ADR-0072's git-hook bullet closes on a bound that runs backwards
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md` § Consequences
+- **Problem:** the bullet closed on "`--no-verify` is not admitted, so the set never clears a spelling that skips the hooks," offered as a bound on the widening. `--no-verify` is the one commit spelling that does *not* run the hooks, so excluding it removes the harmless spelling and leaves only spellings where the hooks fire. True as a fact, and it makes the widening no narrower.
+- **Class:** `.prism/rules/writing-voice.md` § Reassurance that introduces a new claim — the fifth instance on this ADR, and the first where a repair introduced the next one. The pre-`22f98196` wording was an honest admission; the rewrite moved the clause from the admission side of the paragraph to the bound side without changing its content, and it does not survive the move.
+- **Fixed:** 2026-08-20 — the half that holds is kept as the bound, the other half is an admission again, and the editor route joins it as a second thing bounded no further.
+
+### The shell command probe records refusals as proofs
+
+- **Axis:** `test efficacy`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hook-gate.test.ts` — the `SHELL_INSPECTION_COMMANDS` probe
+- **Problem:** the probe ran two generic operand shapes per command and never checked `result.status`; `checkProbeRan` distinguished only `ENOENT`. `cut`, `which`, `diff`, `jq`, `pwd`, and `false` exit non-zero on both shapes, so six commands were counted as passing proofs of read-safety while having refused their operands. A command that stops before its work leaves the tree unchanged for the same reason a read does. The `assert.ok(clean.length > 0)` guard could not catch it, because the shapes that do exit 0 keep the array non-empty. This is the defect briar found on the git arm in round 7, sitting on the sibling arm — and the git arm's own JSDoc documents the fix the shell arm never received.
+- **Fixed:** 2026-08-20 — `SHELL_PROBE_CASES` gives each command a work-reaching spelling and a required exit code, with an `unproven` bucket asserted empty, mirroring `probeGitSubcommand`. `false` declares an expected 1, because exiting non-zero is the whole of what it does. `SHELL_WRITER_CASES` adds a standing negative control — `patch` and `cp` each have to exit 0 *and* change the tree — replacing a mutation someone previously had to run by hand.
+
+### The read-only map's coverage claim is stated wider than what the probe checks
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `SHELL_INSPECTION_COMMANDS` JSDoc; ADR-0072 § Consequences
+- **Problem:** the JSDoc said a command that writes "cannot be added silently." The probe exercises operands and no flags, so `sort` — the command the same JSDoc names as deliberately absent, and whose `-o` caused the round-4 escape — passes clean and a `sort` addition would land silently.
+- **Fixed:** 2026-08-20 — one sentence narrowed to what the probe checks, with `sort -o` named as the uncovered shape. The adjacent claim about the six tree-safe subcommands was accurate and is unchanged.
+
+### The five deny preconditions describe the write arm and are stated over both arms
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** ADR-0072 § Decision; `scripts/ai-skills/hooks/hook.mjs` — `runPreToolUseArm` JSDoc; `.prism/rules/context-reuse.md` and its mirrors; `AGENTS.md`
+- **Problem:** `runPreToolUseArm` accepts `kind === "write" || kind === "shell"`, and the shell branch calls `filterRoutedPaths` and never consults route state. An unproven shell command naming a routed path reroutes whether or not the route's docs have been read, so reading them is not the remedy and never clears it. The numbered list, its copy in the JSDoc, and the always-on rule text all stated the read as the universal clearing condition; the ADR describes the shell arm honestly further down, so the list was the problem, not the behavior.
+- **Fixed:** 2026-08-20 — all four homes scope the preconditions to the write arm and name the shell arm's separate judgment. Mirrors regenerated by `pnpm prism:build`.
+
+### The credit bullet's cost ordering argues against the design it just described
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** ADR-0072 § Consequences
+- **Problem:** the bullet opens by admitting an over-credit the design keeps — a flagless `cat` of a truncated document credits in full — then closes with "over-crediting silently defeats the gate," with nothing reconciling the two.
+- **Fixed:** 2026-08-20 — the truncation case is named as unavoidable rather than chosen (the hook sees the invocation, never the output), and the pre-filter is named as the choice that errs the other way, which is the asymmetry `hook.mjs` already states one layer down.
+
+### Four small gaps between what the code does and what it says
+
+- **Axis:** `runtime`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs`; `scripts/ai-skills/hooks/architect-route.mjs`; `scripts/ai-skills/doctor.test.ts`
+- **Problem and fix, one line each.** `resolveFlagNames` collapses every digit to `-#`, so the `-1` entries in the `ls` set and the git read-only set were unreachable — `ls -1` was refused by a list that appeared to admit it, and both now carry the token that reaches them. `matchDocsForPath` rebuilt every route's regex per path-shaped token, thousands of compilations on a long commit message on the synchronous `PreToolUse` path, under a `filterRoutedPaths` JSDoc reading as though batching hoisted that too — matchers are now compiled once per pattern per process and the JSDoc says what batching does and does not hoist. The doctor's brace-glob row checked the finding and not `report.healthy`, unlike its catch-all sibling; both faults emit as errors and both rows now assert it.
+
+### Unreachable splitter machinery — kept, JSDoc corrected
+
+- **Axis:** `structure`
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/hook.mjs` — `splitShellSegments`
+- **Problem:** the heredoc branches, the `&`/`|` cut, and the backslash escape inside a double quote cannot be reached — every caller tests the whole command against `SHELL_READ_SAFE_CHARACTERS` first, and that class excludes `<`, `&`, `|`, and `\`. No test fails if they are deleted, and the JSDoc asserted the heredoc handling prevents a live bug the class test already refuses.
+- **Fixed:** 2026-08-20 — the machinery is kept and the claim is corrected. Deletion was the other option and was declined: the class test is a single point of failure for all three branches, and widening it by one character, or adding a caller that does not pre-filter, makes each branch the difference between an over-refusal and a silent miss. Removing protection whose only guard is one regex, in an arm whose whole premise is failing toward the over-refusal, is the trade this design exists to refuse. The JSDoc now names which branches are live and which are defense behind the class test.
+
+### `NotebookEdit` is a shipped write tool that no routed path gates — declined this round
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `scripts/ai-skills/hooks/harnesses.mjs` — `toolKinds`; `.claude/settings.json` matcher
+- **Problem:** `NotebookEdit` is absent from `toolKinds` and from the `Write|Edit|Bash` matcher, so a routed `.ipynb` write is never gated. `MultiEdit`, which the ADR named beside it, is no longer a shipped tool.
+- **Deferred:** 2026-08-20 — gating it is a real widening of what the gate blocks and ADR-0072 already frames it as a decision with two halves that move together, so it earns its own call rather than riding a review round. The stale half is fixed: the ADR now names `NotebookEdit` alone as the live example and states plainly that a routed `.ipynb` write is ungated.
+
 ### Angle Coverage
 
 - **Runtime behavior** — `swept` — 23 items enumerated, 23 verdicts. Every listed command's flag set read against what those flags do, and 23 candidate forge shapes driven through `parseUnprovenShellPaths` against a routed path. **No forgeable write found.** The operand-write class is closed: with `sort`, `uniq`, and `xxd` removed, no remaining entry writes through a trailing operand — checked `cat`, `head`, `tail`, `less`, `more`, `nl`, `od`, the grep family, `wc`, `diff`, `ls`, `stat`, `file`, `cut`, `tr`, `jq`, `echo`, `basename`, `dirname`, `which`, `pwd`, `true`, `false`. The flag-write class is closed for the current sets: every value-taking listed flag was traced to its value's role (`grep -f`/`--file` input, `rg -g`/`-t`/`--sort`, `cut -d/-f`, `od -A/-t`, `stat -c`, `head/tail -n/-c`, `diff -U`, `basename -s`, git's `--pretty`/`--format`/`--date`/`--grep`/`-L`), and none names an output file or a program. Dangerous flags are correctly absent: `file -C` (compiles a magic file) REROUTEs, `less -o` REROUTEs, `rg --pre` and `--pre-glob` unlisted, git's `--output`/`-O`/`-C`/`--git-dir`/`--exec-path` unlisted. `sed -n '1,20p' <path>` REROUTEs as designed. `git -p log` is the one exec-adjacent proof, recorded as a Minor above.
@@ -2397,16 +2502,16 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — **briar's round 9 over `529c4db4..22f98196` found none; every round 1–8 issue is `fixed`.** Round 9 re-ran clove's two mutations and added two the repair did not run (`fetch --dry-run` with `prepare` intact, and a `remote` spelling that only reads), confirming the `confirmWork` read-back reads each row's own write rather than a state true regardless, and walked all fifteen probe rows to close the class rather than the two caught instances. Round 8's three Majors and two Minors are `fixed`. No Critical in rounds 7 through 9 — the arm's behaviour is correct on every spelling tested. Round 8's three Majors are two `GIT_PROBE_CASES` rows that exit 0 without reaching their subcommand's work (`remote -v` is a pure read; `fetch` runs against a remote the probe never seeds), the ADR sentence asserting every row reaches its work, and an ADR premise about tree-safe-set membership that a two-line counterfactual falsifies. Round 7's four Majors were a git probe that passed vacuously for two thirds of the set it guards, two ADR sentences claiming more than was measured, and an unqualified no-write claim over `git commit`, which runs hooks. Eric's PR review opened one Critical and seven Majors; all eight are `fixed`. The Critical was the shell arm denying `git commit -m` on a routed path named in prose, with no reachable remedy. Rounds 1 through 5 remain `fixed`; round 5's Critical was run-state (a concurrent session in the worktree) and cleared in `5bb61a7b`/`aaddba90`. The six forged read-only proofs and the `rg --pre` execution vector still reroute, and are backed by an executable probe that runs each listed command against a scratch file rather than by a generated row that could not disagree with the implementation.
+- [x] No critical or major issues — **round 10 opened one Critical, six Majors, and four Minors across eric's PR review and his two late-reporting axes; all eleven are `fixed` or explicitly `deferred`.** The Critical is the `?` that compiled to a quantifier, letting a route match every path — the one runtime hole in the round. Six Majors: six flags reaching `core.editor` or `gpg.program` against the set's own criterion, the shell probe counting six refusals as proofs, the read-only map's coverage claim stated wider than the probe checks, the JSDoc still carrying the pre-commit claim `22f98196` retracted, and ADR-0072's `--no-verify` bound running backwards. The `NotebookEdit` gate is `deferred` with the stale half of its prose fixed. Briar's round 9 over `529c4db4..22f98196` found none, and every round 1–8 issue remains `fixed`.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations, including the two newly exported constants
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — the command axis is now checked by execution: every entry on the read-only lists and both git sets is run against a scratch file and the disk is compared. Adding `patch` or `cp` to the map fails the suite, and so does admitting `checkout` to the tree-safe set — but briar's round 7 executed the git half and found four of the six admitted subcommands never run under the probe's argv, so `apply`, `stash`, `clone`, and `merge` would be admitted silently. A flag added to an existing set still lands untested, and ADR-0072 § Consequences states why an executable probe does not transfer to that axis. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm; the write-tool deny row is derived from the harness's own table, so `Edit` is no longer assertion-free.
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-08-20, `pnpm prism:build && pnpm prism:check` exit 0.
 - [x] PR description up to date — carries the round-2 segmenter rewrite, the round-3 contract narrowing, the round-4 flag inversion, the tree-safe git set, the executable membership probe, and the shipped route-anchoring check
-- [x] Lasting decisions promoted to architect context — every 2D `## Decisions` entry carries a promotion verdict; the scoping entry is promoted as corrected, per its own reversal note
+- [x] Lasting decisions promoted to architect context — every 2D `## Decisions` entry carries a promotion verdict; the scoping entry is promoted as corrected, per its own reversal note. Four entries whose content landed in ADR-0072 in this diff moved from `pending` to `promoted`, and four naming a PR-close gate that has since passed unresolved (2B, 2C, 2E) are re-pointed at plan close.
 
-**Last updated:** 2026-08-20 (briar, round 9 — clean).
+**Last updated:** 2026-08-20 (clove, round 10 — eric's review and both late axes closed).
 
 **Outstanding for the human merge gate:** D8's live-host run, which needs a real Claude Code session and cannot be closed from a dispatched one. **AC-25 has never been graded and this is the PR that makes it consequential** — it deletes the catch-all from all three tables and ships the rejection that replaces it. Reese owns the verdict; grading it from this lane would be the author grading his own code.
 
