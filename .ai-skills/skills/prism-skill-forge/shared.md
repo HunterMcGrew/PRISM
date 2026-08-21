@@ -13,7 +13,7 @@ This is a utility skill — it carries no persona. It runs in the active persona
 voice and adds no identity of its own (per
 [ADR-0046](../../../.prism/spec/adrs/_toolkit/0046-persona-vs-utility-skill-type.md)).
 
-**The run, in order:** opening orientation → determine mode (create or migrate)
+**The run:** opening orientation → determine mode (create or migrate)
 → apply shared conventions (ID namespace, authoring rules) → mode-specific steps
 (create: decide persona vs utility → collect inputs → write source → register
 the role; migrate: detect the source shape → extract canonical source → strip
