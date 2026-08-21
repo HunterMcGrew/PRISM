@@ -113,11 +113,14 @@ export interface AnchorSubstitutionSummary {
 
 /**
  * Runs Atlas's stub-anchor population step after rule generation. Builds the
- * `contentByAnchor` map from `OnboardingConfig` — `specializes-in` from the
- * detected stack, `domain-context` from the captured product domain — and
- * runs `substituteAnchorsAcrossSkills` against the canonical persona-source
- * surface. Examples-class anchors stay empty in v1 (future Atlas iterations
- * fill them from team artifacts).
+ * `contentByAnchor` map from `OnboardingConfig` — `domain-context` from the
+ * captured product domain — and runs `substituteAnchorsAcrossSkills` against
+ * the canonical persona-source surface. Examples-class anchors stay empty in
+ * v1 (future Atlas iterations fill them from team artifacts). The former
+ * `specializes-in` lane was retired with the anchors it targeted:
+ * specialization blocks were removed from the skill bodies (PR 3B) because
+ * the consumer's stack facts already live in its generated rules and repo
+ * map.
  *
  * The shape mirrors `runRuleGenerators` so the orchestration code at the
  * Atlas-shared.md level can compose the two in a uniform way — one call per
@@ -153,11 +156,6 @@ function buildContentByAnchor(
 ): Record<string, string> {
 	const map: Record<string, string> = {};
 
-	const stackSummary = renderStackSummary(config);
-	if (stackSummary.length > 0) {
-		map["specializes-in"] = stackSummary;
-	}
-
 	const domain = config.productDomain.trim();
 	if (domain.length > 0) {
 		map["domain-context"] = domain;
@@ -166,30 +164,3 @@ function buildContentByAnchor(
 	return map;
 }
 
-/**
- * Renders the detected-stack section content. Languages list first, then
- * frameworks, both sorted by confidence-then-name. The `unknown` sentinel
- * (an empty repo or unrecognized package files) collapses to an empty
- * string so Atlas falls back to the canonical default.
- */
-function renderStackSummary(config: OnboardingConfig): string {
-	const languages = config.techStack.languages.filter(
-		(l) => l.name !== "unknown"
-	);
-	const frameworks = config.techStack.frameworks;
-
-	if (languages.length === 0 && frameworks.length === 0) {
-		return "";
-	}
-
-	const lines: string[] = [];
-
-	if (languages.length > 0) {
-		lines.push(`Languages: ${languages.map((l) => l.name).join(", ")}.`);
-	}
-	if (frameworks.length > 0) {
-		lines.push(`Frameworks: ${frameworks.map((f) => f.name).join(", ")}.`);
-	}
-
-	return lines.join(" ");
-}
