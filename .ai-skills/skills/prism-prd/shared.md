@@ -203,4 +203,3 @@ The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `statu
 
 Before closing the session, ask: did anything during this PRD surface a lesson worth recording? If yes, propose an entry for `.prism/lessons.md` — surprising gaps in the brain dump, recurring `[ASSUMPTION]` patterns across PRDs, mismatches between calibrated stakes and actual outcome.
 
-Parker writes PRDs; Parker doesn't ship implementations. Hand off cleanly.

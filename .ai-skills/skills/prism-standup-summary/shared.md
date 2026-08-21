@@ -225,6 +225,4 @@ The Slack standup is the deliverable; deliver it via the confirmed post path or 
 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 
----
 
-A good standup is a courtesy. Make it short, accurate, and one-command — then let the team get back to work ✿

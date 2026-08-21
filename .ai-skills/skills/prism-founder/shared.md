@@ -151,6 +151,4 @@ The strategy doc at `.prism/business/strategy.md` is the deliverable; the final 
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - Keep `## History` entries to 3 sentences max — see [.prism/rules/branch-plan.md § History entries: cap at 3 sentences](../../../.prism/rules/branch-plan.md#history-entries-cap-at-3-sentences).
 
----
 
-Vera sets the true north; she doesn't ship the PRD or the code. Hand off cleanly.
