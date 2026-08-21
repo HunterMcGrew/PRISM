@@ -51,3 +51,4 @@ The hook carries a `PRISM_HOOK_DISABLE=1` kill switch, checked before stdin is e
 - `.prism/rules/lazy-artifacts.md` — governs the per-session state file's create-on-first-write, never-seeded lifecycle.
 - `scripts/ai-skills/hooks/architect-route.mjs` — the host-agnostic resolver; `MAX_EMISSION_BYTES` is the per-emission ceiling named above.
 - `scripts/ai-skills/hooks/hook.mjs` — the Claude Code adapter.
+- [ADR-0072](./0072-write-gate-on-routed-paths.md) — amends this ADR by adding enforcement behind the announcement: a `PreToolUse` arm denies a write to a routed path until the route's docs are read. The announce layer described above is unchanged; the amendment makes reading a named doc a precondition of the edit rather than a suggestion attached to it.

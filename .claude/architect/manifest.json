@@ -16,32 +16,10 @@
 		"guides/writing-a-plan.md",
 		"_toolkit/plan-authoring.md"
 	],
-	".prism/rules/acceptance-criteria.md": "_toolkit/spec-editing.md",
-	".prism/rules/accessibility.md": "_toolkit/spec-editing.md",
-	".prism/rules/architect-doc-verification.md": "_toolkit/spec-editing.md",
-	".prism/rules/autonomous-bug-fixing.md": "_toolkit/spec-editing.md",
-	".prism/rules/branch-plan.md": "_toolkit/spec-editing.md",
-	".prism/rules/bash-output-minimization.md": "_toolkit/spec-editing.md",
-	".prism/rules/code-comments.md": "_toolkit/spec-editing.md",
-	".prism/rules/code-standards.md": "_toolkit/spec-editing.md",
-	".prism/rules/context-reuse.md": "_toolkit/spec-editing.md",
-	".prism/rules/core-principles.md": "_toolkit/spec-editing.md",
-	".prism/rules/cross-agent-handoff-accountability.md": "_toolkit/spec-editing.md",
-	".prism/rules/demand-elegance.md": "_toolkit/spec-editing.md",
-	".prism/rules/followup-scope.md": "_toolkit/spec-editing.md",
-	".prism/rules/git-conventions.md": "_toolkit/spec-editing.md",
-	".prism/rules/implementation-task-detail.md": "_toolkit/spec-editing.md",
-	".prism/rules/plan-before-building.md": "_toolkit/spec-editing.md",
-	".prism/rules/pr-description.md": "_toolkit/spec-editing.md",
-	".prism/rules/pre-compaction-checkpoint.md": "_toolkit/spec-editing.md",
-	".prism/rules/response-shape.md": "_toolkit/spec-editing.md",
-	".prism/rules/self-improvement-loop.md": "_toolkit/spec-editing.md",
-	".prism/rules/skill-authoring.md": "_toolkit/spec-editing.md",
-	".prism/rules/subagent-strategy.md": "_toolkit/spec-editing.md",
-	".prism/rules/verification-before-done.md": "_toolkit/spec-editing.md",
-	".prism/rules/verification-commands.md": "_toolkit/spec-editing.md",
-	".prism/rules/worktree-git.md": "_toolkit/spec-editing.md",
-	".prism/rules/writing-voice.md": "_toolkit/spec-editing.md",
+	".prism/rules/**": [
+		"_toolkit/spec-editing.md",
+		"guides/writing-a-rule.md"
+	],
 	".prism/spec/adrs/**": [
 		"_toolkit/spec-editing.md",
 		"guides/writing-an-adr.md"
@@ -62,6 +40,7 @@
 	],
 	".prism/business/**": "_toolkit/business-layer.md",
 	".prism/skills/prism-conductor/**": "_toolkit/spec-editing.md",
+	".prism/skills/**": "_toolkit/skills-ecosystem.md",
 	".ai-skills/skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md",
@@ -78,15 +57,12 @@
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
 	".prism/audit-state.json": "_toolkit/audit-workflow.md",
 	".prism/audits/**": "_toolkit/audit-workflow.md",
-	".prism/**": [
-		"_toolkit/install-layout.md",
-		"_toolkit/skills-ecosystem.md"
-	],
+	".prism/custom/**": "_toolkit/install-layout.md",
 	"scripts/ai-skills/build.ts": "_toolkit/install-layout.md",
 	"scripts/ai-skills/update.ts": "_toolkit/install-layout.md",
 	"scripts/ai-skills/hooks/**": "_toolkit/install-layout.md",
 	"scripts/ai-skills/path-guard.ts": "_toolkit/install-layout.md",
-	".ai-skills/definitions/paths.json": "_toolkit/install-layout.md",
+	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": [
 		"_toolkit/documentation.md",

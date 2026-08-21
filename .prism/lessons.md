@@ -447,3 +447,19 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-19 (opus5-port PR 2C, PR #463) — a self-review found a stale `**Verify:**` line, then swept the plan's other verify lines by walking `seed-curation.json`'s `curated` list and concluded it was the last survivor. PR review found two more the sweep could not see: one named a superseded directory that never got created (the files were not curated at all), and one had the wrong grep scope. The list was a proxy for one axis — canonical measured while a curated twin goes unmeasured — and the real class was broader: the verify line was not re-derived when the task changed underneath it. Re-deriving against the class rather than the list turned up two further instances nobody had reported.
 
 **How to apply:** when a finding suggests a class, name the class in words before enumerating, then check each candidate against the words. If the sweep's method is "grep a list," ask what the list is a proxy for and what a defect on a different axis would look like. And run each verify command literally — a command that errors on a nonexistent path is indistinguishable from one that passes, until you run it.
+
+---
+
+## A comment that justifies a rule by listing the shapes it governs will be wrong
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — one JSDoc paragraph defending a whole-command credit rule named two positions the rule governs; self-review probed eight. The rewrite named two more and self-review found six others. An inline comment two functions away justified a token-recovery change by naming the two tokens it dropped; measurement over 22 shapes found ten, three of them routed. The reviewer's own suggested replacement ("every lost token is a drive-qualified spelling") failed the same way against a seventeen-shape harness. Four enumerations, four too narrow, in one range — while the sibling paragraph that stated its property without enumerating needed no correction across the whole PR.
+
+**How to apply:** when a comment explains why a rule is written the way it is, write the property and one example, not the set. If you catch yourself listing the cases a rule covers, the list is the draft and the sentence that covers all of them is the comment. Where the property has a real bound, state the bound — "every dropped token keeps a `:` inside it" is checkable and closed; "the ones we lose are all X" is a sample.
+
+---
+
+## A measurement over this repo's fixtures cannot bound a claim about code that ships elsewhere
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — three independent measurements of a token-recovery loss reported zero routed losses: a seventeen-shape harness, a twenty-two-shape harness, and the safety closure they supported. All three scored routedness against PRISM's own manifest, whose patterns are exact, directory-prefix, or prefix-`**` — the shapes where the first colon-piece always rescues the route. The hook ships into consumer repos, where a manifest pattern is whatever the consumer wrote, and a suffix-anchored glob matches a colon-named file the gate then never fires on. Enumerating harder would not have found it, because every enumeration was scored against the same manifest; it was found by reading the matcher's compiled form, where `*` becomes `[^/]*` and admits `:`.
+
+**How to apply:** when the code under test ships somewhere else, this repo's fixtures are one deployment, not the domain — vary the fixture as well as the input, or state the bound as "against this repo's manifest" and stop there. Better still, when a predicate decides the outcome, read the predicate: a claim about what a route can match is answered by the six characters the pattern compiles to, not by a corpus of inputs run through it.

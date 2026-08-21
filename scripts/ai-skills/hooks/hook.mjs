@@ -18,9 +18,21 @@
  * nothing and exit 0 — a `PostToolUse` hook must never block or fail the
  * tool call it observed.
  *
- * `PostToolUse` announces and never blocks. There is no `PreToolUse` arm:
- * a gate that denies a write has to leave the model a remedy it can
- * actually perform, and nothing here denies anything.
+ * `PostToolUse` announces and never blocks. `PreToolUse` is the arm that
+ * blocks: a path a manifest route matches is denied until the route's docs
+ * have been read, and the message names the literal `cat` command that clears
+ * it (ADR-0072). The remedy is performable because the announce arm's credit
+ * channel observes exactly those reads — which is why the two arms live in one
+ * file and share one state format.
+ *
+ * One rule governs both a file-edit tool and a `Bash` call, because no parser
+ * short of a real shell can say what an arbitrary command does to a path it
+ * names. The shell branch adds one narrowing on top of the shared rule: a
+ * command that can be *proven* to only read its operands is exempt
+ * (`parseUnprovenShellPaths`), because denying a flagless `cat` would deny the
+ * remedy itself. Everything the proof does not cover is judged exactly as a
+ * write is — deletes and moves included, with no list of delete verbs to keep
+ * current.
  *
  * Every safety check lives in this script, never in a host's registration
  * matcher — a matcher-less harness would otherwise silently inherit nothing.
@@ -29,38 +41,98 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+	ARCHITECT_DIR_PREFIX,
 	findRepoRoot,
 	MAX_EMISSION_BYTES,
+	filterRoutedPaths,
 	resolveArchitectNag,
+	resolveUnreadDocs,
+	toRepoRelativePath,
 } from "./architect-route.mjs";
-import { HARNESSES, resolveToolKind } from "./harnesses.mjs";
+import {
+	HARNESSES,
+	resolveListedToolKind,
+	resolveToolKind,
+} from "./harnesses.mjs";
 
 /**
- * Shell metacharacters that make a command something other than a single
- * read of named files. A command carrying any of them parses to zero
- * targets rather than to a partial guess: `cat a | grep b` reads `a` but
- * `grep -f patterns b` does not read `patterns` the way `cat` does, and a
- * parser that tries to tell those apart is wrong more often than silence
- * is. Pipelines, redirects, chained commands, and command substitution all
- * land here, and they are deliberately out of scope.
+ * The characters a whole command may contain and still be considered for read
+ * credit: letters, digits, `_ . / - @ + = , : ~`, both quote characters (so
+ * `unquote` keeps working), space and tab, and `;` and line breaks as the only
+ * command separators. A command carrying anything else parses to zero targets,
+ * in its entirety.
  *
- * Newlines and `#` sit in the set for the same reason, and they matter more
- * than they look. A newline separates commands, so a multi-line call whose
- * first line is a bare `cat` would otherwise parse as one `cat` over every
- * bare token on every later line — crediting as fully read a routed doc that
- * was only some later `grep`'s haystack. `#` opens a comment, whose words are
- * not paths either. Multi-line commands are routine agent behavior, and
- * crediting an unread document is the one direction this channel treats as
- * unacceptable.
+ * The direction matters more than the contents. This was a deny-list of shell
+ * metacharacters, and the enumeration escaped twice inside the single PR that
+ * wrote it. An allow-list fails the other way: a miss on a deny-list marks an
+ * unread document read and opens the write gate on it; a miss on an allow-list
+ * costs one re-read. Every other credit judgment in this channel already
+ * resolves that direction — `{ credit: false }` by default, only `cat`
+ * credits, a flagged `cat` does not.
+ *
+ * The test runs over the whole command rather than per segment, and that is
+ * the load it carries. A construct this class does not model can change what
+ * the *following* lines mean: a heredoc introducer turns every line up to its
+ * delimiter into data, so a body line reading `cat <doc>` is text being
+ * written, not a document being read. Judging segments independently credited
+ * exactly that. Refusing the whole command whenever any part of it is outside
+ * the class is the only rule that cannot be fooled by a construct nobody
+ * enumerated, and its cost is one re-read.
+ *
+ * What the class refuses, none of it individually enumerated: `$VAR` and
+ * `${…}`, backslash escapes, globs, brace expansion, `!` history expansion,
+ * `#`, every pipeline, redirect, and heredoc form, `&&`, `||`, and `&`. What
+ * it costs: a path carrying a space, a `%`, or a non-ASCII character stops
+ * crediting, and one unparseable clause costs the whole command rather than
+ * itself.
+ *
+ * `;` and line breaks are in the class because `splitShellSegments` cuts on
+ * them and the commands they separate each run unconditionally, printing to
+ * the same transcript. A multi-line remedy is several commands, not one
+ * unparseable one.
  *
  * @type {RegExp}
  */
-const SHELL_CONTROL_CHARACTERS = /[|&;<>`#\n\r]|\$\(/;
+const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t;\r\n-]*$/;
 
 /** Shell commands whose bare form reads a file. `cat` is the only one that reads the whole of it.
  * @type {Set<string>}
  */
 const SHELL_READ_COMMANDS = new Set(["cat", "head", "tail", "sed", "less", "more"]);
+
+/**
+ * Rewrites Windows path separators to `/` in shell-command text, leaving
+ * POSIX escape sequences alone.
+ *
+ * A `\` is a separator to Windows and an escape character to a POSIX shell,
+ * and each arm of this channel reads it the other way. `SHELL_READ_SAFE_CHARACTERS`
+ * refuses `\`, so a Windows-spelled command credits nothing and the gate
+ * over-denies; `scanPathShapedTokens` deletes it, so `src\index.ts` glues into
+ * `srcindex.ts`, matches no route, and the gate under-denies. Normalizing
+ * before either one runs is what lets both read the same path.
+ *
+ * The lookahead is what separates the two readings. A separator backslash is
+ * always followed by a path character; a POSIX escape is followed by a space,
+ * a quote, a `$`, or a line break. `cat foo\ bar.md` keeps its backslash,
+ * keeps failing the class, and keeps yielding zero targets. The one case that
+ * reads wrong is a no-op escape of a word character — `cat foo\bar.md` becomes
+ * `foo/bar.md`, and if a routed doc sits there the read arm announces it. It
+ * costs a nag line rather than a credit, because `parseShellReadTargets`
+ * withholds credit from any command this rewrite changed. The alternative of
+ * stripping every `\` is what produced the bypass above.
+ *
+ * Nothing here keys on `path.sep`. Node reports `\` on Windows whatever shell
+ * is in front of it, so a platform branch would mis-parse Git Bash — where the
+ * escape reading is the right one — and would be a branch only the Windows CI
+ * leg could ever execute. Running one code path on every platform is what lets
+ * a macOS test prove the Windows behavior.
+ *
+ * @param {string} command
+ * @returns {string}
+ */
+function normalizeShellSeparators(command) {
+	return command.replace(/\\(?=[\w.@~+-])/g, "/");
+}
 
 /**
  * Strips one layer of matching surrounding quotes from a token.
@@ -85,10 +157,33 @@ function unquote(token) {
  * while over-crediting silently defeats the write gate this channel feeds.
  *
  * Deliberate parsing gaps, all of which yield zero targets rather than a
- * guess: pipelines, redirects, and command substitution (see
- * `SHELL_CONTROL_CHARACTERS`); `xargs` and any other command that names its
- * files indirectly; and paths containing spaces, since splitting on
- * whitespace cannot recover them even when they are quoted.
+ * guess: every command carrying a character outside
+ * `SHELL_READ_SAFE_CHARACTERS`, which covers pipelines, redirects,
+ * substitution, heredocs, globs, and variable expansion in one rule; `xargs`
+ * and any other command that names its files indirectly; and unquoted paths
+ * containing spaces.
+ *
+ * The class is tested once, over the whole command with its separators
+ * normalized, and a failure costs every segment rather than the offending one.
+ * Segment-independent judgment is what
+ * let a heredoc body credit the documents its own text named — see the class's
+ * own JSDoc for why the whole-command form is the only one that holds.
+ *
+ * A command the separator rewrite changed announces its targets and credits
+ * none of them. Credit banks on the observed call rather than on the delivered
+ * bytes, so a Windows-spelled `cat .prism\architect\x.md` would otherwise
+ * credit a doc that a POSIX shell — macOS, Linux, Git Bash — never opens: it
+ * reads the glued `.prismarchitectx.md`, fails, and delivers nothing. Nothing
+ * is lost by refusing, because the remedy this channel exists to serve is
+ * spelled with forward slashes on every platform (`formatDenyMessage` composes
+ * `ARCHITECT_DIR_PREFIX` with a manifest doc name, both `/`-joined), so a
+ * Windows reader re-cats the spelling the deny message printed and pays one
+ * extra read. The suppression is whole-command for the same reason the class
+ * test above it is: a rewrite is a property of the command text rather than
+ * of any one operand, so only a whole-command test sees a `\` sitting outside
+ * the operand being credited. `cat <doc> other\x.md` is the shortest example,
+ * and every separator `splitShellSegments` cuts on puts the same `\` a whole
+ * segment away.
  *
  * @param {string | undefined} command
  * @returns {{filePath: string, credit: boolean}[]}
@@ -97,11 +192,36 @@ export function parseShellReadTargets(command) {
 	if (typeof command !== "string" || command.trim().length === 0) {
 		return [];
 	}
-	if (SHELL_CONTROL_CHARACTERS.test(command)) {
+
+	const normalized = normalizeShellSeparators(command);
+	if (!SHELL_READ_SAFE_CHARACTERS.test(normalized)) {
 		return [];
 	}
 
-	const [name, ...args] = command.trim().split(/\s+/);
+	const targets = [];
+	for (const tokens of splitShellSegments(normalized)) {
+		targets.push(...parseSegmentReadTargets(tokens));
+	}
+
+	const rewritten = normalized !== command;
+
+	return targets.map((target) => ({
+		...target,
+		credit: target.credit && !rewritten,
+	}));
+}
+
+/**
+ * One command segment's read targets, or an empty array when the segment
+ * names a command that does not read a file. The caller has already tested
+ * the whole command against `SHELL_READ_SAFE_CHARACTERS`, so a segment
+ * reaching here carries nothing outside that class.
+ *
+ * @param {string[]} tokens
+ * @returns {{filePath: string, credit: boolean}[]}
+ */
+function parseSegmentReadTargets(tokens) {
+	const [name, ...args] = tokens;
 	if (!SHELL_READ_COMMANDS.has(name)) {
 		return [];
 	}
@@ -122,6 +242,734 @@ export function parseShellReadTargets(command) {
 	const credit = name === "cat" && !args.some((arg) => arg.startsWith("-"));
 
 	return operands.map((filePath) => ({ filePath, credit }));
+}
+
+/**
+ * Splits a raw command into one token array per command segment, cutting at
+ * every unquoted `;`, `&&`, `||`, `|`, `&`, and line break.
+ *
+ * Both callers run on this rather than tokenizing the raw command
+ * themselves. `resolveProvenSafePaths` needs the cuts so one segment's
+ * read-only head token cannot vouch for the next command's operands; the read
+ * detector needs them so a remedy pasted as several lines into one call
+ * credits each line. A shared splitter is what keeps those two answers from
+ * drifting.
+ *
+ * This scans characters rather than splitting on whitespace and comparing
+ * whole tokens against a separator set. The token form could only see a
+ * separator that had space on both sides, so `a;b` and `a&&b` never cut — the
+ * write arm resumed claiming operands past the separator and named a path the
+ * command only read. Two things make the character form worth its length over
+ * a regex split on the separators:
+ *
+ * - **Quotes.** `sed -i 's/a/b/;s/c/d/' out.md` carries a `;` that is part of
+ *   the script, not a separator. Cutting there loses `out.md` — a real write
+ *   the gate then never sees.
+ * - **Heredocs.** A `<<DELIM` introducer makes every line up to `DELIM` data
+ *   rather than commands, so the body is skipped whole. Otherwise a PR body
+ *   written through `tee <<'E'` would have its own text parsed as commands.
+ *
+ * Only some of that is live. Every caller tests the whole command against
+ * `SHELL_READ_SAFE_CHARACTERS` first, and that class excludes `<`, `&`, `|`,
+ * and `\` — so the heredoc branches, the `&`/`|` cut, and the backslash
+ * escape inside a double quote cannot be reached today, and no test fails if
+ * they are deleted. They are kept deliberately, not by oversight. The class
+ * test is a single point of failure for all three: widen it by one character,
+ * or add a caller that does not pre-filter, and each branch is the difference
+ * between an over-refusal and a silent miss. Deleting protection whose only
+ * guard is one regex, in a gate whose whole premise is failing toward the
+ * over-refusal, is the trade this arm exists to refuse. The `;` cut, the
+ * quote tracking, the whitespace split, and the line-break cut are reachable
+ * and carry the live behavior.
+ *
+ * Two things it still does not model:
+ *
+ * - **Substitution containing a separator** — `$(a; b)` and its backtick
+ *   twin. This produces an *extra* cut the shell would not make, stranding
+ *   the token after it in a segment whose head is not a command. Unreachable
+ *   in practice: `$` and `` ` `` sit outside `SHELL_READ_SAFE_CHARACTERS`,
+ *   and every caller tests the whole command against that class first.
+ * - **A separator inside an unterminated quote**, which is swallowed rather
+ *   than cut. Quotes are in the class, so this one is reachable — and it
+ *   matches what the shell itself does with an unterminated quote, which is
+ *   to treat the rest of the line as one quoted word rather than as further
+ *   commands.
+ *
+ * @param {string} command
+ * @returns {string[][]}
+ */
+function splitShellSegments(command) {
+	/** @type {string[][]} */
+	const segments = [];
+	/** @type {string[]} */
+	const pendingHeredocs = [];
+	/** @type {string[]} */
+	let tokens = [];
+	let token = "";
+	let started = false;
+	/** @type {string | null} */
+	let quote = null;
+
+	const endToken = () => {
+		if (started) {
+			tokens.push(token);
+			token = "";
+			started = false;
+		}
+	};
+
+	const endSegment = () => {
+		endToken();
+		if (tokens.length > 0) {
+			segments.push(tokens);
+			tokens = [];
+		}
+	};
+
+	for (let index = 0; index < command.length; index++) {
+		const char = command[index];
+
+		if (quote !== null) {
+			token += char;
+			if (char === "\\" && quote === '"' && index + 1 < command.length) {
+				token += command[index + 1];
+				index++;
+			} else if (char === quote) {
+				quote = null;
+			}
+			continue;
+		}
+
+		if (char === "\n" || char === "\r") {
+			endSegment();
+			if (pendingHeredocs.length > 0) {
+				index = skipHeredocBodies(command, index, pendingHeredocs);
+			}
+			continue;
+		}
+
+		if (char === " " || char === "\t") {
+			endToken();
+			continue;
+		}
+
+		if (char === ";" || char === "&" || char === "|") {
+			if (char !== ";" && command[index + 1] === char) {
+				index++;
+			}
+			endSegment();
+			continue;
+		}
+
+		if (char === "<" && command[index + 1] === "<" && command[index + 2] !== "<") {
+			endToken();
+			index = readHeredocDelimiter(command, index, pendingHeredocs);
+			continue;
+		}
+
+		if (char === "'" || char === '"') {
+			quote = char;
+			token += char;
+			started = true;
+			continue;
+		}
+
+		if (char === "\\" && index + 1 < command.length) {
+			token += command[index + 1];
+			index++;
+			started = true;
+			continue;
+		}
+
+		token += char;
+		started = true;
+	}
+
+	endSegment();
+
+	return segments;
+}
+
+/**
+ * Records the delimiter word of the heredoc introduced at `index` and returns
+ * the index of its last consumed character.
+ *
+ * The introducer and its delimiter are dropped rather than kept as tokens —
+ * neither is an operand of the command, and `tee out.md <<'E'` previously
+ * yielded `<<'E'` as a write target alongside the real one.
+ *
+ * @param {string} command
+ * @param {number} index index of the first `<` of the `<<`
+ * @param {string[]} pendingHeredocs delimiters awaiting their body, in order
+ * @returns {number}
+ */
+function readHeredocDelimiter(command, index, pendingHeredocs) {
+	let cursor = index + 2;
+	if (command[cursor] === "-") {
+		cursor++;
+	}
+
+	while (command[cursor] === " " || command[cursor] === "\t") {
+		cursor++;
+	}
+
+	let delimiter = "";
+	while (cursor < command.length && !/[\s;&|<>]/.test(command[cursor])) {
+		if (command[cursor] !== "'" && command[cursor] !== '"') {
+			delimiter += command[cursor];
+		}
+		cursor++;
+	}
+
+	if (delimiter.length > 0) {
+		pendingHeredocs.push(delimiter);
+	}
+
+	return cursor - 1;
+}
+
+/**
+ * Skips the bodies of every heredoc awaiting one, starting from the line break
+ * at `index`, and returns the index of the last consumed character.
+ *
+ * A body line is data the command writes, not a command. An unterminated
+ * heredoc consumes the rest of the input, which is what the shell does too.
+ *
+ * @param {string} command
+ * @param {number} index
+ * @param {string[]} pendingHeredocs
+ * @returns {number}
+ */
+function skipHeredocBodies(command, index, pendingHeredocs) {
+	let cursor = index;
+
+	while (pendingHeredocs.length > 0 && cursor < command.length) {
+		while (
+			cursor < command.length &&
+			(command[cursor] === "\n" || command[cursor] === "\r")
+		) {
+			cursor++;
+		}
+
+		let lineEnd = cursor;
+		while (
+			lineEnd < command.length &&
+			command[lineEnd] !== "\n" &&
+			command[lineEnd] !== "\r"
+		) {
+			lineEnd++;
+		}
+
+		if (command.slice(cursor, lineEnd).trim() === pendingHeredocs[0]) {
+			pendingHeredocs.shift();
+		}
+
+		cursor = lineEnd;
+	}
+
+	return cursor - 1;
+}
+
+/**
+ * Flags the `grep` family accepts that select, format, or filter matches —
+ * none of them names an output file or hands control to another program.
+ *
+ * @type {string}
+ */
+const GREP_INERT_FLAGS =
+	"-# -i -v -n -H -h -c -l -L -w -x -F -E -G -P -o -q -s -r -R -a -I -m -A -B -C -e -f -z " +
+	"--ignore-case --invert-match --line-number --count --files-with-matches --files-without-match " +
+	"--word-regexp --line-regexp --fixed-strings --extended-regexp --perl-regexp --only-matching " +
+	"--quiet --no-messages --recursive --max-count --after-context --before-context --context " +
+	"--regexp --file --color --colour --with-filename --no-filename --include --exclude --exclude-dir";
+
+/**
+ * Head tokens whose operands a shell command reads rather than writes, each
+ * mapped to the flags that command is known not to write or execute through.
+ *
+ * This is the whole of what the shell arm claims to model. Everything else —
+ * `tee`, `cp`, `dd`, `python`, a binary nobody has heard of, any command
+ * behind a `sudo`/`nohup`/`VAR=value` prefix — is treated as a write, so the
+ * arm never has to enumerate the ways a command can write a file. Three
+ * earlier rounds tried the other direction, each one shipping a new missed
+ * write behind a green suite, because a list of write forms is wrong the
+ * moment the shell grows a form nobody listed.
+ *
+ * The flag sets carry the same inversion one level down, and they are here
+ * because the command-only form leaked: `sort -o <path> in.md` was certified
+ * a read and wrote the path, as were `git diff --output <path>` and
+ * `rg --pre <program>`. A read-only command's own write mode arrives as a
+ * flag value, so a proof that skips every `-`-prefixed token cannot see it.
+ * An unlisted flag now costs the whole segment its proof.
+ *
+ * The two directions are what makes this safe. A command or flag missing
+ * from here costs one doc read on a command that only read —
+ * recoverable, and only when the command also names a routed path. A command
+ * or flag wrongly present costs a silently missed write. So membership asks
+ * two questions: is this command read-only on plain operands, and is every
+ * flag listed beside it incapable of naming an output file or running
+ * another program? If either answer needs a "usually", it stays out.
+ *
+ * Membership is checked on two axes, and only one of them is executable.
+ * `hook-gate.test.ts` runs every command on this list in a spelling that
+ * reaches the command's own work, requires it to exit 0, and asserts the
+ * scratch file is unmodified — so a command that writes through a plain
+ * operand cannot be added silently. That check is what `patch` would have
+ * failed, and a derived test row asserting the arm agrees with the list would
+ * have passed.
+ *
+ * What it does not cover is a write reached through a flag. The probe runs
+ * one spelling per command and no flag beyond what that spelling needs, so
+ * `sort` would pass it clean on plain operands while `sort -o <path>` — the
+ * escape that put `sort` on the absent list — never runs. Its other limit is
+ * a command the test machine does not have, which the failure message names.
+ *
+ * The flag sets have no such check. An assertion over a flag can only claim
+ * the flag is inert, which blesses whatever was just added, so the second
+ * reading for a flag happens here, when the entry is written.
+ *
+ * Absent on purpose, each for the reason beside it: `sort`, `uniq`, and `xxd`
+ * write through an output operand indistinguishable from an input by position
+ * (`uniq in out`); `sed` is an editor whose `w` script command writes an
+ * arbitrary path from inside a data operand, with no `-` prefix to catch —
+ * `jq` is listed despite the same shape, a whole program in an unprefixed
+ * data operand, because its language has no write or exec builtin and so
+ * supplies nothing `sed`'s `w` does;
+ * `git` reads or writes depending on its subcommand and is decided per call
+ * by `checkSegmentWritesNoFile`.
+ *
+ * @type {Map<string, Set<string>>}
+ */
+export const SHELL_INSPECTION_COMMANDS = new Map(
+	Object.entries({
+		cat: "-n -b -s -v -e -t -E -T -A",
+		head: "-# -n -c -q -v",
+		tail: "-# -n -c -q -v -f",
+		less: "-# -N -S -R -F -X",
+		more: "-# -s",
+		nl: "-b -n -w",
+		od: "-# -A -t -N -j -c -x -b",
+		grep: GREP_INERT_FLAGS,
+		egrep: GREP_INERT_FLAGS,
+		fgrep: GREP_INERT_FLAGS,
+		ag: GREP_INERT_FLAGS,
+		rg:
+			`${GREP_INERT_FLAGS} -S -u -g -t -T -p -N ` +
+			"--smart-case --case-sensitive --glob --type --hidden --no-ignore " +
+			"--no-heading --json --stats --files --sort",
+		wc: "-l -w -c -m -L",
+		diff: "-# -u -U -r -q -w -b -B -i -N -a -c -y",
+		ls: "-# -l -a -A -h -R -t -r -S -d -F -i -n -p",
+		stat: "-c -f -L -t",
+		file: "-b -i -L -h -z",
+		cut: "-d -f -c -b -s",
+		tr: "-d -s -c",
+		jq: "-r -n -c -e -s -S -a -j -M -C",
+		echo: "-n -e -E",
+		basename: "-z -a -s",
+		dirname: "-z",
+		which: "-a",
+		pwd: "-L -P",
+		true: "",
+		false: "",
+	}).map(([name, flags]) => [name, new Set(flags.split(/\s+/).filter(Boolean))])
+);
+
+/** `git` subcommands that only read the working tree.
+ * @type {Set<string>}
+ */
+export const GIT_INSPECTION_SUBCOMMANDS = new Set([
+	"diff",
+	"log",
+	"show",
+	"status",
+	"blame",
+	"grep",
+	"ls-files",
+	"cat-file",
+	"rev-parse",
+]);
+
+/**
+ * Flags a read-only `git` subcommand accepts without writing a file.
+ *
+ * `--output` and `-o` are absent because `git diff|log|show --output <path>`
+ * writes the diff to that path while the subcommand still reads as read-only;
+ * `-O` is absent because `git grep -O <cmd>` opens matches in an arbitrary
+ * pager command; `-C` is absent because it means two different things at the
+ * two positions git accepts it — a working-directory change before the
+ * subcommand, copy detection after it — and the arm resolves paths against
+ * neither. `-p` is absent for the same positional reason: after the
+ * subcommand it selects patch output, but `git -p log <path>` reads it as
+ * `--paginate` and runs the program `core.pager` names. `--patch` stays,
+ * because it means the diff format at either position.
+ *
+ * @type {Set<string>}
+ */
+const GIT_INERT_FLAGS = new Set(
+	(
+		"-# -n -l -w -b -s -q -z -L -i -E -F -v " +
+		"--oneline --stat --numstat --shortstat --name-only --name-status --patch --no-patch " +
+		"--graph --pretty --format --abbrev-commit --date --since --until --author --grep " +
+		"--follow --cached --staged --word-diff --color --no-color --unified --reverse " +
+		"--first-parent --merges --no-merges --all --decorate --summary --raw"
+	).split(/\s+/)
+);
+
+/**
+ * `git` subcommands that write only inside `.git/`, never a working-tree file.
+ *
+ * Separate from `GIT_INSPECTION_SUBCOMMANDS` because these are not reads —
+ * they write the index, a ref, or a remote. What they share with a read is
+ * the only property this arm needs: no spelling of them writes a working-tree
+ * file *of its own*, so every path-shaped token they name is safe to drop.
+ *
+ * "Of its own" is the whole qualification, and `git commit` is why it is
+ * there. A `pre-commit` hook is arbitrary repo-configured code — husky plus
+ * lint-staged running a formatter over the repo's markdown is an ordinary
+ * consumer setup — so a commit can write a routed path without the set being
+ * wrong about `commit` itself. `core.editor` sits in the same place and
+ * arrives by the same admission: `git commit` with no message launches it, no
+ * flag required. Membership does not create that exposure and dropping
+ * `commit` would not remove it, because a commit whose text names no routed
+ * path is outside a token scan either way.
+ *
+ * The arm needs the distinction because `git commit -m "…"` carries its
+ * message as a plain operand, and `scanPathShapedTokens` cannot tell a
+ * filename mentioned in prose from a path the command operates on. Without
+ * this set, naming a routed doc in a commit subject would cost a doc read
+ * before a command that writes no working-tree file could run.
+ *
+ * Every subcommand that writes the working tree is absent — `rm`, `mv`,
+ * `reset`, `clean`, and `rebase` as much as `checkout` or `merge`. Six of
+ * them — `checkout`, `restore`, `apply`, `stash`, `clone`, `merge` — have
+ * that absence checked rather than asserted: `hook-gate.test.ts` runs each in
+ * a spelling that reaches its write and requires the probe to see the tree
+ * change, so the probe that reports this set clean is shown to be capable of
+ * reporting a writer dirty. Six is enough for that job, which is proving the
+ * machinery can see a write, not enumerating the writers.
+ *
+ * @type {Set<string>}
+ */
+export const GIT_TREE_SAFE_SUBCOMMANDS = new Set([
+	"commit",
+	"add",
+	"push",
+	"fetch",
+	"tag",
+	"remote",
+]);
+
+/**
+ * Flags the tree-safe subcommands accept without naming an output file or
+ * reaching a program the subcommand does not already reach without them.
+ *
+ * The second half is worded that way because one program is reachable with no
+ * flag at all: `git commit` with no message launches `core.editor`, and so
+ * does `git tag --annotate` with none. Excluding `-e`/`--edit` does not close
+ * that route, and no flag list can — it belongs with the `pre-commit` hook
+ * exposure `GIT_TREE_SAFE_SUBCOMMANDS` admits, for the same reason and at the
+ * same place. What the exclusions below do close is `gpg`: no spelling of
+ * these six subcommands runs `gpg.program` unless a flag asks it to, so
+ * dropping the flags that ask removes the route rather than narrowing it.
+ *
+ * Absent on purpose: `--upload-pack`, `--receive-pack`, and `--exec` each
+ * name a program git runs across a transport; `-c` sets arbitrary config
+ * before the subcommand, `core.pager` included; `-p` is `--paginate` at that
+ * same position, the two-position ambiguity `GIT_INERT_FLAGS` documents for
+ * `-C`; `-t`/`--template` names a path git hands to the editor; `-S` is
+ * `--gpg-sign` on `commit` and `tag`; `-e` is `--edit`, which launches
+ * `core.editor` on `commit`, `tag`, and `add`; `--patch` is absent because
+ * `git add --patch` is interactive and its `e` action spawns the editor on
+ * the hunk.
+ *
+ * Four short flags are absent for one shared reason — the same spelling means
+ * different things to different subcommands, and `checkFlagsAreInert`
+ * partitions by neither, so admitting the inert meaning admits the other one.
+ * `git add -n`, `git push -n`, and `git tag -n` read `-n` as `--dry-run`;
+ * `git commit -n` reads it as `--no-verify`. `git commit -s` is `--signoff`,
+ * `git tag -s` is `--sign` and runs `gpg`. `git commit -v` and `git push -v`
+ * are `--verbose`, `git tag -v` is `--verify` and runs `gpg`. `git add -u` is
+ * `--update` and `git push -u` is `--set-upstream`, `git tag -u` is
+ * `--local-user` and runs `gpg`. Each inert meaning is carried by its long
+ * form instead — `--dry-run`, `--signoff`, `--verbose`, `--update`,
+ * `--set-upstream` — because a long form means one thing everywhere.
+ * `--no-verify` is absent for its own reason: `.prism/rules/git-conventions.md`
+ * forbids it, so listing it would widen the proof for a spelling nothing
+ * should use.
+ *
+ * @type {Set<string>}
+ */
+const GIT_TREE_SAFE_FLAGS = new Set(
+	(
+		"-# -m -F -a -q -f -d " +
+		"--message --file --all --quiet --verbose --dry-run --force --amend " +
+		"--no-edit --allow-empty --allow-empty-message --set-upstream --delete " +
+		"--annotate --signoff --porcelain --tags --update --intent-to-add"
+	).split(/\s+/)
+);
+
+const PATH_SHAPED_RUN = /[\w./@~+:-]+/g;
+
+/**
+ * Every path-shaped token a command names, anywhere in its text, with quote
+ * and backslash characters removed first.
+ *
+ * Stripping those two before scanning is what makes the scan see through the
+ * spellings a token-level parser gets wrong: `tee ".prism/x"/y.md`,
+ * `tee .prism/'x'/y.md`, an unterminated quote, and a backslash-newline
+ * continuation all still contain the literal path once the punctuation is
+ * gone. The scan runs over the raw command rather than over parsed tokens
+ * precisely so that no parsing mistake can hide a path from it.
+ *
+ * Junk tokens ride along — `tee`, `-i`, a `sed` script. They cost one route
+ * lookup each and match nothing, which is cheaper than teaching the scanner
+ * which words are paths and being wrong about it.
+ *
+ * @param {string | undefined} command
+ * @returns {string[]}
+ */
+function scanPathShapedTokens(command) {
+	if (typeof command !== "string" || command.trim().length === 0) {
+		return [];
+	}
+
+	const stripped = command.replace(/["'\\]/g, "");
+	const tokens = new Set();
+	for (const run of stripped.match(PATH_SHAPED_RUN) ?? []) {
+		tokens.add(run);
+
+		// `:` is in the run so a Windows absolute path stays one token —
+		// `C:/repo/x.ts` resolves to the drive it names, while `/repo/x.ts`
+		// alone would be re-qualified with whatever drive the process is on
+		// and resolve elsewhere. Keeping it also glues a path to whatever
+		// shares its run: an expansion operand (`OUT:-src/x.ts`), a `sed -i`
+		// backup suffix (`a.md:orig`), or a second path.
+		//
+		// So each colon is read both ways, from every boundary. Read as a
+		// separator it ends the path at the next colon — the piece. Read as a
+		// character inside the path it carries through to the end of the run —
+		// the tail. Both readings reach a route, because `compileMatcher`
+		// turns `*` into `[^/]*` and `**` into `.*` and each of those matches
+		// `:`, so a colon-named POSIX file is as routable as the Windows drive
+		// prefix. Pieces alone lose `${OUT:-src/a:b.ts}`, whose pieces are
+		// `OUT`, `src/a`, and `b.ts` — none of them the path a route matches.
+		// A leading `-`/`+` comes off both readings because `-` belongs inside
+		// a path (`context-reuse.md`) but not at its front, where it is a flag
+		// marker or the tail of `${OUT:-…}`.
+		//
+		// What the two readings miss is a colon-spanning path that another
+		// colon-separated field follows: `src/a:b.ts:orig` yields `src/a` and
+		// `b.ts:orig`, never `src/a:b.ts`. Recovering it means every span
+		// between two boundaries, quadratic in a run's colon count, for a
+		// shape that needs a colon inside the filename and a second colon
+		// after it.
+		let offset = 0;
+		for (const piece of run.split(":")) {
+			const tail = run.slice(offset);
+			offset += piece.length + 1;
+
+			for (const reading of [piece, tail]) {
+				const unprefixed = reading.replace(/^[-+]+/, "");
+				if (unprefixed.length > 0) {
+					tokens.add(unprefixed);
+				}
+			}
+		}
+	}
+
+	return [...tokens];
+}
+
+/**
+ * True when a segment names a command that cannot write a working-tree file,
+ * carrying only flags that command cannot write or execute through.
+ *
+ * Both halves are required. The command test alone certified `sort -o <path>`
+ * and `git diff --output <path>` as safe, because the write mode lived in a
+ * flag the proof skipped rather than in the head token.
+ *
+ * Most of the surface is read-only commands, where "writes no file" and
+ * "only reads" are the same claim. `git` is the exception, and it is decided
+ * here rather than by list membership because it does three different things
+ * depending on its subcommand: `git diff` reads, `git commit` writes `.git/`
+ * only, and `git checkout` overwrites working-tree files. The first two are
+ * safe for opposite reasons and the third is the write this arm exists to
+ * catch. A `git` whose subcommand is not stated (only flags) is not provable.
+ *
+ * @param {string[]} tokens
+ * @returns {boolean}
+ */
+function checkSegmentWritesNoFile(tokens) {
+	const [name, ...args] = tokens;
+
+	if (name === "git") {
+		const subcommand = args.find((arg) => !arg.startsWith("-"));
+		if (subcommand === undefined) {
+			return false;
+		}
+
+		if (GIT_INSPECTION_SUBCOMMANDS.has(subcommand)) {
+			return checkFlagsAreInert(args, GIT_INERT_FLAGS);
+		}
+
+		return (
+			GIT_TREE_SAFE_SUBCOMMANDS.has(subcommand) &&
+			checkFlagsAreInert(args, GIT_TREE_SAFE_FLAGS)
+		);
+	}
+
+	const inertFlags = SHELL_INSPECTION_COMMANDS.get(name);
+	return inertFlags !== undefined && checkFlagsAreInert(args, inertFlags);
+}
+
+/**
+ * The flag names one token states — `--color=always` names `--color`, and a
+ * short cluster `-rn` names `-r` and `-n` separately, because a cluster is
+ * exactly as dangerous as its most dangerous letter.
+ *
+ * Digits collapse to `-#` so a count spelled as a flag (`head -20`, `git
+ * log -5`) is one thing to allow rather than ten.
+ *
+ * @param {string} token
+ * @returns {string[]}
+ */
+function resolveFlagNames(token) {
+	if (token.startsWith("--")) {
+		return [token.split("=")[0]];
+	}
+
+	const names = new Set();
+	for (const character of token.slice(1)) {
+		names.add(/\d/.test(character) ? "-#" : `-${character}`);
+	}
+
+	return [...names];
+}
+
+/**
+ * True when every flag in a segment's arguments is on that command's inert
+ * list. An unrecognized flag returns false, which costs the whole command its
+ * proof — the direction this arm fails in everywhere else.
+ *
+ * `-` is a stdin operand and `--` ends option parsing; neither names a flag.
+ *
+ * @param {string[]} args
+ * @param {Set<string>} inertFlags
+ * @returns {boolean}
+ */
+function checkFlagsAreInert(args, inertFlags) {
+	for (const arg of args) {
+		if (!arg.startsWith("-") || arg === "-" || arg === "--") {
+			continue;
+		}
+
+		for (const flag of resolveFlagNames(arg)) {
+			if (!inertFlags.has(flag)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+/**
+ * The paths a command names that it cannot be proven to only read — the
+ * shell arm's whole judgment, and the inverse of what earlier rounds tried
+ * to compute.
+ *
+ * Two steps. First, every path-shaped token in the raw command is a
+ * candidate, whatever position it sits in. Second, a candidate is dropped
+ * only when the command is *provably* a set of segments that write no
+ * working-tree file, and the candidate is one of their operands. Anything the
+ * proof does not cover stays, and the caller gates it if a manifest route
+ * matches.
+ *
+ * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and
+ * `splitShellSegments`, and it is all-or-nothing over the whole command: one
+ * character outside the class, or one segment whose head is not a known
+ * read-only command, and nothing is proven. That is what makes the five
+ * shapes this arm used to miss unreachable rather than handled — an
+ * interpreter write, a `cp`, a process substitution, an `exec` redirect, and
+ * an expansion carrying a separator each fail the class test or the head-token
+ * test, so none of them can produce a proof.
+ *
+ * Two gaps survive. A write whose target path never appears in the command
+ * text — assembled from a variable, or reached through a `cd` — is invisible
+ * to any scan over the command, and no parser short of a shell closes it. The
+ * second is narrower than it used to be: a *command* wrongly admitted to a
+ * read-only list is caught by the executable probe in `hook-gate.test.ts`,
+ * which runs each listed command and looks at the disk, but a *flag* wrongly
+ * admitted stays a human judgment and a silent write. See
+ * `SHELL_INSPECTION_COMMANDS` for the questions membership has to answer.
+ *
+ * @param {string | undefined} command
+ * @returns {string[]}
+ */
+export function parseUnprovenShellPaths(command) {
+	if (typeof command !== "string") {
+		return [];
+	}
+
+	// Both halves read the same normalized text, so a proven-safe operand
+	// still matches the candidate the scan recovered from it.
+	const normalized = normalizeShellSeparators(command);
+
+	const candidates = scanPathShapedTokens(normalized);
+	if (candidates.length === 0) {
+		return [];
+	}
+
+	const provenSafe = resolveProvenSafePaths(normalized);
+	return candidates.filter((candidate) => !provenSafe.has(candidate));
+}
+
+/**
+ * The operands of a command proven to consist only of segments that write no
+ * working-tree file, or an empty set when no such proof holds.
+ *
+ * Distinct from `parseShellReadTargets`, which answers a different question
+ * for the announce arm — which paths were read, and whether the read
+ * delivered the whole file. This one asks only whether a mention is safe to
+ * ignore, so it takes every operand of a safe segment and grades none of
+ * them. That is why a `git commit` message body clears here and earns no read
+ * credit anywhere: safe to ignore is not the same claim as read.
+ *
+ * @param {string | undefined} command
+ * @returns {Set<string>}
+ */
+function resolveProvenSafePaths(command) {
+	if (typeof command !== "string" || !SHELL_READ_SAFE_CHARACTERS.test(command)) {
+		return new Set();
+	}
+
+	const operands = new Set();
+	for (const tokens of splitShellSegments(command)) {
+		if (!checkSegmentWritesNoFile(tokens)) {
+			return new Set();
+		}
+
+		for (const token of tokens.slice(1)) {
+			// Safe to skip only because `checkSegmentWritesNoFile` has already
+			// confirmed every flag in this segment is on its command's inert
+			// list, so no flag reaching here names an output file.
+			if (token.startsWith("-") && token !== "-") {
+				continue;
+			}
+
+			// Both the whole operand and its path-shaped runs, so an operand
+			// carrying a space still matches the runs `scanPathShapedTokens`
+			// recovered from the same text.
+			const operand = unquote(token);
+			operands.add(operand);
+			for (const run of scanPathShapedTokens(operand)) {
+				operands.add(run);
+			}
+		}
+	}
+
+	return operands;
 }
 
 /**
@@ -300,6 +1148,171 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 }
 
 /**
+ * Builds the deny message for a routed path whose docs this scope has not
+ * read. Both arms render it, so the opening clause names no verb — the call
+ * being gated may be a write, a delete, a move, or a read the shell arm could
+ * not prove.
+ *
+ * The literal `cat` command is the message's whole job. A gate whose remedy
+ * has to be inferred is a gate the model cannot reliably clear, and the
+ * credit channel only credits a flagless `cat` or a rangeless `Read` — so
+ * naming the doc without naming how to read it in full is the unsatisfiable
+ * shape this wording exists to avoid. One line per unread doc, because the
+ * model performs them one at a time.
+ *
+ * The remedy is reachable from inside whichever tool the caller is already
+ * using: a flagless `cat` is exempt on the shell arm, and a rangeless `Read`
+ * is not a gated kind on the write arm. That is what keeps the gate from
+ * prescribing a tool, and a gate that prescribed one would loop against a
+ * host reminder prescribing the other.
+ *
+ * @param {string} relativePath
+ * @param {string[]} unreadDocs
+ * @returns {string}
+ */
+export function formatDenyMessage(relativePath, unreadDocs) {
+	const remedies = unreadDocs
+		.map((doc) => `cat ${ARCHITECT_DIR_PREFIX}${doc}`)
+		.join("\n");
+	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}`;
+}
+
+/**
+ * `PreToolUse` arm — denies a call that touches a routed path whose governing
+ * docs this scope has not read. Returns the JSON string to write to stdout, or
+ * `null` when the call proceeds.
+ *
+ * The five conditions below govern both arms. They differ only in how the
+ * candidate paths are produced: a file-edit tool states its target, while a
+ * shell command's candidates are every path-shaped token it names minus the
+ * ones a proof of read-only-ness clears. So a shell call carries a sixth
+ * condition — the path is one the command cannot be proven to only read.
+ *
+ * Five conditions all hold before a call is denied, and each one is
+ * required:
+ *
+ * 1. Neither `PRISM_HOOK_DISABLE=1` nor `PRISM_HOOK_DENY_DISABLE=1` is set.
+ * 2. The payload carries a scope id. No id, no deny — the gate has no state
+ *    to judge against and would block every gated call in a session it cannot
+ *    identify.
+ * 3. `resolveListedToolKind` returns a kind the harness's table actually
+ *    states. The unlisted-name fallback is right for announce and wrong here
+ *    (see `harnesses.mjs`).
+ * 4. A manifest route matches the path. A route existing is the opt-in; an
+ *    unrouted path is never denied, which is what keeps a consumer's first
+ *    edit to their own application code from being blocked.
+ * 5. A doc that route names is absent from this scope's `read` array and
+ *    still exists on disk.
+ *
+ * Nothing here writes state. A denied call must be able to produce the same
+ * message again after the model's remedy fails, and appending to `announced`
+ * would silence the very doc the deny is asking for.
+ *
+ * @param {string} tool
+ * @param {import("./harnesses.mjs").HarnessSpec} spec
+ * @param {string} rawStdin
+ * @returns {Promise<string | null>}
+ */
+export async function runPreToolUseArm(tool, spec, rawStdin) {
+	if (
+		process.env.PRISM_HOOK_DISABLE === "1" ||
+		process.env.PRISM_HOOK_DENY_DISABLE === "1"
+	) {
+		return null;
+	}
+
+	try {
+		const payload = JSON.parse(rawStdin);
+
+		if (isForeignPayload(tool, payload)) {
+			return null;
+		}
+
+		const scopeId = spec.scopeId(payload);
+		if (!scopeId) {
+			return null;
+		}
+
+		const kind = resolveListedToolKind(spec, payload.tool_name);
+		if (kind !== "write" && kind !== "shell") {
+			return null;
+		}
+
+		const cwd = payload.cwd ?? process.cwd();
+		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
+
+		const candidatePaths =
+			kind === "shell"
+				? await resolveShellCandidatePaths(repoRoot, cwd, payload)
+				: spec.filePaths(payload);
+
+		const reason = await resolveDenyReason(repoRoot, scopeId, candidatePaths);
+		if (reason === null) {
+			return null;
+		}
+
+		const envelope = spec.emitDeny(reason);
+		return envelope === null ? null : JSON.stringify(envelope);
+	} catch (error) {
+		process.stderr.write(
+			`architect-route deny arm failed: ${error instanceof Error ? error.message : String(error)}\n`
+		);
+		return null;
+	}
+}
+
+/**
+ * The deny reason for a list of candidate paths, or `null` when every one of
+ * them is clear. This is the one rule both arms run; they differ only in how
+ * their candidate list is produced.
+ *
+ * Only the first gated path is reported: the model retries the same call after
+ * reading, so naming one path's docs is what it can act on, and a multi-path
+ * call surfaces its next gate on the next attempt.
+ *
+ * @param {string} repoRoot
+ * @param {string} scopeId
+ * @param {string[]} filePaths
+ * @returns {Promise<string | null>}
+ */
+async function resolveDenyReason(repoRoot, scopeId, filePaths) {
+	for (const filePath of filePaths) {
+		const unreadDocs = await resolveUnreadDocs(repoRoot, filePath, scopeId);
+		if (unreadDocs.length === 0) {
+			continue;
+		}
+
+		const relativePath = toRepoRelativePath(repoRoot, filePath) ?? filePath;
+		return formatDenyMessage(relativePath, unreadDocs);
+	}
+
+	return null;
+}
+
+/**
+ * A shell command's candidate paths: every path-shaped token it names that a
+ * proof of read-only-ness does not clear, narrowed to the ones a manifest
+ * route matches. Tokens resolve against the command's own working directory,
+ * the same way `resolveTargets` resolves a shell read.
+ *
+ * `filterRoutedPaths` runs before `resolveDenyReason` rather than being left
+ * to it, because a command names many tokens and the batched form costs one
+ * manifest load instead of one per token.
+ *
+ * @param {string} repoRoot
+ * @param {string} cwd
+ * @param {import("./harnesses.mjs").HookPayload} payload
+ * @returns {Promise<string[]>}
+ */
+async function resolveShellCandidatePaths(repoRoot, cwd, payload) {
+	const unproven = parseUnprovenShellPaths(payload.tool_input?.command);
+	return filterRoutedPaths(
+		repoRoot,
+		unproven.map((target) => path.resolve(cwd, target))
+	);
+}
+
+/**
  * `PostCompact` arm — deletes the session's state file so docs re-announce
  * and re-gate after compaction. Compaction can drop the conversation
  * history that made a doc "read"; leaving the state intact would silence
@@ -431,14 +1444,17 @@ async function main() {
 		return;
 	}
 
-	const output = await runPostToolUseArm(tool, spec, rawStdin);
+	const output =
+		eventName === "PreToolUse"
+			? await runPreToolUseArm(tool, spec, rawStdin)
+			: await runPostToolUseArm(tool, spec, rawStdin);
 	if (output !== null) {
 		process.stdout.write(output);
 	}
 	process.exitCode = 0;
 }
 
-/** Parses an optional `--event=<name>` argv flag distinguishing `PostCompact` from `PostToolUse`.
+/** Parses an optional `--event=<name>` argv flag selecting the arm; absent means `PostToolUse`.
  * @param {string[]} argv
  * @returns {string | undefined}
  */

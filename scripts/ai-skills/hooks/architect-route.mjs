@@ -35,7 +35,14 @@ import path from "node:path";
 
 import { compileMatcher } from "./lib/match.mjs";
 
-const ARCHITECT_DIR_PREFIX = ".prism/architect/";
+/**
+ * Where every manifest route value resolves from. Exported because the deny
+ * arm's remedy names a `cat`-able repo-relative path while the `read` array
+ * and the routes themselves speak in values relative to this directory —
+ * spelling the prefix a second time at the message site is how the two
+ * notions drift apart.
+ */
+export const ARCHITECT_DIR_PREFIX = ".prism/architect/";
 
 const NAG_PREFIX = "Architect context for this path is unread: ";
 const NAG_SUFFIX = " (under .prism/architect/).";
@@ -198,6 +205,30 @@ async function loadManifest(repoRoot) {
 }
 
 /**
+ * One compiled matcher per route pattern, for the life of the process.
+ *
+ * `compileMatcher` builds a fresh `RegExp` on every call, and the shell arm
+ * asks about every path-shaped token in a command — a long `git commit -m`
+ * yields hundreds of tokens, each one walking the whole manifest, all of it
+ * on the synchronous `PreToolUse` path. Keyed by the pattern string and
+ * bounded by the manifest's route count, which is small and fixed.
+ *
+ * @type {Map<string, (filePath: string) => boolean>}
+ */
+const matcherCache = new Map();
+
+/** @param {string} pattern @returns {(filePath: string) => boolean} */
+function resolveMatcher(pattern) {
+	let matcher = matcherCache.get(pattern);
+	if (matcher === undefined) {
+		matcher = compileMatcher(pattern);
+		matcherCache.set(pattern, matcher);
+	}
+
+	return matcher;
+}
+
+/**
  * Returns every doc the manifest routes `relativePath` to, in first-match
  * order with duplicates removed. Reuses `compileMatcher` from
  * `lib/match.mjs` rather than re-deriving the three matcher shapes (exact,
@@ -212,7 +243,7 @@ export function matchDocsForPath(manifest, relativePath) {
 	const seen = new Set();
 
 	for (const [pattern, docOrDocs] of Object.entries(manifest)) {
-		if (!compileMatcher(pattern)(relativePath)) {
+		if (!resolveMatcher(pattern)(relativePath)) {
 			continue;
 		}
 
@@ -378,6 +409,79 @@ export async function saveRouteState(repoRoot, scopeId, state) {
 	}
 
 	await pruneStaleRouteState(repoRoot);
+}
+
+/**
+ * Returns the docs a write to `filePath` is gated on — every doc a manifest
+ * route names for that path that this scope has not read and that still
+ * exists on disk — or an empty array when the write is clear. Values are
+ * relative to `ARCHITECT_DIR_PREFIX`, the same shape the `read` array and the
+ * routes themselves use.
+ *
+ * Read-only by construction, and that is the point rather than an
+ * incidental property. `resolveArchitectNag` above writes state on every
+ * call; a deny must not, because a denied write has to be able to produce the
+ * same message again after the model's remedy fails. `announced` is ignored
+ * here for the same reason the announce arm tracks it separately: naming a
+ * doc is not delivering it, so an announced-but-unread doc still gates.
+ *
+ * @param {string} repoRoot
+ * @param {string} filePath
+ * @param {string} scopeId
+ * @returns {Promise<string[]>}
+ */
+export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
+	const relativePath = toRepoRelativePath(repoRoot, filePath);
+	if (relativePath === null) {
+		return [];
+	}
+
+	const manifest = await loadManifest(repoRoot);
+	const matchedDocs = matchDocsForPath(manifest, relativePath);
+	if (matchedDocs.length === 0) {
+		return [];
+	}
+
+	const state = await loadRouteState(repoRoot, scopeId);
+	const readSet = new Set(state.read);
+	const unreadDocs = matchedDocs.filter((doc) => !readSet.has(doc));
+	if (unreadDocs.length === 0) {
+		return [];
+	}
+
+	return filterDocsOnDisk(repoRoot, unreadDocs);
+}
+
+/**
+ * Narrows `filePaths` to the ones a manifest route matches, preserving input
+ * order — the narrowing the shell arm runs before it asks the shared deny
+ * question (see `resolveShellCandidatePaths` in `hook.mjs`). A path no route
+ * matches is never denied on any verb.
+ *
+ * Batched rather than one-path-at-a-time because the shell arm asks about
+ * every path-shaped token in a command, and a per-path entry point would
+ * re-read and re-parse the manifest once per token. Batching hoists the read
+ * and the parse only — each token still walks every route, which is why
+ * `matchDocsForPath` compiles each route's matcher once per process rather
+ * than once per token.
+ *
+ * @param {string} repoRoot
+ * @param {string[]} filePaths
+ * @returns {Promise<string[]>}
+ */
+export async function filterRoutedPaths(repoRoot, filePaths) {
+	if (filePaths.length === 0) {
+		return [];
+	}
+
+	const manifest = await loadManifest(repoRoot);
+
+	return filePaths.filter((filePath) => {
+		const relativePath = toRepoRelativePath(repoRoot, filePath);
+		return (
+			relativePath !== null && matchDocsForPath(manifest, relativePath).length > 0
+		);
+	});
 }
 
 /**

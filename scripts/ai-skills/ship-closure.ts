@@ -99,6 +99,7 @@ export const SHIP_CLOSURE_TRACKED_DANGLING_REFS: ReadonlySet<string> = new Set([
 	"spec/adrs/_toolkit/0060-business-layer-substrate.md",
 	"spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md",
 	"spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md",
+	"spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md",
 ]);
 
 export interface SeedCurationTiers {

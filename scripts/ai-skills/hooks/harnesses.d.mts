@@ -20,11 +20,18 @@ export interface HarnessSpec {
 	filePaths: (payload: HookPayload) => string[];
 	emitNag: (text: string) => unknown;
 	emitNone: () => unknown;
+	/** `null` on a host whose deny envelope nobody has observed — see `harnesses.mjs`. */
+	emitDeny: (reason: string) => unknown;
 }
 
 export function extractPatchFilePaths(command: string | undefined): string[];
 
 export const HARNESSES: Record<string, HarnessSpec>;
+
+export function resolveListedToolKind(
+	spec: HarnessSpec,
+	toolName: string | undefined
+): string | null;
 
 export function resolveToolKind(
 	spec: HarnessSpec,

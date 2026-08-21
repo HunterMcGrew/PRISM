@@ -27,9 +27,15 @@
  */
 
 /**
- * Per-harness wire contract. Exactly five members — nothing below the
- * `HARNESSES` table reads a harness-specific field name, so a fourth host
- * needs only one more row here, not a change anywhere else in `hooks/`.
+ * Per-harness wire contract. Nothing below the `HARNESSES` table reads a
+ * harness-specific field name, so a fourth host needs only one more row here,
+ * not a change anywhere else in `hooks/`.
+ *
+ * `emitDeny` returns `null` on a host whose deny envelope nobody has observed.
+ * A deny is the one output shape that changes what the user's tool does, so a
+ * guessed envelope either fails silently or blocks a write with a message the
+ * host never renders. Returning `null` makes "the gate reaches Claude Code
+ * only" a property of the code rather than a sentence in a doc (ADR-0072).
  *
  * @typedef {Object} HarnessSpec
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
@@ -37,6 +43,7 @@
  * @property {(payload: HookPayload) => string[]} filePaths
  * @property {(text: string) => unknown} emitNag
  * @property {() => unknown} emitNone
+ * @property {(reason: string) => unknown} emitDeny
  */
 
 /**
@@ -93,7 +100,21 @@ export function extractPatchFilePaths(command) {
 /** @type {Record<string, HarnessSpec>} */
 export const HARNESSES = {
 	claude: {
-		toolKinds: { Read: "read", Bash: "shell", Grep: "search" },
+		// `Write` and `Edit` are listed rather than left to the "write" default
+		// because the deny arm fires only on an explicitly listed name. The
+		// default is right for announce — an unclassified tool over-nags — and
+		// wrong for deny: the next read-shaped tool a vendor ships would be
+		// classified `write` and blocked, with the remedy unperformable through
+		// the very tool doing the blocking. This listing and the
+		// `Write|Edit|Bash` matcher in `.claude/settings.json` name the same
+		// three tools.
+		toolKinds: {
+			Read: "read",
+			Write: "write",
+			Edit: "write",
+			Bash: "shell",
+			Grep: "search",
+		},
 		// A subagent's events carry the parent's `session_id` verbatim and add
 		// an `agent_id` the parent's events never have, so `session_id` alone
 		// pools parent and child into one announce-once budget: the child
@@ -114,6 +135,18 @@ export const HARNESSES = {
 			},
 		}),
 		emitNone: () => null,
+		// Measured against a live Claude Code host on 2026-08-19: a
+		// `permissionDecisionReason` returned from `PreToolUse` reaches the
+		// model intact, tagged `"toolDenialKind":"permission-rule"`, and
+		// crosses the subagent boundary. See `opus5-port.md` § Decisions
+		// (Subagent context does not travel) for the probe record.
+		emitDeny: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "deny",
+				permissionDecisionReason: reason,
+			},
+		}),
 	},
 	cursor: {
 		// StrReplace (Cursor's edit tool) is deliberately unlisted here — the
@@ -124,6 +157,10 @@ export const HARNESSES = {
 		filePaths: filePathFromToolInput,
 		emitNag: (text) => ({ additional_context: text }),
 		emitNone: () => ({}),
+		// Nothing delivers a Cursor hook registration, and no probe has
+		// observed Cursor's deny envelope — so there is nothing to answer and
+		// no verified shape to answer in.
+		emitDeny: () => null,
 	},
 	codex: {
 		// Codex's read tool is unmapped until a live probe observes its name,
@@ -142,8 +179,28 @@ export const HARNESSES = {
 			},
 		}),
 		emitNone: () => null,
+		// Codex supports `PreToolUse`, but as with Cursor nothing delivers it a
+		// registration and no probe has observed its deny envelope.
+		emitDeny: () => null,
 	},
 };
+
+/**
+ * Resolves a harness's own tool name to its generic kind, or `null` when the
+ * harness's `toolKinds` map does not list that name.
+ *
+ * The deny arm keys on this rather than on `resolveToolKind` below: it acts
+ * only on a kind the table states, never on one the fallback assumed. Both
+ * lookups go through this one function so the deny and the announce can never
+ * disagree about what a table says.
+ *
+ * @param {HarnessSpec} spec
+ * @param {string | undefined} toolName
+ * @returns {string | null}
+ */
+export function resolveListedToolKind(spec, toolName) {
+	return spec.toolKinds[toolName ?? ""] ?? null;
+}
 
 /**
  * Resolves a harness's own tool name to its generic kind, defaulting to
@@ -153,14 +210,13 @@ export const HARNESSES = {
  * over-nags rather than under-gates. A tool this table has never classified
  * might still touch a governed path, so treating the unknown as
  * safe-to-ignore would silently drop the nag exactly when the manifest
- * route matters most. A write-time deny gate narrows this — it denies only on
- * a `write` resolved from an explicitly listed tool name, never the
- * fallback.
+ * route matters most. The write-time deny gate narrows this by asking
+ * `resolveListedToolKind` instead, so the fallback never denies.
  *
  * @param {HarnessSpec} spec
  * @param {string | undefined} toolName
  * @returns {string}
  */
 export function resolveToolKind(spec, toolName) {
-	return spec.toolKinds[toolName ?? ""] ?? "write";
+	return resolveListedToolKind(spec, toolName) ?? "write";
 }

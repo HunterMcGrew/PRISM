@@ -1261,7 +1261,7 @@ function mergeHookEventEntries(
  * Merges the hook registration block from `templates/install/.claude/settings.json`
  * into the consumer's `.claude/settings.json`. The top-level `hooks` key is
  * additive: an event name the consumer hasn't registered is added outright,
- * and an event name both sides register (`PostToolUse`, `PostCompact`) is
+ * and an event name both sides register (`PreToolUse`, `PostToolUse`, `PostCompact`) is
  * composed within its array via `mergeHookEventEntries` rather than replaced
  * — a consumer's own matcher group on that event survives the merge instead
  * of being overwritten by PRISM's. Re-running this merge is idempotent:

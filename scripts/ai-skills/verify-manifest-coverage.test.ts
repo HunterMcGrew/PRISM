@@ -15,6 +15,7 @@ import {
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
 import { compileMatcher } from "./hooks/lib/match.mjs";
+import { checkRouteIsAnchored } from "./lib/manifest-routes";
 
 test("compileMatcher: exact path", () => {
 	const matcher = compileMatcher(".prism/SPEC.md");
@@ -62,6 +63,27 @@ test("compileMatcher: regex metacharacters in the pattern are escaped", () => {
 	assert.equal(matcher(".prism/architect/manifest.json"), true);
 	// The dots in the pattern would otherwise act as regex wildcards.
 	assert.equal(matcher("xprismxarchitectxmanifestxjson"), false);
+});
+
+test("compileMatcher: `?` is a literal, so a route carrying one still constrains", () => {
+	const matcher = compileMatcher("a?**");
+	assert.equal(matcher("a?/b/c.md"), true);
+	// Unescaped, `?` would make the preceding `a` optional and `/^a?.*$/`
+	// would match every path in the repo.
+	assert.equal(matcher("README.md"), false);
+	assert.equal(matcher("src/index.ts"), false);
+});
+
+test("compileMatcher: a route opening `?*` compiles rather than throwing", () => {
+	const matcher = compileMatcher("?*/**");
+	assert.equal(matcher("?anything/b.md"), true);
+	assert.equal(matcher("src/index.ts"), false);
+});
+
+test("checkRouteIsAnchored: a leading `?` counts as the anchor it compiles to", () => {
+	assert.equal(checkRouteIsAnchored("a?**"), true);
+	assert.equal(checkRouteIsAnchored("**"), false);
+	assert.equal(checkRouteIsAnchored("*/**"), false);
 });
 
 test("loadedDocsForScope: collects matches from every key per file", () => {
