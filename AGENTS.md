@@ -323,7 +323,7 @@ Before promoting decisions and marking the plan closed (steps 1–2 above), ever
 
 **Why:** Without an explicit verdict, decisions get promoted mentally, the plan closes, and the architect surface silently misses the update. The verdict forces the promotion call before close — and makes the call auditable in PR review.
 
-**How to apply:** Winston runs this gate during plan close. Briar surfaces missing verdicts as a Minor in self-review when a plan is being closed. Eric surfaces missing verdicts during PR review when the PR is the close-out PR for a ticket.
+**How to apply:** Winston runs this gate during plan close. A missing verdict is his to fill, not a reviewer finding — Briar and Eric file a plan observation only when the plan contradicts the diff, per each reviewer skill's § Plan-file scope. The same holds for a missing `> Retro:` line under § Before Closing above.
 
 ---
 
@@ -853,7 +853,9 @@ The pattern is "read once, refer many" — not "read every step."
 
 Architect-context routing keys on the working diff (`prism-architect` startup step 4 matches the diff against `.prism/architect/manifest.json`), so a doc you are about to edit is invisible to it — a prompt-driven task carries an unrelated diff, and the target path's own architect doc never loads through that route. When a task names a specific existing doc or directory, match that target path against `manifest.json` and load its context before editing.
 
-A `PostToolUse` hook on `Read` backs this up on hosts that expose the event (Claude Code today): when a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — nothing is denied, and reading the named doc is still yours to do. This clause is the fallback that runs everywhere else, including hosts without a hook yet.
+A `PostToolUse` hook on `Read` backs this up on hosts that expose the event (Claude Code today): when a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — reading the named doc is still yours to do.
+
+The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies a call that touches a routed path until the route's docs have been read, and the deny names the literal `cat` command that clears it (see [`install-layout.md` § Write gate](../architect/_toolkit/install-layout.md)). One rule covers a `Write`, an `Edit`, and a `Bash` command alike, so a delete gates like a write; a shell command adds one narrowing, which is that a command provably reading only its operands is exempt. Reading the docs is the remedy on every one of them. It reaches Claude Code only, it is friction rather than a wall, and it never fires on a path no route matches — so this clause remains the fallback that runs everywhere else, including hosts with no hook.
 
 ## Citation list — skills that load this rule
 

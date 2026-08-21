@@ -104,7 +104,7 @@ Every business persona is a persona (not a utility skill) — sustained identity
 
 ## Manifest routing
 
-`.prism/business/**` routes to this file in `manifest.json`. The broader `.prism/**` route loads `install-layout.md` as well. This file adds the business-layer-specific context on top.
+`.prism/business/**` routes to this file in `manifest.json`, and that is the only route a business path matches — there is no broader `.prism/**` route pulling in `install-layout.md` alongside it. A business path that also needs install-layout context has to name it explicitly.
 
 ## References
 

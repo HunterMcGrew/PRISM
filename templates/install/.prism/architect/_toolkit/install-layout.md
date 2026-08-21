@@ -116,7 +116,7 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism update` run on a repo already at the current PRISM version is a no-op across the roster.
 
-**The hook runtime rides the same update.** Alongside the skill roster, `prism update` copies PRISM's zero-dependency hook runtime into your `.claude/hooks/` and merges its `PostToolUse` and `PostCompact` registrations into your own `.claude/settings.json`. The merge composes within each event's array and replaces only PRISM's own prior entries, so hooks you registered yourself on the same event survive the update. The two hook state-file globs are appended to your `.gitignore` so you never have to add them by hand.
+**The hook runtime rides the same update.** Alongside the skill roster, `prism update` copies PRISM's zero-dependency hook runtime into your `.claude/hooks/` and merges its `PreToolUse`, `PostToolUse`, and `PostCompact` registrations into your own `.claude/settings.json`. The merge composes within each event's array and replaces only PRISM's own prior entries, so hooks you registered yourself on the same event survive the update. The two hook state-file globs are appended to your `.gitignore` so you never have to add them by hand.
 
 The hook announces; it never blocks. On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today.
 
@@ -126,7 +126,23 @@ The hook announces; it never blocks. On a read that matches an architect-context
 
 **State file.** The hook tracks which routed docs a session has read in `.prism/architect-route-state.<session-id>.json`, with a `.tmp` sibling while it writes. Both globs are appended to your `.gitignore` on adopt, so the files stay out of your commits. Those two lines are the only thing PRISM writes into your `.gitignore`; nothing else in it is touched. If the file is missing or unreadable the hook treats it as empty, which costs you a repeated announcement and nothing worse.
 
-**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` is reserved for switching off the write gate specifically while leaving announcements on; it does nothing until that gate ships.
+**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` switches off the write gate specifically, leaving announcements on.
+
+## Write gate
+
+Touching a file your manifest routes to an architect doc is blocked until you have read that doc. Like the rest of the hook runtime, this reaches Claude Code only.
+
+**What triggers it.** A `Write`, an `Edit`, or a `Bash` command naming a path one of your manifest routes matches, where at least one doc that route names has not been read in this scope. One rule covers all three, so deleting or moving a routed file asks for the same read a write does. A subagent is its own scope and reads for itself, so a doc its parent read still gates the child. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
+
+**What clears it.** Read each doc the message names, in full. The message spells out the exact command — `cat <doc>`, one line per doc — because only a whole-file read counts. A `Read` with a line range, a `head`, or a `grep` that merely names the doc does not clear it. Read it, then retry the same call.
+
+The message never tells you which tool to use, and that is deliberate: a flagless `cat` is exempt from the gate, and a `Read` with no line range is not the kind of call it checks, so whichever tool you are already in can perform the read.
+
+**Shell commands are exempt only where the command is provably a read.** Nothing short of a real shell can say what an arbitrary command does to a path it names, so the gate never tries to guess. It treats every path-shaped word in the command as a possible target, and only lets one go when the entire command is a set of commands known to read and never write — `cat`, `grep`, `ls`, a read-only `git` subcommand and their kin — carrying only flags those commands cannot write through. Any remaining word that matches one of your routes is treated exactly like a write, and reading the doc clears it. The exemption exists because the remedy is a read: blocking a plain `cat` would block the very command the message asks for.
+
+That means a command that only reads sometimes asks for a doc read anyway: a pipeline, a `$VAR`, a `find`, or any binary the gate does not recognize cannot be proven read-only. The bias is deliberate — an unnecessary read costs you a minute once, while a missed write defeats the gate silently. Unlike a message you can retry past, the read clears that route for the rest of the scope.
+
+**Turning it off.** Set `PRISM_HOOK_DENY_DISABLE=1`, remove the `PreToolUse` entry from your `.claude/settings.json`, or delete `.claude/hooks/hook.mjs`. Any of the three works, and none of them is prevented — the gate is friction meant to be worth keeping, not a lock. `prism doctor` reports a removed or unregistered hook so the change is visible rather than silent.
 
 **How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours and is never written or removed. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.
 

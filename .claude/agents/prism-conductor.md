@@ -129,9 +129,9 @@ Reese's other modes (release, sprint/group, feature/PR, bug-fix — the tester-f
 
 Each consumer maps tiers to concrete models in `.ai-skills/config.json` under `modelTiers` (`top`, `worker`, and optional per-persona `overrides`) — see the config schema. The tier per dispatch is read off the goal-state lane's `models` map (seeded from `modelTiers`) and applied via the runtime's per-dispatch model override; `claude.md` documents the Claude Code mechanism and shows model names only as examples of that mechanism. A Plan Readiness Gate failure means *re-plan harder* (Winston is already top tier), not *escalate the model*. A consumer who wants cheap Sasha dispatches keeps the `modelTiers.overrides` config seam as the escape valve.
 
-### Enforcement is guidance + pipeline stages, never runtime hooks
+### Enforcement is guidance + pipeline stages, and no runtime hook sits on a verdict
 
-No `Stop`/`SubagentStop` gates on report-backs, no `PreToolUse` ownership guards on writes. Gated personas spent their final turns satisfying their own gate instead of reporting back, and one dogfooding agent tried to edit the gate's own code to force a stop. See [ADR-0067](../../../.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) (superseded) and `.prism/plans/epic-floor-revert.md` for the record; [ADR-0069](../../../.prism/spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md) for the surviving design.
+No `Stop`/`SubagentStop` gates on report-backs. `PreToolUse` guards are confined to routed paths — a write is held until the route's governing doc is read ([ADR-0072](../../../.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md)); ownership guards on writes stay out. Gated personas spent their final turns satisfying their own gate instead of reporting back, and one dogfooding agent tried to edit the gate's own code to force a stop. What separates the surviving gate from the reverted one is where it sits: mid-work, on a write, cleared by reading a document, never on the turn a persona reports back. See [ADR-0067](../../../.prism/spec/adrs/_toolkit/0067-runtime-ratifies-verdicts.md) (superseded) and `.prism/plans/epic-floor-revert.md` for the record; [ADR-0069](../../../.prism/spec/adrs/_toolkit/0069-deterministic-verification-is-a-pipeline-stage.md) for the surviving design.
 
 ## Per-team orchestration notes
 

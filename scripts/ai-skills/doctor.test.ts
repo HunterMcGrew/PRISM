@@ -817,6 +817,56 @@ test("runDoctor reports no architect finding when every doc on disk is routed", 
 	});
 });
 
+test("runDoctor reports a consumer manifest route anchored to nothing", async () => {
+	// The catch-all rejection in `pnpm prism:check` is a development gate and
+	// never runs in a consumer's repo, where `manifest.json` is the
+	// consumer's own file. Without this check a consumer or Atlas can author
+	// `**` and every edit in their tree denies unconditionally.
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "**": "_toolkit/routed.md" },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const catchAll = report.findings.filter(
+			(f) => f.check === "architect-route" && f.severity === "error"
+		);
+		assert.equal(catchAll.length, 1);
+		assert.match(catchAll[0].message, /matches every path/);
+		assert.equal(report.healthy, false);
+	});
+});
+
+test("runDoctor reports a consumer manifest route written as a brace glob", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "src/**/*.{ts,tsx}": "_toolkit/routed.md" },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const braces = report.findings.filter(
+			(f) => f.check === "architect-route" && f.severity === "error"
+		);
+		assert.equal(braces.length, 1);
+		assert.match(braces[0].message, /brace glob/);
+		assert.equal(report.healthy, false);
+	});
+});
+
 test("runDoctor reports a manifest route naming a doc that is not on disk", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeArchitectFixture(

@@ -29,6 +29,10 @@ Findings that span axes or surface things worth calling out separately:
 
 Cross-cutting findings carry no severity tag of their own — if they're severe enough to gate the merge, they belong in the appropriate axis (Standards or Spec) with a Critical/Major. This section is for observations the author should know about that don't fit the gate-the-merge framing.
 
+## Angle Coverage
+
+All nine angles from [`review-angles.md`](../review-angles.md), every pass, including a clean one. One line each: the angle, the axis that swept it, its status token verbatim, and the counts — `<n> items enumerated, <n> verdicts` on `swept`, `verdict-only` on Repo writing rules, nothing on `n/a` and `not reached`. The enumerations themselves go under each `swept` line. No prose defending a status.
+
 ## Cleaner Paths (non-blocking)
 
 Structural simplifications worth considering — reach for [`structural-remedies.md`](../structural-remedies.md) § Preferred Remedies and [`review-justification.md`](../review-justification.md) § Simplification & Structural Leverage. This section is explicitly **non-blocking**: it lives in the summary-comment body only, never gets a GitHub label, and never appears in the PR Readiness checklist below. Keep it to genuinely structural moves (delete a layer, reframe so conditionals disappear, move logic to the module that owns the concept) — if this section runs longer than the findings above, the lens is mis-calibrated. Omit if none.
@@ -36,6 +40,7 @@ Structural simplifications worth considering — reach for [`structural-remedies
 ## PR Readiness
 
 - [ ] No critical or major issues found
+- [ ] No pass-bounded angle stands in `## Angle Coverage` — leave this unchecked while one does, and name the angle and the check still owed in `## Summary`, per the verdict cap in [`review-angles.md`](../review-angles.md) § Status vocabulary. A structurally bounded angle leaves this checked: nothing a later pass does changes it, and `confidence:standards-only` already reports that case honestly
 - [ ] Type-checks clean — no unsafe casts or escape-hatch types
 - [ ] No stray debug output or artifacts
 - [ ] Accessibility requirements met for UI changes

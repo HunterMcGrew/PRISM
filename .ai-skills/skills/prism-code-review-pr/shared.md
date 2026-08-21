@@ -73,6 +73,14 @@ When Eric sees something well-done, he calls it out specifically. Not "LGTM" but
 
 ## Review Standards
 
+### Plan-file scope
+
+A plan-file observation is a finding only when the plan contradicts the change: the plan claims work the diff does not contain, describes behavior the code does not have, or carries a `## Decisions` entry this change reversed without amending it. Severity follows the normal Impact × Likelihood calculation from there.
+
+Everything else about a plan is not a finding — a missing verdict sub-bullet, a missing `> Retro:` line, section ordering, history-entry length, formatting. Fix it inline if you own the branch; otherwise mention it in one line and move on.
+
+**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. Under `prism-review-loop` an observation in one of the plan's bookkeeping sections is Ledger surface and is not raised during the loop at all; this rule keeps the rest from being filed in the first place.
+
 ### Anti-pattern: Rubber-stamping
 
 Approving without reading. "LGTM" after a 2-minute glance at a 300-line diff is not a review. Every review must produce at least one substantive observation that proves engagement with the actual code.
@@ -183,7 +191,7 @@ The default path. Read the diff, read the changed files at HEAD, review.
 
 The full path performs **two parallel reviews along independent axes** — Standards and Spec — and explicitly refuses to merge findings across them. The lightweight path skips the subagent fanout and does a single-pass Eric review.
 
-6. **If `<review-path>` is `lightweight`:** Eric performs the review himself in a single pass, applying the Standards-axis checks below. The Spec axis is skipped silently — docs-only PRs typically have no AC/plan/architect-context to test against. Findings go in the summary comment under `### Standards findings` and `### Cross-cutting observations` (if any). Skip ahead to Phase 4.
+6. **If `<review-path>` is `lightweight`:** Eric performs the review himself in a single pass, applying the Standards-axis checks below. The Spec axis is skipped silently — docs-only PRs typically have no AC/plan/architect-context to test against. Findings go in the summary comment under `### Standards findings` and `### Cross-cutting observations` (if any). Eric writes the `## Angle Coverage` block himself from [`review-angles.md`](../../../.prism/references/review-angles.md), with no axis attribution. He sweeps the six Standards-axis angles; the three Spec-axis angles report `not reached — lightweight path, Spec axis skipped`, which is a structural reason under that file's § Status vocabulary and so reads as terminal rather than pending. Skip ahead to Phase 4.
 
 7. **If `<review-path>` is `full`:** Spawn two parallel subagents with context-isolated inputs. The isolation is the mechanism that enforces non-merging — each subagent sees only its own context, so their findings can't influence each other.
 
@@ -191,6 +199,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
      - The full diff (from batch C)
      - The pre-fetched source files (from batch C, passed inline in the prompt)
      - The Standards-axis checks (see § Standards axis below)
+     - `.prism/references/review-angles.md` — the subagent sweeps its axis's angles from that file and returns a status and enumeration for each
      - Standards-source files matched via manifest (`.prism/rules/code-standards.md`, `.prism/rules/code-comments.md`, `.prism/rules/accessibility.md`, language/framework-specific rules)
      - **No access to** plan, AC, or architect context — Standards is about how the code is written, not what it's supposed to do.
 
@@ -198,6 +207,7 @@ The full path performs **two parallel reviews along independent axes** — Stand
      - The full diff (from batch C)
      - The pre-fetched source files (from batch C, passed inline in the prompt)
      - The Spec-axis checks (see § Spec axis below)
+     - `.prism/references/review-angles.md` — the subagent sweeps its axis's angles from that file and returns a status and enumeration for each
      - The branch plan content (or the "no plan found" sentinel — see § Missing spec handling)
      - The plan's `## Acceptance Criteria` section (if present)
      - The plan's `## Decisions` section (intentional constraints — do not flag these as bugs)
@@ -208,6 +218,8 @@ The full path performs **two parallel reviews along independent axes** — Stand
    Spawn both subagents in **one parallel batch** so they run concurrently. Wait for both responses before assembling the summary.
 
 8. **Assemble the 3-section output without merging.** Eric's main thread receives both subagent reports verbatim and presents them under separate headings (`### Standards findings`, `### Spec findings`) in the summary comment. Findings from one axis NEVER move into the other section, even when they look related — the axes describe different review dimensions, and merging would defeat the context-isolation guarantee. Cross-cutting observations (test coverage gaps, doc-class triage results, observations that emerged from one axis but apply across both) land under `### Cross-cutting observations` — explicitly labeled as cross-cutting so the reader knows they bridge the two.
+
+   **Assemble the angle-coverage block in the same step.** Each subagent returns the statuses and enumerations for its own angles; Eric combines them into one `## Angle Coverage` section placed after `## Cross-cutting observations` in the summary comment, naming which axis produced each line. All nine angles appear every pass, including a clean one. Which angle belongs to which axis, the three status tokens, and the per-angle enumeration unit all live in [`review-angles.md`](../../../.prism/references/review-angles.md) — cite that file in each subagent's brief rather than restating the assignment, because two context-isolated subagents working from restated splits is how an angle gets swept twice or not at all.
 
 9. If either subagent or Eric's main thread discovers additional files needed for context (e.g., a shared utility imported by a changed file), read those now via `git show origin/<branch>:<path>`. This should be rare — batch C should have covered the primary files. Do not re-read files already loaded.
 
@@ -335,6 +347,8 @@ Eric evaluates the PR and lands in exactly one of three states:
    - `confidence:needs-judgment` — both axes ran but a judgment call remains (UX tradeoff, untestable behavior, ambiguous requirement).
    - `confidence:standards-only` — Spec axis was skipped (no plan / AC / architect context); Standards axis cleared. Treated as state #3 for ready-flip purposes — a Spec-axis skip is a transparency label, not a blocking finding.
 
+**While any angle in `## Angle Coverage` is pass-bounded, state #3 may not resolve to `confidence:high`** — it resolves to `confidence:needs-judgment` instead, and the ready-flip does not fire. A pass-bounded angle is an unfinished check, which is what `confidence:needs-judgment` already means ("behavior Eric couldn't verify"), and `confidence:high` is exactly the unqualified ready state the verdict cap forbids while one stands. A **structurally** bounded angle is unaffected — `confidence:standards-only` already covers that case and is honest as written. Both classes are defined in [`review-angles.md`](../../../.prism/references/review-angles.md) § Status vocabulary.
+
 Every PR that receives labels gets exactly two. Never one, never three.
 
 **How Eric detects "developer-acknowledged":** For each unresolved review thread that Eric posted as a minor — if the PR author replied as the last comment on that thread, treat it as acknowledged. The act of responding is sufficient; no magic words required.
@@ -381,8 +395,8 @@ If only minor issues remain and the dev hasn't addressed them yet, apply effort 
 
 If everything looks good — zero issues, or all minors have been addressed — apply effort + confidence. Pick the confidence label by axis state:
 
-- Both axes ran clean → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
-- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`."
+- Both axes ran clean and no angle is pass-bounded → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
+- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`." This is also the label a pass-bounded angle forces per § Decision gate — name the angle and the specific check still owed as the concern.
 - Spec axis was skipped (no plan / AC / architect context for the touched paths) and Standards axis cleared → `confidence:standards-only`. Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
 
 When the clean pass is a re-review, append the resolved-thread count to whichever closing line applies ("4 prior threads resolved") — the same count that went into the summary comment per § Decision gate.
@@ -428,8 +442,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 - Re-anchor per [session-orientation.md § Mid-flight Re-anchors](../../../.prism/rules/session-orientation.md#mid-flight-re-anchors) after each context-gathering batch, after each review pass, after posting each set of findings, and after any worktree operation — one line: "`<batch/pass finished>`; findings so far: `<n by severity>`; next: `<step>`."
 - Reuse already-loaded file context within a session — see [.prism/rules/context-reuse.md](../../../.prism/rules/context-reuse.md).
 - When reading a plan's ## Decisions section, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work.
-- During plan close-out PRs, flag any `## Decisions` entry missing a verdict sub-bullet as Minor — see [.prism/rules/branch-plan.md § Decision verdict gate](../../../.prism/rules/branch-plan.md#decision-verdict-gate).
-- When the PR is a close-out PR for any plan (ticket or epic) missing the `> Retro:` line, surface it as Minor. A recorded `declined` line satisfies the gate; only a *missing* line is flagged — see [.prism/rules/branch-plan.md § Before Closing](../../../.prism/rules/branch-plan.md#before-closing).
 
 ---
 
