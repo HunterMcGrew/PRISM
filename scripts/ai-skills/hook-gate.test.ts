@@ -1857,6 +1857,7 @@ function everyUnprovableShape(target: string): string[] {
 const PROBE_VICTIM = "victim.md";
 const PROBE_SOURCE = "source.md";
 const PROBE_PATCH = "probe.patch";
+const PROBE_FETCH_BRANCH = "probe-fetch";
 const PROBE_VICTIM_CONTENT = "victim line\n";
 const PROBE_SOURCE_CONTENT = "source line\n";
 
@@ -1964,10 +1965,17 @@ test("SHELL_INSPECTION_COMMANDS: every listed command leaves a scratch file unmo
  * `prepare` runs after the repo is seeded and before the victim is dirtied,
  * so a case may build whatever its subcommand needs — a patch to apply, a
  * branch to merge — without that setup counting as the subcommand's write.
+ *
+ * Exit 0 is not enough for a subcommand that succeeds by doing nothing —
+ * `git fetch` against a remote holding no ref it lacks exits 0 having
+ * written neither object nor ref, which is the same idle pass a refusal
+ * would leave behind. Those cases carry `confirmWork`, which reads back the
+ * write the row exists to perform.
  */
 type GitProbeCase = {
 	argv: string[];
 	prepare?: (dir: string) => Promise<void>;
+	confirmWork?: (dir: string) => boolean;
 };
 
 /** Every subcommand on the two lists, in the spelling that reaches its work. */
@@ -1984,14 +1992,60 @@ const GIT_PROBE_CASES: Record<string, GitProbeCase> = {
 	commit: { argv: ["commit", "-q", "-m", "probe", PROBE_VICTIM] },
 	add: { argv: ["add", PROBE_VICTIM] },
 	push: { argv: ["push", "-q", "origin", "HEAD:refs/heads/probe"] },
-	fetch: { argv: ["fetch", "-q", "origin"] },
+	fetch: {
+		prepare: (dir) => seedRemoteBranch(dir),
+		argv: ["fetch", "-q", "origin"],
+		confirmWork: (dir) =>
+			runProbe(dir, "git", [
+				"rev-parse",
+				"--verify",
+				"-q",
+				`refs/remotes/origin/${PROBE_FETCH_BRANCH}`,
+			]).status === 0,
+	},
 	tag: { argv: ["tag", "-a", "probe-tag", "-m", "probe"] },
-	remote: { argv: ["remote", "-v"] },
+	remote: {
+		argv: ["remote", "set-url", "origin", "."],
+		confirmWork: (dir) =>
+			runProbe(dir, "git", ["remote", "get-url", "origin"]).stdout.trim() === ".",
+	},
 };
 
 /**
- * The six working-tree writers `GIT_TREE_SAFE_SUBCOMMANDS`'s JSDoc names as
- * deliberately absent, each in a spelling that reaches its write.
+ * Commits a branch into the probe's bare remote from a repo of its own, so a
+ * later `git fetch` has an object and a ref it does not already hold.
+ *
+ * Pushing from the probe repo itself would not do: the objects would already
+ * be local, and the fetch would write a remote-tracking ref over history it
+ * already had.
+ */
+async function seedRemoteBranch(dir: string): Promise<void> {
+	const remote = runProbe(dir, "git", ["remote", "get-url", "origin"]).stdout.trim();
+
+	await withTempRepo(async (seed) => {
+		await fs.writeFile(path.join(seed, "seeded.md"), "seeded\n");
+		for (const args of [
+			["init", "-q"],
+			["add", "."],
+			["commit", "-q", "-m", "remote seed"],
+			["push", "-q", remote, `HEAD:refs/heads/${PROBE_FETCH_BRANCH}`],
+		]) {
+			const result = runProbe(seed, "git", args);
+			assert.equal(
+				result.status,
+				0,
+				`fetch probe setup \`git ${args.join(" ")}\` failed: ${result.stderr}`
+			);
+		}
+	});
+}
+
+/**
+ * Working-tree writers `GIT_TREE_SAFE_SUBCOMMANDS`'s JSDoc names as
+ * deliberately absent, each in a spelling that reaches its write. A sample,
+ * not the roster — `rm`, `reset`, and `rebase` are equally absent, and the
+ * arm's job is to show the machinery can see a write, not to enumerate every
+ * subcommand that performs one.
  *
  * These are the probe's negative control. Without one, a probe that reports
  * every subcommand clean is indistinguishable from a probe that checks
@@ -2038,9 +2092,12 @@ const GIT_TREE_WRITER_CASES: Record<string, GitProbeCase> = {
 };
 
 /** Runs one probe case against a fresh repo and reports what it did. */
-async function probeGitSubcommand(
-	probe: GitProbeCase
-): Promise<{ exitCode: number | null; changed: boolean; stderr: string }> {
+async function probeGitSubcommand(probe: GitProbeCase): Promise<{
+	exitCode: number | null;
+	changed: boolean;
+	workConfirmed: boolean;
+	stderr: string;
+}> {
 	return withTempRepo(async (remote) => {
 		runProbe(remote, "git", ["init", "-q", "--bare", "."]);
 
@@ -2074,6 +2131,7 @@ async function probeGitSubcommand(
 			return {
 				changed: (await snapshotWorkingTree(dir)) !== before,
 				exitCode: result.status,
+				workConfirmed: probe.confirmWork?.(dir) ?? true,
 				stderr: result.stderr,
 			};
 		});
@@ -2084,6 +2142,7 @@ test("the git subcommand sets: every listed subcommand runs and leaves the worki
 	const subcommands = [...GIT_INSPECTION_SUBCOMMANDS, ...GIT_TREE_SAFE_SUBCOMMANDS];
 	const unproven: string[] = [];
 	const wrote: string[] = [];
+	const proven: string[] = [];
 
 	for (const subcommand of subcommands) {
 		const probe = GIT_PROBE_CASES[subcommand];
@@ -2098,9 +2157,12 @@ test("the git subcommand sets: every listed subcommand runs and leaves the worki
 			continue;
 		}
 
-		if (result.changed) {
-			wrote.push(subcommand);
+		if (!result.workConfirmed) {
+			unproven.push(`${subcommand} (exit 0, but its write never landed)`);
+			continue;
 		}
+
+		(result.changed ? wrote : proven).push(subcommand);
 	}
 
 	assert.deepEqual(
@@ -2113,22 +2175,34 @@ test("the git subcommand sets: every listed subcommand runs and leaves the worki
 		[],
 		"a subcommand on a list that says it writes no working-tree file changed the tree"
 	);
+	assert.ok(
+		proven.length > 0,
+		"the subcommand lists are empty, so this arm ran no case and proved nothing"
+	);
 });
 
 test("the git subcommand probe catches every working-tree writer the tree-safe set excludes", async () => {
 	const missed: string[] = [];
+	const caught: string[] = [];
 
 	for (const [subcommand, probe] of Object.entries(GIT_TREE_WRITER_CASES)) {
 		const result = await probeGitSubcommand(probe);
 		if (result.exitCode !== 0 || !result.changed) {
 			missed.push(`${subcommand} (exit ${result.exitCode}: ${result.stderr.trim()})`);
+			continue;
 		}
+
+		caught.push(subcommand);
 	}
 
 	assert.deepEqual(
 		missed,
 		[],
 		"the probe did not detect a write it must detect, so a clean report from it means nothing"
+	);
+	assert.ok(
+		caught.length > 0,
+		"the negative control is empty, so it showed the probe catching nothing"
 	);
 });
 
