@@ -1,20 +1,20 @@
 # AC Verification — `opus5-port.md`, PR 2D (the deny gate)
 
-- **Graded at SHA:** `3e2fba3afaa3e5cbb1da5e54f7338114d2925a25` (last code commit `22f98196`; the two commits above it are plan-only)
+- **Graded at SHA:** `edb05927` (head). The prior full pass ran at `3e2fba3a`; five commits have landed since, four of them touching graded ground.
 - **Branch:** `huntermcgrew/opus5-port-deny-gate` (PR #470, draft)
 - **Date:** 2026-08-20
 - **Environment:** worktree `.claude/worktrees/agent-a507b79a93c90415f`, macOS (darwin 25.5.0), node via `pnpm`. `git status --porcelain` empty before and after; `pnpm prism:build` and `pnpm prism:check` both left it empty. The only artifact either produced is `dist/`, which `.gitignore:22` excludes.
 - **Scope:** the criteria PR 2D is responsible for — tasks D0–D10 — **plus AC-25**, which the earlier pass excluded as another PR's and which belongs here: this is the PR that narrows the routing tables in all three manifests and ships the computed route-anchoring rejection. AC-6, AC-8 through AC-18, AC-22 through AC-24, and AC-26 through AC-29 belong to other PRs in the stack and are not graded here.
 
-This is a full re-grade, not a patch of the earlier pass. Every verdict below was re-derived at this SHA and every citation resolves in the tree as it now stands. The prior grading ran at `de3d3430` with a targeted re-check at `9a7d1ebd`, and its citations pointed into a suite that has since been restructured — the write parser it was built around was deleted, the shell arm was inverted to refuse-unless-provable, and a tree-safe git subcommand set was added. Those verdicts are preserved in the re-check log at the bottom as history; nothing above the log is carried forward from them.
+Two things in this report were wrong when it was written at `3e2fba3a` and are corrected here rather than quietly overwritten — see § Corrections to the prior pass. Every verdict below was re-derived at head and every citation resolves in the tree as it now stands. The prior grading ran at `de3d3430` with a targeted re-check at `9a7d1ebd`, and its citations pointed into a suite that has since been restructured — the write parser it was built around was deleted, the shell arm was inverted to refuse-unless-provable, and a tree-safe git subcommand set was added. Those verdicts are preserved in the re-check log at the bottom as history; nothing above the log is carried forward from them.
 
 ## Verdict table
 
-12 criteria: **12 MET, 0 UNMET, 0 UNGRADEABLE.** Every verdict rendered at `3e2fba3a`.
+12 criteria: **12 MET, 0 UNMET, 0 UNGRADEABLE.** Every verdict rendered at `edb05927`. No verdict moved under the five commits since `3e2fba3a`; what moved is AC-25's evidence, which is now mechanism as well as population, and two frozen numbers inside AC-31's prose.
 
 | ID | Verdict | Evidence type | Citation |
 | --- | --- | --- | --- |
-| AC-1 | MET | executed | `pnpm prism:test` exit 0, 818/818, 0 skipped. `hook-gate.test.ts:1247` asserts the deny message by full equality — path, instruction sentence, and `cat .prism/architect/<doc>` remedy — across every entry in `WRITE_TOOL_NAMES`. |
+| AC-1 | MET | executed | `pnpm prism:test` exit 0, 822/822, 0 skipped. `hook-gate.test.ts:1247` asserts the deny message by full equality — path, instruction sentence, and `cat .prism/architect/<doc>` remedy — across every entry in `WRITE_TOOL_NAMES`. |
 | AC-2 | MET | executed | `hook-gate.test.ts:1336` (`Read`) and `:1343` (`cat`), both running `assertRemedyClearsTheGate` (`:1305`), which denies first and clears only through the announce arm — it never seeds. Positive control at `:1352` pins the rejection to the `"the write is denied before the remedy"` assertion. |
 | AC-3 | MET | executed | `hook-gate.test.ts:1534` loops `Write`, `Edit`, and `Bash` over an unrouted path; all three return `null`. |
 | AC-4 | MET | executed | `hook-gate.test.ts:1592` — a payload with no `session_id` returns `null` on a routed write. |
@@ -23,37 +23,34 @@ This is a full re-grade, not a patch of the earlier pass. Every verdict below wa
 | AC-19 | MET | executed (derived filter) | ADR-0072 present at `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md`; `pnpm prism:check` runs `crossref-lint` green; D6's corrected grep across all five roots returns nothing. See § Note on AC-19's evidence line. |
 | AC-20 | MET | executed | `pnpm prism:build` exit 0; `pnpm prism:check` exit 0. |
 | AC-21 | MET | executed | `pnpm prism:check` exit 0; no drift reported outside the curated set. |
-| AC-25 | MET | executed | `pnpm prism:verify-manifest` exit 0 over all three manifests (`verify-manifest-coverage.ts:272`); the rejection is a computed leading-literal test (`lib/manifest-routes.ts` `checkRouteIsAnchored`); `verify-manifest-coverage.test.ts:147` covers all five wildcard-only spellings and `:169` is the leading-literal negative control. See below. |
+| AC-25 | MET | executed (population + mechanism) | `pnpm prism:verify-manifest` exit 0 over all three manifests; zero wildcard-only keys across all ten `manifest*.json` in the tree; and a brute-force sweep of 1,043,910 anchored route spellings finds no route that clears `checkRouteIsAnchored` and still matches every path, against 141 such routes at the pre-fix parent. **Re-graded — see below; the prior MET rested on population evidence alone and was refuted on the mechanism axis.** |
 | AC-30 | MET | executed | `hook-gate.test.ts:1505` asserts both directions. The deny arm resolves its key through `spec.scopeId(payload)` (`hook.mjs:1117`), the same resolver the announce arm uses at `:964`, not `session_id` directly. |
 | AC-31 | MET | executed | Two dated sweep tables in `## History` (D0 at plan line 1051, D10 at 1071), one row per task D0–D10. Every row's command re-run literally reproduces its recorded result. See below. |
 
-## AC-25 — MET (first grading)
+## AC-25 — MET (re-graded on the mechanism axis)
 
 **Criterion:** No manifest route matches every path, and the rejection is computed rather than blacklisted.
 
-**Evidence procedure followed, in the order the Evidence line names it.**
+**Why this criterion is being graded twice.** The prior pass graded AC-25 MET at `3e2fba3a` on evidence that was correct and incomplete: every `manifest*.json` in the tree was parsed and none carried a wildcard-only route. That is the population half. The criterion's second clause is that *no route can* match every path, and a route that clears the computed test while matching everything satisfies the first clause and falsifies the second. A parallel review found exactly that — `compileMatcher` escaped twelve regex metacharacters but not `?`, so `a?**` compiled to `/^a?.*$/` and matched every path in the repo while `checkRouteIsAnchored` read the `?` as the required literal, and `?*/**` compiled to a regex `RegExp` rejects, which the hook swallowed as a fail-open. Clove escaped `?` in `ee0fa46b`. The MET below is re-derived against the mechanism, not re-asserted from the population.
 
-*Half one — `pnpm prism:verify-manifest` green across all three manifests.* Exit 0. The three the structural checks run against are named at `scripts/ai-skills/verify-manifest-coverage.ts:272`: `.prism/architect/manifest.json`, `.prism/architect/_toolkit/manifest.base.json`, and `templates/install/.prism/architect/manifest.stub.json` — the set the Evidence line asks for, not a subset. The same two structural checks run inside `prism doctor` at `doctor.ts:494`, at severity `error`, importing from the shared `lib/manifest-routes.ts` so the shipped surface and the development gate answer the question identically.
+**Half one — population, re-run at head.** `pnpm prism:verify-manifest` exit 0 over the three manifests `verify-manifest-coverage.ts` names — `.prism/architect/manifest.json`, `.prism/architect/_toolkit/manifest.base.json`, and `templates/install/.prism/architect/manifest.stub.json`. `prism doctor` runs the same two structural checks at severity `error`, importing from the shared `lib/manifest-routes.ts`, so the shipped surface and the development gate answer identically. Parsing all ten `manifest*.json` in the tree directly — the three checked plus their seven build-managed mirrors — finds zero wildcard-only first segments.
 
-*Half two — the rejection is computed, not enumerated.* `checkRouteIsAnchored` (`lib/manifest-routes.ts`) is three lines:
+**Half two — the rejection is computed.** `checkRouteIsAnchored` is two lines: take the first path segment, strip `*`, require what remains to be non-empty. No spelling list, so there is no enumeration for the next catch-all spelling to walk past.
 
-```ts
-const firstSegment = pattern.split("/")[0];
+**Half three — mechanism, the half the refutation demanded.** A route defeats the gate when the anchor test reads a character as literal that the matcher compiles as a wildcard. The escape set is the whole of what stands between those two readings, so the check is whether any string in the route language can split them. Every pattern of length 1–5 over the alphabet `* ? . + ^ $ { } ( ) | [ ] \ / a` was enumerated and, for each of the 1,043,910 that cleared `checkRouteIsAnchored`, `compileMatcher` was built and run against a corpus of 21 real repo paths spanning five top-level directories plus four synthetic ones:
 
-return firstSegment.replaceAll("*", "").length > 0;
-```
+| Tree | Anchored routes | Matches every corpus path | Throws on compile |
+| --- | --- | --- | --- |
+| head (`edb05927`) | 1,043,910 | **0** | **0** |
+| pre-fix parent (`ee0fa46b^`) | 1,043,910 | 141 | 16,424 |
 
-That is the property "the route constrains something" stated directly. It carries no spelling list, so there is no enumeration for the next catch-all spelling to walk past — which is the criterion's UNMET signature.
+The pre-fix column is the positive control: the same probe, unchanged, finds the defect this criterion was refuted on — `**?`, `a?**`, and 139 siblings match everything, and 16,424 spellings throw `SyntaxError: Nothing to repeat` into the hook's catch. Zero of each at head is a measurement, not an absence of looking.
 
-*Half three — the unit case covers every wildcard-only opening segment plus a leading-literal control.* `verify-manifest-coverage.test.ts:147` loops all five spellings the Evidence line names — `**`, `*`, `**/*`, `*/**`, `**/**` — and asserts each produces exactly one failure. It then pins why a probe is insufficient, asserting that `compileMatcher("**/*")("")` is `false` while `compileMatcher("**/*")("scripts/ai-skills/build.ts")` is `true`: the spelling an empty-string probe accepts still matches every nested path. `:169` is the negative control — three routes opening with a literal segment, including `.prism/**` and `scripts/**/*.ts`, produce zero failures. Both pass inside the 818.
+**One residual, named rather than folded into the verdict.** The sweep covers the printable route language. It does not cover the sentinel `compileMatcher` uses internally to protect `**` during escaping — a NUL character, the string `DOUBLE_STAR`, and a second NUL. A manifest key whose first segment is that exact 13-character sentinel followed by `*` clears the anchor test (13 literal characters survive the `*` strip) and compiles to `^.*[^/]*$`, which matches every path. It is the same failure shape as `?` one layer up: the anchor test reads the sentinel as literal, the matcher splits on it as a wildcard, and ADR-0072's stated principle — *"the test reads a character as literal when the matcher compiles it as one"* — is what breaks.
 
-*Independent check of the invariant itself.* Rather than trusting the gate to police its own tree, every `manifest*.json` in the repo was parsed and its keys tested for a wildcard-only first segment directly. Zero across all ten, the three checked manifests and their seven build-managed mirrors included.
+The verdict stays MET because the input is not reachable from the surfaces the criterion is about. Architect-manifest keys are hand-authored JSON; nothing under `scripts/` generates a route key from free text, and a NUL reaches a key only through a hand-written JSON escape for the NUL codepoint, which no editor emits by accident. All ten manifests in the tree were checked for a NUL in any key: clean. A reader who takes the second clause as an absolute rather than as a bound on authorable routes should treat this as the counterexample and overrule the verdict — the evidence is here to do that with. The one-line hardening that would make the reading true rather than accidental is to reject any manifest key containing a control character, alongside the existing catch-all and brace-glob checks in `lib/manifest-routes.ts`.
 
-**Two things a reader should not take from this MET.**
-
-The narrowing this PR performed and the property this criterion asserts are adjacent, not identical. What the three tables carried before was `.prism/**`, and `.prism` is a literal first segment — `checkRouteIsAnchored` returns `true` for it. Replaying every commit from `origin/main` through head against the anchoring test confirms no wildcard-only route has ever existed in the three checked manifests on either main or this branch. So AC-25's first clause held before this PR as well; what this PR contributes is the second clause, the computed enforcement that keeps it holding, plus the separate narrowing of an over-broad-but-anchored route. Grading this criterion here is still right — the enforcement is this PR's code, and it is what makes the clause consequential rather than incidental — but the MET is not evidence that a live catch-all was caught and removed.
-
-One consequence of the narrowing is visible in the verify-manifest output and is worth naming: the `fallthrough` scope now resolves to `[]`. A path matching no route loads no architect doc, which is the intended shape under a deny gate — an unrouted write is not denied (AC-3) and now also announces nothing. It is a behavior change from `.prism/**`'s blanket coverage, chosen deliberately per the plan's Decision on narrowing, and it is not something AC-25 grades.
+**What the MET does and does not say about the narrowing.** This PR narrowed `.prism/**` in all three routing tables. `.prism` is a literal first segment, so that route was anchored and this gate would never have rejected it — the narrowing and this criterion are adjacent, not the same work. One visible consequence, chosen deliberately per the plan's Decision on narrowing and not graded here: the `fallthrough` scope now resolves to `[]`, so a path matching no route loads no architect doc and is not denied (AC-3).
 
 ## AC-31 — MET
 
@@ -63,7 +60,7 @@ One consequence of the narrowing is visible in the verify-manifest output and is
 
 **Command half — every row reproduces.** Each non-`held` row's corrected command appears in its task's **Verify** line and was re-run literally from the repo root:
 
-| Row | Recorded | Observed at `3e2fba3a` |
+| Row | Recorded | Observed at `edb05927` |
 | --- | --- | --- |
 | D3 (`fixed`) | five mirrors named, exit 0 | five paths listed, exit 0 — `.cursor/rules/context-reuse.mdc` among them |
 | D5 (`amended`) | `1` for both | `seed-curation.json:1`, `ship-closure.ts:1` |
@@ -71,11 +68,11 @@ One consequence of the narrowing is visible in the verify-manifest output and is
 
 **Positive control — two `held` rows re-run, both reproduce.** D6's row records *"The re-derived grep returns nothing"*: the five-root grep with the plans filter returns no output, exit 1. D1's row records *"→ `1` and `1`"*: `grep -c '"PreToolUse"' .claude/settings.json templates/install/.claude/settings.json` returns `1` for each. The table is not a table of commands nobody ran.
 
-**Where the D10 table has gone out of date, and why it does not flip the verdict.** D7's `held` row records `pnpm prism:test` at *"798 tests / 798 pass / 0 fail, 0 skipped"* and *"`hook-gate.test.ts` alone: 57 cases"*. Today the suite is 818/818/0 with 0 skipped and `hook-gate.test.ts` carries 75 cases. The disposition the row rests on — exit 0, the command reaching the whole surface the task changes — still holds; the frozen counts do not.
+**Where the D10 table has gone out of date, and why it does not flip the verdict.** D7's `held` row records `pnpm prism:test` at *"798 tests / 798 pass / 0 fail, 0 skipped"* and *"`hook-gate.test.ts` alone: 57 cases"*. Today the suite is 822/822 with 0 skipped and `hook-gate.test.ts` carries 76 cases. The disposition the row rests on — exit 0, the command reaching the whole surface the task changes — still holds; the frozen counts do not.
 
 That divergence is inherent to what AC-31 asks for. Task D10 places its sweep *"before the PR goes up for review"*, and nine review rounds have landed since, so a dated snapshot that still reproduced its counts exactly would mean review changed nothing. The criterion grades verify lines, and every verify line still reaches what its task changes and returns what its row claims.
 
-**Named limitation, carried forward rather than graded.** The D10 sweep's commentary describes machinery that review has since replaced — D3's row credits a `segmentHasInPlaceFlag` segment scanner that the round-3 inversion deleted along with the whole write parser. No third sweep was run after that rewrite. AC-31 does not ask for one; the axis-3 concern D10 exists to catch (the implementation changing shape mid-PR) did recur after the sweep's window, and a reader should know the tables predate the current design even though the lines they certify still hold.
+**Named limitation, carried forward rather than graded.** The D10 sweep's commentary describes machinery that review has since replaced — D3's row credits a `segmentHasInPlaceFlag` segment scanner that the round-3 inversion deleted along with the whole write parser, and the shell probe the sweep ran against was rebuilt again in `e831a250` to require exit codes and carry an `unproven` bucket. No third sweep was run after either rewrite. AC-31 does not ask for one; the axis-3 concern D10 exists to catch (the implementation changing shape mid-PR) did recur after the sweep's window, and a reader should know the tables predate the current design even though the lines they certify still hold.
 
 ## Note on AC-19's evidence line
 
@@ -90,9 +87,15 @@ Both are plan files quoting the retired string — exactly what the filter `grep
 
 The invariant AC-19 asserts holds, proven by D6's broader command over all five roots returning nothing at this SHA. The defect is in AC-19's evidence line and belongs to Winston rather than to this PR's diff. This finding is unchanged from the earlier pass and was re-executed here rather than carried over.
 
-## Observation outside this PR's diff
+## Corrections to the prior pass
 
-`verify-manifest-coverage.ts`, in the JSDoc above the three-manifest list, states that *"the `**` catch-all this gate exists to reject shipped in the consumer-facing stub."* No wildcard-only route has ever been in that stub — what shipped there was `.prism/**`, which is anchored and which this gate does not reject. The sentence predates this PR (it is present at `origin/main` and untouched by the diff), so it is not this PR's to fix and is recorded here only because a reader arriving at AC-25 through that comment would take the wrong history from it.
+Two claims this report made at `3e2fba3a` were wrong. Both are corrected in place above; they are restated here so a reader who saw the earlier version knows what moved and why.
+
+**AC-25's MET rested on population evidence and was refuted on the mechanism axis.** The refutation and the re-grade are in § AC-25 above. The generalizable shape: a criterion with two clauses needs evidence for both, and "I enumerated every instance and found none" answers only the clause about instances. The clause about what the mechanism *permits* needs an attack on the mechanism.
+
+**A live `**` catch-all did ship in the consumer-facing stub — the prior pass said it never had.** The earlier version carried an "Observation outside this PR's diff" claiming that the JSDoc in `verify-manifest-coverage.ts` — *"the `**` catch-all this gate exists to reject shipped in the consumer-facing stub"* — described history that never happened. It happened. Replaying every first-parent commit on `origin/main` and parsing `manifest.stub.json` at each one finds a literal `"**": "_toolkit/skills-ecosystem.md"` route present continuously through `536a01d3` (2026-08-18), removed by `34f0db16` — PR 2C, a sibling in this same stack, already on `main`. The JSDoc is accurate and needs no fix.
+
+What produced the wrong claim: the prior pass replayed only the `origin/main..HEAD` range, saw `.prism/**` in every commit it looked at, and generalized to "ever." The range it searched could not contain the counterexample, and the sentence it wrote did not carry that bound. This also corrects the AC-25 caveat that read *"the MET is not evidence that a live catch-all was caught and removed"* — a live one was caught and removed, by PR 2C, and PR 2D ships the computed enforcement that keeps it out.
 
 ## Criteria awaiting human verification
 
@@ -116,4 +119,5 @@ Its significance is real and unchanged by the green suite: every leg in `hook-ga
 
 - 2026-08-19 — initial grading at `de3d3430`. 11 criteria: 9 MET, 2 UNMET (AC-7, AC-31), 0 UNGRADEABLE.
 - 2026-08-19 — targeted re-check of AC-7 and AC-31 at `9a7d1ebd`. Both MET. AC-7: the no-session `PostCompact` case gained real seeded state and a survival assertion. AC-31: D3's verify line was corrected to `.cursor/rules/context-reuse.mdc` and its D10 row moved from `held` to `fixed`.
-- 2026-08-20 — **full re-grade at `3e2fba3a`**, all machine evidence re-run at one SHA. 12 criteria: 12 MET, 0 UNMET, 0 UNGRADEABLE. AC-25 graded for the first time. No verdict from the two earlier passes flipped; every citation above was re-derived against the current tree rather than carried forward, because the suite the earlier citations indexed no longer exists in that shape.
+- 2026-08-20 — **re-grade at `edb05927` (head)** after AC-25's MET was refuted by a parallel review. 12 criteria: 12 MET, 0 UNMET, 0 UNGRADEABLE — no verdict flipped. AC-25 re-derived on the mechanism axis with a brute-force sweep and a pre-fix positive control; one residual named (the matcher's internal sentinel). Two prior-pass claims corrected — see § Corrections to the prior pass. Every other criterion re-checked against the four commits that landed after the `?` fix: `hook-gate.test.ts` citations for AC-1 through AC-5, AC-7, and AC-30 all still resolve to the same test names at the same lines; `pnpm prism:test` 822/822; `pnpm prism:build` and `pnpm prism:check` exit 0; AC-19's evidence-line defect reproduces unchanged; every AC-31 sweep row re-run and still reproducing.
+- 2026-08-20 — full re-grade at `3e2fba3a`, all machine evidence re-run at one SHA. 12 criteria: 12 MET, 0 UNMET, 0 UNGRADEABLE. AC-25 graded for the first time. No verdict from the two earlier passes flipped; every citation above was re-derived against the current tree rather than carried forward, because the suite the earlier citations indexed no longer exists in that shape.
