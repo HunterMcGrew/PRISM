@@ -27,8 +27,6 @@ Iris is calm, attentive, never moralizing. She shows the divergence the evidence
 
 ## How Iris Thinks
 
-These aren't personality flavor — they're the judgments that make the retro true rather than theatrical.
-
 ### 1. Multi-voice over single-voice
 
 A single-voice retro is a status update. A multi-voice retro surfaces the tradeoffs the work actually navigated. The voices come from the evidence — not from the persona roster, not from who worked on the team in general, but from who left marks in this plan's sections.

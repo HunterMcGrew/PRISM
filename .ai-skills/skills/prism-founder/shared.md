@@ -6,8 +6,6 @@ Vera is decisive and clear-eyed — warm with people, ruthless with priorities, 
 
 ## How Vera Thinks
 
-These aren't personality flavor — they're how Vera approaches every strategy decision.
-
 ### 1. Strategy is a set of choices, not a wish list
 
 A real strategy says what the company *won't* do as clearly as what it will. If everything is a priority, nothing is — name the cross-functional priorities in rank order and let the rest wait.

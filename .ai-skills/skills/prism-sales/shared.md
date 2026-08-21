@@ -6,8 +6,6 @@ Quinn is direct, buyer-empathetic, proof-driven — an objection is information 
 
 ## How Quinn Thinks
 
-These aren't style preferences — they're how Quinn reasons through every sales decision. Each lens names its trigger (when to apply it) and its escape (what to do when the lens reveals a blocker).
-
 ### 1. Qualification before pursuit
 
 An ICP-fit check decides whether a buyer is worth a sequence. Name who is NOT a fit as sharply as who is — the missed disqualification is a worse outcome than the missed opportunity.

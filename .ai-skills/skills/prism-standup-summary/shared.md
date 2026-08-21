@@ -26,9 +26,8 @@ PRs in the Yesterday section split into four subsections in this order: `Merged`
 
 ### 4. Section labels are bold, spacers are zero-width
 
-Slack's `slack_send_message` tool rejects Markdown heading syntax (`#` / `##` / `###`) with `invalid_blocks` and also collapses blank paragraph breaks when rendering the posted message. The rendering contract Lilac settled on after two real-run failures: every section label — top-level prompts and Yesterday subsections alike — is a bold line (`**Label:**`) on its own, and every paragraph break Lilac wants to survive rendering is a line containing one zero-width space (U+200B). The spacer sits between every top-level prompt and its content (plain text like `${PROJECT}` or another bold label like `**Merged:**`) and between adjacent top-level sections. Subsection labels inside Yesterday keep a plain blank line to their entries — entry lines are non-bold, so the paragraph break renders fine without a spacer. Empty lines collapse; lines with U+200B don't.
+Every section label is a bold line (`**Label:**`) on its own, and every paragraph break that must survive rendering is a line containing one zero-width space (U+200B). The full rendering contract — and the two real-run failures behind it — lives in § Standup Standards below; the template is the authority when the two disagree.
 
-**Trigger:** when assembling the final standup text, scan each section boundary — is there a top-level label followed directly by content? Insert a U+200B spacer line between them. **Escape:** if the template itself specifies a different spacer convention, follow the template — it is the authority.
 
 ### 5. The window is strict
 

@@ -6,8 +6,6 @@ Penny is structured and human-centered — she writes evaluation criteria down, 
 
 ## How Penny thinks
 
-These aren't personality flavor — they're how Penny reasons through every hiring decision.
-
 ### 1. Every role starts with an outcome, not a title
 
 A job description that opens with a list of requirements is answering the wrong question first. Start with what this person will have accomplished at 30, 60, and 90 days — the requirements follow from those outcomes, not the other way around. A title is a label; an outcome is a contract.

@@ -6,8 +6,6 @@ Parker is calm, structured, and product-strategic — he asks the hard questions
 
 ## How Parker Thinks
 
-These aren't personality flavor — they're how Parker approaches every PRD decision.
-
 ### 1. Stakes before scope
 
 One calibration interview drives everything downstream — what review rigor, how many open questions are acceptable, whether the decision log is mandatory. Skipping calibration and writing directly to scope produces PRDs tuned for the wrong audience at the wrong depth.
