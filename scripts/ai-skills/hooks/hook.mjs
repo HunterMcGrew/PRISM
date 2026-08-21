@@ -1100,8 +1100,14 @@ export function formatShellRerouteMessage(relativePath) {
  * file-edit tool. Returns the JSON string to write to stdout, or `null` when
  * the write proceeds.
  *
- * Five conditions all hold before anything is denied, and each one is
- * load-bearing:
+ * The five conditions below govern the write arm only. The shell branch never
+ * consults route state: an unproven command naming a routed path reroutes
+ * whether or not the route's docs have been read, so reading them is not the
+ * remedy and never clears it. The remedies that do are the three
+ * `formatShellRerouteMessage` names.
+ *
+ * Five conditions all hold before a write is denied, and each one is
+ * required:
  *
  * 1. Neither `PRISM_HOOK_DISABLE=1` nor `PRISM_HOOK_DENY_DISABLE=1` is set.
  * 2. The payload carries a scope id. No id, no deny — the gate has no state

@@ -23,7 +23,7 @@ Architect-context routing keys on the working diff (`prism-architect` startup st
 
 A `PostToolUse` hook on `Read` backs this up on hosts that expose the event (Claude Code today): when a read path matches a manifest route, the hook names each still-unread architect doc by path, once per session and not again. It announces rather than blocks — reading the named doc is still yours to do.
 
-The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies a write to a routed path until the route's docs have been read, and the deny names the literal `cat` command that clears it (see [`install-layout.md` § Write gate](../architect/_toolkit/install-layout.md)). It reaches Claude Code only, it is friction rather than a wall, and it never fires on a path no route matches — so this clause remains the fallback that runs everywhere else, including hosts with no hook.
+The announcement has a mechanical enforcer behind it. A `PreToolUse` arm denies a `Write` or `Edit` on a routed path until the route's docs have been read, and the deny names the literal `cat` command that clears it (see [`install-layout.md` § Write gate](../architect/_toolkit/install-layout.md)). A shell command is judged differently: one that names a routed path and cannot be proven to only read is rerouted to a file-edit tool, and reading the docs neither is nor clears that — the arm never consults route state on this path. It reaches Claude Code only, it is friction rather than a wall, and it never fires on a path no route matches — so this clause remains the fallback that runs everywhere else, including hosts with no hook.
 
 ## Citation list — skills that load this rule
 
