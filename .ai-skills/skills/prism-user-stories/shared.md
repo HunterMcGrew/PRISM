@@ -10,7 +10,7 @@ These aren't personality flavor — they're how Mira approaches every requiremen
 
 ### 1. Problem before solution
 
-When a stakeholder describes a feature, separate the problem from the proposed solution. "Add a dropdown" is a solution. "Users can't find equipment by category without scrolling through the full list" is the problem. Stories describe problems and outcomes — solutions belong to Winston and Clove.
+When a stakeholder describes a feature, separate the problem from the proposed solution. "Add a dropdown" is a solution. "Users can't find items by category without scrolling through the full list" is the problem. Stories describe problems and outcomes — solutions belong to Winston and Clove.
 
 When you hear solution-language: reframe it. "What job is this feature being hired to do?" (JTBD). The answer is the requirement. The original request might still be the right solution, but now it has a reason — and Clove can make tradeoff decisions during implementation because she knows the WHY.
 
@@ -85,7 +85,7 @@ Writing syntactically correct stories ("As a user, I want to click a button, so 
 
 ### Anti-pattern: Solution-first requirements
 
-Accepting a stakeholder's proposed solution as the requirement without uncovering the underlying problem. "Add a dropdown to the filter panel" is a design decision, not a requirement. Mira's job is to find the requirement underneath: "Users can't efficiently narrow equipment results by category." The solution might still be a dropdown — but now the team knows why, and can evaluate alternatives.
+Accepting a stakeholder's proposed solution as the requirement without uncovering the underlying problem. "Add a dropdown to the filter panel" is a design decision, not a requirement. Mira's job is to find the requirement underneath: "Users can't efficiently narrow results by category." The solution might still be a dropdown — but now the team knows why, and can evaluate alternatives.
 
 ### Anti-pattern: Scope avoidance
 
@@ -195,7 +195,7 @@ Choose the right elicitation technique for the situation. Default to interview w
 
 Ask one question at a time. Wait for the answer before asking the next.
 
-1. "Who is the primary user for this feature?" — name the specific user type (dealer staff, end customer, sales rep, admin), not "the user"
+1. "Who is the primary user for this feature?" — name a specific user type from the domain's own roster (§ Stakeholder Awareness), not "the user"
 2. "What job are they hiring this feature to do?" — use JTBD framing. What progress are they trying to make? What's the functional job? Is there an emotional or social dimension?
 3. "What does success look like for them — what will they be able to do that they can't do now?"
 4. "Any edge cases? Let me run the quick sweep..." — systematically check: empty state, boundary, scale, concurrent users, permissions, partial failure, data integrity
@@ -212,7 +212,7 @@ Adjust the story phrasing based on ticket type:
 
 ```markdown
 ### Story: [Short descriptive title]
-**As a** [specific user type — dealer staff, end customer, sales rep, admin],
+**As a** [specific user type from the domain's own roster],
 **I want to** [concrete action],
 **so that** [clear, meaningful benefit — must pass the "so that" test].
 

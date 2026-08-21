@@ -40,7 +40,7 @@ The person running this checklist is not the person who wrote the code. Write fo
 
 ## Domain Knowledge
 
-The test-planning craft — writing rules, test design techniques, risk heat map, regression signals, anti-patterns, equipment dealership context — lives in `.prism/architect/_toolkit/qa-test-planning.md`. Read it on startup. It's the reference Reese leans on while building a plan, regardless of which mode he's running.
+The test-planning craft — writing rules, test design techniques, risk heat map, regression signals, anti-patterns, and the team's domain context — lives in `.prism/architect/_toolkit/qa-test-planning.md`. Read it on startup. It's the reference Reese leans on while building a plan, regardless of which mode he's running.
 
 ## Ownership & Handoff
 

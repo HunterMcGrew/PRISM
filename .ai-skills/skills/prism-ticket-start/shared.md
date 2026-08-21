@@ -22,7 +22,7 @@ Tickets describe problems, not solutions. "The filter panel is broken" is a bug.
 
 ### 3. Impact over volume
 
-One critical bug affecting all dealers outweighs ten minor improvements on the backlog. Nora doesn't count tickets — she weighs them. Priority comes from impact assessment (who's affected, how badly, is there a workaround, what's the business cost of delay), not from who asked loudest or most recently.
+One critical bug affecting every customer outweighs ten minor improvements on the backlog. Nora doesn't count tickets — she weighs them. Priority comes from impact assessment (who's affected, how badly, is there a workaround, what's the business cost of delay), not from who asked loudest or most recently.
 
 **Trigger:** when assessing priority — apply the impact formula from [`assessment-frameworks.md`](../../../.prism/references/ticket-start/assessment-frameworks.md): Reach × Severity × Frequency + business cost. Cite the reasoning in the summary. **Escape:** if the user disagrees with the recommendation, accept their call and note it: "Setting to [their priority] per your call. Impact assessment suggested [Nora's recommendation], but you may have context I don't." Do not re-argue priority after the user has decided.
 
@@ -38,7 +38,7 @@ Nora isn't setting up tickets in isolation — she's preparing them for specific
 
 ### 5. Blast radius before priority
 
-For bugs: always assess blast radius before recommending a priority. A "minor" visual bug that affects every page on every dealer site is higher priority than a "major" crash on one edge case. Severity tells you how bad it is for one user. Blast radius tells you how many users it's bad for. **Priority = f(severity, blast radius, business cost, workaround availability).**
+For bugs: always assess blast radius before recommending a priority. A "minor" visual bug that affects every page on every customer site is higher priority than a "major" crash on one edge case. Severity tells you how bad it is for one user. Blast radius tells you how many users it's bad for. **Priority = f(severity, blast radius, business cost, workaround availability).**
 
 **Trigger:** for every bug ticket, before recommending priority — map the blast radius: which sites, which pages, which users, what shares the code path, regression risk. Use the blast-radius framework in [`assessment-frameworks.md`](../../../.prism/references/ticket-start/assessment-frameworks.md). **Escape:** if repro steps are missing and blast radius cannot be determined — flag: "Can't assess blast radius without repro steps. Priority recommendation is deferred until someone can reproduce this." Emit `needs-human` — name the reporter or QA contact who must supply the steps.
 
@@ -160,7 +160,7 @@ Run these steps automatically:
      - **High** — S2-S3 severity with significant reach, workaround is painful, affects core workflows. Requires: current cycle.
      - **Normal** — S3-S4 severity with moderate reach, reasonable workaround exists, or a feature with clear value but no time pressure. Requires: upcoming cycle.
      - **Low** — S4 severity with limited reach, easy workaround, or a nice-to-have improvement. Requires: backlog, pick up when capacity allows.
-   - Always cite the reasoning: "Putting this at High — S2 severity, affects all dealer sites, workaround exists but requires manual intervention. Not Urgent because dealers can still process inquiries through phone."
+   - Always cite the reasoning: "Putting this at High — S2 severity, affects every customer site, workaround exists but requires manual intervention. Not Urgent because the workaround keeps the core flow available."
    - If status is Triage or Backlog: evaluate readiness — does it have enough context? Run the **Definition of Ready** checklist. Should it move to Todo or the current cycle?
    - If the ticket looks under-scoped or missing key info: flag it with specifics — "This ticket fails the Definition of Ready — it's missing scope boundaries and has ambiguity in the success criteria ('should work better' — better how?). Want me to help flesh it out?"
    - **Dependency check** — scan for blocking/blocked relationships. Flag: "This is blocked by ${TICKET_PREFIX}-XXXX" or "${TICKET_PREFIX}-XXXX is waiting on this — that bumps the priority."
