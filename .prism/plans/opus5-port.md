@@ -907,6 +907,12 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (briar, dispatched — lane 2D, round 15)
+  - **Intent** — review clove's fix for my round-14 Major over `48fd3fb3..8e8fb2fb`: verify the both-ways colon reading closes the routed loss, pressure-test the stated residual and the read/write symmetry, and judge the new lesson's altitude.
+  - **Ambiguity** — none load-bearing; `.prism/references/review-angles.md` still absent on this branch (#471 not an ancestor), so the review-angles and exhaustiveness fragments were read from the reviewer's own shared skill set, same content lineage as round 14.
+  - **Bounds** — done = round-15 `## Review Issues` block, Angle Coverage, PR Readiness update, plan-only commit pushed; untouched = source, GitHub, and `hook-gate.test.ts:590`'s CI belief (scoped to a follow-up PR off `main`).
+  - **Approach** — re-derive the piece/tail algebra by hand against the round-14 counterexample, then verify every claim by execution: seven probes on the live exports, both rows re-run failing at base, `pnpm prism:check` at head, and the routedness premise read at `match.mjs:49-51`.
+  - **Close** — scope held. Zero findings; the fix, the residual, the symmetry, and the deletion of the drive-closure paragraph all verified by execution (see the round-15 Review Issues block for the evidence). Edge recall: whitespace-only command returns `[]`, colonless runs leave the candidate set unchanged, a leading-`:` run drops its empty piece and recovers via the next boundary, and a trailing-`:` run drops its empty tail on the length guard — each re-executed here, not inherited. Silent decisions: collapsed the slice/cross-cutting fan-out into one reader (the range is a single 4-file slice; every cross-file check was executed directly); ran the tail sweep for other `split(":")` sites tree-wide — one site, no siblings. Verification honesty: no real Windows shell and no colon-named file on a real disk, the same gap every round has carried; the lesson-altitude judgment is a judgment, not a measurement.
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — lane 2D, round 15)
   - **Intent** — close briar's round-14 Major by picking between the two offered shapes and applying the one this arm's premise calls for.
   - **Ambiguity** — none load-bearing; assuming shape (b), the code fix, because a refuse-unless-provable arm treats an under-deny residual as fatal and shape (a) prices the loss rather than closing it.
@@ -1282,17 +1288,17 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## PR Readiness (PR 2D — The deny gate)
 
-- [x] No critical or major issues known — Briar has not reviewed yet.
+- [x] No critical or major issues — round 15 (`48fd3fb3..8e8fb2fb`) is a zero-findings pass; the round-14 Major is `fixed` and its fix verified by execution.
 - [x] Types correct — `pnpm prism:check-types` exit 0 across both tsconfigs, including `checkJs` over the `.mjs` runtime.
 - [x] No stray debug artifacts.
 - [x] Tests written for new logic and edge cases — the command axis is checked by execution on both arms and to the same standard: each command runs in a spelling that reaches its own work, is required to exit its expected code, and has the disk compared. Each arm carries a negative control — `checkout`/`restore`/`apply`/`stash`/`clone`/`merge` on the git arm, `patch`/`cp` on the shell arm — so a clean report from the positive half means something. What execution still does not cover is a write reached through a flag: the probe runs no flags, so `sort` would pass it clean, and ADR-0072 states why an executable probe does not transfer to that axis. The partial remedy is a denial row per excluded flag in `everyGitTreeWrite`, which pins an exclusion once made but cannot surface the next wrong admission. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm.
 - [x] All debugged issues resolved — none opened.
-- [x] Build passes — `pnpm prism:build && pnpm prism:check` exit 0, 2026-08-20.
+- [x] Build passes — `pnpm prism:check` exit 0, 832/832, re-run in the round-15 review worktree, 2026-08-21.
 - [ ] **D8 is unrun.** The `[HITL]` end-to-end run against a live Claude Code host cannot happen in a dispatched session. Every leg below it synthesizes its own payloads, so the suite cannot catch a payload-shape mistake — that is exactly what D8 exists to catch, and it is the one claim in this PR with no evidence behind it.
 - [ ] PR description — written at push; re-sync if scope moves.
 - [ ] Lasting decisions promoted — deferred to plan close, per the pending verdicts on the deny-scope, friction-not-a-wall, catch-all, and subagent Decisions.
 
-**Last updated:** 2026-08-19
+**Last updated:** 2026-08-21
 
 ---
 
@@ -3122,4 +3128,20 @@ Spec axis:
 - **Repo writing rules** — `swept` — verdict-only.
 - **Security** — `swept` — 1 item enumerated, 1 verdict. The one trust boundary in range is the write-deny gate's candidate scan; the Major names a residual under-deny on it, reachable only in a consumer repo with a colon-named routed file under a suffix-anchored glob, on POSIX.
 - **Docs impact** — `swept` — 1 item enumerated, 1 verdict. `hook.mjs`'s matching doc surface (ADR-0072 and `install-layout.md` § Write gate) carries no colon, drive-prefix, or loss-class prose (grepped), and comment-only edits change no documented behavior.
+- **Accessibility** — `n/a` — no UI in the pinned range.
+
+## Review Issues (PR 2D round 15 — briar, review of the round-14 fix, `48fd3fb3..8e8fb2fb`, #470)
+
+No issues found — 2026-08-21 [huntermcgrew/opus5-port-deny-gate]. The round-14 Major's fix verified by execution, not inheritance: both new rows fail at `48fd3fb3` (84/86, rows 79 and 80, nothing else moves) and pass at `8e8fb2fb`; `pnpm prism:check` exit 0, 832/832 in this worktree. Seven probes against the live exports confirmed the recovery (`${OUT:-src/nested/a:b.ts}` → `src/nested/a:b.ts`; `-C:\repo\src\index.ts` → `C:/repo/src/index.ts`), the stated residual reproducing exactly (`src/a:b.ts:orig` yields neither reading of `src/a:b.ts`), empty/whitespace returning `[]`, and a leading-`:` run recovering via the second boundary. The symmetry question was answered by execution rather than by the design argument: `cat src/a:b.ts` and `grep -rn foo src/a:b.ts` leave only pre-existing head/flag noise unproven — every tail the candidate scan produces from an operand's run is reproduced by `resolveProvenSafePaths`, because both arms call the identical scanner on the same normalized text and the change sits inside the shared scanner. The comment's routedness premise was checked against the compiled predicate itself (`match.mjs:49-51`: `**` → cross-segment, `*` → `[^/]*`, all three colon probes `true`) — the exact remedy the new lesson prescribes. On the lesson's altitude, as the round-14 reader: correctly a separate entry, not a sharpening of the enumerated-comment one — that lesson is about comments narrating sets, this one is about a measurement's domain, and no amount of better enumeration against PRISM's own manifest could have surfaced a consumer-glob loss. The remedy line ("read the predicate") is the checkable half and is stated first-class. One deviation to note: the slice/cross-cutting fan-out was collapsed into a single reader — the range is one slice (4 files, ~93 lines) and every cross-file check was executed directly in this session.
+
+### Angle Coverage — PR 2D round 15, `48fd3fb3..8e8fb2fb`
+
+- **Runtime behavior** — `swept` — 1 item enumerated, 1 verdict. `scanPathShapedTokens`'s colon loop (feeding both `parseUnprovenShellPaths` and `resolveProvenSafePaths`) — boundary offsets verified by hand and by seven executed probes; the two-readings set strictly widens candidates, fail-closed for the deny arm.
+- **Test efficacy** — `swept` — 2 items enumerated, 2 verdicts. Expansion tail recovery ↔ row 79 and leading-dash drive tail ↔ row 80 — both re-executed failing at `48fd3fb3` against the base scanner in this worktree, both passing at head; the range's other behaviors (residual absence, leading-colon recovery) are unchanged from base, so they owe no new row.
+- **Spec and doc consistency** — `swept` — 6 items enumerated, 6 verdicts. The Decision entry, the round-14 Review Issue's `Fixed-in` flip, the History entry, clove's Sessions close, the lessons entry, and the rewritten comment block — each checked against the code and the executed evidence; all consistent, and the residual is worded identically in comment and Decision.
+- **Citation integrity** — `swept` — 5 items enumerated, 5 verdicts. `870eac91` — exists, is the split commit; the fail-at-base claim — reproduced; `compileMatcher`'s compiled forms — read at `match.mjs:49-51` and executed; the 84/86 → 86/86 and 830 → 832 counts — reproduced; `hook.mjs:755` in the round-14 finding — historical, stands.
+- **External-system claims** — `swept` — 2 items enumerated, 2 verdicts. `String.raw` in row 80 — exercised by the row itself; `split(":")`/`slice` offset semantics — executed through all seven probes. The colon-routability premise is repo-internal (`compileMatcher`) and is counted under citation integrity.
+- **Repo writing rules** — `swept` — verdict-only.
+- **Security** — `swept` — 1 item enumerated, 1 verdict. The write-deny trust boundary: candidate widening closes the round-14 under-deny; the over-deny direction probed clean on proven-read shapes, and unprovable shapes (expansions) failing the character class is the pre-existing fail-closed default.
+- **Docs impact** — `swept` — 1 item enumerated, 1 verdict. `hook.mjs` routes to `_toolkit/install-layout.md`, which carries no scanner-colon prose (grepped); the tree-wide sweep for the predicate's prose homes (`grep -rln colon` over rules and architect docs) hits only git-conventions' unrelated commit-format text.
 - **Accessibility** — `n/a` — no UI in the pinned range.
