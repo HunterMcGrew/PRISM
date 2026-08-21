@@ -1844,18 +1844,31 @@ function everyUnprovableShape(target: string): string[] {
  * Stdin carries a unified diff rather than nothing, because several writers
  * take their payload from stdin and are inert without one — `patch <file>`
  * with empty stdin applies no hunks and writes nothing, so a probe that fed
- * it nothing would have passed. Two operand shapes cover the two ways a write
- * hides in operand position: an in-place edit of the only operand, and an
- * output file trailing an input (`uniq in out`, `cp in out`).
+ * it nothing would have passed.
+ *
+ * Each command is invoked in a spelling of its own, from `SHELL_PROBE_CASES`,
+ * and required to exit its expected code. Two generic operand shapes came
+ * first and proved less than they looked: `cut`, `which`, `diff`, `jq`,
+ * `pwd`, and `false` refuse both shapes, and a command that stops before its
+ * work leaves the tree unchanged for the same reason a read does — so six
+ * refusals were being counted as six proofs. That is the same defect the git
+ * arm below found and fixed in `probeGitSubcommand`; the exit-code
+ * requirement is what makes an unchanged tree evidence on either arm.
+ *
+ * `SHELL_WRITER_CASES` is the negative control, and it replaces a mutation
+ * someone had to run by hand: `patch` and `cp` are off the list and each has
+ * to exit 0 *and* change the tree, so a probe that reports every listed
+ * command clean is distinguishable from a probe that checks nothing.
  *
  * Its own limit, stated rather than hidden: a command this machine does not
- * have is reported `unavailable` and proves nothing. The two mutations that
- * exposed the tautology — `patch` and `cp` — are present everywhere the suite
- * runs, so the gap is real but does not reach the defect class it was built
- * for.
+ * have is reported `unavailable` and proves nothing. `patch` and `cp` are
+ * present everywhere the suite runs, so the gap is real but does not reach
+ * the defect class the control was built for.
  */
 const PROBE_VICTIM = "victim.md";
 const PROBE_SOURCE = "source.md";
+const PROBE_JSON = "probe.json";
+const PROBE_JSON_CONTENT = '{"probe":1}\n';
 const PROBE_PATCH = "probe.patch";
 const PROBE_FETCH_BRANCH = "probe-fetch";
 const PROBE_VICTIM_CONTENT = "victim line\n";
@@ -1914,40 +1927,145 @@ function checkProbeRan(result: ReturnType<typeof runProbe>): boolean {
 	return (result.error as NodeJS.ErrnoException | undefined)?.code !== "ENOENT";
 }
 
-test("SHELL_INSPECTION_COMMANDS: every listed command leaves a scratch file unmodified when run", async () => {
+/**
+ * How the probe invokes one shell command so the invocation reaches the
+ * command's own work.
+ *
+ * `exitCode` defaults to 0. `false` declares 1 because exiting non-zero is
+ * the whole of what it does — for that one entry a refusal and its work are
+ * the same event, which is why the expectation is written down rather than
+ * assumed.
+ */
+type ShellProbeCase = { argv: string[]; exitCode?: number };
+
+/** Every command on the read-only map, in the spelling that reaches its work. */
+const SHELL_PROBE_CASES: Record<string, ShellProbeCase> = {
+	cat: { argv: [PROBE_VICTIM] },
+	head: { argv: [PROBE_VICTIM] },
+	tail: { argv: [PROBE_VICTIM] },
+	less: { argv: [PROBE_VICTIM] },
+	more: { argv: [PROBE_VICTIM] },
+	nl: { argv: [PROBE_VICTIM] },
+	od: { argv: [PROBE_VICTIM] },
+	grep: { argv: ["line", PROBE_VICTIM] },
+	egrep: { argv: ["line", PROBE_VICTIM] },
+	fgrep: { argv: ["line", PROBE_VICTIM] },
+	ag: { argv: ["line", PROBE_VICTIM] },
+	rg: { argv: ["line", PROBE_VICTIM] },
+	wc: { argv: ["-l", PROBE_VICTIM] },
+	// Two identical operands rather than victim against source: `diff` exits 1
+	// on a difference, and a refusal and a difference would be indistinguishable.
+	diff: { argv: [PROBE_VICTIM, PROBE_VICTIM] },
+	ls: { argv: [PROBE_VICTIM] },
+	stat: { argv: [PROBE_VICTIM] },
+	file: { argv: [PROBE_VICTIM] },
+	cut: { argv: ["-c1", PROBE_VICTIM] },
+	tr: { argv: ["-d", "x"] },
+	jq: { argv: [".", PROBE_JSON] },
+	echo: { argv: ["probe"] },
+	basename: { argv: [PROBE_VICTIM] },
+	dirname: { argv: [PROBE_VICTIM] },
+	which: { argv: ["cat"] },
+	pwd: { argv: [] },
+	true: { argv: [] },
+	false: { argv: [], exitCode: 1 },
+};
+
+/**
+ * Writers the read-only map deliberately excludes, each in a spelling that
+ * reaches its write. `patch` takes its payload from stdin and `cp` from a
+ * second operand — the two shapes a write hides in around here.
+ */
+const SHELL_WRITER_CASES: Record<string, ShellProbeCase> = {
+	patch: { argv: [PROBE_VICTIM] },
+	cp: { argv: [PROBE_SOURCE, PROBE_VICTIM] },
+};
+
+/** Runs one shell probe case against a fresh scratch tree and reports what it did. */
+async function probeShellCommand(
+	name: string,
+	probe: ShellProbeCase
+): Promise<{ available: boolean; exitCode: number | null; changed: boolean; stderr: string }> {
+	return withTempRepo(async (dir) => {
+		await fs.writeFile(path.join(dir, PROBE_VICTIM), PROBE_VICTIM_CONTENT);
+		await fs.writeFile(path.join(dir, PROBE_SOURCE), PROBE_SOURCE_CONTENT);
+		await fs.writeFile(path.join(dir, PROBE_JSON), PROBE_JSON_CONTENT);
+		const before = await snapshotWorkingTree(dir);
+
+		const result = runProbe(dir, name, probe.argv);
+
+		return {
+			available: checkProbeRan(result),
+			changed: (await snapshotWorkingTree(dir)) !== before,
+			exitCode: result.status,
+			stderr: result.stderr,
+		};
+	});
+}
+
+test("SHELL_INSPECTION_COMMANDS: every listed command runs and leaves a scratch file unmodified", async () => {
+	const unproven: string[] = [];
 	const wrote: string[] = [];
-	const clean: string[] = [];
+	const proven: string[] = [];
 	const unavailable: string[] = [];
 
 	for (const name of SHELL_INSPECTION_COMMANDS.keys()) {
-		await withTempRepo(async (dir) => {
-			await fs.writeFile(path.join(dir, PROBE_VICTIM), PROBE_VICTIM_CONTENT);
-			await fs.writeFile(path.join(dir, PROBE_SOURCE), PROBE_SOURCE_CONTENT);
-			const before = await snapshotWorkingTree(dir);
+		const probe = SHELL_PROBE_CASES[name];
+		assert.ok(
+			probe,
+			`\`${name}\` is on the read-only map but has no invocation in \`SHELL_PROBE_CASES\``
+		);
 
-			let ran = false;
-			for (const args of [[PROBE_VICTIM], [PROBE_SOURCE, PROBE_VICTIM]]) {
-				ran = checkProbeRan(runProbe(dir, name, args)) || ran;
-			}
+		const result = await probeShellCommand(name, probe);
+		if (!result.available) {
+			unavailable.push(name);
+			continue;
+		}
 
-			if (!ran) {
-				unavailable.push(name);
-				return;
-			}
+		if (result.exitCode !== (probe.exitCode ?? 0)) {
+			unproven.push(`${name} (exit ${result.exitCode}: ${result.stderr.trim()})`);
+			continue;
+		}
 
-			((await snapshotWorkingTree(dir)) === before ? clean : wrote).push(name);
-		});
+		(result.changed ? wrote : proven).push(name);
 	}
 
+	assert.deepEqual(
+		unproven,
+		[],
+		"a listed command never reached its work, so its unchanged tree proves nothing"
+	);
 	assert.deepEqual(
 		wrote,
 		[],
 		`a command on the read-only list changed the scratch tree when run (unavailable on this machine: ${unavailable.join(", ") || "none"})`
 	);
 	assert.ok(
-		clean.length > 0,
+		proven.length > 0,
 		"every listed command was unavailable, so this control proved nothing"
 	);
+});
+
+test("the shell command probe catches the writers the read-only map excludes", async () => {
+	const missed: string[] = [];
+	const caught: string[] = [];
+
+	for (const [name, probe] of Object.entries(SHELL_WRITER_CASES)) {
+		const result = await probeShellCommand(name, probe);
+		if (result.exitCode !== 0 || !result.changed) {
+			missed.push(`${name} (exit ${result.exitCode}: ${result.stderr.trim()})`);
+			continue;
+		}
+
+		caught.push(name);
+	}
+
+	assert.deepEqual(
+		missed,
+		[],
+		"an excluded writer ran without the probe seeing its write, so the probe reporting the list clean proves nothing"
+	);
+	assert.ok(caught.length > 0, "the negative control ran no case");
 });
 
 /**
@@ -2303,13 +2421,18 @@ function everyForgedProof(target: string): string[] {
  * the subcommands that genuinely write, and what pin the flags left off
  * `GIT_TREE_SAFE_FLAGS` on purpose.
  *
- * The last two rows pin denials the tree-safe set does not reach at all. A
- * command substitution puts `$` and `(` outside `SHELL_READ_SAFE_CHARACTERS`,
- * so the heredoc commit form `.prism/rules/git-conventions.md` § Formatting
- * mandates denies before any subcommand is resolved — the `-F` remedy the
- * deny message names is what clears it. And `git commit -n` denies because
- * `-n` is `--no-verify` at that subcommand, which is why `GIT_TREE_SAFE_FLAGS`
- * carries `--dry-run` in long form only.
+ * Two rows pin denials the tree-safe set does not reach at all. A command
+ * substitution puts `$` and `(` outside `SHELL_READ_SAFE_CHARACTERS`, so the
+ * heredoc commit form `.prism/rules/git-conventions.md` § Formatting mandates
+ * denies before any subcommand is resolved — the `-F` remedy the deny message
+ * names is what clears it. And `git commit -n` denies because `-n` is
+ * `--no-verify` at that subcommand, which is why `GIT_TREE_SAFE_FLAGS` carries
+ * `--dry-run` in long form only.
+ *
+ * The tail pins the flags that reach a program. `-e` and `--patch` launch
+ * `core.editor`; `-S` signs, and on `tag` so do `-s`, `-v`, and `-u`. Each is
+ * the flag axis's only executable check — the axis otherwise gets one reading,
+ * which is how these six were admitted in the first place.
  */
 function everyGitTreeWrite(target: string): string[] {
 	return [
@@ -2329,6 +2452,12 @@ function everyGitTreeWrite(target: string): string[] {
 		`git commit -m msg; tee ${target}`,
 		`git commit -m "$(cat <<'EOF'\nPRISM-1: rewrite ${target}\nEOF\n)"`,
 		`git commit -n -m "fix ${target}"`,
+		`git commit -e -m "fix ${target}"`,
+		`git commit -S -m "fix ${target}"`,
+		`git tag -s v1 -m "see ${target}"`,
+		`git tag -v ${target}`,
+		`git tag -u ABCD1234 v1 -m "see ${target}"`,
+		`git add --patch ${target}`,
 	];
 }
 

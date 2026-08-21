@@ -439,12 +439,18 @@ const GREP_INERT_FLAGS =
  * another program? If either answer needs a "usually", it stays out.
  *
  * Membership is checked on two axes, and only one of them is executable.
- * `hook-gate.test.ts` runs every command on this list against a scratch file
- * and asserts the file is unmodified, so a command that writes cannot be
- * added silently — that check is what `patch` would have failed, and a
- * derived test row asserting the arm agrees with the list would have passed.
- * Its own limit is a command the test machine does not have, which the
- * failure message names.
+ * `hook-gate.test.ts` runs every command on this list in a spelling that
+ * reaches the command's own work, requires it to exit 0, and asserts the
+ * scratch file is unmodified — so a command that writes through a plain
+ * operand cannot be added silently. That check is what `patch` would have
+ * failed, and a derived test row asserting the arm agrees with the list would
+ * have passed.
+ *
+ * What it does not cover is a write reached through a flag. The probe runs
+ * one spelling per command and no flag beyond what that spelling needs, so
+ * `sort` would pass it clean on plain operands while `sort -o <path>` — the
+ * escape that put `sort` on the absent list — never runs. Its other limit is
+ * a command the test machine does not have, which the failure message names.
  *
  * The flag sets have no such check. An assertion over a flag can only claim
  * the flag is inert, which blesses whatever was just added, so the second
@@ -549,11 +555,12 @@ const GIT_INERT_FLAGS = new Set(
  * "Of its own" is the whole qualification, and `git commit` is why it is
  * there. A `pre-commit` hook is arbitrary repo-configured code — husky plus
  * lint-staged running a formatter over the repo's markdown is an ordinary
- * consumer setup — and that write lands whether or not this set admits the
- * subcommand, because a `git commit` whose text names no routed path is
- * outside the gate either way. It is the same shape as the variable-path gap
- * ADR-0072 § Consequences already admits: a write whose path never appears in
- * the command text is invisible to a scan over the command text.
+ * consumer setup — and for a commit whose text names a routed path,
+ * membership in this set is the difference between clearing, so those hooks
+ * run, and rerouting, so the command never runs. `core.editor` sits in the
+ * same place and arrives by the same admission: `git commit` with no message
+ * launches it, no flag required. That widening is what the set pays for a
+ * reachable remedy on the one shape that had none.
  *
  * The arm needs the distinction because `git commit -m "…"` carries its
  * message as a plain operand, and `scanPathShapedTokens` cannot tell a
@@ -584,31 +591,50 @@ export const GIT_TREE_SAFE_SUBCOMMANDS = new Set([
 
 /**
  * Flags the tree-safe subcommands accept without naming an output file or
- * running another program.
+ * reaching a program the subcommand does not already reach without them.
+ *
+ * The second half is worded that way because one program is reachable with no
+ * flag at all: `git commit` with no message launches `core.editor`, and so
+ * does `git tag --annotate` with none. Excluding `-e`/`--edit` does not close
+ * that route, and no flag list can — it belongs with the `pre-commit` hook
+ * exposure `GIT_TREE_SAFE_SUBCOMMANDS` admits, for the same reason and at the
+ * same place. What the exclusions below do close is `gpg`: no spelling of
+ * these six subcommands runs `gpg.program` unless a flag asks it to, so
+ * dropping the flags that ask removes the route rather than narrowing it.
  *
  * Absent on purpose: `--upload-pack`, `--receive-pack`, and `--exec` each
  * name a program git runs across a transport; `-c` sets arbitrary config
  * before the subcommand, `core.pager` included; `-p` is `--paginate` at that
  * same position, the two-position ambiguity `GIT_INERT_FLAGS` documents for
- * `-C`; `-t`/`--template` names a path git hands to the editor.
+ * `-C`; `-t`/`--template` names a path git hands to the editor; `-S` is
+ * `--gpg-sign` on `commit` and `tag`; `-e` is `--edit`, which launches
+ * `core.editor` on `commit`, `tag`, and `add`; `--patch` is absent because
+ * `git add --patch` is interactive and its `e` action spawns the editor on
+ * the hunk.
  *
- * `-n` is absent for a third kind of ambiguity — the same spelling means
- * different things to different subcommands. `git add -n`, `git push -n`, and
- * `git tag -n` read it as `--dry-run`; `git commit -n` reads it as
- * `--no-verify`. `checkFlagsAreInert` partitions by neither, so admitting the
- * dry-run meaning would admit the other one too. `--dry-run` stays, because
- * the long form means one thing everywhere. `--no-verify` is absent for its
- * own reason: `.prism/rules/git-conventions.md` forbids it, so listing it
- * would widen the proof for a spelling nothing should use.
+ * Four short flags are absent for one shared reason — the same spelling means
+ * different things to different subcommands, and `checkFlagsAreInert`
+ * partitions by neither, so admitting the inert meaning admits the other one.
+ * `git add -n`, `git push -n`, and `git tag -n` read `-n` as `--dry-run`;
+ * `git commit -n` reads it as `--no-verify`. `git commit -s` is `--signoff`,
+ * `git tag -s` is `--sign` and runs `gpg`. `git commit -v` and `git push -v`
+ * are `--verbose`, `git tag -v` is `--verify` and runs `gpg`. `git add -u` is
+ * `--update` and `git push -u` is `--set-upstream`, `git tag -u` is
+ * `--local-user` and runs `gpg`. Each inert meaning is carried by its long
+ * form instead — `--dry-run`, `--signoff`, `--verbose`, `--update`,
+ * `--set-upstream` — because a long form means one thing everywhere.
+ * `--no-verify` is absent for its own reason: `.prism/rules/git-conventions.md`
+ * forbids it, so listing it would widen the proof for a spelling nothing
+ * should use.
  *
  * @type {Set<string>}
  */
 const GIT_TREE_SAFE_FLAGS = new Set(
 	(
-		"-# -m -F -a -q -v -f -u -d -s -S -e " +
+		"-# -m -F -a -q -f -d " +
 		"--message --file --all --quiet --verbose --dry-run --force --amend " +
 		"--no-edit --allow-empty --allow-empty-message --set-upstream --delete " +
-		"--annotate --signoff --porcelain --tags --patch --update --intent-to-add"
+		"--annotate --signoff --porcelain --tags --update --intent-to-add"
 	).split(/\s+/)
 );
 
