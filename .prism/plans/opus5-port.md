@@ -887,6 +887,13 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (briar, dispatched — lane 2D, round 11)
+  - **Intent** — decide whether the Windows separator fix over `d34755b8..8fcb2b03` is safe to merge, attacking the new discriminator and the `:` recovery rather than re-reading ten rounds of settled surface.
+  - **Ambiguity** — none load-bearing; took Sol's pinned range as the whole review surface, and read the disclosed no-op-escape residual as accepted unless a second instance of its class is cheaper to reach than the price the ADR puts on it.
+  - **Bounds** — findings in chat and in this plan's `## Review Issues`, plus the `## PR Readiness` update. Untouched: source, the GitHub PR, the draft flag, the merge, `wt-3a`.
+  - **Approach** — run the parsers at both ends of the range and diff the answers, rather than reasoning about regexes; reviewed inline instead of fanning out, since the diff is two source files and the whole job is comparing one function's behavior across two commits.
+  - **Close** — scope held; plan file only. Two Majors, both confirmed by execution at both ends of the range rather than argued: the `:` recovery cannot cross a `/`, so a routed path carrying a colon stops being a candidate (under-deny); and the read arm's rewrite credits a routed doc the shell never opened (over-credit). Both are regressions this range introduces. Silent decisions named: I judged the second Major to clear Sol's cheaper-reachability bar because the ADR's cost model prices two preconditions and one of them — a doc at the rewritten path — is free for the gate's own docs, which is a different claim from re-filing the disclosed residual; and I graded the CI-leg comment as a finding rather than bookkeeping because the same range's architect doc states the opposite count. Edge recall: checked the escaped-space, escaped-quote, escaped-dollar, backslash-newline and backslash-CR spellings — all still yield zero targets or stay unproven, so the discriminator's safety property holds and clove's allow-list-row claim is true; empty, whitespace-only, and non-string commands route through the existing guards unchanged. Verification honesty: `pnpm prism:check` exit 0 and 826/826 re-run here at `8fcb2b03`, independent of Sol's ratification. Both Majors are reproduced by running the exported functions at `d34755b8` and `8fcb2b03`; neither is inferred. Not verified by me: the Windows CI leg and the drive-absolute rows, which resolve only on a Windows host.
+
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — lane 2D, Windows leg)
   - **Intent** — find out why PR #470's Windows leg fails nine rows that ubuntu passes, and separate what is fixture construction from what is a real difference in how the gate behaves on Windows.
   - **Ambiguity** — none load-bearing; assumed the dispatch's hypothesis is a proposal to test rather than a conclusion to implement, and that "verify before changing anything" means proving the mechanism from macOS rather than pushing to CI to find out.
@@ -2602,16 +2609,16 @@ Scoped to clove's round-4 structural fix, not a fresh full sweep: (1) can a proo
 
 ## PR Readiness (PR 2D — the deny gate on routed paths, #470)
 
-- [x] No critical or major issues — **round 10 opened one Critical, six Majors, and four Minors across eric's PR review and his two late-reporting axes; all eleven are `fixed` or explicitly `deferred`.** The Critical is the `?` that compiled to a quantifier, letting a route match every path — the one runtime hole in the round. Six Majors: six flags reaching `core.editor` or `gpg.program` against the set's own criterion, the shell probe counting six refusals as proofs, the read-only map's coverage claim stated wider than the probe checks, the JSDoc still carrying the pre-commit claim `22f98196` retracted, and ADR-0072's `--no-verify` bound running backwards. The `NotebookEdit` gate is `deferred` with the stale half of its prose fixed. Briar's round 9 over `529c4db4..22f98196` found none, and every round 1–8 issue remains `fixed`.
+- [ ] No critical or major issues — **round 11 opened two Majors, both `open`.** The `:` recovery in `scanPathShapedTokens` strips a prefix only, so a routed path followed by `:` stops being a deny candidate; and the read arm's separator rewrite credits a routed doc a POSIX shell never opened. Both are regressions this range introduces, measured at `d34755b8` and `8fcb2b03`. Round 10 opened one Critical, six Majors, and four Minors across eric's PR review and his two late-reporting axes; all eleven are `fixed` or explicitly `deferred`.** The Critical is the `?` that compiled to a quantifier, letting a route match every path — the one runtime hole in the round. Six Majors: six flags reaching `core.editor` or `gpg.program` against the set's own criterion, the shell probe counting six refusals as proofs, the read-only map's coverage claim stated wider than the probe checks, the JSDoc still carrying the pre-commit claim `22f98196` retracted, and ADR-0072's `--no-verify` bound running backwards. The `NotebookEdit` gate is `deferred` with the stale half of its prose fixed. Briar's round 9 over `529c4db4..22f98196` found none, and every round 1–8 issue remains `fixed`.
 - [x] Types correct — no `any`, no unsafe `as`; `.d.mts` sidecars match their implementations, including the two newly exported constants
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — the command axis is now checked by execution: every entry on the read-only lists and both git sets is run against a scratch file and the disk is compared. Adding `patch` or `cp` to the map fails the suite, and so does admitting `checkout` to the tree-safe set — but briar's round 7 executed the git half and found four of the six admitted subcommands never run under the probe's argv, so `apply`, `stash`, `clone`, and `merge` would be admitted silently. A flag added to an existing set still lands untested, and ADR-0072 § Consequences states why an executable probe does not transfer to that axis. `everyForgedProof` and `everyGitTreeWrite` carry the confirmed leaks as regression rows through both the parser and the end-to-end arm; the write-tool deny row is derived from the harness's own table, so `Edit` is no longer assertion-free.
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-20, `pnpm prism:build && pnpm prism:check` exit 0.
+- [x] Build passes — last run: 2026-08-21, `pnpm prism:check` exit 0, 826 tests / 826 pass / 0 fail, re-run by briar at `8fcb2b03`.
 - [x] PR description up to date — carries the round-2 segmenter rewrite, the round-3 contract narrowing, the round-4 flag inversion, the tree-safe git set, the executable membership probe, and the shipped route-anchoring check
 - [x] Lasting decisions promoted to architect context — every 2D `## Decisions` entry carries a promotion verdict; the scoping entry is promoted as corrected, per its own reversal note. Four entries whose content landed in ADR-0072 in this diff moved from `pending` to `promoted`, and four naming a PR-close gate that has since passed unresolved (2B, 2C, 2E) are re-pointed at plan close.
 
-**Last updated:** 2026-08-20 (clove, round 10 — eric's review and both late axes closed).
+**Last updated:** 2026-08-21 (briar, round 11 — two Majors and two Minors opened over `d34755b8..8fcb2b03`).
 
 **Outstanding for the human merge gate:** D8's live-host run, which needs a real Claude Code session and cannot be closed from a dispatched one. **AC-25 has never been graded and this is the PR that makes it consequential** — it deletes the catch-all from all three tables and ships the rejection that replaces it. Reese owns the verdict; grading it from this lane would be the author grading his own code.
 
@@ -2882,3 +2889,83 @@ Spec axis:
 - **Spec and doc consistency** — `swept` — 7 items enumerated, 7 verdicts. ADR-0072 § Consequences command-axis paragraph and git-hook paragraph — both now describe what the code does; the three ADR mirrors — byte-identical to `.prism/`; `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc, `GitProbeCase` JSDoc, and `GIT_TREE_WRITER_CASES` JSDoc — each matches the table it documents; the plan's round-8 `## Review Issues` statuses — all five moved to `fixed`, matching the shipped code. No acceptance criterion is in range; AC-25 stays ungraded and out of this lane.
 - **Citation integrity** — `swept` — 6 items enumerated, 6 verdicts. The ADR's `git remote -v` and idle-`git fetch` claims — both reproduced; its "those two rows" count — matches the two rows carrying `confirmWork`; hook.mjs's "Six of them" — matches `GIT_TREE_WRITER_CASES`'s six entries; the six writer names in both prose homes — identical; `hook-gate.test.ts` as the file running the probe — correct.
 - **Docs impact** — `n/a` — no feature, component, or module with a matching docs file changed; the ADR is itself the doc surface and is in the diff, so it is covered under Spec and doc consistency rather than here.
+
+## Review Issues (PR 2D round 11 — briar, adversarial read of `d34755b8..8fcb2b03`, #470)
+
+Scope: the Windows separator fix — `normalizeShellSeparators` on both shell arms, `:` in `PATH_SHAPED_RUN` with its recovery clause, the probe's config isolation, four suite rows, and the ADR/architect-doc prose. Everything before `d34755b8` is out of range.
+
+Two Majors, both confirmed by running the parsers at `d34755b8` and at `8fcb2b03` and diffing the answers. Both are regressions this range introduces, and each runs in the direction its own arm calls fatal.
+
+### The `:` recovery strips a prefix only, so a routed path followed by `:` stops being a candidate
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:735`
+- **Problem:** `run.replace(/^[^/:]*:[-+]*/, "")` recovers a path only when the colon precedes every `/` in the run, so a routed path carrying a trailing `:<anything>`, or two routed paths in a colon-separated list, now yields nothing but the glued token and the gate never fires on it.
+- **Evidence:** `tee .prism/architect/_toolkit/install-layout.md:s` yields `[".prism/architect/_toolkit/install-layout.md", "s"]` at `d34755b8` and `[".prism/architect/_toolkit/install-layout.md:s"]` at `8fcb2b03`. Same regression on `tee .prism/rules/a.md:.prism/rules/b.md` (both routed paths lost) and `sed -i s/a/b/ .prism/rules/a.md:orig`. Run against both trees, not reasoned.
+- **Class:** a token-recovery clause written against the two spellings that broke the suite, rather than against the shape of the character that was admitted.
+- **Sweep:** `grep -rn 'PATH_SHAPED_RUN' scripts/` — one consumer, `scanPathShapedTokens`, whose recovery block has two arms. Arm 1 (`^[-+]+` strip) — clean, unaffected by the `:` admission. Arm 2 (the new `:` strip) — this finding. No third arm.
+- **Suggested fix:** replace the `unqualified` clause with a split on `:`, adding each piece with the leading-`[-+]` strip already applied. That is a strict superset of both current recoveries — `C:/repo/x.ts` still yields `/repo/x.ts`, `OUT:-src/x.ts` still yields `src/x.ts` — and it recovers the routed path from both broken shapes. It removes a special case rather than adding one.
+- **Test gap it rides:** the two shapes the `:` admission broke are pinned (the drive row, the pre-existing `${OUT:-…}` row); the shape it newly broke is not. A row asserting a routed path carrying a colon stays a candidate is what would have caught this.
+
+### The read arm credits a routed doc a POSIX shell never opened
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/hook.mjs:179`
+- **Problem:** normalizing before the class test makes `cat .prism\architect\_toolkit\install-layout.md` return `{ credit: true }` on the routed doc. On macOS, Linux, and Git Bash the shell reads `.prismarchitect_toolkitinstall-layout.md`, `cat` fails, and nothing is delivered — but `runPostToolUseArm` never inspects `tool_response`, so credit banks on the observed call and the write gate opens on every path routing to that doc.
+- **Evidence:** the same command returns `[]` at `d34755b8` and `[{"filePath":".prism/architect/_toolkit/install-layout.md","credit":true}]` at `8fcb2b03`.
+- **Why this is not the disclosed residual re-filed:** ADR-0072 prices the fourth gap as needing a spelling nobody writes **and** a doc at the rewritten path. For the gate's own docs the second clause is free — the rewritten path *is* the routed doc, picked by whoever writes the command, and the deny message hands the model that exact path to `cat`. One of the two stated preconditions is satisfied by construction rather than by coincidence, which is the cheaper-reachability bar this round was asked to apply.
+- **Class:** a normalization added to close an under-deny on one arm, applied unchanged to the arm where the same rewrite produces an over-credit.
+- **Sweep:** `grep -n 'normalizeShellSeparators' scripts/ai-skills/hooks/hook.mjs` — two call sites. `parseUnprovenShellPaths:877` (write arm) — correct, this is the bypass the PR closes. `parseShellReadTargets:179` (read arm) — this finding. No third.
+- **Suggested fix:** keep the rewrite on both arms, and drop credit for any read target whose raw operand carried a rewritten `\` — announce it, never credit it. A Windows user re-cats with the forward-slash spelling the deny message already prints; the cost is one re-read, which is the trade this file states everywhere else ("under-crediting costs one re-read while over-crediting silently defeats the write gate this channel feeds").
+
+### The new test JSDoc claims three CI legs; the workflow has two
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hook-gate.test.ts:2772`
+- **Problem:** the block says "on macOS and ubuntu they exercise the forward-slash spelling" and "These rows put the backslash reading on all three legs," but `.github/workflows/prism-check.yml`'s matrix is `[ubuntu-latest, windows-latest]` — there is no macOS leg. The same range's `install-layout.md:161` says "both CI legs," so the diff contradicts itself.
+- **Class:** a durable comment asserting a CI topology the workflow does not have.
+- **Sweep:** `grep -rn 'macos\|macOS\|three legs\|both legs\|CI leg'` over the range's files plus the workflow — one in-range wrong instance (this one), one pre-existing wrong instance out of range (`hook-gate.test.ts:590`, "Both other CI legs run it", same belief, not this diff's to fix), and two in-range correct (`install-layout.md` "both CI legs", ADR-0072 "only the Windows CI leg").
+- **Suggested fix:** say "both CI legs" and drop macOS, or say "every leg that runs the suite" if local macOS runs are meant. The substantive claim — the rows run on a majority leg rather than only Windows — holds either way.
+
+### A Decision sentence is refuted by its own residual bullet
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/opus5-port.md:324`
+- **Problem:** "`cat foo\ bar.md` … keeps returning zero targets — the same answer it gives today, so the POSIX case gains no over-credit." The escaped-space instance is safe and verified; the generalization to "the POSIX case" is refuted by the Residual-risk bullet six lines down, which states the POSIX no-op escape does credit. This clears the contradicts-the-diff bar rather than being bookkeeping: the code credits `foo/bar.md`, and this is the sentence a future hardener reads before deciding whether POSIX needs looking at.
+- **Class:** reassurance that widens an admission into a claim the same passage refutes — `.prism/rules/writing-voice.md` § Anti-pattern: Reassurance that introduces a new claim.
+- **Sweep:** read the sentence after each admission in the Decision. The other three admissions (`splitShellSegments` measured rather than reasoned; the hardened surface untouched; the seven red rows) each close on the admission or on something re-verified. One instance.
+- **Suggested fix:** scope the clause to what was measured — "so the escaped-space spelling gains no over-credit" — and let the Residual-risk bullet carry the rest.
+
+### Checked and cleared — not findings
+
+- **Escape preservation holds.** `cat docs/one\ two.md`, `cat foo\"bar.md`, `cat foo\$bar.md`, `tee \<newline>` and its CR twin all still yield zero targets or stay unproven. Clove's claim that the escaped-space case is "pinned by the existing allow-list row" is true — `hook-gate.test.ts`'s allow-list row carries `"cat docs/one\\ two.md"`, and widening the lookahead to admit a space would fail it. The discriminator's safety property is tested where it matters.
+- **The `typeof` guard is correct and load-bearing.** Clove disclosed it as behavior-identical, which is right about the outcome; it is also now required, since the normalizer runs before both already-guarded callees and `undefined.replace` would throw. No change needed.
+- **`splitShellSegments`'s unreachable-branch claim survives.** Every `\` that survives normalization is escape-shaped and still fails `SHELL_READ_SAFE_CHARACTERS`, so the heredoc branches, the `&`/`|` cut, and the double-quote backslash branch stay unreachable exactly as documented. The stated reason still holds, not just the conclusion.
+- **Drive-letter recovery works.** `tee C:\repo\src\index.ts` yields both `C:/repo/src/index.ts` and `/repo/src/index.ts`, so neither reading is lost.
+- **Mirror parity holds.** ADR-0072 is byte-identical across `.claude`, `.codex`, `.cursor`, `.prism`. `install-layout.md` differs between `.prism` and the three only on pre-existing token-substitution lines; the line this range changed is identical in all four, and no "Three gaps survive" phrasing survives anywhere.
+- **No stale separator prose elsewhere.** `templates/install/.prism/architect/_toolkit/install-layout.md` and `.prism/rules/context-reuse.md` state no separator behavior, so clove's decision to leave them alone is right.
+
+### Angle Coverage — PR 2D round 11, `d34755b8..8fcb2b03`
+
+Standards axis:
+
+- **Runtime behavior** — `swept` — 4 items enumerated, 4 verdicts. `normalizeShellSeparators` (new; rewrites `\`→`/` on a path-shaped lookahead) — correct for the separator reading, defective on the read arm's credit (Major 2); `parseShellReadTargets` (normalizes before the class test) — defective, Major 2; `parseUnprovenShellPaths` (normalizes before scan and proof, plus a `typeof` guard) — correct, and the guard is required rather than cosmetic; `scanPathShapedTokens` (`:` admitted to the run, one new recovery clause) — defective for a colon that follows a `/`, Major 1.
+- **Test efficacy** — `swept` — 5 items enumerated, 5 verdicts. Backslash read credit — pinned by the new `parseShellReadTargets` row; backslash write candidate — pinned by the new `parseUnprovenShellPaths` row; end-to-end backslash deny — pinned by the new `runPreToolUseArm` row on a relative path, which proves it on macOS rather than inferring it; drive-letter preservation — pinned by the new drive row; **colon-carrying routed path — unpinned**, which is the gap Major 1 rides. Escape preservation is pinned by the pre-existing allow-list row, verified rather than assumed.
+- **External-system claims** — `swept` — 4 items enumerated, 4 verdicts. `os.devNull` spelling `\\.\nul` on Windows and git failing to open it — taken from the plan's measured diagnosis, and the replacement (an ordinary empty file) asks git for no sentinel behavior, so the fix rests on nothing unverifiable; `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM` as the isolation pair — correct, and the `core.autocrlf` read-back is recorded as run; Node reporting `\` as `path.sep` on Windows regardless of shell — correct, and the design deliberately does not depend on it; the CI matrix — `[ubuntu-latest, windows-latest]`, read from the workflow, which is what refutes the three-legs comment (Minor 1).
+- **Repo writing rules** — `swept` — verdict-only. New JSDoc leads with purpose and carries its reason; the two new inline comments in `scanPathShapedTokens` give what and why; no tags, no ALL CAPS, no changelog voice; the four new test names state the contract rather than the change that added them.
+- **Security** — `swept` — 1 item enumerated, 1 verdict. The trust boundary in range is the deny gate's own credit-and-candidate channel, and both Majors sit on it: Major 1 under-denies a write, Major 2 over-credits a read. The proof machinery, both command lists, `GIT_TREE_SAFE_SUBCOMMANDS`, and the flag maps are untouched by this range.
+- **Accessibility** — `n/a` — no UI in the pinned range.
+
+Spec axis:
+
+- **Spec and doc consistency** — `swept` — 8 items enumerated, 8 verdicts. ADR-0072's new separator bullet and its fourth-gap bullet — both describe what the code does; `install-layout.md`'s § Write gate paragraph and its "Four gaps survive" sentence — both correct, and the gap count matches the ADR; the three `install-layout.md` mirrors and the three ADR mirrors — consistent with `.prism/` on every changed line; `parseShellReadTargets`'s corrected JSDoc — now matches the normalized-text reading; `SHELL_READ_SAFE_CHARACTERS`'s JSDoc — still accurate, since it describes the class and the class is unchanged; the plan's Decision — one over-generalized sentence, Minor 2. No acceptance criterion is in range.
+- **Citation integrity** — `swept` — 6 items enumerated, 6 verdicts. The lookahead `/\\(?=[\w.@~+-])/g` as quoted in the plan and the ADR — matches the code; `PATH_SHAPED_RUN` as quoted in the plan's implementation guidance — matches; "four gaps" against the ADR's actual bullet count — matches; the `${OUT:-src/nested/index.ts}` breakage claim — reproduced; "both CI legs" in `install-layout.md` — correct; "all three legs" in the test JSDoc — wrong, Minor 1.
+- **Docs impact** — `n/a` — the doc surfaces this change touches (ADR-0072, `install-layout.md`, the mirrors) are in the diff and are graded under Spec and doc consistency; no other feature, component, or module with a matching docs file changed.
