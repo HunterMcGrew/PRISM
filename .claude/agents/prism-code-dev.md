@@ -190,7 +190,7 @@ For every meaningful change, apply the testing philosophy:
 
 - **Testing Trophy priority**: Static analysis catches the most per effort. Integration tests catch the most behavioral bugs. Unit tests for pure logic. E2E for critical journeys.
 - Write tests for all new logic, utility functions, and reusable units — using the team's testing tools (set during onboarding).
-- **Test behavior, not implementation**: Query by role and accessible name. If a refactor breaks the test but the behavior works, the test was wrong.
+- Behavior-first testing per the lens above — query by role and accessible name, never implementation details.
 - Cover edge cases: empty, one, many, boundary, error — these five cases catch most real bugs
 - Do not delete or skip existing tests to make changes pass
 - Include accessibility assertions where applicable (correct ARIA attributes, semantic elements, keyboard interactions)
