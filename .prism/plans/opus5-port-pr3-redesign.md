@@ -81,6 +81,35 @@ runs.
     are stated in the fragment rather than left to the reviewer. The § Deferred row in
     `opus5-port.md` was left untouched; PR #470 is open and carries that file.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, Briar dispatched by Sol under run
+  `architect-gate-port`, lane 3a]
+  - **Intent** — self-review PR #471 against the § PR 3A spec, weighted toward deletion
+    completeness across the whole tree and toward whether the written `review-angles.md` would
+    reproduce the coverage table I have been emitting from a briefing.
+  - **Ambiguity** — none load-bearing; assuming task N1's *"Register in
+    `seed-curation.json` as non-curated"* means an entry in the `mirrored` bucket rather than
+    an absent entry, since `mirrored`'s own contract is "ships, byte-identical" and
+    `opus5-port.md` C7 forbids the unclassified state.
+  - **Bounds** — done = findings in chat plus `## Review Issues` with the nine-angle coverage
+    block, and a plan-only commit. Untouchable = every file under review (Clove fixes),
+    `.claude/worktrees/agent-a507b79a93c90415f`, the `opus5-port-deny-gate` branch, and
+    `.prism/plans/opus5-port.md` § Deferred, which Sol lands.
+  - **Close** — scope held. One process slip owned rather than buried: I ran the opening
+    battery after the setup batch instead of before it, so the bullets above were written from
+    the finished sweep rather than ahead of it; the Bounds did not move, but the ordering
+    guarantee did not hold this run. Silent decisions named: I treated `.prism/plans/`
+    (`iris-cadence-starvation.md:324`, `epic-prism-thrive-backport-wave-2.md:136`) as
+    historical record rather than surviving mandates — both are `> Closed:`, and the new
+    § Plan-file scope is itself the rule saying a closed plan's stale AC is not a finding; and
+    I did not flag `../../../` link depth in `.claude/agents/` and `.codex/agents/` because
+    that shape pre-dates this diff at 16 other sites in the same file. Edge recall: a clean
+    pass and a bounded angle both still emit all nine statuses, and `n/a` on the two triggered
+    angles here (Security, Accessibility) is a legal status with its reason named, not a
+    skipped check. Verification honesty: `pnpm prism:build` and `pnpm prism:check` re-run by me
+    at exit 0 with a clean tree afterwards, and task N2's negative grep probe re-run with its
+    positive control; the four Major findings are read from file content, not inferred — each
+    carries the literal search that produced it.
+
 ---
 
 ## Decisions
@@ -774,6 +803,232 @@ plan's highest assigned ID; `AC-P3-n` here is a placeholder Sol renumbers.
 
 ---
 
+## Review Issues
+
+Briar self-review of PR #471, 2026-08-21, pinned range
+`176f35c5..343588ab` on `huntermcgrew/opus5-port-3a-reviewer-scope`.
+
+### `Meta` severity is cited by both reviewer bodies and exists nowhere
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-code-review-self/shared.md:78`,
+  `.ai-skills/skills/prism-code-review-pr/shared.md:82` (+5 generated mirrors each)
+- **Problem:** § Plan-file scope closes with *"The `Meta` severity the review loop applies caps
+  what such a finding costs once filed"*, but this plan's own Decision *Task 28a ships its
+  substance without the `Meta` severity token* rules the token out and instructs future changes
+  to repeal the no-new-vocabulary paragraph before adding one — so both bodies now cite a
+  mechanism the same PR decided not to build.
+- **Class:** prose retained a citation to a mechanism a late deviation removed — the deviation
+  was applied in the target file and not in the files that cite it.
+- **Sweep:** `grep -rn "Meta" . --exclude-dir=.git --exclude-dir=node_modules` over the whole
+  tree — the only hits are these two sentences and their ten mirrors. `grep -n -i "Meta"
+  .ai-skills/skills/prism-review-loop/shared.md` — none found.
+- **Suggested fix:** replace the sentence with the mechanism that does exist, after resolving
+  the next finding: the review loop's surface-provenance split, not a severity token.
+
+### The review-loop composition paragraph contradicts the Ledger bullet above it
+
+- **Axis:** `standards`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:55-59` (+5 mirrors)
+- **Problem:** two errors from one cause. The paragraph says *"The Ledger row **below**"* while
+  the Ledger bullet sits ~30 lines above it; and it says the Ledger *"caps what the survivors
+  can cost"*, when the survivors of § Plan-file scope are by that rule's own three clauses
+  contradictions in `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` —
+  which the Ledger bullet explicitly classifies as **Subject** content, not Ledger. The Ledger
+  caps the observations § Plan-file scope filters *out* (history-entry length in `## History`),
+  not the ones it keeps, so *"upstream filter, downstream cap"* describes a composition that
+  does not hold.
+- **Class:** a composition claim re-pointed at a second mechanism without re-checking that
+  mechanism's stated scope or position.
+- **Sweep:** read `.ai-skills/skills/prism-review-loop/shared.md:18-70` in full and diffed the
+  Ledger bullet's section list against § Plan-file scope's three survivor clauses; also
+  `grep -n "Ledger" .ai-skills/skills/prism-review-loop/shared.md` — three hits, all above the
+  paragraph.
+- **Suggested fix:** state the composition that is true — § Plan-file scope drops most plan
+  observations; the survivors are Subject content and are reviewed at the Subject bar like any
+  other finding; the Ledger bullet independently keeps bookkeeping out at every bar. Fix
+  `below` to `above` in the same edit.
+
+### Briar's new § Plan-file scope tells her to fix code, contradicting her bounds
+
+- **Axis:** `standards`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.ai-skills/skills/prism-code-review-self/shared.md:74` (+5 mirrors)
+- **Problem:** *"Fix it inline if you own the branch"* is Eric's sentence copied into Briar's
+  body unadapted. `:110` of the same file reads *"Briar reviews and flags issues — Clove fixes
+  them"*, and `skill-routing.md` § Authors ship, reviewers review binds her the same way.
+- **Class:** a paragraph written once for two personas and installed in both without adapting
+  the half that turns on the persona's write bounds.
+- **Sweep:** `grep -n "Fix it inline if you own the branch" .ai-skills/skills/` — two hits,
+  Briar's and Eric's. Checked Eric's copy too: he reviews from a worktree on another author's
+  branch, so the clause is thin there as well, but it contradicts nothing in his body.
+- **Suggested fix:** in Briar's copy, *"Note it in one line and move on — plan hygiene is not
+  hers to fix any more than code is."* Leave Eric's as-is or narrow it the same way.
+
+### `review-angles.md` was never registered in `seed-curation.json`
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.ai-skills/definitions/seed-curation.json`
+- **Problem:** task N1 ends *"Register in `.ai-skills/definitions/seed-curation.json` as
+  non-curated — it should mirror verbatim"*, and the file carries no entry in any bucket.
+  `opus5-port.md:198-201` records constraint C7 for this port — every new file carries a
+  classification entry, and *"a file in none of them auto-mirrors and counts as unclassified,
+  which is the state C7 exists to forbid"* — and `opus5-port.md:1378` already logs this exact
+  defect once against the five guides. The `mirrored` bucket added by #466 (`4cae9ba4`, two
+  commits before this branch's base) exists for precisely this shape and currently holds those
+  same five guides.
+- **Class:** a required declaration skipped because the undeclared default happens to produce
+  the same bytes — the reasoning the constraint was written to reject after it failed once.
+- **Sweep:** `python3` load of `seed-curation.json` printing all five buckets — `references/`
+  entries appear only under `curated` (5 files), and `mirrored` holds the five guides;
+  `grep -rn "review-angles" .ai-skills/definitions/` — none found. Read `build.ts:690-712` and
+  `:845-860` to confirm the unclassified fall-through writes and byte-compares identically, so
+  this is a declaration defect and not a live drift defect.
+- **Suggested fix:** add `"references/review-angles.md"` to `mirrored`, rebuild, confirm the
+  seed twin hash is unchanged.
+
+### `review-angles.md` defines a chat-side line no PRISM persona is told to emit
+
+- **Axis:** `spec`
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/references/review-angles.md` § Enumeration, *Where it goes* (+4 mirrors)
+- **Problem:** the section specifies a chat-side shape — *"The chat-side line carries the angle,
+  its status token verbatim, and the counts"*, with three worked examples — and nothing routes
+  it. Briar's `## Review format` is a closed enumerated chat contract that opens *"Do not
+  duplicate plan content into chat"* and gained no Angle Coverage slot, because task N2 asked
+  only for the plan block. Eric's chat is not his surface; his block goes to the summary
+  comment via the template. So about a third of § Enumeration has no consumer in this tree.
+  This is the port's one unnamed adaptation: the portable roster's `briar/SKILL.md`
+  § Review format carries an explicit `**Angle Coverage:**` line, and PRISM kept the paragraph
+  describing that line's shape while dropping the instruction that causes it.
+- **Class:** a ported spec section whose consumer-side instruction lived in a file the port did
+  not touch, leaving the contract described but unreachable.
+- **Sweep:** `grep -n "Angle Coverage" .ai-skills/skills/prism-code-review-self/shared.md` —
+  one hit, the plan write at `:334`, none in § Review format; same grep against
+  `prism-code-review-pr/shared.md` and `.prism/references/code-review-pr/summary-template.md` —
+  Eric's path is complete. Compared against `~/.claude/skills/briar/SKILL.md` § Review format,
+  which carries the missing line.
+- **Suggested fix:** add `**Angle Coverage:** all nine angles, status token verbatim, counts
+  only — enumerations stay in the plan` to Briar's `## Review format`, between **Issues:** and
+  **Accessibility:**. Deleting the chat-side paragraph instead is the weaker fix — the counts
+  line in chat is what makes a bounded angle visible mid-loop.
+
+### `review-angles.md` names the review loop as a coverage-gating consumer that does not gate
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/references/review-angles.md` § Status vocabulary and § Enumeration
+  (*Status interaction*) (+4 mirrors)
+- **Problem:** both sections assert a consumer gating on coverage, the second naming it — *"(the
+  review loop's convergence check)"*. `prism-review-loop/shared.md` contains no occurrence of
+  "angle" or "coverage"; its exit condition is **subject-clean**, two consecutive passes with
+  zero subject-surface findings. The parenthetical asserts an integration that does not exist.
+- **Class:** a cross-file integration claim ported verbatim without checking the named consumer
+  in this tree.
+- **Sweep:** `grep -n -i "angle\|coverage\|convergence" .ai-skills/skills/prism-review-loop/shared.md`
+  — no angle or coverage hits; `grep -n -i "exit\|clean pass" ` on the same file returns
+  subject-clean and thread-clean only.
+- **Suggested fix:** drop the parenthetical and leave the sentence conditional, or wire the loop
+  and keep it. Do not leave it naming a consumer that is not one.
+
+### Angle Coverage
+
+Briar sweeps all nine in one pass; no line carries an axis attribution.
+
+- **Runtime behavior** — `swept` — 3 items enumerated, 3 verdicts
+  - Generated mirrors of `review-angles.md` across `.claude/`, `.codex/`, `.cursor/`,
+    `templates/install/` — byte-identical to canonical (`shasum`, all five `346de365074c`) — clean.
+  - AGENTS.md inlined `branch-plan.md` block — regenerated and matches canonical — clean.
+  - `pnpm prism:build && pnpm prism:check` — exit 0 both, `git status -s` empty afterwards — clean.
+- **Test efficacy** — `swept` — 3 items enumerated, 3 verdicts
+  - Mirror parity — covered by `checkSeedDrift`'s byte compare inside `pnpm prism:check`; fails
+    on drift — adequate.
+  - Link resolution for the new `../review-angles.md` and
+    `../../../.prism/references/review-angles.md` citations — covered by `prism:crossref-lint` —
+    adequate.
+  - The four deleted plan-hygiene instructions staying deleted — no regression guard; task N2's
+    grep probe is manual and runs once. Gap named, not filed: PRISM has no prose-assertion
+    harness, and building one for a single absence check is out of proportion.
+- **Spec and doc consistency** — `swept` — 7 items enumerated, 7 verdicts
+  - N1 § Axis-split and § Finding-anatomy adaptations — both present as specified — met.
+  - N1 register-in-`seed-curation.json` step — unmet — finding 4.
+  - N2 four edits — all four present; negative probe
+    `! grep -q "missing a verdict sub-bullet as Minor"` passes, positive control
+    `grep -c "Decision verdict gate" .prism/rules/branch-plan.md` returns 1 — met.
+  - N2 § Before Closing clause — the section carries no reviewer or Minor mention, so there was
+    nothing to delete; folding the note into § Decision verdict gate is correct — met.
+  - 28a substance — exempt-surface additions, third incident, composition line all present;
+    token deviation documented as a Decision — met, with finding 2 against the composition line.
+  - AC-P3-3 (no finding filed for a missing verdict sub-bullet) — satisfied by the new
+    § Plan-file scope — met.
+  - `review-angles.md` chat-side surface — described, unreachable — finding 5.
+- **Citation integrity** — `swept` — 5 items enumerated, 5 verdicts
+  - `Meta` severity, cited in both reviewer bodies — does not exist — finding 1.
+  - *"The Ledger row below"* — wrong direction and wrong scope — finding 2.
+  - *"(the review loop's convergence check)"* — names a non-gating consumer — finding 6.
+  - `[review-angles.md](../review-angles.md)` from `summary-template.md` — resolves in all five
+    buckets — clean.
+  - `[review-angles.md](../../../.prism/references/review-angles.md)` from both skill bodies —
+    resolves from `.ai-skills/skills/<skill>/`, `.claude/skills/<skill>/`,
+    `.cursor/skills/<skill>/`; `crossref-lint` green — clean.
+- **External-system claims** — `swept` — 4 items enumerated, 4 verdicts
+  - `build.ts` unclassified fall-through writes verbatim and byte-compares — verified at source,
+    `:690-712` and `:845-860` — confirmed.
+  - `mirrored` bucket semantics ("ships, byte-identical, rename-aware") — verified at
+    `build.ts:76-89` and `:791-800` plus the bucket's five current entries — confirmed.
+  - `unclassifiedMirrored` warns only when `seedFileIsNew` — verified at `build.ts:859` — confirmed,
+    which is why a re-run is silent and cannot serve as the check.
+  - `Meta` as a token the review loop applies — verified absent — refuted, finding 1.
+- **Repo writing rules** — `swept` — `verdict-only`
+- **Security** — `n/a — no auth, input handling, secrets, permissions, or trust boundary in the
+  pinned range; the diff is markdown and one JSON-adjacent omission`
+- **Docs impact** — `swept` — 2 items enumerated, 2 verdicts
+  - `docs/personas.md` — Briar and Eric entries describe their surfaces generically ("reports
+    findings in chat and in the branch plan's `## Review Issues`"), still accurate — clean.
+  - `docs/adopting-into-existing-repos.md` — mentions code-review skills only by name, carries no
+    reviewer plan-hygiene content — clean.
+- **Accessibility** — `n/a — no UI in the pinned range`
+
+---
+
+## Cleanup Items
+
+- `.ai-skills/skills/prism-code-review-self/shared.md:72-80` and
+  `prism-code-review-pr/shared.md:76-84` — § Plan-file scope is byte-identical in both reviewer
+  bodies. `.prism/references/review-frameworks.md` is already the shared catalog both reviewers
+  consume and already owns § Severity Classification, which is where this plan's own Decision
+  says the rule promotes at close. The same PR introduces `review-angles.md` on exactly that
+  shared-reference pattern two sections away. Non-blocking, and the author could reasonably keep
+  it inline for read-locality.
+
+---
+
+## PR Readiness
+
+- [ ] No critical or major issues — **4 Major open**
+- [x] Types correct — no `any`, no unsafe `as` — n/a, no TypeScript in the diff
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — no new logic; existing seed-drift and
+      crossref-lint coverage carries the diff
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-08-21, `pnpm prism:build && pnpm prism:check` exit 0
+- [ ] PR description up to date — not re-verified this pass
+- [ ] Lasting decisions promoted to architect context — three Decisions carry
+      `→ promotion verdict pending — resolves at PR 3A close`
+
+**Last updated:** 2026-08-21
+
+---
+
 ## History
 
 - 2026-08-20 [pr3-replan]: Wrote this proposal replacing `opus5-port.md` tasks 20–29. Cut PR 3
@@ -787,3 +1042,8 @@ plan's highest assigned ID; `AC-P3-n` here is a placeholder Sol renumbers.
   Added `.prism/references/review-angles.md`, wired the coverage block into Briar and Eric, and
   replaced the four plan-hygiene instructions plus the `branch-plan.md` clause mandating them
   with the plan-scope rule. 28a shipped without its `Meta` token; see Decision: Task 28a.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Briar self-reviewed PR #471 — 4 Major,
+  2 Minor, all recorded in `## Review Issues` with the nine-angle coverage block. The four Major
+  are the dropped `Meta` token still cited by both reviewer bodies, the review-loop composition
+  paragraph contradicting its own Ledger bullet, the missing `seed-curation.json` registration
+  task N1 asked for, and a chat-side coverage line `review-angles.md` defines with no consumer.
