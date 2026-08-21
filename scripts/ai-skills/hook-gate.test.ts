@@ -1182,7 +1182,7 @@ test("runPostToolUseArm: a Grep naming a routed doc credits nothing", async () =
 	});
 });
 
-// --- The write gate: PreToolUse deny, remedy, and reroute ---
+// --- The write gate: PreToolUse deny and remedy ---
 
 const GATE_DOC = "_toolkit/spec-editing.md";
 
@@ -1419,9 +1419,9 @@ test("runPreToolUseArm: a two-doc deny is cleared by its own remedy pasted as on
 	});
 });
 
-test("runPreToolUseArm: a shell write named on a later line of a multi-line command is not rerouted", async () => {
+test("runPreToolUseArm: a shell write named on a later line of a multi-line command does not gate the later line", async () => {
 	// The write detector once read a whole multi-line command as one command,
-	// so a leading `sed -i` claimed every later line's tokens and the reroute
+	// so a leading `sed -i` claimed every later line's tokens and the deny
 	// named a path the command only reads.
 	await withTempRepo(async (repoRoot) => {
 		const { target, docPath } = await seedGateRepo(repoRoot);
@@ -1717,12 +1717,12 @@ test("runPreToolUseArm: a harness with no observed deny envelope writes nothing"
 					tool_input: { command: `echo hi > ${target}` },
 				})
 			),
-			"the same write is a real reroute on a harness whose envelope is known"
+			"the same write is a real deny on a harness whose envelope is known"
 		);
 	});
 });
 
-// --- The shell arm: reroute unless the command is provably a read ---
+// --- The shell arm: gate unless the command is provably a read ---
 
 /**
  * The routed path every shell case below names. Long enough that a splice
@@ -2625,7 +2625,7 @@ test("runPreToolUseArm: a shell command that names a routed path it cannot prove
 });
 
 test("runPreToolUseArm: the same shapes pass untouched when no route matches the path", async () => {
-	// Route existence is the opt-in. Without this, a reroute that fired on
+	// Route existence is the opt-in. Without this, a deny that fired on
 	// every shell command naming any path would pass the case above.
 	await withTempRepo(async (repoRoot) => {
 		await seedGateRepo(repoRoot);

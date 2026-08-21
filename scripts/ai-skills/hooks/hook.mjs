@@ -446,7 +446,7 @@ const GREP_INERT_FLAGS =
  * An unlisted flag now costs the whole segment its proof.
  *
  * The two directions are what makes this safe. A command or flag missing
- * from here costs one reroute message on a command that only read —
+ * from here costs one doc read on a command that only read —
  * recoverable, and only when the command also names a routed path. A command
  * or flag wrongly present costs a silently missed write. So membership asks
  * two questions: is this command read-only on plain operands, and is every
@@ -797,7 +797,7 @@ function checkFlagsAreInert(args, inertFlags) {
  * candidate, whatever position it sits in. Second, a candidate is dropped
  * only when the command is *provably* a set of segments that write no
  * working-tree file, and the candidate is one of their operands. Anything the
- * proof does not cover stays, and the caller reroutes it if a manifest route
+ * proof does not cover stays, and the caller gates it if a manifest route
  * matches.
  *
  * The proof reuses the read arm's own `SHELL_READ_SAFE_CHARACTERS` class and

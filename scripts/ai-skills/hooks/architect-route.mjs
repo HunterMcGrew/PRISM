@@ -454,9 +454,9 @@ export async function resolveUnreadDocs(repoRoot, filePath, scopeId) {
 
 /**
  * Narrows `filePaths` to the ones a manifest route matches, preserving input
- * order — the question the shell reroute asks, which deliberately judges no
- * prerequisites (see `hook.mjs`'s § The shell arm). A path no route matches
- * is never denied on any verb.
+ * order — the narrowing the shell arm runs before it asks the shared deny
+ * question (see `resolveShellCandidatePaths` in `hook.mjs`). A path no route
+ * matches is never denied on any verb.
  *
  * Batched rather than one-path-at-a-time because the shell arm asks about
  * every path-shaped token in a command, and a per-path entry point would
