@@ -47,7 +47,12 @@ async function loadRoles(): Promise<RoleEntry[]> {
 }
 
 function extractBacktickedSkillIds(text: string): string[] {
-	const matches = text.match(/`(prism-[a-z0-9-]+)`/g) ?? [];
+	// Skill ids are not all prism-prefixed — utility references like `tdd` and
+	// `devils-advocate` ship under bare ids (roles.json is the authority), so
+	// the extractor matches any backticked id-shaped token. The parity
+	// assertions below only ever compare against ids from roles.json, so
+	// over-extraction of other backticked words is harmless.
+	const matches = text.match(/`([a-z0-9][a-z0-9-]*)`/g) ?? [];
 	return matches.map((match) => match.slice(1, -1));
 }
 

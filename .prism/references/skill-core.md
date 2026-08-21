@@ -30,7 +30,7 @@ load every matching architect doc — partial loads miss constraints, and
 architect-context routing is diff-blind to a doc you are about to edit (see
 [`context-reuse.md`](../rules/context-reuse.md) § Architect-context routing is
 diff-blind). Authoring paths are write-gated: on hosts with the hook runtime,
-edits to routed paths are denied until their routed docs are read (ADR-0072).
+edits to routed paths are denied until their routed docs are read.
 
 ## Reporting back
 
