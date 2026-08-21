@@ -76,6 +76,23 @@ async function seedManifestAndDoc(
 	await fs.writeFile(docPath, docBody, "utf8");
 }
 
+/**
+ * A path spelled the way a shell command spells one: `/` separators on every
+ * platform.
+ *
+ * `path.join` yields `\` on Windows, and `parseShellReadTargets` withholds
+ * credit from any command its separator rewrite changed. A fixture that
+ * interpolates a `path.join` path into a command therefore asserts one
+ * behavior on a POSIX host and the opposite on Windows, and the row that
+ * looks platform-independent is the one that is not. Forward slashes are also
+ * the spelling the gate itself prescribes — `formatDenyMessage` renders its
+ * `cat` remedy `/`-joined everywhere — so pinning the separator makes the
+ * fixture match the command a reader of the deny message would actually run.
+ */
+function toShellPath(filePath: string): string {
+	return filePath.split(path.sep).join("/");
+}
+
 // --- Adapter-level payload handling ---
 
 test("runPostToolUseArm: PRISM_HOOK_DISABLE=1 returns null even with a matching doc", async () => {
@@ -1003,7 +1020,7 @@ test("runPostToolUseArm: every shell read form announces the routed doc", async 
 				session_id: "session-1",
 				cwd: repoRoot,
 				tool_name: "Bash",
-				tool_input: { command: `${form} ${target}` },
+				tool_input: { command: `${form} ${toShellPath(target)}` },
 			});
 
 			const result = await runPostToolUseArm("claude", HARNESSES.claude, stdin);
@@ -1059,7 +1076,7 @@ test("runPostToolUseArm: cat credits the doc it read", async () => {
 			session_id: "session-1",
 			cwd: repoRoot,
 			tool_name: "Bash",
-			tool_input: { command: `cat ${docPath}` },
+			tool_input: { command: `cat ${toShellPath(docPath)}` },
 		});
 
 		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
@@ -1078,7 +1095,7 @@ test("runPostToolUseArm: a cat inside a heredoc body credits nothing", async () 
 			cwd: repoRoot,
 			tool_name: "Bash",
 			tool_input: {
-				command: `tee /tmp/pr-body.md <<'EOF'\ncat ${docPath}\nEOF`,
+				command: `tee /tmp/pr-body.md <<'EOF'\ncat ${toShellPath(docPath)}\nEOF`,
 			},
 		});
 
@@ -1090,7 +1107,7 @@ test("runPostToolUseArm: a cat inside a heredoc body credits nothing", async () 
 test("runPostToolUseArm: a relative cat resolves against the payload cwd, not the repo root", async () => {
 	await withTempRepo(async (repoRoot) => {
 		await seedCreditRepo(repoRoot);
-		const relativeDoc = path.join(".prism", "architect", CREDIT_DOC);
+		const relativeDoc = `.prism/architect/${CREDIT_DOC}`;
 
 		const fromRoot = JSON.stringify({
 			session_id: "session-root",
@@ -1156,7 +1173,7 @@ test("runPostToolUseArm: head over the doc credits nothing", async () => {
 			session_id: "session-1",
 			cwd: repoRoot,
 			tool_name: "Bash",
-			tool_input: { command: `head -20 ${docPath}` },
+			tool_input: { command: `head -20 ${toShellPath(docPath)}` },
 		});
 
 		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
@@ -1343,10 +1360,13 @@ test("runPreToolUseArm: a full Read of the named doc clears the deny end to end"
 
 test("runPreToolUseArm: a cat of the named doc clears the deny end to end", async () => {
 	// This repo's own output style reads files with `cat`, so a gate only the
-	// `Read` path can clear is a gate its own agents cannot satisfy.
-	await assertRemedyClearsTheGate((docPath) => ({
+	// `Read` path can clear is a gate its own agents cannot satisfy. The
+	// command is the exact line leg 1 asserts the deny prints, so what clears
+	// the gate here is the remedy the message hands the model rather than a
+	// differently-spelled command that happens to reach the same file.
+	await assertRemedyClearsTheGate(() => ({
 		tool_name: "Bash",
-		tool_input: { command: `cat ${docPath}` },
+		tool_input: { command: `cat .prism/architect/${GATE_DOC}` },
 	}));
 });
 
@@ -2767,13 +2787,17 @@ test("runPreToolUseArm: a shell deny resolves its path against the command's own
 // --- Windows path separators ---
 
 /**
- * Every row here spells its separator as a literal `\`, which means the same
- * thing on every platform. The end-to-end rows above reach the same code by
- * building their paths with `path.join`, so a POSIX host exercises the
- * forward-slash spelling and only the Windows leg sees a backslash. These rows
- * put the backslash reading on every leg that runs the suite, so the next
- * regression is caught where most runs happen rather than on the one leg
- * nobody watches.
+ * Every row here spells its separator as a literal `\`, and every fixture
+ * elsewhere in this file spells one as `/` (see `toShellPath`). Both halves
+ * of that split serve the same rule: a fixture path is pinned to one
+ * separator, never derived from `path.sep`.
+ *
+ * A `path.join` path inside a shell command means a different thing on each
+ * host, so the row asserts one behavior on a POSIX leg and its opposite on
+ * Windows — and the leg most people run is the one that cannot see the
+ * disagreement. Pinning the separator is what lets a macOS run prove the
+ * Windows result, which is the same property `normalizeShellSeparators` was
+ * written to provide.
  */
 test("parseShellReadTargets: a backslash-spelled path announces its doc without crediting it", () => {
 	assert.deepEqual(
@@ -2816,6 +2840,47 @@ test("parseShellReadTargets: a rewrite outside the credited operand still costs 
 			`${JSON.stringify(command)} rewrites a token outside the credited operand`
 		);
 	}
+});
+
+test("parseShellReadTargets: a drive-qualified forward-slash path credits", () => {
+	// The spelling every end-to-end fixture here uses, in the shape Windows
+	// gives it. Nothing on a POSIX host produces a `C:` prefix, so without
+	// this row a drive letter costing a command its credit would surface only
+	// on the Windows leg.
+	assert.deepEqual(
+		parseShellReadTargets(
+			"cat C:/repo/.prism/architect/_toolkit/install-layout.md"
+		),
+		[
+			{
+				filePath: "C:/repo/.prism/architect/_toolkit/install-layout.md",
+				credit: true,
+			},
+		]
+	);
+});
+
+test("runPostToolUseArm: a backslash-spelled cat leaves the read array empty", async () => {
+	// The parser rows above prove the rewrite yields `credit: false`; this
+	// proves the arm honors that verdict rather than banking the doc anyway,
+	// which is the only form of the claim the write gate reads. Its positive
+	// control is the forward-slash `cat` row that credits `CREDIT_DOC` — a
+	// change that kills every credit fails there rather than passing here.
+	await withTempRepo(async (repoRoot) => {
+		await seedCreditRepo(repoRoot);
+		const backslashSpelled = `.prism/architect/${CREDIT_DOC}`
+			.split("/")
+			.join("\\");
+		const stdin = JSON.stringify({
+			session_id: "session-1",
+			cwd: repoRoot,
+			tool_name: "Bash",
+			tool_input: { command: `cat ${backslashSpelled}` },
+		});
+
+		await runPostToolUseArm("claude", HARNESSES.claude, stdin);
+		assert.deepEqual(await readCreditedDocs(repoRoot, "session-1"), []);
+	});
 });
 
 test("parseUnprovenShellPaths: a backslash-spelled write target stays one path rather than gluing into a word", () => {
