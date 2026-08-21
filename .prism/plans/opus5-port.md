@@ -2651,3 +2651,20 @@ Scope: clove's two commits closing round 8. Everything before `529c4db4` is out 
 ### Judged, not filed
 
 - **A future row added without `confirmWork` gets no mechanical nudge toward one.** The type defaults to `true`, so a new tree-safe subcommand with an exit-0-idle spelling would pass the way `remote` and `fetch` did. Not a finding: the JSDoc now states the criterion in the place an author adding a row reads, and the alternative — a required field — is wrong for the nine rows that write nothing. This is the same residual shape as the flag axis, which ADR-0072 § Consequences already admits and prices.
+
+### Angle Coverage
+
+Standards axis:
+
+- **Runtime behavior** — `swept` — 5 items enumerated, 5 verdicts. `probeGitSubcommand` (now returns `workConfirmed`, evaluated after the tree snapshot) — correct; `GIT_PROBE_CASES.remote` (argv moves from a listing to a write) — correct; `GIT_PROBE_CASES.fetch` (gains `prepare`, which writes only into the bare remote and a throwaway seed repo, never into `dir`) — correct; `seedRemoteBranch` (asserts each of its four setup commands, so a silent setup failure surfaces as a setup message rather than as a probe verdict) — correct; the tree-safe arm's classification branch (`unproven` on unconfirmed work, then the `changed ? wrote : proven` split, so a writer never counts as proof of a clean pass) — correct.
+- **Test efficacy** — `swept` — 4 items enumerated, 4 verdicts. `remote` reaching its write — fails under both `remote -v` and `remote get-url`; `fetch` reaching its write — fails under both a deleted `prepare` and `fetch --dry-run` with `prepare` intact; an emptied positive set — fails `proven.length > 0`; an emptied writer table — fails `caught.length > 0`.
+- **External-system claims** — `swept` — 5 items enumerated, 5 verdicts. `git remote set-url`, `git remote get-url`, `git rev-parse --verify -q <ref>`, `git fetch`'s default `+refs/heads/*:refs/remotes/origin/*` refspec written by `git remote add`, and `git push <url> HEAD:refs/heads/<name>` — each verified by running it in the probe rather than from memory, and the refspec claim specifically by the `--dry-run` mutation, which shows the tracking ref appearing only when the fetch itself runs.
+- **Repo writing rules** — `swept` — verdict-only. Every new JSDoc block leads with purpose and carries its reason; no tags, no ALL CAPS, no changelog voice. The two new assertion messages name the contract under test rather than the change that added them.
+- **Security** — `swept` — 1 item enumerated, 1 verdict. The one trust boundary in range is `GIT_TREE_SAFE_SUBCOMMANDS`'s hook exposure, whose membership the diff leaves untouched and whose bound the ADR now states: neither `--no-verify` nor `-n` is on `GIT_TREE_SAFE_FLAGS`, and `-n` reaches only `GIT_INERT_FLAGS`, so no admitted spelling skips the hooks.
+- **Accessibility** — `n/a` — no UI in the pinned range.
+
+Spec axis:
+
+- **Spec and doc consistency** — `swept` — 7 items enumerated, 7 verdicts. ADR-0072 § Consequences command-axis paragraph and git-hook paragraph — both now describe what the code does; the three ADR mirrors — byte-identical to `.prism/`; `GIT_TREE_SAFE_SUBCOMMANDS` JSDoc, `GitProbeCase` JSDoc, and `GIT_TREE_WRITER_CASES` JSDoc — each matches the table it documents; the plan's round-8 `## Review Issues` statuses — all five moved to `fixed`, matching the shipped code. No acceptance criterion is in range; AC-25 stays ungraded and out of this lane.
+- **Citation integrity** — `swept` — 6 items enumerated, 6 verdicts. The ADR's `git remote -v` and idle-`git fetch` claims — both reproduced; its "those two rows" count — matches the two rows carrying `confirmWork`; hook.mjs's "Six of them" — matches `GIT_TREE_WRITER_CASES`'s six entries; the six writer names in both prose homes — identical; `hook-gate.test.ts` as the file running the probe — correct.
+- **Docs impact** — `n/a` — no feature, component, or module with a matching docs file changed; the ADR is itself the doc surface and is in the diff, so it is covered under Spec and doc consistency rather than here.
