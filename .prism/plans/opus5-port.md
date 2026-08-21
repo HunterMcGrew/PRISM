@@ -321,7 +321,7 @@ The original PR 2 (tasks 10–19) is retired wholesale and replaced by A1–E5. 
   - **Alternatives considered:** admit `\` to `SHELL_READ_SAFE_CHARACTERS`; normalize separators on a branch keyed on `path.sep`.
   - **Admitting `\` to the class loses because it does not fix the read arm.** `splitShellSegments` already carries an unquoted-backslash branch that consumes the following character as an escape, so a command the widened class now admits still tokenizes `cat C:\repo\x.md` to `C:repox.md` — no credit, over-deny unchanged. Measured, not reasoned: with the class widened, `parseShellReadTargets` still returns `[]`. It also spends the single guard keeping the heredoc introducer, the `&`/`|` cut, and both backslash branches unreachable — the protection clove kept deliberately and Eric filed as unreachable-by-construction. Paying that price for no behavior change is the worst of the three.
   - **Keying on `path.sep` loses because Node reports `\` on Windows whatever shell is in front of it.** A Git Bash session, where `\` really is an escape, takes the Windows branch and mis-parses. Worse, it creates a branch the macOS and ubuntu legs can never execute — the exact condition that let this defect survive ten review rounds.
-  - **Chosen approach:** rewrite `\` to `/` only where the next character is path-shaped — `/\\(?=[\w.@~+-])/g` — applied at the top of `parseShellReadTargets` and `parseUnprovenShellPaths` before anything else runs. A separator backslash is always followed by a path character; a POSIX escape is followed by a space, a quote, a `$`, or a line break. `cat foo\ bar.md` is left alone, keeps its `\`, keeps failing the class, and keeps returning zero targets — the same answer it gives today, so the POSIX case gains no over-credit. Nothing keys on the platform, so both legs run the same code and a macOS test proves the Windows behavior.
+  - **Chosen approach:** rewrite `\` to `/` only where the next character is path-shaped — `/\\(?=[\w.@~+-])/g` — applied at the top of `parseShellReadTargets` and `parseUnprovenShellPaths` before anything else runs. A separator backslash is always followed by a path character; a POSIX escape is followed by a space, a quote, a `$`, or a line break. `cat foo\ bar.md` is left alone, keeps its `\`, keeps failing the class, and keeps returning zero targets — the same answer it gives today, so the escaped-space spelling gains no over-credit. Nothing keys on the platform, so both legs run the same code and a macOS test proves the Windows behavior.
   - **The hardened surface is untouched.** `SHELL_READ_SAFE_CHARACTERS`, `splitShellSegments`, `parseUnprovenShellPaths`'s proof logic, both command lists, `GIT_TREE_SAFE_SUBCOMMANDS`, and the execution probes need no edit. Any `\` surviving normalization is escape-shaped, still fails the class, and the three branches stay unreachable — clove's defense-in-depth argument and Eric's standards finding both stand exactly as recorded.
   - **One companion change is required, and it is the only part that is not free.** A Windows absolute path carries a drive letter and `PATH_SHAPED_RUN` breaks a run at `:`, so `C:/repo/x.ts` yields `/repo/x.ts`, which `path.resolve` re-qualifies with the *current* drive. Same-drive is correct by accident; cross-drive resolves elsewhere and under-denies — this same bypass, one case narrower. Adding `:` to `PATH_SHAPED_RUN` closes it and, on its own, breaks two existing tests: `${OUT:-src/nested/index.ts}` becomes one run and the leading-`[-+]` strip no longer recovers the path. Pairing it with a second both-spellings recovery — `run.replace(/^[^/:]*:[-+]*/, "")` beside the leading-`[-+]` one already there — restores both and follows the pattern that function already states for `-`.
   - **Implementation guidance for clove:** in `scripts/ai-skills/hooks/hook.mjs`, add a module-level helper that applies the lookahead rewrite; call it as the first statement of `parseShellReadTargets` and of `parseUnprovenShellPaths` (normalizing at the entry points is what keeps `resolveProvenSafePaths` and `scanPathShapedTokens` seeing the same text, so a proven-safe operand still matches its candidate); change `PATH_SHAPED_RUN` to `/[\w./@~+:-]+/g`; add the `unqualified` recovery clause in `scanPathShapedTokens` beside `unprefixed`. Verify with `pnpm prism:test`.
@@ -900,6 +900,13 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## Sessions
 
+- 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (clove, dispatched — lane 2D, round 12)
+  - **Intent** — close the two round-11 Majors the Windows separator range introduced, plus its two Minors, so the deny gate reads a colon-separated path as a candidate and never banks credit a POSIX shell did not earn.
+  - **Ambiguity** — none load-bearing; read briar's split-on-`:` and winston's whole-command credit suppression as prescriptions to verify rather than apply, and verified each against the tree before writing.
+  - **Bounds** — `pnpm prism:check` green with the colon shape and the credit rule both pinned, four-mirror parity, PR still draft. Untouched: the proof surface, both command lists, `GIT_TREE_SAFE_SUBCOMMANDS`, `hook.d.mts`, the merge.
+  - **Approach** — one recovery arm replacing two, one `.map` on the read arm, and revert the fourth-gap prose this same PR added.
+  - **Close** — scope held, with two prose corrections beyond the named list. Briar's superset claim is true for every shape carrying a routed path, measured over eleven commands old-versus-new: the split loses only `C:/repo/x.ts` from `-C:/repo/x.ts` and `b:c.md` from `a:b:c.md`, both tokens no route matches and both needing a spelling that a space or `=` would break. Silent decisions named: I dropped the leading-`[-+]` arm entirely rather than keeping it beside the split, since it is the zero-colon case of the split; I added two colon rows rather than one, because the trailing-suffix and the colon-pair shapes fail for different reasons; and I corrected two sentences winston's list did not name — ADR-0072's "a Windows-spelled `cat` credited nothing", which stays true after the fix and so read as the repaired thing, and `install-layout.md` § Write gate, which told a reader both arms rewrite without saying a rewritten read no longer clears the gate. Both are the changed-predicate-with-no-token case `code-standards.md` § Removal and rename completeness names, reconciled in the same pass as the code. Edge recall: empty, whitespace-only, and non-string commands hit the existing guards ahead of both changes; a run of only colons yields no pieces and the length guard drops them; a rewrite inside a non-`cat` segment costs credit for the whole command, which is the deliberate over-suppression. Verification honesty: `pnpm prism:test` 829/829 and `pnpm prism:check` exit 0, both run in this worktree; the old-versus-new token comparison was executed, not reasoned; the forward-slash remedy is read out of `architect-route.mjs:45` and `hook.mjs:1135` plus `toRepoRelativePath`'s `/`-join, and the two-leg matrix out of `prism-check.yml`. Not verified by me: that the suppression holds on a real Windows shell — no Windows host was available, and the rows prove the parser rather than the platform.
+
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate] (winston, dispatched — lane 2D, the read-arm credit call)
   - **Intent** — decide whether the separator rewrite should still grant read credit, given that the rewrite it produced credits a `cat` a POSIX shell never opens.
   - **Ambiguity** — none load-bearing; read "a design call, not code" as covering the prose that states the arm's behavior (ADR-0072 and `install-layout.md`, four mirrors each), and scoped the call to the credit judgment rather than to whether the rewrite itself stays.
@@ -1129,6 +1136,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 
 ## History
 
+- 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Fixed briar's round-11 set — two Majors, two Minors. The candidate scan now splits a path-shaped run on `:` so a routed path carrying a suffix or sharing a list stays a candidate, and the read arm refuses credit on any command the separator rewrite changed. `pnpm prism:check` exit 0, 829/829; see Decision: The read arm refuses credit on any command the separator rewrite touched.
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Judged briar's round-11 read-arm over-credit — the separator rewrite stays on both arms, and the read arm refuses credit whenever the rewrite changed the command. The trade briar priced dissolves because the deny message's remedy is forward-slash on every platform, so credit suppression costs no remedy path; see Decision: The read arm refuses credit on any command the separator rewrite touched.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Round-9 self-review of clove's round-8 repair — no issues found, the first clean round on PR 2D. The `confirmWork` read-back reads each row's own write, verified by two mutations clove did not run alongside the two he did, and the class is closed across all fifteen probe rows rather than only the two that were caught. `pnpm prism:check` re-run at exit 0.
 - 2026-08-20 [huntermcgrew/opus5-port-deny-gate]: Round-8 self-review of clove's round-7 repair — three Majors, two Minors, no Critical. Both claimed mutations reproduce and the negative control is real; the residue is two probe rows (`remote`, `fetch`) that exit 0 without reaching their write path, plus two ADR sentences that assert past what was measured. `pnpm prism:check` re-run at exit 0.
@@ -2921,7 +2929,7 @@ Two Majors, both confirmed by running the parsers at `d34755b8` and at `8fcb2b03
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:735`
 - **Problem:** `run.replace(/^[^/:]*:[-+]*/, "")` recovers a path only when the colon precedes every `/` in the run, so a routed path carrying a trailing `:<anything>`, or two routed paths in a colon-separated list, now yields nothing but the glued token and the gate never fires on it.
 - **Evidence:** `tee .prism/architect/_toolkit/install-layout.md:s` yields `[".prism/architect/_toolkit/install-layout.md", "s"]` at `d34755b8` and `[".prism/architect/_toolkit/install-layout.md:s"]` at `8fcb2b03`. Same regression on `tee .prism/rules/a.md:.prism/rules/b.md` (both routed paths lost) and `sed -i s/a/b/ .prism/rules/a.md:orig`. Run against both trees, not reasoned.
@@ -2934,7 +2942,7 @@ Two Majors, both confirmed by running the parsers at `d34755b8` and at `8fcb2b03
 
 - **Axis:** `standards`
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hooks/hook.mjs:179`
 - **Problem:** normalizing before the class test makes `cat .prism\architect\_toolkit\install-layout.md` return `{ credit: true }` on the routed doc. On macOS, Linux, and Git Bash the shell reads `.prismarchitect_toolkitinstall-layout.md`, `cat` fails, and nothing is delivered — but `runPostToolUseArm` never inspects `tool_response`, so credit banks on the observed call and the write gate opens on every path routing to that doc.
 - **Evidence:** the same command returns `[]` at `d34755b8` and `[{"filePath":".prism/architect/_toolkit/install-layout.md","credit":true}]` at `8fcb2b03`.
@@ -2947,7 +2955,7 @@ Two Majors, both confirmed by running the parsers at `d34755b8` and at `8fcb2b03
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/hook-gate.test.ts:2772`
 - **Problem:** the block says "on macOS and ubuntu they exercise the forward-slash spelling" and "These rows put the backslash reading on all three legs," but `.github/workflows/prism-check.yml`'s matrix is `[ubuntu-latest, windows-latest]` — there is no macOS leg. The same range's `install-layout.md:161` says "both CI legs," so the diff contradicts itself.
 - **Class:** a durable comment asserting a CI topology the workflow does not have.
@@ -2958,7 +2966,7 @@ Two Majors, both confirmed by running the parsers at `d34755b8` and at `8fcb2b03
 
 - **Axis:** `spec`
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/opus5-port.md:324`
 - **Problem:** "`cat foo\ bar.md` … keeps returning zero targets — the same answer it gives today, so the POSIX case gains no over-credit." The escaped-space instance is safe and verified; the generalization to "the POSIX case" is refuted by the Residual-risk bullet six lines down, which states the POSIX no-op escape does credit. This clears the contradicts-the-diff bar rather than being bookkeeping: the code credits `foo/bar.md`, and this is the sentence a future hardener reads before deciding whether POSIX needs looking at.
 - **Class:** reassurance that widens an admission into a claim the same passage refutes — `.prism/rules/writing-voice.md` § Anti-pattern: Reassurance that introduces a new claim.
