@@ -60,8 +60,8 @@ The PR body is exempt *during* the loop, not permanently — a standalone
 review pass checks it once, out of loop, before the human gate. Its
 verification block is what a human reads instead of re-running the probes, so
 the loop can converge clean while that block states counts and hashes an
-earlier round moved. PRISM PR #471 did exactly that, and the out-of-loop pass
-is what caught it.
+earlier round moved. PRISM PR #471 carried exactly that drift twice — outside
+a loop run, caught by a review pass over the body itself.
 
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass

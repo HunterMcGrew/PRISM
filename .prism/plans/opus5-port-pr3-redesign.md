@@ -230,6 +230,36 @@ runs.
     verified by re-reading the body back from the API after the `PATCH`, since `gh pr edit` fails
     on this repo and is silent about whether the write landed.
 
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope, dispatched by Sol under run
+  `architect-gate-port`, lane 3a]
+  - **Intent** — strip the false review-loop attribution out of the PR-body sentence absorbed
+    last pass, keeping the rule it carries and the evidence that is real.
+  - **Ambiguity** — none load-bearing; assuming the honest version keeps `#471` as a non-loop
+    instance rather than dropping the citation entirely, since the drift is real and recorded in
+    this plan and `.prism/rules/writing-voice.md` § Explain the why wants the reason to cite
+    something.
+  - **Bounds** — done = the sentence and its two generated mirrors carry no loop claim, build
+    and check green, plan and PR body synced, PR still draft. Untouchable =
+    `.claude/worktrees/agent-a507b79a93c90415f` and the deny-gate branch,
+    `.prism/plans/opus5-port.md`, and the `../../../` link depth in the flattened `agents/`
+    mirrors.
+  - **Approach** — one clause at source, then `pnpm prism:build` to regenerate the mirrors
+    rather than hand-editing three copies out of parity.
+  - **Close** — scope held on the fix. One thing taken beyond it, and said rather than absorbed:
+    Eric's stronger reasoning on Briar's un-narrowed verdict state is swapped into the record now
+    instead of at close, because the only artifact it changes is this plan entry — the clause it
+    justifies is unchanged under either reading, so deferring would only leave close reading the
+    weaker reason. It is not adopted whole: Eric's "permanently" is recorded with a residual,
+    since § Status vocabulary defines structural by the reason naming the *diff* and gives the
+    axis skip as "such as" rather than a closed set. Edge recall: the citation-free variant was
+    the other real option and loses the reason the rule exists, and a genuine loop incident does
+    not exist to cite — this change introduces the exemption, so nothing has exercised it. Left
+    alone deliberately: `.prism/plans/opus5-port.md:697`'s deferred nine-angle battery, which
+    reconciles at 3A close and belongs to another lane right now. Verification honesty:
+    `pnpm prism:build` and `pnpm prism:check` both exit 0 with 775/775 tests; the false string
+    confirmed absent tree-wide by grep and the replacement present in exactly the source and its
+    two mirrors; the PR body re-read back from the API after the `PATCH`.
+
 ---
 
 ## Decisions
@@ -1488,11 +1518,36 @@ its `— <reason>` on both surfaces.
 Eric's Major narrows Eric's checkbox from "bounded" to "pass-bounded" because a structural bound
 is honest as `confidence:standards-only`. Briar's third verdict state
 (`prism-code-review-self/shared.md:326`) keeps the wider "bounded" reading deliberately. The
-only structural `not reached` producer this fragment names is Eric's lightweight-path Spec-axis
-skip (`review-angles.md:37`, `prism-code-review-pr/shared.md:194`), and Briar runs no axis
-split — so for her, bounded and pass-bounded name the same set today. Narrowing her clause would
-add a distinction she has no way to produce. This is a producer enumeration against the file,
-not a reading.
+clause is unchanged either way; what changed is the reason on the record. Eric supplied the
+stronger one and it supersedes the enumeration first written here: § Status vocabulary already
+routes "does not apply to this diff" to `n/a`, so what reaches `not reached` is an angle that
+applies, and for a reviewer with no axis to skip nothing makes that terminal. Bounded and
+pass-bounded denote the same set for Briar by construction, where the enumeration held only
+under today's producer inventory and would have gone stale the moment a second structural
+producer landed. One residual keeps this short of absolute: § Status vocabulary defines
+structural as the reason naming the *diff*, with the axis skip as "such as" rather than a closed
+set, so a future non-axis structural producer is not formally foreclosed. Narrowing her clause
+would still add a distinction she has no way to produce.
+
+### The absorbed PR-body sentence cited a review-loop run that never happened
+
+- **Axis:** `spec`
+- **Severity:** `minor`
+- **Status:** `fixed` — the rule stands, the loop attribution is gone.
+- **File:** `.ai-skills/skills/prism-review-loop/shared.md:46`, plus the two generated mirrors
+- **Problem:** the sentence absorbed under Decision: The loop's exempt PR body read "the loop can
+  converge clean while that block states counts and hashes an earlier round moved. PRISM PR #471
+  did exactly that." No `prism-review-loop` run ever ran on #471 — every `## Sessions` header
+  reads `dispatched by Sol under run architect-gate-port, lane 3a`, and the tree holds no
+  `loopBase`, pass budget, or scoreboard for it. The Ledger exemption the paragraph qualifies is
+  scoped to a loop run, so it was never in force. The `**Why:**` nine lines below cites `#446`
+  with a resolvable merge sha, which sets the standard the neighbour missed.
+- **Fix as applied:** kept the rule and the evidence, dropped the attribution — "PRISM PR #471
+  carried exactly that drift twice — outside a loop run, caught by a review pass over the body
+  itself." The drift is real and recorded above under § Two of the PR body's four verification
+  probes; only the loop framing was false. Citing a genuine loop incident instead was considered
+  and is unavailable: the PR-body exemption is introduced by this very change, so no loop run has
+  exercised it yet.
 
 ---
 
@@ -1510,17 +1565,18 @@ not a reading.
 
 ## PR Readiness
 
-- [x] No critical or major issues — round 1's 4 Major and 2 Minor, round 2's 1 Major, and Eric's
-      round-3 2 Major and 2 Minor are all `fixed`
+- [x] No critical or major issues — round 1's 4 Major and 2 Minor, round 2's 1 Major, Eric's
+      round-3 2 Major and 2 Minor, and Eric's round-4 1 Minor are all `fixed`
 - [x] Types correct — no `any`, no unsafe `as` — n/a, no TypeScript in the diff
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — no new logic; existing seed-drift and
       crossref-lint coverage carries the diff
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-08-21 after Eric's round-3 fixes, `pnpm prism:build` exit 0
-      and `pnpm prism:check` exit 0, `git status -s` clean afterwards
-- [x] PR description up to date — re-synced 2026-08-21 after Eric's round-3 pass, with the two
-      stale verification literals replaced by claims that survive the next edit
+- [x] Build passes — last run: 2026-08-21 after Eric's round-4 fix, `pnpm prism:build` exit 0
+      and `pnpm prism:check` exit 0 with 775/775 tests
+- [x] PR description up to date — re-synced 2026-08-21 after Eric's round-4 pass; the round-3
+      resync already replaced the two stale verification literals with claims that survive the
+      next edit
 - [ ] Lasting decisions promoted to architect context — three Decisions carry
       `→ promotion verdict pending — resolves at PR 3A close`
 
@@ -1569,3 +1625,7 @@ not a reading.
   trigger collapses to the bounded set, the unverified spatial detail dropped, and the PR body's
   two stale literals replaced with rules. Absorbed Eric's review-loop observation as one
   sentence; see Decision: The loop's exempt PR body.
+- 2026-08-21 [huntermcgrew/opus5-port-3a-reviewer-scope]: Closed Eric's round-4 Minor — the
+  absorbed PR-body sentence cited a `prism-review-loop` run that never happened on #471, so the
+  loop attribution is dropped and the real drift kept. Also swapped Eric's stronger reasoning for
+  the enumeration behind Briar's un-narrowed verdict state, with the residual named.
