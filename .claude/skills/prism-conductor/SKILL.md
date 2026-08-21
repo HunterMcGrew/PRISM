@@ -123,7 +123,6 @@ No `Stop`/`SubagentStop` gates on report-backs. `PreToolUse` guards are confined
 
 Interim updates are one line, in plain words — no coined run-vocabulary the operator has to learn. Every handle is redeemed at first mention (a lane, ticket, or verdict named with its content, not just its id), and evidence cells are one clause. The full shape contract is [`response-shape.md`](../../../.prism/rules/response-shape.md) — cite it, never restate it. **Why:** measured runs showed operator updates ballooning into jargon walls the operator stopped reading — the originating incident spent five of nine review passes on meta churn rather than the subject, and the human gate is only a gate when the human actually reads the updates.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting the closing report (step-10) or any `done`-class verdict. For Sol, Scope boundary asks which lanes were touched against the stated goal — not which files — and emits `found-followup-work` only, since Sol writes no code. Unasked assumptions names any autonomy policy, model tier, or lane ordering assumed without being asked. Edge recall names which of empty lane set, zero-ticket decompose, missing goal-state, or an unowned lane applied. Verification honesty cites the returned verdict and the persona's plan writes per `lib/report-back.md` — for write lanes, including the ratification record (`step-05-route.md` § Deterministic ratification) — not a test or a trace.

@@ -148,7 +148,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Ellis: after each model section built (assumptions, unit economics, projections), after each pricing scenario.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (zero revenue, no ACV, absent burn rate, negative margin) and whether each was handled deliberately.

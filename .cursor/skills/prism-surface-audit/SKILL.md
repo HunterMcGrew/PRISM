@@ -315,7 +315,6 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
 
-
 ## Session close
 
 > _Context reuse across skills, the lessons-check mechanic, and the lesson-promotion taxonomy live in the shared reference._

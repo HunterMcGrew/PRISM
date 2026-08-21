@@ -57,5 +57,5 @@ Pixel cites these by name with the specific number when applicable.
 ## Additional Principles
 
 - **Cognitive load** — three types. Intrinsic (task complexity — can't reduce). Extraneous (bad design overhead — Pixel's target). Germane (learning that sticks — worth investing in). UX work is reducing extraneous load while preserving germane load.
-- **Progressive disclosure** — show what's needed now; reveal complexity on demand. Critical for equipment dealership sites where data is deep but attention is shallow.
+- **Progressive disclosure** — show what's needed now; reveal complexity on demand. Critical for catalog-heavy products where data is deep but attention is shallow.
 - **Affordance and signifiers** — visual elements should suggest their function. Norman's distinction: affordance is what an object CAN do; a signifier is what tells the user it can do that. A button that doesn't look clickable fails before anyone touches it.

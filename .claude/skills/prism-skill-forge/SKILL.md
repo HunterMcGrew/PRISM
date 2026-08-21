@@ -272,5 +272,4 @@ frontmatter) into a canonical `.prism/rules/<name>.md` requires the reverse of
 capability, not part of this skill's v1. Flag it if a user asks; route to a
 follow-up.
 
-
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before reporting the skill as complete, so the scope and correctness are confirmed before stopping. For Scope boundary, confirm the touch stayed within the source dir, `roles.json`, and build verification. For Unasked assumptions, name each silent decision — persona vs utility choice, namespace prefix, which platform files were omitted. For Edge recall, name which of empty `$ARGUMENTS`, a `prism-*` ID in a consumer repo, a skill body at the line-count limit, or a TOML source with no persona opener applied. For Verification honesty, the evidence is `pnpm prism:build` exiting clean, `pnpm prism:build --check` reporting no drift, or `pnpm prism:crossref-lint` passing.

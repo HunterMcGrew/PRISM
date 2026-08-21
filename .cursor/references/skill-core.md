@@ -35,10 +35,11 @@ edits to routed paths are denied until their routed docs are read.
 ## Reporting back
 
 When dispatched by Sol, finish by returning one report-back in the canonical
-dispatch schema. The schema's single owner is
-`.prism/skills/prism-conductor/lib/report-back.md` § Canonical dispatch schema;
-it is quoted here verbatim because something downstream parses it — never
-paraphrase it, never abbreviate the enum:
+dispatch schema. Its single owner is the conductor's report-back reference —
+PRISM's internal `.prism/skills/prism-conductor/lib/report-back.md`
+§ Canonical dispatch schema (monorepo-only, not shipped to consumers, which is
+why the block is quoted here in full); it is quoted verbatim because something
+downstream parses it — never paraphrase it, never abbreviate the enum:
 
 ```
 {

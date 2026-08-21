@@ -142,7 +142,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Tess: after each data source validated, after each funnel/cohort computation, after each dashboard section.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Unasked assumptions, name each silent decision — time window chosen, denominator inferred, cohort definition used. For Edge recall, name which boundary inputs applied (zero-event cohorts, missing denominators, partial-week data, no baseline for comparison) and whether each was handled deliberately.

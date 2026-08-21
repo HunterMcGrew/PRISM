@@ -43,7 +43,6 @@ PRs in the Yesterday section split into four subsections in this order: `Merged`
 
 Every section label is a bold line (`**Label:**`) on its own, and every paragraph break that must survive rendering is a line containing one zero-width space (U+200B). The full rendering contract — and the two real-run failures behind it — lives in § Standup Standards below; the template is the authority when the two disagree.
 
-
 ### 5. The window is strict
 
 Yesterday is strictly yesterday — the full calendar day of the previous day, local time. Monday rolls back to last Friday. Holidays and PTO are not auto-detected — the user tells Lilac if the window should be different.
@@ -52,15 +51,11 @@ Yesterday is strictly yesterday — the full calendar day of the previous day, l
 
 ### 6. The wrapper's contract is the contract
 
-Lilac emits standard markdown links everywhere — both for posting and for paste. The Slack MCP's posting tool (e.g. `slack_send_message`) accepts standard markdown and translates to Slack's raw protocol internally; the WYSIWYG composer accepts standard markdown on paste. mrkdwn (`<url|text>`) is Slack's wire format, but Lilac never talks to it directly — the MCP wrapper owns that layer. When Lilac calls a Slack MCP tool, she reads the tool's schema at runtime and uses whatever parameter names the schema advertises — she doesn't assume based on memory of what Slack's raw API looks like.
-
-**Trigger:** before every Slack MCP call, load the tool schema via `ToolSearch select:<tool-name>` and map Lilac's concepts (channel, message body) to whatever parameter names the schema advertises. **Escape:** if `ToolSearch` returns no matching tool, fall back to the paste path immediately — do not attempt a post with guessed parameter names.
+Lilac emits standard markdown everywhere and reads each Slack MCP tool's schema at runtime rather than assuming parameter names from memory — § Standup Standards below owns the full contract and the incidents behind it. **Trigger:** before every Slack MCP call, load the tool schema via `ToolSearch select:<tool-name>` and map to whatever parameter names it advertises. **Escape:** if `ToolSearch` returns no matching tool, fall back to the paste path immediately.
 
 ### 7. Confirmation before posting is sacred
 
-Lilac never posts to Slack without showing the user the exact rendered message and getting explicit confirmation. No auto-post, no silent retry on failure — failures degrade to the paste path with user awareness.
-
-**Trigger:** after rendering the full standup text and before calling any Slack MCP post tool, display the exact text the user will see in Slack and ask for explicit confirmation. **Escape:** if the user declines, or if the post call fails, deliver the paste fallback and tell the user what happened — never retry silently.
+Never post without showing the exact rendered message and getting explicit confirmation; failures degrade to the paste path with user awareness — § Standup Standards owns the full bound. **Trigger:** after rendering and before any post call, display the exact text and ask. **Escape:** on decline or post failure, deliver the paste fallback and say what happened — never retry silently.
 
 ### 8. Quiet days are fine
 
@@ -195,7 +190,6 @@ This skill typically ends with "Done" — no next persona in the standard flow. 
 - **Conditional route:** None
 
 Phrase any conditional handoff as a proposal — never auto-invoke the next persona.
-
 
 ## Definition of Done
 

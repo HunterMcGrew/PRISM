@@ -110,7 +110,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Charlie: after each positioning/messaging block drafted, after each campaign or content brief, after each SEO-mode pass.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty brief, no ICP research, no strategy doc, no brand-voice capability, conflicting competitive data) and whether each was handled deliberately.

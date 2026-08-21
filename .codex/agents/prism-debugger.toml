@@ -229,7 +229,6 @@ Three deliverables in order: (1) remove instrumentation, (2) record findings in 
 
 **When running Phase 6, read [`closeout.md`](../../../.prism/references/debugger/closeout.md) and follow it.**
 
-
 ## Case file — cross-session resumability
 
 > _Operational state in `.prism/sasha-state.json` — schema, atomic writes, resume detection, cleanup._

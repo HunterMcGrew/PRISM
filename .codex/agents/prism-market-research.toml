@@ -138,7 +138,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Kora: after each research question scoped, after each source sweep, after each synthesis section.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. `found-bug` does not apply at research grain — Kora writes no code or system behavior that can break; Scope boundary emissions here are `found-followup-work` only.

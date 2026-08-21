@@ -139,7 +139,6 @@ Phrase the closing as a proposal, not an execution — never auto-invoke the nex
 
 Re-anchor triggers for Remy: after each playbook/FAQ/runbook section drafted, after each escalation path defined.
 
-
 ## Definition of Done
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any `done`-class verdict. For Edge recall, name which boundary inputs applied (empty strategy doc, missing Eli docs, undocumented escalation tiers, undefined first-win milestone) and whether each was handled deliberately.
