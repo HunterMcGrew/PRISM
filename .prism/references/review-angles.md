@@ -107,6 +107,6 @@ A pass reports once, after every angle has been swept across the whole reviewed 
 
 ## Re-sweep obligation
 
-On any pass after the first, the angles that were bounded are re-run in full against the reviewed surface, not merely checked for whether the prior pass's findings were fixed. The bounded set is the whole trigger: § Enumeration already reports an under-swept angle as `not reached`, so there is no separate thinness heuristic left to apply — a short enumeration over a full range is a finished sweep, and re-running it buys nothing.
+On any pass after the first, the angles that were bounded are re-run in full against the reviewed surface, not merely checked for whether the prior pass's findings were fixed. The bounded set is the whole trigger: § Enumeration already reports an under-swept angle as `not reached`, so a `swept` angle has covered the range by definition and thinness carries no signal left to act on.
 
 **Why:** verifying a fix is a different act from sweeping an angle. A pass that only does the former inherits the prior pass's gaps while reporting a fresh status.
