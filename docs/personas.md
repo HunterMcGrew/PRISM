@@ -352,6 +352,8 @@ These skills run in the current persona's voice — no dedicated persona. Invoca
 | `prism-handoff` | Compacts the session into a handoff document a fresh agent can continue from |
 | `prism-review-loop` | Orchestrates self-review → fix → PR-review loops to a subject-clean pass |
 | `prism-skill-forge` | Scaffolds a new PRISM skill from scratch or migrates an existing platform skill into canonical source |
+| `tdd` | Utility *reference* — holds the red-green loop and its three anti-patterns (with their tells); read for its content, not invoked as a session |
+| `devils-advocate` | Utility *reference* — red-teams a finished artifact through four passes and a typed verdict; deliberately no persona, never edits the artifact it challenges |
 
 ---
 

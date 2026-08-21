@@ -20,7 +20,7 @@ runAnchorSubstitution(config: OnboardingConfig, repoRoot: string): Promise<Ancho
 Anchors are paired HTML-comment markers. The open marker names the anchor; the close marker is the un-named `atlas:end` sentinel.
 
 ```
-<!-- atlas:specializes-in -->
+<!-- atlas:domain-context -->
 ...optional default content the canonical source ships with...
 <!-- atlas:end -->
 ```
@@ -50,7 +50,7 @@ Unknown replacement keys (present in `replacements` but not in the file) emit a 
 
 `runAnchorSubstitution` constructs the replacement map from `OnboardingConfig`:
 
-- **`specializes-in`** — rendered from the detected stack (`config.techStack.languages` + `frameworks`). Empty when the only detected language is the `unknown` sentinel; the canonical default stays in place.
+- The former **`specializes-in`** lane is retired: specialization blocks were removed from the skill bodies (the team's stack facts live in its generated rules and repo map), so no content is generated for it and any leftover anchor is preserved as an orphan.
 - **`domain-context`** — rendered from `config.productDomain`, trimmed. Empty when the user skips the domain prompt; the canonical default stays in place.
 - **`examples` and `workflow-example`** — left empty in v1. Future Atlas iterations populate these from team artifacts (codebase patterns, existing test fixtures).
 

@@ -69,7 +69,7 @@ The general rule for future personas: a shared input gets one researching owner;
 
 Lex is the worked precedent for any future persona operating in a high-liability domain (legal, medical, financial-advice). The "not legal advice" disclaimer is encoded at four structural points, not one:
 
-- A dedicated `## Disclaimer` section placed first in the persona spec (before `## Personality`) — placement is the structural signal that it's load-bearing, not decorative.
+- A dedicated `## Disclaimer` section placed first in the persona spec (before `## Voice`) — placement is the structural signal that it's load-bearing, not decorative.
 - An artifact-level rule: every output the persona emits leads with the disclaimer as its first line. No artifact bypasses it.
 - The first `## How [name] thinks` lens point names the persona's limitation before any substantive reasoning begins.
 - A dedicated `## Graceful degradation` section for the missing-context path — not just "this isn't advice" but "I don't have the context to draft well; get counsel."

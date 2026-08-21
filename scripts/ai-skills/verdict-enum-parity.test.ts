@@ -46,6 +46,12 @@ const CLAUDE_MD_PATH = path.join(
 	"claude.md"
 );
 const CONDUCTOR_DOC_PATH = path.join(repoRoot, "docs", "ai-skills", "conductor.md");
+const SKILL_CORE_PATH = path.join(
+	repoRoot,
+	".prism",
+	"references",
+	"skill-core.md"
+);
 
 /** Extracts the first-column backticked value from each `| \`x\` | ... |` table row. */
 function extractTableFirstColumnValues(text: string): string[] {
@@ -159,4 +165,30 @@ function assertNoNeedsReplanWithoutNeedsFix(filePath: string, raw: string): void
 test("docs/ai-skills/conductor.md: no verdict enumeration lists needs-replan but omits needs-fix", async () => {
 	const raw = await fs.readFile(CONDUCTOR_DOC_PATH, "utf8");
 	assertNoNeedsReplanWithoutNeedsFix("docs/ai-skills/conductor.md", raw);
+});
+
+test("skill-core.md: § Reporting back quotes the canonical dispatch schema byte-identically", async () => {
+	// skill-core.md ships to consumers (seed-curation `mirrored`) and quotes the
+	// schema in full because `.prism/skills/**` never ships — so this copy is a
+	// fourth enum surface, and without this check an enum change would pass
+	// `prism:check` while shipping a stale schema to every consumer.
+	const canonical = await fs.readFile(REPORT_BACK_PATH, "utf8");
+	const core = await fs.readFile(SKILL_CORE_PATH, "utf8");
+	const canonicalBlock = extractSection(
+		canonical,
+		"## Canonical dispatch schema"
+	).match(/```([\s\S]*?)```/)?.[1];
+	const coreBlock = extractSection(core, "## Reporting back").match(
+		/```([\s\S]*?)```/
+	)?.[1];
+	assert.ok(
+		canonicalBlock,
+		"no fenced block in report-back.md § Canonical dispatch schema"
+	);
+	assert.ok(coreBlock, "no fenced block in skill-core.md § Reporting back");
+	assert.equal(
+		coreBlock,
+		canonicalBlock,
+		"skill-core.md § Reporting back's schema block diverged from report-back.md § Canonical dispatch schema — update the quote, never paraphrase it"
+	);
 });

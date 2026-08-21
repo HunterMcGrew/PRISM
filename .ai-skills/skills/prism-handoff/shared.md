@@ -3,9 +3,11 @@ from. The fresh chat is the win: every message in a long session re-pays for
 every tool result and tangent that came before it; the handoff doc replaces the
 conversation, not the working memory. The branch plan stays the working memory.
 
-**The run, in order:** opening orientation → flush plan-worthy state into the
+**The run:** opening orientation → flush plan-worthy state into the
 branch plan → parse arguments (scope filter / target persona) → write the
 handoff document → closing re-orientation → report the path.
+
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
 
 ## Invocation trigger
 

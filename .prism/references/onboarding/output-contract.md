@@ -15,7 +15,6 @@ Every file Atlas touches appears in the closing summary. If a file changed and i
 ## Files Atlas updates (via anchor substitution)
 
 - **`.ai-skills/skills/<persona>/shared.md`** (and platform variants) — wherever a `<!-- atlas:<name> -->` / `<!-- atlas:end -->` pair appears, Atlas replaces the empty stub with team-derived content. Known anchors at v1:
-  - `atlas:specializes-in` — populated from the detected stack
   - `atlas:domain-context` — populated from the product-domain answer
   - `atlas:examples`, `atlas:workflow-example`, and `atlas:workflow-example-*` — left empty in v1; future Atlas iterations populate these from team artifacts
 

@@ -547,7 +547,7 @@ test("runRuleGenerators reports skip-if-exists entries in the skipped bucket", a
 	}
 });
 
-test("runAnchorSubstitution populates specializes-in and domain-context anchors", async (t) => {
+test("runAnchorSubstitution populates the domain-context anchor and leaves retired anchors untouched", async (t) => {
 	const repoRoot = await makeTempRepo();
 	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
 
@@ -583,14 +583,12 @@ test("runAnchorSubstitution populates specializes-in and domain-context anchors"
 	const summary = await runAnchorSubstitution(config, repoRoot);
 
 	assert.equal(summary.written.length, 1);
-	assert.deepEqual(summary.touchedAnchors.sort(), [
-		"domain-context",
-		"specializes-in",
-	]);
+	assert.deepEqual(summary.touchedAnchors, ["domain-context"]);
 
 	const after = await fs.readFile(sharedPath, "utf8");
-	assert.match(after, /Languages: typescript\./);
-	assert.match(after, /Frameworks: react\./);
+	// No specializes-in lane exists — a leftover anchor of that name keeps its
+	// default content untouched, like any anchor with no replacement key.
+	assert.match(after, /default stack content/);
 	assert.match(after, /test domain/);
 });
 
@@ -633,7 +631,7 @@ test("runAnchorSubstitution leaves orphan anchors with no replacement key intact
 	);
 });
 
-test("runAnchorSubstitution skips files when both languages and frameworks are absent", async (t) => {
+test("runAnchorSubstitution skips files when no anchor lane produces content", async (t) => {
 	const repoRoot = await makeTempRepo();
 	t.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
 

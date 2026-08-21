@@ -3,10 +3,12 @@ existing personas — it never reviews, fixes, or writes findings itself, and th
 personas keep their own plan hygiene (Review Issues entries, History appends)
 exactly as if invoked by hand.
 
-**The run, in order:** opening orientation → self-review loop (findings → fixes
+**The run:** opening orientation → self-review loop (findings → fixes
 → re-review until clean) → phase-boundary gate → PR-review loop (findings →
 fixes → re-review until clean, threads resolved) → cleaner-path routing →
 closing re-orientation → scoreboard TLDR.
+
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
 
 ## Opening Orientation Battery
 
@@ -275,8 +277,6 @@ rather than fixed. State the exit reason — subject-clean or budget-exhausted �
 and the `loopBase` the run froze at. The PR stays draft; tell the user it is
 ready for human testing and review. Merging and flipping ready-for-review
 remain the human's call (`.prism/rules/git-conventions.md` § Who merges).
-
-## Closing Re-Orientation Battery
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
 once, immediately before producing the scoreboard TLDR, so scope and
