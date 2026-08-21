@@ -562,11 +562,14 @@ const GIT_INERT_FLAGS = new Set(
  * `formatShellRerouteMessage`'s remedies reaches it — a commit is not an edit
  * to redo with a file-edit tool, and it is not a read to respell.
  *
- * The six working-tree writers — `checkout`, `restore`, `apply`, `stash`,
- * `clone`, `merge` — are absent, and their absence is checked rather than
- * asserted. `hook-gate.test.ts` runs each of them in a spelling that reaches
- * its write and requires the probe to see the tree change, so the probe that
- * reports this set clean is shown to be capable of reporting a writer dirty.
+ * Every subcommand that writes the working tree is absent — `rm`, `mv`,
+ * `reset`, `clean`, and `rebase` as much as `checkout` or `merge`. Six of
+ * them — `checkout`, `restore`, `apply`, `stash`, `clone`, `merge` — have
+ * that absence checked rather than asserted: `hook-gate.test.ts` runs each in
+ * a spelling that reaches its write and requires the probe to see the tree
+ * change, so the probe that reports this set clean is shown to be capable of
+ * reporting a writer dirty. Six is enough for that job, which is proving the
+ * machinery can see a write, not enumerating the writers.
  *
  * @type {Set<string>}
  */
