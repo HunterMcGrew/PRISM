@@ -1188,6 +1188,7 @@ Every evidence command below was reasoned against this plan's own task list befo
   - **Bounds** — the verification report and this plan's record. Untouched: source, tests, manifests, the PR, the merge.
   - **Approach** — attack the mechanism by brute-forcing the route language against both head and the pre-fix parent, so the sweep's null result carries a positive control rather than standing alone.
   - **Close** — scope held. Two prior-pass claims were found wrong and corrected in place rather than overwritten; the wrong one about the stub's history came from generalizing a range-bounded search past its bound, which is the same shape as the refuted MET.
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim] open: Intent — execute PR 3B (shared core, Step-0 pointer, roster slim, tdd + devils-advocate) from the committed foreclosure table, 27 unheld files first, held four after #470/#471 merged; Bounds — canonical sources only until the terminal mirror commit, no held file touched before both merges, reversal-list items untouchable; Approach — one commit per deletion class with its foreclosure slice in the commit message, build+check green at every step · close: scope held — two sanctioned additions beyond the brief (Hunter's mid-run ruling deleting every atlas:specializes-in anchor plus the generator-lane retirement it forced, and a routing-test extractor fix for non-prefixed skill ids), each recorded in its commit message.
 
 ## History
 
@@ -1300,6 +1301,7 @@ Every evidence command below was reasoned against this plan's own task list befo
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Resolved the Windows `\` `OPEN` Decision — normalize separators in shell text keyed on the following character, not on the platform, so both legs run one code path. Measured at 822/822 with the change applied and reverted; the seven red rows go green unedited. See Decision: `\` in shell-command text is rewritten to `/`.
 
 - 2026-08-21 [huntermcgrew/opus5-port-deny-gate]: Implemented the separator rewrite on both shell arms, plus the `:` companion in the path-shaped run and its both-spellings recovery. Added four literal-backslash rows so the backslash reading runs on every CI leg rather than only Windows, and recorded the rule and its fourth gap in ADR-0072 and `install-layout.md`. 826/826 with `pnpm prism:check` exit 0; see Decision: `\` in shell-command text is rewritten to `/`.
+- 2026-08-21 [huntermcgrew/opus5-port-3b-roster-slim]: PR 3B executed from `.prism/plans/pr3b-foreclosure-table.md` — tasks 20–29 (28b included), N3/N4, and the D5–D8 classes across all 31 bodies; every atlas:specializes-in anchor and its generator lane removed per Hunter's 2026-08-21 ruling. Seven previously-undeclared persona pronouns added. Mirrors land in the branch's terminal commit; review pass next.
 
 ## PR Readiness (PR 2D — The deny gate)
 
