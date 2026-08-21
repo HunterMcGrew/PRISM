@@ -1268,7 +1268,7 @@ test("runPreToolUseArm: every write tool on a routed path with unread docs is de
 		// substring match leaves that sentence free to be rewritten away.
 		assert.equal(
 			reason,
-			"You're editing `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+			"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
 				`cat .prism/architect/${GATE_DOC}`,
 			`${toolName} is a write in the harness table, so it earns the same deny`
 		);
@@ -1774,6 +1774,11 @@ const CHARACTERS_OUTSIDE_THE_CLASS = "<>|&$`(){}#*?![]%\\";
  * into at all. Every entry asserts the same expected outcome, so the list
  * grows by appending a shape rather than by working out what a parser would
  * return for it.
+ *
+ * Removal shapes (`rm`, a move away from the path) sit here for the same
+ * reason a write does, and no delete verb is enumerated anywhere: they are
+ * unproven because no proof covers them, which is what lets the gate cover a
+ * removal spelling nobody listed.
  */
 function everyUnprovableShape(target: string): string[] {
 	const shapes: string[] = [
@@ -1784,6 +1789,8 @@ function everyUnprovableShape(target: string): string[] {
 		`echo hi > >(tee ${target})`,
 		`cp a.md ${target}`,
 		`mv a.md ${target}`,
+		`rm ${target}`,
+		`mv ${target} archive.md`,
 		`dd if=a.md of=${target}`,
 		`install -m644 a.md ${target}`,
 		`rsync a.md ${target}`,
@@ -2587,7 +2594,7 @@ test("parseUnprovenShellPaths: an empty or absent command names nothing", () => 
 	assert.deepEqual(parseUnprovenShellPaths("   "), []);
 });
 
-test("runPreToolUseArm: a shell command that names a routed path it cannot prove it reads is rerouted", async () => {
+test("runPreToolUseArm: a shell command that names a routed path it cannot prove it reads is denied while the docs are unread", async () => {
 	// The end-to-end half of the generator above: the same shapes, driven
 	// through the arm, so a candidate list that is right cannot pair with a
 	// route lookup or a message that is not.
@@ -2595,22 +2602,23 @@ test("runPreToolUseArm: a shell command that names a routed path it cannot prove
 		const { target } = await seedGateRepo(repoRoot);
 
 		for (const command of everyUnprovableShape(target)) {
-			const reason = denyReason(
-				await runPreToolUseArm(
-					"claude",
-					HARNESSES.claude,
-					writePayload(repoRoot, target, {
-						tool_name: "Bash",
-						tool_input: { command },
-					})
-				)
-			);
-
-			assert.ok(reason, `${JSON.stringify(command)} reroutes on a routed path`);
-			assert.match(
-				reason,
-				/redo this edit with your file-edit tool/,
-				"the reroute judges no prerequisites, so it cannot be made unsatisfiable"
+			// The whole message, so the shell arm is pinned to the write arm's
+			// wording rather than to a paraphrase of it. One rule on both arms
+			// is the claim; a substring match would let the two drift apart.
+			assert.equal(
+				denyReason(
+					await runPreToolUseArm(
+						"claude",
+						HARNESSES.claude,
+						writePayload(repoRoot, target, {
+							tool_name: "Bash",
+							tool_input: { command },
+						})
+					)
+				),
+				"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+					`cat .prism/architect/${GATE_DOC}`,
+				`${JSON.stringify(command)} names a routed path it cannot prove it reads`
 			);
 		}
 	});
@@ -2640,7 +2648,7 @@ test("runPreToolUseArm: the same shapes pass untouched when no route matches the
 	});
 });
 
-test("runPreToolUseArm: a provable read of a routed path is not rerouted", async () => {
+test("runPreToolUseArm: a provable read of a routed path is not denied", async () => {
 	await withTempRepo(async (repoRoot) => {
 		const { target } = await seedGateRepo(repoRoot);
 
@@ -2661,30 +2669,45 @@ test("runPreToolUseArm: a provable read of a routed path is not rerouted", async
 	});
 });
 
-test("runPreToolUseArm: a shell reroute fires even when the docs are already read", async () => {
-	// The reroute judges no prerequisites by design — it points at a surface
-	// the gate can check rather than asking for a condition first.
-	await withTempRepo(async (repoRoot) => {
-		const { target } = await seedGateRepo(repoRoot);
-		await saveRouteState(repoRoot, "session-1", { read: [GATE_DOC], announced: [] });
+test("runPreToolUseArm: an unproven shell command on a routed path runs once the docs are read", async () => {
+	// The tradeoff the one-rule collapse buys, asserted rather than described.
+	// An unproven shell write is no longer pushed onto a file-edit tool where
+	// the gate could check it per edit — it clears with the docs, like a write
+	// does. What that buys is the delete: no file-edit tool deletes, so a
+	// verdict that never consulted route state left `rm` with no remedy at all.
+	for (const command of [`echo hi > TARGET`, `rm TARGET`]) {
+		await withTempRepo(async (repoRoot) => {
+			const { target } = await seedGateRepo(repoRoot);
+			const stdin = writePayload(repoRoot, target, {
+				tool_name: "Bash",
+				tool_input: { command: command.replace("TARGET", target) },
+			});
 
-		assert.ok(
-			await runPreToolUseArm(
-				"claude",
-				HARNESSES.claude,
-				writePayload(repoRoot, target, {
-					tool_name: "Bash",
-					tool_input: { command: `echo hi > ${target}` },
-				})
-			),
-			"a shell write is rerouted on the strength of the route alone"
-		);
-	});
+			// The unread leg first. Without it, a platform where the command
+			// yields no candidate at all would pass the cleared leg for a
+			// reason that has nothing to do with reading the doc.
+			assert.ok(
+				await runPreToolUseArm("claude", HARNESSES.claude, stdin),
+				`${JSON.stringify(command)} is gated while the docs are unread`
+			);
+
+			await saveRouteState(repoRoot, "session-1", {
+				read: [GATE_DOC],
+				announced: [],
+			});
+
+			assert.equal(
+				await runPreToolUseArm("claude", HARNESSES.claude, stdin),
+				null,
+				`${JSON.stringify(command)} clears once the route's docs are read`
+			);
+		});
+	}
 });
 
-test("runPreToolUseArm: a shell reroute resolves its path against the command's own directory", async () => {
+test("runPreToolUseArm: a shell deny resolves its path against the command's own directory", async () => {
 	// A relative operand from a subdirectory names a different file than the
-	// same operand from the repo root, and rerouting the repo-root reading of
+	// same operand from the repo root, and denying on the repo-root reading of
 	// it would name a path the command never touches.
 	await withTempRepo(async (repoRoot) => {
 		await seedGateRepo(repoRoot);

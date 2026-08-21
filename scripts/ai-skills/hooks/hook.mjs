@@ -19,18 +19,20 @@
  * tool call it observed.
  *
  * `PostToolUse` announces and never blocks. `PreToolUse` is the arm that
- * blocks: a write to a path a manifest route matches is denied until the
- * route's docs have been read, and the message names the literal `cat`
- * command that clears it (ADR-0072). The remedy is performable because the
- * announce arm's credit channel observes exactly those reads — which is why
- * the two arms live in one file and share one state format.
+ * blocks: a path a manifest route matches is denied until the route's docs
+ * have been read, and the message names the literal `cat` command that clears
+ * it (ADR-0072). The remedy is performable because the announce arm's credit
+ * channel observes exactly those reads — which is why the two arms live in one
+ * file and share one state format.
  *
- * A `Bash` call cannot be judged that way, because no parser short of a real
- * shell can say what an arbitrary command writes. So the shell arm inverts
- * the question: it reroutes every routed path a command names *unless* it can
- * prove the command only reads it (`parseUnprovenShellPaths`). Refusing what
- * it cannot prove is what makes an unmodelled shell form a re-spelled command
- * rather than a silently missed write.
+ * One rule governs both a file-edit tool and a `Bash` call, because no parser
+ * short of a real shell can say what an arbitrary command does to a path it
+ * names. The shell branch adds one narrowing on top of the shared rule: a
+ * command that can be *proven* to only read its operands is exempt
+ * (`parseUnprovenShellPaths`), because denying a flagless `cat` would deny the
+ * remedy itself. Everything the proof does not cover is judged exactly as a
+ * write is — deletes and moves included, with no list of delete verbs to keep
+ * current.
  *
  * Every safety check lives in this script, never in a host's registration
  * matcher — a matcher-less harness would otherwise silently inherit nothing.
@@ -568,19 +570,18 @@ const GIT_INERT_FLAGS = new Set(
  * "Of its own" is the whole qualification, and `git commit` is why it is
  * there. A `pre-commit` hook is arbitrary repo-configured code — husky plus
  * lint-staged running a formatter over the repo's markdown is an ordinary
- * consumer setup — and for a commit whose text names a routed path,
- * membership in this set is the difference between clearing, so those hooks
- * run, and rerouting, so the command never runs. `core.editor` sits in the
- * same place and arrives by the same admission: `git commit` with no message
- * launches it, no flag required. That widening is what the set pays for a
- * reachable remedy on the one shape that had none.
+ * consumer setup — so a commit can write a routed path without the set being
+ * wrong about `commit` itself. `core.editor` sits in the same place and
+ * arrives by the same admission: `git commit` with no message launches it, no
+ * flag required. Membership does not create that exposure and dropping
+ * `commit` would not remove it, because a commit whose text names no routed
+ * path is outside a token scan either way.
  *
  * The arm needs the distinction because `git commit -m "…"` carries its
  * message as a plain operand, and `scanPathShapedTokens` cannot tell a
  * filename mentioned in prose from a path the command operates on. Without
- * this set every commit whose subject names a routed path denies, and none of
- * `formatShellRerouteMessage`'s remedies reaches it — a commit is not an edit
- * to redo with a file-edit tool, and it is not a read to respell.
+ * this set, naming a routed doc in a commit subject would cost a doc read
+ * before a command that writes no working-tree file could run.
  *
  * Every subcommand that writes the working tree is absent — `rm`, `mv`,
  * `reset`, `clean`, and `rebase` as much as `checkout` or `merge`. Six of
@@ -1053,7 +1054,10 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
 }
 
 /**
- * Builds the deny message for a write to a routed path with unread docs.
+ * Builds the deny message for a routed path whose docs this scope has not
+ * read. Both arms render it, so the opening clause names no verb — the call
+ * being gated may be a write, a delete, a move, or a read the shell arm could
+ * not prove.
  *
  * The literal `cat` command is the message's whole job. A gate whose remedy
  * has to be inferred is a gate the model cannot reliably clear, and the
@@ -1061,6 +1065,12 @@ export async function runPostToolUseArm(tool, spec, rawStdin) {
  * naming the doc without naming how to read it in full is the unsatisfiable
  * shape this wording exists to avoid. One line per unread doc, because the
  * model performs them one at a time.
+ *
+ * The remedy is reachable from inside whichever tool the caller is already
+ * using: a flagless `cat` is exempt on the shell arm, and a rangeless `Read`
+ * is not a gated kind on the write arm. That is what keeps the gate from
+ * prescribing a tool, and a gate that prescribed one would loop against a
+ * host reminder prescribing the other.
  *
  * @param {string} relativePath
  * @param {string[]} unreadDocs
@@ -1070,61 +1080,26 @@ export function formatDenyMessage(relativePath, unreadDocs) {
 	const remedies = unreadDocs
 		.map((doc) => `cat ${ARCHITECT_DIR_PREFIX}${doc}`)
 		.join("\n");
-	return `You're editing \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}`;
+	return `You're working on \`${relativePath}\`. Read its governing docs in full first, then retry:\n${remedies}`;
 }
 
 /**
- * The shell reroute's message. It judges no prerequisites at all, which is
- * what makes it impossible to render unsatisfiable — the model is pointed at
- * a surface the gate can actually check rather than told to satisfy a
- * condition through a channel that cannot report satisfying it.
+ * `PreToolUse` arm — denies a call that touches a routed path whose governing
+ * docs this scope has not read. Returns the JSON string to write to stdout, or
+ * `null` when the call proceeds.
  *
- * All three of its remedies are performable, which matters because the arm
- * fires on commands that only read, and on commands that neither read nor
- * write the path at all, as well as on writes: an edit moves to the file-edit
- * tool, a read the arm could not prove is rewritten in a form it can, and a
- * path named only as prose inside a message or body moves into a file passed
- * by path. The third one exists because the first two are unreachable for a
- * `git commit -m` whose subject names a routed doc — there is no edit to redo
- * and no read to respell, which is the unsatisfiable shape this gate is built
- * to avoid rather than a louder version of the over-refusal ADR-0072 accepts.
- * Naming an environment variable as a way out would be a false remedy — the
- * deny switch is read from the hook process's own environment, which a
- * command's inline assignment never reaches.
+ * The five conditions below govern both arms. They differ only in how the
+ * candidate paths are produced: a file-edit tool states its target, while a
+ * shell command's candidates are every path-shaped token it names minus the
+ * ones a proof of read-only-ness clears. So a shell call carries a sixth
+ * condition — the path is one the command cannot be proven to only read.
  *
- * @param {string} relativePath
- * @returns {string}
- */
-export function formatShellRerouteMessage(relativePath) {
-	return (
-		`You're running a shell command that names \`${relativePath}\`, a path with governing architect docs. ` +
-		`The gate clears a shell command only when it can prove the command is a read, so everything else counts as a write — ` +
-		`redo this edit with your file-edit tool so the gate can check its prerequisites. ` +
-		"If the command only reads, spell it as a plain `cat`, `head`, or `grep` with no pipe, " +
-		"redirect, substitution, or unusual flag — the proof covers the whole command, not just its first word. " +
-		"If the path is only prose inside a message or body, move that text into a file and pass it by path " +
-		"(`git commit -F <file>`, `gh pr create --body-file <file>`), or leave the path out of the message."
-	);
-}
-
-/**
- * `PreToolUse` arm — denies a write to a routed path whose governing docs
- * this scope has not read, and reroutes a shell write on a routed path to a
- * file-edit tool. Returns the JSON string to write to stdout, or `null` when
- * the write proceeds.
- *
- * The five conditions below govern the write arm only. The shell branch never
- * consults route state: an unproven command naming a routed path reroutes
- * whether or not the route's docs have been read, so reading them is not the
- * remedy and never clears it. The remedies that do are the three
- * `formatShellRerouteMessage` names.
- *
- * Five conditions all hold before a write is denied, and each one is
+ * Five conditions all hold before a call is denied, and each one is
  * required:
  *
  * 1. Neither `PRISM_HOOK_DISABLE=1` nor `PRISM_HOOK_DENY_DISABLE=1` is set.
  * 2. The payload carries a scope id. No id, no deny — the gate has no state
- *    to judge against and would block every write in a session it cannot
+ *    to judge against and would block every gated call in a session it cannot
  *    identify.
  * 3. `resolveListedToolKind` returns a kind the harness's table actually
  *    states. The unlisted-name fallback is right for announce and wrong here
@@ -1135,7 +1110,7 @@ export function formatShellRerouteMessage(relativePath) {
  * 5. A doc that route names is absent from this scope's `read` array and
  *    still exists on disk.
  *
- * Nothing here writes state. A denied write must be able to produce the same
+ * Nothing here writes state. A denied call must be able to produce the same
  * message again after the model's remedy fails, and appending to `announced`
  * would silence the very doc the deny is asking for.
  *
@@ -1172,10 +1147,12 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 		const cwd = payload.cwd ?? process.cwd();
 		const repoRoot = (await findRepoRoot(cwd)) ?? cwd;
 
-		const reason =
+		const candidatePaths =
 			kind === "shell"
-				? await resolveShellRerouteReason(repoRoot, cwd, payload)
-				: await resolveWriteDenyReason(repoRoot, scopeId, spec.filePaths(payload));
+				? await resolveShellCandidatePaths(repoRoot, cwd, payload)
+				: spec.filePaths(payload);
+
+		const reason = await resolveDenyReason(repoRoot, scopeId, candidatePaths);
 		if (reason === null) {
 			return null;
 		}
@@ -1191,17 +1168,20 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 }
 
 /**
- * The deny reason for a file-edit write, or `null` when every path it names
- * is clear. Only the first gated path is reported: the model retries the same
- * call after reading, so naming one path's docs is what it can act on, and a
- * multi-path patch surfaces its next gate on the next attempt.
+ * The deny reason for a list of candidate paths, or `null` when every one of
+ * them is clear. This is the one rule both arms run; they differ only in how
+ * their candidate list is produced.
+ *
+ * Only the first gated path is reported: the model retries the same call after
+ * reading, so naming one path's docs is what it can act on, and a multi-path
+ * call surfaces its next gate on the next attempt.
  *
  * @param {string} repoRoot
  * @param {string} scopeId
  * @param {string[]} filePaths
  * @returns {Promise<string | null>}
  */
-async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
+async function resolveDenyReason(repoRoot, scopeId, filePaths) {
 	for (const filePath of filePaths) {
 		const unreadDocs = await resolveUnreadDocs(repoRoot, filePath, scopeId);
 		if (unreadDocs.length === 0) {
@@ -1216,28 +1196,25 @@ async function resolveWriteDenyReason(repoRoot, scopeId, filePaths) {
 }
 
 /**
- * The reroute reason for a shell command naming a routed path it cannot be
- * proven to only read, or `null` when it names no such path. Tokens resolve
- * against the command's own working directory, the same way `resolveTargets`
- * resolves a shell read.
+ * A shell command's candidate paths: every path-shaped token it names that a
+ * proof of read-only-ness does not clear, narrowed to the ones a manifest
+ * route matches. Tokens resolve against the command's own working directory,
+ * the same way `resolveTargets` resolves a shell read.
+ *
+ * `filterRoutedPaths` runs before `resolveDenyReason` rather than being left
+ * to it, because a command names many tokens and the batched form costs one
+ * manifest load instead of one per token.
  *
  * @param {string} repoRoot
  * @param {string} cwd
  * @param {import("./harnesses.mjs").HookPayload} payload
- * @returns {Promise<string | null>}
+ * @returns {Promise<string[]>}
  */
-async function resolveShellRerouteReason(repoRoot, cwd, payload) {
+async function resolveShellCandidatePaths(repoRoot, cwd, payload) {
 	const unproven = parseUnprovenShellPaths(payload.tool_input?.command);
-	const routed = await filterRoutedPaths(
+	return filterRoutedPaths(
 		repoRoot,
 		unproven.map((target) => path.resolve(cwd, target))
-	);
-	if (routed.length === 0) {
-		return null;
-	}
-
-	return formatShellRerouteMessage(
-		toRepoRelativePath(repoRoot, routed[0]) ?? routed[0]
 	);
 }
 

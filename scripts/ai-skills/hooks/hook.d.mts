@@ -27,8 +27,6 @@ export function formatDenyMessage(
 	unreadDocs: string[]
 ): string;
 
-export function formatShellRerouteMessage(relativePath: string): string;
-
 export function runPreToolUseArm(
 	tool: string,
 	spec: HarnessSpec,
