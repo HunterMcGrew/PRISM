@@ -2764,6 +2764,66 @@ test("runPreToolUseArm: a shell deny resolves its path against the command's own
 	});
 });
 
+// --- Windows path separators ---
+
+/**
+ * Every row here spells its separator as a literal `\`, which means the same
+ * thing on every platform. The end-to-end rows above reach the same code by
+ * building their paths with `path.join`, so on macOS and ubuntu they exercise
+ * the forward-slash spelling and only the Windows leg sees a backslash. These
+ * rows put the backslash reading on all three legs, so the next regression is
+ * caught where most runs happen rather than on the one leg nobody watches.
+ */
+test("parseShellReadTargets: a backslash-spelled path credits the same doc as its forward-slash twin", () => {
+	assert.deepEqual(
+		parseShellReadTargets(
+			String.raw`cat .prism\architect\_toolkit\install-layout.md`
+		),
+		[{ filePath: ".prism/architect/_toolkit/install-layout.md", credit: true }]
+	);
+});
+
+test("parseUnprovenShellPaths: a backslash-spelled write target stays one path rather than gluing into a word", () => {
+	assert.ok(
+		parseUnprovenShellPaths(
+			String.raw`echo hi > scripts\ai-skills\build.ts`
+		).includes("scripts/ai-skills/build.ts"),
+		"a separator read as an escape deletes itself and the path matches no route"
+	);
+});
+
+test("parseUnprovenShellPaths: a drive-qualified path keeps its drive letter", () => {
+	// Dropping the `C:` leaves `/repo/src/index.ts`, which `path.resolve`
+	// re-qualifies with whichever drive the process sits on — correct on the
+	// same drive by accident, and resolved somewhere else across drives.
+	assert.ok(
+		parseUnprovenShellPaths(String.raw`tee C:\repo\src\index.ts`).includes(
+			"C:/repo/src/index.ts"
+		)
+	);
+});
+
+test("runPreToolUseArm: a backslash-spelled shell write on a routed path is denied", async () => {
+	await withTempRepo(async (repoRoot) => {
+		const { target } = await seedGateRepo(repoRoot);
+
+		assert.equal(
+			denyReason(
+				await runPreToolUseArm(
+					"claude",
+					HARNESSES.claude,
+					writePayload(repoRoot, target, {
+						tool_name: "Bash",
+						tool_input: { command: String.raw`echo hi > src\index.ts` },
+					})
+				)
+			),
+			"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+				`cat .prism/architect/${GATE_DOC}`
+		);
+	});
+});
+
 // --- The allow-list pre-filter (D3) ---
 
 test("parseShellReadTargets: each class the allow-list closes yields zero targets", () => {

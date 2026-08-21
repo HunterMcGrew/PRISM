@@ -101,6 +101,39 @@ const SHELL_READ_SAFE_CHARACTERS = /^[\w./@+=,:~"' \t;\r\n-]*$/;
 const SHELL_READ_COMMANDS = new Set(["cat", "head", "tail", "sed", "less", "more"]);
 
 /**
+ * Rewrites Windows path separators to `/` in shell-command text, leaving
+ * POSIX escape sequences alone.
+ *
+ * A `\` is a separator to Windows and an escape character to a POSIX shell,
+ * and each arm of this channel reads it the other way. `SHELL_READ_SAFE_CHARACTERS`
+ * refuses `\`, so a Windows-spelled command credits nothing and the gate
+ * over-denies; `scanPathShapedTokens` deletes it, so `src\index.ts` glues into
+ * `srcindex.ts`, matches no route, and the gate under-denies. Normalizing
+ * before either one runs is what lets both read the same path.
+ *
+ * The lookahead is what separates the two readings. A separator backslash is
+ * always followed by a path character; a POSIX escape is followed by a space,
+ * a quote, a `$`, or a line break. `cat foo\ bar.md` keeps its backslash,
+ * keeps failing the class, and keeps yielding zero targets. The one case that
+ * reads wrong is a no-op escape of a word character — `cat foo\bar.md` becomes
+ * `foo/bar.md`, which credits if a routed doc happens to sit there. It needs a
+ * spelling nobody writes plus a doc at the rewritten path, and the alternative
+ * of stripping every `\` is what produced the bypass above.
+ *
+ * Nothing here keys on `path.sep`. Node reports `\` on Windows whatever shell
+ * is in front of it, so a platform branch would mis-parse Git Bash — where the
+ * escape reading is the right one — and would be a branch only the Windows CI
+ * leg could ever execute. Running one code path on every platform is what lets
+ * a macOS test prove the Windows behavior.
+ *
+ * @param {string} command
+ * @returns {string}
+ */
+function normalizeShellSeparators(command) {
+	return command.replace(/\\(?=[\w.@~+-])/g, "/");
+}
+
+/**
  * Strips one layer of matching surrounding quotes from a token.
  *
  * @param {string} token
@@ -129,8 +162,9 @@ function unquote(token) {
  * and any other command that names its files indirectly; and unquoted paths
  * containing spaces.
  *
- * The class is tested once, over the raw command, and a failure costs every
- * segment rather than the offending one. Segment-independent judgment is what
+ * The class is tested once, over the whole command with its separators
+ * normalized, and a failure costs every segment rather than the offending one.
+ * Segment-independent judgment is what
  * let a heredoc body credit the documents its own text named — see the class's
  * own JSDoc for why the whole-command form is the only one that holds.
  *
@@ -142,12 +176,13 @@ export function parseShellReadTargets(command) {
 		return [];
 	}
 
-	if (!SHELL_READ_SAFE_CHARACTERS.test(command)) {
+	const normalized = normalizeShellSeparators(command);
+	if (!SHELL_READ_SAFE_CHARACTERS.test(normalized)) {
 		return [];
 	}
 
 	const targets = [];
-	for (const tokens of splitShellSegments(command)) {
+	for (const tokens of splitShellSegments(normalized)) {
 		targets.push(...parseSegmentReadTargets(tokens));
 	}
 
@@ -652,7 +687,7 @@ const GIT_TREE_SAFE_FLAGS = new Set(
 	).split(/\s+/)
 );
 
-const PATH_SHAPED_RUN = /[\w./@~+-]+/g;
+const PATH_SHAPED_RUN = /[\w./@~+:-]+/g;
 
 /**
  * Every path-shaped token a command names, anywhere in its text, with quote
@@ -689,6 +724,17 @@ function scanPathShapedTokens(command) {
 		const unprefixed = run.replace(/^[-+]+/, "");
 		if (unprefixed.length > 0) {
 			tokens.add(unprefixed);
+		}
+
+		// `:` is in the run so a Windows absolute path stays one token —
+		// `C:/repo/x.ts` resolves to the drive it names, while `/repo/x.ts`
+		// would be re-qualified with whatever drive the process is on and
+		// resolve elsewhere. Keeping it also glues an expansion to its
+		// operand, so `${OUT:-src/x.ts}` yields `OUT:-src/x.ts`; both
+		// spellings ride along, the same way the `-` strip above handles it.
+		const unqualified = run.replace(/^[^/:]*:[-+]*/, "");
+		if (unqualified.length > 0) {
+			tokens.add(unqualified);
 		}
 	}
 
@@ -822,12 +868,20 @@ function checkFlagsAreInert(args, inertFlags) {
  * @returns {string[]}
  */
 export function parseUnprovenShellPaths(command) {
-	const candidates = scanPathShapedTokens(command);
+	if (typeof command !== "string") {
+		return [];
+	}
+
+	// Both halves read the same normalized text, so a proven-safe operand
+	// still matches the candidate the scan recovered from it.
+	const normalized = normalizeShellSeparators(command);
+
+	const candidates = scanPathShapedTokens(normalized);
 	if (candidates.length === 0) {
 		return [];
 	}
 
-	const provenSafe = resolveProvenSafePaths(command);
+	const provenSafe = resolveProvenSafePaths(normalized);
 	return candidates.filter((candidate) => !provenSafe.has(candidate));
 }
 
