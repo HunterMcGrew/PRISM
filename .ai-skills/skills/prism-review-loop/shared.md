@@ -53,9 +53,14 @@ noticed the subject had stopped producing findings.
 
 Two rules meet here and neither replaces the other. Each reviewer's
 § Plan-file scope shrinks the set of plan observations that are findings at
-all — a plan is a finding only when it contradicts the diff. The Ledger row
-below caps what the survivors can cost inside a loop: they are swept once at
-close and never drive another pass. Upstream filter, downstream cap.
+all — a plan is a finding only when it contradicts the diff. What survives
+that filter is mostly a contradiction in `## Implementation Tasks`,
+`## Decisions`, or `## Acceptance Criteria`, which the list above already
+calls Subject content — so the loop reviews it at the Subject bar like any
+other finding rather than capping it. The capping belongs to the Ledger row
+under **Disposition** below, and it runs over the bookkeeping sections
+whether or not § Plan-file scope would have called them findings. Two filters
+aimed at different sets, not an upstream filter feeding a downstream cap.
 
 **The repair bar — four anchors, name one or it is not a finding.** A
 repair-surface finding is admissible only when the reviewer names, and the

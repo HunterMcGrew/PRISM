@@ -96,7 +96,7 @@ A plan-file observation is a finding only when the plan contradicts the change: 
 
 Everything else about a plan is not a finding — a missing verdict sub-bullet, a missing `> Retro:` line, section ordering, history-entry length, formatting. Fix it inline if you own the branch; otherwise mention it in one line and move on.
 
-**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. The `Meta` severity the review loop applies caps what such a finding costs once filed; this rule keeps most of them from being filed at all.
+**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. Under `prism-review-loop` an observation in one of the plan's bookkeeping sections is Ledger surface and is not raised during the loop at all; this rule keeps the rest from being filed in the first place.
 
 ### Anti-pattern: Rubber-stamping
 

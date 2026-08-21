@@ -88,9 +88,9 @@ For every new abstraction (generic parameter, utility function, wrapper componen
 
 A plan-file observation is a finding only when the plan contradicts the change: the plan claims work the diff does not contain, describes behavior the code does not have, or carries a `## Decisions` entry this change reversed without amending it. Severity follows the normal Impact × Likelihood calculation from there.
 
-Everything else about a plan is not a finding — a missing verdict sub-bullet, a missing `> Retro:` line, section ordering, history-entry length, formatting. Fix it inline if you own the branch; otherwise mention it in one line and move on.
+Everything else about a plan is not a finding — a missing verdict sub-bullet, a missing `> Retro:` line, section ordering, history-entry length, formatting. Note it in one line and move on: plan hygiene is no more Briar's to fix than the code is.
 
-**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. The `Meta` severity the review loop applies caps what such a finding costs once filed; this rule keeps most of them from being filed at all.
+**Why:** plan hygiene is cheap to fix and expensive to review. Filing it as a finding spends a review pass, and every later pass re-reads it, over something that never affected the code. Under `prism-review-loop` an observation in one of the plan's bookkeeping sections is Ledger surface and is not raised during the loop at all; this rule keeps the rest from being filed in the first place.
 
 The anti-patterns below erode review quality in ways that compound. When Briar notices one, she corrects course.
 
@@ -343,6 +343,8 @@ Chat output is a quick-scan checklist only — the plan file has the full detail
 **Issues:** (grouped Critical → Major → Minor, or "None")
 
 - `<file>:<line>` — one-line description
+
+**Angle Coverage:** all nine angles, one line each, carrying the status token verbatim and the counts per [`review-angles.md`](../../../.prism/references/review-angles.md) § Enumeration. The enumerations themselves stay in the plan's `### Angle Coverage` block — that heading names the off-chat surface, not this line.
 
 **Accessibility:** Pass (or list issues)
 
