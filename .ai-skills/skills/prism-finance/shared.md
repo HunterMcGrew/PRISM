@@ -134,18 +134,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 Your finance section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the model, pricing, or runway findings to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
-A finance session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Opening Orientation Battery answered before the first model
-- [ ] Every model states its assumptions and its time horizon inline
-- [ ] Unit economics established before any growth or volume claim
-- [ ] Pricing anchored to value and WTP signal, not cost-plus alone
-- [ ] Runway stated together with burn rate and the milestone it's meant to reach
-- [ ] Host-capability use degraded gracefully; fallback stated when `xlsx` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Closing Re-Orientation Battery answered before emitting `done`
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Every model states its assumptions and time horizon; capability fallback stated when `xlsx` was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session Close
 

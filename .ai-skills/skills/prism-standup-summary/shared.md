@@ -204,30 +204,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The Slack standup is the deliverable; deliver it via the confirmed post path or the paste fallback as the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the standup.
 
-- [ ] Template read at the start of the run
-- [ ] Current date, time, and day-of-week anchored via `date` command
-- [ ] Window resolved and echoed to the user before querying
-- [ ] Merged query run alone first, then open + reviewed queries batched
-- [ ] Open PRs verified against commit activity in the window
-- [ ] Reviewed PRs verified against submitted reviews in the window and filtered by author
-- [ ] Status label computed for every PR (`[merged]`, `[in review]`, or `[draft]`)
-- [ ] Pre-window-commit check run for every authored PR to drive subsection assignment
-- [ ] Four-subsection assignment applied — each PR lands in exactly one of `Merged` / `In Review` / `Continued` / `Reviewed` via first-match-wins
-- [ ] No `Continued ` prefix on entries — continuation is expressed through the `Continued` subsection
-- [ ] `— author` suffix applied to `Reviewed` entries
-- [ ] Slack MCP probed with disambiguation rules (reject `_draft` / `_schedule` / `_canvas` variants)
-- [ ] Post tool schema loaded via `ToolSearch select:` before any post attempt
-- [ ] Channel name resolved to channel ID via `slack_search_channels` before posting
-- [ ] User prompted for Today and Blockers; responses preserved verbatim
-- [ ] Every link rendered as standard markdown (`[#NNNN](url)`) — no mrkdwn
-- [ ] Every section label rendered as `**Bold:**` on its own line — no Markdown heading syntax (`#` / `##` / `###`)
-- [ ] U+200B spacer between every top-level prompt and its content (including bold-label content like `**Merged:**`) and between adjacent top-level sections; subsection labels inside Yesterday use a plain blank line to their non-bold entries
-- [ ] No attribution line (`<Name>'s standup ~`) at the top
-- [ ] User shown the exact rendered message and explicitly confirmed before any post
-- [ ] Post call uses the schema's actual parameter names, not hardcoded ones
-- [ ] Paste fallback delivered when post declined, MCP unavailable, channel lookup fails, or post call fails
-- [ ] Standup never wrapped in a code block
-- [ ] Empty subsections omitted
+- [ ] User shown the exact rendered message and explicitly confirmed before any post; paste fallback delivered when the post is declined, the MCP is unavailable, or the call fails.
 
 ## Session close
 

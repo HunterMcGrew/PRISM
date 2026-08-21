@@ -302,8 +302,6 @@ The audit report at `.prism/audits/<YYYY-MM-DD>-audit.md` is the deliverable; wr
 - [ ] If the worktree lane ran, it never removed a RED or YELLOW worktree, and it re-classified each GREEN entry immediately before removing it.
 - [ ] Every confirm gate in this run was per-item, except the worktree lane's single batch gate — the one documented exception.
 
----
-
 ## Next persona
 
 This skill typically ends with "Done" — no next persona in the standard flow. Cite [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.

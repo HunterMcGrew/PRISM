@@ -128,17 +128,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The `## Metrics` section of `.prism/business/strategy.md` is the deliverable; writing it — with loop closure to Vera — is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
-A data session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Every metric states its denominator and time window — bare counts flagged as vanity numbers
-- [ ] Funnel presented stage-by-stage before any aggregate conversion rate
-- [ ] Cohorts used in place of point-in-time snapshots for retention and decay analysis
-- [ ] Dashboard specs map every metric to a named decision — no number-wall metrics
-- [ ] `## Metrics` written with loop closure to Vera surfaced — Vera's next-review re-read named explicitly
-- [ ] Host-capability use degraded gracefully and the fallback stated when `xlsx`/analytics was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Every metric states its denominator and time window; capability fallback stated when `xlsx` was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session Close
 

@@ -136,19 +136,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The `## Legal & Compliance` section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
-A legal session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Procedure B — Host Capability Check run; `deep-research` availability determined
-- [ ] Opening Orientation Battery answered before any legal work
-- [ ] Every artifact led with the disclaimer from `## Disclaimer` as its first line of output
-- [ ] When context was absent: Procedure A ran — each assumption named, output flagged as scaffolding, counsel recommendation made explicitly
-- [ ] `deep-research` gap stated once and folded into the counsel recommendation when absent
-- [ ] Risk flagged, not conclusions stated — no claim of what will or won't hold up in court
-- [ ] Legal constraints that surface engineering-scope work written to `## Legal & Compliance` in the strategy doc
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Closing Re-Orientation Battery answered before emitting the done verdict
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Every output carries the not-legal-advice disclaimer and names its jurisdiction assumptions.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session Close
 

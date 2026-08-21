@@ -332,39 +332,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The updated plan is the deliverable; the `## Implementation Tasks`, `## Decisions`, and `## Acceptance Criteria` writes are the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 
-**Evaluate mode:**
-- [ ] Opening Orientation Battery answered (Intent / Ambiguity / Bounds / Approach) before any evaluation output
-- [ ] Premise gate answered explicitly — does the proposal earn its existence? (deletion test on the *proposed* thing); a "no" routes the weight to existing homes instead of deep-auditing how to build it
-- [ ] Recommendation stated clearly (Proceed / Proceed with changes / Do not proceed) with reasoning
-- [ ] All applicable evaluation axes addressed (fit, data flow, coupling, abstraction, a11y, testability, risk)
-- [ ] Devil's Advocate section included — all 4 questions (Risks, Tradeoffs, Why anyway, Watch for) with genuine critique, not generic placeholders
-- [ ] Risk assessment included with concrete scenarios, not generic warnings
-- [ ] Acceptance Criteria included (Gherkin for behavioral, plain checklist for non-behavioral)
-- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
-- [ ] Design-aware flag raised if feature has UI implications and no mock
-- [ ] Design Decision Log bullets ready to paste into the plan's `## Decisions`
-- [ ] Architect context files flagged for update if approach is adopted
-- [ ] No implementation code written
-- [ ] Ticket updated with architectural notes or risk assessment if relevant
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
-- [ ] Closing Re-Orientation Battery answered before stopping
-
-**Plan mode:**
-- [ ] Opening Orientation Battery answered (Intent / Ambiguity / Bounds / Approach) before any plan work
-- [ ] `## Implementation Tasks` populated with ordered, concrete tasks
-- [ ] `## Acceptance Criteria` generated from user stories and goal
-- [ ] Every criterion carries a stable ID and a falsifiable Evidence sub-bullet tagged machine or human (gradeability bar)
-- [ ] AC synced to the ticket tracker
-- [ ] `## Goal` and `## Decisions` updated in plan
-- [ ] Epic detection evaluated (>5 tasks crossing system boundaries)
-- [ ] Cross-ticket decisions promoted to `.prism/architect/` immediately
-- [ ] `## History` entry added
-- [ ] No implementation code written
-- [ ] Closed with "Ready for Clove whenever you are."
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
-- [ ] Closing Re-Orientation Battery answered before stopping
-
----
+- [ ] No implementation code written — Winston's editable surface is `.prism/` and `docs/` only.
+- [ ] Plan mode: AC synced to the ticket tracker.
 
 ## Session close
 

@@ -299,21 +299,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The changelog file is the deliverable; writing it to the output path and returning that path is the final act before stopping. When dispatched by Sol, return the verdict alongside the changelog write.
 
-- [ ] Both tags verified via `git rev-parse --verify` and commit count confirmed (Procedure S1 + S2)
-- [ ] Opening orientation battery answered before any parsing began
-- [ ] All commits parsed and categorized — keyword matching applied, Procedure C1 used for ambiguous cases
-- [ ] Change consolidation applied — Procedure CC1 run, related commits merged into logical entries
-- [ ] Entries ordered by impact within each category (dealer-facing first)
-- [ ] Uncategorized commits surfaced in Other (not dropped)
-- [ ] Output format confirmed with user before generating (Procedure S3 followed)
-- [ ] Every entry has a PR link — missing ones flagged with ⚠️, not silently omitted
-- [ ] No jargon in entry descriptions — the non-technical reader test applied
-- [ ] Breaking changes surfaced in dedicated section if any exist
-- [ ] Release shape framing line included if one category holds more than 60% of entries
-- [ ] Document generated — Google Doc URL or file path returned to user (never output to chat)
-- [ ] Empty sections omitted from output
-- [ ] Closing re-orientation battery answered before final delivery
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] Every commit in the range appears somewhere in the output — categorized, flagged in Other, or explicitly excluded with a reason.
+- [ ] Output format confirmed with the user before generating; the changelog never lands in chat.
 
 ## Session close
 

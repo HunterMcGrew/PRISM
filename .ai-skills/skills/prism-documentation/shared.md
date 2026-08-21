@@ -244,28 +244,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The written doc file under `docs/` is the deliverable; shipping it — through the two-path closing (§ Post-Docs Closing) — is the final act before stopping, not presenting its path. When dispatched by Sol, return the verdict alongside the doc write.
 
-- [ ] Documentation conventions read (`documentation.md`)
-- [ ] Doc templates read (`.prism/references/user-doc-template.md` and/or `.prism/references/dev-doc-template.md`)
-- [ ] Callout guide read (`.prism/references/doc-callouts.md`)
-- [ ] Branch plan read fully — decisions, history, and constraints absorbed before writing
-- [ ] Recent commits checked (`git log --oneline -10`) for tone, language, and structural decisions
-- [ ] Feature context confirmed (branch / PR / tag range / existing doc / interview)
-- [ ] Audience confirmed before writing
-- [ ] Existing doc check — updated existing file if one exists for the topic
-- [ ] Missing doc nudge — checked for missing user/dev docs on touched blocks and flagged to user
-- [ ] Diff surface assessed — parallel sub-agents used if both frontend and backend are touched
-- [ ] Context read — diff, plan, PR description, or interview answers
-- [ ] Control inventory built from source (user docs only) — every UI control accounted for
-- [ ] Complete doc(s) written following the template structure — every step documented, every block option covered (toolbar AND sidebar), nothing skipped
-- [ ] Callouts used where appropriate (NOTE, TIP, IMPORTANT, WARNING, CAUTION) — 0-2 per page
-- [ ] Image paths use relative format (`../../../public/images/...`), meaningful alt text on every image
-- [ ] Frontmatter included with correct category, audience, and last_updated
-- [ ] `_meta.js` updated in target directory with new page slug and display name
-- [ ] `docs/content/index.mdx` updated if new page warrants a home page link
-- [ ] Cross-reference map updated in `documentation.md` if applicable
-- [ ] Branch plan updated with History entry (if plan exists)
-- [ ] File path(s) presented to user with review prompt
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] Control inventory built from source (user docs only) — every UI control accounted for, not just the ones the plan mentions.
 
 ### Large-write checks (if applicable)
 

@@ -365,35 +365,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 For mode 2, the mock spec saved to `.prism/design/mocks/` is the deliverable; saving it and writing the `## Design` summary to the plan is the final act before stopping. Mode-1 inline runs produce no file — they complete in chat on coherence alone. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
-Before presenting your response, walk through the relevant checklist. Each item should be addressed or explicitly noted as not applicable with reasoning.
-
-**Audit mode:**
-- [ ] User goal and context confirmed before auditing
-- [ ] Convention audit completed (6 dimensions) as first pass
-- [ ] Deep audit axes evaluated when warranted (cognitive load, perception, motor, decision, feedback, consistency, error, dealership)
-- [ ] Issues cited with specific named principles (not just "feels off")
-- [ ] "What's working" section included — name the principle it satisfies
-- [ ] Mobile-first assessment included for frontend work
-- [ ] Stayed within role scope (design and specs, not implementation code)
-
-**Proposal mode:**
-- [ ] Requirements confirmed before proposing
-- [ ] Proposal anchored to named principles
-- [ ] All five states covered (empty, loading, error, partial, success)
-- [ ] Mobile-first layout designed for frontend work
-- [ ] Self-critique included
-- [ ] Implementation spec ready for Clove handoff
-- [ ] Stayed within role scope (design and specs, not implementation code)
-
-**Mode 2 (saved spec):**
-- [ ] All of the above
-- [ ] Mock spec saved to `.prism/design/mocks/`
-- [ ] Plan updated with `## Design` section
-- [ ] Handoff paragraph written with status
-- [ ] Spec includes Tailwind/rem/px annotations for measurable design choices
-- [ ] Spec cites UI/UX principles by name for each interaction or layout decision
-- [ ] Spec includes `## Architectural inputs for Winston` section
-- [ ] Spec routed to Winston (no direct-to-Clove — see [ADR-0034](../../spec/adrs/_toolkit/0034-pixel-always-routes-through-winston.md))
+- [ ] Mode-2 specs route through Winston — never direct to Clove (§ Handing off, Procedure A; ADR-0034).
 
 ## Session close
 

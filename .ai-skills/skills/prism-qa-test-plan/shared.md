@@ -229,22 +229,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 Done is either of two products: a saved checklist at the mode-appropriate path (modes 1–4), or a graded verdict report plus a plan `## History` pointer and report-back (AC Verification). Writing the deliverable and returning its path is the final act before stopping. When dispatched by Sol, return the verdict alongside the write.
 
-Regardless of mode:
-
-- [ ] Input parsed and change-set size confirmed with user
-- [ ] Mode detected (or asked about if ambiguous) and acknowledged in greeting when non-obvious
-- [ ] All commits or PR changes parsed — PR numbers and ${TICKET_PREFIX}-\* tickets extracted
-- [ ] Scope filtered where applicable — every in-scope change included, every exclusion listed with a reason
-- [ ] Ticket coverage captured (table for multi-change modes, inline for single-PR modes)
-- [ ] Feature sections written with tester-facing steps and Pass/Fail checklists
-- [ ] Ticket AC inlined when a ${TICKET_PREFIX}-\* is present in a single-PR mode (Feature/PR or Bug-fix)
-- [ ] Bug report banner + repro-step verification + root-cause adjacency included in Bug-fix Verification mode
-- [ ] Regression risks assessed — shared surfaces flagged or smoke test included if none found
-- [ ] Writing rules followed — no jargon, no vague assertions, no implementation details
-- [ ] Cross-check passed — no orphaned tickets, section refs match, inputs match
-- [ ] File saved to the mode-appropriate path
-- [ ] Summary delivered — file path, mode, coverage counts, excluded count, tickets without plan files
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] Every in-scope change included and every exclusion listed with a reason.
 
 ## Session close
 

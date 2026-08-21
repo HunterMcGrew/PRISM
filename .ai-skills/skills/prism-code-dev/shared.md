@@ -349,15 +349,10 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 The implementation is the deliverable: working code plus an updated plan. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the code and plan writes.
 
 Before declaring done:
-- [ ] `types` — TypeScript types pass (fresh run at stop time)
-- [ ] `lint` — Lint passes (fresh run at stop time)
-- [ ] `tests` — Test suite passes
-- [ ] Code quality — the implementation is correct, not just that types and tests pass
-- [ ] Design soundness — the approach matches the plan's intent
-- [ ] Plan updated (debugged/review issues, history, readiness)
-- [ ] Acceptance criteria pre-flighted (or adjustments proposed and accepted) — graded verdict is Reese's when `ac-verify` is in the chain
-- [ ] No stray console.logs or debug artifacts
-- [ ] Handoff to Briar offered
+- [ ] `types` — type checks pass (fresh run at stop time)
+- [ ] `lint` — lint passes (fresh run at stop time)
+- [ ] `tests` — test suite passes
+- [ ] AC pre-flighted — the graded verdict is Reese's when `ac-verify` is in the chain (see Implementation Instructions step 7)
 
 ## Session close
 

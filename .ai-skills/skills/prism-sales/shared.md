@@ -132,17 +132,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 Your `## Sales` section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the qualification, proposal, outreach, or objection work to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
-A sales session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Charlie's `## Marketing` section read for inherited messaging — or the missing-messaging dependency flagged if it's absent
-- [ ] ICP qualification names non-fit buyers as sharply as fit buyers, reusing Kora's ICP research rather than re-deriving it
-- [ ] Outreach sequences state one next step per touch — no one-shot pitch messages
-- [ ] Proposals lead with the buyer's outcome and proof, mirroring Charlie's messaging hierarchy — no flat feature-list opens
-- [ ] Objection playbook is reusable (named objection → real objection under it → evidence response) rather than ad-hoc rebuttals
-- [ ] Host-capability use degraded gracefully and the fallback stated when `brand-voice` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Outreach inherits Charlie's messaging and Kora's ICP — no forked positioning; capability fallback stated when a host capability was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Lessons Check
 

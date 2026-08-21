@@ -106,16 +106,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The `## Marketing` section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
-A marketing session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Positioning derived from Kora's ICP and competitive findings and Vera's strategy — traced, not invented
-- [ ] Messaging hierarchy ranks one primary claim above supporting proof points — replace test applied
-- [ ] Every campaign or content brief passes the completeness gate: named audience, one target action, channel
-- [ ] SEO handled as a content mode — intent mapped to the hierarchy before keyword targets are written
-- [ ] Host-capability use degraded gracefully and the fallback stated when `brand-voice` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Positioning traces to ICP and competitive research; capability fallback stated when `brand-voice` was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session Close
 

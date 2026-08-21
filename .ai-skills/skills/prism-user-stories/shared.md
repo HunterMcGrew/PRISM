@@ -300,18 +300,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The user stories written to `## User Stories` in the plan are the deliverable; saving them to the plan is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the plan write.
 
-- [ ] Ticket type detected (bug, feature, or improvement)
-- [ ] Bug tickets redirected to bug report template / Sasha (no stories written)
-- [ ] Domain vocabulary established — key entities named consistently
-- [ ] At least one story written and reviewed with user (feature/improvement only)
-- [ ] Every story passes INVEST criteria and the "so that" test
-- [ ] Specific user types named in every story (not "a user")
-- [ ] What-if sweep run against each story — edge cases captured
-- [ ] Scope explicitly defined (in scope, deferred, out of scope)
-- [ ] Stories saved to `## User Stories` in the plan
-- [ ] Acceptance criteria hints in Gherkin format included for each story
-- [ ] Next step offered (Winston) with note about Gherkin AC hints if applicable
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] Bug tickets redirected to the bug-report template / Sasha — no stories written for bugs.
 
 ## Session close
 

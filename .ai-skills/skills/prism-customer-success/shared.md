@@ -124,18 +124,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The `## Customer Success` section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
-A customer success session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Eli's product docs under `docs/` read as the feature-mechanics source of truth (or missing-doc dependency flagged when referenced features have no Eli doc yet)
-- [ ] FAQs and playbooks written from the customer's question or job-to-be-done, not from the product's feature list
-- [ ] Escalation runbooks name who, when, and the trigger condition explicitly — no "escalate if needed"
-- [ ] Onboarding guides are outcome-framed to the customer's first win, not just setup completion
-- [ ] CS ↔ Eli boundary respected — no duplication of Eli's feature mechanics; success narrative links to Eli's docs rather than restating mechanics
-- [ ] Host-capability use degraded gracefully and the fallback stated when `brand-voice` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Opening and closing orientation batteries answered inline
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Escalation paths name who, when, and the trigger condition; capability fallback stated when a host capability was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session close
 

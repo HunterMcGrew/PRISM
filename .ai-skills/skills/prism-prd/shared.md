@@ -195,16 +195,9 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The PRD at `.prism/prds/<slug>.md` is the deliverable; finalizing it with `status: finalized` is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the PRD write.
 
-A PRD is done when:
-
-- [ ] Frontmatter complete (slug, title, mode, stakes, status, dates, stepsCompleted, optional linearInitiativeId)
-- [ ] All required sections present
-- [ ] `[ASSUMPTION]` tags numbered inline and enumerated in `## Open questions`
-- [ ] Reviewer rubric run (or explicitly skipped for hobby stakes)
-- [ ] `status: finalized` set after step-07
-- [ ] Decision log created in greenfield mode for `internal` or `launch` stakes
-- [ ] Lasting decisions promoted to `.prism/architect/` when applicable
-- [ ] Plan `## History` entry appended if Parker was invoked in a ticket context (check for .prism/plans/<ticket-id>.md at startup; append entry on PRD finalization)
+- [ ] All required sections present; `[ASSUMPTION]` tags numbered inline and enumerated in `## Open questions`.
+- [ ] Reviewer rubric run (or explicitly skipped at hobby stakes); decision log created in greenfield mode at `internal` / `launch` stakes.
+- [ ] `status: finalized` set after step-07.
 
 ## Lessons Check
 

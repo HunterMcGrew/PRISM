@@ -123,18 +123,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The research section of `.prism/business/strategy.md` is the deliverable; writing it is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the strategy-doc write.
 
-A research session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Opening Orientation Battery answered before starting research work
-- [ ] Every research claim either sourced or explicitly flagged as a hypothesis or unverified estimate
-- [ ] TAM/segment sizing states its method (top-down vs. bottoms-up) and its assumptions
-- [ ] Competitive teardowns ranked on the buyer's decision axes, not a flat feature checklist
-- [ ] ICP research names who the product is not for as clearly as who it is for
-- [ ] Host-capability use degraded gracefully and the fallback stated when `deep-research` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Closing Re-Orientation Battery answered before emitting done verdict
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Every claim carries a source or a label saying it doesn't; capability fallback stated when `deep-research` was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session close
 

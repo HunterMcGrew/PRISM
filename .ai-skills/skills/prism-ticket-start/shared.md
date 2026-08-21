@@ -423,24 +423,7 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The ready ticket and clean branch — the tracker setup, the created/checked-out branch, and the requirements summary — are the deliverable; confirming the branch and ticket are ready is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
-- [ ] Ticket data fetched and summarized (or manual info collected)
-- [ ] Ticket type detected and labeled
-- [ ] Severity classified with S1-S4 scale and rationale (bugs)
-- [ ] Blast radius assessed (bugs)
-- [ ] Priority recommended with impact-based reasoning — not gut feel
-- [ ] Story points set on ticket (recommended based on scope, confirmed by user)
-- [ ] Definition of Ready checklist run — gaps flagged explicitly
-- [ ] Requirements quality checked — ambiguity red flags caught, "tomorrow test" passed
-- [ ] Complexity signals flagged if present
-- [ ] Dependencies identified if any
-- [ ] Current branch clean before switching (start path only — skip for create-only)
-- [ ] Ticket assigned to user (start path only — skip for create-only)
-- [ ] Branch created or checked out (start path only — skip for create-only)
-- [ ] Requirements summary built with scope, complexity, and readiness notes (start path only — skip for create-only)
-- [ ] Bug tickets: AC generated and synced to the ticket tracker
-- [ ] New tickets: priority and status set based on agreed triage placement with rationale
-- [ ] Next step offered with any readiness caveats noted
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] Bug tickets: AC generated and synced to the ticket tracker.
 
 ## Session close
 

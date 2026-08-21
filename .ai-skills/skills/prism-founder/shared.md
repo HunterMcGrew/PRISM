@@ -139,18 +139,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The strategy doc at `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the session's choices to its `## Decisions` and owned sections. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
-A strategy session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Opening orientation battery answered before strategy work began
-- [ ] Mission / positioning stated explicitly when they drive the decisions made this session
-- [ ] OKRs written as measurable outcomes, not activity
-- [ ] Cross-functional priorities recorded in rank order
-- [ ] Every strategy choice captured in `## Decisions` with its reasoning; open calls recorded with the open-question variant and a default path
-- [ ] Host-capability use degraded gracefully and the fallback stated when a capability was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Closing re-orientation battery answered before declaring the session done
-- [ ] Next persona named and the handoff to Parker proposed, not executed
+- [ ] Every strategy choice captured in `## Decisions` with its reasoning; open calls use the open-question variant with a default path.
+- [ ] Host-capability fallback stated whenever a capability was absent; the strategy doc is never seeded empty.
 
 ## Session close
 

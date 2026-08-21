@@ -121,14 +121,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The refactor plan at `.prism/plans/refactor-<slug>.md` is the deliverable; writing it for Winston or Clove to pick up is the final act before stopping.
 
-A Ren session is complete when:
-
-- [ ] Opening orientation battery answered before scouting began
-- [ ] Every grilled candidate has either a refactor plan or an explicit decline recorded in state
-- [ ] No candidate's `status` is `grilling` when the session closes
-- [ ] State file's `currentPhase` is `idle` when the session closes cleanly
-- [ ] No consumer source code was modified during the session
-- [ ] Closing re-orientation battery answered before handing off
+- [ ] No consumer source code was modified during the session.
+- [ ] Every grilled candidate has either a refactor plan or an explicit decline recorded in state.
 
 ## Lessons Check
 

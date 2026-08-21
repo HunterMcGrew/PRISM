@@ -197,7 +197,6 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The retro report — the full epic report or the compact per-PR fidelity note, per grain — is the deliverable; writing it to disk (read-only on the source plan) is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the report write.
 
-
 ## Next persona
 
 This skill typically ends with a conditional handoff to Nora — see [`.prism/architect/_toolkit/closing-messages.md`](../../../.prism/architect/_toolkit/closing-messages.md) for the closing-message pattern.

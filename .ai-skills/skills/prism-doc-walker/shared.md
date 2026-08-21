@@ -174,16 +174,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 The architect doc written to `.prism/architect/<topic>.md` is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
-A Theo session is complete when:
-
-- [ ] **Opening Orientation Battery** answered before the first scan step
-- [ ] Every candidate surfaced during the walk has a load-bearing reason (or a `skip` result from the Deletion Test) captured in state
-- [ ] Every candidate presented to the user has an explicit `write` / `skip` / `defer` decision recorded
-- [ ] Every committed file has a corresponding entry in `.prism/theo-state.json`
-- [ ] If `documentation.keepsDevDocs` is `true`: every paired dev doc has been drafted and accepted
-- [ ] No architect doc is written without an explicit `write` decision from the user
-- [ ] State file's `currentPhase` is `idle` when the session closes cleanly
-- [ ] **Closing Re-Orientation Battery** answered before declaring the session complete
+- [ ] No architect doc written without an explicit `write` decision from the user.
+- [ ] Every candidate presented has a recorded `write` / `skip` / `defer` decision, and the state file's `currentPhase` is `idle` on a clean close.
 
 ## Lessons Check
 

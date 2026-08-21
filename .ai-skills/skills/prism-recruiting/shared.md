@@ -130,15 +130,8 @@ Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.pr
 
 Your `## People` section of `.prism/business/strategy.md` is the deliverable; the final act before stopping is writing the job description, rubric, or hiring-process work to that owned section. When dispatched by Sol, return the verdict (see the dispatch section) alongside the strategy-doc write.
 
-A recruiting session is done when:
-
-- [ ] Strategy doc read at the start of the run (or offered if absent — never errored on a missing file)
-- [ ] Every JD opens with role outcomes before requirements
-- [ ] Every rubric names evaluation criteria with the signal being sought, not just the trait name
-- [ ] Hiring plan grounded in Vera's OKRs and Ellis's runway constraints where available
-- [ ] Host-capability use degraded gracefully and the fallback stated when `brand-voice` was absent
-- [ ] No `.prism/business/strategy.md` seeded with empty content — written only when there was real content to record
-- [ ] Next persona named and the handoff proposed, not executed
+- [ ] Evaluation criteria are explicit — no rubric lives only in someone's head; capability fallback stated when a host capability was absent.
+- [ ] The strategy doc is never seeded empty.
 
 ## Session close
 

@@ -351,20 +351,8 @@ The plan is the deliverable: the `## Debugged Issues` entry is the final act bef
 
 The six phases gate completion. Earlier phases are not skipped to save time — a missing Phase 1 signal compromises every later phase. Typed escape paths (see each Phase above) are the sanctioned way to stop early; emit the appropriate verdict rather than forcing a diagnosis.
 
-- [ ] **Opening Orientation Battery** answered before Phase 1 began
-- [ ] **Phase 1** — Deterministic feedback-loop signal built (or `"no correct seam — architecture prevents lockdown"` finding recorded with the seam that should exist)
-- [ ] **Phase 2** — Signal triggers the bug consistently; bug categorized (`data | control_flow | timing | integration | environmental`); user's description treated as Hypothesis #0 and verified independently
-- [ ] **Phase 3** — 3–5 ranked falsifiable hypotheses written with explicit falsification criteria; each anchored on at least one Confirmed evidence point (Stronghold-first); user shown the ranked list before instrumentation (or documented in plan if dispatched)
-- [ ] **Phase 4** — Top hypothesis tested against the diagnostic-technique ladder; `[DEBUG-<hash>]` instrumentation tagged on every temporary log line
-- [ ] **Phase 5** — Root cause confirmed with evidence; 5 Whys applied (root vs. proximate); regression test designed (not written — Clove implements). If no correct seam, finding recorded.
-- [ ] **Phase 6** — Instrumentation cleaned (`grep -rn '\[DEBUG-'` returns empty); `## Debugged Issues` entry recorded with `Confidence`, inline-tagged root cause, and `Refuted hypotheses` / `Missing evidence` where applicable; ticket sync completed (synced if user opted in, `not synced` if they opted out or if dispatched); Lessons Check run
-- [ ] **Closing Re-Orientation Battery** answered before declaring the investigation complete
-- [ ] Historical discovery completed — git blame traced, prior plan/PR checked (or noted as "predates plan system")
-- [ ] Case file at `.prism/sasha-state.json` deleted (`status: complete`) or preserved with explicit status (`paused` for resume, `aborted` after user confirmation)
-- [ ] No source files modified, no fixes applied
-- [ ] If unconfirmed: `Confidence: Low`, leading hypothesis stated explicitly, missing evidence captured — do not close as "unknown"
-- [ ] Next step offered (Clove)
-- [ ] Flagged or recommended updates to `.prism/rules/` or `.prism/architect/` files where gaps were discovered
+- [ ] No source files modified, no fixes applied — the plan is the only file Sasha writes.
+- [ ] If unconfirmed: `Confidence: Low`, leading hypothesis stated explicitly, missing evidence captured — do not close as "unknown".
 
 ## Any-agent bug reporting
 
