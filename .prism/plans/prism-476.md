@@ -1,5 +1,8 @@
 # Plan: PRISM-476
 
+> Closed: 2026-09-02
+> Retro: declined — ticket-grain fidelity check ran inline: all nine AC verified MET against the branch, CI green on both runners, the one self-review Minor fixed, no plan-vs-diff divergence.
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/476
@@ -209,6 +212,8 @@ The docs each route asks for, from this branch's paths:
 
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — pick names that carry their own meaning and give every calibration prompt a per-level behavior line, without forking Parker's and Sol's shared vocabulary; Bounds — plan only, no implementation, no edits outside `.prism/plans/prism-476.md` and the GitHub issue body; Approach — one source of truth for the behavior lines in the existing reference doc, rename both consumers in one PR, leave frozen records alone and point at a new ADR · close: scope held
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — execute all ten Clove tasks: rename hobby/internal/launch to quick/reviewed/strict everywhere live, add ADR-0073, migrate PRD frontmatter, keep frozen records untouched; Bounds — the ten tasks as written, no scope beyond the plan; Approach — task order 1→10, one commit per task, rebuild and check at the end · close: scope held — a rename-completeness sweep after task 10 found two additional `internal`/`launch` mentions in `.ai-skills/skills/prism-prd/shared.md` that the task 4 pass missed (fixed in a follow-up commit within the same session, not a scope change)
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — self-review the rename branch for rename completeness, prompt-behavior AC, ADR/doc structure, and build cleanliness; Bounds — review only, no code edits; Approach — read the full canonical diff (`.prism`, `.ai-skills`, `docs`), verify each AC's evidence command directly, run `pnpm prism:build && pnpm prism:check` · close: scope held — one Minor finding (stray blank line), everything else clean
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — run the plan close: reflect at ticket grain, confirm every Decision verdict against what shipped, promote what needs promoting, mark the plan closed; Bounds — the plan file only, no source or spec edits; Approach — re-run every AC evidence command against the branch, read CI and the review record, verify ADR-0073 carries D1–D4 and D6 · close: scope held — one finding outside the plan: Eric's review summary never rendered on PR #479, since the posted comment body is an unexpanded local file path
 
 ---
 
@@ -216,6 +221,7 @@ The docs each route asks for, from this branch's paths:
 
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names]: Winston planned the stakes-level rename — ten Clove tasks, six Decisions, AC synced to issue #476. No implementation.
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names]: Implemented all ten tasks — renamed hobby/internal/launch to quick/reviewed/strict across `.prism/references/stakes-calibration.md`, Parker's and Sol's specs, the two human docs, and four PRD frontmatter values; added ADR-0073 and pointed the four earlier ADRs at it. `pnpm prism:build && pnpm prism:check` pass clean.
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names]: Closed the plan — the ticket-grain fidelity check found all nine AC MET (evidence commands re-run on this branch, and independently by Eric), CI green, and no divergence between the plan and the diff. All six Decision verdicts hold as written; no architect doc needed a line, because the vocabulary's durable home is `.prism/references/stakes-calibration.md` and ADR-0073 carries the reasoning.
 
 ---
 
@@ -223,33 +229,33 @@ The docs each route asks for, from this branch's paths:
 
 ### Behavioral
 
-- [ ] **AC-1** Given a user starts a new PRD and reaches the stakes question, When the question is asked, Then the three options are named quick, reviewed and strict, and each one is shown with a one-line description of what it changes, without the user having to open any other document.
+- [x] **AC-1** Given a user starts a new PRD and reaches the stakes question, When the question is asked, Then the three options are named quick, reviewed and strict, and each one is shown with a one-line description of what it changes, without the user having to open any other document.
   - Evidence (machine): `cat .prism/skills/prism-prd/greenfield-step-02-stakes.md` → question 1 lists `quick`, `reviewed`, `strict`, each followed by a description naming at least the reviewer rubric and the decision log · UNMET looks like: the question still lists bare labels, or lists levels with no description beside them
 
-- [ ] **AC-2** Given a user documents an existing feature as a PRD, When the single stakes-confirmation question is asked, Then it offers the same three named levels with the same one-line descriptions as the new-PRD flow.
+- [x] **AC-2** Given a user documents an existing feature as a PRD, When the single stakes-confirmation question is asked, Then it offers the same three named levels with the same one-line descriptions as the new-PRD flow.
   - Evidence (machine): `grep -n -A6 'stakes confirm' .prism/skills/prism-prd/step-01-init.md` → the question names `quick`/`reviewed`/`strict` and cites `stakes-calibration.md` § What each level changes · UNMET looks like: the brownfield question still says hobby/internal/launch, or offers the new names with no descriptions
 
-- [ ] **AC-3** Given a user starts an orchestrated run, When asked to set the autonomy policy, Then the options are named quick, reviewed and strict, and each is shown with a one-line description of which gates it lets a persona clear.
+- [x] **AC-3** Given a user starts an orchestrated run, When asked to set the autonomy policy, Then the options are named quick, reviewed and strict, and each is shown with a one-line description of which gates it lets a persona clear.
   - Evidence (machine): `sed -n '1,12p' .prism/skills/prism-conductor/step-01-init.md` → item 2 names `strict`/`reviewed`/`quick` with a clause each on gate-clearing behavior · UNMET looks like: the intake still offers launch/internal/hobby, or offers the new names as bare labels
 
-- [ ] **AC-4** Given a person reads the human-facing Parker guide, When they reach the stakes section, Then the table names the three levels and states what each one changes.
+- [x] **AC-4** Given a person reads the human-facing Parker guide, When they reach the stakes section, Then the table names the three levels and states what each one changes.
   - Evidence (human): open `docs/ai-skills/parker.md`, find the stakes table → rows read quick/reviewed/strict and the table carries a column describing what changes at each level · UNMET looks like: the table still lists hobby/internal/launch, or lists the new names with only the rubric/open-questions/decision-log columns
 
-- [ ] **AC-5** Given someone reads a document written before this change that mentions an old level name, When they look up what it meant, Then the shared reference tells them which new level it maps to.
+- [x] **AC-5** Given someone reads a document written before this change that mentions an old level name, When they look up what it meant, Then the shared reference tells them which new level it maps to.
   - Evidence (machine): `grep -n -A4 'Reading older artifacts' .prism/references/stakes-calibration.md` → the section maps `hobby`→`quick`, `internal`→`reviewed`, `launch`→`strict` · UNMET looks like: no mapping section exists, or it names fewer than all three old words
 
 ### Non-behavioral
 
-- [ ] **AC-6** No live specification, skill, or documentation file still uses an old level name for a level.
+- [x] **AC-6** No live specification, skill, or documentation file still uses an old level name for a level.
   - Evidence (machine): `grep -rn --exclude-dir=node_modules --exclude-dir=.git -iE '\bhobby\b' .` → every remaining hit is a frozen record (`.prism/plans/`, `.prism/prds/`, `.prism/retros/`, `.prism/qa/`, the four ADR bodies, the ADR index README quoting ADR-0054's title) or a generated mirror of one · UNMET looks like: a hit in `.prism/skills/`, `.ai-skills/skills/`, `.prism/references/`, `.prism/architect/`, or `docs/`. Positive control: the same grep before the change returns hits in `.prism/skills/prism-prd/` — the probe is known to fire
 
-- [ ] **AC-7** The generated platform mirrors match the canonical sources and the full repository gate passes.
+- [x] **AC-7** The generated platform mirrors match the canonical sources and the full repository gate passes.
   - Evidence (machine): `pnpm prism:build && pnpm prism:check` → exit 0, no drift reported · UNMET looks like: `prism:check` reports drift under `.claude/`, `.codex/`, `.cursor/`, or `templates/install/`, or any lint fails
 
-- [ ] **AC-8** The rename is recorded as an accepted architecture decision, and every earlier decision record that uses the old vocabulary points at it.
+- [x] **AC-8** The rename is recorded as an accepted architecture decision, and every earlier decision record that uses the old vocabulary points at it.
   - Evidence (machine): `ls .prism/spec/adrs/_toolkit/0073-*.md` → one file exists with `Status: accepted` and Context/Decision/Consequences sections; `grep -l 'ADR-0073' .prism/spec/adrs/_toolkit/00{43,48,52,54}-*.md` → all four listed · UNMET looks like: no 0073 file, or fewer than four ADRs carrying the pointer
 
-- [ ] **AC-9** Accepted decision records, closed plans, finalized PRD bodies, retros, and the changelog keep their original wording.
+- [x] **AC-9** Accepted decision records, closed plans, finalized PRD bodies, retros, and the changelog keep their original wording.
   - Evidence (machine): `git diff --stat origin/main` → the only changed lines under `.prism/spec/adrs/_toolkit/00{43,48,52,54}-*.md` are the added amendment-pointer lines, and the only changed lines under `.prism/prds/` are the four `stakes:` frontmatter values · UNMET looks like: prose edits inside any ADR body, retro, or PRD body
 
 ### AC Adjustments
@@ -262,19 +268,15 @@ The docs each route asks for, from this branch's paths:
 
 ---
 
-## Sessions
-
-- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — self-review the rename branch for rename completeness, prompt-behavior AC, ADR/doc structure, and build cleanliness; Bounds — review only, no code edits; Approach — read the full canonical diff (`.prism`, `.ai-skills`, `docs`), verify each AC's evidence command directly, run `pnpm prism:build && pnpm prism:check` · close: scope held — one Minor finding (stray blank line), everything else clean
-
 ## Review Issues
 
 ### Stray blank-line insertion in step-03-plan-readiness.md
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/skills/prism-conductor/step-03-plan-readiness.md` (and its generated mirrors under `.claude/`, `.codex/`, `.cursor/`, `templates/install/`)
 - **Problem:** the diff inserts an extra blank line between the "Fail →" bullet and "Mutate goal-state per the protocol..." — a formatting-only change unrelated to the rename, violating `code-standards.md` § General "Do not introduce formatting-only changes."
-- **Suggested fix:** delete the extra blank line, then `pnpm prism:build` to resync mirrors.
+- **Suggested fix:** delete the extra blank line, then `pnpm prism:build` to resync mirrors. Fixed in 4118e2cc — the file's only remaining diff against `main` is the rename itself.
 
 No other issues found — rename completeness (AC-6), all nine ACs' evidence commands, ADR-0073's structure against `writing-an-adr.md`, the four amendment pointers, the PRD frontmatter migration, and `pnpm prism:build && pnpm prism:check` (exit 0, no drift) all verified directly against the diff and the working tree — 2026-09-02 [huntermcgrew/prism-476-stakes-level-names].
 
@@ -282,7 +284,7 @@ No other issues found — rename completeness (AC-6), all nine ACs' evidence com
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 1 Minor open (stray blank line), no critical/major
+- [x] No critical or major issues — the one Minor (stray blank line) fixed in 4118e2cc
 - [x] Types correct — N/A, no code in this diff
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — N/A, spec/doc rename verified by grep + build, no test seam
