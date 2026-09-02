@@ -1361,6 +1361,42 @@ test("runUpdate refuses a config.json missing a required field", async () => {
 	);
 });
 
+test("runUpdate refuses a config.json whose hosts array names an unrecognized host", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/rule.md", "# Rule\n");
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude", "windsurf"] }, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("/hosts/1"),
+						`expected the offending array element named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
+		}
+	);
+});
+
 // --- git-repo check tests (issue #376) ---
 
 test("runUpdate fails fast when the consumer directory is not inside a git repository", async () => {
@@ -1624,7 +1660,8 @@ test("refreshHookRuntime: a consumer's own file at a runtime path is backed up, 
 		const outcomes = await refreshHookRuntime(
 			prismRepoRoot,
 			consumerRepoRoot,
-			false
+			false,
+			["claude"]
 		);
 
 		assert.equal(
@@ -1660,7 +1697,8 @@ test("refreshHookRuntime: an earlier PRISM copy is replaced in place with no bac
 		const outcomes = await refreshHookRuntime(
 			prismRepoRoot,
 			consumerRepoRoot,
-			false
+			false,
+			["claude"]
 		);
 
 		assert.equal(
@@ -1680,11 +1718,12 @@ test("refreshHookRuntime: an earlier PRISM copy is replaced in place with no bac
 
 test("refreshHookRuntime: an already-current file is a no-op", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
 		const outcomes = await refreshHookRuntime(
 			prismRepoRoot,
 			consumerRepoRoot,
-			false
+			false,
+			["claude"]
 		);
 
 		assert.deepEqual(
@@ -1703,7 +1742,8 @@ test("refreshHookRuntime: dryRun reports the same outcomes without touching the 
 		const outcomes = await refreshHookRuntime(
 			prismRepoRoot,
 			consumerRepoRoot,
-			true
+			true,
+			["claude"]
 		);
 
 		assert.equal(
@@ -1733,7 +1773,7 @@ test("refreshHookRuntime: dryRun reports the same outcomes without touching the 
 
 test("refreshHookRuntime: delivers the runtime modules only, not the type sidecars beside them", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
 
 		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
 			assert.ok(
@@ -1771,7 +1811,8 @@ test("refreshHookRuntime: prunes a marked file it no longer ships, backs it up f
 		const outcomes = await refreshHookRuntime(
 			prismRepoRoot,
 			consumerRepoRoot,
-			false
+			false,
+			["claude"]
 		);
 
 		const pruned = outcomes.find(
@@ -1814,7 +1855,8 @@ test("refreshHookRuntime: the backup of a pruned file is not itself pruned on th
 			const outcomes = await refreshHookRuntime(
 				prismRepoRoot,
 				consumerRepoRoot,
-				false
+				false,
+				["claude"]
 			);
 			prunedPerRun.push(
 				outcomes.filter((o) => o.action === "removed-with-backup").length
@@ -1844,6 +1886,143 @@ test("refreshHookRuntime: the backup of a pruned file is not itself pruned on th
 			adapted,
 			"the recovery guarantee holds past the first update cycle"
 		);
+	});
+});
+
+test("refreshHookRuntime: a repo that does not run Claude Code receives no runtime, no registration, and no gitignore lines", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex", "cursor"]);
+
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs")),
+			false,
+			"no runtime file is delivered"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".claude", "settings.json")),
+			false,
+			"no settings registration is written"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".gitignore")),
+			false,
+			"no gitignore lines are appended"
+		);
+	});
+});
+
+test("refreshHookRuntime: dropping Claude Code from hosts takes back the delivered runtime and PRISM's registration", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.equal(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				false,
+				`${relativePath} is removed`
+			);
+		}
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.ok(
+			!JSON.stringify(settings).includes(".claude/hooks/hook.mjs"),
+			"PRISM's registration no longer names the runtime path"
+		);
+	});
+});
+
+test("refreshHookRuntime: a consumer's own hook on an event PRISM registered survives the removal", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.deepEqual(
+			settings.hooks?.PostToolUse,
+			[consumerOwnHook],
+			"the consumer's PostToolUse entry is the only one left"
+		);
+		assert.ok(
+			!settings.hooks || !("PostCompact" in settings.hooks),
+			"PostCompact, which only PRISM registered, is dropped entirely rather than left as an empty array"
+		);
+	});
+});
+
+test("refreshHookRuntime: an unmarked file at a runtime path survives the removal", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			consumerOwnBody,
+			"a file without the ownership marker is never removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: the state-file gitignore lines are left in place when Claude Code is dropped", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		const gitignore = await readFile(consumerRepoRoot, ".gitignore");
+		assert.ok(
+			gitignore.includes(".prism/architect-route-state.*.json"),
+			"the state-file glob is not removed"
+		);
+		assert.ok(
+			gitignore.includes(".prism/architect-route-state.*.json.tmp"),
+			"the tmp-sidecar glob is not removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: dryRun previews a removal without performing it", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			true,
+			["codex"]
+		);
+
+		const removedPaths = outcomes
+			.filter((o) => o.action === "removed")
+			.map((o) => o.relativePath);
+		assert.ok(
+			HOOK_RUNTIME_RELATIVE_PATHS.every((relativePath) =>
+				removedPaths.includes(`.claude/hooks/${relativePath}`)
+			),
+			"the preview names every runtime path it would remove"
+		);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is still on disk — dryRun performs nothing`
+			);
+		}
 	});
 });
 

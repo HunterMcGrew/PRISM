@@ -1077,7 +1077,7 @@ test("runDoctor reports a settings.json that is not valid JSON", async () => {
 	});
 });
 
-test("runDoctor reports no hook finding when the runtime and its registration agree", async () => {
+test("runDoctor reports hook reach, not a problem, when the runtime and its registration agree", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(
@@ -1092,12 +1092,246 @@ test("runDoctor reports no hook finding when the runtime and its registration ag
 			npmVersionFetcher: NEVER_FETCH,
 		});
 
-		assert.deepEqual(hookFindings(report.findings), []);
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /Claude Code only/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
 	});
+});
+
+test("runDoctor omits the hook reach line when the runtime is present but unregistered", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(hookFindingsList.length, 1);
+		assert.equal(hookFindingsList[0].severity, "warning");
+		assert.equal(hookFindingsList.filter((f) => f.severity === "info").length, 0);
+	});
+});
+
+test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts exclude Claude Code", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not delivered on this repo's hosts/);
+		assert.match(messages[0], /codex/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
+	});
+});
+
+test("runDoctor warns when hosts exclude Claude Code but PRISM's runtime is still on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/hook.mjs",
+			"// @prism-hook-runtime\nexport const label = \"delivered\";\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /run npx @huntermcgrew\/prism update/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "warning");
+	});
+});
+
+test("runDoctor warns when hosts exclude Claude Code but PRISM's registration is still in settings", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(hookFindingsList.length, 1);
+		assert.equal(hookFindingsList[0].severity, "warning");
+		assert.match(hookFindingsList[0].message, /registration in \.claude\/settings\.json is/);
+	});
+});
+
+test("runDoctor ignores a consumer's own hook entry when deciding whether PRISM's registration is stale", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		const consumerOwnSettings = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Write",
+						hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(consumerOwnSettings, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(
+			hookFindingsList.filter((f) => f.severity === "warning").length,
+			0,
+			"a consumer's own hook entry is not PRISM's, so it does not read as a stale delivery"
+		);
+	});
+});
+
+test("runDoctor warns on a dead registration even when hosts excludes Claude Code", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		// A hand-edited command that mentions the runtime path but no longer
+		// matches PRISM_HOOK_COMMAND_PATTERN — update.ts's removal branch does
+		// not claim it, so it survives dropping claude from hosts while the
+		// runtime file it points at is gone.
+		const handEditedRegistration = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: "bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'",
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(handEditedRegistration, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(
+			deadRegistration,
+			"a registration pointing at a missing file is wrong on every host mix, not only when claude is in hosts"
+		);
+		assert.equal(deadRegistration!.severity, "warning");
+	});
+});
+
+test("runDoctor treats an unreadable config as declaring every host", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const reach = hookFindingsList.find((f) => f.severity === "info");
+		assert.ok(reach, "the reach info fires — an unreadable config resolves to every host");
+		assert.match(reach!.message, /Claude Code only/);
+		assert.equal(
+			hookFindingsList.filter((f) => f.severity === "warning").length,
+			0,
+			"the stale-delivery warning does not fire when the config could not be read"
+		);
+	});
+});
+
+test("formatDoctorReport still prints No issues found. alongside an info-only finding", async () => {
+	const report = {
+		findings: [
+			{
+				check: "hook-registration" as const,
+				severity: "info" as const,
+				message: "The hook runtime is installed and registered.",
+			},
+		],
+		syncState: { manifest: null },
+		version: { installed: "1.0.0", latest: null, outOfDate: false },
+		healthy: true,
+	};
+
+	const rendered = formatDoctorReport(report);
+	assert.match(rendered, /No issues found\./);
+	assert.match(rendered, /\[INFO\] hook-registration:/);
 });
 
 test("runDoctor stays silent when a repo has neither a hook runtime nor a registration — the check reports each half against the other, so their joint absence is outside what it can see", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+
 		const report = await runDoctor({
 			consumerRepoRoot,
 			prismSourceRoot,

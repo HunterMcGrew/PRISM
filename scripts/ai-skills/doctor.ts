@@ -25,13 +25,20 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { resolveHosts } from "./lib/hosts";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
 import { parseRuleLoad } from "./rule-load";
 import { loadSeedCurationRenames } from "./lib/seed-curation";
-import { OVERLAY_SUBPATH, resolvePrismSource, resolveSelfPrismSource } from "./update";
+import {
+	HOOK_RUNTIME_MARKER,
+	OVERLAY_SUBPATH,
+	PRISM_HOOK_COMMAND_PATTERN,
+	resolvePrismSource,
+	resolveSelfPrismSource,
+} from "./update";
 import { loadSyncManifest, SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
 import { hashFile, pathExists, readFileIfExists } from "./utils";
 
@@ -656,8 +663,33 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
 }
 
 /**
+ * Reads the consumer's config for the fields `doctor` branches on, degrading
+ * to `null` on any failure. A config that cannot be read or parsed already
+ * produces its own `config` finding, and `doctor` never throws — so the
+ * host-mix branch falls back to `resolveHosts`'s all-hosts default rather
+ * than turning one bad field into a missing check.
+ */
+async function readConsumerConfigSafely(
+	consumerRepoRoot: string
+): Promise<{ hosts?: unknown } | null> {
+	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
+	const raw = await readFileIfExists(configPath);
+	if (raw === null) {
+		return null;
+	}
+
+	try {
+		return JSON.parse(raw) as { hosts?: unknown };
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Reports a hook runtime that is present but unregistered, and a registration
- * that points at a file which is not there.
+ * that points at a file which is not there — the dead-registration half runs
+ * regardless of the consumer's `hosts`, since a command naming a missing
+ * file is wrong on every host mix, not only on Claude Code.
  *
  * The write gate cannot prevent its own removal — deleting the runtime or its
  * registration disables it, and neither is prevented (ADR-0072). Visibility is
@@ -665,10 +697,17 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
  * it that is decidable from the consumer tree alone: each side reports the
  * other's absence.
  *
- * Removing both halves is silent. Nothing on disk then distinguishes a
- * consumer who deleted the gate from one who never received it — a Cursor or
- * Codex consumer has no `.claude/` tree at all — so reporting it would fire on
- * installs that are correct as they stand.
+ * Removing both halves is silent for a consumer who runs Claude Code:
+ * nothing on disk distinguishes one who deleted the gate from one who never
+ * received it, so reporting it would fire on installs that are correct as
+ * they stand.
+ *
+ * What is decidable is the host mix. `hosts` in the consumer's config says
+ * which hosts they run, and `refreshHookRuntime` delivers only when
+ * `claude` is among them — so a consumer who does not run Claude Code
+ * should have no runtime and no registration, and finding either means an
+ * update has not run since they changed the key. Both directions are
+ * reported: the absence is informational, the leftover is a warning.
  */
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
@@ -677,9 +716,9 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 	const findings: DoctorFinding[] = [];
 	const registeredPaths = new Set<string>();
+	let settings: Record<string, unknown> | null = null;
 
 	if (settingsRaw !== null) {
-		let settings: Record<string, unknown>;
 		try {
 			settings = JSON.parse(settingsRaw) as Record<string, unknown>;
 		} catch (error) {
@@ -699,15 +738,38 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		}
 	}
 
-	if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
+	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
+	const runtimeIsPrisms =
+		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
+	const prismIsRegistered =
+		settings !== null &&
+		collectHookCommands(settings).some((command) => PRISM_HOOK_COMMAND_PATTERN.test(command));
+
+	if (!hosts.includes("claude") && (runtimeIsPrisms || prismIsRegistered)) {
+		const staleHalves =
+			runtimeIsPrisms && prismIsRegistered
+				? "PRISM's hook runtime and its registration in .claude/settings.json are"
+				: runtimeIsPrisms
+					? "PRISM's hook runtime is"
+					: "PRISM's hook registration in .claude/settings.json is";
+
 		findings.push({
 			check: "hook-registration",
 			severity: "warning",
-			message:
-				".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			message: `hosts does not list "claude", but ${staleHalves} still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
 		});
+
+		return findings;
 	}
 
+	// A registered command pointing at a file that is not on disk is wrong on
+	// every host mix — a hand-edited registration whose command no longer
+	// matches PRISM_HOOK_COMMAND_PATTERN survives the removal branch in
+	// update.ts (it is not claimed as PRISM's own), so this has to run here
+	// too, not only inside the claude-in-hosts branch below. It is skipped
+	// only on the stale-delivery early return above, where the "run update"
+	// remedy already covers it — see that branch's own findings.
 	for (const registered of [...registeredPaths].sort()) {
 		if (!(await pathExists(registered))) {
 			findings.push({
@@ -717,6 +779,34 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 			});
 		}
 	}
+
+	if (hosts.includes("claude")) {
+		if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			});
+		}
+
+		if (findings.length === 0 && registeredPaths.has(hookRuntimePath)) {
+			findings.push({
+				check: "hook-registration",
+				severity: "info",
+				message:
+					"The hook runtime is installed and registered. It fires on Claude Code only — Codex and Cursor receive no registration, so on those hosts read-before-write is a discipline carried by .prism/rules/context-reuse.md and .prism/references/skill-core.md, not an enforced gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.",
+			});
+		}
+
+		return findings;
+	}
+
+	findings.push({
+		check: "hook-registration",
+		severity: "info",
+		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). PRISM's write gate runs under Claude Code only; on your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.`,
+	});
 
 	return findings;
 }
@@ -930,12 +1020,12 @@ export function formatDoctorReport(report: DoctorReport): string {
 			: `Version: ${report.version.installed} installed, latest-on-npm unavailable.`
 	);
 
-	if (report.findings.length === 0) {
+	if (!report.findings.some((f) => f.severity !== "info")) {
 		lines.push("No issues found.");
-	} else {
-		for (const finding of report.findings) {
-			lines.push(`[${SEVERITY_LABEL[finding.severity]}] ${finding.check}: ${finding.message}`);
-		}
+	}
+
+	for (const finding of report.findings) {
+		lines.push(`[${SEVERITY_LABEL[finding.severity]}] ${finding.check}: ${finding.message}`);
 	}
 
 	lines.push(report.healthy ? "prism doctor: healthy." : "prism doctor: unhealthy — see findings above.");

@@ -46,6 +46,7 @@ import {
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { resolveHosts, type HostName } from "./lib/hosts";
 import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
@@ -485,7 +486,8 @@ export async function runUpdate(
 	// Resolve and validate everything the platform refresh needs before the file
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
 	// with nothing written.
-	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
+	const consumerConfig = loadConfig(consumerRepoRoot);
+	const tokenMap = deriveTokenMap(consumerConfig);
 	const consumerPathDefinitions = await resolveRunPathDefinitions(
 		prismRepoRoot,
 		consumerRepoRoot,
@@ -538,7 +540,8 @@ export async function runUpdate(
 	const hookOutcomes = await refreshHookRuntime(
 		prismRepoRoot,
 		consumerRepoRoot,
-		dryRun
+		dryRun,
+		resolveHosts(consumerConfig)
 	);
 
 	const ruleLoadScan = await scanConsumerRuleLoad(
@@ -1010,7 +1013,7 @@ const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
  * delivered runtime rather than in edits to the delivered file itself — an
  * in-place edit to a marked file does not survive the next update.
  */
-const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
+export const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
 
 /**
  * Matches the basenames `backupConsumerFile` produces — `<file>.bak`,
@@ -1077,13 +1080,14 @@ async function deliverHookRuntimeFile(
  */
 async function pruneStaleHookRuntimeFiles(
 	targetDir: string,
-	dryRun: boolean
+	dryRun: boolean,
+	deliveredPaths: readonly string[] = HOOK_RUNTIME_FILES
 ): Promise<FileOutcome[]> {
 	if (!(await pathExists(targetDir))) {
 		return [];
 	}
 
-	const delivered = new Set(HOOK_RUNTIME_FILES);
+	const delivered = new Set(deliveredPaths);
 	const entries = await fs.readdir(targetDir, {
 		recursive: true,
 		withFileTypes: true,
@@ -1128,6 +1132,51 @@ async function pruneStaleHookRuntimeFiles(
 	return outcomes;
 }
 
+/**
+ * Removes the runtime files PRISM delivers at their canonical paths, for a
+ * consumer who has dropped `claude` from `hosts`. Only a file carrying
+ * `HOOK_RUNTIME_MARKER` is removed; an unmarked file at one of those paths
+ * is the consumer's own and is left where it is.
+ *
+ * No backup, deliberately — the asymmetry mirrors delivery rather than
+ * prune. `deliverHookRuntimeFile` replaces a marked file at a canonical
+ * path without a backup because the marker plus the path together identify
+ * PRISM's own content; the same pair identifies it here. `pruneStaleHookRuntimeFiles`
+ * backs up first because it acts on marked files at *unrecognized* paths,
+ * which are plausibly a consumer's adaptation that carried the marker
+ * along — a different case with a different risk.
+ */
+async function removeDeliveredHookRuntimeFiles(
+	targetDir: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	const outcomes: FileOutcome[] = [];
+
+	for (const relative of HOOK_RUNTIME_FILES) {
+		const segments = relative.split("/");
+		const absolutePath = path.join(targetDir, ...segments);
+		if (!(await pathExists(absolutePath))) {
+			continue;
+		}
+
+		const contents = await readFileIfExists(absolutePath);
+		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
+			continue;
+		}
+
+		if (!dryRun) {
+			await fs.rm(absolutePath, { force: true });
+		}
+
+		outcomes.push({
+			relativePath: `.claude/hooks/${relative}`,
+			action: "removed",
+		});
+	}
+
+	return outcomes;
+}
+
 /** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the two hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
 const HOOK_STATE_GITIGNORE_LINES = [
 	".prism/architect-route-state.*.json",
@@ -1150,7 +1199,8 @@ const HOOK_STATE_GITIGNORE_LINES = [
 export async function refreshHookRuntime(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
-	dryRun: boolean
+	dryRun: boolean,
+	hosts: HostName[]
 ): Promise<FileOutcome[]> {
 	const sourceDir = path.join(prismRepoRoot, "scripts", "ai-skills", "hooks");
 	if (!(await pathExists(sourceDir))) {
@@ -1158,6 +1208,14 @@ export async function refreshHookRuntime(
 	}
 
 	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
+
+	if (!hosts.includes("claude")) {
+		const outcomes = await removeDeliveredHookRuntimeFiles(targetDir, dryRun);
+		outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun, [])));
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
+
+		return outcomes;
+	}
 
 	const outcomes: FileOutcome[] = [];
 	for (const relative of HOOK_RUNTIME_FILES) {
@@ -1210,7 +1268,7 @@ export async function refreshHookRuntime(
  * still recognized as PRISM's and replaced, instead of surviving alongside its
  * own replacement.
  */
-const PRISM_HOOK_COMMAND_PATTERN =
+export const PRISM_HOOK_COMMAND_PATTERN =
 	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/hook\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
@@ -1267,11 +1325,20 @@ function mergeHookEventEntries(
  * of being overwritten by PRISM's. Re-running this merge is idempotent:
  * `mergeHookEventEntries` drops PRISM's own prior entries before appending
  * the current ones, so no entry is ever duplicated.
+ *
+ * `deliver: false` composes each event key from the consumer's own entries
+ * alone — the same `mergeHookEventEntries` call with an empty incoming set —
+ * so removal is the drop half of the merge that already runs on every
+ * update, not a second ownership rule that could disagree with it. When a
+ * consumer never had a settings file and removal leaves nothing to merge
+ * in, no file is written — a repo that never received the hook stays
+ * exactly as it was.
  */
 export async function mergeHookSettingsRegistration(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
-	dryRun: boolean
+	dryRun: boolean,
+	deliver = true
 ): Promise<void> {
 	const sourcePath = path.join(
 		prismRepoRoot,
@@ -1304,12 +1371,23 @@ export async function mergeHookSettingsRegistration(
 	)) {
 		mergedHooks[eventName] = mergeHookEventEntries(
 			targetSettings.hooks?.[eventName],
-			sourceEntries
+			deliver ? sourceEntries : []
 		);
 	}
+
+	for (const [eventName, entries] of Object.entries(mergedHooks)) {
+		if (Array.isArray(entries) && entries.length === 0) {
+			delete mergedHooks[eventName];
+		}
+	}
+
 	const merged = { ...targetSettings, hooks: mergedHooks };
 
 	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
+		return;
+	}
+
+	if (targetRaw === null && Object.keys(mergedHooks).length === 0) {
 		return;
 	}
 

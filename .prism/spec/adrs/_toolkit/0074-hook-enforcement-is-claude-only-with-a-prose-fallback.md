@@ -47,11 +47,12 @@ obligation and names the hook as Claude-only. `skill-core.md` § "Reading
 before writing" states the same obligation at Step 0 of every persona
 session, on every host.
 
-Delivery is not gated on the consumer's host. `refreshHookRuntime` is called
+Delivery was not gated on the consumer's host. `refreshHookRuntime` was called
 unconditionally from `runUpdate` (`scripts/ai-skills/update.ts`) with no
-`optedIn` check, so every `prism update` writes `.claude/hooks/` and merges
+`optedIn` check, so every `prism update` wrote `.claude/hooks/` and merged
 the registration into `.claude/settings.json` even for a consumer who opted
-into Codex or Cursor only. That fact is stated here; its consequence is below.
+into Codex or Cursor only. That fact is stated here; its consequence is below,
+and the follow-up that closed it is recorded there too.
 
 ## Decision
 
@@ -124,9 +125,15 @@ not hold: `refreshHookRuntime` is ungated, so any consumer who has run
 `prism update` does have a `.claude/hooks/` tree and a registration — both
 halves present, doctor quiet, and the gate still never fires because Codex
 and Cursor receive no registration of their own. A clean `doctor` run on
-those hosts is not evidence that enforcement is present. This ticket does not
-change doctor (see the plan's `## Decisions`); this record exists so a later
-reader is not misled by the doc comment.
+those hosts was therefore not evidence that enforcement is present. The
+follow-up to this ticket closed both halves: an optional `hosts` array in
+`.ai-skills/config.json` now gates delivery, so a consumer who does not list
+`claude` receives no runtime and no registration and has a prior delivery
+taken back out; and `checkHookRegistration` reads the same key, reporting the
+prose fallback where the gate is not delivered and warning where a delivery
+is left over. The `## Context` sentence above stating that delivery is not
+gated on the consumer's host describes the state this ADR was written in, not
+the state on `main`.
 
 Numbered ADRs do not ship to consumers (ADR-0064), so this ADR is the
 maintainer-facing record only. The consumer-facing statement lives in
