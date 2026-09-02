@@ -378,3 +378,43 @@ test("renders PRISM's own source in check mode with no drift", async () => {
 		`extracted generatePlatformSkills drifts from committed PRISM output: ${changedPaths.join(", ")}`
 	);
 });
+
+test("a platform opted out of a render pass keeps the output a previous pass wrote", async () => {
+	await withTempRoots(async (roots) => {
+		await writeSkillSource(
+			roots.sourceSkillsRoot,
+			"prism-sample",
+			"You build ${PROJECT} for ${TICKET_PREFIX}.\n"
+		);
+
+		// Seed the Codex root as if an earlier pass already rendered it, before a
+		// pass that opts Codex out — the check-mode drift guard sets
+		// `codex: false` on every `pnpm prism:check` run, and that must never be
+		// read as "the consumer dropped this host." Only a consumer-side caller
+		// (`update.ts`'s `refreshPlatformSkills`) is allowed to sweep on a
+		// dropped host, never `generatePlatformSkills` itself.
+		const codexSkillDir = path.join(roots.targetRoots.codex, "prism-sample");
+		await fs.mkdir(codexSkillDir, { recursive: true });
+		await fs.writeFile(path.join(codexSkillDir, "SKILL.md"), "earlier render\n", "utf8");
+		await fs.writeFile(path.join(codexSkillDir, MANAGED_MARKER), "", "utf8");
+
+		// Render with Codex opted out, the same way build.ts's check-mode
+		// heuristic does.
+		const changedPaths: string[] = [];
+		await generatePlatformSkills({
+			...optionsFor(
+				roots,
+				[{ id: "prism-sample", persona: "Sample" }],
+				false,
+				changedPaths
+			),
+			optedIn: { ...ALL_OPTED_IN, codex: false },
+		});
+
+		assert.equal(
+			await pathExists(path.join(codexSkillDir, MANAGED_MARKER)),
+			true,
+			"the marker-bearing Codex skill dir from the earlier pass survives an opted-out render"
+		);
+	});
+});

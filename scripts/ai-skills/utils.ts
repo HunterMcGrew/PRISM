@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { type HostName } from "./lib/hosts";
 import {
 	codexRuleDialect,
 	cursorRuleDialect,
@@ -513,21 +514,24 @@ export async function resolveRunPathDefinitions(
 export function buildPlatformDirs(
 	repoRoot: string,
 	pathDefinitions: PathDefinitions
-): { dir: string; dialect: RuleDialect }[] {
+): { dir: string; dialect: RuleDialect; host: HostName }[] {
 	const platformCopies = pathDefinitions.generated.platformContentCopies;
 
 	return [
 		{
 			dir: path.join(repoRoot, platformCopies.claude),
 			dialect: verbatimRuleDialect,
+			host: "claude",
 		},
 		{
 			dir: path.join(repoRoot, platformCopies.codex),
 			dialect: codexRuleDialect,
+			host: "codex",
 		},
 		{
 			dir: path.join(repoRoot, platformCopies.cursor),
 			dialect: cursorRuleDialect,
+			host: "cursor",
 		},
 	];
 }

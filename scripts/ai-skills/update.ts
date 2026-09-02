@@ -31,11 +31,14 @@ import {
 import {
 	resolvePrismVersion,
 	resolveSourceCommit,
+	removeManagedContentAreas,
 	syncAllPlatformContentCopies,
 } from "./build";
 import {
 	buildRoleMap,
 	generatePlatformSkills,
+	GENERATED_MARKDOWN_HEADER_LINE,
+	removeDeletedManagedAgentFiles,
 	type RolesDefinitions,
 } from "./generate-skills";
 import {
@@ -46,7 +49,7 @@ import {
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
-import { resolveHosts, type HostName } from "./lib/hosts";
+import { deriveOptedIn, resolveHosts, type HostName } from "./lib/hosts";
 import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
 import { deriveTokenMap, loadConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
@@ -60,10 +63,12 @@ import {
 } from "./sync-manifest";
 import {
 	buildPlatformDirs,
+	GENERATED_HEADER_LINE,
 	hashFile,
 	type PathDefinitions,
 	pathExists,
 	readFileIfExists,
+	removeDeletedManagedSkills,
 	resolveRunPathDefinitions,
 } from "./utils";
 
@@ -487,15 +492,22 @@ export async function runUpdate(
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
 	// with nothing written.
 	const consumerConfig = loadConfig(consumerRepoRoot);
+	const hosts = resolveHosts(consumerConfig);
 	const tokenMap = deriveTokenMap(consumerConfig);
 	const consumerPathDefinitions = await resolveRunPathDefinitions(
 		prismRepoRoot,
 		consumerRepoRoot,
 		dryRun
 	);
-	const platformDirs = buildPlatformDirs(
+	const allPlatformDirs = buildPlatformDirs(
 		consumerRepoRoot,
 		consumerPathDefinitions
+	);
+	const platformDirs = allPlatformDirs.filter((entry) =>
+		hosts.includes(entry.host)
+	);
+	const droppedPlatformDirs = allPlatformDirs.filter(
+		(entry) => !hosts.includes(entry.host)
 	);
 	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
 
@@ -533,6 +545,7 @@ export async function runUpdate(
 		consumerContentRoot,
 		overlayContentRoot,
 		platformDirs,
+		droppedPlatformDirs,
 		tokenMap,
 		dryRun
 	);
@@ -541,7 +554,7 @@ export async function runUpdate(
 		prismRepoRoot,
 		consumerRepoRoot,
 		dryRun,
-		resolveHosts(consumerConfig)
+		hosts
 	);
 
 	const ruleLoadScan = await scanConsumerRuleLoad(
@@ -564,7 +577,8 @@ export async function runUpdate(
 		consumerRepoRoot,
 		consumerPathDefinitions,
 		tokenMap,
-		dryRun
+		dryRun,
+		hosts
 	);
 
 	const { refreshed } = await refreshConsumerAgentsMdBlock(
@@ -839,7 +853,8 @@ async function refreshPlatformSkills(
 	consumerRepoRoot: string,
 	consumerPathDefinitions: PathDefinitions,
 	tokenMap: Map<string, string>,
-	dryRun: boolean
+	dryRun: boolean,
+	hosts: HostName[]
 ): Promise<void> {
 	const sourceSkillsRoot = path.join(prismRepoRoot, ".ai-skills", "skills");
 	if (!(await pathExists(sourceSkillsRoot))) {
@@ -874,6 +889,7 @@ async function refreshPlatformSkills(
 		consumerPathDefinitions
 	);
 
+	const optedIn = deriveOptedIn(hosts);
 	const changedPaths: string[] = [];
 	await generatePlatformSkills({
 		sourceSkillsRoot,
@@ -881,17 +897,72 @@ async function refreshPlatformSkills(
 		codexConfigPath,
 		roleMap,
 		tokenMap,
-		optedIn: {
-			claude: true,
-			codex: true,
-			cursor: true,
-			codexAgents: true,
-			claudeAgents: true,
-			codexConfig: true,
-		},
+		optedIn,
 		checkMode: dryRun,
 		changedPaths,
 	});
+
+	// An empty known-id set turns each cleanup helper into a full sweep of its
+	// own root: every marker-bearing directory is now an id PRISM no longer
+	// ships for a host the consumer dropped. Runs even on a dry run so the
+	// preview reports what would be removed — `checkMode: dryRun` on each call
+	// stops it from actually deleting anything.
+	if (!optedIn.claude) {
+		await removeDeletedManagedSkills(
+			targetRoots.claude,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.cursor) {
+		await removeDeletedManagedSkills(
+			targetRoots.cursor,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codex) {
+		await removeDeletedManagedSkills(
+			targetRoots.codex,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.claudeAgents) {
+		await removeDeletedManagedAgentFiles(
+			targetRoots.claudeAgents,
+			new Set(),
+			".md",
+			GENERATED_MARKDOWN_HEADER_LINE,
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codexAgents) {
+		await removeDeletedManagedAgentFiles(
+			targetRoots.codexAgents,
+			new Set(),
+			".toml",
+			GENERATED_HEADER_LINE,
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codexConfig) {
+		const codexConfigContent = await readFileIfExists(codexConfigPath);
+		if (
+			codexConfigContent !== null &&
+			codexConfigContent.startsWith(GENERATED_HEADER_LINE)
+		) {
+			changedPaths.push(codexConfigPath);
+			if (!dryRun) {
+				await fs.rm(codexConfigPath, { force: true });
+			}
+		}
+	}
 
 	if (dryRun) {
 		// A dry-run preview leaves the rendered roster on disk unchanged (stale or
@@ -901,13 +972,18 @@ async function refreshPlatformSkills(
 		return;
 	}
 
-	const leftoverTokenViolations = await runLeftoverTokenGuard(consumerRepoRoot, [
-		targetRoots.claude,
-		targetRoots.claudeAgents,
-		targetRoots.codex,
-		targetRoots.codexAgents,
-		targetRoots.cursor,
-	]);
+	const leftoverTokenRoots = [
+		optedIn.claude ? targetRoots.claude : null,
+		optedIn.claudeAgents ? targetRoots.claudeAgents : null,
+		optedIn.codex ? targetRoots.codex : null,
+		optedIn.codexAgents ? targetRoots.codexAgents : null,
+		optedIn.cursor ? targetRoots.cursor : null,
+	].filter((root): root is string => root !== null);
+
+	const leftoverTokenViolations = await runLeftoverTokenGuard(
+		consumerRepoRoot,
+		leftoverTokenRoots
+	);
 	if (leftoverTokenViolations.length > 0) {
 		const detail = leftoverTokenViolations
 			.map((v) => `  ${v.relativePath}:${v.line}: ${v.match}`)
@@ -950,6 +1026,7 @@ async function refreshPlatformDirs(
 	consumerContentRoot: string,
 	overlayContentRoot: string,
 	platformDirs: ReturnType<typeof buildPlatformDirs>,
+	droppedDirs: ReturnType<typeof buildPlatformDirs>,
 	tokenMap: Map<string, string>,
 	dryRun: boolean
 ): Promise<void> {
@@ -970,6 +1047,10 @@ async function refreshPlatformDirs(
 			tokenMap,
 			OVERLAY_SUBPATH
 		);
+	}
+
+	for (const entry of droppedDirs) {
+		await removeManagedContentAreas(entry.dir, dryRun, []);
 	}
 }
 
