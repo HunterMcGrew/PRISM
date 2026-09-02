@@ -24,8 +24,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { COPIED_CONTENT_AREAS } from "./build";
+import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
-import { resolveHosts } from "./lib/hosts";
+import { resolveHosts, type HostName } from "./lib/hosts";
 import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
@@ -36,11 +38,22 @@ import {
 	HOOK_RUNTIME_MARKER,
 	OVERLAY_SUBPATH,
 	PRISM_HOOK_COMMAND_PATTERN,
+	resolveConsumerSkillTargetRoots,
 	resolvePrismSource,
 	resolveSelfPrismSource,
 } from "./update";
 import { loadSyncManifest, SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
-import { hashFile, pathExists, readFileIfExists } from "./utils";
+import {
+	buildPlatformDirs,
+	GENERATED_HEADER_LINE,
+	hashFile,
+	listDirectories,
+	loadPathDefinitions,
+	MANAGED_MARKER,
+	type PathDefinitions,
+	pathExists,
+	readFileIfExists,
+} from "./utils";
 
 const NPM_REGISTRY_URL = "https://registry.npmjs.org/@huntermcgrew/prism";
 const NPM_FETCH_TIMEOUT_MS = 3000;
@@ -55,7 +68,8 @@ export interface DoctorFinding {
 		| "version"
 		| "rule-load"
 		| "architect-route"
-		| "hook-registration";
+		| "hook-registration"
+		| "host-output";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -811,6 +825,130 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	return findings;
 }
 
+/**
+ * Reports a dropped host whose marker-bearing output is still on disk — the
+ * mirror image of `checkHookRegistration`'s stale-delivery branch, generalized
+ * past the hook. `refreshPlatformSkills` and `refreshPlatformDirs` in
+ * `update.ts` take a dropped host's output back out on the next
+ * `prism update`, so leftover output here means that update has not run
+ * since `hosts` changed.
+ *
+ * `warning`, not `error` — the leftover bytes sit in a directory the
+ * consumer's host never reads, and `healthy` keys on `error` alone, so this
+ * check must not flip a doctor exit code.
+ */
+async function checkHostOutput(
+	consumerRepoRoot: string,
+	pathDefinitions: PathDefinitions
+): Promise<DoctorFinding[]> {
+	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	const droppedHosts = (["claude", "codex", "cursor"] as const).filter(
+		(host) => !hosts.includes(host)
+	);
+	if (droppedHosts.length === 0) {
+		return [];
+	}
+
+	const { targetRoots } = resolveConsumerSkillTargetRoots(
+		consumerRepoRoot,
+		pathDefinitions
+	);
+	const platformDirs = buildPlatformDirs(consumerRepoRoot, pathDefinitions);
+
+	const findings: DoctorFinding[] = [];
+
+	for (const host of droppedHosts) {
+		const leftoverRoots: string[] = [];
+
+		const skillsRoot =
+			host === "claude"
+				? targetRoots.claude
+				: host === "codex"
+					? targetRoots.codex
+					: targetRoots.cursor;
+		if (await hasMarkedSkillOutput(skillsRoot)) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, skillsRoot));
+		}
+
+		if (host === "claude" && (await hasMarkedAgentOutput(targetRoots.claudeAgents, ".md", GENERATED_MARKDOWN_HEADER_LINE))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, targetRoots.claudeAgents));
+		}
+		if (host === "codex" && (await hasMarkedAgentOutput(targetRoots.codexAgents, ".toml", GENERATED_HEADER_LINE))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, targetRoots.codexAgents));
+		}
+
+		const platformDir = platformDirs.find((entry) => entry.host === host);
+		if (platformDir && (await hasMarkedContentOutput(platformDir.dir))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, platformDir.dir));
+		}
+
+		if (leftoverRoots.length > 0) {
+			findings.push({
+				check: "host-output",
+				severity: "warning",
+				message: `hosts does not list "${host}", but it still has PRISM-generated output under ${leftoverRoots.join(", ")}. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove it.`,
+			});
+		}
+	}
+
+	return findings;
+}
+
+/** True when any subdirectory of `root` carries `MANAGED_MARKER` — a marker-confirmed skill dir survives there. */
+async function hasMarkedSkillOutput(root: string): Promise<boolean> {
+	if (!(await pathExists(root))) {
+		return false;
+	}
+
+	for (const name of await listDirectories(root)) {
+		if (await pathExists(path.join(root, name, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/** True when any `extension` file under `root` still carries `headerLine` — the same test `removeDeletedManagedAgentFiles` uses to claim a file as PRISM's own. */
+async function hasMarkedAgentOutput(
+	root: string,
+	extension: string,
+	headerLine: string
+): Promise<boolean> {
+	if (!(await pathExists(root))) {
+		return false;
+	}
+
+	const entries = await fs.readdir(root, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isFile() || !entry.name.endsWith(extension) || entry.name.startsWith(".")) {
+			continue;
+		}
+
+		const content = (await readFileIfExists(path.join(root, entry.name))) ?? "";
+		if (content.includes(headerLine)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/** True when any `COPIED_CONTENT_AREAS` entry under `platformDir` still carries its area-level `MANAGED_MARKER`. */
+async function hasMarkedContentOutput(platformDir: string): Promise<boolean> {
+	if (!(await pathExists(platformDir))) {
+		return false;
+	}
+
+	for (const area of COPIED_CONTENT_AREAS) {
+		if (await pathExists(path.join(platformDir, area, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /** Fetcher shape `checkVersion` depends on — lets tests inject a stub instead of hitting the network. */
 export type NpmVersionFetcher = (url: string, timeoutMs: number) => Promise<string | null>;
 
@@ -985,6 +1123,15 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
 	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
 	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+
+	try {
+		const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+		findings.push(...(await checkHostOutput(consumerRepoRoot, pathDefinitions)));
+	} catch {
+		// A repo whose paths.json can't be loaded already gets that failure
+		// reported by another check (or has never run prism:adopt) — this check
+		// degrades to silent rather than throwing out of runDoctor.
+	}
 
 	const versionResult = await checkVersion(prismSourceRoot, npmVersionFetcher);
 	findings.push(...versionResult.findings);
