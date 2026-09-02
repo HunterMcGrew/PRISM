@@ -190,6 +190,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
 - 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — decide and record PRISM's portability posture for hook-dependent enforcement, and make the Claude-only reach visible to a Codex or Cursor adopter; Bounds — done when the plan carries tasks, AC, and decisions, and the AC is synced to issue #477; touch only `.prism/plans/prism-477.md` on this branch, implement nothing; Approach — correct the issue's stale inventory against `main`, apply the triple ADR gate, and pick the cheapest surface that already reaches all three hosts rather than building a fourth. · close: scope held
 - 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — implement Clove's tasks 1–4 and 6–7 (ADR-0074, the sharpened skill-core.md sentence, the install-layout.md pointer, build, check), renumbered to 0074 per the dispatcher's correction; Bounds — done when `pnpm prism:check` exits 0 and the AC evidence commands for AC-3 through AC-8 pass, touching only the paths the plan's Clove tasks name plus `seed-curation.json` if the build surfaces a gap; Approach — write the ADR content verbatim from the plan's spec, then verify each AC's evidence command myself rather than trusting the task description alone. · close: scope held — the `seed-curation.json` fix was a build-time gap the plan's tasks didn't name, filed under Refactor scope as in-local-frame-and-trivial (fixed inline, no follow-up needed)
 - 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — add the hook-enforcement section to `docs/ai-skills/compatibility.md` per Eli's task 1; Bounds — done when the section and opening-bullet addition land, no ADR-0074 citation by number, and `pnpm prism:check` exits 0; touch only `docs/ai-skills/compatibility.md`; Approach — insert between "Per-tool layouts" and "The install-script rule" using the plan's specified bullets verbatim, add the fourth opening bullet, leave frontmatter unchanged. · close: scope held
+- 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — self-review the branch: verify every factual claim in ADR-0074, `skill-core.md`, `install-layout.md`, and `compatibility.md` against `harnesses.mjs`, `hook.mjs`, `update.ts`, `doctor.ts`, and `settings.json`, and sweep the nine review angles; Bounds — done when the plan carries the review findings and `pnpm prism:check` is confirmed clean; touch only `.prism/plans/prism-477.md`; Approach — read each cited source directly rather than trusting the ADR's paraphrase, checked AC-1 through AC-8 against the diff and machine evidence. · close: scope held — clean pass, no findings; `pnpm prism:check` reconfirmed exit 0
 
 ---
 
@@ -209,7 +210,19 @@ None.
 
 ## Review Issues
 
-None yet.
+No issues found — 2026-09-02 [huntermcgrew/prism-477-hook-portability]
+
+### Angle Coverage
+
+- Runtime behavior — n/a — no runtime code in the diff (markdown/JSON only; `harnesses.mjs`/`doctor.ts`/`update.ts` are read-only reference sources, untouched)
+- Test efficacy — n/a — no runtime behavior changed, nothing for a test to cover
+- Spec and doc consistency — swept — 8 items enumerated, 8 verdicts (AC-1 through AC-8, each checked against the diff and, where machine-evidenced, against the cited command output — all MET)
+- Citation integrity — swept — 9 items enumerated, 9 verdicts (ADR-0074's citations to `harnesses.mjs` comment text, `doctor.ts` `checkHookRegistration` JSDoc, `update.ts` `refreshHookRuntime`'s missing `optedIn` check, `templates/install/.claude/settings.json` hook keys, `generate-skills.ts`'s `buildSkillMarkdown`, `.ai-skills/skills/_shared/` absence, ADR-0072's habituation claim, `epic-floor-revert.md`'s "No hooks survive" decision, and the ADR-0074 README/install-layout/skill-core cross-links — all verified against current source, no divergence found)
+- External-system claims — n/a — no framework/platform behavior asserted beyond PRISM's own already-cited internal mechanisms
+- Repo writing rules — swept — verdict-only (writing-voice onboarding voice, count-rules exception for the closed three-hook set, no session-context leakage, no reassurance-introduces-new-claim pattern in the Consequences admissions — clean)
+- Security — n/a — no auth, secrets, permissions, or trust boundary touched
+- Docs impact — swept — 2 items enumerated, 2 verdicts (`docs/ai-skills/compatibility.md` new section + opening bullet, `.prism/references/skill-core.md` sharpened sentence — both consistent with the ADR and with each other; no other doc found referencing hook-runtime host reach that the diff left stale)
+- Accessibility — n/a — no UI in the diff
 
 ---
 
@@ -263,13 +276,13 @@ None.
 
 ## PR Readiness
 
-- [ ] No critical or major issues
+- [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as` (n/a — no TypeScript changes)
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (n/a — no runtime logic changes)
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-09-02, `pnpm prism:check` exit 0
-- [ ] PR description up to date (draft PR opened; Eli's docs task still to land)
+- [x] PR description up to date (Eli's docs task landed per History; verify PR body reflects both Clove's and Eli's tasks before merge)
 - [ ] Lasting decisions promoted to architect context (plan close, not yet reached)
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-02 — Briar self-review, clean pass (see `## Review Issues`)
