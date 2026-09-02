@@ -15,7 +15,7 @@ Exactly one per dispatch. It routes the lane.
 | `blocked` | The persona can't proceed — a dependency, an environment failure, or a missing input. | Clove can't build because an upstream lane hasn't landed. |
 | `needs-replan` | The plan is the problem — vague tasks, a wrong decision, a gap. | Clove reports the plan left implementation judgment calls open. |
 | `needs-stronger-model` | The persona judges the task exceeds its dispatched tier — an execution-capability call, not a plan defect, not a human call. | Clove reports the task is within the plan's spec but beyond the worker tier's ability to execute correctly. |
-| `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `launch` policy; an `OPEN —` decision; a review finding that needs a human call (disagreement → step-06). |
+| `needs-human` | A gate or an open question needs a human. | Winston's A/P/C under a `strict` policy; an `OPEN —` decision; a review finding that needs a human call (disagreement → step-06). |
 
 A bigger model does not fix a vague plan. If the worker had to guess because the plan was ambiguous, the verdict is `needs-replan` (→ Winston), not `needs-stronger-model`.
 
@@ -114,8 +114,8 @@ A gate's owning persona returns one of three dispositions instead of (or alongsi
 
 **Deferred-commit shape (Sol-run-time decision box):** Nora's in-loop evaluation returns `{ disposition, draftTicket, escalationReason? }` rather than a plain gate disposition. The ticket is drafted (DoR-draft, estimate null, flagged for human ratification) but **not yet committed to the ticket tracker**.
 
-- Under `hobby` policy: Nora may finalize autonomously — the ticket commits if warranted and the disposition clears.
-- Under `internal` or `launch` policy: a ticket commit above trivial returns `needs-human`; the draft batches into `pendingHumanReport` at the end of the segment. Zero auto-commits above trivial.
+- Under `quick` policy: Nora may finalize autonomously — the ticket commits if warranted and the disposition clears.
+- Under `reviewed` or `strict` policy: a ticket commit above trivial returns `needs-human`; the draft batches into `pendingHumanReport` at the end of the segment. Zero auto-commits above trivial.
 
 See `lib/decision-box.md` for the full procedure, crash-safety protocol, and the uncertain (blast-radius) path.
 
@@ -123,7 +123,7 @@ See `lib/decision-box.md` for the full procedure, crash-safety protocol, and the
 | --- | --- | --- |
 | `auto-cleared` | Within policy and low-stakes; the owner cleared it and recorded the stakes reasoning in the plan. | Advance the lane. |
 | `needs-human` | The owner escalated regardless of policy. | Pause the lane; append to `pendingHumanReport`. |
-| `blocked` | Policy forces a human (e.g. `launch` locked the gate). | Pause the lane. |
+| `blocked` | Policy forces a human (e.g. `strict` locked the gate). | Pause the lane. |
 
 On a `needs-human` resolution, the human's answer is durable product content. The **owning persona** writes it — one `## Decisions` entry capturing escalation reason, human answer, and rationale, via the existing `OPEN —` decision lifecycle. Sol logs the gate *event* in goal-state (who escalated, why, resolved-at) and carries the answer back to the owner on re-dispatch ("Winston — Hunter answered: [Y]. Record it and re-judge."). Sol never writes the plan; the two channels split the labor — the ephemeral event in goal-state, the durable decision in the plan.
 
@@ -149,17 +149,17 @@ Sol writes `lastVerdict`, `signals`, and the gate disposition into goal-state pe
 
 ## Gate registry
 
-The hard-pause gates in a Sol run, and the rule that binds them: **Sol cannot autonomously clear any of them.** The gate's owning persona clears or escalates it under the autonomy policy (`launch` / `internal` / `hobby`); Sol routes the disposition.
+The hard-pause gates in a Sol run, and the rule that binds them: **Sol cannot autonomously clear any of them.** The gate's owning persona clears or escalates it under the autonomy policy (`strict` / `reviewed` / `quick`); Sol routes the disposition.
 
 | Gate | Owner | Auto-clearable under policy? |
 | --- | --- | --- |
 | Plan readiness | Sol's firewall (step-03) | **No** — a quality gate, never a stakes gate; a vague plan always re-plans. |
-| Winston A/P/C (approve / proceed / cancel) | Winston | Yes, under `internal` / `hobby` for low-stakes plans; `launch` locks it. |
-| Nora Definition of Ready | Nora | Yes, under `internal` / `hobby` for clearly-ready tickets; `launch` locks it. |
+| Winston A/P/C (approve / proceed / cancel) | Winston | Yes, under `reviewed` / `quick` for low-stakes plans; `strict` locks it. |
+| Nora Definition of Ready | Nora | Yes, under `reviewed` / `quick` for clearly-ready tickets; `strict` locks it. |
 | Eric review | Eric | **No** — Eric never approves a PR (ADR-0011); review findings route, they don't clear a merge. |
-| Integration gate | the human (always) | **No** — always `needs-human` at every autonomy level, including `hobby`; a cross-team convergence checkpoint, not a stakes gate (NFR-4). Fires before an integration lane dispatches. |
+| Integration gate | the human (always) | **No** — always `needs-human` at every autonomy level, including `quick`; a cross-team convergence checkpoint, not a stakes gate (NFR-4). Fires before an integration lane dispatches. |
 | Human merge | the human | **No** — the one unconditional gate, enforced by branch protection (ADR-0011); never a returned disposition, always a park. |
 
-Merge is the hard backstop on every lane. Even a maximally-autonomous Sol on a `hobby` policy parks at merge — branch protection enforces it at the infrastructure level, so merge is never a disposition any persona returns. See [ADR-0011](../../../spec/adrs/_toolkit/0011-eric-never-approves-prs.md) and [`git-conventions.md` § Who merges](../../../rules/git-conventions.md) — the review-side rule binds the reviewer, the merge-side rule binds every persona, and this registry binds Sol. The integration gate is the second unconditional `needs-human` gate alongside merge — but where merge is enforced by branch protection, the integration gate is enforced by Sol's dispatch logic (`lib/fleet.md § Integration gate`).
+Merge is the hard backstop on every lane. Even a maximally-autonomous Sol on a `quick` policy parks at merge — branch protection enforces it at the infrastructure level, so merge is never a disposition any persona returns. See [ADR-0011](../../../spec/adrs/_toolkit/0011-eric-never-approves-prs.md) and [`git-conventions.md` § Who merges](../../../rules/git-conventions.md) — the review-side rule binds the reviewer, the merge-side rule binds every persona, and this registry binds Sol. The integration gate is the second unconditional `needs-human` gate alongside merge — but where merge is enforced by branch protection, the integration gate is enforced by Sol's dispatch logic (`lib/fleet.md § Integration gate`).
 
 **Why one file, not two.** A gate disposition *is* one of the return shapes this contract enumerates — co-locating the disposition enum with the gates it applies to keeps them from drifting. Splitting the registry into a separate `gates.md` would put the enum in one file and its gates in another, guaranteeing the two fall out of sync.

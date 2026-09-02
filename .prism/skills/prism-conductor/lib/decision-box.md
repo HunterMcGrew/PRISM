@@ -62,7 +62,7 @@ When Nora returns no `escalationReason`:
    - Nora commits the ticket (if warranted).
    - Sol records the outcome in the lane's `signals[]` entry (`disposition`, `processedAt`).
    - The committed ticket / spawned lane records the inherited `team` in its `lanes[]` entry (carried from the emitting lane per the team-tag carry in Step A).
-4. If the autonomy gate does not clear (`internal`/`launch` above trivial): Nora returns `needs-human`; Sol batches the draft into `pendingHumanReport`.
+4. If the autonomy gate does not clear (`reviewed`/`strict` above trivial): Nora returns `needs-human`; Sol batches the draft into `pendingHumanReport`.
 
 ## Crash safety
 
