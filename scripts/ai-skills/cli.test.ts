@@ -20,6 +20,7 @@ import {
 	resolveSelfPrismSource,
 	runUpdate,
 } from "./update";
+import { runDetectCli } from "./detect";
 import { runInitCli } from "./init";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
@@ -119,6 +120,13 @@ test("runInitCli is exported from init.ts and is a function", () => {
 	// export exists and has the right shape — the dispatch case cannot wire to
 	// undefined.
 	assert.equal(typeof runInitCli, "function");
+});
+
+test("runDetectCli is exported from detect.ts and is a function", () => {
+	// The CLI dispatcher routes "detect" to runDetectCli. This test confirms
+	// the export exists and has the right shape — the dispatch case cannot
+	// wire to undefined.
+	assert.equal(typeof runDetectCli, "function");
 });
 
 // --- self-location ---

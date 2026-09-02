@@ -1139,6 +1139,71 @@ test("runUpdate applies a renamed seed file under its consumer name and records 
 	);
 });
 
+// --- anchor content renders at update time, and the PRISM source is never mutated ---
+
+test("runUpdate renders the consumer's productDomain into the roster and leaves the PRISM source untouched", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			// assertSourceIsPlausible needs at least one PRISM-owned file under
+			// .prism/ — unrelated to the anchor content this test exercises.
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			// Override the base fixture's config with a non-empty productDomain, and
+			// give the persona source a `domain-context` anchor to substitute into.
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, productDomain: "home-service scheduling" }, null, "\t")}\n`
+			);
+			const sharedPath = ".ai-skills/skills/prism-sample/shared.md";
+			await writeFile(
+				prismRepoRoot,
+				sharedPath,
+				[
+					"You build ${PROJECT} for ${TICKET_PREFIX}.",
+					"",
+					"<!-- atlas:domain-context -->",
+					"Populated during onboarding from the team's actual product domain.",
+					"<!-- atlas:end -->",
+					"",
+				].join("\n")
+			);
+			const beforeBytes = await readFile(prismRepoRoot, sharedPath);
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const skillBody = await readFile(
+				consumerRepoRoot,
+				".claude/skills/prism-sample/SKILL.md"
+			);
+			assert.match(
+				skillBody,
+				/home-service scheduling/,
+				"the rendered persona carries the consumer's product domain"
+			);
+			assert.doesNotMatch(
+				skillBody,
+				/Populated during onboarding from the team's actual product domain\./,
+				"the generic anchor default is replaced, not left in place"
+			);
+
+			// Nothing under the PRISM source's own .ai-skills/skills/ tree changed —
+			// anchor substitution runs in memory against the rendered output only.
+			const afterBytes = await readFile(prismRepoRoot, sharedPath);
+			assert.equal(
+				afterBytes,
+				beforeBytes,
+				"the canonical persona source is byte-identical after the update"
+			);
+		}
+	);
+});
+
 /**
  * Captures `console.warn` calls made during `body`, restoring the original
  * afterward regardless of whether `body` throws.

@@ -161,6 +161,11 @@
 			"description": "Optional Slack channel for Lilac standup posting.",
 			"examples": ["#tractru-dev"]
 		},
+		"productDomain": {
+			"type": "string",
+			"description": "One-sentence description of what the product does, collected during onboarding. Rendered into the `domain-context` anchor across the persona roster at output-regeneration time (scripts/ai-skills/generate-skills.ts) in place of the generic canonical default. Absent or empty means every persona body keeps its shipped default anchor content.",
+			"examples": ["A multi-tenant SaaS platform for scheduling home service appointments."]
+		},
 		"documentation": {
 			"type": "object",
 			"description": "Documentation configuration. Populated by Atlas during onboarding (Phase 2). Eli reads these values to write guides shaped for the team's actual doc system — the format field in particular drives which patterns Eli uses. format is an open string, never a closed union: a new consumer adds their value here without a schema migration.",

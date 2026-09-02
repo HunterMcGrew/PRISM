@@ -20,10 +20,6 @@
  * caller, which decides whether to abort the session or surface and
  * continue.
  */
-import {
-	substituteAnchorsAcrossSkills,
-	type AnchorResult,
-} from "./anchor-substitute";
 import { generate as generateCodeStandards } from "./rule-generators/code-standards";
 import { generate as generateSecurity } from "./rule-generators/security";
 import { generate as generateFrameworkGuidelines } from "./rule-generators/framework-guidelines";
@@ -100,59 +96,21 @@ export async function runRuleGenerators(
 }
 
 /**
- * Summary of a single anchor-substitution run. `entries` is one record per
- * canonical persona-source file that contained at least one anchor;
- * `written` and `touchedAnchors` are pre-filtered views the closing summary
- * can use directly.
- */
-export interface AnchorSubstitutionSummary {
-	entries: AnchorResult[];
-	written: AnchorResult[];
-	touchedAnchors: string[];
-}
-
-/**
- * Runs Atlas's stub-anchor population step after rule generation. Builds the
- * `contentByAnchor` map from `OnboardingConfig` — `domain-context` from the
- * captured product domain — and runs `substituteAnchorsAcrossSkills` against
- * the canonical persona-source surface. Examples-class anchors stay empty in
- * v1 (future Atlas iterations fill them from team artifacts). There is no
- * `specializes-in` lane: the consumer's stack facts reach skills through its
- * generated rules and repo map, and any leftover anchor of that name is
- * preserved as an orphan.
+ * Builds the anchor replacement map from the product-domain field a config
+ * carries. Only anchors with a non-empty value are included — empty content
+ * would replace existing default content with a single newline, which the
+ * v1 spec treats as "leave the default until a future Atlas iteration fills
+ * it."
  *
- * The shape mirrors `runRuleGenerators` so the orchestration code at the
- * Atlas-shared.md level can compose the two in a uniform way — one call per
- * step, one summary per step, the closing summary stitches both together.
+ * Takes the narrow `{ productDomain }` shape rather than the full
+ * `OnboardingConfig` — the render-time caller (`refreshPlatformSkills` in
+ * `update.ts`) holds a `PrismConfig` (the on-disk config shape), not an
+ * in-session `OnboardingConfig`, and the function only ever reads this one
+ * field.
  */
-export async function runAnchorSubstitution(
-	config: OnboardingConfig,
-	repoRoot: string
-): Promise<AnchorSubstitutionSummary> {
-	const contentByAnchor = buildContentByAnchor(config);
-	const results = await substituteAnchorsAcrossSkills(
-		repoRoot,
-		contentByAnchor
-	);
-
-	const entries = Array.from(results.values());
-	const written = entries.filter((e) => e.written);
-	const touchedAnchors = Array.from(
-		new Set(written.flatMap((e) => e.anchorsReplaced))
-	).sort();
-
-	return { entries, written, touchedAnchors };
-}
-
-/**
- * Builds the replacement map from `OnboardingConfig`. Only anchors with a
- * non-empty value are included — empty content would replace existing
- * default content with a single newline, which the v1 spec treats as
- * "leave the default until a future Atlas iteration fills it."
- */
-function buildContentByAnchor(
-	config: OnboardingConfig
-): Record<string, string> {
+export function buildContentByAnchor(config: {
+	productDomain: string;
+}): Record<string, string> {
 	const map: Record<string, string> = {};
 
 	const domain = config.productDomain.trim();

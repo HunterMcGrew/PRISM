@@ -28,7 +28,7 @@ import { buildBundle } from "./bundle";
  * body rather than its name.
  */
 const NO_SUBCOMMAND_OUTPUT =
-	/prism:adopt|prism adopt:|Sync state:|Version:|PRISM-owned file\(s\) removed/;
+	/prism:adopt|prism adopt:|Sync state:|Version:|PRISM-owned file\(s\) removed|docLayout/;
 
 let bundlePath: string;
 let tempDir: string;
