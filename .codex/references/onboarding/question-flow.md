@@ -25,7 +25,7 @@ In `init-bootstrapped` mode, questions 1–5 are pre-seeded from the existing `c
 
 ## Documentation question set
 
-Atlas runs `detectDocLayout(<repo-root>)` before asking and proposes detected values as pre-filled defaults. Each sub-question is one turn within the single `documentation-setup` state step.
+Atlas uses the doc layout reported by detection (§ Startup) before asking and proposes detected values as pre-filled defaults. Each sub-question is one turn within the single `documentation-setup` state step.
 
 **11a. Location** — "Where do your user-facing docs live? (path relative to the repo root, e.g. `docs/`)" Pre-fill with detected `location` when found. Not validated for existence — onboarding may run before the directory is created.
 
@@ -33,9 +33,9 @@ Atlas runs `detectDocLayout(<repo-root>)` before asking and proposes detected va
 
 **11c. Keeps dev docs** — "Do you maintain separate internal/technical docs alongside the user-facing docs? (yes / no) This controls whether Eli runs the paired-doc workflow for newly written code." Boolean; stored as `keepsDevDocs`. No pre-fill — Atlas always asks explicitly.
 
-**11d. Format** — "What format do these docs use? (e.g. `nextra-blocks`, `flat-markdown-guides`, `docusaurus-mdx` — or describe your own)" Pre-fill with `inferDocFormat(detectedLayout.tool)` when a tool was detected. Open string; any value the user types is valid.
+**11d. Format** — "What format do these docs use? (e.g. `nextra-blocks`, `flat-markdown-guides`, `docusaurus-mdx` — or describe your own)" Pre-fill with the format inferred from the doc layout reported by detection (§ Startup) when a tool was detected. Open string; any value the user types is valid.
 
-When `detectDocLayout` returns non-empty evidence, Atlas frames each sub-question as "Does this look right?" rather than asking cold. When evidence is empty, Atlas asks plainly without a pre-fill.
+When detection returns non-empty evidence for the doc layout, Atlas frames each sub-question as "Does this look right?" rather than asking cold. When evidence is empty, Atlas asks plainly without a pre-fill.
 
 **Skip path:** if the user answers "skip" or "none" to question 11a, Atlas omits the entire `documentation` block from the config write. Eli operates without it (falling back to its own heuristics) until the team configures it.
 
@@ -81,7 +81,7 @@ Atlas asks one asset class per turn and presents auto-detected paths as a pre-fi
 
 Atlas scans the **union** of auto-detected locations and user-supplied paths confirmed in the asset-path survey. For each asset class Atlas lists what it found and asks, per item, whether to adopt or leave. All answers save together under step `discovery-sweep`.
 
-**Skills** — scan the union of platform skill directories and user-supplied skill paths. For each discovered skill, ask: adopt via `pnpm prism:migrate-skill <path>`, or leave untouched.
+**Skills** — scan the union of platform skill directories and user-supplied skill paths. For each discovered skill, ask: adopt it by invoking `prism-skill-forge` in migrate mode against the skill's path, or leave it untouched.
 
 **Architect docs** — scan the union of `.prism/architect/*.md` (excluding `_toolkit/`) and user-supplied paths. Default is confirm consumer-owned — flat `.prism/architect/*.md` files are already `consumer` per `classifyPath`. Offer migration into `_toolkit/` only on explicit user request.
 

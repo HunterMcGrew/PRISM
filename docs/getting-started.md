@@ -3,7 +3,7 @@ title: "Getting Started"
 description: "How to install PRISM into a new or existing repository."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-06-27"
+last_updated: "2026-09-02"
 ---
 
 # Getting Started
@@ -45,7 +45,7 @@ Atlas will:
 1. Detect your tech stack from your project files
 2. Ask a few questions about your team's setup (org name, ticket prefix, GitHub repo, docs location, etc.)
 3. Generate per-team engineering rules from patterns in your actual code
-4. Fill in the stub anchors that `adopt` put in place
+4. Write your team's `.ai-skills/config.json` and rerun `prism update` — the update is what renders your team's content, like your product domain, into the persona roster
 5. Track its progress in `.ai-skills/registry/onboarding-state.json` so an interrupted session can resume
 
 If you already have engineering standards (ESLint configs, style guides, existing conventions), tell Atlas — it reads them and decides where each belongs in the tier system.

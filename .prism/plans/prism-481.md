@@ -1,5 +1,8 @@
 # Plan: prism-481
 
+> Closed: 2026-09-02
+> Retro: declined — ticket grain; the lightweight charter-fidelity check ran inline during this close (all nine AC graded against the combined stack diff, CI green on both PRs, the Briar and Eric records complete in `## Review Issues`), so a separate report would restate it.
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/481 — label `bug`
@@ -138,45 +141,67 @@ Branch off PR 2's head. Docs are Eli's lane; PRs 1–2 do not touch `docs/`.
 ## Decisions
 
 - **Ship as a two-PR stack, not three.** Hunter approved collapsing the plan's three-lane stack into two PRs: PR 1 is Lane A (runtime) alone; PR 2 carries Lane B (Atlas procedure, ADR-0075, the three architect docs) and Lane C (docs) together on one branch stacked on PR 1. The lane boundaries and task content are unchanged — only the PR cut moves.
+  - → no promotion needed (PR-cut tactic for this ticket; the lane boundaries it preserves are already recorded in `## Implementation Tasks`)
 - **The two internal-only anchor functions are deleted outright, not deprecated.** Hunter approved deleting `runAnchorSubstitution` (`onboarding-run.ts`) and `substituteAnchorsAcrossSkills` (`anchor-substitute.ts`) directly rather than keeping deprecated wrappers — both are internal build-script functions with no consumer-facing call surface, so a deprecation period buys nothing. Tests exercising them (`anchor-substitute.test.ts`, `rule-generators.test.ts`) were removed in the same commit; `substituteAnchors` (the single-file write primitive) and its tests stay, since the plan keeps it as a public seam.
+  - → no promotion needed (deprecate-vs-delete tactic for two internal build-script functions; the retirement itself is recorded in ADR-0075)
 - **`buildContentByAnchor` takes `{ productDomain: string }`, not `OnboardingConfig` as task 4 specified.** Verified before implementing (`.prism/rules/cross-agent-handoff-accountability.md`): task 4 said the signature stays `(config: OnboardingConfig)` unchanged, but the render-time caller in `update.ts` holds a `PrismConfig` (the on-disk shape `loadConfig` returns), not an in-session `OnboardingConfig` — the two types share almost no fields (no `githubOwner`, `githubRepo`, `techStack: DetectedStack`, `existingStandards`). Full `OnboardingConfig` would not typecheck at the real call site. Narrowing the parameter to the one field the function actually reads fixes the mismatch without touching Atlas's own call in `runAnchorSubstitution` (removed anyway) — `OnboardingConfig` still structurally satisfies the narrower type.
+  - → promoted to `.prism/architect/_toolkit/anchor-substitution.md` — § Public surface carries the narrowed signature and the reason it narrowed (the render-time caller holds the on-disk config shape, not an in-session onboarding one)
 - **`productDomain` now persists to `.ai-skills/config.json`.** Root cause: `OnboardingConfig.productDomain` was always collected in Atlas's in-session flow but `toOnDiskConfig` never wrote it, and the schema had no slot for it — so `update.ts`'s `consumerConfig` could never carry a real value, and task 6's anchor-render wiring would have been structurally present but dead in every real consumer install. Fixed by adding `productDomain?: string` to `.ai-skills/config.schema.json`, `PrismOnDiskConfig`, and `PrismConfig` (`lib/tokens.ts`), and writing it in `toOnDiskConfig` when non-empty (same pattern as `slackChannel`). This is schema/type plumbing, not Atlas's interactive-flow prose — Atlas already collects the field; this only makes the write path complete. `update.test.ts` covers the full path: config → `refreshPlatformSkills` → rendered anchor.
+  - → promoted to `.prism/architect/onboarding.md` — the collect-only-what-`init`-leaves-empty item states that `init` writes `productDomain: ""` and that anchor content renders from the written config; `.prism/architect/_toolkit/anchor-substitution.md` § How `buildContentByAnchor` builds the replacement map names `productDomain` as `domain-context`'s source
 - **`prism detect` ships; `prism validate` does not.** The issue proposed both. Detection has no consumer-reachable equivalent, so it earns a subcommand. Validation already has two: `validateConsumerConfigAgainstSchema` runs inside `runUpdate` (`update.ts:501-502`) and `prism doctor` exposes it standalone and read-only. A third spelling of an existing check is a permanent public surface bought for nothing.
   - **Alternatives considered:** folding detection into `prism init`/`adopt` output — rejected because `init` runs once and never re-detects, and a first-install consumer has no config at all; Atlas reading the tree itself with no CLI help — rejected because it discards a tested, fixture-covered detector in favor of an LLM eyeballing package manifests, which produces different answers across models and gives npm consumers a measurably worse Atlas than toolkit users.
   - **Packaging cost is zero.** `bundle.ts` runs esbuild with `bundle: true`, so anything `cli.ts` imports transitively lands in `dist/cli.js`. `stack-detect.ts` already ships that way through `init.ts`; `doc-detect.ts` starts shipping the same way. No `package.json#files` change, and `verify-pack-parity.ts` needs no new entry because the subcommand reads no packaged file the existing entries do not already cover.
   - **One subcommand, not two.** Both detectors run together in Batch 1, both are read-only, both return small JSON. Every name in `USAGE` is a permanent promise, so one name carrying both reports beats two.
+  - → promoted to `.prism/architect/_toolkit/install-layout.md` — the ship-closure section names the consumer CLI's `USAGE` as the command-reachability authority and inventories the subcommands it admits; `detect` was added to that inventory during this close
 
 - **Anchor substitution moves into the render pass, and in-place source mutation is retired.** This is the ticket's real defect and it is wider than the issue states: anchors have never reached any npm consumer. See ADR-0075 for the full record.
   - **Root cause:** `substituteAnchorsAcrossSkills` globs `<root>/.ai-skills/skills/` and rewrites those files. In a consumer that directory is inside `node_modules`, so the call either no-ops silently on ENOENT or writes somewhere reinstall destroys.
   - **Chosen approach:** substitute in memory inside `generatePlatformSkills`, beside the token pass that already reads the consumer's config. It removes machinery rather than adding it, and it makes anchors work exactly like tokens — canonical source holds marker plus default, render substitutes.
   - **Alternatives considered:** convert `domain-context` to a `${PRODUCT_DOMAIN}` token — rejected because the documented Test-1/Test-2 split reserves tokens for identifiers and anchors for content, and the pending `examples`/`workflow-example` anchors are definitionally content; leave anchors toolkit-only and correct the docs — rejected, recorded in ADR-0075 as the cheapest honest alternative.
   - **Safe to retire:** every `atlas:*` anchor across `.ai-skills/skills/**` currently holds its shipped generic default, verified by grep. Nothing populated is committed, so the retirement reverts no content.
+  - → promoted to ADR-0075, and to `.prism/architect/_toolkit/anchor-substitution.md`, whose § Who runs this module names the render pass as the only caller
 
 - **Anchors substitute before tokens.** Anchor bodies derive from the same config that feeds the token map, so an anchor may legitimately carry a `${TOKEN}`. Tokens-first would leave it unresolved and trip `runLeftoverTokenGuard`. Anchors-first composes; the reverse does not.
+  - → promoted to ADR-0075, and to `.prism/architect/_toolkit/anchor-substitution.md` § Idempotency, ordering, and atomic write, which states the ordering as a render-pass invariant rather than an incidental call sequence
 
 - **Install context is a second axis, not a sixth mode.** The discriminator is `scripts/ai-skills/` at the repo root — present means toolkit, absent means consumer. It multiplies against all five existing modes rather than joining them, so the ordered mode walk in `.prism/architect/onboarding.md` is untouched.
   - **Alternatives considered:** a root `package.json` carrying a `prism:build` script — rejected, a consumer's own `package.json` is a false positive and confirming the script needs a second read; the sync manifest's `prismVersion` — rejected, a vendored toolkit checkout has one too. The `scripts/` probe is one read and is the literal cause of every failure in the issue's table.
   - A vendored PRISM inside a consumer repo classifies as consumer context, which is correct: `npx @huntermcgrew/prism <cmd>` works there, and consumer-context instructions are safe in a toolkit checkout while the reverse is not.
+  - → promoted to `.prism/architect/onboarding.md` § Install context, carrying the `scripts/ai-skills/` discriminator, the orthogonality clause, and both rejected alternatives
 
 - **One skill body with two branches, not a consumer-only body.** The generated Claude body is 165 lines against a 500-line cap (`MAX_SKILL_BODY_LINES`, `utils.ts:26`), so headroom is not the constraint. The deciding reason is that no mechanism exists to ship a different body to consumers — the same `shared.md` renders everywhere — so a second body would need new machinery to solve a problem a table and three conditional clauses already solve. Most of the procedure does not branch; only detection, regeneration, and the retired anchor step do.
+  - → promoted to `.prism/architect/onboarding.md` § Install context, which states that a run in either context asks the same questions and writes the same config and that only the commands each step names differ — the one-body shape stated as behavior
 
 - **`sourceCommit: "unknown"` stays out of scope.** The issue calls it minor and it is unrelated to the failure. `resolveSourceCommit` (`build.ts:891`) shells `git rev-parse HEAD` against the PRISM root, which in a consumer is inside `node_modules`; the command fails and the value degrades to `"unknown"`. The real fix is baking the SHA into the bundle at publish time, which `bundle.ts` has no step for — a release-ritual change touching `docs/publishing-prism.md`, a different subject-matter thread. Recorded as a follow-up.
   - **Latent risk worth naming in the follow-up:** when `node_modules` is not gitignored, `git rev-parse HEAD` succeeds and records the *consumer's* HEAD as PRISM's source commit. That is a silently wrong value, not a missing one.
+  - → no promotion needed (follow-up, not yet filed)
 
 - **The Atlas `hosts` question stays out of scope.** PR #480 added `hosts` to the schema; `init` does not write it and Atlas has no prompt for it. A parallel lane is currently changing what `hosts` means for skill output, so an Atlas question written now would be written against moving semantics. It is also additive to `question-flow.md` — a different file and a different failure mode from the consumer-path bug. Recorded as a follow-up for after the parallel lane settles.
+  - → no promotion needed (follow-up, not yet filed)
 
 - **No mechanical gate against recurrence in this ticket.** `ship-closure.ts` is a file-link closure and has no command-authority check; the `USAGE`-as-authority doctrine in `install-layout.md` § Curated seed twins → Test 2 exists in prose with no enforcement, which that doc states outright. A gate would need a fence syntax so a legitimate toolkit-context mention does not fail, and issue #444 already owns the ungated command-reachability class. Building it here would absorb #444's scope into a bug fix.
   - **What this ticket proves and #444 should absorb:** the gap is wider than the curated seed twins. `.ai-skills/skills/**` and `.prism/references/**` ship too, and both carried the same class of violation.
+  - → no promotion needed (follow-up, not yet filed — issue #444 owns the ungated command-reachability class)
+
+- **`modes.md`'s seed-and-sync handoff step names the install-context table instead of embedding a `pnpm prism:adopt` example inline.** Task 13's literal wording for `modes.md:76` was "the adopt command for this install context (`npx @huntermcgrew/prism adopt`, or `pnpm prism:adopt --prism-source <path>` in a toolkit checkout)" — a wording that itself contains `pnpm prism:`. AC-6's evidence is a zero-tolerance grep on `.prism/references/onboarding/` (no toolkit-column exception the way `shared.md`'s table gets one), so the literal wording would fail the AC it exists to satisfy. Fixed by pointing the step at `prism-onboarding` § Install context instead of naming either command inline — same information, no command literal in a reference doc.
+  - → no promotion needed (wording fix on one reference line; the constraint it satisfies is AC-6's grep, already recorded there)
 
 - **Ship as a three-PR stack, linear.** Twenty-one files across three lanes, past the ten-file threshold. Lane A (runtime, 10 files) is inert until Lane B names it. Lane B (Atlas prose plus ADR plus architect docs, 8 files) is wrong until Lane A exists. Lane C (docs, 3 files) describes both. The cuts fall on lane boundaries, and nothing inside a lane can ship without the rest of that lane.
 
 ---
+  - → no promotion needed (superseded by the two-PR cut recorded at the top of this section)
 
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — plan the consumer-mode Atlas fix from issue #481, evaluating the proposed CLI surface rather than adopting it; Bounds — plan file only, no implementation, no source edits; Approach — verify the packaging and render pipeline first, since bundling and existing render seams change which of the issue's three proposals are actually needed · close: scope held
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — implement PR 1's runtime lane (tasks 1-7: `prism detect`, render-time anchor substitution, retire the mutation path, tests); Bounds — `scripts/ai-skills/**` and `.ai-skills/config.schema.json` only, no Atlas prose/ADR/architect-doc/docs edits; Approach — verify the plan's line-number citations before editing, and fix the `buildContentByAnchor`/`productDomain` type-plumbing gap the plan's task 4/6 combination didn't typecheck against · close: scope held — two deviations from the plan's literal wording (buildContentByAnchor's parameter type; productDomain schema/type plumbing) recorded as Decisions above, both necessary for task 6's own AC-2 to be true rather than a compiling-but-dead wire
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — implement PR 2's Atlas-procedure lane (tasks 8-15: install-context branching in `shared.md`, the three onboarding references, ADR-0075, three architect docs); Bounds — `.ai-skills/skills/prism-onboarding/shared.md`, `.prism/references/onboarding/**`, `.prism/spec/adrs/_toolkit/0075-*.md`, and the three named architect docs only — no `docs/**` (Eli's lane); Approach — read every governing doc the write gate names, verify the ADR number and seed-curation classification against the directory, then edit task-by-task and run `pnpm prism:build`/`pnpm prism:check` before shipping · close: scope held — one deviation from task 13's literal wording recorded as a Decision below (AC-6's zero-tolerance grep on `.prism/references/onboarding/` overrides the toolkit-column exception task 13 wrote inline)
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — fix Briar's two PR 2 self-review Majors (both stale prose crediting Atlas with running anchor substitution) and merge the plan's duplicated bookkeeping sections after the origin/main merge; Bounds — anchor-substitution.md § Anchor schema, shared.md's Procedure D and opening persona description, plan bookkeeping sections only; Approach — fix the two named findings, sweep shared.md once more for the same claim class, then merge duplicate section pairs keeping every entry · close: scope held
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — implement tasks 16-18, the docs lane, on `docs/adopt-prism.md`, `docs/getting-started.md`, and `docs/troubleshooting.md`; Bounds — `docs/**` only, no source or spec edits; Approach — verify `prism detect`'s CLI surface and USAGE line against the shipped source before citing them, follow the existing flat-markdown-guides shape and frontmatter each file already uses · close: scope held — one adjacent fix folded in (adopt-prism.md's `prism init` section still credited Atlas with "anchor population," stale per ADR-0075; corrected in the same file already in the diff)
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — self-review PR 2 (tasks 8-18) against the plan's Decisions and AC-1/5/6/7/8/9, walking Atlas's consumer branch end to end and checking the three onboarding references, three architect docs, and ADR-0075 against shipped code; Bounds — review only, plan-only commit, no source edits, no GitHub posting; Approach — verify every named command against `cli.ts`, grep AC-6/AC-9's exact patterns from inside the worktree, and run `pnpm prism:check`/`pnpm prism:build` for the mechanical gates · close: scope held — two Major findings recorded above, both prose contradictions (Atlas credited with an anchor step it no longer runs); all mechanical AC evidence (AC-5, AC-6, AC-7, AC-9) confirmed passing, AC-8's ADR structure confirmed complete
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — self-review PR 1 of the stack (draft PR #483) across the anchor-render pass, `prism detect`, deletion completeness, and `productDomain` persistence; Bounds — read-only review, chat + plan write only, no source edits, no GitHub post; Approach — verify every plan claim against source and a live run of the check pipeline rather than trusting the diff's own comments · close: scope held — one Minor comment finding, all other angles clean
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — fix Eric's two PR #484 review Minors (AC-6's grep evidence, the PR body's stale Stack section) and land a plan-only commit; Bounds — the plan's AC-6 evidence sub-bullet, `## Review Issues`, `## PR Readiness`, and the PR #484 body only — no source or spec-prose edits; Approach — run AC-6's exact grep to confirm the finding, rewrite the evidence to state the falsifiable rule, rewrite the Stack section to reflect #483's merge and the docs lane shipping here, verify the pushed body renders · close: scope held
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure] open: Intent — run the plan close on the final PR of the stack (reflect at ticket grain, Decision verdict gate, close markers); Bounds — the plan file plus any promoted-claim gap the verdict gate exposes in an already-routed file, no source and no new spec; Approach — grade all nine AC against the combined `abfe2d09`-plus-branch diff and verify each promotion target by reading its stated home, rather than trusting the plan's own account of what landed · close: scope held — two stale-claim fixes folded in (`install-layout.md`'s CLI inventory, `_toolkit/onboarding.md`'s checkpoint list), both surfaced by the verdict gate itself, both in files this PR already touches
 
 ---
 
@@ -184,50 +209,76 @@ Branch off PR 2's head. Docs are Eli's lane; PRs 1–2 do not touch `docs/`.
 
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install]: Wrote the implementation plan. Evaluation cut `prism validate` as redundant with `prism doctor` and widened the fix to anchor substitution, which has never reached any npm consumer; see Decisions and ADR-0075.
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install]: Implemented PR 1's runtime lane (tasks 1-7) — added `prism detect`; moved anchor substitution into `generatePlatformSkills`, threaded through `update.ts`; deleted `runAnchorSubstitution`/`substituteAnchorsAcrossSkills` and their tests; fixed `productDomain` never persisting to `.ai-skills/config.json`, which the plan's task 6 silently depended on. `pnpm prism:check` green; see Decisions for the two plan deviations.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Implemented PR 2's Atlas-procedure lane (tasks 8-15) — install-context probe added to Atlas's startup Batch 1, the two detection steps collapsed into one context-branching probe, a new `## Install context` command table added after `## Identity`, schema-path and build-command claims rewritten to name behavior instead of a consumer-unreachable path, the three onboarding references and three architect docs updated to match, and ADR-0075 written recording the render-time anchor decision. `pnpm prism:build` and `pnpm prism:check` both green; see Decisions for the one plan deviation.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Implemented the docs lane (tasks 16-18) — added a `prism detect` subsection to `docs/adopt-prism.md`'s command reference, replaced the stale "fill in stub anchors" step in `docs/getting-started.md` § Step 3 with the config-write-then-update step, added a troubleshooting entry for consumers hitting toolkit-only paths in `docs/troubleshooting.md`, and fixed a stale "anchor population" credit to Atlas found in `adopt-prism.md` while in the file. `pnpm prism:check` green.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Fixed Briar's two PR 2 self-review Majors — `anchor-substitution.md` § Anchor schema still credited Atlas with running substitution (rewrote to caller-agnostic render-time phrasing), and Procedure D in `shared.md` described an anchor step Atlas no longer runs (deleted; the render pass's unknown-anchor handling is already documented). A follow-up sweep found and fixed a third stale claim in `shared.md`'s opening persona description. Merged the plan's duplicated section pairs (main's PR 1 copy and this branch's PR 2 copy, introduced by the `origin/main` merge) into one of each. `pnpm prism:build` (874/874 tests) and `pnpm prism:check` (exit 0) both green.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Briar self-reviewed PR 2 (tasks 8-18) — two Major findings, both stale prose describing Atlas as still running an anchor step it no longer runs; `pnpm prism:check` and `pnpm prism:build` confirmed green, no mirror drift.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Eric reviewed PR #484, clean on substance with two Minors — AC-6's grep evidence didn't account for two correctly-gated `shared.md` lines outside the Install context table, and the PR body's Stack section still said the docs lane was a pending follow-up and PR #483 was in review, both stale by the time of review. Fixed AC-6's evidence to state the falsifiable toolkit-gating rule, and rewrote the Stack section and a `## What did you do?` bullet to reflect #483's merge and the docs lane shipping in this PR. `pnpm prism:build` and `pnpm prism:check` both green.
+- 2026-09-02 [huntermcgrew/prism-481-atlas-procedure]: Closed the plan on PR #484 — every `## Decisions` entry carries a promotion verdict, and the close verified each promoted claim against its stated home rather than assuming it landed. Two stale claims surfaced during that verification and are fixed here: the ship-closure subcommand inventory in `install-layout.md` did not list `detect`, and `_toolkit/onboarding.md`'s checkpoint-density section still proposed a STOP after an anchor step Atlas no longer runs. Two lessons appended; three follow-ups left for Nora to file.
 
 ---
 
-## Acceptance Criteria
+## Debugged Issues
 
-### Behavioral
+Add entries here via the debugger skill. Each entry has a structured format.
 
-- [ ] **AC-1** Given a repo that has only ever been set up with `npx @huntermcgrew/prism init`, When Atlas is invoked and runs to completion, Then it finishes through config write, validation, and output regeneration without referring the user to `scripts/ai-skills/lib`, `pnpm prism:build`, or a config schema at the repo root.
-  - Evidence (human): run Atlas end to end in a fresh npm-consumer repo and read the full transcript → the session reaches its closing summary, and no message names any of the three · UNMET looks like: Atlas stalls, or the transcript names any of `scripts/ai-skills/lib`, `pnpm prism:build`, or a consumer-root `config.schema.json`.
-  - This is the issue's done condition, carried verbatim in substance.
+---
 
-- [ ] **AC-2** Given a consumer repo whose configuration records a product domain, When the update command runs, Then the persona files it writes carry that product domain in place of the generic placeholder text.
-  - Evidence (machine): `npx tsx --test scripts/ai-skills/update.test.ts` → the anchor-render case passes; grep the rendered `.claude/skills/prism-code-dev/SKILL.md` for the domain string returns a hit, and for "Populated during onboarding from the team's actual product domain" returns nothing. Positive control for the absence half: the same grep against the canonical `.ai-skills/skills/prism-code-dev/shared.md` returns a hit, proving the probe works · UNMET looks like: the rendered file still carries the placeholder sentence.
+## Review Issues
 
-- [ ] **AC-3** Given a consumer repo, When the update command runs, Then nothing inside the installed PRISM package is modified.
-  - Evidence (machine): `npx tsx --test scripts/ai-skills/update.test.ts` → the byte-identity case passes, comparing every file under the fake PRISM source's `.ai-skills/skills/` before and after the run · UNMET looks like: any file under that tree differs after the run.
+### `anchor-substitution.md` § Anchor schema still credits Atlas with running substitution
 
-- [ ] **AC-4** Given any repo, When the detect command is run, Then it prints the detected tech stack and doc layout as JSON and writes no file.
-  - Evidence (machine): `npx tsx --test scripts/ai-skills/detect.test.ts` → all three cases pass; `npx tsx scripts/ai-skills/cli.ts detect | node -e "JSON.parse(require('fs').readFileSync(0))"` exits 0 · UNMET looks like: non-JSON on stdout, a non-zero exit on an empty repo, or any file appearing in `git status` after the run.
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/anchor-substitution.md` § Anchor schema
+- **Problem:** The sentence "When Atlas runs, it replaces the inner span (between open and close) with team-specific content" survived the task-15 rewrite and contradicts the same file's § Who runs this module, which correctly states the render pass (`generatePlatformSkills`) is the only caller and Atlas runs no anchor step. AC-9's grep doesn't catch this — the sentence names no banned symbol, only a stale claim about *who* substitutes.
+- **Fix applied:** Replaced with "At render time, the inner span (between open and close) is replaced with team-specific content." — caller-agnostic phrasing consistent with § Who runs this module.
 
-- [ ] **AC-5** Given the consumer CLI's help output, When a reader looks for the detect command, Then it is listed alongside init, adopt, update, doctor, and eject.
-  - Evidence (machine): `npx tsx scripts/ai-skills/cli.ts --help` → output includes a line beginning `  prism detect` · UNMET looks like: the command dispatches but is absent from the help listing, which would make every reference to it in shipped prose unreachable.
+### Procedure D in `shared.md` describes an anchor step Atlas no longer runs
 
-### Non-behavioral
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-onboarding/shared.md` § When Things Break, "Procedure D — Anchor substitution lands on an unknown anchor"
+- **Problem:** Procedure D instructs Atlas on handling an unknown-anchor case mid-session, but the same file's § Install context table states "Anchor population: none — anchors render during output regeneration" for both install contexts — Atlas performs no anchor step in either context, so there's no Atlas-run moment where it could "land on" an anchor. Predates this PR and wasn't touched by tasks 8-12, but is now describing behavior the rest of the file just retired.
+- **Fix applied:** Deleted Procedure D — the render pass's own unknown-anchor handling is already documented in `anchor-substitution.md` § Idempotency, ordering, and atomic write. A follow-up sweep of `shared.md` for the same class of stale claim found one more: the opening persona-description sentence separately credited Atlas with "populates stub anchors"; rewritten to describe the config write instead (Atlas supplies the values the render pass's anchor and token layers read, per ADR-0030 and ADR-0075).
 
-- [ ] **AC-6** Atlas's skill body and the three onboarding references name no command or path a consumer cannot reach.
-  - Evidence (machine): `grep -rn "pnpm prism:\|scripts/ai-skills" .prism/references/onboarding/` returns nothing, and the same grep against `.ai-skills/skills/prism-onboarding/shared.md` returns only lines inside the § Install context table's toolkit column. Positive control: the same grep against `.prism/architect/_toolkit/install-layout.md` returns hits, proving the pattern matches · UNMET looks like: any hit outside the toolkit column.
+### Changelog-voice JSDoc on `refreshPlatformSkills`
 
-- [ ] **AC-7** The full build and check pipeline passes.
-  - Evidence (machine): `pnpm prism:check` → exits 0 · UNMET looks like: any non-zero exit, including a `discovery-metadata.test.ts` body-cap failure on the grown Atlas body or a `ship-closure` dangling-reference failure from the new ADR.
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/update.ts` (docstring above `refreshPlatformSkills`)
+- **Problem:** The docstring paragraph read "Anchor population used to be a separate Atlas write into the canonical `.ai-skills/skills/` sources; it now runs here, in memory, on every regeneration." — changelog-voice per `.prism/rules/code-comments.md` (described the migration, not the current invariant).
+- **Fix applied:** Rewrote to state only the current invariant — "Anchor population happens here, in memory, on every regeneration — see ADR-0075." Checked the sibling JSDoc on `applyAnchorsThenTokens` in `generate-skills.ts` for the same voice issue; it already states the invariant (anchors before tokens, and why), no fix needed there.
 
-- [ ] **AC-8** The decision to render anchors rather than mutate sources is recorded as an ADR carrying its rejected alternatives.
-  - Evidence (human): open `.prism/spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md` → it has Context, Decision, and Consequences; Decision names all three rejected alternatives with a reason each; Consequences states at least one honest negative · UNMET looks like: a missing section, an alternative listed without its reason, or an all-upside Consequences section.
+### AC-6's grep evidence didn't match reality
 
-- [ ] **AC-9** The three routed architect docs match the shipped behavior.
-  - Evidence (machine): `grep -rn "substituteAnchorsAcrossSkills\|runAnchorSubstitution" .prism/architect/` returns nothing. Positive control: the same grep against this plan file returns hits · UNMET looks like: any architect doc still describing the retired API as live.
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-481.md` § Acceptance Criteria → AC-6
+- **Problem:** AC-6's evidence claimed the toolkit-token grep against `shared.md` returns hits only inside the § Install context table's toolkit column. `shared.md:43` (naming the `scripts/ai-skills/` discriminator itself) and `:59` (the toolkit-context clause of the detection probe) both hit outside the table — correctly gated on toolkit context, but not inside the table, so the stated evidence was narrower than what the criterion actually required.
+- **Fix applied:** Rewrote AC-6's evidence to state the falsifiable rule — a toolkit-only hit passes when it sits inside the table's toolkit column *or* in a sentence that explicitly names the toolkit-context branch — with both current examples cited and the positive control kept.
 
-### AC Adjustments
+### PR #484 body's Stack section was stale
 
-### AC Sync Log
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** GitHub PR #484 body § Stack
+- **Problem:** The section said Eli's docs lane "lands as follow-up commits after this PR is reviewed," and that PR #483 was "currently in review" — both false by the time of review: the three `docs/` files are in this PR's diff, and #483 had already merged.
+- **Fix applied:** Rewrote the section to say PR 1 merged to `main` as #483 and that the docs lane shipped directly on this branch; added a matching bullet to `## What did you do?`. Pushed via `gh api -X PATCH` per `pr-description.md` § Writing mechanics; verified rendered.
 
-| Date | Agent | Action | Plan | Ticket |
-| ---- | ----- | ------ | ---- | ------ |
-| 2026-09-02 | Winston | AC generated and synced | prism-481 | #481 |
+No other issues found beyond the five above — 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install]. Verified: `pnpm prism:check-types` (clean), `pnpm prism:test` (860/860 pass), `pnpm prism:build` (byte-identical — `git status` clean after the build, directly confirming task 5's own AC rather than trusting Clove's claim), `pnpm prism:check` (exit 0 — crossref-lint, spec-scope-lint, ship-closure, verify-pack-parity all pass). A tree-wide grep for `runAnchorSubstitution|substituteAnchorsAcrossSkills|AnchorSubstitutionSummary|AnchorResult` under `scripts/` returns nothing — the deletion is complete, no stray references. `isDirectCliEntry("detect")` matches the codebase's actual convention (basename without extension, confirmed against every other subcommand's guard) despite the plan's task 1 literally specifying `"detect.ts"` — not a bug, just the plan's wording being imprecise. `productDomain`'s schema entry is optional (absent from `required`), so an existing config without it still validates; the write path (`toOnDiskConfig`, gated on non-empty trim), both type surfaces (`PrismOnDiskConfig`, `PrismConfig`), and the render-time read (`consumerConfig.productDomain ?? ""`) all check out against source. All four `substituteTokens` call sites in `generate-skills.ts` route through the new `applyAnchorsThenTokens` helper in the anchors-before-tokens order the plan requires. The tests removed from `anchor-substitute.test.ts` and `rule-generators.test.ts` only exercised the deleted `substituteAnchorsAcrossSkills`/`runAnchorSubstitution` paths — no live behavior lost coverage. Briar's PR 2 self-review (plan commit `45154739`) found the two Major stale-prose contradictions above; both fixed on `huntermcgrew/prism-481-atlas-procedure`, verified via `pnpm prism:build` (874/874 tests, mirrors regenerated) and `pnpm prism:check` (exit 0).
+
+### Angle Coverage
+
+- Types and logic: swept — no issues
+- Accessibility: n/a — no UI in this diff
+- Removal/rename completeness: swept — zero remaining references to the two deleted functions/types under `scripts/`; PR 2's sweep confirms zero remaining prose claims crediting Atlas with running anchor substitution
+- Test coverage: swept — new tests cover `detect`'s three contracts plus the anchor-render and byte-identity regression; no gap found
+- Comments/JSDoc: swept — one Minor changelog-voice finding above, otherwise clean
+- Spec/plan divergence: swept — the plan's two recorded deviations (buildContentByAnchor's parameter type; productDomain schema/type plumbing) are both necessary and match the diff exactly
+- Docs impact: n/a — PR 2/3 own Atlas prose and consumer docs per the plan's lane split; PR 1 touches neither
+- Build: swept — `pnpm prism:build` produces a byte-identical tree (PR 1); PR 2's build regenerates mirrors for the two edited files, byte-identical elsewhere
+- Cross-file/citation integrity: swept — call sites, imports, and the schema/type threading through `onboarding-config.ts` → `tokens.ts` → `update.ts` all verified against source, not just the diff
 
 ---
 
@@ -237,41 +288,65 @@ None found.
 
 ---
 
-## Review Issues
+## PR Readiness
 
-### Changelog-voice JSDoc on `refreshPlatformSkills`
+- [x] No critical or major issues (two Major findings from Briar's PR 2 self-review, both fixed)
+- [x] Types correct — no `any`, no unsafe `as` introduced; PR 2 is content-only, no source changes
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (PR 1); PR 2 is content-only, no new logic
+- [x] All debugged issues resolved (no `open` entries in `## Debugged Issues` — none exist)
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:build` green (874/874 tests), mirrors byte-identical
+- [x] PR description up to date — PR 1 (#483, merged) rewritten to the canonical template shape on Eric's Minor finding, verified rendered; PR 2 (#484) Stack section and `## What did you do?` rewritten on Eric's Minor finding to reflect the merge and the docs lane shipping here, verified rendered
+- [x] Lasting decisions promoted to architect context — ADR-0075 recorded; the three routed architect docs match shipped behavior (AC-9)
+- [x] Eric's PR review clean on substance — both Minors (AC-6 evidence, stale Stack section) fixed
 
-- **Severity:** `minor`
-- **Status:** `fixed`
-- **File:** `scripts/ai-skills/update.ts:839-842` (docstring above `refreshPlatformSkills`)
-- **Problem:** The docstring paragraph read "Anchor population used to be a separate Atlas write into the canonical `.ai-skills/skills/` sources; it now runs here, in memory, on every regeneration." — changelog-voice per `.prism/rules/code-comments.md` (described the migration, not the current invariant).
-- **Fix applied:** Rewrote to state only the current invariant — "Anchor population happens here, in memory, on every regeneration — see ADR-0075." Checked the sibling JSDoc on `applyAnchorsThenTokens` in `generate-skills.ts` for the same voice issue; it already states the invariant (anchors before tokens, and why), no fix needed there.
-
-No other issues found — 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install]. Verified: `pnpm prism:check-types` (clean), `pnpm prism:test` (860/860 pass), `pnpm prism:build` (byte-identical — `git status` clean after the build, directly confirming task 5's own AC rather than trusting Clove's claim), `pnpm prism:check` (exit 0 — crossref-lint, spec-scope-lint, ship-closure, verify-pack-parity all pass). A tree-wide grep for `runAnchorSubstitution|substituteAnchorsAcrossSkills|AnchorSubstitutionSummary|AnchorResult` under `scripts/` returns nothing — the deletion is complete, no stray references. `isDirectCliEntry("detect")` matches the codebase's actual convention (basename without extension, confirmed against every other subcommand's guard) despite the plan's task 1 literally specifying `"detect.ts"` — not a bug, just the plan's wording being imprecise. `productDomain`'s schema entry is optional (absent from `required`), so an existing config without it still validates; the write path (`toOnDiskConfig`, gated on non-empty trim), both type surfaces (`PrismOnDiskConfig`, `PrismConfig`), and the render-time read (`consumerConfig.productDomain ?? ""`) all check out against source. All four `substituteTokens` call sites in `generate-skills.ts` route through the new `applyAnchorsThenTokens` helper in the anchors-before-tokens order the plan requires. The tests removed from `anchor-substitute.test.ts` and `rule-generators.test.ts` only exercised the deleted `substituteAnchorsAcrossSkills`/`runAnchorSubstitution` paths — no live behavior lost coverage.
-
-### Angle Coverage
-
-- Types and logic: swept — no issues
-- Accessibility: n/a — no UI in this diff
-- Removal/rename completeness: swept — zero remaining references to the two deleted functions/types under `scripts/`
-- Test coverage: swept — new tests cover `detect`'s three contracts plus the anchor-render and byte-identity regression; no gap found
-- Comments/JSDoc: swept — one Minor changelog-voice finding above, otherwise clean
-- Spec/plan divergence: swept — the plan's two recorded deviations (buildContentByAnchor's parameter type; productDomain schema/type plumbing) are both necessary and match the diff exactly
-- Docs impact: n/a — PR 2/3 own Atlas prose and consumer docs per the plan's lane split; PR 1 touches neither
-- Build: swept — `pnpm prism:build` produces a byte-identical tree
-- Cross-file/citation integrity: swept — call sites, imports, and the schema/type threading through `onboarding-config.ts` → `tokens.ts` → `update.ts` all verified against source, not just the diff
+**Last updated:** 2026-09-02
 
 ---
 
-## PR Readiness
 
-- [x] No critical or major issues
-- [x] Types correct — no `any`, no unsafe `as` introduced
-- [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
-- [x] All debugged issues resolved (no `open` entries in `## Debugged Issues` — none exist)
-- [x] Build passes — last run: 2026-09-02, byte-identical
-- [x] PR description up to date — rewritten to the canonical template shape (`.prism/templates/pr-description.md`) on Eric's Minor finding; verified rendered on PR #483
-- [ ] Lasting decisions promoted to architect context — deferred to PR 2 by design (Lane B owns the three architect docs and ADR-0075)
+## Acceptance Criteria
 
-**Last updated:** 2026-09-02
+### Behavioral
+
+- [ ] **AC-1** Given a repo that has only ever been set up with `npx @huntermcgrew/prism init`, When Atlas is invoked and runs to completion, Then it finishes through config write, validation, and output regeneration without referring the user to `scripts/ai-skills/lib`, `pnpm prism:build`, or a config schema at the repo root.
+  - Evidence (human): run Atlas end to end in a fresh npm-consumer repo and read the full transcript → the session reaches its closing summary, and no message names any of the three · UNMET looks like: Atlas stalls, or the transcript names any of `scripts/ai-skills/lib`, `pnpm prism:build`, or a consumer-root `config.schema.json`.
+  - This is the issue's done condition, carried verbatim in substance.
+
+- [x] **AC-2** Given a consumer repo whose configuration records a product domain, When the update command runs, Then the persona files it writes carry that product domain in place of the generic placeholder text.
+  - Evidence (machine): `npx tsx --test scripts/ai-skills/update.test.ts` → the anchor-render case passes; grep the rendered `.claude/skills/prism-code-dev/SKILL.md` for the domain string returns a hit, and for "Populated during onboarding from the team's actual product domain" returns nothing. Positive control for the absence half: the same grep against the canonical `.ai-skills/skills/prism-code-dev/shared.md` returns a hit, proving the probe works · UNMET looks like: the rendered file still carries the placeholder sentence.
+
+- [x] **AC-3** Given a consumer repo, When the update command runs, Then nothing inside the installed PRISM package is modified.
+  - Evidence (machine): `npx tsx --test scripts/ai-skills/update.test.ts` → the byte-identity case passes, comparing every file under the fake PRISM source's `.ai-skills/skills/` before and after the run · UNMET looks like: any file under that tree differs after the run.
+
+- [x] **AC-4** Given any repo, When the detect command is run, Then it prints the detected tech stack and doc layout as JSON and writes no file.
+  - Evidence (machine): `npx tsx --test scripts/ai-skills/detect.test.ts` → all three cases pass; `npx tsx scripts/ai-skills/cli.ts detect | node -e "JSON.parse(require('fs').readFileSync(0))"` exits 0 · UNMET looks like: non-JSON on stdout, a non-zero exit on an empty repo, or any file appearing in `git status` after the run.
+
+- [x] **AC-5** Given the consumer CLI's help output, When a reader looks for the detect command, Then it is listed alongside init, adopt, update, doctor, and eject.
+  - Evidence (machine): `npx tsx scripts/ai-skills/cli.ts --help` → output includes a line beginning `  prism detect` · UNMET looks like: the command dispatches but is absent from the help listing, which would make every reference to it in shipped prose unreachable.
+
+### Non-behavioral
+
+- [x] **AC-6** Atlas's skill body and the three onboarding references name no command or path a consumer cannot reach.
+  - Evidence (machine): `grep -rn "pnpm prism:\|scripts/ai-skills" .prism/references/onboarding/` returns nothing. The same grep against `.ai-skills/skills/prism-onboarding/shared.md` — a file that legitimately names toolkit-only commands and paths inside the toolkit-context branch — returns hits only where each one sits either inside the § Install context table's toolkit column or in a sentence that explicitly names the toolkit-context branch it belongs to (e.g. "check whether `<repo-root>/scripts/ai-skills/` exists" naming the discriminator itself, or "In toolkit context, call ... from `scripts/ai-skills/lib/`"). Positive control: the same grep against `.prism/architect/_toolkit/install-layout.md` returns hits, proving the pattern matches · UNMET looks like: a toolkit-only command or path in `shared.md` appearing in a sentence that is not gated on toolkit context, or any hit at all in `.prism/references/onboarding/`.
+
+- [x] **AC-7** The full build and check pipeline passes.
+  - Evidence (machine): `pnpm prism:check` → exits 0 · UNMET looks like: any non-zero exit, including a `discovery-metadata.test.ts` body-cap failure on the grown Atlas body or a `ship-closure` dangling-reference failure from the new ADR.
+
+- [x] **AC-8** The decision to render anchors rather than mutate sources is recorded as an ADR carrying its rejected alternatives.
+  - Evidence (human): open `.prism/spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md` → it has Context, Decision, and Consequences; Decision names all three rejected alternatives with a reason each; Consequences states at least one honest negative · UNMET looks like: a missing section, an alternative listed without its reason, or an all-upside Consequences section.
+
+- [x] **AC-9** The three routed architect docs match the shipped behavior.
+  - Evidence (machine): `grep -rn "substituteAnchorsAcrossSkills\|runAnchorSubstitution" .prism/architect/` returns nothing. Positive control: the same grep against this plan file returns hits · UNMET looks like: any architect doc still describing the retired API as live.
+
+### AC Adjustments
+
+- **AC-1 stays unchecked at close — verified by construction, not by execution.** Its evidence is human (run Atlas end to end in a fresh npm-consumer repo and read the full transcript), and no such run happened. What was verified instead: the three tokens AC-1 forbids appear nowhere Atlas can reach them — AC-6's grep returns nothing under `.prism/references/onboarding/`, and every hit in `shared.md` sits inside the § Install context table's toolkit column or in a sentence naming the toolkit branch. That is the mechanical half of AC-1; the transcript half is a human step this close does not claim.
+
+### AC Sync Log
+
+| Date | Agent | Action | Plan | Ticket |
+| ---- | ----- | ------ | ---- | ------ |
+| 2026-09-02 | Winston | AC generated and synced | prism-481 | #481 |
+| 2026-09-02 | Winston | AC graded at plan close — AC-2 through AC-9 checked, AC-1 left unchecked per AC Adjustments | prism-481 | not synced |
+

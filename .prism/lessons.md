@@ -479,3 +479,19 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-09-02 (prism-477-followup-skills-hosts, PR #482) — PR #480 gated hook delivery on `hosts` and recorded the skill roster as the one remaining ungated fanout, having searched for the `optedIn` object that identifies it. The consumer path had a second ungated fanout: `refreshPlatformDirs`, which copies rules, architect docs, and templates into all three platform dirs through `buildPlatformDirs`. It carried no `optedIn` object at all, so no widening of that search would ever have reached it — the token the search keyed on was exactly what the missed site lacked. It surfaced by walking every write reachable from `runUpdate`, the one seam the consumer path goes through.
 
 **How to apply:** when completing an opt-in or feature gate, enumerate the sites from the call graph of the entry point, not from a search for the marker the known sites carry. A grep finds sites that already participate in the mechanism; the ones that need adding are, by definition, the ones with nothing to match. Name the single seam every write passes through, list what it reaches, and gate from that list. Same completeness family as the grep-narrower-than-the-defect-class lesson above, with the opposite remedy: there is no pattern to widen, so the enumeration has to come from structure.
+
+---
+
+## A bug report's inventory is a snapshot of where the reporter looked, not a boundary on the defect
+
+**Why:** 2026-09-02 (PRISM-481, PRs #483/#484) — issue #481 listed the consumer-unreachable commands Atlas names and proposed three CLI subcommands as the fix. Two of the three already had consumer-reachable equivalents (`prism doctor` already exposes config validation standalone), and the defect that actually broke every npm install was absent from the report: anchor substitution rewrote `.ai-skills/skills/**` in place, which in a consumer install sits inside `node_modules`, so no anchor had ever reached an npm consumer. It surfaced by tracing the render pipeline out from `runUpdate`, not by working the report's list.
+
+**How to apply:** treat a report's inventory as evidence a defect exists, not as its edge. Check each proposed remedy against what already ships — a subcommand duplicating an existing one is a permanent public surface bought for nothing — and walk the pipeline the symptom implicates end to end before adopting the proposed shape.
+
+---
+
+## Prose naming who performs a step goes stale when a refactor moves the step, and no symbol search finds it
+
+**Why:** 2026-09-02 (PRISM-481, PR #484) — moving anchor substitution out of Atlas and into the render pass left three sentences still crediting Atlas with running it: `anchor-substitution.md` § Anchor schema, `shared.md`'s Procedure D, and `shared.md`'s opening persona description. AC-9's grep passed over all three, because it searched the deleted function names and each stale sentence names only an actor. Plan close found a fourth in `_toolkit/onboarding.md`'s checkpoint-density section. Third occurrence of the class in one session — see the PRISM-477 entry above, where a refactor moved a check under a new branch and the plan's own Decision still described its old reach.
+
+**How to apply:** the removal-and-rename-completeness section of the always-on code standards already owns this; it reads as being about a changed *predicate*, and this is a changed *actor*. When a change moves a step from one component to another, run a prose search for the old performer's name across every doc describing the step, alongside the symbol grep rather than instead of it — a grep for deleted symbols cannot see a sentence whose only stale token is a persona's name.
