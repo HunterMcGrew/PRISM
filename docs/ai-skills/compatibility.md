@@ -13,6 +13,7 @@ The short version, before the prose:
 - **Codex** reads from `.codex/agents/` (tracked) and `.codex/codex-config.toml` (per-user, ignored).
 - **Cursor** reads from `.cursor/skills/` — tracked.
 - **Codex skill bodies** land at `.agents/skills/` — resolved repo-relative, not `~/.agents/skills/` — populated directly by every `prism adopt`/`prism update`. `.agents/` in the repo is ignored but populated.
+- **Hook-based enforcement** reaches Claude Code only — Codex and Cursor rely on a manual read-before-write discipline instead.
 
 ## Persona vs utility skills
 
@@ -63,6 +64,18 @@ There's no `.cursor/codex-config.toml`-equivalent — Cursor doesn't have an in-
 ### `.agents/` — ignored but populated
 
 Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agents/skills/` — and is rendered directly by every `prism adopt`/`prism update`, the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It stays gitignored as machine-local output, not because population is unshipped.
+
+## Hook-based enforcement is Claude Code only
+
+PRISM ships a hook runtime that does two things: it names the architect docs that govern a file you just read, and it blocks an edit to a routed path until those docs are read.
+
+That runtime is delivered to Claude Code only. `prism adopt` and `prism update` write `.claude/hooks/` and merge the registration into `.claude/settings.json`; no equivalent is written for Codex or Cursor, so on those hosts neither behavior fires — and nothing announces its absence.
+
+This is a delivery gap, not a limitation of those tools — both support the hook event the gate uses. Wiring them up is unshipped work, not a setting to flip.
+
+What carries the guarantee on Codex and Cursor is the always-on rule in `.prism/rules/context-reuse.md` and the shared startup contract in `.prism/references/skill-core.md`: match the paths you're about to touch against `.prism/architect/manifest.json` and read every matching doc before you write. On those hosts, that's a discipline, not an enforcement.
+
+A clean `prism doctor` run on a Codex-only or Cursor-only install isn't evidence that enforcement is present — the check looks for a Claude-shaped registration.
 
 ## The install-script rule
 
