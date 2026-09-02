@@ -56,6 +56,6 @@ The Atlas STOP marker landed in wave 2 PR 5 (post-detection survey, before quest
 
 - **minimal:** no STOPs; mirrors today's `dogfood-self` behavior at the user's discretion.
 - **standard (default):** today's behavior — STOP after detection.
-- **aggressive:** add STOPs after rule generation and after anchor substitution, so the user can sanity-check intermediate artifacts before they land on disk.
+- **aggressive:** add STOPs after rule generation and after the config write, so the user can sanity-check each intermediate artifact before the next one lands. Anchor content is not a checkpoint candidate — it renders during output regeneration, not as a step Atlas runs (ADR-0075).
 
 This is documentation only — no code change. The shape lets future contributors propose the feature without re-deriving the rationale.
