@@ -271,7 +271,7 @@ No other issues found — 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-inst
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries in `## Debugged Issues` — none exist)
 - [x] Build passes — last run: 2026-09-02, byte-identical
-- [ ] PR description up to date — not verified this pass (chat-only scope; PR body sync is Clove's lane)
+- [x] PR description up to date — rewritten to the canonical template shape (`.prism/templates/pr-description.md`) on Eric's Minor finding; verified rendered on PR #483
 - [ ] Lasting decisions promoted to architect context — deferred to PR 2 by design (Lane B owns the three architect docs and ADR-0075)
 
 **Last updated:** 2026-09-02
