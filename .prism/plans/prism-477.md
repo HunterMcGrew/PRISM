@@ -28,7 +28,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
 ### Clove (implementation)
 
-1. **Write ADR-0073 at `.prism/spec/adrs/_toolkit/0073-hook-enforcement-is-claude-only-with-a-prose-fallback.md`** (new file).
+1. **Write ADR-0074 at `.prism/spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md`** (new file). Renumbered from the plan's original 0073 — PRISM-476 landed 0073 in parallel; see `## Decisions`.
 
    Clear the gate first:
 
@@ -41,7 +41,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
    ```
    ---
-   Number: 0073
+   Number: 0074
    Title: Hook-Dependent Enforcement Reaches Claude Code Only; the Fallback Everywhere Else Is Always-On Prose
    Status: accepted
    Date: <the date you write it, YYYY-MM-DD>
@@ -78,9 +78,9 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
    No verification for this task on its own; tasks 6 and 7 cover the tree.
 
-2. **Add the ADR-0073 index row to `.prism/spec/adrs/_toolkit/README.md`.** Same gate clearance as task 1 (already credited if task 1 ran first in the same agent). The file ends in a table whose last row is `| 0072 | ... |` at line 126. Append one row in the identical five-column format:
+2. **Add the ADR-0074 index row to `.prism/spec/adrs/_toolkit/README.md`.** Same gate clearance as task 1 (already credited if task 1 ran first in the same agent). The file ends in a table whose last row is `| 0072 | ... |` at line 126. Append one row in the identical five-column format:
 
-   `| 0073 | [Hook-Dependent Enforcement Reaches Claude Code Only; the Fallback Everywhere Else Is Always-On Prose](0073-hook-enforcement-is-claude-only-with-a-prose-fallback.md) | accepted | <one-sentence summary matching the ADR's Decision> |`
+   `| 0074 | [Hook-Dependent Enforcement Reaches Claude Code Only; the Fallback Everywhere Else Is Always-On Prose](0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md) | accepted | <one-sentence summary matching the ADR's Decision> |`
 
    After task 1. No verification beyond task 7.
 
@@ -119,7 +119,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
    In § "Hook runtime", immediately after the paragraph beginning `**Delivery path.**`, insert one new paragraph:
 
    ```
-   **The asymmetry is a decision, not an oversight.** Enforcement on Claude Code with always-on prose everywhere else, and the alternatives rejected to reach it — building the Cursor and Codex seams now, a git `pre-commit` floor, levelling down by removing the gate — are recorded in [ADR-0073](../../spec/adrs/_toolkit/0073-hook-enforcement-is-claude-only-with-a-prose-fallback.md).
+   **The asymmetry is a decision, not an oversight.** Enforcement on Claude Code with always-on prose everywhere else, and the alternatives rejected to reach it — building the Cursor and Codex seams now, a git `pre-commit` floor, levelling down by removing the gate — are recorded in [ADR-0074](../../spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md).
    ```
 
    Change nothing else in the file. After task 1 (the link target must exist).
@@ -155,7 +155,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
    Leave the page's frontmatter unchanged. `.prism/architect/_toolkit/documentation.md` § Frontmatter schema asks for `category`, `audience`, and `last_updated`, and this page carries only `title` and `description` — matching every sibling in that directory. Normalizing frontmatter across the doc tree is separate work, and doing it to one page makes the tree less consistent, not more.
 
-   Do not cite ADR-0073 by number: `docs/` may link to ADRs on GitHub (the page already does for ADR-0044 and ADR-0046), so a GitHub link is permitted — but the section reads better without one, and the reachability rule makes an unlinked number worse than no reference. If you link, use the same absolute `https://github.com/HunterMcGrew/PRISM/blob/main/...` form the page already uses.
+   Do not cite ADR-0074 by number: `docs/` may link to ADRs on GitHub (the page already does for ADR-0044 and ADR-0046), so a GitHub link is permitted — but the section reads better without one, and the reachability rule makes an unlinked number worse than no reference. If you link, use the same absolute `https://github.com/HunterMcGrew/PRISM/blob/main/...` form the page already uses.
 
    Before Clove's task 6, so the build and check run over the finished tree.
 
@@ -175,9 +175,11 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
 - **An ADR is warranted; the triple gate fires, with gate 1 the weakest.** Per `.prism/references/triple-gated-adr-criterion.md`: *hard to reverse* — the reversible thing is the Claude-only fact (additive to fix), but the posture being recorded is "accept the asymmetry rather than level down," and reversing that means removing a shipped enforcement layer consumers depend on; *surprising without explanation* — a multi-runtime toolkit enforcing on one runtime, with `emitDeny: () => null` on the other two, reads as an oversight until the reasoning is on the page; *genuine trade-off* — three real alternatives were on the table and each lost for a stated reason. Gate 1 is the least clean of the three, and it is recorded that way rather than argued up.
 
-- **Doctor stays untouched, and the reason its silence is wrong is recorded rather than fixed.** `checkHookRegistration` in `scripts/ai-skills/doctor.ts` reports three findings, all keyed on `.claude/`, and its doc comment justifies staying quiet by asserting "a Cursor or Codex consumer has no `.claude/` tree at all." That premise is contradicted by `refreshHookRuntime` being ungated (next Decision): an updated Codex-only consumer has both the runtime and the registration, doctor sees a healthy `.claude/` install, and the gate still never fires. Making doctor report the unavailability is a change to a consumer-facing output surface with its own blast radius and its own verification, and it is entangled with the ungated-delivery question below — fixing one without the other produces a warning that contradicts what the installer just did. **Default path (used in this ticket):** the state is recorded as a Consequence in ADR-0073 and stated plainly in the consumer docs section; no code change.
+- **Doctor stays untouched, and the reason its silence is wrong is recorded rather than fixed.** `checkHookRegistration` in `scripts/ai-skills/doctor.ts` reports three findings, all keyed on `.claude/`, and its doc comment justifies staying quiet by asserting "a Cursor or Codex consumer has no `.claude/` tree at all." That premise is contradicted by `refreshHookRuntime` being ungated (next Decision): an updated Codex-only consumer has both the runtime and the registration, doctor sees a healthy `.claude/` install, and the gate still never fires. Making doctor report the unavailability is a change to a consumer-facing output surface with its own blast radius and its own verification, and it is entangled with the ungated-delivery question below — fixing one without the other produces a warning that contradicts what the installer just did. **Default path (used in this ticket):** the state is recorded as a Consequence in ADR-0074 and stated plainly in the consumer docs section; no code change.
 
 - **`refreshHookRuntime` being ungated on host is a real defect, and this ticket names it without fixing it.** `runUpdate` (`scripts/ai-skills/update.ts`) calls it unconditionally — no `optedIn.claude` check — so every `prism update` writes `.claude/hooks/`, merges a hooks block into `.claude/settings.json`, and appends two lines to `.gitignore` on consumers who opted into Codex or Cursor only. Considered folding the fix in: rejected because it changes what the installer writes into a consumer's repo, which is a wider blast radius than a spec-and-docs ticket carries, and because it and the doctor question have to move together to avoid shipping a warning that contradicts the installer. It is same-scope enough to be a follow-up PR rather than a new ticket per `.prism/rules/followup-scope.md` § Choosing the vehicle — file it against `scripts/ai-skills/update.ts` and `scripts/ai-skills/doctor.ts` as one unit.
+
+- **ADR number moved 0073 → 0074; 0073 is taken by PRISM-476, landing in parallel.** Winston's plan drafted the ADR as 0073 against `main` at plan time; by implementation time a parallel lane (PRISM-476) had already claimed 0073. Renumbered to 0074 — the next free number confirmed against `.prism/spec/adrs/_toolkit/` at implementation time (0072 was the highest landed on this branch) — throughout the plan, the ADR file, its README row, and every cross-reference.
 
 - **Every task names its gate-clearing `cat` commands inline.** The write gate denies an edit to a routed path until the route's docs are read, and every path in this plan is routed. Naming the commands in the task is the difference between a task an agent can execute and one that stalls on a deny it has to reverse-engineer.
 
@@ -191,7 +193,7 @@ Every task below writes to a path the architect write gate routes. The gate deni
 
 ## History
 
-- 2026-09-02 [huntermcgrew/prism-477-hook-portability]: Winston planned PRISM-477 — ADR-0073, a sharpened sentence in the shared startup contract, and a consumer-facing compatibility section. Corrected the issue's hook inventory against `main`: the files it names are reverted-floor artifacts, and the Codex gap is a delivery gap rather than a platform limit. Git hooks rejected as the portable floor; see Decisions.
+- 2026-09-02 [huntermcgrew/prism-477-hook-portability]: Winston planned PRISM-477 — ADR-0074, a sharpened sentence in the shared startup contract, and a consumer-facing compatibility section. Corrected the issue's hook inventory against `main`: the files it names are reverted-floor artifacts, and the Codex gap is a delivery gap rather than a platform limit. Git hooks rejected as the portable floor; see Decisions.
 
 ---
 
@@ -220,13 +222,13 @@ None yet.
 ### Non-behavioral
 
 - [ ] **AC-3** The decision record names every hook-registered behavior PRISM actually ships, and names no behavior it does not.
-  - Evidence (machine): `cat .prism/spec/adrs/_toolkit/0073-*.md` → its inventory lists exactly the `PreToolUse` write gate, the `PostToolUse` announce layer, and the `PostCompact` handler; cross-check against `cat templates/install/.claude/settings.json`, whose `hooks` object has exactly those three keys · UNMET looks like: the ADR lists a gate, ownership guard, or evidence ledger with no matching registration, or omits a registered event.
+  - Evidence (machine): `cat .prism/spec/adrs/_toolkit/0074-*.md` → its inventory lists exactly the `PreToolUse` write gate, the `PostToolUse` announce layer, and the `PostCompact` handler; cross-check against `cat templates/install/.claude/settings.json`, whose `hooks` object has exactly those three keys · UNMET looks like: the ADR lists a gate, ownership guard, or evidence ledger with no matching registration, or omits a registered event.
 
 - [ ] **AC-4** The record states plainly that the files issue #477 inventories do not exist on `main`, and says where they came from.
-  - Evidence (machine): `grep -n "run-gates\|ownership-guard\|evidence-ledger" .prism/spec/adrs/_toolkit/0073-*.md` → matches, in a passage naming the reverted verdict-ratification floor. Positive control for the probe: `git ls-files | grep -c "ownership-guard"` → `0`, confirming the files are genuinely absent rather than the grep being broken · UNMET looks like: no match in the ADR, so the stale inventory survives unchallenged in the ticket.
+  - Evidence (machine): `grep -n "run-gates\|ownership-guard\|evidence-ledger" .prism/spec/adrs/_toolkit/0074-*.md` → matches, in a passage naming the reverted verdict-ratification floor. Positive control for the probe: `git ls-files | grep -c "ownership-guard"` → `0`, confirming the files are genuinely absent rather than the grep being broken · UNMET looks like: no match in the ADR, so the stale inventory survives unchallenged in the ticket.
 
 - [ ] **AC-5** The git-hook alternative is recorded as rejected, with the reason it fails rather than only the verdict.
-  - Evidence (machine): `grep -n "pre-commit" .prism/spec/adrs/_toolkit/0073-*.md` → matches in the Decision section, in a passage stating that a commit-time hook fires after the edit is already written and so cannot enforce read-before-write · UNMET looks like: git hooks appear as "rejected" with no stated reason, or do not appear at all.
+  - Evidence (machine): `grep -n "pre-commit" .prism/spec/adrs/_toolkit/0074-*.md` → matches in the Decision section, in a passage stating that a commit-time hook fires after the edit is already written and so cannot enforce read-before-write · UNMET looks like: git hooks appear as "rejected" with no stated reason, or do not appear at all.
 
 - [ ] **AC-6** The sharpened startup-contract sentence reaches every host mirror and the consumer seed, and carries no reference a consumer cannot resolve.
   - Evidence (machine): after `pnpm prism:build`, run `grep -c "Claude Code is the only host that receives it" .prism/references/skill-core.md .claude/references/skill-core.md .codex/references/skill-core.md .cursor/references/skill-core.md templates/install/.prism/references/skill-core.md` → `1` for each of the five. Positive control: the same `grep -c` for `zzz-not-present` → `0` for each, proving the probe discriminates. Then `grep -c "ADR-00" templates/install/.prism/references/skill-core.md` → `0` · UNMET looks like: any of the five returns `0` (the build did not propagate), or the seed twin returns non-zero for the ADR probe (an unreachable reference shipped).
