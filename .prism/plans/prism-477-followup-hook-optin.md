@@ -551,6 +551,7 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Hunter decided the scope — add an optional `hosts` key and gate delivery and reporting on it. Re-planned to 13 tasks across the config schema, a shared resolver, the installer's gate and removal branch, doctor's four host-mix branches, and four prose homes; see Decision: "`hosts` is an optional array in `.ai-skills/config.json`, absent meaning all three hosts."
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove implemented all 13 tasks — the `hosts` schema key and resolver, the installer's delivery gate and removal branch, doctor's four host-mix branches, 21 new tests across `update.test.ts` and `doctor.test.ts`, and the four prose homes (`install-layout.md` canonical and curated twin, ADR-0074, both consumer docs). `pnpm prism:check` exits 0.
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove fixed Briar's self-review findings — added `scripts/ai-skills/lib/hosts.test.ts` (10 direct tests on `resolveHosts`, including the empty-array-resolves-to-all contract) and recorded the `mergeHookSettingsRegistration` empty-write guard as a `## Decisions` entry. Both Review Issues resolved.
+- 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove fixed Eric's PR-review finding — the dead-registration check in `checkHookRegistration` had moved inside the `hosts.includes("claude")` branch during the restructure, so a hand-edited registration surviving a `claude`-dropped removal went unreported. Moved the check to run on every host mix except the stale-delivery early return, and added a doctor.test.ts case for the combination.
 
 ---
 
@@ -569,6 +570,18 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 - **File:** `scripts/ai-skills/lib/hosts.ts:26`
 - **Problem:** The plan's `## Decisions` records a deliberate, non-obvious call — `"hosts": []` resolves to all three hosts, not none — with a rejected alternative and a stated reason (an empty array is more likely an editing accident than an opt-out-of-everything request; resolving it to "none" would silently strip a working install). No test in `update.test.ts` or `doctor.test.ts` exercises `hosts: []`, and there is no `hosts.test.ts`. The only coverage is indirect, through fixtures that never pass an empty array. This is exactly the kind of branch (`recognized.length > 0 ? recognized : [...HOST_NAMES]`) a future refactor can silently invert — e.g. simplifying it to `return recognized;` — with nothing in the suite catching it, and the consequence is a silent hook-runtime removal on every consumer's next update.
 - **Suggested fix:** Add a direct test for `resolveHosts` (either a small `scripts/ai-skills/lib/hosts.test.ts` or two integration-level tests in `update.test.ts`/`doctor.test.ts` seeding `hosts: []`) asserting it resolves to all three hosts, not none.
+- **Fixed in:** `PRISM-477 followup: Pin the empty hosts fallback with a direct test` — `scripts/ai-skills/lib/hosts.test.ts` (10 tests).
+
+---
+
+### Dead-registration check only ran when `hosts` included `claude`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/doctor.ts:764` (pre-fix line)
+- **Problem:** The pre-PR check that reports a registered command pointing at a file that is not on disk ran unconditionally. This PR's restructure moved it inside `if (hosts.includes("claude"))`, so it stopped running whenever `hosts` excludes `claude`. A consumer who hand-edited a PRISM hook command into a shape `PRISM_HOOK_COMMAND_PATTERN` no longer matches, then drops `claude` from `hosts` and runs `prism update`, gets the marked runtime file removed (unaffected, since the entry isn't claimed as PRISM's own) while the surviving unanchored registration still points at the now-deleted file — and `doctor` reports "not delivered, clean" instead of warning. The plan's task-3e Decision (line 184) and Implementation guidance (line 502) both claim "doctor's existing dead-registration warning reports it," which was true pre-PR and false after the restructure.
+- **Suggested fix:** Run the dead-registration check regardless of the resolved `hosts` — it is about the consumer's `settings.json` pointing at a missing file, which is wrong on every host mix — while keeping the other three host-mix outcomes as designed.
+- **Fixed in:** `PRISM-477 followup: Run the dead-registration check on every host mix` — the loop over `registeredPaths` moved out of the `hosts.includes("claude")` branch (still suppressed on the stale-delivery early return, where "run update" already covers it); `scripts/ai-skills/doctor.test.ts` gained "runDoctor warns on a dead registration even when hosts excludes Claude Code". The plan's task-3e prose (lines 184, 502) needed no correction — the claim is true again with the fix in place.
 
 ---
 
@@ -649,13 +662,13 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 ## PR Readiness
 
-- [x] No critical or major issues — the one Major (`resolveHosts`'s empty-array behavior had no direct unit test) is fixed; see `## Review Issues`
+- [x] No critical or major issues — both Majors (Briar's empty-array test gap, Eric's dead-registration host-mix scoping) are fixed; see `## Review Issues`
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — `scripts/ai-skills/lib/hosts.test.ts` added, 10 direct tests on `resolveHosts`
+- [x] Tests written for new logic and edge cases — `scripts/ai-skills/lib/hosts.test.ts` (10 tests) and a new doctor.test.ts case for the dead-registration fix
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0)
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0, 860 tests passing)
 - [x] PR description up to date — PR #480 open
 - [x] Lasting decisions promoted to architect context (if applicable) — `install-layout.md` (tasks 9), `docs/parameterization.md` (task 12)
 
-**Last updated:** 2026-09-02 (Clove — fixed Briar's review findings)
+**Last updated:** 2026-09-02 (Clove — fixed Eric's PR-review finding)

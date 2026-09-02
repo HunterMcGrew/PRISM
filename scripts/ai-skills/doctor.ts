@@ -687,7 +687,9 @@ async function readConsumerConfigSafely(
 
 /**
  * Reports a hook runtime that is present but unregistered, and a registration
- * that points at a file which is not there.
+ * that points at a file which is not there — the dead-registration half runs
+ * regardless of the consumer's `hosts`, since a command naming a missing
+ * file is wrong on every host mix, not only on Claude Code.
  *
  * The write gate cannot prevent its own removal — deleting the runtime or its
  * registration disables it, and neither is prevented (ADR-0072). Visibility is
@@ -761,6 +763,23 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		return findings;
 	}
 
+	// A registered command pointing at a file that is not on disk is wrong on
+	// every host mix — a hand-edited registration whose command no longer
+	// matches PRISM_HOOK_COMMAND_PATTERN survives the removal branch in
+	// update.ts (it is not claimed as PRISM's own), so this has to run here
+	// too, not only inside the claude-in-hosts branch below. It is skipped
+	// only on the stale-delivery early return above, where the "run update"
+	// remedy already covers it — see that branch's own findings.
+	for (const registered of [...registeredPaths].sort()) {
+		if (!(await pathExists(registered))) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message: `.claude/settings.json registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
+			});
+		}
+	}
+
 	if (hosts.includes("claude")) {
 		if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
 			findings.push({
@@ -769,16 +788,6 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 				message:
 					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
 			});
-		}
-
-		for (const registered of [...registeredPaths].sort()) {
-			if (!(await pathExists(registered))) {
-				findings.push({
-					check: "hook-registration",
-					severity: "warning",
-					message: `.claude/settings.json registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
-				});
-			}
 		}
 
 		if (findings.length === 0 && registeredPaths.has(hookRuntimePath)) {

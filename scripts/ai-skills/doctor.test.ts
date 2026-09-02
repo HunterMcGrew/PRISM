@@ -1229,6 +1229,54 @@ test("runDoctor ignores a consumer's own hook entry when deciding whether PRISM'
 	});
 });
 
+test("runDoctor warns on a dead registration even when hosts excludes Claude Code", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		// A hand-edited command that mentions the runtime path but no longer
+		// matches PRISM_HOOK_COMMAND_PATTERN — update.ts's removal branch does
+		// not claim it, so it survives dropping claude from hosts while the
+		// runtime file it points at is gone.
+		const handEditedRegistration = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: "bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'",
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(handEditedRegistration, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(
+			deadRegistration,
+			"a registration pointing at a missing file is wrong on every host mix, not only when claude is in hosts"
+		);
+		assert.equal(deadRegistration!.severity, "warning");
+	});
+});
+
 test("runDoctor treats an unreadable config as declaring every host", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });
