@@ -360,6 +360,7 @@ Sequence: task 1 adds the derivation, tasks 2–4 consume it in the installer, t
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts] open: Intent — stop writing a host's skill roster and platform content into consumers who do not run it, and take back what a prior update wrote; Bounds — done when both consumer-side fanout sites gate on `hosts`, a dropped host's marked output is swept, and every prose home of the key's description covers all three delivery classes, touching nothing under `prism-onboarding` or `.prism/references/onboarding/` and nothing in `build.ts`'s check-mode heuristic; Approach — derive the existing six-flag shape from `hosts` in one place, filter the platform-dir list at the consumer call site, and reuse the existing cleanup helpers with an empty known-id set · close: scope held — planning only, no source touched
 - 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts] open: Intent — implement Winston's 13 Clove tasks (gate the two fanout sites, sweep dropped-host output, warn from doctor, cover all with tests, reconcile the prose homes); Bounds — done when `pnpm prism:check` is green and every AC's cited test/diff evidence holds; Approach — task order as planned, tasks 4–5 in one commit · close: scope held — 13 tasks landed as planned, task 5a needed no code change (both cleanup helpers were already exported), `pnpm prism:check` exits 0
+- 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts] open: Intent — self-review the diff against all 17 AC and the plan's Decisions, with focus on the check-mode trap, filter placement, and the drop sweep's marker gating; Bounds — done when every angle is swept and `pnpm prism:check-types`/`prism:test`/`prism:check` are independently re-run; Approach — read the diff cold (not the plan's task prose) against each file, then verify structurally and by test · close: scope held — no findings, all checks re-run green
 
 ---
 
@@ -377,6 +378,24 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 ---
 
 ## Review Issues
+
+No issues found — 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts]
+
+### Angle Coverage
+
+- Logic/edge cases: swept — check-mode trap verified structurally (sweep lives only in `refreshPlatformSkills`/`refreshPlatformDirs`, never in `generatePlatformSkills`) and by test (`generate-skills.test.ts` "a platform opted out of a render pass keeps the output a previous pass wrote"); marker-gating verified in `removeDeletedManagedSkills`/`removeDeletedManagedAgentFiles`/`removeManagedContentAreas`; dry-run ordering confirmed (sweep calls run before the `if (dryRun) return` in `refreshPlatformSkills`, so `checkMode: dryRun` previews correctly).
+- Type safety: swept — `pnpm prism:check-types` exits 0, no `any` or unsafe `as` in the diff.
+- Magic/brittle behavior: swept — no ad-hoc mechanisms found; `deriveOptedIn` is a small explicit mapping with a doc comment explaining why it's separate from `build.ts`'s `optedIn`.
+- Silent fallback over unclear invariant: n/a — no new fallback branches introduced.
+- Server/client boundary: n/a — Node CLI/build scripts only.
+- Unintended side effects/regressions: swept — `build.ts` confirmed to import neither `resolveHosts` nor `deriveOptedIn` (AC-11); `buildPlatformDirs` still returns all three unfiltered, filter applied only at the `runUpdate` call site.
+- Abstraction level: swept — `deriveOptedIn` has one caller today (`refreshPlatformSkills`) but earns its place as a named derivation rather than a wrapper: it encodes a real 3-to-6 mapping (a host owns more than one output) that a caller could otherwise get wrong by gating the roster and forgetting the adapters beside it, and its doc comment records why `build.ts` deliberately doesn't share it. No premature abstraction found.
+- Dead code/debug artifacts: swept — none found.
+- Naming/readability: swept — no issues.
+- Divergence from plan intent: swept — implementation matches all 13 tasks and the Decisions section exactly, including the check-mode-trap avoidance.
+- Performance: n/a — build/CLI tooling, no hot paths introduced.
+- Comment standards: swept — all new comments are what+why, no ALL CAPS, no tags, no changelog-voice; JSDoc present on `HostOutputFlags`, `deriveOptedIn`'s neighbors, `removeManagedContentAreas`, `checkHostOutput`, and the three doctor helper functions.
+- Visual-regression/component-explorer coverage: n/a — no UI in this diff.
 
 ---
 
@@ -460,8 +479,8 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-02, `pnpm prism:check` exit 0
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:check` exit 0 (re-verified by Briar: `pnpm prism:check-types`, `pnpm prism:test` — 873/873 pass, `pnpm prism:check` — all exit 0)
+- [x] PR description up to date — draft PR #482 body opens "Follow-up to PRISM-477. No new ticket per `.prism/rules/followup-scope.md`." per convention
+- [x] Lasting decisions promoted to architect context (if applicable) — verified: both `install-layout.md` twins carry the corrected § bifurcation / § Steady-state passages
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-02 [Briar self-review]
