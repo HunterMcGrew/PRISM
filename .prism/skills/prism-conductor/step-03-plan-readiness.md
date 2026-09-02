@@ -2,7 +2,7 @@
 
 The firewall, and the single highest-leverage gate in the run. A worker dispatched against a fuzzy plan is exactly where two runs diverge into two codebases — so a vague plan is a failed plan, not a "proceed carefully."
 
-This is a **quality** gate, not a stakes gate. The autonomy policy never touches it: it is **never auto-cleared**, under any policy, because plan vagueness is a correctness problem, not a low-stakes judgment call. (Contrast the A/P/C and DoR gates, which the owning persona may auto-clear under `internal` / `hobby`.)
+This is a **quality** gate, not a stakes gate. The autonomy policy never touches it: it is **never auto-cleared**, under any policy, because plan vagueness is a correctness problem, not a low-stakes judgment call. (Contrast the A/P/C and DoR gates, which the owning persona may auto-clear under `reviewed` / `quick`.)
 
 For each lane's plan, check the `## Implementation Tasks` against the detail bar in `.prism/rules/implementation-task-detail.md`: every task names its target file path, the specific change, a verification command, and its sequence — no judgment calls left to the implementer.
 

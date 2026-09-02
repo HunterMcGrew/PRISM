@@ -17,7 +17,7 @@ Each upstream persona returns a primary verdict per `.prism/skills/prism-conduct
 
 Sol supports a `greenfield` decompose mode distinct from the existing hand-listed lane decompose above (which is **unchanged**).
 
-In greenfield mode, Sol takes a PRD document path and an architecture document path and runs the Parker→Winston→Nora chain documented in `lib/greenfield-decompose.md` as a conducted segment. The chain emits an epic→issue→ticket tree into goal-state. After the chain completes, Sol runs the ratification gate (`lib/greenfield-decompose.md` § Ratification gate). On operator approval — or at `hobby` stakes where the gate auto-clears — the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence (`step-04-dispatch.md` § Tree dispatch).
+In greenfield mode, Sol takes a PRD document path and an architecture document path and runs the Parker→Winston→Nora chain documented in `lib/greenfield-decompose.md` as a conducted segment. The chain emits an epic→issue→ticket tree into goal-state. After the chain completes, Sol runs the ratification gate (`lib/greenfield-decompose.md` § Ratification gate). On operator approval — or at `quick` stakes where the gate auto-clears — the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence (`step-04-dispatch.md` § Tree dispatch).
 
 The mode is selected at intake (step-01) from the operator's invocation: a PRD + architecture handoff signals greenfield; a hand-listed lane set signals the existing mode.
 

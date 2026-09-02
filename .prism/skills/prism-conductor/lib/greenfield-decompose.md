@@ -38,8 +38,8 @@ The artifact is the **tree-structured view from the end-of-run report** (`step-1
 
 Gate behavior is autonomy-policy-driven with a config seam (NFR-5):
 
-- **`internal` / `launch` stakes:** the gate is `needs-human` — no dispatch proceeds until the operator approves. Sol batches the ratification artifact into `pendingHumanReport`.
-- **`hobby` stakes:** the tree auto-dispatches without a ratification pause.
+- **`reviewed` / `strict` stakes:** the gate is `needs-human` — no dispatch proceeds until the operator approves. Sol batches the ratification artifact into `pendingHumanReport`.
+- **`quick` stakes:** the tree auto-dispatches without a ratification pause.
 
 The operator may adjust `scope` statements or drop lanes before approving. Sol reconciles the adjustment (re-invokes the reconcile primitive over the edited tree) before dispatching.
 
@@ -47,14 +47,14 @@ The operator may adjust `scope` statements or drop lanes before approving. Sol r
 
 The ratification gate **is** the human review the breadth gate exists to force, so a ratified planned tree is **excluded from the breadth gate** — applying it again would be redundant double-gating.
 
-The loophole guard closes the gap at `hobby` stakes: when there is no ratification gate, the breadth gate **does** apply to the planned tree as the backstop, so a very large tree can never bypass human review under every policy.
+The loophole guard closes the gap at `quick` stakes: when there is no ratification gate, the breadth gate **does** apply to the planned tree as the backstop, so a very large tree can never bypass human review under every policy.
 
 The three-case table for planned trees (cite `lib/convergence.md` § Brake 3 — Breadth gate for gate mechanics — do not restate them):
 
 | Case | Breadth gate |
 | --- | --- |
-| Planned + ratified (`internal` / `launch`) | Skipped — ratification is the gate |
-| Planned + auto-dispatched (`hobby`) | Applies as the backstop |
+| Planned + ratified (`reviewed` / `strict`) | Skipped — ratification is the gate |
+| Planned + auto-dispatched (`quick`) | Applies as the backstop |
 | Unplanned discovery (any policy) | Always applies (Phase A behavior, unchanged) |
 
 Under every policy, a large planned tree faces exactly one human gate — ratification or the breadth gate, never both, never neither.
