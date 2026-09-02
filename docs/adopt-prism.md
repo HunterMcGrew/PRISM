@@ -3,7 +3,7 @@ title: "Adopt PRISM into your repo"
 description: "How to adopt PRISM into a consumer repo — via npx (recommended), or via a local checkout for air-gapped environments and contributors."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-08-18"
+last_updated: "2026-09-02"
 ---
 
 # Adopt PRISM into your repo
@@ -23,7 +23,7 @@ npx @huntermcgrew/prism init
 
 `init` asks for your project name, ticket prefix, ticket system (`linear` or `github-issues`), and GitHub owner/repo, then writes the config. It detects your tech stack automatically. In CI or scripts, pass the same values as flags (`--project`, `--ticket-prefix`, etc.) instead of answering prompts.
 
-Once the config is written, run `adopt` below. After that, open Claude Code and run Atlas for the richer, AI-assisted onboarding (per-team rules, stack-specific guidance, anchor population).
+Once the config is written, run `adopt` below. After that, open Claude Code and run Atlas for the richer, AI-assisted onboarding (per-team rules, stack-specific guidance, and writing the config `update` renders into your persona roster).
 
 ## Recommended: npx
 
@@ -174,6 +174,18 @@ Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every ch
 If you adopted before the seed-delivery check above existed, expect `doctor` to flip red the first time you run it after updating — that's the check surfacing a gap this release closes, not a new problem with your repo. Run the `mv` it prints and re-run `doctor` to clear it.
 
 `pnpm prism:doctor` runs the same command from a local checkout.
+
+### `prism detect`
+
+`prism detect` reports your detected tech stack and doc layout as JSON:
+
+```bash
+npx @huntermcgrew/prism detect
+```
+
+It's read-only — it writes no file — so it's safe to run as many times as you like. The output has two keys: `stack` (languages, frameworks, and the evidence paths that led to each) and `docLayout` (the doc tool it found, and where your docs live).
+
+Atlas calls `detect` itself during onboarding to answer the same questions it would otherwise need you to answer by hand, so you'll rarely need to run this directly — it's here mainly for scripting a stack check outside of an Atlas session, or for sanity-checking what Atlas is about to see.
 
 ## Ejecting PRISM
 
