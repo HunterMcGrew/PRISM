@@ -1329,7 +1329,10 @@ function mergeHookEventEntries(
  * `deliver: false` composes each event key from the consumer's own entries
  * alone — the same `mergeHookEventEntries` call with an empty incoming set —
  * so removal is the drop half of the merge that already runs on every
- * update, not a second ownership rule that could disagree with it.
+ * update, not a second ownership rule that could disagree with it. When a
+ * consumer never had a settings file and removal leaves nothing to merge
+ * in, no file is written — a repo that never received the hook stays
+ * exactly as it was.
  */
 export async function mergeHookSettingsRegistration(
 	prismRepoRoot: string,
@@ -1381,6 +1384,10 @@ export async function mergeHookSettingsRegistration(
 	const merged = { ...targetSettings, hooks: mergedHooks };
 
 	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
+		return;
+	}
+
+	if (targetRaw === null && Object.keys(mergedHooks).length === 0) {
 		return;
 	}
 
