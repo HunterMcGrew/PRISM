@@ -208,12 +208,14 @@ The docs each route asks for, from this branch's paths:
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — pick names that carry their own meaning and give every calibration prompt a per-level behavior line, without forking Parker's and Sol's shared vocabulary; Bounds — plan only, no implementation, no edits outside `.prism/plans/prism-476.md` and the GitHub issue body; Approach — one source of truth for the behavior lines in the existing reference doc, rename both consumers in one PR, leave frozen records alone and point at a new ADR · close: scope held
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — execute all ten Clove tasks: rename hobby/internal/launch to quick/reviewed/strict everywhere live, add ADR-0073, migrate PRD frontmatter, keep frozen records untouched; Bounds — the ten tasks as written, no scope beyond the plan; Approach — task order 1→10, one commit per task, rebuild and check at the end · close: scope held — a rename-completeness sweep after task 10 found two additional `internal`/`launch` mentions in `.ai-skills/skills/prism-prd/shared.md` that the task 4 pass missed (fixed in a follow-up commit within the same session, not a scope change)
 
 ---
 
 ## History
 
 - 2026-09-02 [huntermcgrew/prism-476-stakes-level-names]: Winston planned the stakes-level rename — ten Clove tasks, six Decisions, AC synced to issue #476. No implementation.
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names]: Implemented all ten tasks — renamed hobby/internal/launch to quick/reviewed/strict across `.prism/references/stakes-calibration.md`, Parker's and Sol's specs, the two human docs, and four PRD frontmatter values; added ADR-0073 and pointed the four earlier ADRs at it. `pnpm prism:build && pnpm prism:check` pass clean.
 
 ---
 
@@ -262,9 +264,9 @@ The docs each route asks for, from this branch's paths:
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] No critical or major issues — self-review not yet run
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:build && pnpm prism:check` both exit 0
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context — ADR-0073, task 8
 
 **Last updated:** 2026-09-02
