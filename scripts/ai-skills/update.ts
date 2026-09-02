@@ -837,10 +837,9 @@ export function resolveConsumerSkillTargetRoots(
  * guard applies (see plan prism-242 Decision "Two guards, not one").
  *
  * `consumerConfig` supplies the anchor content (currently just
- * productDomain) substituted into the roster ahead of token substitution —
- * see ADR-0075. Anchor population used to be a separate Atlas write into the
- * canonical `.ai-skills/skills/` sources; it now runs here, in memory, on
- * every regeneration.
+ * productDomain) substituted into the roster ahead of token substitution.
+ * Anchor population happens here, in memory, on every regeneration — see
+ * ADR-0075.
  */
 async function refreshPlatformSkills(
 	prismRepoRoot: string,
