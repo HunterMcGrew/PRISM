@@ -523,6 +523,9 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 - **`formatDoctorReport`'s "No issues found." moves from a total-count test to an error-or-warning test.** The reach and not-delivered findings now fire on every healthy install on every host mix, so without this the info line silently costs consumers the one line telling them the run was clean. Considered accepting the loss: rejected, it trades a consumer-facing regression for a three-line edit. Considered printing info findings above the "No issues found." line: rejected as noise before signal.
   - → no promotion needed (implementation tactic, evident from the diff)
 
+- **`mergeHookSettingsRegistration` skips writing `.claude/settings.json` when the consumer never had one and removal leaves nothing to merge in.** Without this, a repo with no prior settings file whose `hosts` excludes `claude` would get one written as `{"hooks":{}}` on every update — a file appearing from nothing, failing AC-2. Found while writing the no-registration removal test, not speced in task 3d.
+  - → no promotion needed (a guard on one function, evident from the diff)
+
 - **The `docs/` edits are absorbed into Clove's lane rather than routed to Eli.** Both are reference-shaped corrections driven directly by the code in the same PR — a field-reference row for a key this PR adds, and a section whose closing claim this PR's code makes false. `.prism/rules/code-standards.md` § Removal and rename completeness asks that every prose home of a changed predicate be reconciled in the same review pass, and splitting two table-and-sentence edits across a persona handoff costs more than it protects. Recorded here because `.prism/rules/branch-plan.md` § Implementation Tasks permits cross-lane absorption only with a `## Decisions` entry naming the scope shift and the affected files: `docs/ai-skills/compatibility.md` and `docs/parameterization.md`.
   - → no promotion needed (one application of an existing rule)
 
@@ -547,6 +550,7 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Winston planned the follow-up as the doctor half only, having found no per-host opt-in signal anywhere in the consumer surface.
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Hunter decided the scope — add an optional `hosts` key and gate delivery and reporting on it. Re-planned to 13 tasks across the config schema, a shared resolver, the installer's gate and removal branch, doctor's four host-mix branches, and four prose homes; see Decision: "`hosts` is an optional array in `.ai-skills/config.json`, absent meaning all three hosts."
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove implemented all 13 tasks — the `hosts` schema key and resolver, the installer's delivery gate and removal branch, doctor's four host-mix branches, 21 new tests across `update.test.ts` and `doctor.test.ts`, and the four prose homes (`install-layout.md` canonical and curated twin, ADR-0074, both consumer docs). `pnpm prism:check` exits 0.
+- 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove fixed Briar's self-review findings — added `scripts/ai-skills/lib/hosts.test.ts` (10 direct tests on `resolveHosts`, including the empty-array-resolves-to-all contract) and recorded the `mergeHookSettingsRegistration` empty-write guard as a `## Decisions` entry. Both Review Issues resolved.
 
 ---
 
@@ -561,7 +565,7 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 ### `resolveHosts`'s empty-array behavior has no direct unit test
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/lib/hosts.ts:26`
 - **Problem:** The plan's `## Decisions` records a deliberate, non-obvious call — `"hosts": []` resolves to all three hosts, not none — with a rejected alternative and a stated reason (an empty array is more likely an editing accident than an opt-out-of-everything request; resolving it to "none" would silently strip a working install). No test in `update.test.ts` or `doctor.test.ts` exercises `hosts: []`, and there is no `hosts.test.ts`. The only coverage is indirect, through fixtures that never pass an empty array. This is exactly the kind of branch (`recognized.length > 0 ? recognized : [...HOST_NAMES]`) a future refactor can silently invert — e.g. simplifying it to `return recognized;` — with nothing in the suite catching it, and the consequence is a silent hook-runtime removal on every consumer's next update.
 - **Suggested fix:** Add a direct test for `resolveHosts` (either a small `scripts/ai-skills/lib/hosts.test.ts` or two integration-level tests in `update.test.ts`/`doctor.test.ts` seeding `hosts: []`) asserting it resolves to all three hosts, not none.
@@ -639,19 +643,19 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 ## Cleanup Items
 
-- `scripts/ai-skills/update.ts:1390` — `mergeHookSettingsRegistration` gained a guard (`if (targetRaw === null && Object.keys(mergedHooks).length === 0) return;`) not named in any `## Decisions` entry. It's correct and necessary — without it, a repo that never had `.claude/settings.json` and whose `hosts` excludes `claude` would get one written as `{"hooks":{}}`, failing AC-2 — but it's a real addition beyond task 3d's spec. Worth a one-line Decision recording it.
+- `scripts/ai-skills/update.ts:1390` — `mergeHookSettingsRegistration` gained a guard (`if (targetRaw === null && Object.keys(mergedHooks).length === 0) return;`) not named in any `## Decisions` entry. It's correct and necessary — without it, a repo that never had `.claude/settings.json` and whose `hosts` excludes `claude` would get one written as `{"hooks":{}}`, failing AC-2 — but it's a real addition beyond task 3d's spec. Worth a one-line Decision recording it. **Addressed** — see the `## Decisions` entry "`mergeHookSettingsRegistration` skips writing `.claude/settings.json`...".
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 1 Major open: `resolveHosts`'s empty-array behavior has no direct unit test (see `## Review Issues`)
+- [x] No critical or major issues — the one Major (`resolveHosts`'s empty-array behavior had no direct unit test) is fixed; see `## Review Issues`
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases — the documented empty-array Decision is untested; see `## Review Issues`
+- [x] Tests written for new logic and edge cases — `scripts/ai-skills/lib/hosts.test.ts` added, 10 direct tests on `resolveHosts`
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0, 849 tests passing)
-- [ ] PR description up to date — PR not yet opened
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0)
+- [x] PR description up to date — PR #480 open
 - [x] Lasting decisions promoted to architect context (if applicable) — `install-layout.md` (tasks 9), `docs/parameterization.md` (task 12)
 
-**Last updated:** 2026-09-02 (Briar self-review)
+**Last updated:** 2026-09-02 (Clove — fixed Briar's review findings)
