@@ -12,6 +12,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import type { HostName } from "./hosts";
+
 export interface PrismConfig {
 	org: string;
 	project: string;
@@ -29,6 +31,7 @@ export interface PrismConfig {
 	defaultBranch?: string;
 	prismSource?: string;
 	techStack?: string[];
+	hosts?: HostName[];
 	rules?: {
 		universal?: "all";
 		optIn?: string[];
