@@ -1360,6 +1360,57 @@ test("runDoctor warns on a dead registration even when hosts excludes Claude Cod
 	});
 });
 
+test("runDoctor reports a dead registration and an inert runtime together — neither suppresses the other", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// The runtime is on disk but not registered anywhere — this should
+		// warn on its own. A second, unrelated registration entry names a
+		// hook.mjs path that is not on disk — a dead registration unrelated to
+		// the inert runtime. Both are real, independent findings.
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		const unrelatedStaleRegistration = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: "node .claude/hooks/old-hook.mjs --tool=claude",
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(unrelatedStaleRegistration, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		const inertRuntime = hookFindingsList.find((f) => /registers no hook command/.test(f.message));
+		assert.ok(deadRegistration, "the dead registration on old-hook.mjs is reported");
+		assert.ok(
+			inertRuntime,
+			"the inert runtime is also reported — the dead-registration finding must not suppress it"
+		);
+		assert.equal(hookFindingsList.length, 2, "exactly these two findings, nothing else");
+	});
+});
+
 test("runDoctor treats an unreadable config as declaring every host", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });

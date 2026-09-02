@@ -187,7 +187,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
    - **Verify:** content-only.
 
 13. **Update the consumer-facing compatibility statement** — `docs/ai-skills/compatibility.md`. Three sites: the summary bullet at line 17 ("**Hook-based enforcement** reaches Claude Code only"); the section heading at line 69 ("Hook-based enforcement is Claude Code only"), which is now wrong as a heading and needs renaming to name the two delivered hosts and Cursor as the gap; and the body at lines 71–83, where the second paragraph asserts "no equivalent is written for Codex or Cursor."
-   - Renaming the heading breaks every cross-reference to it. Sweep with `grep -rn "Hook-based enforcement is Claude Code only" . --exclude-dir=node_modules --exclude-dir=.git` and fix each hit — known callers are ADR-0074's closing paragraph and both doctor findings from task 5. This is `code-standards.md` § Removal and rename completeness.
+   - Renaming the heading breaks every cross-reference to it. Sweep with `grep -rn "Hook-based enforcement is Claude Code only" . --exclude-dir=node_modules --exclude-dir=.git` and fix each hit — known callers are ADR-0074's closing paragraph, both doctor findings from task 5, and `AGENTS.md:858`, which carries the same stale "reaches Claude Code only" sentence and is hand-maintained rather than a build mirror, so it needs the same hand edit as the others. This is `code-standards.md` § Removal and rename completeness.
    - **Verify:** the grep returns no stale hits.
 
 14. **Correct the always-on prose** — `.prism/rules/context-reuse.md:30`, § "Architect-context routing is diff-blind". The clause "It reaches Claude Code only, it is friction rather than a wall, and it never fires on a path no route matches — so this clause remains the fallback that runs everywhere else, including hosts with no hook" is wrong on its first phrase. Rewrite to name Claude Code and Codex as the hosts the enforcer reaches, keeping Cursor and any host with no hook support as what the following fallback clause covers. Keep the friction-not-a-wall clause.
@@ -258,6 +258,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Planned Codex hook delivery as a follow-up to #477. Verified OpenAI's hooks documentation directly and confirmed `.codex/hooks.json` is not git-ignored, which settled the registration target; see Decisions.
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Implemented tasks 1–7 (PR 1) — `HARNESSES.codex` gained the deny envelope and `Edit`/`Write` aliases, the `.codex/hooks.json` template shipped, `mergeHookSettingsRegistration` generalized into a shared `mergeHookRegistration` seam with a Codex twin, `refreshHookRuntime`'s host gate split so the runtime delivers on `claude` OR `codex` while each registration gates on its own host, `checkHookRegistration` gained the Codex arm, and tests were added or updated across `update.test.ts`, `doctor.test.ts`, and `hook-gate.test.ts`. `pnpm prism:check` is green.
+- 2026-09-02 [huntermcgrew/codex-hook-delivery]: Fixed Briar's Major — `checkHookRegistration`'s dead-registration early return was silently dropping the inert-runtime warning for an unrelated host mix. Dropped the blanket early return, hoisted `runtimePresent`, and each per-host arm now guards its own info/warning push on the runtime's actual presence instead of trusting the registered-path set alone. Added the combined-condition test Briar named.
 
 ---
 
@@ -270,10 +271,10 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 ### `checkHookRegistration`'s dead-registration early return silently drops the inert-runtime warning
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `scripts/ai-skills/doctor.ts:134-137` (the `if (findings.length > 0) { return findings; }` inserted between the dead-registration loop and the per-host arms)
 - **Problem:** the function's own JSDoc promises to report both halves independently — "a hook runtime that is present but unregistered, AND a registration that points at a file which is not there." The new early return breaks that: whenever the dead-registration loop pushes any warning (even for a command wholly unrelated to the host being checked), the function returns before the per-host arms run, so a genuinely inert runtime (present on disk, not registered) is never reported. Confirmed by a manual repro against the built function: `hosts: ["claude"]`, `.claude/hooks/hook.mjs` present and unregistered, plus one unrelated dead registration (a stale `.claude/hooks/old/hook.mjs` command) — the report carries only the dead-registration warning; the inert-runtime warning that the pre-Codex code would have also reported is silently gone. None of the new or existing tests in `doctor.test.ts` combine "runtime present but unregistered" with "an unrelated dead registration exists," so nothing caught this. Pre-Codex, the inert check ran unconditionally inside `if (hosts.includes("claude"))`, independent of the dead-registration loop's findings — this is a regression the Codex generalization introduced, not a pre-existing bug.
-- **Suggested fix:** drop the `if (findings.length > 0) return findings;` early return; instead, scope each per-host arm's "installed and registered" info push to fire only when that host has neither a dead-registration finding nor its own inert-runtime finding already pushed (the shape the old single-host `findings.length === 0` guard achieved). The dead-registration warning and the inert-runtime warning are independent facts about independent hosts/commands and both should be reportable in the same run.
+- **Fixed in:** dropped the blanket `if (findings.length > 0) return findings;` between the dead-registration loop and the per-host arms. The per-host arms now run unconditionally (gated only on their own host being in `hosts`), each re-checking the runtime's own presence (`runtimePresent`, hoisted once) rather than trusting `registeredPaths.has(hookRuntimePath)` alone — that guard is what keeps a registration the dead-registration loop already flagged as missing from also being claimed as "installed and registered." Added `runDoctor reports a dead registration and an inert runtime together — neither suppresses the other` to `doctor.test.ts`, asserting both findings land in the same report.
 
 ### Curated seed twin contradicts itself on whether the hook blocks
 
@@ -291,10 +292,10 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 1 open major: `checkHookRegistration`'s dead-registration early return silently drops the inert-runtime warning
+- [x] No critical or major issues
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases — gap: no test combines a dead registration with an unrelated inert-runtime finding (see the open Major)
+- [x] Tests written for new logic and edge cases
 - [x] All debugged issues resolved (no `open` entries)
 - [x] Build passes — last run: 2026-09-02 (`pnpm prism:check-types`, `pnpm prism:test` (220/220), `pnpm prism:crossref-lint`, `pnpm prism:verify-pack`, `pnpm prism:ship-closure` all green)
 - [ ] PR description up to date

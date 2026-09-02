@@ -842,26 +842,32 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		}
 	}
 
-	if (findings.length > 0) {
-		return findings;
-	}
-
 	// Each host that is in `hosts` either produces its own finding or stays
-	// silent — mirroring the pre-Codex shape, where the whole check returned
-	// early inside `if (hosts.includes("claude"))` regardless of whether that
-	// branch pushed anything. A host declared but genuinely never delivered
-	// (pre-first-update) is outside what this check can see, so it says
-	// nothing rather than guessing. The catch-all "not delivered" message
-	// below fires only when neither host is declared at all.
+	// silent — mirroring the pre-Codex shape, where the per-host block ran
+	// unconditionally rather than being gated on the dead-registration loop
+	// above. The two report different things (an inert or reachable runtime
+	// vs. a registration pointing at nothing) and neither should suppress
+	// the other — a dead registration for one host and an inert runtime for
+	// the other, or an unrelated dead registration, are both real findings.
+	// Each branch below re-checks the runtime's own presence rather than
+	// trusting `registeredPaths.has(hookRuntimePath)` alone, so a registered
+	// path that the dead-registration loop just reported missing is never
+	// also claimed as "installed and registered" here. A host declared but
+	// genuinely never delivered (pre-first-update) is outside what this
+	// check can see, so it says nothing rather than guessing. The catch-all
+	// "not delivered" message below fires only when neither host is
+	// declared at all.
+	const runtimePresent = await pathExists(hookRuntimePath);
+
 	if (hosts.includes("claude")) {
-		if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
+		if (runtimePresent && !registeredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
 				message:
 					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
 			});
-		} else if (registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
+		} else if (runtimePresent && registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
@@ -872,14 +878,14 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	}
 
 	if (hosts.includes("codex")) {
-		if ((await pathExists(hookRuntimePath)) && !codexIsRegistered) {
+		if (runtimePresent && !codexIsRegistered) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
 				message:
 					".claude/hooks/hook.mjs is present but .codex/hooks.json registers no hook command pointing at it — the architect-context hook is inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
 			});
-		} else if (codexIsRegistered) {
+		} else if (runtimePresent && codexIsRegistered) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
