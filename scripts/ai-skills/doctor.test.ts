@@ -47,6 +47,24 @@ const CONSUMER_CONFIG_JSON = {
 	ticketSystem: { kind: "github-issues" },
 };
 
+/** `checkHostOutput` reads this via `loadPathDefinitions` to resolve each host's skills, agents, and content roots. */
+const CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+		platformContentCopies: { claude: ".claude", codex: ".codex", cursor: ".cursor" },
+	},
+};
+
 /** A fetcher stub that always reports the lookup as unavailable — no test hits the network. */
 const NEVER_FETCH: NpmVersionFetcher = async () => null;
 
@@ -1339,6 +1357,109 @@ test("runDoctor stays silent when a repo has neither a hook runtime nor a regist
 		});
 
 		assert.deepEqual(hookFindings(report.findings), []);
+	});
+});
+
+// --- host-output check ---
+
+test("runDoctor warns when a host the config excludes still has PRISM's output on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/skills/prism-sample/SKILL.md",
+			"# Sample\n"
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/skills/prism-sample/.ai-skill-generated",
+			""
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hostOutputFindings = report.findings.filter((f) => f.check === "host-output");
+		assert.equal(hostOutputFindings.length, 1);
+		assert.equal(hostOutputFindings[0].severity, "warning");
+		assert.match(hostOutputFindings[0].message, /"claude"/);
+	});
+});
+
+test("runDoctor reports no host-output finding when the tree matches the declared hosts", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		// No output under .claude/ or .cursor/ — only the declared host, codex,
+		// has anything on disk.
+		await writeFile(
+			consumerRepoRoot,
+			".agents/skills/prism-sample/SKILL.md",
+			"# Sample\n"
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".agents/skills/prism-sample/.ai-skill-generated",
+			""
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			report.findings.filter((f) => f.check === "host-output"),
+			[]
+		);
+	});
+});
+
+test("runDoctor reports no host-output finding when the config declares no hosts", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		// Output under every host's root — legitimate when hosts is absent, since
+		// the resolver's default is every host.
+		for (const skillsRoot of [".claude/skills", ".agents/skills", ".cursor/skills"]) {
+			await writeFile(consumerRepoRoot, `${skillsRoot}/prism-sample/SKILL.md`, "# Sample\n");
+			await writeFile(consumerRepoRoot, `${skillsRoot}/prism-sample/.ai-skill-generated`, "");
+		}
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			report.findings.filter((f) => f.check === "host-output"),
+			[]
+		);
 	});
 });
 
