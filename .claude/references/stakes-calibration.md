@@ -8,21 +8,45 @@ A pattern for tuning a skill's rigor to the stakes of the work in front of it. O
 
 | Level | Signal | Calibration |
 | --- | --- | --- |
-| **Hobby** | Personal projects, exploratory tickets, learning work | Light PM-thinking, generous `[ASSUMPTION]` tolerance, looser reviewer rubric, fast path preferred |
-| **Internal** | Team-internal tools, dogfood-only features, low-blast-radius work | Standard PM-thinking, scoped `[ASSUMPTION]` tags expected to resolve before merge, default reviewer rubric |
-| **Launch** | Customer-facing, public release, multi-tenant blast radius | Deep PM-thinking, no unresolved `[ASSUMPTION]` tags, strict reviewer rubric, coaching path preferred over fast path |
+| **quick** | Personal projects, exploratory tickets, learning work | Light PM-thinking, generous `[ASSUMPTION]` tolerance, looser reviewer rubric, fast path preferred |
+| **reviewed** | Team-internal tools, dogfood-only features, low-blast-radius work | Standard PM-thinking, scoped `[ASSUMPTION]` tags expected to resolve before merge, default reviewer rubric |
+| **strict** | Customer-facing, public release, multi-tenant blast radius | Deep PM-thinking, no unresolved `[ASSUMPTION]` tags, strict reviewer rubric, coaching path preferred over fast path |
 
-The signal is asked explicitly when the skill starts — "What's the stakes here: hobby, internal, or launch?" — and the user's answer becomes the calibration setting for the rest of the run. Calibration is not implicit; making it a named question forces the conversation and prevents skills from defaulting to "launch rigor on hobby work" (over-engineering) or "hobby rigor on launch work" (shipping with gaps).
+The signal is asked explicitly when the skill starts — "How much rigor should this get: quick, reviewed, or strict?" — and the user's answer becomes the calibration setting for the rest of the run. Calibration is not implicit; making it a named question forces the conversation and prevents skills from defaulting to "strict rigor on quick work" (over-engineering) or "quick rigor on strict work" (shipping with gaps).
+
+## What each level changes
+
+The one-line description a consumer shows next to each option. Quote these verbatim in a prompt rather than paraphrasing — a paraphrase is where the two prompts drift apart.
+
+| Level | What it changes |
+| --- | --- |
+| `quick` | No reviewer rubric, no decision log, no ticket handoff — open questions may stay open. |
+| `reviewed` | Reviewer rubric runs; decision log optional; open questions expected to resolve before merge. |
+| `strict` | Reviewer rubric runs and escalates; decision log required; every open question resolved before finalize. |
+
+## The same words as an autonomy ceiling
+
+Sol reuses these level names for `autonomyPolicy` — the human-set ceiling on which gates a persona may clear for itself. Same vocabulary, a different axis, so the lines differ:
+
+| Level | What it changes |
+| --- | --- |
+| `quick` | Personas clear their own gates; they escalate only on genuine risk. |
+| `reviewed` | Personas self-clear the clearly-simple cases and escalate on judgment — the balanced default. |
+| `strict` | Every gate stays human. |
+
+## Reading older artifacts
+
+Artifacts written before the rename carry the old words. Read `hobby` as `quick`, `internal` as `reviewed`, and `launch` as `strict`. Closed plans, finalized PRDs, and accepted ADRs keep their original wording — they are records of what was decided then, and rewriting them would make the record lie about itself.
 
 ## What calibrates
 
 For any skill adopting the pattern, three dimensions calibrate to the stakes level:
 
 - **Depth of PM-thinking sections** — how many of the standard sections (problem statement, user segments, success metrics, scope boundaries, etc.) the skill drives to completion vs. flags as `[ASSUMPTION]` for later resolution.
-- **Reviewer-rubric strictness** — what the skill flags as a blocker vs. a non-blocking note. Hobby tolerates ambiguity that internal flags as risk; launch tolerates none of it.
-- **Assumption-tagging tolerance** — how many `[ASSUMPTION]` tags the skill leaves unresolved at finalize. Hobby may finalize with several; launch finalizes with zero.
+- **Reviewer-rubric strictness** — what the skill flags as a blocker vs. a non-blocking note. Quick tolerates ambiguity that reviewed flags as risk; strict tolerates none of it.
+- **Assumption-tagging tolerance** — how many `[ASSUMPTION]` tags the skill leaves unresolved at finalize. Quick may finalize with several; strict finalizes with zero.
 
-Skills should document their own calibration table — which sections, which rubric items, which assumption thresholds correspond to which level — rather than handwaving "more rigor at launch."
+Skills should document their own calibration table — which sections, which rubric items, which assumption thresholds correspond to which level — rather than handwaving "more rigor at strict."
 
 ## Who cites this pattern
 

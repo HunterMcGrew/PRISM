@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-06-14
 ---
 
+> Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
+
 ## Context
 
 Phase A built the between-segment reconcile-delta primitive (`.prism/skills/prism-conductor/lib/reconcile.md`) once, deliberately, so later phases reuse it rather than fork it ([ADR-0050](./0050-conductor-growth-loop-and-convergence-governor.md)). Phase B's second half adds greenfield mode: Sol takes a PRD plus an architecture document and conducts a Parker→Winston→Nora chain that turns them into a ratifiable epic→issue→ticket tree, then dispatches it. Two architectural questions had to be settled together, because the answer to each shapes the other (`.prism/plans/epic-sol-conductor-phase-b.md`, Decisions B-A6 and B-A4).

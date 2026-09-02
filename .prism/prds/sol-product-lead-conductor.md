@@ -2,7 +2,7 @@
 slug: sol-product-lead-conductor
 title: "Sol as a self-growing product-lead conductor"
 mode: greenfield
-stakes: internal
+stakes: reviewed
 status: finalized
 created: 2026-06-13T23:29:59Z
 lastEdited: 2026-06-13T23:29:59Z
