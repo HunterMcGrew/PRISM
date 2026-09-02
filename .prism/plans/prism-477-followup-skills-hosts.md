@@ -381,6 +381,15 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 No issues found — 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts]
 
+### Cursor skills sweep has no dedicated test
+
+- **Severity:** minor
+- **Status:** fixed
+- **File:** `scripts/ai-skills/update.test.ts`
+- **Problem:** the marker-gated skill-sweep function (`removeDeletedManagedSkills`) was covered by test only against the Claude skills root — a regression in the Cursor sweep path had no test to catch it, and Cursor's skill output is git-committed, so a regression there lands directly in a consumer's commit history.
+- **Suggested fix:** add a Cursor-mirrored test asserting a marker-bearing skill is removed and an unmarked one survives, the same shape as the existing Claude case.
+- **Fixed in:** `scripts/ai-skills/update.test.ts` — added `"the Cursor skills sweep removes a marked skill and leaves an unmarked one, the same as Claude's"`.
+
 ### Angle Coverage
 
 - Logic/edge cases: swept — check-mode trap verified structurally (sweep lives only in `refreshPlatformSkills`/`refreshPlatformDirs`, never in `generatePlatformSkills`) and by test (`generate-skills.test.ts` "a platform opted out of a render pass keeps the output a previous pass wrote"); marker-gating verified in `removeDeletedManagedSkills`/`removeDeletedManagedAgentFiles`/`removeManagedContentAreas`; dry-run ordering confirmed (sweep calls run before the `if (dryRun) return` in `refreshPlatformSkills`, so `checkMode: dryRun` previews correctly).

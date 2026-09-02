@@ -937,6 +937,54 @@ test("a consumer's own file under a dropped host's directory survives the sweep"
 	);
 });
 
+test("the Cursor skills sweep removes a marked skill and leaves an unmarked one, the same as Claude's", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample/SKILL.md"),
+				true,
+				"Cursor's roster exists before the drop"
+			);
+
+			// A hand-authored skill (no managed marker) under the Cursor root that
+			// is about to be dropped — Cursor's skill output is git-committed, so a
+			// regression here lands in a consumer's history, not just their tree.
+			await writeFile(
+				consumerRepoRoot,
+				".cursor/skills/my-own-skill/SKILL.md",
+				"# My own skill\n"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample"),
+				false,
+				"the marker-bearing Cursor skill is removed once cursor is dropped"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/my-own-skill/SKILL.md"),
+				true,
+				"the unmarked Cursor skill directory survives the sweep"
+			);
+		}
+	);
+});
+
 test("the Codex config is removed only when it still carries PRISM's generated header", async () => {
 	await withTempRepoRoots(
 		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
