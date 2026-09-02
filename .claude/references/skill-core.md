@@ -29,8 +29,11 @@ Match the paths you will touch against `.prism/architect/manifest.json` and
 load every matching architect doc — partial loads miss constraints, and
 architect-context routing is diff-blind to a doc you are about to edit (see
 [`context-reuse.md`](../rules/context-reuse.md) § Architect-context routing is
-diff-blind). Authoring paths are write-gated: on hosts with the hook runtime,
-edits to routed paths are denied until their routed docs are read.
+diff-blind). Authoring paths are write-gated on hosts that receive the hook
+runtime, where an edit to a routed path is denied until that route's docs are
+read. Claude Code is the only host that receives it today, so on Codex and
+Cursor nothing stops an unread edit — match the manifest and read the docs
+yourself before you write.
 
 ## Reporting back
 
