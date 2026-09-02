@@ -78,7 +78,9 @@ What carries the guarantee on Codex and Cursor is the always-on rule in `.prism/
 
 `prism doctor` now says which case you are in: it prints the Claude-only reach on an install that has the gate, and says the gate is not delivered on a repo whose `hosts` excludes `claude`.
 
-PRISM only installs the hook when `hosts` includes `claude` — or when `hosts` is absent, which means every host. A Codex-only or Cursor-only repo that lists its own hosts gets no `.claude/hooks/`, no settings merge, and no `.gitignore` lines. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
+PRISM only installs the hook when `hosts` includes `claude` — or when `hosts` is absent, which means every host. A Codex-only or Cursor-only repo that lists its own hosts gets no `.claude/hooks/`, no settings merge, and no `.gitignore` lines.
+
+`hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping `claude` takes the hook back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 
 ## The install-script rule
 

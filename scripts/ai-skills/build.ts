@@ -122,7 +122,7 @@ async function loadJsonFile<T>(
  * platform copy directory. Agent-written areas (plans/, lessons.md) are
  * deliberately excluded — those live only at canonical.
  */
-const COPIED_CONTENT_AREAS = [
+export const COPIED_CONTENT_AREAS = [
 	"rules",
 	"architect",
 	"spec",
@@ -492,6 +492,44 @@ export async function removeDeletedManagedContent(
 			if (!checkModeArg) {
 				await fs.rm(targetArea, { force: true, recursive: true });
 			}
+		}
+	}
+}
+
+/**
+ * Removes every managed content area under one platform dir — the sweep for
+ * a host a consumer has dropped from `hosts`.
+ *
+ * Gated on the area's own `MANAGED_MARKER`, so an area PRISM never wrote is
+ * never removed and a consumer's own file that happens to sit under the
+ * platform dir is untouched. `removeDeletedManagedContent` answers a
+ * narrower question — which entries under a still-managed area have lost
+ * their canonical source — and cannot express "this whole area is no longer
+ * wanted."
+ */
+export async function removeManagedContentAreas(
+	platformDir: string,
+	checkModeArg: boolean,
+	changedPathsArg: string[]
+): Promise<void> {
+	for (const area of COPIED_CONTENT_AREAS) {
+		const targetArea = path.join(platformDir, area);
+		const overlayArea = path.join(targetArea, "custom");
+
+		if (await pathExists(path.join(overlayArea, MANAGED_MARKER))) {
+			changedPathsArg.push(overlayArea);
+			if (!checkModeArg) {
+				await fs.rm(overlayArea, { force: true, recursive: true });
+			}
+		}
+
+		if (!(await pathExists(path.join(targetArea, MANAGED_MARKER)))) {
+			continue;
+		}
+
+		changedPathsArg.push(targetArea);
+		if (!checkModeArg) {
+			await fs.rm(targetArea, { force: true, recursive: true });
 		}
 	}
 }

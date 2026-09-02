@@ -674,6 +674,419 @@ test("runUpdate copies content and projects the persona roster", async () => {
 	);
 });
 
+// --- hosts gating tests (PRISM-477 followup) ---
+
+/** Overrides `CONSUMER_CONFIG_JSON` with a declared `hosts` array for one test run. */
+async function writeHostsConfig(
+	consumerRepoRoot: string,
+	hosts: string[]
+): Promise<void> {
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts }, null, "\t")}\n`
+	);
+}
+
+test("runUpdate projects the roster to every host when the config declares none", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			for (const skillPath of [
+				".claude/skills/prism-sample/SKILL.md",
+				".agents/skills/prism-sample/SKILL.md",
+				".cursor/skills/prism-sample/SKILL.md",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, skillPath),
+					true,
+					`${skillPath} should exist when the config declares no hosts`
+				);
+			}
+		}
+	);
+});
+
+test("runUpdate projects the roster only to the hosts the config declares", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".agents/skills/prism-sample/SKILL.md"),
+				true,
+				"Codex's roster is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				false,
+				"Claude's roster is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample/SKILL.md"),
+				false,
+				"Cursor's roster is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate writes agent definitions and the Codex config only for their own host", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/agents/prism-sample.md"),
+				true,
+				"Claude's agent definition is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/agents/prism-sample.toml"),
+				false,
+				"Codex's agent adapter is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				false,
+				"the Codex config file is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate copies platform content only to the hosts the config declares", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["cursor"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerContentRoot, "rules/local.md", "# Local rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/rules/local.mdc"),
+				true,
+				"Cursor's rule copy is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/rules"),
+				false,
+				"Claude's platform content dir is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/rules"),
+				false,
+				"Codex's platform content dir is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate scans only the roots it wrote for unresolved token literals", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			// A stale Claude skill left over from before `hosts` narrowed to Codex —
+			// this run never touches `.claude/skills`, so an unresolved token there
+			// must not fail the update.
+			await writeFile(
+				consumerRepoRoot,
+				".claude/skills/stale-skill/SKILL.md",
+				"Stale ${LEFTOVER_TOKEN} literal.\n"
+			);
+
+			await assert.doesNotReject(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				"a leftover token in a root this pass did not write must not fail the update"
+			);
+		}
+	);
+});
+
+test("runUpdate takes back a dropped host's roster, agent files, and content copies", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			// Every host received output on the first pass, matching the schema's
+			// absent-`hosts`-means-all default.
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				true,
+				"Claude's roster exists before the drop"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			for (const droppedPath of [
+				".claude/skills/prism-sample",
+				".cursor/skills/prism-sample",
+				".claude/agents/prism-sample.md",
+				".claude/rules",
+				".cursor/rules",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, droppedPath),
+					false,
+					`${droppedPath} is taken back out once codex is the only declared host`
+				);
+			}
+			for (const keptPath of [
+				".agents/skills/prism-sample/SKILL.md",
+				".codex/rules/shipped.md",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, keptPath),
+					true,
+					`${keptPath} survives the drop — codex is still declared`
+				);
+			}
+		}
+	);
+});
+
+test("a consumer's own file under a dropped host's directory survives the sweep", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// A hand-authored skill (no managed marker) and a loose note, both under
+			// the Claude root that is about to be dropped.
+			await writeFile(
+				consumerRepoRoot,
+				".claude/skills/my-own-skill/SKILL.md",
+				"# My own skill\n"
+			);
+			await writeFile(consumerRepoRoot, ".claude/notes.md", "# Notes\n");
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/my-own-skill/SKILL.md"),
+				true,
+				"the unmarked skill directory survives the sweep"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/notes.md"),
+				true,
+				"the unmarked loose file survives the sweep"
+			);
+		}
+	);
+});
+
+test("the Cursor skills sweep removes a marked skill and leaves an unmarked one, the same as Claude's", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample/SKILL.md"),
+				true,
+				"Cursor's roster exists before the drop"
+			);
+
+			// A hand-authored skill (no managed marker) under the Cursor root that
+			// is about to be dropped — Cursor's skill output is git-committed, so a
+			// regression here lands in a consumer's history, not just their tree.
+			await writeFile(
+				consumerRepoRoot,
+				".cursor/skills/my-own-skill/SKILL.md",
+				"# My own skill\n"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample"),
+				false,
+				"the marker-bearing Cursor skill is removed once cursor is dropped"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/my-own-skill/SKILL.md"),
+				true,
+				"the unmarked Cursor skill directory survives the sweep"
+			);
+		}
+	);
+});
+
+test("the Codex config is removed only when it still carries PRISM's generated header", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				true,
+				"the Codex config exists before the drop"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				false,
+				"a Codex config still carrying PRISM's header is removed when codex is dropped"
+			);
+		}
+	);
+
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// The consumer replaced the generated file's contents entirely.
+			await writeFile(
+				consumerRepoRoot,
+				".codex/codex-config.toml",
+				"# hand-written by the consumer\n"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await readFile(consumerRepoRoot, ".codex/codex-config.toml"),
+				"# hand-written by the consumer\n",
+				"a Codex config without PRISM's header is left alone when codex is dropped"
+			);
+		}
+	);
+});
+
+test("runUpdate --dry-run previews a dropped host's removals without performing them", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			for (const survivingPath of [
+				".claude/skills/prism-sample/SKILL.md",
+				".claude/agents/prism-sample.md",
+				".claude/rules",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, survivingPath),
+					true,
+					`${survivingPath} is still on disk after a dry-run that only previews the drop`
+				);
+			}
+		}
+	);
+});
+
 test("runUpdate applies a renamed seed file under its consumer name and records it in the manifest that way", async () => {
 	await withTempRepoRoots(
 		async ({

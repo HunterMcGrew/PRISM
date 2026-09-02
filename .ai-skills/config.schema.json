@@ -97,7 +97,7 @@
 		},
 		"hosts": {
 			"type": "array",
-			"description": "AI coding hosts this repo actually runs. Absent means all of them, so an existing install keeps its current behavior and needs no migration. Today this gates hook-runtime delivery: PRISM writes .claude/hooks/, merges its hook registration into .claude/settings.json, and appends the hook state-file globs to .gitignore only when `claude` is listed. Removing `claude` from a repo that previously received the runtime makes the next `prism update` take it back out.",
+			"description": "AI coding hosts this repo actually runs. Absent means all of them, so an existing install keeps its current behavior and needs no migration. This gates every host-specific delivery: the hook runtime and its registration (writes .claude/hooks/, merges the registration into .claude/settings.json, and appends the hook state-file globs to .gitignore only when `claude` is listed); the persona skill roster and agent definitions for each host; and the platform content copies of rules, architect docs, and templates. Removing a host from a repo that previously received its output makes the next `prism update` take that output back out.",
 			"items": {
 				"type": "string",
 				"enum": ["claude", "codex", "cursor"]

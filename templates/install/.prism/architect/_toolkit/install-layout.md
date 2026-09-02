@@ -9,7 +9,7 @@ Two kinds of content sit in a PRISM install:
 - **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
 - **Platform-specific outputs** — Claude skills, Codex agents/skills, Cursor skills, native config files. These live under `.claude/`, `.codex/`, `.cursor/`, and `.agents/` per platform.
 
-`pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root.
+`pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root. In your own repo, `prism update` copies the same areas into the platform dirs for the hosts your `hosts` config key declares — all three when the key is absent, and a dropped host's copies taken back out on the next update (§ Steady-state persona-skill distribution below).
 
 Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style rule. `pnpm prism:build` writes byte-identical copies to `.claude/rules/code-comments.md`, `.codex/rules/code-comments.md`, and `.cursor/rules/code-comments.md`. Editing the canonical and rebuilding refreshes all three. Editing a platform copy directly is drift — `pnpm prism:check` flags it.
 
@@ -100,7 +100,7 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
 
-**What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with the consumer's own token map — `${PROJECT}` becomes the consumer's project name, `${TICKET_PREFIX}` becomes their ticket prefix, and so on — and writes the rendered output to each opted-in platform directory:
+**What you receive.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
 
 - `.claude/skills/<id>/SKILL.md` (Claude Code)
 - `.agents/skills/<id>/SKILL.md` (Codex)
@@ -110,7 +110,7 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard runs over the consumer's skill output roots immediately after the render and fails the update if any are found.
 
-**Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target.
+**Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target. The same cleanup fires a second way: drop a host from `hosts` and the next `prism update` sweeps that host's entire skill root, agent-definition root, Codex config, and platform content dir the same way — still gated on the marker, so your own files under those roots are never a delete target either — and a `codex-config.toml` you have replaced with your own content is left alone, since PRISM removes one only while it still carries the generated header it wrote. A persona leaving the roster and a host leaving `hosts` are the same cleanup at different granularity.
 
 **Consumer-authored skills are untouched.** The render writes only to roster-member IDs, and cleanup deletes only marker-bearing directories that are no longer in the roster. A consumer's own skills — whether they use a non-`prism-*` prefix or a custom-prefixed name — are never written or deleted by `prism update`.
 
