@@ -188,12 +188,14 @@ Every task below writes to a path the architect write gate routes. The gate deni
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — decide and record PRISM's portability posture for hook-dependent enforcement, and make the Claude-only reach visible to a Codex or Cursor adopter; Bounds — done when the plan carries tasks, AC, and decisions, and the AC is synced to issue #477; touch only `.prism/plans/prism-477.md` on this branch, implement nothing; Approach — correct the issue's stale inventory against `main`, apply the triple ADR gate, and pick the cheapest surface that already reaches all three hosts rather than building a fourth. · close: scope held
+- 2026-09-02 [huntermcgrew/prism-477-hook-portability] open: Intent — implement Clove's tasks 1–4 and 6–7 (ADR-0074, the sharpened skill-core.md sentence, the install-layout.md pointer, build, check), renumbered to 0074 per the dispatcher's correction; Bounds — done when `pnpm prism:check` exits 0 and the AC evidence commands for AC-3 through AC-8 pass, touching only the paths the plan's Clove tasks name plus `seed-curation.json` if the build surfaces a gap; Approach — write the ADR content verbatim from the plan's spec, then verify each AC's evidence command myself rather than trusting the task description alone. · close: scope held — the `seed-curation.json` fix was a build-time gap the plan's tasks didn't name, filed under Refactor scope as in-local-frame-and-trivial (fixed inline, no follow-up needed)
 
 ---
 
 ## History
 
 - 2026-09-02 [huntermcgrew/prism-477-hook-portability]: Winston planned PRISM-477 — ADR-0074, a sharpened sentence in the shared startup contract, and a consumer-facing compatibility section. Corrected the issue's hook inventory against `main`: the files it names are reverted-floor artifacts, and the Codex gap is a delivery gap rather than a platform limit. Git hooks rejected as the portable floor; see Decisions.
+- 2026-09-02 [huntermcgrew/prism-477-hook-portability]: Clove implemented tasks 1–4 and 6–7 — wrote ADR-0074 (renumbered from 0073), sharpened `skill-core.md`, pointed `install-layout.md` at the ADR, and ran the build. Found and fixed a gap the plan didn't cover: the new ADR wasn't in `seed-curation.json`'s excluded list, so the first build shipped it into `templates/install/` with forbidden `ADR-NNNN` references; added the entry and reran the build. `pnpm prism:check` passes clean. Eli's docs task (task 5 in Eli's numbering) still to land on this branch.
 
 ---
 
@@ -260,12 +262,12 @@ None.
 ## PR Readiness
 
 - [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as` (n/a — no TypeScript changes)
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases (n/a — no runtime logic changes)
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Types correct — no `any`, no unsafe `as` (n/a — no TypeScript changes)
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases (n/a — no runtime logic changes)
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:check` exit 0
+- [ ] PR description up to date (draft PR opened; Eli's docs task still to land)
+- [ ] Lasting decisions promoted to architect context (plan close, not yet reached)
 
 **Last updated:** 2026-09-02
