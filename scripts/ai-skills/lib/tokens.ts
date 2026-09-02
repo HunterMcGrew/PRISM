@@ -37,6 +37,7 @@ export interface PrismConfig {
 		optIn?: string[];
 	};
 	slackChannel?: string;
+	productDomain?: string;
 }
 
 const REQUIRED_TOP_LEVEL_KEYS: ReadonlyArray<keyof PrismConfig> = [

@@ -17,6 +17,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { substituteAnchorsInContent } from "./lib/anchor-substitute";
 import { substituteTokens } from "./lib/tokens";
 import {
 	ensureDirectory,
@@ -57,6 +58,7 @@ interface SkillSource {
 }
 
 interface BuildSkillMarkdownArgs {
+	anchorContent?: Record<string, string>;
 	frontmatter: string;
 	platformBody: string;
 	platformName: string;
@@ -66,6 +68,7 @@ interface BuildSkillMarkdownArgs {
 }
 
 interface BuildCodexAgentTomlArgs {
+	anchorContent?: Record<string, string>;
 	codexSkillMarkdown: string;
 	description: string;
 	roleDefinition: RoleDefinition;
@@ -74,10 +77,30 @@ interface BuildCodexAgentTomlArgs {
 }
 
 interface BuildClaudeAgentMarkdownArgs {
+	anchorContent?: Record<string, string>;
 	claudeSkillMarkdown: string;
 	description: string;
 	skillId: string;
 	tokenMap: Map<string, string>;
+}
+
+/**
+ * Substitutes anchors before tokens, then substitutes tokens. Anchor content
+ * is derived from the same config that feeds the token map, so an anchor's
+ * default body may legitimately carry a `${TOKEN}` — running tokens first
+ * would leave it unresolved and trip `runLeftoverTokenGuard`.
+ */
+function applyAnchorsThenTokens(
+	content: string,
+	anchorContent: Record<string, string> | undefined,
+	tokenMap: Map<string, string>
+): string {
+	const withAnchors =
+		anchorContent && Object.keys(anchorContent).length > 0
+			? substituteAnchorsInContent(content, anchorContent).content
+			: content;
+
+	return substituteTokens(withAnchors, tokenMap);
 }
 
 /**
@@ -109,6 +132,7 @@ const optionalSkillPayloads: OptionalSkillPayload[] = [
 ];
 
 function buildSkillMarkdown({
+	anchorContent,
 	frontmatter,
 	platformBody,
 	platformName,
@@ -128,10 +152,11 @@ function buildSkillMarkdown({
 
 	const assembled = `---\n${frontmatter}\n---\n\n${header}\n\n${contentSections}\n`;
 
-	return substituteTokens(assembled, tokenMap);
+	return applyAnchorsThenTokens(assembled, anchorContent, tokenMap);
 }
 
 export function buildCodexAgentToml({
+	anchorContent,
 	codexSkillMarkdown,
 	description,
 	roleDefinition,
@@ -145,11 +170,15 @@ export function buildCodexAgentToml({
 		"",
 	].join("\n");
 
-	const substitutedDescription = substituteTokens(description, tokenMap);
+	const substitutedDescription = applyAnchorsThenTokens(
+		description,
+		anchorContent,
+		tokenMap
+	);
 	// Utility entries carry no persona — the adapter opens with the skill
 	// source line instead of a "You are X." identity.
 	const substitutedPersona = roleDefinition.persona
-		? substituteTokens(roleDefinition.persona, tokenMap)
+		? applyAnchorsThenTokens(roleDefinition.persona, anchorContent, tokenMap)
 		: undefined;
 
 	const developerInstructions = [
@@ -179,6 +208,7 @@ export function buildCodexAgentToml({
  * CLAUDE_AGENT_MODEL_DEFAULTS, falling back to the cheaper worker tier.
  */
 export function buildClaudeAgentMarkdown({
+	anchorContent,
 	claudeSkillMarkdown,
 	description,
 	skillId,
@@ -190,10 +220,11 @@ export function buildClaudeAgentMarkdown({
 		"<!-- Target: claude-agent | Regenerate with: pnpm prism:build -->",
 	].join("\n");
 
-	const substitutedDescription = substituteTokens(description, tokenMap).replace(
-		/\s+/g,
-		" "
-	);
+	const substitutedDescription = applyAnchorsThenTokens(
+		description,
+		anchorContent,
+		tokenMap
+	).replace(/\s+/g, " ");
 	const model =
 		CLAUDE_AGENT_MODEL_DEFAULTS.get(skillId) ?? DEFAULT_CLAUDE_AGENT_MODEL;
 
@@ -454,6 +485,14 @@ export function buildRoleMap(
 }
 
 export interface GeneratePlatformSkillsOptions {
+	/**
+	 * Per-team anchor replacement map (e.g. `{ "domain-context": "..." }`),
+	 * applied to every rendered body immediately before token substitution.
+	 * Omitted or empty means no anchor is touched — every anchor keeps its
+	 * canonical default content, which is what PRISM's own build (no
+	 * per-team config) relies on to stay byte-identical.
+	 */
+	anchorContent?: Record<string, string>;
 	sourceSkillsRoot: string;
 	targetRoots: {
 		claude: string;
@@ -492,6 +531,7 @@ export async function generatePlatformSkills(
 	options: GeneratePlatformSkillsOptions
 ): Promise<GeneratePlatformSkillsResult> {
 	const {
+		anchorContent,
 		sourceSkillsRoot,
 		targetRoots,
 		codexConfigPath,
@@ -515,6 +555,7 @@ export async function generatePlatformSkills(
 		}
 
 		const claudeMarkdown = buildSkillMarkdown({
+			anchorContent,
 			frontmatter: skillSource.frontmatter,
 			platformBody: skillSource.claudeBody,
 			platformName: "claude",
@@ -523,6 +564,7 @@ export async function generatePlatformSkills(
 			tokenMap,
 		});
 		const codexMarkdown = buildSkillMarkdown({
+			anchorContent,
 			frontmatter: skillSource.frontmatter,
 			platformBody: skillSource.codexBody,
 			platformName: "codex",
@@ -531,6 +573,7 @@ export async function generatePlatformSkills(
 			tokenMap,
 		});
 		const cursorMarkdown = buildSkillMarkdown({
+			anchorContent,
 			frontmatter: skillSource.frontmatter,
 			platformBody: skillSource.cursorBody,
 			platformName: "cursor",
@@ -605,6 +648,7 @@ export async function generatePlatformSkills(
 				skillSource.frontmatterMap.get("description") ??
 				`Generated codex agent adapter for ${skillId}.`;
 			const codexAgentToml = buildCodexAgentToml({
+				anchorContent,
 				codexSkillMarkdown: codexMarkdown,
 				description,
 				roleDefinition,
@@ -624,6 +668,7 @@ export async function generatePlatformSkills(
 				skillSource.frontmatterMap.get("description") ??
 				`Generated claude agent definition for ${skillId}.`;
 			const claudeAgentMarkdown = buildClaudeAgentMarkdown({
+				anchorContent,
 				claudeSkillMarkdown: claudeMarkdown,
 				description,
 				skillId,

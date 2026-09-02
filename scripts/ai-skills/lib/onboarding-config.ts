@@ -58,6 +58,7 @@ export interface PrismOnDiskConfig {
 		optIn?: string[];
 	};
 	slackChannel?: string;
+	productDomain?: string;
 	documentation?: {
 		location?: string;
 		audience?: string;
@@ -112,6 +113,7 @@ const ORDERED_TOP_LEVEL_KEYS: ReadonlyArray<keyof PrismOnDiskConfig> = [
 	"techStack",
 	"rules",
 	"slackChannel",
+	"productDomain",
 	"documentation",
 ];
 
@@ -216,6 +218,10 @@ export function toOnDiskConfig(
 
 	if (typeof options.slackChannel === "string" && options.slackChannel.length > 0) {
 		onDisk.slackChannel = options.slackChannel;
+	}
+
+	if (config.productDomain.trim().length > 0) {
+		onDisk.productDomain = config.productDomain;
 	}
 
 	if (config.documentation !== undefined) {

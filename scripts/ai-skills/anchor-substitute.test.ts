@@ -1,12 +1,10 @@
 /**
- * Tests for Atlas's anchor-substitute module (PR-2.4, plan task 5).
+ * Tests for the anchor-substitute module.
  *
  * Covers the contract surfaces `lib/anchor-substitute.ts` exposes:
  * - `findAnchors` — happy paths and structural rejections.
  * - `substituteAnchors` — idempotency, atomicity, unknown-key warning,
  *   orphan-preservation.
- * - `substituteAnchorsAcrossSkills` — glob coverage across the canonical
- *   persona-source surface (shared.md + claude.md + codex.md + cursor.md).
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -18,7 +16,6 @@ import {
 	AnchorParseError,
 	findAnchors,
 	substituteAnchors,
-	substituteAnchorsAcrossSkills,
 } from "./lib/anchor-substitute";
 
 async function withTempRepo<T>(
@@ -261,60 +258,3 @@ test("substituteAnchors is atomic — a failed rename leaves the prior file unto
 	});
 });
 
-test("substituteAnchorsAcrossSkills runs across shared.md and platform variants", async () => {
-	await withTempRepo(async (root) => {
-		const skillsRoot = path.join(root, ".ai-skills", "skills");
-		const personaA = path.join(skillsRoot, "prism-alpha");
-		const personaB = path.join(skillsRoot, "prism-beta");
-		await fs.mkdir(personaA, { recursive: true });
-		await fs.mkdir(personaB, { recursive: true });
-
-		const anchored = [
-			"<!-- atlas:specializes-in -->",
-			"<!-- atlas:end -->",
-			"",
-		].join("\n");
-		const unanchored = "no anchors here.\n";
-
-		await fs.writeFile(path.join(personaA, "shared.md"), anchored, "utf8");
-		await fs.writeFile(path.join(personaA, "claude.md"), anchored, "utf8");
-		await fs.writeFile(path.join(personaA, "codex.md"), unanchored, "utf8");
-		await fs.writeFile(path.join(personaB, "shared.md"), anchored, "utf8");
-
-		const results = await substituteAnchorsAcrossSkills(root, {
-			"specializes-in": "team specializes in X",
-		});
-
-		const writtenPaths = Array.from(results.values())
-			.filter((r) => r.written)
-			.map((r) => r.path)
-			.sort();
-
-		assert.deepEqual(writtenPaths, [
-			path.join(personaA, "claude.md"),
-			path.join(personaA, "shared.md"),
-			path.join(personaB, "shared.md"),
-		]);
-
-		const sharedAfter = await fs.readFile(
-			path.join(personaA, "shared.md"),
-			"utf8"
-		);
-		assert.match(sharedAfter, /team specializes in X/);
-
-		const codexAfter = await fs.readFile(
-			path.join(personaA, "codex.md"),
-			"utf8"
-		);
-		assert.equal(codexAfter, unanchored, "files without anchors stay byte-identical");
-	});
-});
-
-test("substituteAnchorsAcrossSkills returns an empty map when the skills root does not exist", async () => {
-	await withTempRepo(async (root) => {
-		const results = await substituteAnchorsAcrossSkills(root, {
-			"specializes-in": "anything",
-		});
-		assert.equal(results.size, 0);
-	});
-});

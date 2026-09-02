@@ -38,6 +38,7 @@ import {
 	generatePlatformSkills,
 	type RolesDefinitions,
 } from "./generate-skills";
+import { buildContentByAnchor } from "./lib/onboarding-run";
 import {
 	assertInsideGitRepo,
 	resolveConsumerRoot,
@@ -48,7 +49,7 @@ import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
 import { resolveHosts, type HostName } from "./lib/hosts";
 import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
-import { deriveTokenMap, loadConfig } from "./lib/tokens";
+import { deriveTokenMap, loadConfig, type PrismConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
 import {
@@ -563,6 +564,7 @@ export async function runUpdate(
 		prismRepoRoot,
 		consumerRepoRoot,
 		consumerPathDefinitions,
+		consumerConfig,
 		tokenMap,
 		dryRun
 	);
@@ -833,14 +835,24 @@ export function resolveConsumerSkillTargetRoots(
  * Thrive-literal guard is deliberately not run here — a consumer's output
  * legitimately contains "Thrive"-flavored words, so only the leftover-token
  * guard applies (see plan prism-242 Decision "Two guards, not one").
+ *
+ * `consumerConfig` supplies the anchor content (currently just
+ * productDomain) substituted into the roster ahead of token substitution —
+ * see ADR-0075. Anchor population used to be a separate Atlas write into the
+ * canonical `.ai-skills/skills/` sources; it now runs here, in memory, on
+ * every regeneration.
  */
 async function refreshPlatformSkills(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
 	consumerPathDefinitions: PathDefinitions,
+	consumerConfig: PrismConfig,
 	tokenMap: Map<string, string>,
 	dryRun: boolean
 ): Promise<void> {
+	const anchorContent = buildContentByAnchor({
+		productDomain: consumerConfig.productDomain ?? "",
+	});
 	const sourceSkillsRoot = path.join(prismRepoRoot, ".ai-skills", "skills");
 	if (!(await pathExists(sourceSkillsRoot))) {
 		throw new Error(
@@ -876,6 +888,7 @@ async function refreshPlatformSkills(
 
 	const changedPaths: string[] = [];
 	await generatePlatformSkills({
+		anchorContent,
 		sourceSkillsRoot,
 		targetRoots,
 		codexConfigPath,

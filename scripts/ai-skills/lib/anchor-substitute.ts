@@ -1,5 +1,6 @@
 /**
- * Atlas's stub-anchor substitution (PR-2.4, plan task 1-4).
+ * Anchor substitution — populates per-team content into the generic stub
+ * anchors canonical persona sources ship with.
  *
  * Canonical persona sources (`.ai-skills/skills/<id>/shared.md` and platform
  * variants) carry HTML-comment anchor pairs the editorial cleanup leaves in
@@ -15,7 +16,7 @@
  * in rendered markdown — the comments don't render — so the canonical sources
  * stay readable when an author opens them.
  *
- * The module exposes three layers:
+ * The module exposes two layers:
  *
  * - `findAnchors` is pure — it walks `content` and returns one descriptor per
  *   pair. Throws on three structural errors: an open marker with no matching
@@ -23,20 +24,16 @@
  *   open markers sharing the same name in one file. The errors are wrapped in
  *   `AnchorParseError` so callers can distinguish parse failures from
  *   filesystem failures.
- * - `substituteAnchors` reads the file, runs `findAnchors`, applies the
- *   replacement map, and writes the new content atomically. Idempotent —
- *   running twice with the same input produces byte-identical output.
- *   Unknown replacement keys warn but don't throw. Orphan anchors (no
- *   matching replacement key) preserve their existing default content.
- * - `substituteAnchorsAcrossSkills` globs the canonical-source surface
- *   (`shared.md`, `claude.md`, `codex.md`, `cursor.md` under
- *   `.ai-skills/skills/*`) and runs `substituteAnchors` per file. Returns a
- *   map keyed by absolute file path so the caller can audit which files were
- *   touched.
+ * - `substituteAnchorsInContent` is the pure in-memory substitution pass —
+ *   `generatePlatformSkills` calls it once per rendered body, immediately
+ *   before token substitution (ADR-0075). `substituteAnchors` wraps it with
+ *   an atomic read/write seam for the rare caller that needs anchors
+ *   substituted directly on disk.
  *
- * The atomic-write seam mirrors `writeOnboardingConfig`: tmp file in the same
- * directory followed by a rename. A process interrupted mid-write leaves
- * either the prior file or the new one — never a half-written file.
+ * `substituteAnchors`'s atomic-write seam mirrors `writeOnboardingConfig`:
+ * tmp file in the same directory followed by a rename. A process interrupted
+ * mid-write leaves either the prior file or the new one — never a
+ * half-written file.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -81,12 +78,6 @@ export interface Anchor {
 	start: number;
 	end: number;
 	range: { start: number; end: number };
-}
-
-export interface AnchorResult {
-	path: string;
-	written: boolean;
-	anchorsReplaced: string[];
 }
 
 /**
@@ -196,39 +187,34 @@ function findCloseMarker(
 
 export interface SubstituteAnchorsOptions {
 	/**
-	 * Suppresses the per-file "unknown replacement key" warning. The cross-
-	 * skills caller (`substituteAnchorsAcrossSkills`) sets this because in
-	 * cross-skills mode the same replacement map is fanned out to every
-	 * canonical source — a key that's absent from one file but present in
-	 * another is normal, not a misconfiguration. The aggregate caller emits
-	 * a single warning per key that ended up unused across every file.
+	 * Suppresses the "unknown replacement key" warning. A replacement map
+	 * fanned out across several canonical sources legitimately carries a key
+	 * that's absent from this particular file but present in another — set
+	 * this when the caller aggregates that check itself instead of relying
+	 * on the per-file warning.
 	 */
 	suppressUnknownKeyWarning?: boolean;
 }
 
+export interface SubstituteAnchorsInContentOptions {
+	/** See `SubstituteAnchorsOptions.suppressUnknownKeyWarning`. */
+	suppressUnknownKeyWarning?: boolean;
+	/** Label used in the unknown-key warning message — a file path when the caller has one, or omitted for an in-memory-only caller. */
+	sourceLabel?: string;
+}
+
 /**
- * Reads `filePath`, applies `replacements` to each known anchor, and writes
- * the result atomically. Returns whether bytes changed and which anchor
- * names were replaced.
- *
- * Behavior:
- * - Idempotent — when the post-substitution bytes equal the on-disk bytes,
- *   no write occurs and `written` is false.
- * - Atomic — tmp file in the same directory, rename over the target. A
- *   failed rename leaves the original file intact.
- * - Unknown replacement keys (in `replacements` but not in the file) emit a
- *   `console.warn` and don't throw. Suppress with
- *   `suppressUnknownKeyWarning: true` when the caller aggregates the check
- *   across many files (`substituteAnchorsAcrossSkills`).
- * - Orphan anchors (in the file but not in `replacements`) preserve their
- *   existing default content untouched.
+ * Pure in-memory half of anchor substitution: applies `replacements` to each
+ * known anchor in `content` and returns the result. No filesystem access —
+ * `substituteAnchors` wraps this with the read/atomic-write seam, and the
+ * render pass (`generatePlatformSkills`) calls this directly since rendered
+ * output isn't written back to the canonical source.
  */
-export async function substituteAnchors(
-	filePath: string,
+export function substituteAnchorsInContent(
 	content: string,
 	replacements: Record<string, string>,
-	options: SubstituteAnchorsOptions = {}
-): Promise<{ written: boolean; anchorsReplaced: string[] }> {
+	options: SubstituteAnchorsInContentOptions = {}
+): { content: string; anchorsReplaced: string[] } {
 	const anchors = findAnchors(content);
 	const anchorNames = new Set(anchors.map((a) => a.name));
 
@@ -236,7 +222,9 @@ export async function substituteAnchors(
 		for (const key of Object.keys(replacements)) {
 			if (!anchorNames.has(key)) {
 				console.warn(
-					`anchor-substitute: unknown replacement key ${JSON.stringify(key)} (not present in ${filePath})`
+					`anchor-substitute: unknown replacement key ${JSON.stringify(key)}${
+						options.sourceLabel ? ` (not present in ${options.sourceLabel})` : ""
+					}`
 				);
 			}
 		}
@@ -262,6 +250,41 @@ export async function substituteAnchors(
 
 	nextContent += content.slice(cursor);
 
+	return { content: nextContent, anchorsReplaced };
+}
+
+/**
+ * Reads `filePath`, applies `replacements` to each known anchor, and writes
+ * the result atomically. Returns whether bytes changed and which anchor
+ * names were replaced.
+ *
+ * Behavior:
+ * - Idempotent — when the post-substitution bytes equal the on-disk bytes,
+ *   no write occurs and `written` is false.
+ * - Atomic — tmp file in the same directory, rename over the target. A
+ *   failed rename leaves the original file intact.
+ * - Unknown replacement keys (in `replacements` but not in the file) emit a
+ *   `console.warn` and don't throw. Suppress with
+ *   `suppressUnknownKeyWarning: true` when the caller aggregates the check
+ *   across many files itself.
+ * - Orphan anchors (in the file but not in `replacements`) preserve their
+ *   existing default content untouched.
+ */
+export async function substituteAnchors(
+	filePath: string,
+	content: string,
+	replacements: Record<string, string>,
+	options: SubstituteAnchorsOptions = {}
+): Promise<{ written: boolean; anchorsReplaced: string[] }> {
+	const { content: nextContent, anchorsReplaced } = substituteAnchorsInContent(
+		content,
+		replacements,
+		{
+			suppressUnknownKeyWarning: options.suppressUnknownKeyWarning,
+			sourceLabel: filePath,
+		}
+	);
+
 	if (nextContent === content) {
 		return { written: false, anchorsReplaced };
 	}
@@ -279,88 +302,6 @@ export async function substituteAnchors(
 	}
 
 	return { written: true, anchorsReplaced };
-}
-
-/**
- * Globs the canonical-source surface and runs `substituteAnchors` per file.
- * Returns one `AnchorResult` per file (whether it was written or not), keyed
- * by absolute file path. Skips files with no anchors silently — the caller
- * does not need to know about unaffected files.
- *
- * Unknown-key warnings are aggregated across all files: a replacement key
- * that's absent from one file but present in another is normal in cross-
- * skills mode, so per-file warnings would be misleading. Only keys absent
- * from every canonical source emit a single warning at the end.
- */
-export async function substituteAnchorsAcrossSkills(
-	repoRoot: string,
-	contentByAnchor: Record<string, string>
-): Promise<Map<string, AnchorResult>> {
-	const skillsRoot = path.join(repoRoot, ".ai-skills", "skills");
-
-	let skillDirs: string[];
-	try {
-		const entries = await fs.readdir(skillsRoot, { withFileTypes: true });
-		skillDirs = entries
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => path.join(skillsRoot, entry.name));
-	} catch (error) {
-		const code = (error as NodeJS.ErrnoException).code;
-		if (code === "ENOENT") {
-			return new Map();
-		}
-		throw error;
-	}
-
-	const platformFiles = ["shared.md", "claude.md", "codex.md", "cursor.md"];
-	const results = new Map<string, AnchorResult>();
-	const usedKeys = new Set<string>();
-
-	for (const dir of skillDirs) {
-		for (const filename of platformFiles) {
-			const filePath = path.join(dir, filename);
-
-			let content: string;
-			try {
-				content = await fs.readFile(filePath, "utf8");
-			} catch (error) {
-				const code = (error as NodeJS.ErrnoException).code;
-				if (code === "ENOENT") {
-					continue;
-				}
-				throw error;
-			}
-
-			if (!content.includes("<!-- atlas:")) {
-				continue;
-			}
-
-			const result = await substituteAnchors(
-				filePath,
-				content,
-				contentByAnchor,
-				{ suppressUnknownKeyWarning: true }
-			);
-			for (const name of result.anchorsReplaced) {
-				usedKeys.add(name);
-			}
-			results.set(filePath, {
-				path: filePath,
-				written: result.written,
-				anchorsReplaced: result.anchorsReplaced,
-			});
-		}
-	}
-
-	for (const key of Object.keys(contentByAnchor)) {
-		if (!usedKeys.has(key)) {
-			console.warn(
-				`anchor-substitute: replacement key ${JSON.stringify(key)} was not found in any canonical source under ${skillsRoot}`
-			);
-		}
-	}
-
-	return results;
 }
 
 /**
