@@ -250,6 +250,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — plan Codex hook delivery so the write gate and announce layer fire on Codex, closing the alternative ADR-0074 deferred; Bounds — write one plan file, no implementation, no source edits; Approach — reuse the existing registration-merge seam for a second file rather than build a parallel writer · close: scope held
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — implement the 7 Clove tasks (PR 1) delivering the hook runtime and write gate to Codex; Bounds — `harnesses.mjs`, `update.ts`, `doctor.ts`, `verify-pack-parity.ts`, `templates/install/.codex/hooks.json`, and their test files only — no PR 2 doc tasks, no `[HITL]` probe; Approach — follow the plan's task specs in order, verifying types and tests after each · close: scope held — one addition beyond the literal task text: `verify-pack-parity.ts` gained a `templates/install/.codex` runtime-read entry, needed because `mergeHookCodexRegistration` reads that path at runtime and `prism:verify-pack` would otherwise miss it; local-frame correction, not scope drift.
+- 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — Briar self-review of PR 1 (tasks 1–7) against the nine review angles, plus a targeted check of the ownership-merge, host-gate, deny-envelope, and doctor-arm logic named in the dispatch; Bounds — read-only review of the PR 1 diff and its tests, no source edits, plan-only commit; Approach — read every changed file in full, run type-check/tests/crossref/pack/ship-closure, and manually repro any suspicious control-flow interaction rather than trust the green test suite alone · close: scope held — one manual repro built outside the diff (`/tmp/repro-doctor.test.ts`, not committed) to confirm the dead-registration/inert-warning suppression finding; no source files touched besides this plan.
 
 ---
 
@@ -265,6 +266,14 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 ---
 
 ## Review Issues
+
+### `checkHookRegistration`'s dead-registration early return silently drops the inert-runtime warning
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/doctor.ts:134-137` (the `if (findings.length > 0) { return findings; }` inserted between the dead-registration loop and the per-host arms)
+- **Problem:** the function's own JSDoc promises to report both halves independently — "a hook runtime that is present but unregistered, AND a registration that points at a file which is not there." The new early return breaks that: whenever the dead-registration loop pushes any warning (even for a command wholly unrelated to the host being checked), the function returns before the per-host arms run, so a genuinely inert runtime (present on disk, not registered) is never reported. Confirmed by a manual repro against the built function: `hosts: ["claude"]`, `.claude/hooks/hook.mjs` present and unregistered, plus one unrelated dead registration (a stale `.claude/hooks/old/hook.mjs` command) — the report carries only the dead-registration warning; the inert-runtime warning that the pre-Codex code would have also reported is silently gone. None of the new or existing tests in `doctor.test.ts` combine "runtime present but unregistered" with "an unrelated dead registration exists," so nothing caught this. Pre-Codex, the inert check ran unconditionally inside `if (hosts.includes("claude"))`, independent of the dead-registration loop's findings — this is a regression the Codex generalization introduced, not a pre-existing bug.
+- **Suggested fix:** drop the `if (findings.length > 0) return findings;` early return; instead, scope each per-host arm's "installed and registered" info push to fire only when that host has neither a dead-registration finding nor its own inert-runtime finding already pushed (the shape the old single-host `findings.length === 0` guard achieved). The dead-registration warning and the inert-runtime warning are independent facts about independent hosts/commands and both should be reportable in the same run.
 
 ### Curated seed twin contradicts itself on whether the hook blocks
 
@@ -282,13 +291,13 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [ ] No critical or major issues — 1 open major: `checkHookRegistration`'s dead-registration early return silently drops the inert-runtime warning
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [x] Tests written for new logic and edge cases — gap: no test combines a dead registration with an unrelated inert-runtime finding (see the open Major)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` green)
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check-types`, `pnpm prism:test` (220/220), `pnpm prism:crossref-lint`, `pnpm prism:verify-pack`, `pnpm prism:ship-closure` all green)
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close, after PR 2 and task 8's probe
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-02 [huntermcgrew/codex-hook-delivery] — Briar self-review (PR 1)
