@@ -537,6 +537,7 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin] open: Intent — close the misleading clean-doctor signal PRISM-477 recorded and left unfixed; Bounds — done when doctor reports hook reach and every prose home of the old claim is reconciled, touching no file under `scripts/ai-skills/update.ts` and no test of `refreshHookRuntime`; Approach — reporting half only, because the delivery half has no consumer signal to gate on · close: drifted — Hunter widened the scope to add a `hosts` config key and gate both halves, so `update.ts`, its tests, and the config schema are now in bounds; re-planned against the decided shape.
+- 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin] open: Intent — implement the 13-task plan gating hook delivery on an optional `hosts` key; Bounds — done when all 17 ACs pass, `pnpm prism:check` exits 0, and a draft PR is open; Approach — follow the plan's exact task sequence, one commit per task per `git-conventions.md` § Commit Granularity · close: scope held — all 13 tasks implemented as specced, 21 tests added, all 17 ACs verified, `pnpm prism:check` exits 0.
 
 ---
 
@@ -544,6 +545,7 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Winston planned the follow-up as the doctor half only, having found no per-host opt-in signal anywhere in the consumer surface.
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Hunter decided the scope — add an optional `hosts` key and gate delivery and reporting on it. Re-planned to 13 tasks across the config schema, a shared resolver, the installer's gate and removal branch, doctor's four host-mix branches, and four prose homes; see Decision: "`hosts` is an optional array in `.ai-skills/config.json`, absent meaning all three hosts."
+- 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin]: Clove implemented all 13 tasks — the `hosts` schema key and resolver, the installer's delivery gate and removal branch, doctor's four host-mix branches, 21 new tests across `update.test.ts` and `doctor.test.ts`, and the four prose homes (`install-layout.md` canonical and curated twin, ADR-0074, both consumer docs). `pnpm prism:check` exits 0.
 
 ---
 
@@ -563,57 +565,57 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 **Background:** A consumer repo with a valid `.ai-skills/config.json`, run through `prism update` at least once.
 
-- [ ] **AC-1** Given a repo whose config does not mention hosts at all, When it is updated, Then the hook runtime is delivered exactly as it was before this change
+- [x] **AC-1** Given a repo whose config does not mention hosts at all, When it is updated, Then the hook runtime is delivered exactly as it was before this change
   - Evidence (machine): `pnpm prism:test` → the seven pre-existing `refreshHookRuntime:` tests pass with `["claude"]` supplied, and the `runUpdate copies content and projects the persona roster` test passes against a config with no `hosts` key · UNMET looks like: any of those tests fails, or a fixture with no `hosts` key produces no `.claude/hooks/hook.mjs`
 
-- [ ] **AC-2** Given a repo whose config lists only Codex and Cursor as its hosts, When it is updated, Then it receives no hook files, no hook entry in its Claude settings, and no new lines in its gitignore
+- [x] **AC-2** Given a repo whose config lists only Codex and Cursor as its hosts, When it is updated, Then it receives no hook files, no hook entry in its Claude settings, and no new lines in its gitignore
   - Evidence (machine): `pnpm prism:test` → the "a repo that does not run Claude Code receives no runtime, no registration, and no gitignore lines" test passes, asserting all three files absent · UNMET looks like: any of `.claude/hooks/hook.mjs`, `.claude/settings.json`, or `.gitignore` exists after the call
 
-- [ ] **AC-3** Given a repo that previously received the hook runtime, When Claude Code is removed from its hosts and it is updated, Then PRISM's hook files and its own registration entries are taken back out
+- [x] **AC-3** Given a repo that previously received the hook runtime, When Claude Code is removed from its hosts and it is updated, Then PRISM's hook files and its own registration entries are taken back out
   - Evidence (machine): `pnpm prism:test` → the "dropping Claude Code from hosts takes back the delivered runtime and PRISM's registration" test passes · UNMET looks like: a runtime file remains on disk, or the settings file still contains `.claude/hooks/hook.mjs`
 
-- [ ] **AC-4** Given that removal, When it completes, Then anything the consumer wrote themselves is untouched — their own hook entries, their own files under the hooks directory, and their gitignore lines
+- [x] **AC-4** Given that removal, When it completes, Then anything the consumer wrote themselves is untouched — their own hook entries, their own files under the hooks directory, and their gitignore lines
   - Evidence (machine): `pnpm prism:test` → the consumer-own-hook, unmarked-file, and gitignore-lines removal tests all pass · UNMET looks like: the consumer's `PostToolUse` entry is gone, an unmarked `hook.mjs` was deleted, or the state-file globs were stripped from `.gitignore`
 
-- [ ] **AC-5** Given a config naming a host PRISM does not recognize, When the repo is updated, Then the update refuses before writing anything and names the offending field
+- [x] **AC-5** Given a config naming a host PRISM does not recognize, When the repo is updated, Then the update refuses before writing anything and names the offending field
   - Evidence (machine): `pnpm prism:test` → the unrecognized-host test passes, asserting the rejection message names `/hosts/1` · UNMET looks like: the update succeeds, or the message names the object rather than the array element
 
-- [ ] **AC-6** Given a repo that runs Claude Code with the gate installed and working, When the consumer runs `prism doctor`, Then they are told the gate covers Claude Code only, and are still told no issues were found
+- [x] **AC-6** Given a repo that runs Claude Code with the gate installed and working, When the consumer runs `prism doctor`, Then they are told the gate covers Claude Code only, and are still told no issues were found
   - Evidence (machine): `pnpm prism:test` → the reach test passes asserting one `info` finding matching `/Claude Code only/`, and the `formatDoctorReport` test passes asserting the output contains both `No issues found.` and `[INFO] hook-registration:` · UNMET looks like: the finding is absent, its severity is `warning`, or `No issues found.` is missing from the rendered output
 
-- [ ] **AC-7** Given a repo whose hosts exclude Claude Code and which has no leftover delivery, When the consumer runs `prism doctor`, Then they are told the gate is not delivered on their hosts and that the prose fallback applies — as information, not a problem
+- [x] **AC-7** Given a repo whose hosts exclude Claude Code and which has no leftover delivery, When the consumer runs `prism doctor`, Then they are told the gate is not delivered on their hosts and that the prose fallback applies — as information, not a problem
   - Evidence (machine): `pnpm prism:test` → the not-delivered test passes asserting one `info` finding matching `/not delivered on this repo's hosts/` and naming `codex` · UNMET looks like: the finding's severity is `warning` or `error`, or no finding is produced
 
-- [ ] **AC-8** Given a repo whose hosts exclude Claude Code but which still carries PRISM's runtime or registration, When the consumer runs `prism doctor`, Then they are warned about the leftover and told to run the update
+- [x] **AC-8** Given a repo whose hosts exclude Claude Code but which still carries PRISM's runtime or registration, When the consumer runs `prism doctor`, Then they are warned about the leftover and told to run the update
   - Evidence (machine): `pnpm prism:test` → both stale-delivery tests pass, each asserting a `warning` matching `/run npx @huntermcgrew\/prism update/`, and the consumer-own-entry test passes asserting no warning · UNMET looks like: the warning does not fire on a marked runtime, or it fires on a repo carrying only the consumer's own hook entry
 
-- [ ] **AC-9** Given a repo with no readable config, When the consumer runs `prism doctor`, Then the hook check behaves as though every host were declared rather than going silent or erroring
+- [x] **AC-9** Given a repo with no readable config, When the consumer runs `prism doctor`, Then the hook check behaves as though every host were declared rather than going silent or erroring
   - Evidence (machine): `pnpm prism:test` → the unreadable-config test passes, asserting the reach `info` fires rather than the stale-delivery warning · UNMET looks like: the stale-delivery warning fires, or the check produces no finding
 
-- [ ] **AC-10** Given any of these runs, When it finishes, Then the exit status is unchanged from before this change
+- [x] **AC-10** Given any of these runs, When it finishes, Then the exit status is unchanged from before this change
   - Evidence (machine): `pnpm prism:test` → the existing doctor tests asserting `report.healthy === true` pass unmodified · UNMET looks like: a healthy fixture reports `healthy: false`, meaning a new finding leaked into the error severity
 
 ### Non-behavioral
 
-- [ ] **AC-11** `hosts` is resolved in exactly one place, and both the installer and the doctor read it from there
+- [x] **AC-11** `hosts` is resolved in exactly one place, and both the installer and the doctor read it from there
   - Evidence (machine): `grep -rn "\.hosts" scripts/ai-skills --include=*.ts` → the only hits outside `lib/hosts.ts` and its tests are type declarations, not reads; positive control: `grep -rn "resolveHosts" scripts/ai-skills` returns hits in both `update.ts` and `doctor.ts`, proving both call the shared function · UNMET looks like: `update.ts` or `doctor.ts` reads `config.hosts` directly
 
-- [ ] **AC-12** `refreshPlatformSkills` is unchanged — this PR gates hook delivery, not skill rendering
+- [x] **AC-12** `refreshPlatformSkills` is unchanged — this PR gates hook delivery, not skill rendering
   - Evidence (machine): `git diff origin/main...HEAD -- scripts/ai-skills/update.ts` → the diff contains no change inside `refreshPlatformSkills`; positive control: the same diff does show changes inside `refreshHookRuntime`, proving the diff is being read · UNMET looks like: the `optedIn` literal in `refreshPlatformSkills` appears in the diff
 
-- [ ] **AC-13** The false premise "a Cursor or Codex consumer has no `.claude/` tree at all" survives nowhere in the tree
+- [x] **AC-13** The false premise "a Cursor or Codex consumer has no `.claude/` tree at all" survives nowhere in the tree
   - Evidence (machine): `grep -rn "no .claude. tree at all" .` → no matches; positive control: `grep -rn "hook-registration" scripts/ai-skills/doctor.ts` returns matches, proving the search reaches the file · UNMET looks like: the first grep returns a hit in `doctor.ts` or any mirror
 
-- [ ] **AC-14** Consumer-facing output and shipped docs cite no numbered ADR
+- [x] **AC-14** Consumer-facing output and shipped docs cite no numbered ADR
   - Evidence (machine): `pnpm prism:check` → exits 0 with crossref-lint's install-adr-gate green · UNMET looks like: the gate reports an `ADR-NNNN` reference in the install seed or in a consumer-facing string
 
-- [ ] **AC-15** The curated seed twin of `install-layout.md` carries the same corrected claims as its canonical partner
+- [x] **AC-15** The curated seed twin of `install-layout.md` carries the same corrected claims as its canonical partner
   - Evidence (human): open `templates/install/.prism/architect/_toolkit/install-layout.md` and confirm its § Steady-state, § Hook runtime, and § Write gate paragraphs each name the `hosts` gate · UNMET looks like: any of the three still describes delivery as unconditional
 
-- [ ] **AC-16** A consumer can find the new key where they look for config keys
+- [x] **AC-16** A consumer can find the new key where they look for config keys
   - Evidence (human): open `docs/parameterization.md` § Field reference and confirm a `hosts` row states the allowed values, the absent-means-all default, and the delivery consequence · UNMET looks like: no `hosts` row, or a row that omits the default
 
-- [ ] **AC-17** The full repository gate passes
+- [x] **AC-17** The full repository gate passes
   - Evidence (machine): `pnpm prism:check` → exit 0 · UNMET looks like: any non-zero exit, with the failing sub-gate named in the output
 
 ### AC Adjustments
@@ -632,13 +634,13 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0)
+- [ ] PR description up to date — PR not yet opened
+- [x] Lasting decisions promoted to architect context (if applicable) — `install-layout.md` (tasks 9), `docs/parameterization.md` (task 12)
 
 **Last updated:** 2026-09-02
