@@ -37,6 +37,7 @@ import { loadSeedCurationRenames } from "./lib/seed-curation";
 import {
 	HOOK_RUNTIME_MARKER,
 	OVERLAY_SUBPATH,
+	PRISM_CODEX_HOOK_COMMAND_PATTERN,
 	PRISM_HOOK_COMMAND_PATTERN,
 	resolveConsumerSkillTargetRoots,
 	resolvePrismSource,
@@ -726,11 +727,13 @@ async function readConsumerConfigSafely(
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
 	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const codexHooksPath = path.join(consumerRepoRoot, ".codex", "hooks.json");
 	const settingsRaw = await readFileIfExists(settingsPath);
+	const codexHooksRaw = await readFileIfExists(codexHooksPath);
 
-	const findings: DoctorFinding[] = [];
 	const registeredPaths = new Set<string>();
 	let settings: Record<string, unknown> | null = null;
+	let codexHooks: Record<string, unknown> | null = null;
 
 	if (settingsRaw !== null) {
 		try {
@@ -752,48 +755,104 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		}
 	}
 
+	if (codexHooksRaw !== null) {
+		try {
+			codexHooks = JSON.parse(codexHooksRaw) as Record<string, unknown>;
+		} catch (error) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "error",
+					message: `.codex/hooks.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			];
+		}
+
+		for (const command of collectHookCommands(codexHooks)) {
+			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
+				registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+			}
+		}
+	}
+
+	const findings: DoctorFinding[] = [];
 	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
 	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
 	const runtimeIsPrisms =
 		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
-	const prismIsRegistered =
+	const claudeIsRegistered =
 		settings !== null &&
 		collectHookCommands(settings).some((command) => PRISM_HOOK_COMMAND_PATTERN.test(command));
+	const codexIsRegistered =
+		codexHooks !== null &&
+		collectHookCommands(codexHooks).some((command) =>
+			PRISM_CODEX_HOOK_COMMAND_PATTERN.test(command)
+		);
 
-	if (!hosts.includes("claude") && (runtimeIsPrisms || prismIsRegistered)) {
-		const staleHalves =
-			runtimeIsPrisms && prismIsRegistered
-				? "PRISM's hook runtime and its registration in .claude/settings.json are"
-				: runtimeIsPrisms
-					? "PRISM's hook runtime is"
-					: "PRISM's hook registration in .claude/settings.json is";
-
+	// Runtime delivery gates on `claude` OR `codex` — see the plan Decision
+	// "Runtime delivery gates on claude OR codex" — so the runtime itself is
+	// stale only when the consumer's hosts name neither.
+	if (!hosts.includes("claude") && !hosts.includes("codex") && runtimeIsPrisms) {
 		findings.push({
 			check: "hook-registration",
 			severity: "warning",
-			message: `hosts does not list "claude", but ${staleHalves} still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
+			message: `hosts does not list "claude" or "codex", but PRISM's hook runtime is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
 		});
 
 		return findings;
 	}
 
+	// Each registration gates on its own host, independent of the runtime and
+	// of the other registration — dropping one host takes only that host's
+	// registration back out.
+	if (!hosts.includes("claude") && claudeIsRegistered) {
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message: `hosts does not list "claude", but PRISM's hook registration in .claude/settings.json is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
+		});
+	}
+
+	if (!hosts.includes("codex") && codexIsRegistered) {
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message: `hosts does not list "codex", but PRISM's hook registration in .codex/hooks.json is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
+		});
+	}
+
+	if (findings.length > 0) {
+		return findings;
+	}
+
 	// A registered command pointing at a file that is not on disk is wrong on
 	// every host mix — a hand-edited registration whose command no longer
-	// matches PRISM_HOOK_COMMAND_PATTERN survives the removal branch in
-	// update.ts (it is not claimed as PRISM's own), so this has to run here
-	// too, not only inside the claude-in-hosts branch below. It is skipped
-	// only on the stale-delivery early return above, where the "run update"
-	// remedy already covers it — see that branch's own findings.
+	// matches PRISM_HOOK_COMMAND_PATTERN or PRISM_CODEX_HOOK_COMMAND_PATTERN
+	// survives the removal branch in update.ts (it is not claimed as PRISM's
+	// own), so this has to run here too, not only inside the per-host
+	// branches below. It is skipped only on the stale-delivery early returns
+	// above, where the "run update" remedy already covers it.
 	for (const registered of [...registeredPaths].sort()) {
 		if (!(await pathExists(registered))) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
-				message: `.claude/settings.json registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
+				message: `A hook registration points at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
 			});
 		}
 	}
 
+	if (findings.length > 0) {
+		return findings;
+	}
+
+	// Each host that is in `hosts` either produces its own finding or stays
+	// silent — mirroring the pre-Codex shape, where the whole check returned
+	// early inside `if (hosts.includes("claude"))` regardless of whether that
+	// branch pushed anything. A host declared but genuinely never delivered
+	// (pre-first-update) is outside what this check can see, so it says
+	// nothing rather than guessing. The catch-all "not delivered" message
+	// below fires only when neither host is declared at all.
 	if (hosts.includes("claude")) {
 		if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
 			findings.push({
@@ -802,24 +861,41 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 				message:
 					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
 			});
-		}
-
-		if (findings.length === 0 && registeredPaths.has(hookRuntimePath)) {
+		} else if (registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
 				message:
-					"The hook runtime is installed and registered. It fires on Claude Code only — Codex and Cursor receive no registration, so on those hosts read-before-write is a discipline carried by .prism/rules/context-reuse.md and .prism/references/skill-core.md, not an enforced gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.",
+					"The hook runtime is installed and registered for Claude Code.",
 			});
 		}
+	}
 
+	if (hosts.includes("codex")) {
+		if ((await pathExists(hookRuntimePath)) && !codexIsRegistered) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/hook.mjs is present but .codex/hooks.json registers no hook command pointing at it — the architect-context hook is inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
+			});
+		} else if (codexIsRegistered) {
+			findings.push({
+				check: "hook-registration",
+				severity: "info",
+				message: "The hook runtime is installed and registered for Codex.",
+			});
+		}
+	}
+
+	if (hosts.includes("claude") || hosts.includes("codex")) {
 		return findings;
 	}
 
 	findings.push({
 		check: "hook-registration",
 		severity: "info",
-		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). PRISM's write gate runs under Claude Code only; on your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.`,
+		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). On your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" or "codex" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.`,
 	});
 
 	return findings;

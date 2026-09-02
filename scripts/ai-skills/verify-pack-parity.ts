@@ -35,6 +35,7 @@ const RUNTIME_READ_PATHS: RuntimeReadPath[] = [
 	{ path: ".ai-skills/skills", reader: "update.ts refreshPlatformSkills sourceSkillsRoot", kind: "prefix" },
 	{ path: "scripts/ai-skills/hooks", reader: "update.ts runUpdate — hook runtime copied into the consumer's .claude/hooks/", kind: "prefix" },
 	{ path: "templates/install/.claude", reader: "update.ts mergeHookSettingsRegistration — hook registration merge source", kind: "prefix" },
+	{ path: "templates/install/.codex", reader: "update.ts mergeHookCodexRegistration — hook registration merge source", kind: "prefix" },
 ];
 
 /**
