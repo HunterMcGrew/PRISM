@@ -249,12 +249,14 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — plan Codex hook delivery so the write gate and announce layer fire on Codex, closing the alternative ADR-0074 deferred; Bounds — write one plan file, no implementation, no source edits; Approach — reuse the existing registration-merge seam for a second file rather than build a parallel writer · close: scope held
+- 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — implement the 7 Clove tasks (PR 1) delivering the hook runtime and write gate to Codex; Bounds — `harnesses.mjs`, `update.ts`, `doctor.ts`, `verify-pack-parity.ts`, `templates/install/.codex/hooks.json`, and their test files only — no PR 2 doc tasks, no `[HITL]` probe; Approach — follow the plan's task specs in order, verifying types and tests after each · close: scope held — one addition beyond the literal task text: `verify-pack-parity.ts` gained a `templates/install/.codex` runtime-read entry, needed because `mergeHookCodexRegistration` reads that path at runtime and `prism:verify-pack` would otherwise miss it; local-frame correction, not scope drift.
 
 ---
 
 ## History
 
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Planned Codex hook delivery as a follow-up to #477. Verified OpenAI's hooks documentation directly and confirmed `.codex/hooks.json` is not git-ignored, which settled the registration target; see Decisions.
+- 2026-09-02 [huntermcgrew/codex-hook-delivery]: Implemented tasks 1–7 (PR 1) — `HARNESSES.codex` gained the deny envelope and `Edit`/`Write` aliases, the `.codex/hooks.json` template shipped, `mergeHookSettingsRegistration` generalized into a shared `mergeHookRegistration` seam with a Codex twin, `refreshHookRuntime`'s host gate split so the runtime delivers on `claude` OR `codex` while each registration gates on its own host, `checkHookRegistration` gained the Codex arm, and tests were added or updated across `update.test.ts`, `doctor.test.ts`, and `hook-gate.test.ts`. `pnpm prism:check` is green.
 
 ---
 
@@ -280,13 +282,13 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` green)
 - [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close, after PR 2 and task 8's probe
 
 **Last updated:** 2026-09-02

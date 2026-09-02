@@ -727,6 +727,31 @@ test("resolveToolKind: an unlisted or absent tool name falls back to write", () 
 	assert.equal(resolveToolKind(HARNESSES.claude, undefined), "write");
 });
 
+test("resolveListedToolKind: Codex's apply_patch, Edit, and Write all resolve to write", () => {
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "apply_patch"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "Edit"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "Write"), "write");
+});
+
+test("resolveListedToolKind: an unlisted Codex tool name resolves to null, not to the write default", () => {
+	// The deny arm keys on `resolveListedToolKind`, never on the
+	// `resolveToolKind` fallback — an unmapped Codex tool must reach `write`
+	// only through the fallback used for announce, not through the table the
+	// deny arm consults.
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "SomeToolCodexNeverShipped"), null);
+	assert.equal(resolveToolKind(HARNESSES.codex, "SomeToolCodexNeverShipped"), "write");
+});
+
+test("HARNESSES.codex.emitDeny returns the envelope OpenAI documents for PreToolUse", () => {
+	assert.deepEqual(HARNESSES.codex.emitDeny("Read the doc first."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "deny",
+			permissionDecisionReason: "Read the doc first.",
+		},
+	});
+});
+
 // --- Standalone process spawn (runs on every platform, including Windows) ---
 
 /**
@@ -1460,6 +1485,45 @@ test("runPreToolUseArm: a shell write named on a later line of a multi-line comm
 			null,
 			"the cat on the second line is a read, and the sed on the first writes elsewhere"
 		);
+	});
+});
+
+test("the spawned entry point denies a Codex apply_patch on an unread routed path, and exits 0", async () => {
+	// The exit-0 half is the fail-open property the plan's "ship ahead of the
+	// probe" decision rests on: every exit path in hook.mjs sets
+	// `process.exitCode = 0`, so a deny travels in stdout JSON alone and an
+	// envelope Codex does not recognize fails open rather than crashing the
+	// tool call.
+	await withTempRepo(async (temporaryRoot) => {
+		const { target } = await seedGateRepo(temporaryRoot);
+		const entryPoint = path.join(scriptDirectory, "hooks", "hook.mjs");
+		const patchCommand = `*** Update File: ${toShellPath(target)}\n@@\n-old\n+new\n`;
+
+		const denied = spawnSync(
+			"node",
+			[entryPoint, "--tool=codex", "--event=PreToolUse"],
+			{
+				input: JSON.stringify({
+					session_id: "session-1",
+					cwd: temporaryRoot,
+					tool_name: "apply_patch",
+					tool_input: { command: patchCommand },
+				}),
+				encoding: "utf8",
+			}
+		);
+
+		assert.equal(denied.status, 0, denied.stderr);
+		const parsed = JSON.parse(denied.stdout);
+		assert.deepEqual(parsed, {
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "deny",
+				permissionDecisionReason:
+					"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+					`cat .prism/architect/${GATE_DOC}`,
+			},
+		});
 	});
 });
 
