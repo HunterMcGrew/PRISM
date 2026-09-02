@@ -262,10 +262,32 @@ The docs each route asks for, from this branch's paths:
 
 ---
 
+## Sessions
+
+- 2026-09-02 [huntermcgrew/prism-476-stakes-level-names] open: Intent — self-review the rename branch for rename completeness, prompt-behavior AC, ADR/doc structure, and build cleanliness; Bounds — review only, no code edits; Approach — read the full canonical diff (`.prism`, `.ai-skills`, `docs`), verify each AC's evidence command directly, run `pnpm prism:build && pnpm prism:check` · close: scope held — one Minor finding (stray blank line), everything else clean
+
+## Review Issues
+
+### Stray blank-line insertion in step-03-plan-readiness.md
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/skills/prism-conductor/step-03-plan-readiness.md` (and its generated mirrors under `.claude/`, `.codex/`, `.cursor/`, `templates/install/`)
+- **Problem:** the diff inserts an extra blank line between the "Fail →" bullet and "Mutate goal-state per the protocol..." — a formatting-only change unrelated to the rename, violating `code-standards.md` § General "Do not introduce formatting-only changes."
+- **Suggested fix:** delete the extra blank line, then `pnpm prism:build` to resync mirrors.
+
+No other issues found — rename completeness (AC-6), all nine ACs' evidence commands, ADR-0073's structure against `writing-an-adr.md`, the four amendment pointers, the PRD frontmatter migration, and `pnpm prism:build && pnpm prism:check` (exit 0, no drift) all verified directly against the diff and the working tree — 2026-09-02 [huntermcgrew/prism-476-stakes-level-names].
+
+---
+
 ## PR Readiness
 
-- [ ] No critical or major issues — self-review not yet run
-- [x] Build passes — last run: 2026-09-02, `pnpm prism:build && pnpm prism:check` both exit 0
+- [ ] No critical or major issues — 1 Minor open (stray blank line), no critical/major
+- [x] Types correct — N/A, no code in this diff
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases — N/A, spec/doc rename verified by grep + build, no test seam
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:build && pnpm prism:check` both exit 0, no mirror drift
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context — ADR-0073, task 8
 
