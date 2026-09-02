@@ -14,8 +14,8 @@ Prompt:
 
 Capture the choice. Note in step-04-draft's frontmatter internally (Parker reads `mode-internal` from PRD body content; no frontmatter mutation needed — the next step file branches on the answer captured in chat).
 
-For `hobby` stakes, default to fast path unless the user explicitly picks coaching.
-For `launch` stakes, recommend coaching path explicitly: "At launch stakes, coaching path catches more gaps. Pick fast only if your brain dump is already PM-strong."
+For `quick` stakes, default to fast path unless the user explicitly picks coaching.
+For `strict` stakes, recommend coaching path explicitly: "At strict stakes, coaching path catches more gaps. Pick fast only if your brain dump is already PM-strong."
 
 ## Actions (continued)
 

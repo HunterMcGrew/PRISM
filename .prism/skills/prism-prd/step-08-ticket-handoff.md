@@ -13,9 +13,9 @@ Offer to create a tracker initiative/epic from the finalized PRD. Never runs aut
 
 ## Behavior by stakes
 
-- **`hobby`** — skip the offer entirely. The closing summary in step-07 already mentions the option for completeness.
-- **`internal`** — offer: "Want me to create a tracker initiative from this PRD? Nora handles the creation; I just hand off the title, summary, and link to this PRD."
-- **`launch`** — recommend explicitly: "Launch stakes — recommend creating a tracker initiative for cross-team visibility. Want me to hand off to Nora?"
+- **`quick`** — skip the offer entirely. The closing summary in step-07 already mentions the option for completeness.
+- **`reviewed`** — offer: "Want me to create a tracker initiative from this PRD? Nora handles the creation; I just hand off the title, summary, and link to this PRD."
+- **`strict`** — recommend explicitly: "Strict stakes — recommend creating a tracker initiative for cross-team visibility. Want me to hand off to Nora?"
 
 ## Actions on user confirmation
 

@@ -20,7 +20,7 @@ Set `status: finalized` and emit the closing summary.
    > - Stakes: `<stakes>`
    > - Mode: `<mode>`
    > - Open questions: `<N>` `[ASSUMPTION]` tags carried forward
-   > - Decision log: `<path or 'skipped (hobby stakes)'>`
+   > - Decision log: `<path or 'skipped (quick stakes)'>`
    >
    > Next options:
    > - Hand off to **Nora** to create a tracker initiative (step-08-ticket-handoff)
