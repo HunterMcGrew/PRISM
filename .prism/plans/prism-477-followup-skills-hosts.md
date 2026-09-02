@@ -359,12 +359,14 @@ Sequence: task 1 adds the derivation, tasks 2–4 consume it in the installer, t
 ## Sessions
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts] open: Intent — stop writing a host's skill roster and platform content into consumers who do not run it, and take back what a prior update wrote; Bounds — done when both consumer-side fanout sites gate on `hosts`, a dropped host's marked output is swept, and every prose home of the key's description covers all three delivery classes, touching nothing under `prism-onboarding` or `.prism/references/onboarding/` and nothing in `build.ts`'s check-mode heuristic; Approach — derive the existing six-flag shape from `hosts` in one place, filter the platform-dir list at the consumer call site, and reuse the existing cleanup helpers with an empty known-id set · close: scope held — planning only, no source touched
+- 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts] open: Intent — implement Winston's 13 Clove tasks (gate the two fanout sites, sweep dropped-host output, warn from doctor, cover all with tests, reconcile the prose homes); Bounds — done when `pnpm prism:check` is green and every AC's cited test/diff evidence holds; Approach — task order as planned, tasks 4–5 in one commit · close: scope held — 13 tasks landed as planned, task 5a needed no code change (both cleanup helpers were already exported), `pnpm prism:check` exits 0
 
 ---
 
 ## History
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts]: Winston planned the second follow-up. Enumeration found a second ungated fanout beyond `refreshPlatformSkills` — the platform content copies through `buildPlatformDirs`, which carries no `optedIn` and so does not surface in a search for it — and a trap in the obvious implementation, where a drop sweep placed inside the shared `generatePlatformSkills` would delete `.agents/` on every `pnpm prism:check`; see Decisions.
+- 2026-09-02 [huntermcgrew/prism-477-followup-skills-hosts]: Clove implemented all 13 tasks — `deriveOptedIn` in `lib/hosts.ts`, both fanout sites gated in `update.ts`, the drop sweep (`removeManagedContentAreas` in `build.ts`, the existing skill/agent cleanup helpers reused with an empty known-id set), doctor's `host-output` warning, 18 new tests across `update.test.ts`/`generate-skills.test.ts`/`doctor.test.ts`, and the four prose homes (schema, both docs, both install-layout.md twins). `pnpm prism:check` exits 0.
 
 ---
 
@@ -453,12 +455,12 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 ## PR Readiness
 
-- [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: not yet run
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-02, `pnpm prism:check` exit 0
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable)
 
