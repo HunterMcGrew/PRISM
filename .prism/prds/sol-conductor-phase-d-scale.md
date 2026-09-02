@@ -2,7 +2,7 @@
 slug: sol-conductor-phase-d-scale
 title: "Sol conductor Phase D: scale — batching + state partitioning"
 mode: greenfield
-stakes: internal
+stakes: reviewed
 status: finalized
 created: 2026-06-14T00:00:00Z
 lastEdited: 2026-06-14T00:00:00Z

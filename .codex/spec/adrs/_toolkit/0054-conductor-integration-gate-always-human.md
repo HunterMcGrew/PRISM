@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-06-14
 ---
 
+> Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
+
 ## Context
 
 Sol drives the lifecycle autonomously between human gates but never clears one itself ([ADR-0048](./0048-conductor-autonomy-between-gates.md)). Most gates are *confidence-gated* by a human-set autonomy policy: at `hobby` stakes Sol may auto-clear a gate the owning persona would otherwise route to a human; at `internal`/`launch` the same gate stops for a human. Phase C adds the integration gate — a pre-dispatch checkpoint that fires when a `type: "integration"` lane's `dependsOn` edges span two or more teams ([ADR-0053](./0053-conductor-integration-lane-type-marker.md)). The question is whether the integration gate follows the confidence-gated pattern, or whether it is unconditional like the merge gate (`.prism/plans/epic-sol-conductor-phase-c.md`, Decision C-A5).
