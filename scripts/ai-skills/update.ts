@@ -1302,10 +1302,17 @@ export async function refreshHookRuntime(
 
 	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
 
-	if (!hosts.includes("claude")) {
+	// The runtime is one file tree shared by both registrations (see the plan
+	// Decision "One runtime, two registrations"), so its own delivery gates on
+	// either host being present — only the absence of both takes the removal
+	// path. Each registration file still gates on its own host below, so a
+	// Codex-only consumer never gets a `.claude/settings.json` entry pointing
+	// at a runtime that host does not use.
+	if (!hosts.includes("claude") && !hosts.includes("codex")) {
 		const outcomes = await removeDeliveredHookRuntimeFiles(targetDir, dryRun);
 		outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun, [])));
 		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
+		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
 
 		return outcomes;
 	}
@@ -1339,7 +1346,18 @@ export async function refreshHookRuntime(
 		}
 	}
 
-	await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun);
+	await mergeHookSettingsRegistration(
+		prismRepoRoot,
+		consumerRepoRoot,
+		dryRun,
+		hosts.includes("claude")
+	);
+	await mergeHookCodexRegistration(
+		prismRepoRoot,
+		consumerRepoRoot,
+		dryRun,
+		hosts.includes("codex")
+	);
 	await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
 
 	return outcomes;
@@ -1365,10 +1383,20 @@ export const PRISM_HOOK_COMMAND_PATTERN =
 	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/hook\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
+ * Matches a command string that is one of PRISM's own Codex hook
+ * invocations, end to end — `node ".claude/hooks/hook.mjs"` followed by
+ * PRISM's `--flag=value` arguments and nothing else. Anchored at both ends
+ * for the same reason `PRISM_HOOK_COMMAND_PATTERN` is: a loose match would
+ * claim (and later delete) a consumer's own wrapper around the entry point.
+ */
+export const PRISM_CODEX_HOOK_COMMAND_PATTERN =
+	/^node "\.claude\/hooks\/hook\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+
+/**
  * Reports whether a `hooks[eventName]` array entry is one of PRISM's own
  * registrations, as opposed to a consumer-authored entry on the same event key.
  */
-function isPrismOwnedHookEntry(entry: unknown): boolean {
+function isPrismOwnedHookEntry(entry: unknown, pattern: RegExp): boolean {
 	if (typeof entry !== "object" || entry === null) {
 		return false;
 	}
@@ -1383,9 +1411,7 @@ function isPrismOwnedHookEntry(entry: unknown): boolean {
 			typeof innerHook === "object" &&
 			innerHook !== null &&
 			typeof (innerHook as { command?: unknown }).command === "string" &&
-			PRISM_HOOK_COMMAND_PATTERN.test(
-				(innerHook as { command: string }).command
-			)
+			pattern.test((innerHook as { command: string }).command)
 	);
 }
 
@@ -1399,47 +1425,45 @@ function isPrismOwnedHookEntry(entry: unknown): boolean {
  */
 function mergeHookEventEntries(
 	targetEntries: unknown,
-	sourceEntries: unknown[]
+	sourceEntries: unknown[],
+	pattern: RegExp
 ): unknown[] {
 	const consumerEntries = Array.isArray(targetEntries)
-		? targetEntries.filter((entry) => !isPrismOwnedHookEntry(entry))
+		? targetEntries.filter((entry) => !isPrismOwnedHookEntry(entry, pattern))
 		: [];
 
 	return [...consumerEntries, ...sourceEntries];
 }
 
 /**
- * Merges the hook registration block from `templates/install/.claude/settings.json`
- * into the consumer's `.claude/settings.json`. The top-level `hooks` key is
- * additive: an event name the consumer hasn't registered is added outright,
- * and an event name both sides register (`PreToolUse`, `PostToolUse`, `PostCompact`) is
+ * Merges a hook registration block from `sourcePath` into the consumer's
+ * `targetPath`, an ownership seam shared by every host's registration file
+ * — `.claude/settings.json` and `.codex/hooks.json` both go through this one
+ * function with their own source, target, and ownership pattern. The
+ * top-level `hooks` key is additive: an event name the consumer hasn't
+ * registered is added outright, and an event name both sides register is
  * composed within its array via `mergeHookEventEntries` rather than replaced
  * — a consumer's own matcher group on that event survives the merge instead
  * of being overwritten by PRISM's. Re-running this merge is idempotent:
- * `mergeHookEventEntries` drops PRISM's own prior entries before appending
- * the current ones, so no entry is ever duplicated.
+ * `mergeHookEventEntries` drops PRISM's own prior entries (matched by
+ * `pattern`) before appending the current ones, so no entry is ever
+ * duplicated.
  *
  * `deliver: false` composes each event key from the consumer's own entries
  * alone — the same `mergeHookEventEntries` call with an empty incoming set —
  * so removal is the drop half of the merge that already runs on every
  * update, not a second ownership rule that could disagree with it. When a
- * consumer never had a settings file and removal leaves nothing to merge
+ * consumer never had a registration file and removal leaves nothing to merge
  * in, no file is written — a repo that never received the hook stays
  * exactly as it was.
  */
-export async function mergeHookSettingsRegistration(
-	prismRepoRoot: string,
-	consumerRepoRoot: string,
+export async function mergeHookRegistration(
+	sourcePath: string,
+	targetPath: string,
+	pattern: RegExp,
 	dryRun: boolean,
 	deliver = true
 ): Promise<void> {
-	const sourcePath = path.join(
-		prismRepoRoot,
-		"templates",
-		"install",
-		".claude",
-		"settings.json"
-	);
 	const sourceRaw = await readFileIfExists(sourcePath);
 	if (sourceRaw === null) {
 		return;
@@ -1452,7 +1476,6 @@ export async function mergeHookSettingsRegistration(
 		return;
 	}
 
-	const targetPath = path.join(consumerRepoRoot, ".claude", "settings.json");
 	const targetRaw = await readFileIfExists(targetPath);
 	const targetSettings = (
 		targetRaw === null ? {} : JSON.parse(targetRaw)
@@ -1464,7 +1487,8 @@ export async function mergeHookSettingsRegistration(
 	)) {
 		mergedHooks[eventName] = mergeHookEventEntries(
 			targetSettings.hooks?.[eventName],
-			deliver ? sourceEntries : []
+			deliver ? sourceEntries : [],
+			pattern
 		);
 	}
 
@@ -1488,6 +1512,67 @@ export async function mergeHookSettingsRegistration(
 		await fs.mkdir(path.dirname(targetPath), { recursive: true });
 		await fs.writeFile(targetPath, `${JSON.stringify(merged, null, "\t")}\n`, "utf8");
 	}
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.claude/settings.json`
+ * into the consumer's `.claude/settings.json`. Thin wrapper over
+ * `mergeHookRegistration` with the Claude source, target, and ownership
+ * pattern — kept as its own named export so existing callers and tests are
+ * unaffected by the generalized seam underneath it.
+ */
+export async function mergeHookSettingsRegistration(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean,
+	deliver = true
+): Promise<void> {
+	const sourcePath = path.join(
+		prismRepoRoot,
+		"templates",
+		"install",
+		".claude",
+		"settings.json"
+	);
+	const targetPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+
+	await mergeHookRegistration(
+		sourcePath,
+		targetPath,
+		PRISM_HOOK_COMMAND_PATTERN,
+		dryRun,
+		deliver
+	);
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.codex/hooks.json`
+ * into the consumer's `.codex/hooks.json`. Thin wrapper over
+ * `mergeHookRegistration` with the Codex source, target, and ownership
+ * pattern — the Codex twin of `mergeHookSettingsRegistration` above.
+ */
+export async function mergeHookCodexRegistration(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean,
+	deliver = true
+): Promise<void> {
+	const sourcePath = path.join(
+		prismRepoRoot,
+		"templates",
+		"install",
+		".codex",
+		"hooks.json"
+	);
+	const targetPath = path.join(consumerRepoRoot, ".codex", "hooks.json");
+
+	await mergeHookRegistration(
+		sourcePath,
+		targetPath,
+		PRISM_CODEX_HOOK_COMMAND_PATTERN,
+		dryRun,
+		deliver
+	);
 }
 
 /**

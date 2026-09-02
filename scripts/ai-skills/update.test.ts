@@ -24,6 +24,7 @@ import {
 	appendHookStateGitignoreLines,
 	applyFilePass,
 	assertSourceIsPlausible,
+	mergeHookCodexRegistration,
 	mergeHookSettingsRegistration,
 	refreshHookRuntime,
 	resolvePrismContentRoot,
@@ -1964,6 +1965,33 @@ const PRISM_HOOK_SETTINGS = {
 	},
 };
 
+const PRISM_CODEX_HOOKS = {
+	hooks: {
+		PreToolUse: [
+			{
+				matcher: "^(Bash|apply_patch|Edit|Write)$",
+				hooks: [
+					{
+						type: "command",
+						command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse',
+					},
+				],
+			},
+		],
+		PostToolUse: [
+			{
+				matcher: "^(Bash|apply_patch|Edit|Write)$",
+				hooks: [
+					{
+						type: "command",
+						command: 'node ".claude/hooks/hook.mjs" --tool=codex',
+					},
+				],
+			},
+		],
+	},
+};
+
 async function withHookMergeRoots(
 	body: (roots: {
 		prismRepoRoot: string;
@@ -1978,6 +2006,11 @@ async function withHookMergeRoots(
 		"templates/install/.claude/settings.json",
 		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
 	);
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.codex/hooks.json",
+		`${JSON.stringify(PRISM_CODEX_HOOKS, null, "\t")}\n`
+	);
 	try {
 		await body({ prismRepoRoot, consumerRepoRoot });
 	} finally {
@@ -1991,6 +2024,17 @@ async function readConsumerSettings(
 	return JSON.parse(
 		await fs.readFile(
 			path.join(consumerRepoRoot, ".claude", "settings.json"),
+			"utf8"
+		)
+	) as { hooks?: Record<string, unknown[]> };
+}
+
+async function readConsumerCodexHooks(
+	consumerRepoRoot: string
+): Promise<{ hooks?: Record<string, unknown[]> }> {
+	return JSON.parse(
+		await fs.readFile(
+			path.join(consumerRepoRoot, ".codex", "hooks.json"),
 			"utf8"
 		)
 	) as { hooks?: Record<string, unknown[]> };
@@ -2074,6 +2118,84 @@ test("mergeHookSettingsRegistration: a consumer with no prior settings file rece
 	});
 });
 
+test("mergeHookCodexRegistration: a consumer's own PreToolUse entry survives, and PRISM's is added beside it", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "apply_patch",
+			hooks: [{ type: "command", command: "./scripts/consumer-guard.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		const preToolUse = hooksJson.hooks?.PreToolUse ?? [];
+		assert.deepEqual(
+			preToolUse[0],
+			consumerOwnHook,
+			"the consumer's own PreToolUse entry must survive the merge"
+		);
+		assert.equal(
+			preToolUse.length,
+			2,
+			"PRISM's PreToolUse entry must be added alongside the consumer's"
+		);
+		assert.ok(
+			JSON.stringify(preToolUse[1]).includes(".claude/hooks/hook.mjs"),
+			"the second entry must be PRISM's own registration"
+		);
+		assert.ok(
+			hooksJson.hooks?.PostToolUse,
+			"PostToolUse is added outright since the consumer never registered it"
+		);
+	});
+});
+
+test("mergeHookCodexRegistration: running twice does not duplicate PRISM's entry or drift the consumer's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "apply_patch",
+			hooks: [{ type: "command", command: "./scripts/consumer-guard.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const firstPass = await readConsumerCodexHooks(consumerRepoRoot);
+
+		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const secondPass = await readConsumerCodexHooks(consumerRepoRoot);
+
+		assert.deepEqual(
+			secondPass,
+			firstPass,
+			"a repeat merge must be a no-op byte-for-byte, not just entry-count-stable"
+		);
+		assert.equal(
+			secondPass.hooks?.PreToolUse?.length,
+			2,
+			"the consumer entry plus exactly one PRISM entry — no duplicate PRISM registration"
+		);
+	});
+});
+
+test("mergeHookCodexRegistration: a consumer with no prior hooks.json receives PRISM's registration untouched", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await mergeHookCodexRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		assert.equal(hooksJson.hooks?.PreToolUse?.length, 1);
+		assert.equal(hooksJson.hooks?.PostToolUse?.length, 1);
+	});
+});
+
 const HOOK_RUNTIME_RELATIVE_PATHS = [
 	"hook.mjs",
 	"architect-route.mjs",
@@ -2110,6 +2232,11 @@ async function withHookRuntimeRoots(
 		prismRepoRoot,
 		"templates/install/.claude/settings.json",
 		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.codex/hooks.json",
+		`${JSON.stringify(PRISM_CODEX_HOOKS, null, "\t")}\n`
 	);
 	for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
 		await writeFile(
@@ -2367,9 +2494,9 @@ test("refreshHookRuntime: the backup of a pruned file is not itself pruned on th
 	});
 });
 
-test("refreshHookRuntime: a repo that does not run Claude Code receives no runtime, no registration, and no gitignore lines", async () => {
+test("refreshHookRuntime: a repo that runs neither Claude Code nor Codex receives no runtime, no registration, and no gitignore lines", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex", "cursor"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["cursor"]);
 
 		assert.equal(
 			await pathExists(path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs")),
@@ -2382,6 +2509,11 @@ test("refreshHookRuntime: a repo that does not run Claude Code receives no runti
 			"no settings registration is written"
 		);
 		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".codex", "hooks.json")),
+			false,
+			"no codex registration is written"
+		);
+		assert.equal(
 			await pathExists(path.join(consumerRepoRoot, ".gitignore")),
 			false,
 			"no gitignore lines are appended"
@@ -2389,10 +2521,91 @@ test("refreshHookRuntime: a repo that does not run Claude Code receives no runti
 	});
 });
 
-test("refreshHookRuntime: dropping Claude Code from hosts takes back the delivered runtime and PRISM's registration", async () => {
+test("refreshHookRuntime: a hosts: [\"codex\"] consumer receives the runtime and only the codex registration", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is delivered even though only codex is in hosts`
+			);
+		}
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		assert.equal(hooksJson.hooks?.PreToolUse?.length, 1);
+		assert.equal(hooksJson.hooks?.PostToolUse?.length, 1);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".claude", "settings.json")),
+			false,
+			"no claude registration is written for a codex-only consumer"
+		);
+	});
+});
+
+test("refreshHookRuntime: dropping Claude Code from hosts takes back only its own registration, and the runtime stays because codex is still declared", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} stays — codex is still in hosts`
+			);
+		}
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.ok(
+			!JSON.stringify(settings).includes(".claude/hooks/hook.mjs"),
+			"PRISM's claude registration no longer names the runtime path"
+		);
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		assert.equal(
+			hooksJson.hooks?.PreToolUse?.length,
+			1,
+			"the codex registration is added since codex is now the declared host"
+		);
+	});
+});
+
+test("refreshHookRuntime: dropping codex from hosts removes only PRISM's codex entries, and the consumer's own survive", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "apply_patch",
+			hooks: [{ type: "command", command: "./scripts/consumer-guard.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		assert.deepEqual(
+			hooksJson.hooks?.PreToolUse,
+			[consumerOwnHook],
+			"the consumer's own PreToolUse entry is the only one left"
+		);
+		assert.ok(
+			!hooksJson.hooks || !("PostToolUse" in hooksJson.hooks),
+			"PostToolUse, which only PRISM registered on codex, is dropped entirely"
+		);
+	});
+});
+
+test("refreshHookRuntime: dropping both hosts removes the runtime and both registrations — the regression guard on the split host gate", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude", "codex"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
 
 		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
 			assert.equal(
@@ -2400,14 +2613,20 @@ test("refreshHookRuntime: dropping Claude Code from hosts takes back the deliver
 					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
 				),
 				false,
-				`${relativePath} is removed`
+				`${relativePath} is removed once neither host is declared`
 			);
 		}
 
 		const settings = await readConsumerSettings(consumerRepoRoot);
 		assert.ok(
 			!JSON.stringify(settings).includes(".claude/hooks/hook.mjs"),
-			"PRISM's registration no longer names the runtime path"
+			"PRISM's claude registration no longer names the runtime path"
+		);
+
+		const hooksJson = await readConsumerCodexHooks(consumerRepoRoot);
+		assert.ok(
+			!JSON.stringify(hooksJson).includes(".claude/hooks/hook.mjs"),
+			"PRISM's codex registration no longer names the runtime path"
 		);
 	});
 });
@@ -2425,7 +2644,7 @@ test("refreshHookRuntime: a consumer's own hook on an event PRISM registered sur
 		);
 
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
 
 		const settings = await readConsumerSettings(consumerRepoRoot);
 		assert.deepEqual(
@@ -2445,7 +2664,7 @@ test("refreshHookRuntime: an unmarked file at a runtime path survives the remova
 		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
 
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
 
 		assert.equal(
 			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
@@ -2455,10 +2674,10 @@ test("refreshHookRuntime: an unmarked file at a runtime path survives the remova
 	});
 });
 
-test("refreshHookRuntime: the state-file gitignore lines are left in place when Claude Code is dropped", async () => {
+test("refreshHookRuntime: the state-file gitignore lines are left in place when both hosts are dropped", async () => {
 	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
-		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, []);
 
 		const gitignore = await readFile(consumerRepoRoot, ".gitignore");
 		assert.ok(
@@ -2480,7 +2699,7 @@ test("refreshHookRuntime: dryRun previews a removal without performing it", asyn
 			prismRepoRoot,
 			consumerRepoRoot,
 			true,
-			["codex"]
+			[]
 		);
 
 		const removedPaths = outcomes
