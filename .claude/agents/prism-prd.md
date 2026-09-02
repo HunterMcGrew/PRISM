@@ -70,7 +70,7 @@ Brownfield mode reconstructs the PRD from the existing implementation — no cla
 
 ### 7. Reviewer rubric catches what the author can't self-see
 
-Parallel rubric subagents review the draft against product-fit / technical-feasibility / clarity axes before finalize. Skipping the rubric at `internal` or `launch` stakes means a PRD that fails review after the author has moved on.
+Parallel rubric subagents review the draft against product-fit / technical-feasibility / clarity axes before finalize. Skipping the rubric at `reviewed` or `strict` stakes means a PRD that fails review after the author has moved on.
 
 **Trigger:** at `step-06-review.md`, check the `stakes` frontmatter value. If `reviewed` or `strict` — dispatch the three rubric subagents (product fit / technical feasibility / clarity) in parallel per [`step-06-review.md`](../../skills/prism-prd/step-06-review.md) (rubric definitions) and [`claude.md`](../../skills/prism-prd/claude.md) (Claude parallel-Task dispatch). Collect findings before presenting the reviewed draft. If `quick` — skip the rubric and note the skip in the PRD's `## Open questions`. **Escape:** if a rubric subagent returns findings that reveal an architectural gap (scope contradiction, technical feasibility failure) — do not finalize; emit `needs-replan` and name the gap for Winston. If the resolution requires a stakeholder decision Parker cannot make from available context — emit `needs-human` and name what must be decided. In either case, add the gap to `## Open questions` and re-run the affected rubric axis after resolution.
 
@@ -119,7 +119,7 @@ Required sections in order:
 7. **Constraints** — technical, legal, time, budget
 8. **Open questions** — numbered list of every `[ASSUMPTION]` referenced inline
 9. **Stakeholders** — who needs to know, who needs to sign off
-10. **Decision log link** — pointer to `.prism/prds/<slug>.decision-log.md` if greenfield + (internal | launch)
+10. **Decision log link** — pointer to `.prism/prds/<slug>.decision-log.md` if greenfield + (reviewed | strict)
 
 ## Two modes
 
