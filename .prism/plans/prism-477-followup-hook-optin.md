@@ -538,6 +538,7 @@ Sequence: tasks 1–2 land the config surface, task 3 consumes it in the install
 
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin] open: Intent — close the misleading clean-doctor signal PRISM-477 recorded and left unfixed; Bounds — done when doctor reports hook reach and every prose home of the old claim is reconciled, touching no file under `scripts/ai-skills/update.ts` and no test of `refreshHookRuntime`; Approach — reporting half only, because the delivery half has no consumer signal to gate on · close: drifted — Hunter widened the scope to add a `hosts` config key and gate both halves, so `update.ts`, its tests, and the config schema are now in bounds; re-planned against the decided shape.
 - 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin] open: Intent — implement the 13-task plan gating hook delivery on an optional `hosts` key; Bounds — done when all 17 ACs pass, `pnpm prism:check` exits 0, and a draft PR is open; Approach — follow the plan's exact task sequence, one commit per task per `git-conventions.md` § Commit Granularity · close: scope held — all 13 tasks implemented as specced, 21 tests added, all 17 ACs verified, `pnpm prism:check` exits 0.
+- 2026-09-02 [huntermcgrew/prism-477-followup-hook-optin] open: Intent — self-review the branch against the plan's 17 AC and the gate/removal logic in `update.ts`/`doctor.ts`; Bounds — done when every code path is traced by hand (removal branch, `resolveHosts`, `mergeHookEventEntries` with an empty incoming set, the four doctor branches) and `pnpm prism:check` is re-run; Approach — read every diff hunk plus the full surrounding function bodies, not just the diff context · close: scope held — traced all named paths, ran `pnpm prism:check` (849 tests, exit 0), found one Major (missing direct test for the documented empty-`hosts`-array behavior) and one Cleanup note (an undocumented but correct guard in `mergeHookSettingsRegistration`).
 
 ---
 
@@ -556,6 +557,14 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 ---
 
 ## Review Issues
+
+### `resolveHosts`'s empty-array behavior has no direct unit test
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/lib/hosts.ts:26`
+- **Problem:** The plan's `## Decisions` records a deliberate, non-obvious call — `"hosts": []` resolves to all three hosts, not none — with a rejected alternative and a stated reason (an empty array is more likely an editing accident than an opt-out-of-everything request; resolving it to "none" would silently strip a working install). No test in `update.test.ts` or `doctor.test.ts` exercises `hosts: []`, and there is no `hosts.test.ts`. The only coverage is indirect, through fixtures that never pass an empty array. This is exactly the kind of branch (`recognized.length > 0 ? recognized : [...HOST_NAMES]`) a future refactor can silently invert — e.g. simplifying it to `return recognized;` — with nothing in the suite catching it, and the consequence is a silent hook-runtime removal on every consumer's next update.
+- **Suggested fix:** Add a direct test for `resolveHosts` (either a small `scripts/ai-skills/lib/hosts.test.ts` or two integration-level tests in `update.test.ts`/`doctor.test.ts` seeding `hosts: []`) asserting it resolves to all three hosts, not none.
 
 ---
 
@@ -630,17 +639,19 @@ None recorded on this branch. The originating defect is documented in `.prism/pl
 
 ## Cleanup Items
 
+- `scripts/ai-skills/update.ts:1390` — `mergeHookSettingsRegistration` gained a guard (`if (targetRaw === null && Object.keys(mergedHooks).length === 0) return;`) not named in any `## Decisions` entry. It's correct and necessary — without it, a repo that never had `.claude/settings.json` and whose `hosts` excludes `claude` would get one written as `{"hooks":{}}`, failing AC-2 — but it's a real addition beyond task 3d's spec. Worth a one-line Decision recording it.
+
 ---
 
 ## PR Readiness
 
-- [x] No critical or major issues
+- [ ] No critical or major issues — 1 Major open: `resolveHosts`'s empty-array behavior has no direct unit test (see `## Review Issues`)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [ ] Tests written for new logic and edge cases — the documented empty-array Decision is untested; see `## Review Issues`
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0)
+- [x] Build passes — last run: 2026-09-02 (`pnpm prism:check` exit 0, 849 tests passing)
 - [ ] PR description up to date — PR not yet opened
 - [x] Lasting decisions promoted to architect context (if applicable) — `install-layout.md` (tasks 9), `docs/parameterization.md` (task 12)
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-02 (Briar self-review)
