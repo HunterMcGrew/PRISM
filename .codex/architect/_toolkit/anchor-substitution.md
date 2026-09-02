@@ -25,7 +25,7 @@ Anchors are paired HTML-comment markers. The open marker names the anchor; the c
 <!-- atlas:end -->
 ```
 
-The name matches `/^[a-z0-9-]+$/`. The HTML-comment form is invisible in rendered markdown — readers opening the canonical source see the default content; the markers around it don't render. When Atlas runs, it replaces the inner span (between open and close) with team-specific content.
+The name matches `/^[a-z0-9-]+$/`. The HTML-comment form is invisible in rendered markdown — readers opening the canonical source see the default content; the markers around it don't render. At render time, the inner span (between open and close) is replaced with team-specific content.
 
 Markers must be on their own line — line-start (optionally indented) and line-end. Inline prose references like `\`<!-- atlas:<name> -->\`` inside backticks are not matched, which is what lets `prism-onboarding/shared.md` document the marker convention without triggering the parser.
 
