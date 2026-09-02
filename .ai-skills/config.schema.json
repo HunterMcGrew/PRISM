@@ -95,6 +95,16 @@
 			"uniqueItems": true,
 			"examples": [["nextjs", "react", "typescript", "tailwind"]]
 		},
+		"hosts": {
+			"type": "array",
+			"description": "AI coding hosts this repo actually runs. Absent means all of them, so an existing install keeps its current behavior and needs no migration. Today this gates hook-runtime delivery: PRISM writes .claude/hooks/, merges its hook registration into .claude/settings.json, and appends the hook state-file globs to .gitignore only when `claude` is listed. Removing `claude` from a repo that previously received the runtime makes the next `prism update` take it back out.",
+			"items": {
+				"type": "string",
+				"enum": ["claude", "codex", "cursor"]
+			},
+			"uniqueItems": true,
+			"examples": [["claude"], ["codex", "cursor"]]
+		},
 		"commands": {
 			"type": "object",
 			"description": "Canonical verification commands for this team. Atlas populates this map during onboarding from the detected tech stack; skill prose and verification-commands.md reference these values as {{commands.*}} tokens so command strings live in one place. Each value is the full shell command to run from the repo root.",
