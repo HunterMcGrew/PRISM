@@ -36,3 +36,41 @@ export function resolveHosts(config: { hosts?: unknown } | null | undefined): Ho
 
 	return recognized.length > 0 ? recognized : [...HOST_NAMES];
 }
+
+/**
+ * The per-output flags `generatePlatformSkills` branches on, derived from a
+ * host set.
+ *
+ * Three hosts, six outputs — a host owns more than one. Claude Code reads
+ * both a skill roster and agent definitions; Codex reads a skill roster, its
+ * own agent adapters, and `codex-config.toml`; Cursor reads a skill roster
+ * only. Deriving the six from the three in one place is what keeps a caller
+ * from gating the roster and forgetting the adapters beside it.
+ *
+ * This is deliberately not what `build.ts` computes. That object answers a
+ * different question — has this platform ever been built in this checkout,
+ * so is a diff real drift or an unbuilt platform — and wiring it to a config
+ * key would make `prism:check` pass or fail on a value unrelated to drift.
+ * See the plan's `## Decisions`.
+ */
+export interface HostOutputFlags {
+	claude: boolean;
+	codex: boolean;
+	cursor: boolean;
+	codexAgents: boolean;
+	claudeAgents: boolean;
+	codexConfig: boolean;
+}
+
+export function deriveOptedIn(hosts: HostName[]): HostOutputFlags {
+	const has = (host: HostName): boolean => hosts.includes(host);
+
+	return {
+		claude: has("claude"),
+		claudeAgents: has("claude"),
+		codex: has("codex"),
+		codexAgents: has("codex"),
+		codexConfig: has("codex"),
+		cursor: has("cursor"),
+	};
+}
