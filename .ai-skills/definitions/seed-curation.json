@@ -74,7 +74,8 @@
 		"spec/adrs/_toolkit/0071-architect-context-read-hook.md",
 		"spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md",
 		"spec/adrs/_toolkit/0073-stakes-levels-name-their-behavior.md",
-		"spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md"
+		"spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md",
+		"spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md"
 	],
 	"curated": [
 		"architect/_toolkit/documentation.md",

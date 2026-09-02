@@ -45,7 +45,7 @@ Atlas runs each step in fixed order so reconfigure and resume behave predictably
 3. Ask the user the questions detection can't answer (project name, ticket prefix, GitHub org/repo, ticket-system workspace, product domain).
 4. Write config (`writeOnboardingConfig`).
 5. Run rule generators in declaration order (`code-standards` → `security` → `framework-guidelines`).
-6. Run anchor substitution across canonical persona sources (`substituteAnchorsAcrossSkills`).
+6. Anchor content renders at output regeneration time, not as a step Atlas runs — see ADR-0075. Atlas performs no anchor-substitution step of its own.
 7. Emit closing summary listing every file's `written` / `skipped` status.
 
 Step completion is tracked in `.ai-skills/registry/onboarding-state.json` for resume-from-interruption.

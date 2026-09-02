@@ -18,9 +18,9 @@ No `.ai-skills/config.json` exists. Run the full guided flow:
 8. Collect Slack channel (optional).
 9. Collect documentation setup via the documentation question set (§ question-flow.md → Documentation question set).
 10. Run `runRuleGenerators(config, repoRoot)` — code-standards → security → framework-guidelines, skip-if-exists by default. Offer the `acceptance-criteria` format choice once (skip-if-exists on re-run; not re-offered on reconfigure).
-11. Run `runAnchorSubstitution(config, repoRoot)` — populates `atlas:domain-context`; leaves `atlas:examples` / `atlas:workflow-example` empty in v1 (the former `atlas:specializes-in` lane is retired — specialization blocks were removed from the skill bodies, since the team's stack facts live in its generated rules and repo map). Appends a one-line applicability declaration to `accessibility.md` and `design-governance.md` when the detected stack includes UI file types — idempotent (skipped if declaration already present).
+11. Anchor content renders during output regeneration in step 13 — Atlas performs no separate anchor step. Appends a one-line applicability declaration to `accessibility.md` and `design-governance.md` when the detected stack includes UI file types — idempotent (skipped if declaration already present).
 12. Write `.ai-skills/config.json` atomically via `writeOnboardingConfig` after explicit user acceptance.
-13. Run `pnpm prism:build` to regenerate platform mirrors.
+13. Regenerate outputs per the install-context table in `prism-onboarding` § Install context.
 14. Emit the closing summary (see § output-contract.md → Closing summary shape).
 
 ---
@@ -71,8 +71,8 @@ Mode for an established repo — one that already has its own setup (skills, arc
 10. **Slack channel** — same as first-install (optional).
 11. **Documentation setup** — same as first-install.
 12. Run `runRuleGenerators`.
-13. Run `runAnchorSubstitution`.
+13. Anchor content renders during output regeneration in step 16 — Atlas performs no separate anchor step.
 14. Write `.ai-skills/config.json` atomically.
-15. **Seed-and-sync handoff** — run `pnpm prism:adopt --prism-source <resolved PRISM source>` to seed `.prism/` from the install surface and establish the steady-state baseline manifest. Surface the `AdoptSummary` in the closing summary.
-16. Run `pnpm prism:build`.
+15. **Seed-and-sync handoff** — run the adopt command for this install context, per the install-context table in `prism-onboarding` § Install context, to seed `.prism/` from the install surface and establish the steady-state baseline manifest. Surface the `AdoptSummary` in the closing summary.
+16. Regenerate outputs per the install-context table in `prism-onboarding` § Install context.
 17. Emit the closing summary — including the `AdoptSummary` and the discovery-sweep adopt/leave decisions.
