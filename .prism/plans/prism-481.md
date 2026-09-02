@@ -176,6 +176,7 @@ Branch off PR 2's head. Docs are Eli's lane; PRs 1–2 do not touch `docs/`.
 
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — plan the consumer-mode Atlas fix from issue #481, evaluating the proposed CLI surface rather than adopting it; Bounds — plan file only, no implementation, no source edits; Approach — verify the packaging and render pipeline first, since bundling and existing render seams change which of the issue's three proposals are actually needed · close: scope held
 - 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — implement PR 1's runtime lane (tasks 1-7: `prism detect`, render-time anchor substitution, retire the mutation path, tests); Bounds — `scripts/ai-skills/**` and `.ai-skills/config.schema.json` only, no Atlas prose/ADR/architect-doc/docs edits; Approach — verify the plan's line-number citations before editing, and fix the `buildContentByAnchor`/`productDomain` type-plumbing gap the plan's task 4/6 combination didn't typecheck against · close: scope held — two deviations from the plan's literal wording (buildContentByAnchor's parameter type; productDomain schema/type plumbing) recorded as Decisions above, both necessary for task 6's own AC-2 to be true rather than a compiling-but-dead wire
+- 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install] open: Intent — self-review PR 1 of the stack (draft PR #483) across the anchor-render pass, `prism detect`, deletion completeness, and `productDomain` persistence; Bounds — read-only review, chat + plan write only, no source edits, no GitHub post; Approach — verify every plan claim against source and a live run of the check pipeline rather than trusting the diff's own comments · close: scope held — one Minor comment finding, all other angles clean
 
 ---
 
@@ -227,3 +228,50 @@ Branch off PR 2's head. Docs are Eli's lane; PRs 1–2 do not touch `docs/`.
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-09-02 | Winston | AC generated and synced | prism-481 | #481 |
+
+---
+
+## Cleanup Items
+
+None found.
+
+---
+
+## Review Issues
+
+### Changelog-voice JSDoc on `refreshPlatformSkills`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/update.ts:844` (docstring above `refreshPlatformSkills`, in the hunk starting `@@ -833,14 +835,24 @@`)
+- **Problem:** The new docstring paragraph reads "Anchor population used to be a separate Atlas write into the canonical `.ai-skills/skills/` sources; it now runs here, in memory, on every regeneration." — changelog-voice per `.prism/rules/code-comments.md` (describes the migration, not the current invariant).
+- **Suggested fix:** Drop the "used to be / now runs" framing; state only the current invariant, e.g. "Anchor population happens here, in memory, on every regeneration — see ADR-0075." Git history already carries the migration story.
+
+No other issues found — 2026-09-02 [huntermcgrew/prism-481-atlas-consumer-install]. Verified: `pnpm prism:check-types` (clean), `pnpm prism:test` (860/860 pass), `pnpm prism:build` (byte-identical — `git status` clean after the build, directly confirming task 5's own AC rather than trusting Clove's claim), `pnpm prism:check` (exit 0 — crossref-lint, spec-scope-lint, ship-closure, verify-pack-parity all pass). A tree-wide grep for `runAnchorSubstitution|substituteAnchorsAcrossSkills|AnchorSubstitutionSummary|AnchorResult` under `scripts/` returns nothing — the deletion is complete, no stray references. `isDirectCliEntry("detect")` matches the codebase's actual convention (basename without extension, confirmed against every other subcommand's guard) despite the plan's task 1 literally specifying `"detect.ts"` — not a bug, just the plan's wording being imprecise. `productDomain`'s schema entry is optional (absent from `required`), so an existing config without it still validates; the write path (`toOnDiskConfig`, gated on non-empty trim), both type surfaces (`PrismOnDiskConfig`, `PrismConfig`), and the render-time read (`consumerConfig.productDomain ?? ""`) all check out against source. All four `substituteTokens` call sites in `generate-skills.ts` route through the new `applyAnchorsThenTokens` helper in the anchors-before-tokens order the plan requires. The tests removed from `anchor-substitute.test.ts` and `rule-generators.test.ts` only exercised the deleted `substituteAnchorsAcrossSkills`/`runAnchorSubstitution` paths — no live behavior lost coverage.
+
+### Angle Coverage
+
+- Types and logic: swept — no issues
+- Accessibility: n/a — no UI in this diff
+- Removal/rename completeness: swept — zero remaining references to the two deleted functions/types under `scripts/`
+- Test coverage: swept — new tests cover `detect`'s three contracts plus the anchor-render and byte-identity regression; no gap found
+- Comments/JSDoc: swept — one Minor changelog-voice finding above, otherwise clean
+- Spec/plan divergence: swept — the plan's two recorded deviations (buildContentByAnchor's parameter type; productDomain schema/type plumbing) are both necessary and match the diff exactly
+- Docs impact: n/a — PR 2/3 own Atlas prose and consumer docs per the plan's lane split; PR 1 touches neither
+- Build: swept — `pnpm prism:build` produces a byte-identical tree
+- Cross-file/citation integrity: swept — call sites, imports, and the schema/type threading through `onboarding-config.ts` → `tokens.ts` → `update.ts` all verified against source, not just the diff
+
+---
+
+## PR Readiness
+
+- [x] No critical or major issues
+- [x] Types correct — no `any`, no unsafe `as` introduced
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries in `## Debugged Issues` — none exist)
+- [x] Build passes — last run: 2026-09-02, byte-identical
+- [ ] PR description up to date — not verified this pass (chat-only scope; PR body sync is Clove's lane)
+- [ ] Lasting decisions promoted to architect context — deferred to PR 2 by design (Lane B owns the three architect docs and ADR-0075)
+
+**Last updated:** 2026-09-02
