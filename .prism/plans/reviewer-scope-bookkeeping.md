@@ -180,6 +180,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — re-land this branch on top of `main` after PR #489 (the review-loop's one-pass restructure); Bounds — merge only, resolve the one real conflict in the review-loop's Ledger bullet by keeping main's structure and adding this branch's citation, no other source edits; Approach — `git merge origin/main`, hand-resolve the Ledger bullet, `pnpm prism:build && pnpm prism:check`, push. · close: scope held
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — grade all eight acceptance criteria against the post-merge branch diff and publish a verdict report; Bounds — read-only over the branch, writing only the report under `.prism/qa/` and this plan's pointer lines, no source or mirror edits; Approach — re-run every machine Evidence command from scratch at the merged SHA rather than trusting the recorded marks, keeping the tree clean throughout. · close: scope held
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 (self-review pass 1) at full bar against `git diff origin/main...HEAD`, including the merge-conflict resolution; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — verify each of the four source edits against the plan's tasks and Decisions verbatim, re-run `pnpm prism:build && pnpm prism:check`, independently re-verify a sample of the AC evidence commands, sweep all nine review angles. · close: scope held — found one Major finding outside the diff proper (the live PR #459 description on GitHub), which `## PR Readiness` already tracks as a checklist item
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix the one open Review Issue (PR #459's broken GitHub description) within the local frame; Bounds — the PR metadata field plus the plan's bookkeeping entries, no source or mirror edits; Approach — `gh pr edit --body-file` the scratchpad file Briar already verified as correct, confirm via a direct API read, mark the finding fixed. · close: scope held
 
 ---
 
@@ -190,6 +191,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Merged `origin/main` (PR #489's review-loop restructure) and hand-resolved the one Ledger-bullet conflict; see Decision: re-landing this branch on `main` after PR #489. `pnpm prism:build` (900/901, 1 skipped) and `pnpm prism:check` both exit 0 on the pushed HEAD `15e8e983`; AC-1's and AC-4's grep probes re-verified against the merged file.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Reese re-graded all eight AC against the post-merge diff at SHA `95bf7102` — 8 MET, 0 UNMET, 0 UNGRADEABLE; report at `.prism/qa/ac-verification-reviewer-scope-bookkeeping.md`. AC-1's and AC-3's human Evidence halves are listed there as awaiting-human-verification and are excluded from those counts. One side observation is recorded in the report: AC-4's probe covers one of the six section names its task names, and the other five were checked by hand.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar self-reviewed the diff (all four source edits verified verbatim against the plan's tasks, `pnpm prism:build`/`pnpm prism:check` re-run clean, 5 of 8 AC evidence commands independently re-verified). Found one Major finding: PR #459's live GitHub description is a broken local-scratchpad-path string, not the intended summary — see `## Review Issues`.
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove fixed the one open Review Issue — `gh pr edit 459 --body-file` replaced the broken PR description with the real summary, re-verified against a direct API read; no source edits needed. `pnpm prism:check` re-run clean.
 
 ---
 
@@ -198,10 +200,11 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 ### PR #459 description is a broken file-path string, not content
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** GitHub PR #459 description (not a repo file — `gh api repos/HunterMcGrew/PRISM/pulls/459 --jq .body` returns the literal string, confirmed against the API directly, not just the `gh pr view` rendering)
 - **Problem:** The PR body is the literal text `@C:\Users\hunte\AppData\Local\Temp\claude\...\scratchpad\pr459-body.md` — a local scratchpad path, not the intended summary. A real summary exists in that local file (Summary, bullet list of the four source edits, known-limitation note) but never reached GitHub, almost certainly because the PR was created with `gh pr create --body "@<path>"` rather than `--body-file <path>` (`gh` does not expand `@file` inside `--body` the way some shells' own `@file` conventions might suggest). Spot-checked PRs #456–#458 and found normal bodies, so this looks isolated to #459, not a systemic tooling break.
 - **Suggested fix:** `gh pr edit 459 --body-file <path-to-the-real-summary>` (the local scratchpad file already has the correct content) to replace the body before merge — GitHub's squash-merge dialog offers the PR body as the default commit body, so an unfixed body ships into `main`'s permanent history for this change.
+- **Fixed in:** `gh pr edit 459 --body-file <scratchpad>/pr459-body.md`, re-verified via `gh api repos/HunterMcGrew/PRISM/pulls/459 --jq .body` (direct API read, not `gh pr view` rendering) — body now reads the real Summary/edit-list/test-plan content.
 
 ---
 
@@ -211,10 +214,10 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 1 open major (PR #459 description)
-- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-verified by Briar after re-landing on `main`, exit 0, 900/901 tests, 1 skipped)
+- [x] No critical or major issues — the one open major (PR #459 description) is fixed, see `## Review Issues`
+- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-verified by Clove after the review-fix pass, exit 0)
 - [x] All eight AC evidence commands executed with observed values recorded — 5 of 8 independently re-run by Briar and confirmed matching (AC-1, AC-4 + positive control, AC-6, AC-8 + positive control)
-- [ ] PR description up to date — broken, see `## Review Issues`
+- [x] PR description up to date — fixed via `gh pr edit`, see `## Review Issues`
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed
 
 **Last updated:** 2026-09-08
