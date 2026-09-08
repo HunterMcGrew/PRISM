@@ -134,7 +134,7 @@ Twenty paths change on this branch: three canonical skill bodies (Eric, Briar, t
 
 The branch merged `origin/main` after the plan's first grading pass, so the two criteria whose evidence targets a file `main` also touched were examined beyond their probe.
 
-- **`.ai-skills/skills/prism-review-loop/shared.md` (AC-4).** The hand-resolved Ledger bullet keeps this branch's citation to `.prism/rules/followup-scope.md` and appends `main`'s loop-local additions — the PR body and the loop-emitted readiness line — which is what the re-land Decision describes. All six bookkeeping section names were probed rather than only the one AC-4 names: the review-issues, history, sessions, debugged-issues, and cleanup-items headings each return `0`.
+- **`.ai-skills/skills/prism-review-loop/shared.md` (AC-4).** The hand-resolved Ledger bullet keeps this branch's citation to `.prism/rules/followup-scope.md` and appends `main`'s loop-local additions — the PR body and the loop-emitted readiness line — which is what the re-land Decision describes. Five of the six bookkeeping section names were probed beyond the one AC-4 names: the review-issues, history, sessions, debugged-issues, and cleanup-items headings each return `0`. The sixth, `## PR Readiness`, returns `1` — the bullet's own replacement text names it once by design, to explain why it's persona-rewritten bookkeeping rather than Subject content (see the plan's task 4), which is a reference mention, not the six-name restated list AC-4's probe targets.
 - **`.ai-skills/skills/prism-code-review-pr/shared.md` (AC-1).** `main`'s changes did not disturb the decision gate; states #2 and #3 carry the qualifier at lines 268-269.
 
 ---

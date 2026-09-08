@@ -290,6 +290,8 @@ Eric evaluates the PR and lands in exactly one of three states:
 
 **While any angle in `## Angle Coverage` is pass-bounded, state #3 may not resolve to `confidence:high`** — it resolves to `confidence:needs-judgment` instead, and the ready-flip does not fire. A pass-bounded angle is an unfinished check, which is what `confidence:needs-judgment` already means ("behavior Eric couldn't verify"), and `confidence:high` is exactly the unqualified ready state the verdict cap forbids while one stands. A **structurally** bounded angle is unaffected — `confidence:standards-only` already covers that case and is honest as written. Both classes are defined in [`review-angles.md`](../../../.prism/references/review-angles.md) § Status vocabulary.
 
+**The same cap applies, for a different reason, when state #3 is reached only because the remaining minors are bookkeeping-only.** An unaddressed Minor still stands, so `confidence:high`'s "both axes ran and both came back clean" claim would be false — resolve to `confidence:needs-judgment` instead. Unlike the pass-bounded case above, the ready-flip still fires here: that is the point of the bookkeeping exemption in [`.prism/rules/followup-scope.md`](../../../.prism/rules/followup-scope.md) § Bookkeeping findings are recorded, not gated — the label stays honest about the standing Minor while the PR still leaves draft.
+
 Every PR that receives labels gets exactly two. Never one, never three.
 
 **How Eric detects "developer-acknowledged":** For each unresolved review thread that Eric posted as a minor — if the PR author replied as the last comment on that thread, treat it as acknowledged. The act of responding is sufficient; no magic words required.

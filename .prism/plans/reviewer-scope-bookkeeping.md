@@ -123,7 +123,7 @@ Stop review findings whose only subject is the review process's own bookkeeping 
 
    > **Ledger** — bookkeeping content as `.prism/rules/followup-scope.md` § Bookkeeping findings are recorded, not gated defines it: the plan sections a persona appends findings to rather than the sections an author writes to declare scope, plus `.prism/lessons.md` and the `Evidence` sub-bullets under `## Acceptance Criteria`. Not a review target during the loop at any bar. Everything else in the plan file — `## Implementation Tasks`, `## Decisions`, and the AC **criterion** lines those Evidence sub-bullets hang from — is Subject content when it falls inside the diff being reviewed; Ledger names only bookkeeping, never the whole plan file. `## PR Readiness` is persona-rewritten on every self-review pass (`.prism/rules/branch-plan.md` defines it as "updated every time `code-review-self` runs"), which is the same persona-appends-versus-author-declares test the rest of the set applies — reviewing it at Subject bar would flag the loop's own bookkeeping as a finding on every pass. The loop's disposition is stricter than the rule's, for its own reason: the rule keeps a bookkeeping finding non-gating because it is not worth a round; the loop declines to raise one at all because the loop wrote the text it would be reviewing, and a pass that reviews its own output cannot converge.
 
-   The six section names (`## Review Issues`, `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, `## PR Readiness`) must **not** survive anywhere in this file — that removal is what AC-4 checks. Leave the `| Ledger |` row in the Disposition table unchanged. Sequence: after task 1.
+   The six section names, restated together as the old drift-prone list (`## Review Issues`, `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, `## PR Readiness`), must **not** survive anywhere in this file — that removal is what AC-4 checks. This is about the *restatement*, not every individual mention: the replacement bullet above still names `## PR Readiness` on its own, once, to explain why it's persona-rewritten bookkeeping rather than Subject content, and that mention is fine — it's citation-consistent prose, not the six-name list this task removes. Leave the `| Ledger |` row in the Disposition table unchanged. Sequence: after task 1.
 
 5. **Regenerate mirrors and verify.** Run `pnpm prism:build` (regenerates `.claude/`, `.codex/`, `.cursor/`, and `templates/install/.prism/` from the canonical sources, then runs `pnpm prism:test`), then `pnpm prism:check` — expect exit 0. `prism:check` includes `prism:crossref-lint` (validates the two new `§ Bookkeeping findings are recorded, not gated` cross-references) and `prism:spec-scope-lint` (the four changed discriminators — `followup-scope.md`, `prism-code-review-pr`, `prism-code-review-self`, `prism-review-loop` — are each named in `## Implementation Tasks` above, outside every bookkeeping section, so the lint passes). Then run every AC evidence command below and record the observed value beside each. Sequence: last.
 
@@ -182,6 +182,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 (self-review pass 1) at full bar against `git diff origin/main...HEAD`, including the merge-conflict resolution; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — verify each of the four source edits against the plan's tasks and Decisions verbatim, re-run `pnpm prism:build && pnpm prism:check`, independently re-verify a sample of the AC evidence commands, sweep all nine review angles. · close: scope held — found one Major finding outside the diff proper (the live PR #459 description on GitHub), which `## PR Readiness` already tracks as a checklist item
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix the one open Review Issue (PR #459's broken GitHub description) within the local frame; Bounds — the PR metadata field plus the plan's bookkeeping entries, no source or mirror edits; Approach — `gh pr edit --body-file` the scratchpad file Briar already verified as correct, confirm via a direct API read, mark the finding fixed. · close: scope held
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 pass 2 at full bar against `git diff origin/main...HEAD`, re-sweeping the same source diff pass 1 covered (unchanged since — the intervening commit touched only this plan) plus confirming the merge-conflict resolution held; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — re-read the full diff fresh, re-run `pnpm prism:build && pnpm prism:check` from a clean tree, re-verify AC-2/AC-3/AC-5/AC-8 independently, sweep all nine review angles. · close: scope held — zero new findings; pass 1's one Major was already fixed and stayed fixed
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix Eric's three PR-review pass-1 Minor findings (decision-gate confidence label, plan task 4's invariant wording, the QA report's AC-4 coverage claim) within the local frame; Bounds — the three named files plus this plan's bookkeeping entries, no other source edits; Approach — apply each finding's prescribed fix, re-verify the underlying facts independently, then `pnpm prism:build && pnpm prism:check`. · close: scope held
 
 ---
 
@@ -194,6 +195,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar self-reviewed the diff (all four source edits verified verbatim against the plan's tasks, `pnpm prism:build`/`pnpm prism:check` re-run clean, 5 of 8 AC evidence commands independently re-verified). Found one Major finding: PR #459's live GitHub description is a broken local-scratchpad-path string, not the intended summary — see `## Review Issues`.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove fixed the one open Review Issue — `gh pr edit 459 --body-file` replaced the broken PR description with the real summary, re-verified against a direct API read; no source edits needed. `pnpm prism:check` re-run clean.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar ran self-review pass 2 over the same source diff (unchanged since pass 1) — full diff re-read, `pnpm prism:build` (900/901, 1 skipped, 0 fail, no drift) and `pnpm prism:check` re-run clean, AC-2/AC-3/AC-5/AC-8 independently re-verified. Zero new findings.
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Eric PR-reviewed #459 (pass 1) and filed three bookkeeping-only Minors, gating normally under this PR's own new rule; Clove fixed all three — capped Eric's decision-gate confidence label for the bookkeeping-minor path, narrowed task 4's "must not survive" invariant to the restated list, and corrected the QA report's AC-4 coverage claim. `pnpm prism:build` (900/901, 1 skipped) and `pnpm prism:check` both exit 0.
 
 ---
 
@@ -210,6 +212,33 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - **Suggested fix:** `gh pr edit 459 --body-file <path-to-the-real-summary>` (the local scratchpad file already has the correct content) to replace the body before merge — GitHub's squash-merge dialog offers the PR body as the default commit body, so an unfixed body ships into `main`'s permanent history for this change.
 - **Fixed in:** `gh pr edit 459 --body-file <scratchpad>/pr459-body.md`, re-verified via `gh api repos/HunterMcGrew/PRISM/pulls/459 --jq .body` (direct API read, not `gh pr view` rendering) — body now reads the real Summary/edit-list/test-plan content.
 
+### Eric decision gate's confidence label doesn't cover the bookkeeping-only-minor path (PR-review pass 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md:269-274`
+- **Problem:** State #3's entry condition was widened to admit bookkeeping-only minors, but the confidence-label sub-branch beneath it wasn't — a pass arriving via that path had no honest label (`confidence:high` implies both axes came back clean while a Minor still stands). The file already settles the same principle for pass-bounded angles at line 274.
+- **Suggested fix:** extend the existing pass-bounded cap to also cover an unaddressed bookkeeping-only Minor, capping the label to `confidence:needs-judgment` while letting the ready-flip still fire (the bookkeeping exemption's whole point).
+- **Fixed in:** added a paragraph after the pass-bounded cap that caps `confidence:needs-judgment` for the bookkeeping-minor path while preserving the ready-flip. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955258848
+
+### Plan task 4's "must not survive anywhere" invariant contradicts its own prescribed replacement text (PR-review pass 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/reviewer-scope-bookkeeping.md:126`
+- **Problem:** Task 4 said all six bookkeeping section names must not survive anywhere in the review-loop file, but the replacement text prescribed directly above it in the same task contains `## PR Readiness`; the merged file correctly returns `1` for that probe (Clove implemented the text verbatim). AC-4 greps only `## Cleanup Items` today so nothing is broken, but a side note in the QA report recommending a wider probe would walk the next reader into a red AC against correct code.
+- **Suggested fix:** narrow the invariant to the restated *list*, not every individual mention of a name.
+- **Fixed in:** reworded the sentence to scope "must not survive" to the six-name restated list and note that the bullet's one individual `## PR Readiness` mention is citation-consistent prose, not that list. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955257468
+
+### QA report's AC-4 coverage claim overstates what was probed (PR-review pass 1)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/qa/ac-verification-reviewer-scope-bookkeeping.md:137`
+- **Problem:** "All six bookkeeping section names were probed" was followed by an enumeration of only five; the unnamed sixth, `## PR Readiness`, returns `1`, not `0`. AC-4's verdict itself is correct and unaffected — the defect is the coverage claim wrapping it, per `writing-voice.md` § Anti-pattern: Reassurance that introduces a new claim.
+- **Suggested fix:** state what actually ran — five names return `0`; `## PR Readiness` returns `1` by design, as a reference mention rather than the restated list.
+- **Fixed in:** reworded the sentence to state the five-of-six probe accurately and explain the `## PR Readiness` exception. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955257946
+
 ---
 
 ## Cleanup Items
@@ -218,8 +247,8 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ## PR Readiness
 
-- [x] No critical or major issues — the one open major (PR #459 description) is fixed, pass 2 found nothing new, see `## Review Issues`
-- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-verified by Briar in pass 2, from a clean tree after `pnpm prism:build` with no drift, exit 0)
+- [x] No critical or major issues — the one open major (PR #459 description) is fixed; Eric's PR-review pass 1 found three bookkeeping-only Minors, all fixed, see `## Review Issues`
+- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-run by Clove after fixing Eric's three findings, from a clean tree after `pnpm prism:build`, 900/901 with 1 skipped, exit 0)
 - [x] All eight AC evidence commands executed with observed values recorded — all 8 independently re-run across pass 1 and pass 2 by Briar and confirmed matching (AC-1, AC-4, AC-6, AC-8 in pass 1; AC-2, AC-3, AC-5, AC-8 again in pass 2)
 - [x] PR description up to date — fixed via `gh pr edit`, see `## Review Issues`
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed
