@@ -333,6 +333,7 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 
 - 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — ship Phase A (A1–A17) as one reviewable draft PR; Bounds — done is `prism:check` green plus a draft PR, Phase B untouched, the six pre-existing untracked files left out of every commit; Approach — plan order A1→A17 with the runtime smoke-tested in a scratch repo before the delivery wiring · close: scope held — every write is under a Phase A task, the one addition (D9's `unquote` move) came from the cleanup pass on this diff
 - 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — Briar self-review pass 1 of the review loop over the full Phase A diff (`origin/main...a00829d5`); Bounds — done is Review Issues/Cleanup Items/PR Readiness written to this plan plus a chat quick-scan checklist, no code changes, the six pre-existing untracked files never staged; Approach — read the diff by file group (runtime, delivery, tests, prose/ADR), re-derive the `detectGitSegments` table by hand, re-run `pnpm prism:build`/`pnpm prism:check` · close: scope held — one Minor finding filed (commit-gate HEAD tracking under `git -C <dir>`), all nine review angles swept or n/a, no code touched
+- 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — Briar self-review pass 2, dispatched by Clove after `b48654ad` fixed the pass-1 Minor; Bounds — repair surface (`a00829d5..HEAD`) held to the four-anchor regression bar, subject surface (`f569c57c..a00829d5`) re-swept in full, ledger sections out of scope, no code changes, the six pre-existing untracked files never staged; Approach — read the fix diff, independently re-derive the `-C` chain resolution and five `detectGitSegments` rows by hand, re-run the git-gates/hook-gate suites, type-check, and `pnpm prism:build` · close: scope held — pass-1 finding confirmed fixed and closed, no new findings, all nine angles swept or n/a
 
 ---
 
@@ -365,6 +366,22 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 - **File:** `scripts/ai-skills/hooks/git-gates.mjs:276-289,312-331`
 - **Problem:** `detectGitSegments` correctly recognizes `git -C <dir> commit ...` as a commit segment (per the A17 test table), but `runCommitGate` always calls `resolveHeadKey(configRoot)` — the repo root found by walking up from `payload.cwd`, never the `-C` target directory. When `<dir>` is a genuinely separate git repository (a nested repo, not just a subdirectory of the same repo — the common `-C packages/foo` case is unaffected because it shares `configRoot`'s `.git`), the hold is recorded against `configRoot`'s HEAD, which never changes when the commit lands in `<dir>`. After the first hold on that unrelated HEAD, the state file marks it "seen," so every subsequent `-C <dir>` commit to that separate repo in the same session silently skips the cleanup-pass hold. Fails open (no security impact) and the trigger is narrow — PRISM's own repo has no nested git repos — but it's a real gap the three documented gaps in ADR-0076 § Consequences (a command built from a variable, a `cd` into a subrepo, the heredoc-quote edge case) don't cover.
 - **Suggested fix:** Either resolve the `-C` target directory from the command tokens and use it for `resolveHeadKey`/the state-file scope, or document the gap explicitly in ADR-0076 § Consequences and `install-layout.md` § Git gates alongside the other three. Given how narrow the trigger is, documenting it is likely the better cost/benefit — Clove's call.
+
+No issues found — 2026-09-07 [huntermcgrew/issue-488-git-gates] (pass 2 — repair-surface + subject re-sweep)
+
+### Angle Coverage (pass 2)
+
+- Runtime behavior — swept — repair surface: independently re-derived `resolveGitInvocation`'s `-C` accumulation and the `path.resolve` chain in `runGitGatesArm` against git's own "each `-C` relative to the previous" semantics; re-ran five `detectGitSegments` rows by hand against the fixed code (`git -C sub commit -m x`, `--amend --no-edit`, `push --delete`, the `MSYS_NO_PATHCONV=1` env-prefix form, the `commit && push` one-liner) — all match. Confirmed `resolveHeadKey` now runs at `commitDir` (resolved from `cwd` plus the `-C` chain), not `configRoot`, closing the pass-1 finding. Subject re-sweep found nothing pass 1 missed.
+- Test efficacy — swept — new test `commit gate: a -C commit into a separate nested repo is keyed on that repo's HEAD, not the config root's` asserts on the hold/retry/new-HEAD sequence against a genuinely separate nested repo, the exact scenario the pass-1 finding named; would fail if `commitDir` resolution regressed. New `detectGitSegments` `-C` test covers multi-`-C` ordering and a quoted `-C "a dir"` value.
+- Spec and doc consistency — n/a for the repair surface (no doc changes in this diff); AC-1 through AC-13 still hold against the fixed runtime.
+- Citation integrity — n/a for the repair surface.
+- External-system claims — n/a for the repair surface.
+- Repo writing rules — swept — JSDoc on `GitGateSegment`, `resolveGitInvocation`, and `resolveHeadKey` states the reason per `code-comments.md`; no drive-by changes outside the fix's frame.
+- Security — n/a — same local opt-in gate, no new trust boundary.
+- Docs impact — n/a for the repair surface.
+- Accessibility — n/a.
+
+Verification re-run this pass: `node --test scripts/ai-skills/git-gates.test.ts` (19/19 pass), `node --test scripts/ai-skills/hook-gate.test.ts` (87/87 pass, 1 skipped by design), `pnpm run prism:check-types` (clean), `pnpm prism:build` (899/900 pass, 1 skipped, 0 fail). `git status -s` confirmed no untracked/staged surprises beyond the six pre-existing untracked files.
 
 ### Angle Coverage
 
@@ -475,11 +492,11 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (one narrow gap noted: no test exercises the `-C <dir>` cross-repo HEAD-tracking finding)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-07 (`pnpm prism:build` and `pnpm prism:check`, Windows, 897 pass / 0 fail / 1 skipped, no new failures; re-ran during this review)
+- [x] Build passes — last run: 2026-09-07 (`pnpm prism:build`, Windows, 899 pass / 0 fail / 1 skipped, no new failures; `pnpm run prism:check-types` clean; re-ran during pass-2 review)
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0076; `install-layout.md` § Git gates)
 
-**Last updated:** 2026-09-07
+**Last updated:** 2026-09-07 (pass 2 — the pass-1 Minor is fixed and independently re-verified; no new findings)
 
 ---
 
