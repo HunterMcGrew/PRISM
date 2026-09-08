@@ -15,7 +15,7 @@ This is the second executed grading pass. The first ran at `95bf7102`, immediate
 
 | ID   | Verdict | Evidence type | Citation                                                                                                                                                                                    |
 | ---- | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AC-1 | MET     | executed      | `grep -o 'bookkeeping-only'` over `.ai-skills/skills/prism-code-review-pr/shared.md` → `4` (threshold `>= 3`); positive control over `.prism/rules/followup-scope.md` → `3`                 |
+| AC-1 | MET     | executed      | `grep -o 'bookkeeping-only'` over `.ai-skills/skills/prism-code-review-pr/shared.md` → `7` (threshold `>= 3`); positive control over `.prism/rules/followup-scope.md` → `4`                 |
 | AC-2 | MET     | executed      | `grep -o 'sub-bullets under'` over `.prism/rules/followup-scope.md` → `1`; `grep -o 'lines those Evidence sub-bullets hang from'` → `1` (both thresholds `>= 1`)                            |
 | AC-3 | MET     | executed      | `grep -o 'classifies the finding, not the reviewer'` over `.prism/rules/followup-scope.md` → `1` (threshold `>= 1`)                                                                         |
 | AC-4 | MET     | executed      | `grep -o '## Cleanup Items'` over `.ai-skills/skills/prism-review-loop/shared.md` → `0` (threshold `0`); positive control over `.prism/rules/followup-scope.md` → `1`                       |
