@@ -59,12 +59,26 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
 - **Ship as a two-PR stack.**
   - **Root cause:** the change touches roughly fifteen canonical files, past the ten-file threshold for a single review.
   - **Chosen approach:** PR 1 is the delivery seam and its tests (tasks 1–7) — self-contained and probe-ready. PR 2 is the durable record (tasks 9–15), landed after the probe so the docs record what the probe found rather than what it was expected to find. The cut is not cosmetic: PR 2's content depends on PR 1's outcome, and PR 2 is where the false "Claude Code only" claims get swept.
+  - **Amended 2026-09-08:** PR 2 now ships together with issue-488's B6, and task 8's probe now runs inside issue-488's B5 session. See the Decision "One probe session and one documentation PR cover both plans' tails" below. PR 1's own scope is unchanged.
+
+- **One probe session and one documentation PR cover both plans' tails.**
+  - **Root cause:** two plans each ended up owning a Hunter probe and a documentation pass over the same paragraphs of the same files. This plan's task 8 probes the Codex write gate and announce layer; issue-488's B5 probes the Codex and Cursor git gates. This plan's tasks 9–15 and issue-488's B6 both rewrite `docs/ai-skills/compatibility.md`'s hook-enforcement heading, `.prism/architect/_toolkit/install-layout.md` § Hook runtime, and ADR-0074 — and they write *different* sentences there. Task 13 renames the heading to name two delivered hosts with Cursor as the gap; B6 replaces it with a per-host table across all three. Landing them separately means writing the same lines twice and shipping an intermediate claim that is known to go stale on a schedule already planned.
+  - **Alternatives considered:** run this plan's probe and PR 2 now, ahead of Phase B, and let B6 rewrite whatever it rewrites.
+  - **Chosen approach:** merge both tails. One probe session covers task 8's four Codex write-gate observations plus B5's Codex and Cursor git-gate observations. One documentation PR then covers tasks 9–15 and B6 together, writing each shared file once at its final wording. Running this plan's PR 2 first loses because the second documentation pass is already written down and waiting: `.prism/plans/issue-488.md` carries B6 as a planned task with its own wording for those same lines, so the rewrite is scheduled rather than hypothetical, and the intermediate heading is known wrong before anyone writes it.
+  - **Cost, stated rather than hedged:** this plan's documentation corrections wait for issue-488 B1–B4 to land, because B5 cannot probe git gates that do not yet exist on Codex and Cursor. The stale "Claude Code only" claims stay in the tree for that window. The escape is explicit: if Phase B stalls, this plan's PR 2 runs standalone on its own task list. The merge is a sequencing choice, not a dependency this plan cannot walk back.
+  - **Implementation guidance:** PR #487 merges as-is, before the probe — its scope does not change. The consolidated probe runs after B1–B4 land. Eli owns the consolidated documentation PR and carries both task lists into it. Because that PR now spans two plans, it records its `## History` line in both.
+
+- **Doctor's Codex git-gates reach lines belong to issue-488 B4, not to a new ticket.**
+  - **Root cause:** `describeGitGates` and the git-gates-inert warning sit inside `if (hosts.includes("claude"))` in `scripts/ai-skills/doctor.ts` (the arm opening at `:921`), while the Codex arm at `:960` has neither. A Codex-only consumer that registers `git-gates.mjs` — which this branch now delivers — is covered by the generic dead-registration loop, but is never told whether its git gates are on, off, or inert.
+  - **Alternatives considered:** a new follow-up ticket; folding it into this plan's PR 2.
+  - **Chosen approach:** fold into issue-488 B4, which already generalizes `checkHookRegistration` over the same claude/codex/cursor host table and rewrites the Claude-only reach sentence. A new ticket fails `.prism/rules/followup-scope.md` § Scope-fit — this is content inside one already-planned task, not a scope that splits off. Putting it in this plan's PR 2 would land doctor's git-gates behavior in the write-gate plan, one host ahead of the Cursor arm B4 writes in the same pass.
+  - **Implementation guidance for B4:** lift `describeGitGates(config)` and the `gitGatesInert` warning out of the Claude arm so each runs once per delivered host. The Codex arm already knows whether `.codex/hooks.json` registers `git-gates.mjs` — this branch widened `PRISM_CODEX_HOOK_COMMAND_PATTERN` to `(?:hook|git-gates)\.mjs` for exactly that reason.
 
 - **Codex also registers and claims `git-gates.mjs`, widened during the merge with `main`'s `commit and push gates are harness hooks` change (issue #488 Phase A).**
   - **Root cause:** merging `origin/main` into this branch pulled in a second entry point, `git-gates.mjs`, delivered into the shared `.claude/hooks/` runtime and registered on Claude via its own `Bash` matcher group in `.claude/settings.json`. Both the Codex registration template and its ownership pattern only knew about `hook.mjs`, so a Codex-only consumer would receive the file but no registration for it, and a Codex registration a consumer edited away would never be reclaimed as PRISM's own.
   - **Alternatives considered:** leaving Codex without git-gates delivery until a follow-up ticket. Rejected — the runtime file already ships to a Codex-only consumer's `.claude/hooks/` per the "one runtime, two registrations" decision above, so shipping the file with no matching registration is exactly the undelivered-gate gap ADR-0072 exists to avoid.
   - **Chosen approach:** added a second `PreToolUse` matcher group (`^Bash$`) to `templates/install/.codex/hooks.json` pointing at `git-gates.mjs`, and widened `PRISM_CODEX_HOOK_COMMAND_PATTERN` to `(?:hook|git-gates)\.mjs`, mirroring how main's own `PRISM_HOOK_COMMAND_PATTERN` widened for the Claude side.
-  - **Implementation guidance:** `doctor.ts`'s git-gates-specific messages (`describeGitGates`, the git-gates-inert warning) stay scoped to `hosts.includes("claude")`, matching main's shipped design as-is — a Codex-only consumer's git-gates registration is still covered by the generic dead-registration loop, just not by the host-specific git-gates info/warning lines. Extending those lines to Codex is follow-up work, not done here. Also gated the pre-existing "installed and registered for Claude Code" info message on `!gitGatesInert`, so it never claims a clean bill of health for a delivery whose git-gates half is inert — an interaction the two branches' tests didn't independently exercise until merged. `seedGitGatesConsumer` and one standalone test in `doctor.test.ts` now pin `hosts: ["claude"]` explicitly; without it, the default all-hosts resolution now also evaluates the Codex arm and adds an unrelated "inert for Codex" warning the tests didn't anticipate.
+  - **Implementation guidance:** `doctor.ts`'s git-gates-specific messages (`describeGitGates`, the git-gates-inert warning) stay scoped to `hosts.includes("claude")`, matching main's shipped design as-is — a Codex-only consumer's git-gates registration is still covered by the generic dead-registration loop, just not by the host-specific git-gates info/warning lines. Extending those lines to Codex is follow-up work, not done here; the Decision "Doctor's Codex git-gates reach lines belong to issue-488 B4" below says where it goes. Also gated the pre-existing "installed and registered for Claude Code" info message on `!gitGatesInert`, so it never claims a clean bill of health for a delivery whose git-gates half is inert — an interaction the two branches' tests didn't independently exercise until merged. `seedGitGatesConsumer` and one standalone test in `doctor.test.ts` now pin `hosts: ["claude"]` explicitly; without it, the default all-hosts resolution now also evaluates the Codex arm and adds an unrelated "inert for Codex" warning the tests didn't anticipate.
 
 ---
 
@@ -170,7 +184,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 ### Hunter (live probe) — the gate between PR 1 and PR 2
 
-8. **[HITL] Probe Codex against the delivered registration.** Blocked on PR 1 merging. Run a Codex session in a repo with PRISM installed and `hosts` including `codex`, then record four observations in this plan's `## History`:
+8. **[HITL] Probe Codex against the delivered registration.** Blocked on PR 1 merging, and now run as part of issue-488 B5's single probe session rather than on its own — the four observations below are B5's Codex arm, recorded in this plan's `## History` as well as issue-488's. Run a Codex session in a repo with PRISM installed and `hosts` including `codex`, then record:
    - Does the `PostToolUse` announcement reach the model (announce arm works)?
    - Does an edit to a routed path with the governing doc unread get blocked, and does the `permissionDecisionReason` text render (deny arm works)?
    - What is `payload.cwd` — the repo root, or below it? This settles the relative-command-string Decision.
@@ -178,6 +192,8 @@ Every task below touches a routed path, so the write gate will ask for docs befo
    - **Blocks tasks 9–15.** If the probe fails, re-plan rather than proceeding; the contingency spellings are in the command-string Decision.
 
 ### Eli (documentation) — PR 2: the durable record, after task 8
+
+These tasks ship in one PR together with issue-488's B6, after the consolidated probe. Tasks 11, 13, and the ADR-0074 half of task 10 touch the same lines B6 rewrites, so write each of those lines once at its final three-host wording rather than twice — see the Decision "One probe session and one documentation PR cover both plans' tails." Tasks 9, 12, 14, and 15 have no B6 counterpart and are unaffected.
 
 9. **Correct ADR-0072's Claude-only Consequences bullet** — `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:65`. The bullet currently reads "**The gate reaches Claude Code consumers only.** Cursor and Codex both support `PreToolUse` … Until then, `HARNESSES.cursor.emitDeny` and `HARNESSES.codex.emitDeny` return `null`." Rewrite it to name Cursor alone as the undelivered host, keeping the delivery-gap-not-platform-limit framing and the note that each remaining seam needs its own registration format, merge semantics, and end-to-end run. Do not change the ADR's `Status`.
    - **Verify:** content-only. `pnpm prism:crossref-lint` catches a broken link if one is introduced.
@@ -244,11 +260,26 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 
 ### AC Adjustments
 
+#### AC Adjustment: AC-9 is graded on PR 2, not PR 1
+
+- **Original:** AC-9 — No document still claims hook enforcement reaches Claude Code alone.
+- **Proposed:** the criterion text and its Evidence command stay exactly as written, and the criterion gains one scope line: *Graded on PR 2 (Eli tasks 11–14). PR 1 is not expected to satisfy it.*
+- **Reason:** every site AC-9's grader listed is assigned to a PR 2 task — `install-layout.md` to task 11, the curated twin to task 12, `compatibility.md` and `AGENTS.md` to task 13, `context-reuse.md` to task 14 — and PR 2 is sequenced behind task 8's `[HITL]` probe. Reese graded it against PR 1's HEAD and returned UNMET, which is the correct grade for a PR that contains none of that work by design. Without the scope line, every verification of PR 1 re-derives the same UNMET, and a reader lands on a shipped PR that looks like it fails its own acceptance criteria. Nothing about the criterion's strictness changes: the same grep still has to come back clean before this plan closes.
+- **Status:** `proposed`
+
+#### AC Adjustment: AC-10 is graded on PR 2, not PR 1
+
+- **Original:** AC-10 — The curated seed twin no longer contradicts itself about whether the hook blocks.
+- **Proposed:** the criterion text and its Evidence command stay exactly as written, and the criterion gains one scope line: *Graded on PR 2 (Eli task 12). PR 1 is not expected to satisfy it.*
+- **Reason:** `templates/install/.prism/architect/_toolkit/install-layout.md:121` is task 12's edit, and task 12 sits behind task 8's probe. Same shape as the AC-9 adjustment above, and the same limit on it — the grep still has to return nothing before this plan closes.
+- **Status:** `proposed`
+
 ### AC Sync Log
 
 | Date | Agent | Action | Plan | Ticket |
 | ---- | ----- | ------ | ---- | ------ |
 | 2026-09-02 | Winston | AC authored | created | N/A — no tracker issue; follow-up to #477 |
+| 2026-09-08 | Winston | AC adjustment proposed — AC-9 and AC-10 scoped to PR 2 | updated | N/A — no tracker issue; follow-up to #477 |
 
 ---
 
@@ -259,6 +290,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — Briar self-review of PR 1 (tasks 1–7) against the nine review angles, plus a targeted check of the ownership-merge, host-gate, deny-envelope, and doctor-arm logic named in the dispatch; Bounds — read-only review of the PR 1 diff and its tests, no source edits, plan-only commit; Approach — read every changed file in full, run type-check/tests/crossref/pack/ship-closure, and manually repro any suspicious control-flow interaction rather than trust the green test suite alone · close: scope held — one manual repro built outside the diff (`/tmp/repro-doctor.test.ts`, not committed) to confirm the dead-registration/inert-warning suppression finding; no source files touched besides this plan.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — re-land PR #487 by merging `origin/main` (issue #488 Phase A, git gates) into this branch and reconciling the two features; Bounds — resolve conflicts in `harnesses.mjs` and `doctor.ts` only, widen Codex delivery to cover `git-gates.mjs` where the merge exposed the gap, no other scope; Approach — read both sides' full functions before resolving, keep both features' explicit correctness fixes rather than picking one side wholesale · close: scope held — the one addition beyond the literal conflict (widening `PRISM_CODEX_HOOK_COMMAND_PATTERN` and the Codex hooks.json template to also claim/register `git-gates.mjs`) is documented as a Decision above and was explicitly anticipated by the dispatch, not silent drift.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — grade all 10 acceptance criteria against the merged HEAD with executed evidence, re-grading from scratch rather than trusting the recorded marks; Bounds — read-only grading plus a plan-and-report commit, no source edits, tree clean before and after; Approach — run each Evidence sub-bullet's named command verbatim, and probe the real shipped template directly wherever a named test grades a fixture instead · close: scope held — the only additions beyond the named commands were three read-only probes (byte-identity for AC-3, live merge/drop/refresh against the real template for AC-2/AC-4/AC-5) run in OS temp dirs, which strengthened evidence rather than widening scope.
+- 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — resolve the AC-9/AC-10 UNMET so lane pr-487 can proceed, and reconcile this plan's tail with issue-488 Phase B's overlapping probe and docs pass; Bounds — this plan file only, no code, no edits to `.prism/plans/issue-488.md`, PR #487's scope unchanged; Approach — scope the two criteria to PR 2 as proposed adjustments rather than rewriting or deleting them, and merge both plans' tails into one probe session and one docs PR · close: scope held — the two `## Review Issues` entries moved to `deferred` and the pre-existing curated-twin `minor` moved with them, since it is the same site AC-10 grades and leaving the two at different statuses would misreport the same defect twice.
 
 ---
 
@@ -269,6 +301,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Fixed Briar's Major — `checkHookRegistration`'s dead-registration early return was silently dropping the inert-runtime warning for an unrelated host mix. Dropped the blanket early return, hoisted `runtimePresent`, and each per-host arm now guards its own info/warning push on the runtime's actual presence instead of trusting the registered-path set alone. Added the combined-condition test Briar named.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Merged `origin/main` (PRISM-488 Phase A) to re-land PR #487; resolved `harnesses.mjs` (kept the documented Codex deny envelope, added Codex's `emitAllow`) and `doctor.ts` (kept the Codex host arms and the `claudeIsRegistered` correctness fix, added main's git-gates-inert warning and `describeGitGates` call). Widened Codex's delivery and ownership pattern to also cover `git-gates.mjs` — see Decision "Codex also registers and claims git-gates.mjs." `pnpm prism:check` is green on the merged HEAD (types, 913/913 runnable tests, crossref-lint, verify-manifest, ship-closure, verify-pack).
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Reese graded the AC against the merged HEAD `fe50d415` — 7 MET, 2 UNMET, 0 UNGRADEABLE across the 9 machine criteria; AC-7 routed to human verification. Both UNMET (AC-9, AC-10) are the documentation sweeps the plan assigns to PR 2. Report at `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md`.
+- 2026-09-08 [huntermcgrew/codex-hook-delivery]: Scoped AC-9 and AC-10 to PR 2 as `proposed` adjustments and moved their `## Review Issues` entries to `deferred`; PR #487's own scope is unchanged and it merges before the probe. Merged this plan's task 8 probe and PR 2 docs with issue-488's B5 and B6 into one probe session and one docs PR, and routed Clove's doctor git-gates gap to issue-488 B4; see Decisions.
 
 ---
 
@@ -289,32 +322,35 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 ### Curated seed twin contradicts itself on whether the hook blocks
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred`
 - **File:** `templates/install/.prism/architect/_toolkit/install-layout.md:121`
 - **Problem:** the line says "The hook announces; it never blocks" directly above the same file's § Write gate, which describes blocking. `checkSeedDrift` never compares curated content, so no gate catches it.
 - **Suggested fix:** task 12.
+- **Deferred to:** PR 2, task 12. The fix is a curated-seed doc edit the plan assigns to PR 2, which is sequenced behind task 8's probe; PR 1 carries no documentation changes by design. Reopens as `fixed` when task 12 lands. Graded by AC-10, adjusted to PR 2 scope in `### AC Adjustments`.
 
 ### AC-9 UNMET — documents still claim hook enforcement reaches Claude Code alone
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `deferred`
 - **File:** `.prism/rules/context-reuse.md:30`, `.prism/architect/_toolkit/install-layout.md:145` and `:159`, `docs/ai-skills/compatibility.md:17` `:69` `:73` `:83`, `AGENTS.md:858`, `templates/install/.prism/architect/_toolkit/install-layout.md:121` and `:135`, `templates/install/.prism/rules/context-reuse.md:30`, plus the `.claude/` `.codex/` `.cursor/` build mirrors of each
 - **Criterion (verbatim):** AC-9 — No document still claims hook enforcement reaches Claude Code alone.
 - **Procedure:** ran the Evidence sub-bullet's own command verbatim from the repo root at `fe50d415` — `grep -rn "Claude Code only" . --exclude-dir=node_modules --exclude-dir=.git`, exit 0.
 - **Expected vs observed:** expected "only Cursor-scoped statements and ADR-0074's frozen `## Context` narration"; observed 30 lines, including `.prism/rules/context-reuse.md:30` — "It reaches Claude Code only, it is friction rather than a wall…" — which is one of the two sites the criterion's own positive control names. `scripts/ai-skills/doctor.ts:812`, the other named control site, is clear; its current message at `doctor.ts:984` names the string only as a `§` citation into `compatibility.md`, whose heading at `:69` is itself still a hit.
 - **Evidence type:** `executed`
 - **Report:** `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md` § AC-9
+- **Deferred to:** PR 2, tasks 11–14. Every site listed above is an assigned PR 2 edit, and PR 2 is sequenced behind task 8's probe — the grade is correct and PR 1 was never expected to satisfy it. Reopens as `fixed` when the criterion's own grep comes back clean on the PR 2 branch. The criterion keeps its text and its command; only its grading scope moved, as a `proposed` adjustment in `### AC Adjustments` awaiting Hunter's accept.
 
 ### AC-10 UNMET — the curated seed twin still contradicts itself on whether the hook blocks
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `deferred`
 - **File:** `templates/install/.prism/architect/_toolkit/install-layout.md:121`
 - **Criterion (verbatim):** AC-10 — The curated seed twin no longer contradicts itself about whether the hook blocks.
 - **Procedure:** ran the Evidence sub-bullet's own command verbatim at `fe50d415` — `grep -n "never blocks" templates/install/.prism/architect/_toolkit/install-layout.md`, exit 0.
 - **Expected vs observed:** expected the grep to return nothing; observed one match at line 121 — "The hook announces; it never blocks. … Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today." That is the exact line the criterion's positive control names as the pre-change state, so the file is unchanged on this axis. Same site as the open `minor` entry above.
 - **Evidence type:** `executed`
 - **Report:** `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md` § AC-10
+- **Deferred to:** PR 2, task 12 — the same site (`templates/install/.prism/architect/_toolkit/install-layout.md:121`) and the same disposition as the `Curated seed twin contradicts itself` entry above, which grades as this criterion. Reopens as `fixed` when the criterion's grep returns nothing on the PR 2 branch. Grading scope moved as a `proposed` adjustment in `### AC Adjustments`, awaiting Hunter's accept.
 
 ---
 
@@ -333,4 +369,4 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close, after PR 2 and task 8's probe
 
-**Last updated:** 2026-09-08 [huntermcgrew/codex-hook-delivery] — merge with origin/main to re-land PR #487
+**Last updated:** 2026-09-08 [huntermcgrew/codex-hook-delivery] — AC-9/AC-10 scoped to PR 2; the two open `## Review Issues` entries are `deferred` to PR 2, so the "no critical or major issues" box reflects PR 1's own scope
