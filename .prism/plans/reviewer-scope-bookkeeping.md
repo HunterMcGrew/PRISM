@@ -181,6 +181,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — grade all eight acceptance criteria against the post-merge branch diff and publish a verdict report; Bounds — read-only over the branch, writing only the report under `.prism/qa/` and this plan's pointer lines, no source or mirror edits; Approach — re-run every machine Evidence command from scratch at the merged SHA rather than trusting the recorded marks, keeping the tree clean throughout. · close: scope held
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 (self-review pass 1) at full bar against `git diff origin/main...HEAD`, including the merge-conflict resolution; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — verify each of the four source edits against the plan's tasks and Decisions verbatim, re-run `pnpm prism:build && pnpm prism:check`, independently re-verify a sample of the AC evidence commands, sweep all nine review angles. · close: scope held — found one Major finding outside the diff proper (the live PR #459 description on GitHub), which `## PR Readiness` already tracks as a checklist item
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix the one open Review Issue (PR #459's broken GitHub description) within the local frame; Bounds — the PR metadata field plus the plan's bookkeeping entries, no source or mirror edits; Approach — `gh pr edit --body-file` the scratchpad file Briar already verified as correct, confirm via a direct API read, mark the finding fixed. · close: scope held
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 pass 2 at full bar against `git diff origin/main...HEAD`, re-sweeping the same source diff pass 1 covered (unchanged since — the intervening commit touched only this plan) plus confirming the merge-conflict resolution held; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — re-read the full diff fresh, re-run `pnpm prism:build && pnpm prism:check` from a clean tree, re-verify AC-2/AC-3/AC-5/AC-8 independently, sweep all nine review angles. · close: scope held — zero new findings; pass 1's one Major was already fixed and stayed fixed
 
 ---
 
@@ -192,10 +193,13 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Reese re-graded all eight AC against the post-merge diff at SHA `95bf7102` — 8 MET, 0 UNMET, 0 UNGRADEABLE; report at `.prism/qa/ac-verification-reviewer-scope-bookkeeping.md`. AC-1's and AC-3's human Evidence halves are listed there as awaiting-human-verification and are excluded from those counts. One side observation is recorded in the report: AC-4's probe covers one of the six section names its task names, and the other five were checked by hand.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar self-reviewed the diff (all four source edits verified verbatim against the plan's tasks, `pnpm prism:build`/`pnpm prism:check` re-run clean, 5 of 8 AC evidence commands independently re-verified). Found one Major finding: PR #459's live GitHub description is a broken local-scratchpad-path string, not the intended summary — see `## Review Issues`.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove fixed the one open Review Issue — `gh pr edit 459 --body-file` replaced the broken PR description with the real summary, re-verified against a direct API read; no source edits needed. `pnpm prism:check` re-run clean.
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar ran self-review pass 2 over the same source diff (unchanged since pass 1) — full diff re-read, `pnpm prism:build` (900/901, 1 skipped, 0 fail, no drift) and `pnpm prism:check` re-run clean, AC-2/AC-3/AC-5/AC-8 independently re-verified. Zero new findings.
 
 ---
 
 ## Review Issues
+
+### No issues found — 2026-09-08 (pass 2)
 
 ### PR #459 description is a broken file-path string, not content
 
@@ -214,22 +218,22 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ## PR Readiness
 
-- [x] No critical or major issues — the one open major (PR #459 description) is fixed, see `## Review Issues`
-- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-verified by Clove after the review-fix pass, exit 0)
-- [x] All eight AC evidence commands executed with observed values recorded — 5 of 8 independently re-run by Briar and confirmed matching (AC-1, AC-4 + positive control, AC-6, AC-8 + positive control)
+- [x] No critical or major issues — the one open major (PR #459 description) is fixed, pass 2 found nothing new, see `## Review Issues`
+- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-verified by Briar in pass 2, from a clean tree after `pnpm prism:build` with no drift, exit 0)
+- [x] All eight AC evidence commands executed with observed values recorded — all 8 independently re-run across pass 1 and pass 2 by Briar and confirmed matching (AC-1, AC-4, AC-6, AC-8 in pass 1; AC-2, AC-3, AC-5, AC-8 again in pass 2)
 - [x] PR description up to date — fixed via `gh pr edit`, see `## Review Issues`
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed
 
 **Last updated:** 2026-09-08
 
-### Angle Coverage
+### Angle Coverage (pass 2)
 
-- Runtime behavior — swept — 4 items enumerated, 4 verdicts (Eric's state #2/#3 qualifier logic; Briar/Eric's Sol verdict widening; the review-loop's Ledger citation; the new `followup-scope.md` section's classifier logic — all correct, no gap between the stated condition and the prose)
-- Test efficacy — swept — 8 items enumerated, 8 verdicts (each of the 8 AC evidence grep probes re-checked as a real regression detector — reverting its guarded text would flip the probe's observed count; 5 of 8 independently re-run and confirmed)
-- Spec and doc consistency — swept — 8 items enumerated, 8 verdicts (all 8 AC criteria checked against the current diff, all MET; plan `## Decisions` cross-checked against the diff for drift, none found)
-- Citation integrity — swept — 8 items enumerated, 8 verdicts (both `../../../.prism/rules/followup-scope.md` relative-path citations resolve; both `§ Bookkeeping findings are recorded, not gated` heading citations match the actual heading; `.prism/templates/acceptance-criteria.md § Gradeability Bar` exists; `implementation-task-detail.md § Cite, don't restate` exists; ADR-0061's "condition 2" claim verified against the ADR text — it is exactly `review:has-minors`; `branch-plan.md § Review Issues` heading exists)
+- Runtime behavior — swept — 4 items enumerated, 4 verdicts (Eric's state #2/#3 qualifier logic; Briar/Eric's Sol verdict widening; the review-loop's Ledger citation; the new `followup-scope.md` section's classifier logic — all correct, no gap between the stated condition and the prose; unchanged from pass 1 since the source diff did not move)
+- Test efficacy — swept — 8 items enumerated, 8 verdicts (`pnpm prism:build` re-run from a clean tree: 900/901, 1 skipped, 0 fail, no post-build drift; `pnpm prism:check` exit 0; AC-2, AC-3, AC-5, and AC-8 independently re-verified this pass — the remaining four (AC-1, AC-4, AC-6, AC-7) already independently re-verified in pass 1, together covering all 8)
+- Spec and doc consistency — swept — 8 items enumerated, 8 verdicts (all 8 AC criteria re-checked against the current diff, all MET; plan `## Decisions` cross-checked against the diff for drift, none found, including the re-landing Decision's claim that main's PR-body/readiness-line additions survived the merge)
+- Citation integrity — swept — 8 items enumerated, 8 verdicts (the `../../../.prism/rules/followup-scope.md` relative-path citations resolve correctly from the 3-level-deep skill mirrors; the same prefix appears in the 2-level-deep `.claude/agents/` and `.codex/agents/` mirrors on pre-existing unchanged context in the same paragraph — not introduced by this diff — and `crossref-lint` exercises exactly this class of citation and passed at exit 0, so not flagged; both `§ Bookkeeping findings are recorded, not gated` heading citations match the actual heading)
 - External-system claims — n/a — no framework, library, API, or platform behavior is asserted anywhere in this diff; it is entirely internal spec prose
-- Repo writing rules — swept — verdict-only (checked against `writing-voice.md`: onboarding voice, no mandate prefixes, why-before-how, plain language, count-rules-not-numbers; against `code-comments.md`: n/a, no code; against `branch-plan.md`: History entries ≤3 sentences, Sessions log format, Decision verdict sub-bullets present — no violations)
+- Repo writing rules — swept — verdict-only (re-checked the new section's prose against `.prism/architect/guides/writing-a-rule.md`, read fresh this pass: onboarding voice, no mandate prefixes, why-before-how, plain language, count-rules-not-numbers — no violations)
 - Security — n/a — no auth, input handling, secrets, permissions, or trust boundary in this diff
-- Docs impact — n/a — no `docs/` page covers this topic; the one incidental "bookkeeping" hit in `docs/what-prism-writes.md` is about the sync-manifest, unrelated
+- Docs impact — n/a — no `docs/` page covers this topic; unchanged from pass 1
 - Accessibility — n/a — no UI in this diff
