@@ -498,7 +498,7 @@ test("findConfigRoot: walks up from a subdirectory to the directory holding .ai-
 		await seedGitRepo(root, { commitCleanupPass: true });
 		const nested = path.join(root, "packages", "app");
 		await fs.mkdir(nested, { recursive: true });
-		// findConfigRoot now canonicalizes internally (see the inclusive-stop test
+		// findConfigRoot canonicalizes internally (see the inclusive-stop test
 		// below), so a windows-latest runner whose own temp dir is an 8.3 short
 		// name — `root` itself — gets back the long form, not `root` verbatim.
 		const canonicalRoot = realpathSync.native(root);
@@ -518,7 +518,7 @@ test("findConfigRoot: walks up from a subdirectory to the directory holding .ai-
 	});
 });
 
-test("findConfigRoot: the inclusive stop fires when startDir and stopDir spell the same directory two different ways", async () => {
+test("findConfigRoot: the inclusive stop fires when startDir and stopDir spell the same directory two different ways", async (t) => {
 	await withTempRepo(async (root) => {
 		await seedGitRepo(root, { commitCleanupPass: true });
 		const target = path.join(root, "packages", "app");
@@ -531,6 +531,7 @@ test("findConfigRoot: the inclusive stop fires when startDir and stopDir spell t
 			// A junction needs no elevated privileges on Windows, but some locked-down
 			// runners still refuse it — skip rather than fail the whole suite on that.
 			if ((error as NodeJS.ErrnoException).code === "EPERM") {
+				t.skip("junction creation refused (EPERM) — locked-down runner");
 				return;
 			}
 			throw error;
@@ -540,7 +541,7 @@ test("findConfigRoot: the inclusive stop fires when startDir and stopDir spell t
 		await fs.mkdir(sub);
 		// The real path git itself would report for `sub`, reached through the link's
 		// target rather than the link — the two spellings a bare `path.relative`
-		// comparison used to treat as different directories.
+		// comparison treats as different directories unless both sides are canonicalized first.
 		const realSub = path.join(await fs.realpath(target), "sub");
 
 		assert.equal(

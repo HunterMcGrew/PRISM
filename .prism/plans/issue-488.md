@@ -329,6 +329,7 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 - 2026-09-07 [huntermcgrew/issue-488-git-gates]: Review loop run (loopBase `a00829d5`): Briar pass 1 found the `-C` commit-key gap, Eric pass 1 its push-side twin; both closed by scoping each gate's config to the repo the call runs in (`b48654ad`, `b13118c4`). Both phases subject-clean on the next pass under the one-pass exit (D11); Eric resolved his thread and labeled `confidence:high`; PR #489 stays draft for the human gate.
 - 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel]: Root-caused the Windows-CI-only `git-gates.test.ts` nested-repo failure; the config-root walk's stop boundary compares two spellings of one directory as text, so a short-name `TEMP` disables nested-repo isolation. See Debugged Issues: Nested-repo isolation fails when the same directory is spelled two ways.
 - 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel]: Fixed the nested-repo isolation bug — `findConfigRoot` canonicalizes `startDir`/`stopDir` via `realpathSync.native` before the inclusive-stop compare, plus a symlink-based regression test and two now-necessary fixes to the pre-existing `findConfigRoot` test's spelling-dependent assertions. `pnpm prism:check` green, and the suite re-verified green under an artificially short-named `TMP`/`TEMP` reproducing the CI condition. See Debugged Issues for the full fix note.
+- 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel]: Fixed Eric's three PR #491 Minors — two changelog-voice comments in `git-gates.test.ts` reworded to state the current invariant, the EPERM branch now calls `t.skip()` instead of a bare `return`, and `resolveCanonicalDir`'s JSDoc cites `resolveSegmentDir`'s unvalidated `-C` path as the production caller instead of only the unit test. `pnpm prism:check` green (900/902, 2 skipped by design, 0 fail).
 
 ---
 
@@ -339,6 +340,7 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 - 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — Briar self-review pass 2, dispatched by Clove after `b48654ad` fixed the pass-1 Minor; Bounds — repair surface (`a00829d5..HEAD`) held to the four-anchor regression bar, subject surface (`f569c57c..a00829d5`) re-swept in full, ledger sections out of scope, no code changes, the six pre-existing untracked files never staged; Approach — read the fix diff, independently re-derive the `-C` chain resolution and five `detectGitSegments` rows by hand, re-run the git-gates/hook-gate suites, type-check, and `pnpm prism:build` · close: scope held — pass-1 finding confirmed fixed and closed, no new findings, all nine angles swept or n/a
 - 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel] open: Intent — root-cause the Windows-runner-only failure of the `-C into a separate nested repo` test; Bounds — done is a graded `## Debugged Issues` entry with a named fix and suggested test, no source file touched, no fix written; Approach — deduce the boundary from the code path, then reproduce locally by pointing `TMP`/`TEMP` at an 8.3 short-name directory · close: scope held — the plan file is the only write, the repro ran outside the repo, and the recommended fix is named but not applied
 - 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel] open: Intent — implement Sasha's diagnosed fix for the nested-repo config-root bug and add the suggested regression test; Bounds — done is `findConfigRoot` canonicalized, `pnpm prism:check` green, a draft PR opened, no unrelated files touched; Approach — verify the diagnosis against source first, apply `realpathSync.native` canonicalization matching the codebase's existing `consumer-root.test.ts` precedent, then run the new test red-then-green against the pre-fix code · close: scope held — only `git-gates.mjs` and `git-gates.test.ts` changed; found and fixed an additional gap the diagnosis didn't name (two pre-existing test assertions broken by the same canonicalization), verified against both normal and an artificially short-named `TMP`/`TEMP`
+- 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel] open: Intent — fix Eric's three Minor findings from PR #491 pass 1 (two changelog-voice comments, an EPERM branch reporting pass instead of skip, a JSDoc citing the wrong caller); Bounds — done is all three ## Review Issues entries marked fixed, `pnpm prism:check` green, one review-fix commit pushed, no unrelated files touched; Approach — verify each finding against the cited lines before editing, apply the minimal wording/behavior fix, re-run the git-gates suite and the full check · close: scope held — only `git-gates.test.ts` and `git-gates.mjs` changed, exactly the three cited findings, all local-frame comment/JSDoc/test-reporting fixes with no design tradeoff
 
 ---
 
@@ -488,6 +490,32 @@ No issues found — 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-tople
 
 Verification this pass: `pnpm run prism:check-types` (clean), `pnpm run prism:crossref-lint` (clean), `pnpm run prism:test` (900/902 pass, 2 skipped by design, 0 fail), `pnpm run prism:build` (901/902 pass, 1 skipped, 0 fail) — all on a fresh scratch worktree at the PR tip on Windows. Independent repro in the same worktree: `npx tsx --test scripts/ai-skills/git-gates.test.ts` under a real 8.3-short-name `TMP`/`TEMP` — 21/21 pass on the fixed branch, 18/21 pass (3 failing, matching the CI report plus the two now-necessary assertion updates) with `git-gates.mjs` reverted to `origin/main` under the identical env. `git status -s` on the PR branch worktree: clean.
 
+### Changelog-voice comments in the canonicalization test
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: dropped "now" from the `findConfigRoot` comment and reworded the `realSub` comment from "used to treat" to a plain statement of the current invariant.
+- **File:** `scripts/ai-skills/git-gates.test.ts:501,543`
+- **Problem:** Eric (PR #491, pass 1 — GitHub review, after Briar's self-review above): two comments described the change rather than the current code — "findConfigRoot NOW canonicalizes internally" and "the two spellings a bare `path.relative` comparison used to treat as different directories" — changelog voice per `.prism/rules/code-comments.md` § Not Allowed.
+- **Suggested fix:** state the invariant that makes the current code correct; let git history carry the migration story.
+
+### EPERM branch in the junction test passes with zero assertions instead of skipping
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: the test now takes the `t` context parameter and calls `t.skip(...)` before the early `return`, so a junction-refusing runner reports skipped rather than passed.
+- **File:** `scripts/ai-skills/git-gates.test.ts:521-535`
+- **Problem:** Eric (PR #491, pass 1): the `EPERM` branch did a bare `return`, which node:test reports as a pass with zero assertions rather than a skip — on a junction-refusing runner the regression guard for this CI-only bug would report green while asserting nothing. The `-C into a separate nested repo` test covers the same defect end to end, so this was a reporting-honesty gap, not a coverage hole.
+- **Suggested fix:** call `t.skip()` with a reason, taking `t` as the test callback's parameter.
+
+### resolveCanonicalDir's JSDoc cites the unit test, not the production path that needs the fallback
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: JSDoc now names `resolveSegmentDir`'s unvalidated `-C` directory building as the production path that can hand `findConfigRoot` a `startDir` not on disk.
+- **File:** `scripts/ai-skills/hooks/git-gates.mjs:183-185`
+- **Problem:** Eric (PR #491, pass 1): the fallback's justification cited `findConfigRoot`'s own unit test rather than the production path that needs it — `resolveSegmentDir` never validates the directories it builds from `-C` tokens, so `git -C does-not-exist commit` reaches the walk with a nonexistent `startDir`. The framing invited a future reader to drop the catch as test scaffolding. Bounded today because `runGitGatesArm`'s catch-all fails open.
+- **Suggested fix:** name the production caller, not just the test.
+
+Verification after these three fixes: `node --test scripts/ai-skills/git-gates.test.ts` (21/21 pass, 0 skipped — this machine's junction creation succeeds so the EPERM branch didn't fire), `pnpm run prism:check-types` (clean), `pnpm run prism:check` (exit 0; 900/902 pass, 2 skipped by design, 0 fail across the full suite).
+
 ---
 
 ## Acceptance Criteria
@@ -543,16 +571,16 @@ Verification this pass: `pnpm run prism:check-types` (clean), `pnpm run prism:cr
 
 ## PR Readiness
 
-- [x] No critical or major issues — none found (PR #491, pass 1)
+- [x] No critical or major issues — none found; three Minors from Eric's PR #491 pass 1 fixed (see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases (symlink-based `findConfigRoot` regression test; confirmed to fail without the fix)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-08 (`pnpm run prism:build`, Windows, 901 pass / 0 fail / 1 skipped; `pnpm run prism:check-types` and `pnpm run prism:crossref-lint` clean; independently re-reproduced the Windows-CI failure and confirmed the fix under a real 8.3 short-name `TMP`/`TEMP`)
+- [x] Build passes — last run: 2026-09-08 (post-review-fix: `pnpm run prism:check-types` clean, `node --test scripts/ai-skills/git-gates.test.ts` 21/21 pass, `pnpm run prism:check` exit 0 — 900/902 pass, 2 skipped by design, 0 fail)
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (no new promotable decision — this is a bugfix, not a pattern change)
 
-**Last updated:** 2026-09-08 (pass 1, PR #491 — Windows-CI-toplevel followup; subject-clean, no findings)
+**Last updated:** 2026-09-08 (Eric's PR #491 pass 1 Minors fixed by Clove; three review-fix edits, all local-frame comment/JSDoc/test-reporting)
 
 ---
 

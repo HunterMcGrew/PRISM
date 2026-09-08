@@ -180,9 +180,11 @@ export function detectGitSegments(command) {
  * short name and resolves a junction; on POSIX it resolves a symlink — or
  * `path.resolve(dir)` when the directory cannot be inspected.
  *
- * The fallback is required, not defensive: `findConfigRoot`'s own unit test
- * walks a directory that is never created, and `realpathSync.native` throws
- * `ENOENT` on a path that does not exist.
+ * The fallback is required, not defensive: `resolveSegmentDir` builds a
+ * segment's directory from `-C` tokens with no filesystem check, so a
+ * command like `git -C does-not-exist commit` reaches this walk with a
+ * `startDir` that is not on disk, and `realpathSync.native` throws `ENOENT`
+ * on a path that does not exist.
  *
  * @param {string} dir
  * @returns {string}
