@@ -3,7 +3,7 @@
 - **Plan:** `.prism/plans/prism-477-followup-codex-hooks.md`
 - **PR:** #487 — "PRISM-477 followup: Deliver the hook runtime to Codex consumers"
 - **Branch:** `huntermcgrew/codex-hook-delivery`
-- **Graded at SHA:** `fe50d415ea129989a2e91b4371e40137c2178b76`
+- **Graded at SHA:** `4189b9d19aa416ef087a36a4dea43d8ba1cea29e` (re-check; first pass was `fe50d415ea129989a2e91b4371e40137c2178b76`)
 - **Date:** 2026-09-08
 - **Environment:** worktree `.claude/worktrees/wf_cb2c787f-341-6`, Windows host, detached HEAD at the branch tip
 - **Diff under grading:** `git diff origin/main...HEAD` — 9 files, 1040 insertions, 77 deletions
@@ -28,6 +28,8 @@ The branch was merged with `origin/main` (PRISM-488 Phase A git gates) at `fe50d
 | AC-10 | **UNMET** | executed | `grep -n "never blocks" templates/install/.prism/architect/_toolkit/install-layout.md` — returns line 121 |
 
 **Machine counts:** 7 MET · 2 UNMET · 0 UNGRADEABLE. AC-7 is `human`-tagged and excluded from every machine count.
+
+**Re-check at `4189b9d1` (2026-09-08).** Every machine criterion was re-run from scratch at the new SHA — no verdict was carried over. All ten rows above hold unchanged. `4189b9d1` adds only the first pass's own plan and report commit on top of `fe50d415`, so no source file moved between the two passes; the re-run is a confirmation, not a re-derivation from different code. Two new AC-9 hit sites surfaced on this pass that the first pass did not list — see § AC-9 → Re-check delta.
 
 **Tree-clean discipline:** `git status -s` was empty before grading and empty after every criterion. `pnpm install --ignore-scripts` was needed to populate `node_modules` (untracked, gitignored); no tracked file changed at any point.
 
@@ -173,6 +175,19 @@ grep -rn "Claude Code only" . --exclude-dir=node_modules --exclude-dir=.git
 
 The plan's `## Implementation Tasks` assigns this sweep to tasks 11–14, which the plan's own PR-split Decision places in PR 2 — an observation about where the work sits, not a diagnosis or a prescribed fix.
 
+#### Re-check delta at `4189b9d1`
+
+The same command now returns 62 lines rather than 30. Most of the growth is this report and the plan's own `## Review Issues` entries quoting the string, which the first pass created — those are records of the failure, not instances of the claim.
+
+Two hits are neither, and neither is named by any task in the plan's PR-2 list (tasks 9–14). Both arrived from `origin/main` in the `fe50d415` merge (PRISM-488 Phase A, commit `972c7757`), and both are untouched by this branch — `git diff --name-only origin/main...HEAD` matches neither file:
+
+- `.prism/spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md:87` — "Reach is Claude Code only, the same delivery gap ADR-0074 records for the write gate. Codex and Cursor both document the shell-precondition event and its deny envelope, so their delivery is a follow-up…"
+- `docs/ai-skills/compatibility.md:83` — "Today they reach Claude Code only, on the same delivery as the write gate; … a follow-up delivers the gates to Codex and Cursor."
+
+Both describe the git gates, and this branch's own Decision ("Codex also registers and claims `git-gates.mjs`") plus the shipped `templates/install/.codex/hooks.json` make the Codex half of each statement false at this HEAD. Observation, not a prescribed fix: as the plan's task list stands, running tasks 9–14 verbatim would leave AC-9's grep still returning these two lines, so AC-9 would still grade UNMET after PR 2.
+
+**Evidence type:** `executed` — the grep above, plus `git log --oneline -2 origin/main -- <adr path>` (returns `972c7757`) and `git diff --name-only origin/main...HEAD` (neither path present).
+
 ### AC-10 — the curated seed twin no longer contradicts itself — **UNMET**
 
 **Procedure:** ran the criterion's own command verbatim.
@@ -207,3 +222,4 @@ Not graded, not counted in any machine total — surfaced at the human merge gat
 ## Re-check log
 
 - **2026-09-08 @ `fe50d415`** — first pass. 7 MET · 2 UNMET · 0 UNGRADEABLE across the 9 machine criteria; AC-7 routed to human verification. Both UNMET criteria (AC-9, AC-10) are documentation sweeps the plan assigns to PR 2.
+- **2026-09-08 @ `4189b9d1`** — full re-check, every machine criterion re-run from scratch rather than carried over. Verdicts unchanged: 7 MET · 2 UNMET · 0 UNGRADEABLE. Evidence re-executed this pass: `pnpm prism:check` exit 0 (`tests 914 · pass 912 · fail 0 · skipped 2`); `update.test.ts` 80/80, `doctor.test.ts` 56/56, `hook-gate.test.ts` 91 pass / 1 skip, each exit 0; a fresh live probe of `refreshHookRuntime` against the real shipped `templates/install/.codex/hooks.json` in OS temp dirs (`AC1_ALL_MATCH_PATTERN=true`, `AC5_RUNTIME_PRESENT=true`, `AC5_CLAUDE_SETTINGS_PRESENT=false`, `AC2_CONSUMER_ENTRY_PRESENT=true` with `AC2_PRE_ENTRY_COUNT=3`, `AC3_BYTE_IDENTICAL=true` at 636/636 bytes, `AC4_PRISM_ENTRIES_GONE=true` with `AC4_CONSUMER_ENTRY_KEPT=true`); and both AC-9/AC-10 greps verbatim. New this pass: the two merge-inherited AC-9 sites in § AC-9 → Re-check delta. `git status -s` empty before and after; the probe wrote only to OS temp dirs and its one scratch file was removed before the tree was re-checked.
