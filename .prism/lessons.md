@@ -495,3 +495,19 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-09-02 (PRISM-481, PR #484) — moving anchor substitution out of Atlas and into the render pass left three sentences still crediting Atlas with running it: `anchor-substitution.md` § Anchor schema, `shared.md`'s Procedure D, and `shared.md`'s opening persona description. AC-9's grep passed over all three, because it searched the deleted function names and each stale sentence names only an actor. Plan close found a fourth in `_toolkit/onboarding.md`'s checkpoint-density section. Third occurrence of the class in one session — see the PRISM-477 entry above, where a refactor moved a check under a new branch and the plan's own Decision still described its old reach.
 
 **How to apply:** the removal-and-rename-completeness section of the always-on code standards already owns this; it reads as being about a changed *predicate*, and this is a changed *actor*. When a change moves a step from one component to another, run a prose search for the old performer's name across every doc describing the step, alongside the symbol grep rather than instead of it — a grep for deleted symbols cannot see a sentence whose only stale token is a persona's name.
+
+---
+
+## Under `shell: true`, a missing command is never `ENOENT` — the shell reports it as its own exit status
+
+**Why:** 2026-09-07 (issue #488) — the push gate's fail-open path was specified on `result.error` carrying `ENOENT`, and the test row for a nonexistent lint command expected an allow. Under `spawnSync(cmd, { shell: true })` the shell starts fine and the miss is the shell's own exit: `127` on every POSIX shell, `1` plus `is not recognized as an internal or external command` on `cmd.exe` — not `9009`, which is only what `%ERRORLEVEL%` shows interactively. The first smoke run denied instead of allowing.
+
+**How to apply:** when a spec says "spawn error" for a `shell: true` command, read it as "the shell's not-found report" and detect that on `status` and `stderr`; keep the `result.error` branch for `ETIMEDOUT`, which `spawnSync` does report.
+
+---
+
+## A `spawnSync` child killed on timeout can hold its cwd open on Windows past the call's return
+
+**Why:** 2026-09-07 (issue #488) — the git-gates test fixture removed its temp repo right after the timeout case and hit `EBUSY: resource busy or locked, rmdir` about one run in three on Windows; the killed `node -e "setTimeout(…)"` child had not released the directory yet.
+
+**How to apply:** a fixture that spawns a process with `timeout` and then removes the directory it ran in passes `maxRetries`/`retryDelay` to `fs.rm`; a bare `fs.rm` is a flake waiting for the CI Windows leg.

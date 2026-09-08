@@ -305,17 +305,50 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
   - **Implementation guidance:** B5 is `[HITL]`; do not mark Phase B done on the docs alone — the repo's convention (ADR-0072, ADR-0074) is a live probe before trusting a deny envelope.
   - → promoted to ADR-0076 § Consequences (task B6).
 
+- **D8 — The push gate's "could not start" case is read off the shell's own report, not `result.error`.** Under `shell: true` a missing binary never produces `ENOENT`: the shell starts fine and reports the miss itself — exit `127` on every POSIX shell, exit `1` plus `is not recognized as an internal or external command` on `cmd.exe` (measured 2026-09-07; `9009` is what `%ERRORLEVEL%` shows in an interactive prompt, not what `cmd /c` returns).
+  - **Alternatives considered:** deny on not-found (holds every push until the config changes — a wall, which D3 rules out); status-only detection (misses `cmd.exe`, which returns `1`).
+  - **Chosen approach:** status `127`, or the `cmd.exe` message on any non-zero exit, routes to the announced allow. The `result.error` branch stays for `ETIMEDOUT`, which `spawnSync` does report.
+  - **Implementation guidance:** A5-P's `result.error` (`ENOENT`) wording and A17's "`definitely-not-a-binary-xyz` → allow envelope" test describe the same outcome by a different signal; the test holds as written.
+  - → no promotion needed (implementation tactic; `git-gates.mjs` documents it at the constant).
+
+- **D9 — `unquote` lives in `lib/shell.mjs`, imported by both `hook.mjs` and `git-gates.mjs`.** The cleanup pass on this diff found it copied verbatim into `git-gates.mjs`; identical logic at two sites is the self-review threshold, and the splitter's module is the natural home.
+  - → no promotion needed (file placement).
+
+- **D10 — `git-gates.mjs` reads stdin before it checks `--event`, so a host that registers it on another event has its pipe drained rather than left unread.** Mirrors `hook.mjs`'s `main`; costs nothing on the dispatching path.
+  - → no promotion needed (mirrors the existing entry point).
+
 ---
 
 ## History
 
 - 2026-09-07 [huntermcgrew/issue-488-git-gates]: Issue #488 filed; branch cut from `origin/main` at `f569c57`; plan seeded with D1–D7 and Phase A/B tasks. Design agreed in chat (mechanism, gate strength, push gate, opt-in default); Codex/Cursor confirmed feasible from their hook docs and added as Phase B.
+- 2026-09-07 [huntermcgrew/issue-488-git-gates]: Phase A implemented end to end (A1–A17): `lib/shell.mjs` extracted, `git-gates.mjs` runtime with both gates, Claude registration and delivery, config schema + PRISM's own opt-in, doctor lines, `cleanup-pass.md`, shipping-flow step 2, ADR-0076, and four test suites. `pnpm prism:check` green on Windows with no new failures; scratch-consumer adopt → update ×2 is a byte-stable no-op; see Decisions D8–D10 for what the plan's spec had to bend on.
+
+---
+
+## Sessions
+
+- 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — ship Phase A (A1–A17) as one reviewable draft PR; Bounds — done is `prism:check` green plus a draft PR, Phase B untouched, the six pre-existing untracked files left out of every commit; Approach — plan order A1→A17 with the runtime smoke-tested in a scratch repo before the delivery wiring · close: scope held — every write is under a Phase A task, the one addition (D9's `unquote` move) came from the cleanup pass on this diff
 
 ---
 
 ## Debugged Issues
 
-None yet.
+### git-gates test temp dir fails to remove on Windows after the timeout case
+
+- **Status:** `fixed`
+- **Severity:** Low
+- **Confidence:** `High`
+- **Environment:** Windows 11, `node --test scripts/ai-skills/git-gates.test.ts`, one run in three
+- **File:** `scripts/ai-skills/git-gates.test.ts:31`
+- **Root cause:** `[Confirmed]` — the lint child `spawnSync` kills on timeout can still hold the scratch cwd open when the fixture's `fs.rm` runs, so `rmdir` returns `EBUSY`.
+- **Steps to Reproduce:**
+  1. Run the suite repeatedly on Windows; the `timed out` case intermittently fails on teardown.
+- **Expected behavior:** teardown removes the temp dir every run.
+- **Actual behavior:** `EBUSY: resource busy or locked, rmdir` on roughly one run in three.
+- **Recommended fix:** `fs.rm(..., { maxRetries: 10, retryDelay: 200 })` in the fixture (applied). Fixed in: this branch, `git-gates.test.ts` `withTempRepo`.
+- **Suggested tests:** none needed — the fixture is the test's own scaffolding.
+- **Ticket:** `N/A`
 
 ---
 
@@ -372,18 +405,20 @@ None yet.
 
 ## Cleanup Items
 
+- `scripts/ai-skills/hooks/git-gates.mjs` `saveGateState` and `architect-route.mjs` `saveRouteState` — the same tmp-then-rename atomic write at two sites (A5-C asked for the copy). A shared `writeJsonAtomically` in `lib/` would remove it; outside this ticket's frame, Briar's call.
+
 ---
 
 ## PR Readiness
 
 - [ ] No critical or major issues
-- [ ] Types correct — no `any`, no unsafe `as`
-- [ ] No stray console.logs or debug artifacts
-- [ ] Tests written for new logic and edge cases
-- [ ] All debugged issues resolved (no `open` entries)
-- [ ] Build passes — last run: —
-- [ ] PR description up to date
-- [ ] Lasting decisions promoted to architect context (if applicable)
+- [x] Types correct — no `any`, no unsafe `as`
+- [x] No stray console.logs or debug artifacts
+- [x] Tests written for new logic and edge cases
+- [x] All debugged issues resolved (no `open` entries)
+- [x] Build passes — last run: 2026-09-07 (`pnpm prism:check`, Windows, no new failures)
+- [x] PR description up to date
+- [x] Lasting decisions promoted to architect context (ADR-0076; `install-layout.md` § Git gates)
 
 **Last updated:** 2026-09-07
 
