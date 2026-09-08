@@ -326,6 +326,7 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 
 - 2026-09-07 [huntermcgrew/issue-488-git-gates]: Issue #488 filed; branch cut from `origin/main` at `f569c57`; plan seeded with D1–D7 and Phase A/B tasks. Design agreed in chat (mechanism, gate strength, push gate, opt-in default); Codex/Cursor confirmed feasible from their hook docs and added as Phase B.
 - 2026-09-07 [huntermcgrew/issue-488-git-gates]: Phase A implemented end to end (A1–A17): `lib/shell.mjs` extracted, `git-gates.mjs` runtime with both gates, Claude registration and delivery, config schema + PRISM's own opt-in, doctor lines, `cleanup-pass.md`, shipping-flow step 2, ADR-0076, and four test suites. `pnpm prism:check` green on Windows with no new failures; scratch-consumer adopt → update ×2 is a byte-stable no-op; see Decisions D8–D10 for what the plan's spec had to bend on.
+- 2026-09-07 [huntermcgrew/issue-488-git-gates]: Review loop run (loopBase `a00829d5`): Briar pass 1 found the `-C` commit-key gap, Eric pass 1 its push-side twin; both closed by scoping each gate's config to the repo the call runs in (`b48654ad`, `b13118c4`). Both phases subject-clean on the next pass under the one-pass exit (D11); Eric resolved his thread and labeled `confidence:high`; PR #489 stays draft for the human gate.
 
 ---
 
