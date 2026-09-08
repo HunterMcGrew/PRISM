@@ -469,6 +469,25 @@ Verification re-run this pass: `node --test scripts/ai-skills/git-gates.test.ts`
 - Docs impact — swept — 4 items enumerated, 4 verdicts — `docs/ai-skills/compatibility.md`, `docs/parameterization.md`, `docs/what-prism-writes.md`, `docs/adopting-into-existing-repos.md` all updated to name the new `git-gates.mjs` entry point and the `hooks` config block; checked each against the corresponding code change
 - Accessibility — n/a — no UI in the reviewed range
 
+No issues found — 2026-09-08 [huntermcgrew/prism-488-followup-windows-ci-toplevel] (pass 1 — Windows-CI-toplevel followup, PR #491)
+
+### Angle Coverage (pass 1, PR #491)
+
+- Runtime behavior — swept — 1 item enumerated, 1 verdict
+  - `resolveCanonicalDir`/`findConfigRoot`'s canonicalize-then-compare fix — reproduced the reported CI failure directly: built a real Windows 8.3 short-name directory, pointed `TMP`/`TEMP` at it, and reran the suite against the fixed branch (21/21 pass, matching the plan's claim) and against `git-gates.mjs` reverted to `origin/main` under the identical env (18/21 pass — the exact reported test plus the two updated `findConfigRoot` assertions fail, nothing else). Traced every `configRoot` consumer (`loadConsumerConfig`'s `fs.readFile` join, `buildStateFilePath`, `runPushGate`'s `cwd`, the `resolveGateContext` cache key) — a canonical path is valid input to all four, and the cache key change is a strict improvement (two spellings of one directory no longer produce two cache entries). `resolveCanonicalDir` is called once per bound before the walk starts, not per iteration, matching the plan's stated intent.
+- Test efficacy — swept — 2 items enumerated, 2 verdicts
+  - The new symlink-based inclusive-stop test — confirmed by the same revert-and-rerun above that it fails without the fix (junction-based `sub`/`realSub` spelled two ways, asserted `null`); the EPERM skip-early-return is a documented, narrow concession for locked-down runners and doesn't weaken the primary nested-repo regression test, which covers the same defect end to end.
+  - The two updated assertions in the pre-existing `findConfigRoot: walks up from a subdirectory…` test (now comparing against `realpathSync.native(root)` instead of raw `root`) — correct: `findConfigRoot` now always returns the canonical spelling regardless of which spelling `stopDir` carries, so the old raw-`root` expectation was the thing that would have gone wrong on a short-name runner, exactly as the plan's Debugged Issues entry describes.
+- Spec and doc consistency — swept — 1 item enumerated, 1 verdict — `install-layout.md` § Git gates's description of the config-root walk ("no further than that repo's own toplevel … governed by its own config or by none") still holds; canonicalization is an internal comparison fix, not a change to the documented contract, so no doc update is needed.
+- Citation integrity — swept — 1 item enumerated, 1 verdict — the new JSDoc's and the plan's claim that `realpathSync.native` matches the existing `consumer-root.test.ts` precedent — confirmed: that file imports and calls `realpathSync.native` the same way, for the same reason (8.3 short-name expansion).
+- External-system claims — swept — 1 item enumerated, 1 verdict — the root-cause claim that `git rev-parse --show-toplevel` always answers in canonical long form regardless of the cwd's own spelling — not re-derived from git's source, but the revert-and-rerun above is a direct behavioral confirmation rather than borrowed trust: the reverted code reproduces the exact reported failure under a real short-name `TEMP`, and only the fixed code clears it.
+- Repo writing rules — swept — verdict-only — `resolveCanonicalDir`'s JSDoc and the updated `findConfigRoot` doc comment follow `code-comments.md` (what+why, no tags, no ALL CAPS); the new test's inline comments explain the symlink and EPERM-skip rationale; no drive-by changes outside the fix's frame.
+- Security — n/a — no new trust boundary; same local opt-in gate, now comparing canonicalized paths.
+- Docs impact — n/a — no `docs/` changes in this diff, and none needed (see Spec and doc consistency above).
+- Accessibility — n/a — no UI in the diff.
+
+Verification this pass: `pnpm run prism:check-types` (clean), `pnpm run prism:crossref-lint` (clean), `pnpm run prism:test` (900/902 pass, 2 skipped by design, 0 fail), `pnpm run prism:build` (901/902 pass, 1 skipped, 0 fail) — all on a fresh scratch worktree at the PR tip on Windows. Independent repro in the same worktree: `npx tsx --test scripts/ai-skills/git-gates.test.ts` under a real 8.3-short-name `TMP`/`TEMP` — 21/21 pass on the fixed branch, 18/21 pass (3 failing, matching the CI report plus the two now-necessary assertion updates) with `git-gates.mjs` reverted to `origin/main` under the identical env. `git status -s` on the PR branch worktree: clean.
+
 ---
 
 ## Acceptance Criteria
@@ -524,16 +543,16 @@ Verification re-run this pass: `node --test scripts/ai-skills/git-gates.test.ts`
 
 ## PR Readiness
 
-- [x] No critical or major issues — one Minor finding open (see Review Issues)
+- [x] No critical or major issues — none found (PR #491, pass 1)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases (one narrow gap noted: no test exercises the `-C <dir>` cross-repo HEAD-tracking finding)
+- [x] Tests written for new logic and edge cases (symlink-based `findConfigRoot` regression test; confirmed to fail without the fix)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-07 (`pnpm prism:build`, Windows, 899 pass / 0 fail / 1 skipped, no new failures; `pnpm run prism:check-types` clean; re-ran during pass-2 review)
+- [x] Build passes — last run: 2026-09-08 (`pnpm run prism:build`, Windows, 901 pass / 0 fail / 1 skipped; `pnpm run prism:check-types` and `pnpm run prism:crossref-lint` clean; independently re-reproduced the Windows-CI failure and confirmed the fix under a real 8.3 short-name `TMP`/`TEMP`)
 - [x] PR description up to date
-- [x] Lasting decisions promoted to architect context (ADR-0076; `install-layout.md` § Git gates)
+- [x] Lasting decisions promoted to architect context (no new promotable decision — this is a bugfix, not a pattern change)
 
-**Last updated:** 2026-09-07 (pass 2 — the pass-1 Minor is fixed and independently re-verified; no new findings)
+**Last updated:** 2026-09-08 (pass 1, PR #491 — Windows-CI-toplevel followup; subject-clean, no findings)
 
 ---
 
