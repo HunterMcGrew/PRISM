@@ -6,6 +6,7 @@
  * gates reach.
  */
 import { execFileSync, spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -497,15 +498,57 @@ test("findConfigRoot: walks up from a subdirectory to the directory holding .ai-
 		await seedGitRepo(root, { commitCleanupPass: true });
 		const nested = path.join(root, "packages", "app");
 		await fs.mkdir(nested, { recursive: true });
+		// findConfigRoot canonicalizes internally (see the inclusive-stop test
+		// below), so a windows-latest runner whose own temp dir is an 8.3 short
+		// name — `root` itself — gets back the long form, not `root` verbatim.
+		const canonicalRoot = realpathSync.native(root);
 
-		assert.equal(await findConfigRoot(nested), root);
+		assert.equal(await findConfigRoot(nested), canonicalRoot);
 		assert.equal(await findConfigRoot(path.join(os.tmpdir(), "prism-no-config-here")), null);
 		assert.equal(
 			await findConfigRoot(nested, path.join(root, "packages")),
 			null,
 			"an inclusive stop directory ends the walk before the config above it"
 		);
-		assert.equal(await findConfigRoot(nested, root), root, "the stop directory itself is checked");
+		assert.equal(
+			await findConfigRoot(nested, root),
+			canonicalRoot,
+			"the stop directory itself is checked"
+		);
+	});
+});
+
+test("findConfigRoot: the inclusive stop fires when startDir and stopDir spell the same directory two different ways", async (t) => {
+	await withTempRepo(async (root) => {
+		await seedGitRepo(root, { commitCleanupPass: true });
+		const target = path.join(root, "packages", "app");
+		await fs.mkdir(target, { recursive: true });
+		const link = path.join(root, "app-link");
+
+		try {
+			await fs.symlink(target, link, process.platform === "win32" ? "junction" : "dir");
+		} catch (error) {
+			// A junction needs no elevated privileges on Windows, but some locked-down
+			// runners still refuse it — skip rather than fail the whole suite on that.
+			if ((error as NodeJS.ErrnoException).code === "EPERM") {
+				t.skip("junction creation refused (EPERM) — locked-down runner");
+				return;
+			}
+			throw error;
+		}
+
+		const sub = path.join(link, "sub");
+		await fs.mkdir(sub);
+		// The real path git itself would report for `sub`, reached through the link's
+		// target rather than the link — the two spellings a bare `path.relative`
+		// comparison treats as different directories unless both sides are canonicalized first.
+		const realSub = path.join(await fs.realpath(target), "sub");
+
+		assert.equal(
+			await findConfigRoot(sub, realSub),
+			null,
+			"a stop directory spelled through the symlink and one spelled by its real path name the same place"
+		);
 	});
 });
 
