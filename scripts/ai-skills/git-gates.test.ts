@@ -156,8 +156,21 @@ test("detectGitSegments: recognizes commit and push in every spelling the shippi
 	];
 
 	for (const [command, expected] of rows) {
-		assert.deepEqual(detectGitSegments(command), expected, command);
+		assert.deepEqual(
+			detectGitSegments(command).map((segment) => segment.subcommand),
+			expected,
+			command
+		);
 	}
+});
+
+test("detectGitSegments: carries every -C directory a segment was given, in order", () => {
+	assert.deepEqual(detectGitSegments("git -C sub -C deeper commit -m x"), [
+		{ subcommand: "commit", directories: ["sub", "deeper"] },
+	]);
+	assert.deepEqual(detectGitSegments('git -C "a dir" push'), [
+		{ subcommand: "push", directories: ["a dir"] },
+	]);
 });
 
 test("detectGitSegments: a non-string or empty command yields nothing", () => {
@@ -220,6 +233,31 @@ test("commit gate: a repo with no commits is gated once under the unborn key", a
 		);
 		assert.deepEqual(state.cleanupPassSeen, ["unborn"]);
 		assert.equal(await runGitGatesArm("claude", claude, commit, CLEAN_ENV), null);
+	});
+});
+
+test("commit gate: a -C commit into a separate nested repo is keyed on that repo's HEAD, not the config root's", async () => {
+	await withTempRepo(async (root) => {
+		await seedGitRepo(root, { commitCleanupPass: true });
+		const nested = path.join(root, "sub");
+		await fs.mkdir(nested, { recursive: true });
+		git(nested, "init", "-q");
+		git(nested, "commit", "-q", "--allow-empty", "-m", "nested init");
+		const nestedCommit = shellPayload(root, "git -C sub commit -m x");
+		const rootCommit = shellPayload(root, "git commit -m x");
+
+		assert.ok(denyReason(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV)));
+		assert.equal(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV), null);
+		assert.ok(
+			denyReason(await runGitGatesArm("claude", claude, rootCommit, CLEAN_ENV)),
+			"the root repo's own HEAD is still unseen"
+		);
+
+		git(nested, "commit", "-q", "--allow-empty", "-m", "nested next");
+		assert.ok(
+			denyReason(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV)),
+			"a new HEAD in the nested repo is held again"
+		);
 	});
 });
 

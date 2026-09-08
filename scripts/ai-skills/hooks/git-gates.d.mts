@@ -1,6 +1,10 @@
 import type { HarnessSpec } from "./harnesses.d.mts";
 
-export type GitGateSegment = "commit" | "push";
+export interface GitGateSegment {
+	subcommand: "commit" | "push";
+	/** Every `-C <dir>` the invocation carried, in order, unresolved. */
+	directories: string[];
+}
 
 export function detectGitSegments(command: string | undefined): GitGateSegment[];
 

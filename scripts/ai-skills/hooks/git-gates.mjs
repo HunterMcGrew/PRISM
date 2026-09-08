@@ -65,7 +65,16 @@ const COMMIT_DENY_REASON = [
 const POSIX_COMMAND_NOT_FOUND_STATUS = 127;
 const CMD_EXE_COMMAND_NOT_FOUND = /is not recognized as an internal or external command/;
 
-/** @typedef {"commit" | "push"} GitGateSegment */
+/**
+ * One recognized segment: which gate it reaches, and every `-C <dir>` the
+ * invocation carried, in order, unresolved — git applies each relative to
+ * the one before, so the caller resolves the chain against the command's
+ * own working directory.
+ *
+ * @typedef {Object} GitGateSegment
+ * @property {"commit" | "push"} subcommand
+ * @property {string[]} directories
+ */
 
 /**
  * The `git` subcommand one command segment runs, or `null` when the segment
@@ -76,10 +85,12 @@ const CMD_EXE_COMMAND_NOT_FOUND = /is not recognized as an internal or external 
  * `git` or a path ending in `git`. Between the head and the subcommand, `-C
  * <dir>`, `-c <k=v>`, `--git-dir`, and `--work-tree` consume their value and
  * every other `-`-prefixed token is skipped; the first bare token is the
- * subcommand.
+ * subcommand. `-C` values are kept because they move the repo the commit
+ * lands in; `--git-dir` and `--work-tree` also do, and are an accepted gap —
+ * a commit spelled that way is keyed on the working directory's HEAD.
  *
  * @param {string[]} tokens
- * @returns {{subcommand: string, args: string[]} | null}
+ * @returns {{subcommand: string, args: string[], directories: string[]} | null}
  */
 function resolveGitInvocation(tokens) {
 	let index = 0;
@@ -95,11 +106,17 @@ function resolveGitInvocation(tokens) {
 		return null;
 	}
 
+	/** @type {string[]} */
+	const directories = [];
 	index++;
 	while (index < tokens.length) {
 		const token = tokens[index];
 		if (!token.startsWith("-")) {
-			return { subcommand: token, args: tokens.slice(index + 1) };
+			return { subcommand: token, args: tokens.slice(index + 1), directories };
+		}
+
+		if (token === "-C" && index + 1 < tokens.length) {
+			directories.push(unquote(tokens[index + 1]));
 		}
 
 		const takesValue =
@@ -112,7 +129,7 @@ function resolveGitInvocation(tokens) {
 
 /**
  * The `commit` and `push` segments a shell command runs, in order, one entry
- * per matching segment.
+ * per matching segment, each carrying the `-C` directories it was given.
  *
  * `commit` counts with any flags — an `--amend` rewrites content the cleanup
  * pass should see. `push` counts with any flags except `--delete`/`-d`, where
@@ -145,12 +162,12 @@ export function detectGitSegments(command) {
 		}
 
 		if (invocation.subcommand === "commit") {
-			segments.push("commit");
+			segments.push({ subcommand: "commit", directories: invocation.directories });
 		} else if (
 			invocation.subcommand === "push" &&
 			!invocation.args.some((arg) => arg === "--delete" || arg === "-d")
 		) {
-			segments.push("push");
+			segments.push({ subcommand: "push", directories: invocation.directories });
 		}
 	}
 
@@ -267,15 +284,20 @@ async function saveGateState(statePath, state) {
 }
 
 /**
- * The current HEAD sha, or `"unborn"` when there is none — a repo with no
- * commits yet is still gated once on its first commit.
+ * The HEAD sha of the repo a commit lands in, or `"unborn"` when there is
+ * none — a repo with no commits yet is still gated once on its first commit.
  *
- * @param {string} configRoot
+ * Resolved from the commit's own directory rather than the config root: a
+ * `git -C <dir> commit` into a separate nested repo would otherwise be keyed
+ * on the config root's unchanging HEAD and skip the hold for the rest of the
+ * session after the first one.
+ *
+ * @param {string} commitDir
  * @returns {string}
  */
-function resolveHeadKey(configRoot) {
+function resolveHeadKey(commitDir) {
 	const head = spawnSync("git", ["rev-parse", "HEAD"], {
-		cwd: configRoot,
+		cwd: commitDir,
 		encoding: "utf8",
 		timeout: 5000,
 		windowsHide: true,
@@ -307,14 +329,15 @@ function serializeEnvelope(envelope) {
  * @param {import("./harnesses.mjs").HarnessSpec} spec
  * @param {string} configRoot
  * @param {string} scopeId
+ * @param {string} commitDir the directory the commit runs in, after any `-C`
  * @returns {Promise<string | null>}
  */
-async function runCommitGate(spec, configRoot, scopeId) {
+async function runCommitGate(spec, configRoot, scopeId, commitDir) {
 	await pruneStaleRouteState(configRoot, STATE_FILE_PREFIX);
 
 	const statePath = buildStateFilePath(configRoot, scopeId);
 	const state = await loadGateState(statePath);
-	const headKey = resolveHeadKey(configRoot);
+	const headKey = resolveHeadKey(commitDir);
 	if (state.cleanupPassSeen.includes(headKey)) {
 		return null;
 	}
@@ -460,7 +483,8 @@ export async function runGitGatesArm(tool, spec, rawStdin, env = process.env) {
 			return null;
 		}
 
-		const configRoot = await findConfigRoot(payload.cwd ?? process.cwd());
+		const cwd = payload.cwd ?? process.cwd();
+		const configRoot = await findConfigRoot(cwd);
 		if (configRoot === null) {
 			return null;
 		}
@@ -472,15 +496,21 @@ export async function runGitGatesArm(tool, spec, rawStdin, env = process.env) {
 		const hooks = /** @type {Record<string, unknown>} */ (config.hooks);
 
 		const segments = detectGitSegments(payload.tool_input?.command);
+		const commit = segments.find((segment) => segment.subcommand === "commit");
+		const push = segments.find((segment) => segment.subcommand === "push");
 
-		if (hooks.commitCleanupPass === true && segments.includes("commit")) {
-			const deny = await runCommitGate(spec, configRoot, scopeId);
+		if (hooks.commitCleanupPass === true && commit !== undefined) {
+			const commitDir = commit.directories.reduce(
+				(dir, next) => path.resolve(dir, next),
+				cwd
+			);
+			const deny = await runCommitGate(spec, configRoot, scopeId, commitDir);
 			if (deny !== null) {
 				return deny;
 			}
 		}
 
-		if (hooks.pushVerification === true && segments.includes("push")) {
+		if (hooks.pushVerification === true && push !== undefined) {
 			return runPushGate(spec, configRoot, config, hooks);
 		}
 
