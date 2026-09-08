@@ -334,23 +334,31 @@ export async function loadRouteState(repoRoot, scopeId) {
 const STALE_STATE_FILE_AGE_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Removes sibling `architect-route-state.*.json` and orphaned
- * `architect-route-state.*.json.tmp` files last modified more than
- * `STALE_STATE_FILE_AGE_MS` ago. One file accumulates per session with
- * nothing to remove them otherwise — the `.gitignore` glob keeps them out of
- * `git status`, so they'd otherwise grow unbounded and invisibly in `.prism/`.
- * A `.tmp` orphan is exactly the file `saveRouteState`'s atomic write leaves
- * behind when a hook process is killed mid-write (before the `rename` to the
- * final path), so it earns the same reap as a stale finished state file. A
- * day is long enough that no session still in progress loses its state;
- * failures here (a file removed between the listing and the unlink, a
- * permissions error) are swallowed — pruning is best-effort housekeeping,
- * never a reason to fail the save it rides along with.
+ * Removes sibling `<filePrefix>*.json` and orphaned `<filePrefix>*.json.tmp`
+ * files last modified more than `STALE_STATE_FILE_AGE_MS` ago. One file
+ * accumulates per session with nothing to remove them otherwise — the
+ * `.gitignore` glob keeps them out of `git status`, so they'd otherwise grow
+ * unbounded and invisibly in `.prism/`. A `.tmp` orphan is exactly the file
+ * an atomic write leaves behind when a hook process is killed mid-write
+ * (before the `rename` to the final path), so it earns the same reap as a
+ * stale finished state file. A day is long enough that no session still in
+ * progress loses its state; failures here (a file removed between the listing
+ * and the unlink, a permissions error) are swallowed — pruning is best-effort
+ * housekeeping, never a reason to fail the save it rides along with.
+ *
+ * The prefix is a parameter because `git-gates.mjs` keeps its own state
+ * family beside this one and reaps it on the same schedule; one sweep with
+ * two age constants in two files would be two sources of truth for one
+ * concern.
  *
  * @param {string} repoRoot
+ * @param {string} [filePrefix]
  * @returns {Promise<void>}
  */
-async function pruneStaleRouteState(repoRoot) {
+export async function pruneStaleRouteState(
+	repoRoot,
+	filePrefix = "architect-route-state."
+) {
 	const stateDir = path.join(repoRoot, ".prism");
 	const now = Date.now();
 
@@ -363,7 +371,7 @@ async function pruneStaleRouteState(repoRoot) {
 
 	for (const entry of entries) {
 		if (
-			!entry.startsWith("architect-route-state.") ||
+			!entry.startsWith(filePrefix) ||
 			!(entry.endsWith(".json") || entry.endsWith(".json.tmp"))
 		) {
 			continue;

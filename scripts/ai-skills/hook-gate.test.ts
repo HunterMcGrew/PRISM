@@ -564,8 +564,23 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 		"the PreToolUse registration dispatches the deny arm, not the announce arm"
 	);
 
-	// Both globs asserted as whole lines. A `match` on the first pattern alone
-	// also matches the `.tmp` line as a substring, so neither line would be
+	// The git gates are a second entry point on the same event, in their own
+	// matcher group so they never spawn on a `Write` or `Edit`.
+	const gitGatesPath = path.join(consumerRoot, ".claude", "hooks", "git-gates.mjs");
+	await fs.access(gitGatesPath);
+	assert.equal(
+		(await fs.stat(gitGatesPath)).mode & 0o111,
+		0o111,
+		"the delivered git-gates entry point is executable"
+	);
+	const gitGates = settings.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("git-gates.mjs")
+	);
+	assert.ok(gitGates, "git-gates PreToolUse registration delivered");
+	assert.equal(gitGates.matcher, "Bash");
+
+	// Every glob asserted as a whole line. A `match` on a bare pattern also
+	// matches its `.tmp` sibling as a substring, so neither line would be
 	// distinctly proven.
 	const gitignoreLines = (
 		await fs.readFile(path.join(consumerRoot, ".gitignore"), "utf8")
@@ -575,6 +590,8 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	for (const expected of [
 		".prism/architect-route-state.*.json",
 		".prism/architect-route-state.*.json.tmp",
+		".prism/git-gates-state.*.json",
+		".prism/git-gates-state.*.json.tmp",
 	]) {
 		assert.equal(
 			gitignoreLines.filter((line) => line === expected).length,
