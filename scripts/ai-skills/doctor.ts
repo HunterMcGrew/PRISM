@@ -790,6 +790,8 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	const codexHooksRaw = await readFileIfExists(codexHooksPath);
 
 	const registeredPaths = new Set<string>();
+	const claudeRegisteredPaths = new Set<string>();
+	const codexRegisteredPaths = new Set<string>();
 	let settings: Record<string, unknown> | null = null;
 	let codexHooks: Record<string, unknown> | null = null;
 
@@ -808,7 +810,9 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 		for (const command of collectHookCommands(settings)) {
 			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
-				registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+				const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
+				registeredPaths.add(resolved);
+				claudeRegisteredPaths.add(resolved);
 			}
 		}
 	}
@@ -828,7 +832,9 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 		for (const command of collectHookCommands(codexHooks)) {
 			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
-				registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+				const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
+				registeredPaths.add(resolved);
+				codexRegisteredPaths.add(resolved);
 			}
 		}
 	}
@@ -908,10 +914,13 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	// vs. a registration pointing at nothing) and neither should suppress
 	// the other — a dead registration for one host and an inert runtime for
 	// the other, or an unrelated dead registration, are both real findings.
-	// Each branch below re-checks the runtime's own presence rather than
-	// trusting `registeredPaths.has(hookRuntimePath)` alone, so a registered
-	// path that the dead-registration loop just reported missing is never
-	// also claimed as "installed and registered" here. A host declared but
+	// Each branch below checks its own host's registered-path set
+	// (`claudeRegisteredPaths` / `codexRegisteredPaths`), never the merged
+	// `registeredPaths` the dead-registration loop above uses — the merged
+	// set goes true when either host's file names the path, so a Claude
+	// `settings.json` that registers only `git-gates.mjs` would otherwise
+	// borrow a Codex-only `hook.mjs` registration and report Claude's write
+	// gate as reachable when it never actually fires. A host declared but
 	// genuinely never delivered (pre-first-update) is outside what this
 	// check can see, so it says nothing rather than guessing. The catch-all
 	// "not delivered" message below fires only when neither host is
@@ -919,7 +928,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	const runtimePresent = await pathExists(hookRuntimePath);
 
 	if (hosts.includes("claude")) {
-		const hookInert = runtimePresent && !registeredPaths.has(hookRuntimePath);
+		const hookInert = runtimePresent && !claudeRegisteredPaths.has(hookRuntimePath);
 		if (hookInert) {
 			findings.push({
 				check: "hook-registration",
@@ -930,7 +939,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		}
 
 		const gitGatesInert =
-			(await pathExists(gitGatesRuntimePath)) && !registeredPaths.has(gitGatesRuntimePath);
+			(await pathExists(gitGatesRuntimePath)) && !claudeRegisteredPaths.has(gitGatesRuntimePath);
 		if (gitGatesInert) {
 			findings.push({
 				check: "hook-registration",
@@ -943,7 +952,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		// Gated on `gitGatesInert` too — the runtime being installed and
 		// registered is not a clean bill of health when the git gates half of
 		// the same delivery is inert, so the two messages never coexist.
-		if (!gitGatesInert && runtimePresent && registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
+		if (!gitGatesInert && runtimePresent && claudeRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
@@ -952,20 +961,20 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 			});
 		}
 
-		if (registeredPaths.has(gitGatesRuntimePath)) {
+		if (claudeRegisteredPaths.has(gitGatesRuntimePath)) {
 			findings.push(...describeGitGates(config));
 		}
 	}
 
 	if (hosts.includes("codex")) {
-		if (runtimePresent && !codexIsRegistered) {
+		if (runtimePresent && !codexRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
 				message:
 					".claude/hooks/hook.mjs is present but .codex/hooks.json registers no hook command pointing at it — the architect-context hook is inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
 			});
-		} else if (runtimePresent && codexIsRegistered) {
+		} else if (runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
