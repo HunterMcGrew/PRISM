@@ -80,6 +80,8 @@ What carries the guarantee on Codex and Cursor is the always-on rule in `.prism/
 
 PRISM only installs the hook when `hosts` includes `claude` — or when `hosts` is absent, which means every host. A Codex-only or Cursor-only repo that lists its own hosts gets no `.claude/hooks/`, no settings merge, and no `.gitignore` lines.
 
+The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). Today they reach Claude Code only, on the same delivery as the write gate; the shipping flow carries the cleanup pass as a prose step on every host, and a follow-up delivers the gates to Codex and Cursor, whose hook events and deny envelopes are documented.
+
 `hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping `claude` takes the hook back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 
 ## The install-script rule

@@ -22,6 +22,8 @@ export interface HarnessSpec {
 	emitNone: () => unknown;
 	/** `null` on a host whose deny envelope nobody has observed — see `harnesses.mjs`. */
 	emitDeny: (reason: string) => unknown;
+	/** An allow carrying a reason; `null` on the same hosts `emitDeny` is `null` for. */
+	emitAllow: (reason: string) => unknown;
 }
 
 export function extractPatchFilePaths(command: string | undefined): string[];

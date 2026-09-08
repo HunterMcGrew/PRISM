@@ -154,7 +154,7 @@ removes.
   Architect consultations and user pauses don't count — they're escalations,
   already bounded by their own ladder. Budget exhaustion triggers **Procedure D** —
   stop, report state, hand back.
-- **Subject-clean exit.** A phase closes when two consecutive passes return
+- **Subject-clean exit.** A phase closes when one pass returns
   zero admissible findings on the **subject** surface and every admitted
   repair-surface finding is closed. When it fires, stop the phase and write
   every outstanding non-subject observation into the scoreboard as a
@@ -294,6 +294,6 @@ Gauntlet-specific framing:
   budget hit on pass 1, all cleaner paths rejected) did this run hit, and did
   I handle each on purpose?
 - **Verification honesty** — for each phase I claim is clean, what is the
-  evidence (two consecutive subject-clean passes, a resolved-thread count,
+  evidence (one subject-clean pass, a resolved-thread count,
   the recorded anchor for each admitted repair-surface finding)? Where am I
   asserting without proof?

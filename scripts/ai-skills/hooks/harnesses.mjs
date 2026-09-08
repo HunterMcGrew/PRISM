@@ -44,6 +44,7 @@
  * @property {(text: string) => unknown} emitNag
  * @property {() => unknown} emitNone
  * @property {(reason: string) => unknown} emitDeny
+ * @property {(reason: string) => unknown} emitAllow
  */
 
 /**
@@ -147,6 +148,16 @@ export const HARNESSES = {
 				permissionDecisionReason: reason,
 			},
 		}),
+		// An explicit allow carrying a reason — the git gates' fail-open path
+		// uses it so a lint that timed out is announced rather than silently
+		// waved through (a silent allow is indistinguishable from a pass).
+		emitAllow: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "allow",
+				permissionDecisionReason: reason,
+			},
+		}),
 	},
 	cursor: {
 		// StrReplace (Cursor's edit tool) is deliberately unlisted here — the
@@ -161,6 +172,8 @@ export const HARNESSES = {
 		// observed Cursor's deny envelope — so there is nothing to answer and
 		// no verified shape to answer in.
 		emitDeny: () => null,
+		// Same reasoning as `emitDeny` — no observed envelope to answer in.
+		emitAllow: () => null,
 	},
 	codex: {
 		// Codex has no separate read tool — reads run through `Bash` — so
@@ -197,6 +210,18 @@ export const HARNESSES = {
 			hookSpecificOutput: {
 				hookEventName: "PreToolUse",
 				permissionDecision: "deny",
+				permissionDecisionReason: reason,
+			},
+		}),
+		// Same documented envelope as `emitDeny`, in the allow direction — the
+		// git gates' fail-open path uses it so a lint that timed out is
+		// announced rather than silently waved through. An envelope Codex does
+		// not recognize just drops the reason text; the push proceeds either
+		// way because this is the allow branch, not the deny branch.
+		emitAllow: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "allow",
 				permissionDecisionReason: reason,
 			},
 		}),

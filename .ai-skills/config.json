@@ -13,6 +13,10 @@
 	"features": {
 		"conductorMayMerge": true
 	},
+	"hooks": {
+		"commitCleanupPass": true,
+		"pushVerification": true
+	},
 	"techStack": ["typescript", "node"],
 	"commands": {
 		"typecheck": "pnpm run prism:check-types",

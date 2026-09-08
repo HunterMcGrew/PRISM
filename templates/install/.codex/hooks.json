@@ -9,6 +9,15 @@
 						"command": "node \".claude/hooks/hook.mjs\" --tool=codex --event=PreToolUse"
 					}
 				]
+			},
+			{
+				"matcher": "^Bash$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/git-gates.mjs\" --tool=codex --event=PreToolUse"
+					}
+				]
 			}
 		],
 		"PostToolUse": [

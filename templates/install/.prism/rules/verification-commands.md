@@ -90,6 +90,12 @@ Briar (self-review) owns the build step and runs it conditionally based on the d
 
 ---
 
+## Git gates (`.ai-skills/config.json#hooks`)
+
+Two opt-in gates ride the hook runtime. `hooks.commitCleanupPass` holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read; `hooks.pushVerification` runs `{{commands.lint}}` and `{{commands.format}}` before every `git push` and denies on a non-zero exit. `format` is the check-mode command for exactly this reason — the gate must never rewrite files. Both are off until set; `PRISM_HOOK_DISABLE=1` turns every hook off for a session.
+
+---
+
 ## Operational gotchas
 
 When Winston populates this file during onboarding, he records the team's environmental gotchas inline (e.g. plugin resolution paths, monorepo flag placement, cache locations). Until then, see `.prism/references/operational-gotchas.md` if it exists.

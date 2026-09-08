@@ -219,6 +219,7 @@ Reviews stall for specific reasons. Named procedures, not guesswork:
 - Performance — unnecessary recomputation, memoization gaps, expensive hot paths, N+1 patterns
 - Comment standards — JSDoc on declarations, no ALL CAPS, no tags/prefixes, Delete Test applied (see `code-comments` rule)
 - Visual-regression / component-explorer coverage exists for touched UI (see `code-standards` rule)
+- The three cleanup-pass lenses (`.prism/references/cleanup-pass.md`) — readability, reuse, maintainability over the local frame. The author ran them before committing; you confirm they held.
 
 <!-- atlas:workflow-example-2 -->
 Stack-specific review checks (e.g. block-system exports, CMS hook signatures, framework-specific anti-patterns) are populated during Phase 2 onboarding from the team's actual codebase patterns.

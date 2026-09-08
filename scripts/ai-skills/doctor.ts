@@ -622,8 +622,8 @@ async function checkArchitectRoutes(consumerContentRoot: string): Promise<Doctor
 	return findings;
 }
 
-/** Matches any `hook.mjs` path inside a parsed hook command string. */
-const HOOK_COMMAND_PATH_RE = /(\S*hook\.mjs)/g;
+/** Matches any `hook.mjs` or `git-gates.mjs` path inside a parsed hook command string. */
+const HOOK_COMMAND_PATH_RE = /(\S*(?:hook|git-gates)\.mjs)/g;
 
 /**
  * Resolves one hook path as written in a hook command string to an absolute
@@ -686,7 +686,7 @@ function collectHookCommands(settings: Record<string, unknown>): string[] {
  */
 async function readConsumerConfigSafely(
 	consumerRepoRoot: string
-): Promise<{ hosts?: unknown } | null> {
+): Promise<{ hosts?: unknown; hooks?: unknown; commands?: unknown } | null> {
 	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
 	const raw = await readFileIfExists(configPath);
 	if (raw === null) {
@@ -694,10 +694,67 @@ async function readConsumerConfigSafely(
 	}
 
 	try {
-		return JSON.parse(raw) as { hosts?: unknown };
+		return JSON.parse(raw) as { hosts?: unknown; hooks?: unknown; commands?: unknown };
 	} catch {
 		return null;
 	}
+}
+
+/** A config field that is a non-empty string, or `unset` — how the git-gates info line renders a command slot. */
+function describeCommandSlot(commands: unknown, slot: string): string {
+	const value =
+		typeof commands === "object" && commands !== null
+			? (commands as Record<string, unknown>)[slot]
+			: undefined;
+
+	return typeof value === "string" && value.trim().length > 0 ? value : "unset";
+}
+
+/**
+ * The git-gates findings for a consumer whose `hosts` includes `claude`: one
+ * `info` line saying whether the gates are on, and a `warning` when the push
+ * gate is on with nothing to run. The gates ride the same delivery as the
+ * write gate, so their state is worth a line wherever the write gate's is.
+ */
+function describeGitGates(
+	config: { hooks?: unknown; commands?: unknown } | null
+): DoctorFinding[] {
+	const hooks =
+		typeof config?.hooks === "object" && config.hooks !== null
+			? (config.hooks as Record<string, unknown>)
+			: null;
+
+	if (hooks === null) {
+		return [
+			{
+				check: "hook-registration",
+				severity: "info",
+				message:
+					"Git gates are delivered and off — add a hooks block to .ai-skills/config.json (commitCleanupPass, pushVerification) to enable them.",
+			},
+		];
+	}
+
+	const lint = describeCommandSlot(config?.commands, "lint");
+	const format = describeCommandSlot(config?.commands, "format");
+	const findings: DoctorFinding[] = [
+		{
+			check: "hook-registration",
+			severity: "info",
+			message: `Git gates: commit cleanup pass ${hooks.commitCleanupPass === true ? "on" : "off"}, push verification ${hooks.pushVerification === true ? "on" : "off"} (lint: ${lint}, format: ${format}).`,
+		},
+	];
+
+	if (hooks.pushVerification === true && lint === "unset" && format === "unset") {
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message:
+				"hooks.pushVerification is on but commands.lint and commands.format are both unset — the push gate can never deny.",
+		});
+	}
+
+	return findings;
 }
 
 /**
@@ -726,6 +783,7 @@ async function readConsumerConfigSafely(
  */
 async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
 	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
+	const gitGatesRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "git-gates.mjs");
 	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
 	const codexHooksPath = path.join(consumerRepoRoot, ".codex", "hooks.json");
 	const settingsRaw = await readFileIfExists(settingsPath);
@@ -776,7 +834,8 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	}
 
 	const findings: DoctorFinding[] = [];
-	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	const config = await readConsumerConfigSafely(consumerRepoRoot);
+	const hosts = resolveHosts(config);
 	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
 	const runtimeIsPrisms =
 		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
@@ -860,20 +919,41 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	const runtimePresent = await pathExists(hookRuntimePath);
 
 	if (hosts.includes("claude")) {
-		if (runtimePresent && !registeredPaths.has(hookRuntimePath)) {
+		const hookInert = runtimePresent && !registeredPaths.has(hookRuntimePath);
+		if (hookInert) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
 				message:
 					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
 			});
-		} else if (runtimePresent && registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
+		}
+
+		const gitGatesInert =
+			(await pathExists(gitGatesRuntimePath)) && !registeredPaths.has(gitGatesRuntimePath);
+		if (gitGatesInert) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/git-gates.mjs is present but .claude/settings.json registers no hook command pointing at it — the git gates are inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			});
+		}
+
+		// Gated on `gitGatesInert` too — the runtime being installed and
+		// registered is not a clean bill of health when the git gates half of
+		// the same delivery is inert, so the two messages never coexist.
+		if (!gitGatesInert && runtimePresent && registeredPaths.has(hookRuntimePath) && claudeIsRegistered) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
 				message:
 					"The hook runtime is installed and registered for Claude Code.",
 			});
+		}
+
+		if (registeredPaths.has(gitGatesRuntimePath)) {
+			findings.push(...describeGitGates(config));
 		}
 	}
 
