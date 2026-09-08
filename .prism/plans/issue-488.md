@@ -314,6 +314,9 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 - **D9 — `unquote` lives in `lib/shell.mjs`, imported by both `hook.mjs` and `git-gates.mjs`.** The cleanup pass on this diff found it copied verbatim into `git-gates.mjs`; identical logic at two sites is the self-review threshold, and the splitter's module is the natural home.
   - → no promotion needed (file placement).
 
+- **D11 — The review loop's subject-clean exit is one clean pass, not two consecutive.** `.ai-skills/skills/prism-review-loop/shared.md` § Guardrails and its verification-honesty echo change from "two consecutive passes" to "one pass" at Hunter's direction, folded into this PR. A second clean pass over a frozen subject re-reads text the first pass already cleared; the pass budget and the three-strike rule still bound the loop.
+  - → no promotion needed (the skill body is the durable surface).
+
 - **D10 — `git-gates.mjs` reads stdin before it checks `--event`, so a host that registers it on another event has its pipe drained rather than left unread.** Mirrors `hook.mjs`'s `main`; costs nothing on the dispatching path.
   - → no promotion needed (mirrors the existing entry point).
 
