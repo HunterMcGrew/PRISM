@@ -982,22 +982,25 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	}
 
 	if (hosts.includes("codex") && !codexParseFailed) {
-		const codexGitGatesInert =
-			(await pathExists(gitGatesRuntimePath)) && !codexRegisteredPaths.has(gitGatesRuntimePath);
-
-		if (runtimePresent && !codexRegisteredPaths.has(hookRuntimePath)) {
+		const codexHookInert = runtimePresent && !codexRegisteredPaths.has(hookRuntimePath);
+		if (codexHookInert) {
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
 				message:
 					".claude/hooks/hook.mjs is present but .codex/hooks.json registers no hook command pointing at it — the architect-context hook is inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
 			});
-			// Gated on `codexGitGatesInert` too, mirroring the Claude arm above —
-			// installed-and-registered is not a clean bill of health when
-			// Codex's git gates are inert. No Codex git-gates info/warning
-			// message exists yet (issue-488 B4), so this only withholds the
-			// false-clean claim rather than adding one.
-		} else if (!codexGitGatesInert && runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
+		}
+
+		const codexGitGatesInert =
+			(await pathExists(gitGatesRuntimePath)) && !codexRegisteredPaths.has(gitGatesRuntimePath);
+
+		// Gated on `codexGitGatesInert` too, mirroring the Claude arm above —
+		// installed-and-registered is not a clean bill of health when
+		// Codex's git gates are inert. No Codex git-gates info/warning
+		// message exists yet (issue-488 B4), so this only withholds the
+		// false-clean claim rather than adding one.
+		if (!codexGitGatesInert && runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",

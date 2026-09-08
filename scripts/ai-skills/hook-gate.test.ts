@@ -601,11 +601,16 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 			`the Codex PreToolUse matcher selects ${toolName}`
 		);
 	}
+	assert.ok(
+		codexPreToolUse.hooks[0].command.includes("--event=PreToolUse"),
+		"the Codex PreToolUse registration dispatches the deny arm, not the announce arm"
+	);
 
 	const codexGitGates = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
 		entry.hooks[0].command.includes("git-gates.mjs")
 	);
 	assert.ok(codexGitGates, "Codex git-gates PreToolUse registration delivered in its own group");
+	assert.equal(codexGitGates.matcher, "^Bash$");
 	assert.notEqual(
 		codexGitGates,
 		codexPreToolUse,
