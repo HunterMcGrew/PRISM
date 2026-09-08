@@ -369,6 +369,14 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 
 No issues found — 2026-09-07 [huntermcgrew/issue-488-git-gates] (pass 2 — repair-surface + subject re-sweep)
 
+### Push gate runs the enclosing config's commands for a `git -C <nested-repo> push`
+
+- **Severity:** `minor`
+- **Status:** `fixed` — Fixed in: both gates now resolve their config from the segment's own directory (`cwd` + `-C` chain) bounded by that repo's git toplevel (`resolveGateContext`, `findConfigRoot(startDir, stopDir)`), so a separate nested repo is governed by its own config or by none; the commit-side scope from Briar's finding falls out of the same change. Tests: nested repo without config → both gates inert; with its own config → its own HEAD key, its own `.prism` state, its own lint; `-C packages/app` inside the same repo → root config.
+- **File:** `scripts/ai-skills/hooks/git-gates.mjs:513-515` (at `b48654ad`)
+- **Problem:** Eric (PR #489, pass 1): `runPushGate` always ran `commands.lint`/`commands.format` at the config root even when the push's `-C` chain targeted a separate nested repo — the push-side twin of Briar's commit-side finding.
+- **Suggested fix:** resolve the push's own directory from `push.directories`, or document the asymmetry. Resolved by scoping the config lookup instead — running the enclosing repo's commands inside a different repo would have been wrong in either directory.
+
 ### Angle Coverage (pass 2)
 
 - Runtime behavior — swept — repair surface: independently re-derived `resolveGitInvocation`'s `-C` accumulation and the `path.resolve` chain in `runGitGatesArm` against git's own "each `-C` relative to the previous" semantics; re-ran five `detectGitSegments` rows by hand against the fixed code (`git -C sub commit -m x`, `--amend --no-edit`, `push --delete`, the `MSYS_NO_PATHCONV=1` env-prefix form, the `commit && push` one-liner) — all match. Confirmed `resolveHeadKey` now runs at `commitDir` (resolved from `cwd` plus the `-C` chain), not `configRoot`, closing the pass-1 finding. Subject re-sweep found nothing pass 1 missed.

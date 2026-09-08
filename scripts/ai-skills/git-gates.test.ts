@@ -236,27 +236,73 @@ test("commit gate: a repo with no commits is gated once under the unborn key", a
 	});
 });
 
-test("commit gate: a -C commit into a separate nested repo is keyed on that repo's HEAD, not the config root's", async () => {
+test("-C into a separate nested repo: governed by that repo's own config, never by the enclosing one", async () => {
 	await withTempRepo(async (root) => {
-		await seedGitRepo(root, { commitCleanupPass: true });
+		await seedGitRepo(
+			root,
+			{ commitCleanupPass: true, pushVerification: true },
+			{ lint: 'node -e "process.exit(3)"' }
+		);
 		const nested = path.join(root, "sub");
 		await fs.mkdir(nested, { recursive: true });
 		git(nested, "init", "-q");
 		git(nested, "commit", "-q", "--allow-empty", "-m", "nested init");
 		const nestedCommit = shellPayload(root, "git -C sub commit -m x");
-		const rootCommit = shellPayload(root, "git commit -m x");
+		const nestedPush = shellPayload(root, "git -C sub push");
 
-		assert.ok(denyReason(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV)));
-		assert.equal(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV), null);
-		assert.ok(
-			denyReason(await runGitGatesArm("claude", claude, rootCommit, CLEAN_ENV)),
-			"the root repo's own HEAD is still unseen"
+		assert.equal(
+			await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV),
+			null,
+			"no config inside the nested repo — the enclosing config does not reach it"
+		);
+		assert.equal(
+			await runGitGatesArm("claude", claude, nestedPush, CLEAN_ENV),
+			null,
+			"the enclosing repo's lint never runs for a push of the nested repo"
 		);
 
-		git(nested, "commit", "-q", "--allow-empty", "-m", "nested next");
+		await seedGitRepo(
+			nested,
+			{ commitCleanupPass: true, pushVerification: true },
+			{ lint: 'node -e "process.exit(4)"' }
+		);
 		assert.ok(
 			denyReason(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV)),
-			"a new HEAD in the nested repo is held again"
+			"the nested repo's own config holds its commit"
+		);
+		const nestedState = JSON.parse(
+			await fs.readFile(path.join(nested, ".prism", "git-gates-state.s1.json"), "utf8")
+		);
+		assert.deepEqual(
+			nestedState.cleanupPassSeen,
+			[git(nested, "rev-parse", "HEAD")],
+			"the hold is keyed on the nested repo's HEAD and recorded under its own .prism"
+		);
+		assert.equal(await runGitGatesArm("claude", claude, nestedCommit, CLEAN_ENV), null);
+		assert.match(
+			denyReason(await runGitGatesArm("claude", claude, nestedPush, CLEAN_ENV)) ?? "",
+			/exited 4/,
+			"the nested repo's own lint is what verifies its push"
+		);
+		assert.ok(
+			denyReason(await runGitGatesArm("claude", claude, shellPayload(root, "git commit -m x"), CLEAN_ENV)),
+			"the enclosing repo's own HEAD is still unseen"
+		);
+	});
+});
+
+test("-C into a subdirectory of the same repo: governed by the repo root's config", async () => {
+	await withTempRepo(async (root) => {
+		await seedGitRepo(root, { commitCleanupPass: true });
+		await fs.mkdir(path.join(root, "packages", "app"), { recursive: true });
+		const commit = shellPayload(root, "git -C packages/app commit -m x");
+
+		assert.ok(denyReason(await runGitGatesArm("claude", claude, commit, CLEAN_ENV)));
+		assert.equal(await runGitGatesArm("claude", claude, commit, CLEAN_ENV), null);
+		assert.equal(
+			await runGitGatesArm("claude", claude, shellPayload(root, "git commit -m x"), CLEAN_ENV),
+			null,
+			"same repo, same HEAD — the hold was already spent"
 		);
 	});
 });
@@ -454,6 +500,12 @@ test("findConfigRoot: walks up from a subdirectory to the directory holding .ai-
 
 		assert.equal(await findConfigRoot(nested), root);
 		assert.equal(await findConfigRoot(path.join(os.tmpdir(), "prism-no-config-here")), null);
+		assert.equal(
+			await findConfigRoot(nested, path.join(root, "packages")),
+			null,
+			"an inclusive stop directory ends the walk before the config above it"
+		);
+		assert.equal(await findConfigRoot(nested, root), root, "the stop directory itself is checked");
 	});
 });
 

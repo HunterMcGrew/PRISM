@@ -176,17 +176,19 @@ export function detectGitSegments(command) {
 
 /**
  * Walks upward from `startDir` to the first directory containing
- * `.ai-skills/config.json`, or `null` when the walk reaches the filesystem
- * root without finding one.
+ * `.ai-skills/config.json`, or `null` when the walk reaches `stopDir` (or
+ * the filesystem root) without finding one. `stopDir` is inclusive: it is
+ * checked, and the walk ends there.
  *
  * Deliberately not `findRepoRoot` from `architect-route.mjs`: that keys on
  * `.prism/architect/manifest.json`, a different feature's file, and a consumer
  * with a config but no manifest would have the gates silently off.
  *
  * @param {string} startDir
+ * @param {string | null} [stopDir]
  * @returns {Promise<string | null>}
  */
-export async function findConfigRoot(startDir) {
+export async function findConfigRoot(startDir, stopDir = null) {
 	let dir = path.resolve(startDir);
 
 	while (true) {
@@ -197,12 +199,50 @@ export async function findConfigRoot(startDir) {
 			// Not here — keep walking up.
 		}
 
+		if (stopDir !== null && path.relative(stopDir, dir) === "") {
+			return null;
+		}
+
 		const parent = path.dirname(dir);
 		if (parent === dir) {
 			return null;
 		}
 		dir = parent;
 	}
+}
+
+/**
+ * The working-tree root of the git repo `dir` sits in, or `null` when `dir`
+ * is not inside one.
+ *
+ * @param {string} dir
+ * @returns {string | null}
+ */
+function resolveGitToplevel(dir) {
+	const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+		cwd: dir,
+		encoding: "utf8",
+		timeout: 5000,
+		windowsHide: true,
+	});
+	if (result.error || result.status !== 0) {
+		return null;
+	}
+
+	const toplevel = result.stdout.trim();
+	return toplevel.length > 0 ? path.resolve(toplevel) : null;
+}
+
+/**
+ * The directory a segment's `git` runs in: the command's own working
+ * directory with each `-C` applied in order, the way git applies them.
+ *
+ * @param {string} cwd
+ * @param {GitGateSegment} segment
+ * @returns {string}
+ */
+function resolveSegmentDir(cwd, segment) {
+	return segment.directories.reduce((dir, next) => path.resolve(dir, next), cwd);
 }
 
 /**
@@ -440,12 +480,58 @@ function runPushGate(spec, configRoot, config, hooks) {
 }
 
 /**
+ * The config that governs a segment: found by walking up from the directory
+ * the segment's `git` runs in, and no further than that repo's own toplevel.
+ * A separate nested repo is therefore governed by its own config or by none
+ * — the enclosing repo's gates never reach into it, and its `commands.*`
+ * never run there. Returns `null` when no config governs the directory or the
+ * config carries no `hooks` block.
+ *
+ * `cache` is keyed by config root so a `git commit && git push` one-liner
+ * reads and, on a parse error, announces the same file once.
+ *
+ * @param {string} dir
+ * @param {Map<string, GateContext | null>} cache
+ * @returns {Promise<GateContext | null>}
+ */
+async function resolveGateContext(dir, cache) {
+	const configRoot = await findConfigRoot(dir, resolveGitToplevel(dir));
+	if (configRoot === null) {
+		return null;
+	}
+
+	if (cache.has(configRoot)) {
+		return cache.get(configRoot) ?? null;
+	}
+
+	const config = await loadConsumerConfig(configRoot);
+	const context =
+		config === null || typeof config.hooks !== "object" || config.hooks === null
+			? null
+			: {
+					configRoot,
+					config,
+					hooks: /** @type {Record<string, unknown>} */ (config.hooks),
+				};
+	cache.set(configRoot, context);
+
+	return context;
+}
+
+/**
+ * @typedef {Object} GateContext
+ * @property {string} configRoot
+ * @property {Record<string, unknown>} config
+ * @property {Record<string, unknown>} hooks
+ */
+
+/**
  * Computes one harness's git-gates result for an already-read stdin payload —
  * the JSON string to write to stdout, or `null` when nothing should be written.
  * Every early exit is a `null`: a kill switch, an unparseable payload, a
  * foreign payload, a tool the harness does not list as shell, a missing scope
- * id, no config on the walk up from `cwd`, a config with no `hooks` block, or
- * a command with no `commit`/`push` segment.
+ * id, a command with no `commit`/`push` segment, no config governing the
+ * directory a segment runs in, or a config with no `hooks` block.
  *
  * Does no process-level I/O beyond stderr, so a test can call it directly.
  * `env` is a parameter for the same reason.
@@ -483,35 +569,33 @@ export async function runGitGatesArm(tool, spec, rawStdin, env = process.env) {
 			return null;
 		}
 
-		const cwd = payload.cwd ?? process.cwd();
-		const configRoot = await findConfigRoot(cwd);
-		if (configRoot === null) {
-			return null;
-		}
-
-		const config = await loadConsumerConfig(configRoot);
-		if (config === null || typeof config.hooks !== "object" || config.hooks === null) {
-			return null;
-		}
-		const hooks = /** @type {Record<string, unknown>} */ (config.hooks);
-
 		const segments = detectGitSegments(payload.tool_input?.command);
 		const commit = segments.find((segment) => segment.subcommand === "commit");
 		const push = segments.find((segment) => segment.subcommand === "push");
+		if (commit === undefined && push === undefined) {
+			return null;
+		}
 
-		if (hooks.commitCleanupPass === true && commit !== undefined) {
-			const commitDir = commit.directories.reduce(
-				(dir, next) => path.resolve(dir, next),
-				cwd
-			);
-			const deny = await runCommitGate(spec, configRoot, scopeId, commitDir);
-			if (deny !== null) {
-				return deny;
+		const cwd = payload.cwd ?? process.cwd();
+		/** @type {Map<string, GateContext | null>} */
+		const contexts = new Map();
+
+		if (commit !== undefined) {
+			const commitDir = resolveSegmentDir(cwd, commit);
+			const context = await resolveGateContext(commitDir, contexts);
+			if (context !== null && context.hooks.commitCleanupPass === true) {
+				const deny = await runCommitGate(spec, context.configRoot, scopeId, commitDir);
+				if (deny !== null) {
+					return deny;
+				}
 			}
 		}
 
-		if (hooks.pushVerification === true && push !== undefined) {
-			return runPushGate(spec, configRoot, config, hooks);
+		if (push !== undefined) {
+			const context = await resolveGateContext(resolveSegmentDir(cwd, push), contexts);
+			if (context !== null && context.hooks.pushVerification === true) {
+				return runPushGate(spec, context.configRoot, context.config, context.hooks);
+			}
 		}
 
 		return null;

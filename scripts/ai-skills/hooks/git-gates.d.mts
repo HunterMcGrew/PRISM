@@ -8,7 +8,10 @@ export interface GitGateSegment {
 
 export function detectGitSegments(command: string | undefined): GitGateSegment[];
 
-export function findConfigRoot(startDir: string): Promise<string | null>;
+export function findConfigRoot(
+	startDir: string,
+	stopDir?: string | null
+): Promise<string | null>;
 
 export function runGitGatesArm(
 	tool: string,
