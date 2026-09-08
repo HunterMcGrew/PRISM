@@ -769,14 +769,14 @@ function describeGitGates(
  * it that is decidable from the consumer tree alone: each side reports the
  * other's absence.
  *
- * Removing both halves is silent for a consumer who runs Claude Code:
- * nothing on disk distinguishes one who deleted the gate from one who never
- * received it, so reporting it would fire on installs that are correct as
- * they stand.
+ * Removing both halves is silent for a consumer who runs Claude Code or
+ * Codex: nothing on disk distinguishes one who deleted the gate from one who
+ * never received it, so reporting it would fire on installs that are correct
+ * as they stand.
  *
  * What is decidable is the host mix. `hosts` in the consumer's config says
- * which hosts they run, and `refreshHookRuntime` delivers only when
- * `claude` is among them — so a consumer who does not run Claude Code
+ * which hosts they run, and `refreshHookRuntime` delivers the runtime when
+ * either `claude` or `codex` is among them — so a consumer who runs neither
  * should have no runtime and no registration, and finding either means an
  * update has not run since they changed the key. Both directions are
  * reported: the absence is informational, the leftover is a warning.
