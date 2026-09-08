@@ -48,6 +48,13 @@ Stop review findings whose only subject is the review process's own bookkeeping 
 - **Out of scope: commit-message findings.** A finding about a commit subject cites no file line and is not covered. Widening to commit messages is scope creep on a scoping rule; leave it to `.prism/rules/git-conventions.md`.
   - → no promotion needed.
 
+- **Re-landing this branch on `main` after PR #489: keep main's restructure, restore this branch's citation.** `main` merged PR #489 in between, which rewrote the review-loop's Ledger bullet to a one-pass Subject-clean exit and re-enumerated the six bookkeeping section names plus the PR body and the loop-emitted readiness line. That collided with this branch's task 4, which re-points the same bullet at `.prism/rules/followup-scope.md` § Bookkeeping findings are recorded, not gated.
+  - **Root cause:** both branches edited the same Ledger bullet for different reasons — main widened the loop-local exemption list, this branch removed the drift-prone restatement of the shared section set.
+  - **Alternatives considered:** take main's enumeration wholesale (reverts this ticket's AC-4 invariant that the six section names never survive in this file); take this branch's citation wholesale (drops main's PR-body and readiness-line additions, which are real loop-local exemptions this ticket never covered).
+  - **Chosen approach:** merged text keeps the citation to `followup-scope.md` for the shared section-set + AC-Evidence-sub-bullet nuance, and appends the PR body and the readiness line the loop itself emits as loop-local additions. Beats both wholesale options — neither drops content the other branch added for a real reason.
+  - **Implementation guidance:** `.ai-skills/skills/prism-review-loop/shared.md` § Review surfaces was the only file with a real conflict; the two generated mirrors (`.claude/`, `.cursor/`) regenerate from it via `pnpm prism:build` and need no hand edits.
+  - → no promotion needed (ticket-tactical merge resolution, not a lasting pattern).
+
 ---
 
 ## Implementation Tasks
@@ -170,6 +177,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 - 2026-08-14 [huntermcgrew/opus5-port-lint-resolution] open: Intent — stop bookkeeping-only review findings from gating merges and buying review rounds; Bounds — write this plan file only, touch no other plan, prescribe four source edits and no code; Approach — reuse the bookkeeping-section set `followup-scope.md` already defines, add the label mechanism at Eric's decision gate. · close: scope held
 - 2026-08-14 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — implement tasks 1-5 exactly as Winston specified: the bookkeeping-findings exemption in `followup-scope.md`, Eric's and Briar's decision-gate qualifiers, and the review-loop's Ledger citation; Bounds — the four named source files plus their generated mirrors, no `.ai-skills/skills/prism-conductor/` edits, no improvised text; Approach — apply each task's verbatim replacement text, verify `spec-scope-lint` resolves this plan before and after the diff exists, then `pnpm prism:build && pnpm prism:check`. · close: scope held
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — re-land this branch on top of `main` after PR #489 (the review-loop's one-pass restructure); Bounds — merge only, resolve the one real conflict in the review-loop's Ledger bullet by keeping main's structure and adding this branch's citation, no other source edits; Approach — `git merge origin/main`, hand-resolve the Ledger bullet, `pnpm prism:build && pnpm prism:check`, push. · close: scope held
 
 ---
 
@@ -177,6 +185,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 - 2026-08-14 [huntermcgrew/opus5-port-lint-resolution]: Winston scoped the rule after PR #458 spent three review rounds on plan prose. Found the review-loop's Ledger surface already covers most of the section set but is loop-only and puts AC evidence in Subject; see Decision: the mechanism is Eric's three-state decision gate.
 - 2026-08-14 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove implemented tasks 1-5 verbatim — the bookkeeping-findings exemption in `followup-scope.md`, Eric's and Briar's decision-gate qualifiers, and the review-loop's Ledger re-point to citation. `pnpm prism:build` (668/668 tests) and `pnpm prism:check` both exit 0; all eight AC evidence commands recorded MET.
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Merged `origin/main` (PR #489's review-loop restructure) and hand-resolved the one Ledger-bullet conflict; see Decision: re-landing this branch on `main` after PR #489. `pnpm prism:build` (900/901, 1 skipped) and `pnpm prism:check` both exit 0 on the pushed HEAD `15e8e983`; AC-1's and AC-4's grep probes re-verified against the merged file.
 
 ---
 
@@ -191,9 +200,9 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 ## PR Readiness
 
 - [x] No critical or major issues
-- [x] `pnpm prism:check` passes — last run: 2026-08-14
+- [x] `pnpm prism:check` passes — last run: 2026-09-08 (after re-landing on `main`)
 - [x] All eight AC evidence commands executed with observed values recorded
 - [ ] PR description up to date
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed
 
-**Last updated:** 2026-08-14
+**Last updated:** 2026-09-08
