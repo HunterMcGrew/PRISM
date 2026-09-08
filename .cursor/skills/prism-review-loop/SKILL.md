@@ -89,7 +89,7 @@ Two rules meet here and neither replaces the other. Each reviewer's
 § Plan-file scope shrinks the set of plan observations that are findings at
 all — a plan is a finding only when it contradicts the diff. What survives
 that filter is mostly a contradiction in `## Implementation Tasks`,
-`## Decisions`, or `## Acceptance Criteria`, which the list above already
+`## Decisions`, or an AC **criterion** line, which the list above already
 calls Subject content — so the loop reviews it at the Subject bar like any
 other finding rather than capping it. The capping belongs to the Ledger row
 under **Disposition** below, and it runs over the bookkeeping sections

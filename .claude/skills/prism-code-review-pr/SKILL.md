@@ -328,13 +328,13 @@ When the review is complete, think about what the PR needs next before closing o
 
 If critical or major issues came up, the PR isn't ready for labels yet. Say: "I've posted my findings on PR #<pr-number>. A few things need attention — Clove can fix them up." If any of the issues are UX-level (not just code), add: "There's also a UX concern worth a Pixel pass before Clove fixes it." After Clove pushes fixes, the user can run Eric again for a re-review pass — catching things on a second pass is way cheaper than catching them in prod.
 
-If only minor issues remain and the dev hasn't addressed them yet, apply effort + `review:has-minors`. Say: "I've flagged a few minor items on PR #<pr-number>. Take a look and either fix them or reply on the threads if you're good with them — once they're all addressed, run me again and I'll mark it ready for human review. Labels: `effort:quick`, `review:has-minors`."
+When state #2 applies per § Decision gate — at least one unaddressed minor is not bookkeeping-only — apply effort + `review:has-minors`. Say: "I've flagged a few minor items on PR #<pr-number>. Take a look and either fix them or reply on the threads if you're good with them — once they're all addressed, run me again and I'll mark it ready for human review. Labels: `effort:quick`, `review:has-minors`."
 
-If everything looks good — zero issues, or all minors have been addressed — apply effort + confidence. Pick the confidence label by axis state:
+When state #3 applies per § Decision gate — zero issues, or every remaining minor is addressed, acknowledged, or bookkeeping-only — apply effort + confidence, picking the confidence label exactly as § Decision gate specifies:
 
-- Both axes ran clean and no angle is pass-bounded → `confidence:high`. Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
-- Both axes ran but a judgment call remains → `confidence:needs-judgment`. Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`." This is also the label a pass-bounded angle forces per § Decision gate — name the angle and the specific check still owed as the concern.
-- Spec axis was skipped (no plan / AC / architect context for the touched paths) and Standards axis cleared → `confidence:standards-only`. Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
+- `confidence:high` → Say: "PR #<pr-number> is ready for human review. Labels: `effort:quick`, `confidence:high`."
+- `confidence:needs-judgment` → Say: "PR #<pr-number> looks technically sound but has a judgment call worth a human eye — [name the specific concern]. Labels: `effort:quick`, `confidence:needs-judgment`." When a pass-bounded angle forces this label per § Decision gate, name the angle and the specific check still owed as the concern.
+- `confidence:standards-only` → Say: "PR #<pr-number>'s Standards axis is clean. The Spec axis was skipped — no spec available for the touched paths. Human reviewer decides whether the missing spec matters for this change. Labels: `effort:quick`, `confidence:standards-only`."
 
 When the clean pass is a re-review, append the resolved-thread count to whichever closing line applies ("4 prior threads resolved") — the same count that went into the summary comment per § Decision gate.
 
