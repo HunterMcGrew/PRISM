@@ -1243,6 +1243,11 @@ test("runDoctor keeps Windows path separators in a dead hook registration it rep
 
 test("runDoctor reports a settings.json that is not valid JSON", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
 
@@ -1255,6 +1260,60 @@ test("runDoctor reports a settings.json that is not valid JSON", async () => {
 		const messages = hookFindings(report.findings);
 		assert.equal(messages.length, 1);
 		assert.match(messages[0], /not valid JSON/);
+	});
+});
+
+test("runDoctor reports a .codex/hooks.json that is not valid JSON", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".codex/hooks.json", "{ not json\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /\.codex\/hooks\.json is not valid JSON/);
+	});
+});
+
+test("runDoctor's settings.json parse failure does not suppress Codex's own findings", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude", "codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const parseError = hookFindingsList.find((f) => /\.claude\/settings\.json is not valid JSON/.test(f.message));
+		const codexReach = hookFindingsList.find((f) => /installed and registered for Codex/.test(f.message));
+		assert.ok(parseError, "the unreadable Claude file still reports its own parse error");
+		assert.ok(
+			codexReach,
+			"Codex's own, readable registration is unaffected by Claude's file failing to parse"
+		);
 	});
 });
 
@@ -1671,6 +1730,11 @@ test("runDoctor does not credit Claude Code with a hook.mjs registration that on
 				"\t"
 			)}\n`
 		);
+		// Codex also registers git-gates.mjs of its own, so the reach
+		// assertion below tests only the cross-host leak this test is named
+		// for — an unregistered Codex git-gates.mjs would separately withhold
+		// the reach line per the "runDoctor withholds the Codex reach line
+		// when Codex's git gates are inert" test.
 		await writeFile(
 			consumerRepoRoot,
 			".codex/hooks.json",
@@ -1684,6 +1748,15 @@ test("runDoctor does not credit Claude Code with a hook.mjs registration that on
 									{
 										type: "command",
 										command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse',
+									},
+								],
+							},
+							{
+								matcher: "^Bash$",
+								hooks: [
+									{
+										type: "command",
+										command: 'node ".claude/hooks/git-gates.mjs" --tool=codex --event=PreToolUse',
 									},
 								],
 							},
@@ -1769,6 +1842,39 @@ test("runDoctor does not credit Codex with a hook.mjs registration when its own 
 			"Codex's own file names git-gates.mjs, not hook.mjs, so the write gate does not actually fire"
 		);
 		assert.ok(codexHookInert, "hook.mjs is inert for Codex even though git-gates.mjs is registered");
+	});
+});
+
+test("runDoctor withholds the Codex reach line when Codex's git gates are inert", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+		// Codex's own file registers only hook.mjs — git-gates.mjs is present
+		// on disk but never named, so the reach line's clean-bill claim would
+		// be wrong exactly the way it already was for the Claude arm.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(
+			messages.length,
+			0,
+			"no Codex git-gates message exists yet (issue-488 B4), so withholding the reach line leaves nothing to report"
+		);
 	});
 });
 

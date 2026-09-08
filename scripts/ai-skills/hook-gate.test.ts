@@ -579,6 +579,39 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	assert.ok(gitGates, "git-gates PreToolUse registration delivered");
 	assert.equal(gitGates.matcher, "Bash");
 
+	// The adopt config carries no `hosts` key, so `resolveHosts` returns
+	// every host and `mergeHookCodexRegistration` writes this file in the
+	// same run — Codex's own registration is asserted with the same rigor
+	// as Claude's above, not just checked for existence.
+	const codexHooks = JSON.parse(
+		await fs.readFile(path.join(consumerRoot, ".codex", "hooks.json"), "utf8")
+	);
+	assert.ok(codexHooks.hooks.PreToolUse, "Codex PreToolUse registration delivered");
+	assert.ok(codexHooks.hooks.PostToolUse, "Codex PostToolUse registration delivered");
+	assert.ok(codexHooks.hooks.PostCompact, "Codex PostCompact registration delivered");
+
+	const codexPreToolUse = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("hook.mjs")
+	);
+	assert.ok(codexPreToolUse, "Codex's write-tool PreToolUse entry delivered");
+	for (const toolName of ["apply_patch", "Edit", "Write", "Bash"]) {
+		assert.match(
+			toolName,
+			new RegExp(codexPreToolUse.matcher),
+			`the Codex PreToolUse matcher selects ${toolName}`
+		);
+	}
+
+	const codexGitGates = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("git-gates.mjs")
+	);
+	assert.ok(codexGitGates, "Codex git-gates PreToolUse registration delivered in its own group");
+	assert.notEqual(
+		codexGitGates,
+		codexPreToolUse,
+		"the git-gates entry is a separate matcher group from the write-tool entry"
+	);
+
 	// Every glob asserted as a whole line. A `match` on a bare pattern also
 	// matches its `.tmp` sibling as a substring, so neither line would be
 	// distinctly proven.
@@ -716,6 +749,15 @@ test(
 						"dropping the delivered registrations must fail this leg"
 					);
 					await fs.writeFile(settingsPath, deliveredSettings, "utf8");
+
+					const codexHooksPath = path.join(consumerRoot, ".codex", "hooks.json");
+					const deliveredCodexHooks = await fs.readFile(codexHooksPath, "utf8");
+					await fs.writeFile(codexHooksPath, JSON.stringify({ hooks: {} }), "utf8");
+					await assert.rejects(
+						assertAdoptedConsumerState(consumerRoot),
+						"dropping the delivered Codex registrations must fail this leg"
+					);
+					await fs.writeFile(codexHooksPath, deliveredCodexHooks, "utf8");
 
 					await assertAdoptedConsumerState(consumerRoot);
 				});

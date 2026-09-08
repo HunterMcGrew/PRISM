@@ -794,25 +794,37 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	const codexRegisteredPaths = new Set<string>();
 	let settings: Record<string, unknown> | null = null;
 	let codexHooks: Record<string, unknown> | null = null;
+	// A parse failure reports its own error finding rather than returning
+	// early — the dead-registration loop, the other host's reachability
+	// checks, and describeGitGates all read state this host's parse failure
+	// does not touch, and an early return here dropped every one of them for
+	// a consumer whose only mistake was a stray comma in one file. The flag
+	// guards only this host's own per-host arm below, where a parse failure
+	// would otherwise read as "genuinely unregistered" and produce a
+	// misleading inert/installed message on top of the real error finding.
+	let claudeParseFailed = false;
+	let codexParseFailed = false;
+	const findings: DoctorFinding[] = [];
 
 	if (settingsRaw !== null) {
 		try {
 			settings = JSON.parse(settingsRaw) as Record<string, unknown>;
 		} catch (error) {
-			return [
-				{
-					check: "hook-registration",
-					severity: "error",
-					message: `.claude/settings.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
-				},
-			];
+			claudeParseFailed = true;
+			findings.push({
+				check: "hook-registration",
+				severity: "error",
+				message: `.claude/settings.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+			});
 		}
 
-		for (const command of collectHookCommands(settings)) {
-			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
-				const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
-				registeredPaths.add(resolved);
-				claudeRegisteredPaths.add(resolved);
+		if (settings !== null) {
+			for (const command of collectHookCommands(settings)) {
+				for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
+					const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
+					registeredPaths.add(resolved);
+					claudeRegisteredPaths.add(resolved);
+				}
 			}
 		}
 	}
@@ -821,25 +833,25 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		try {
 			codexHooks = JSON.parse(codexHooksRaw) as Record<string, unknown>;
 		} catch (error) {
-			return [
-				{
-					check: "hook-registration",
-					severity: "error",
-					message: `.codex/hooks.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
-				},
-			];
+			codexParseFailed = true;
+			findings.push({
+				check: "hook-registration",
+				severity: "error",
+				message: `.codex/hooks.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+			});
 		}
 
-		for (const command of collectHookCommands(codexHooks)) {
-			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
-				const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
-				registeredPaths.add(resolved);
-				codexRegisteredPaths.add(resolved);
+		if (codexHooks !== null) {
+			for (const command of collectHookCommands(codexHooks)) {
+				for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
+					const resolved = resolveHookCommandPath(match[1], consumerRepoRoot);
+					registeredPaths.add(resolved);
+					codexRegisteredPaths.add(resolved);
+				}
 			}
 		}
 	}
 
-	const findings: DoctorFinding[] = [];
 	const config = await readConsumerConfigSafely(consumerRepoRoot);
 	const hosts = resolveHosts(config);
 	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
@@ -930,7 +942,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	// declared at all.
 	const runtimePresent = await pathExists(hookRuntimePath);
 
-	if (hosts.includes("claude")) {
+	if (hosts.includes("claude") && !claudeParseFailed) {
 		const hookInert = runtimePresent && !claudeRegisteredPaths.has(hookRuntimePath);
 		if (hookInert) {
 			findings.push({
@@ -969,7 +981,10 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		}
 	}
 
-	if (hosts.includes("codex")) {
+	if (hosts.includes("codex") && !codexParseFailed) {
+		const codexGitGatesInert =
+			(await pathExists(gitGatesRuntimePath)) && !codexRegisteredPaths.has(gitGatesRuntimePath);
+
 		if (runtimePresent && !codexRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
@@ -977,7 +992,12 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 				message:
 					".claude/hooks/hook.mjs is present but .codex/hooks.json registers no hook command pointing at it — the architect-context hook is inert for Codex. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .codex/hooks.json.",
 			});
-		} else if (runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
+			// Gated on `codexGitGatesInert` too, mirroring the Claude arm above —
+			// installed-and-registered is not a clean bill of health when
+			// Codex's git gates are inert. No Codex git-gates info/warning
+			// message exists yet (issue-488 B4), so this only withholds the
+			// false-clean claim rather than adding one.
+		} else if (!codexGitGatesInert && runtimePresent && codexRegisteredPaths.has(hookRuntimePath)) {
 			findings.push({
 				check: "hook-registration",
 				severity: "info",
