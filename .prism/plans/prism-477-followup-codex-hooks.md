@@ -258,6 +258,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — implement the 7 Clove tasks (PR 1) delivering the hook runtime and write gate to Codex; Bounds — `harnesses.mjs`, `update.ts`, `doctor.ts`, `verify-pack-parity.ts`, `templates/install/.codex/hooks.json`, and their test files only — no PR 2 doc tasks, no `[HITL]` probe; Approach — follow the plan's task specs in order, verifying types and tests after each · close: scope held — one addition beyond the literal task text: `verify-pack-parity.ts` gained a `templates/install/.codex` runtime-read entry, needed because `mergeHookCodexRegistration` reads that path at runtime and `prism:verify-pack` would otherwise miss it; local-frame correction, not scope drift.
 - 2026-09-02 [huntermcgrew/codex-hook-delivery] open: Intent — Briar self-review of PR 1 (tasks 1–7) against the nine review angles, plus a targeted check of the ownership-merge, host-gate, deny-envelope, and doctor-arm logic named in the dispatch; Bounds — read-only review of the PR 1 diff and its tests, no source edits, plan-only commit; Approach — read every changed file in full, run type-check/tests/crossref/pack/ship-closure, and manually repro any suspicious control-flow interaction rather than trust the green test suite alone · close: scope held — one manual repro built outside the diff (`/tmp/repro-doctor.test.ts`, not committed) to confirm the dead-registration/inert-warning suppression finding; no source files touched besides this plan.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — re-land PR #487 by merging `origin/main` (issue #488 Phase A, git gates) into this branch and reconciling the two features; Bounds — resolve conflicts in `harnesses.mjs` and `doctor.ts` only, widen Codex delivery to cover `git-gates.mjs` where the merge exposed the gap, no other scope; Approach — read both sides' full functions before resolving, keep both features' explicit correctness fixes rather than picking one side wholesale · close: scope held — the one addition beyond the literal conflict (widening `PRISM_CODEX_HOOK_COMMAND_PATTERN` and the Codex hooks.json template to also claim/register `git-gates.mjs`) is documented as a Decision above and was explicitly anticipated by the dispatch, not silent drift.
+- 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — grade all 10 acceptance criteria against the merged HEAD with executed evidence, re-grading from scratch rather than trusting the recorded marks; Bounds — read-only grading plus a plan-and-report commit, no source edits, tree clean before and after; Approach — run each Evidence sub-bullet's named command verbatim, and probe the real shipped template directly wherever a named test grades a fixture instead · close: scope held — the only additions beyond the named commands were three read-only probes (byte-identity for AC-3, live merge/drop/refresh against the real template for AC-2/AC-4/AC-5) run in OS temp dirs, which strengthened evidence rather than widening scope.
 
 ---
 
@@ -267,6 +268,7 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Implemented tasks 1–7 (PR 1) — `HARNESSES.codex` gained the deny envelope and `Edit`/`Write` aliases, the `.codex/hooks.json` template shipped, `mergeHookSettingsRegistration` generalized into a shared `mergeHookRegistration` seam with a Codex twin, `refreshHookRuntime`'s host gate split so the runtime delivers on `claude` OR `codex` while each registration gates on its own host, `checkHookRegistration` gained the Codex arm, and tests were added or updated across `update.test.ts`, `doctor.test.ts`, and `hook-gate.test.ts`. `pnpm prism:check` is green.
 - 2026-09-02 [huntermcgrew/codex-hook-delivery]: Fixed Briar's Major — `checkHookRegistration`'s dead-registration early return was silently dropping the inert-runtime warning for an unrelated host mix. Dropped the blanket early return, hoisted `runtimePresent`, and each per-host arm now guards its own info/warning push on the runtime's actual presence instead of trusting the registered-path set alone. Added the combined-condition test Briar named.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Merged `origin/main` (PRISM-488 Phase A) to re-land PR #487; resolved `harnesses.mjs` (kept the documented Codex deny envelope, added Codex's `emitAllow`) and `doctor.ts` (kept the Codex host arms and the `claudeIsRegistered` correctness fix, added main's git-gates-inert warning and `describeGitGates` call). Widened Codex's delivery and ownership pattern to also cover `git-gates.mjs` — see Decision "Codex also registers and claims git-gates.mjs." `pnpm prism:check` is green on the merged HEAD (types, 913/913 runnable tests, crossref-lint, verify-manifest, ship-closure, verify-pack).
+- 2026-09-08 [huntermcgrew/codex-hook-delivery]: Reese graded the AC against the merged HEAD `fe50d415` — 7 MET, 2 UNMET, 0 UNGRADEABLE across the 9 machine criteria; AC-7 routed to human verification. Both UNMET (AC-9, AC-10) are the documentation sweeps the plan assigns to PR 2. Report at `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md`.
 
 ---
 
@@ -291,6 +293,28 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 - **File:** `templates/install/.prism/architect/_toolkit/install-layout.md:121`
 - **Problem:** the line says "The hook announces; it never blocks" directly above the same file's § Write gate, which describes blocking. `checkSeedDrift` never compares curated content, so no gate catches it.
 - **Suggested fix:** task 12.
+
+### AC-9 UNMET — documents still claim hook enforcement reaches Claude Code alone
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/rules/context-reuse.md:30`, `.prism/architect/_toolkit/install-layout.md:145` and `:159`, `docs/ai-skills/compatibility.md:17` `:69` `:73` `:83`, `AGENTS.md:858`, `templates/install/.prism/architect/_toolkit/install-layout.md:121` and `:135`, `templates/install/.prism/rules/context-reuse.md:30`, plus the `.claude/` `.codex/` `.cursor/` build mirrors of each
+- **Criterion (verbatim):** AC-9 — No document still claims hook enforcement reaches Claude Code alone.
+- **Procedure:** ran the Evidence sub-bullet's own command verbatim from the repo root at `fe50d415` — `grep -rn "Claude Code only" . --exclude-dir=node_modules --exclude-dir=.git`, exit 0.
+- **Expected vs observed:** expected "only Cursor-scoped statements and ADR-0074's frozen `## Context` narration"; observed 30 lines, including `.prism/rules/context-reuse.md:30` — "It reaches Claude Code only, it is friction rather than a wall…" — which is one of the two sites the criterion's own positive control names. `scripts/ai-skills/doctor.ts:812`, the other named control site, is clear; its current message at `doctor.ts:984` names the string only as a `§` citation into `compatibility.md`, whose heading at `:69` is itself still a hit.
+- **Evidence type:** `executed`
+- **Report:** `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md` § AC-9
+
+### AC-10 UNMET — the curated seed twin still contradicts itself on whether the hook blocks
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `templates/install/.prism/architect/_toolkit/install-layout.md:121`
+- **Criterion (verbatim):** AC-10 — The curated seed twin no longer contradicts itself about whether the hook blocks.
+- **Procedure:** ran the Evidence sub-bullet's own command verbatim at `fe50d415` — `grep -n "never blocks" templates/install/.prism/architect/_toolkit/install-layout.md`, exit 0.
+- **Expected vs observed:** expected the grep to return nothing; observed one match at line 121 — "The hook announces; it never blocks. … Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today." That is the exact line the criterion's positive control names as the pre-change state, so the file is unchanged on this axis. Same site as the open `minor` entry above.
+- **Evidence type:** `executed`
+- **Report:** `.prism/qa/ac-verification-prism-477-followup-codex-hooks.md` § AC-10
 
 ---
 
