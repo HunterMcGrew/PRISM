@@ -1282,16 +1282,17 @@ const HOOK_STATE_GITIGNORE_LINES = [
 
 /**
  * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`,
- * merges its registration into the consumer's `.claude/settings.json` (never
- * overwriting an existing registration block), and appends the two hook
- * state-file globs to the consumer's `.gitignore`. Shared by `prism:adopt`
- * and `prism:update` through this one `runUpdate` seam, so both inherit the
- * same delivery path.
+ * merges its registrations into the consumer's `.claude/settings.json` and
+ * `.codex/hooks.json` (never overwriting an existing registration block), and
+ * appends the two hook state-file globs to the consumer's `.gitignore`.
+ * Shared by `prism:adopt` and `prism:update` through this one `runUpdate`
+ * seam, so both inherit the same delivery path.
  *
- * The registration in `templates/install/.claude/settings.json` names a path
- * inside the consumer's own repo, so the runtime has to be delivered there
- * for the registration to point at anything — without this seam the hook is
- * a silent no-op in every consumer.
+ * The registrations in `templates/install/.claude/settings.json` and
+ * `templates/install/.codex/hooks.json` each name a path inside the
+ * consumer's own repo, so the runtime has to be delivered there for either
+ * registration to point at anything — without this seam the hook is a
+ * silent no-op in every consumer.
  */
 export async function refreshHookRuntime(
 	prismRepoRoot: string,

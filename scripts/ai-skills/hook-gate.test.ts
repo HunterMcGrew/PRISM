@@ -769,6 +769,26 @@ test("HARNESSES.codex.emitDeny returns the envelope OpenAI documents for PreTool
 	});
 });
 
+test("HARNESSES.claude.emitAllow returns the documented allow envelope", () => {
+	assert.deepEqual(HARNESSES.claude.emitAllow("Lint timed out; allowing the push."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "allow",
+			permissionDecisionReason: "Lint timed out; allowing the push.",
+		},
+	});
+});
+
+test("HARNESSES.codex.emitAllow returns the same documented allow envelope", () => {
+	assert.deepEqual(HARNESSES.codex.emitAllow("Lint timed out; allowing the push."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "allow",
+			permissionDecisionReason: "Lint timed out; allowing the push.",
+		},
+	});
+});
+
 // --- Standalone process spawn (runs on every platform, including Windows) ---
 
 /**

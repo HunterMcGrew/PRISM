@@ -899,10 +899,15 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	// name different registered paths and neither should suppress the other.
 	for (const registered of [...registeredPaths].sort()) {
 		if (!(await pathExists(registered))) {
+			const sourceFiles = [
+				claudeRegisteredPaths.has(registered) ? ".claude/settings.json" : null,
+				codexRegisteredPaths.has(registered) ? ".codex/hooks.json" : null,
+			].filter((file): file is string => file !== null);
+
 			findings.push({
 				check: "hook-registration",
 				severity: "warning",
-				message: `A hook registration points at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
+				message: `${sourceFiles.join(" and ")} registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
 			});
 		}
 	}

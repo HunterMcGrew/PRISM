@@ -300,6 +300,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — Briar self-review pass 3 of the full PR #487 diff against `origin/main` (Codex delivery seam plus the git-gates merge-conflict resolution, checking both sides of the resolved hunks survived), full bar, every severity, per Sol's dispatch; Bounds — read-only review plus the plan-only commit, no source edits; Approach — read every changed file in full (including surrounding unchanged context), set up a fresh worktree with `pnpm install --frozen-lockfile`, run `pnpm prism:check` end to end, and reproduce any suspicious control-flow interaction against the built function rather than trust the green test suite alone · close: scope held — no source edits; one new open major found and reproduced with two throwaway repro scripts under the OS temp scratch dir (not committed).
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — Clove fixes Briar pass 3's open major (`checkHookRegistration`'s per-host "installed and registered" messages don't verify the specific host registers `hook.mjs`) per Sol's needs-fix dispatch on lane pr-487; Bounds — `scripts/ai-skills/doctor.ts` and `doctor.test.ts` only, no unilateral accept of the two `proposed` AC Adjustments, no PR 2 work; Approach — verify both repro scenarios' logic independently before touching code, track each host's own registered paths separately from the shared cross-host set, and re-verify with `pnpm prism:check` · close: scope held — one addition beyond the literal finding: applied the identical per-host fix to `gitGatesInert` and the `describeGitGates` gate, one line away in the same function, which shared the exact same cross-host-leak shape for `git-gates.mjs`; local-frame correction against a repeat bug shape, not scope drift.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — Briar self-review pass 4 of the full PR #487 diff against `origin/main` (Codex delivery seam plus the git-gates merge-conflict resolution), full bar, every severity, per Sol's dispatch; Bounds — read-only review plus the plan-only commit, no source edits; Approach — trace `checkHookRegistration`'s complete control flow given three prior passes each found one instance of the same cross-host-leak bug shape, cross-check the new tests against the specific scenarios the three fixes claim to cover, and run `pnpm prism:check` in a fresh worktree install rather than trust CI alone · close: scope held — no source edits, no new finding; the four documented fixes hold against the current code and no fifth instance of the same bug shape survives.
+- 2026-09-08 [huntermcgrew/codex-hook-delivery] open: Intent — Clove fixes Eric's PR-review pass 1 findings on PR #487 at `4eebe76e` (1 Major + 2 Minors + the carried-over PR-body-structure Minor) per Sol's needs-fix dispatch on lane pr-487; Bounds — `scripts/ai-skills/update.ts`, `doctor.ts`, `hook-gate.test.ts`, and the PR body only, no unilateral accept of the two `proposed` AC Adjustments, no PR 2 work; Approach — fix each finding at its named site, verify with a fresh `pnpm install --frozen-lockfile` then `pnpm prism:check`, and restructure the PR body onto `pr-description.md`'s canonical template · close: scope held — no source edit outside the four named files/PR body; all four findings fixed, `pnpm prism:check` green.
 
 ---
 
@@ -319,6 +320,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Briar self-review pass 3 found one new open major — `checkHookRegistration`'s "installed and registered" messages fire on a host whose file registers only `git-gates.mjs`, not `hook.mjs` (confirmed by direct repro on Codex, and via the shared `registeredPaths` set leaking a sibling host's registration on Claude). `pnpm prism:check` green in a fresh worktree (916 tests, 914 pass, 2 skipped) at unchanged HEAD `e0d4091e`.
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Fixed Briar pass 3's open major — added per-host `claudeRegisteredPaths`/`codexRegisteredPaths` sets and gated `hookInert`, `gitGatesInert`, and all four "installed and registered" checks on the registering host's own set instead of the merged cross-host set. Added two tests covering both repro scenarios from the finding. `pnpm prism:check` is green (918 tests, 916 pass, 2 skipped).
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Briar self-review pass 4 found zero new issues — traced `checkHookRegistration`'s full control flow against the four previously-fixed bug shapes and confirmed each holds; ran `pnpm prism:check` from a fresh `pnpm install --frozen-lockfile` (918 tests, 916 pass, 2 skipped, all gates green). Confirmed the PR's Windows CI failure is the known pre-existing `git-gates.test.ts` nested-repo case from main (fixed by PR #491), not a regression; ubuntu CI is green.
+- 2026-09-08 [huntermcgrew/codex-hook-delivery]: Fixed Eric's PR-review pass 1 (1 Major, 2 Minors): `refreshHookRuntime`'s JSDoc named only the Claude registration file — rewrote to name both `.claude/settings.json` and `.codex/hooks.json` and both templates. `doctor.ts`'s dead-registration warning named no source file — now names whichever of `.claude/settings.json` / `.codex/hooks.json` (or both) carries the dangling command. Added `emitAllow` shape tests for both Claude and Codex to `hook-gate.test.ts`, mirroring the existing `emitDeny` test. Also restructured the PR body onto `pr-description.md`'s canonical template (Summary/What/Why/How/Notes/Ticket/Type of Change), fixing the carried-over Minor. `pnpm prism:check` is green from a fresh `pnpm install --frozen-lockfile` (920 tests, 918 pass, 2 skipped).
 
 ---
 
@@ -417,6 +419,38 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 - Docs impact — not reached — structural: the doc sweep (`install-layout.md`, `compatibility.md`, `AGENTS.md`, `context-reuse.md`) is explicitly scoped to PR 2 by the plan's two-PR-stack Decision; PR 1 carries no doc changes by design, and nothing in a later self-review pass on this branch changes that
 - Accessibility — n/a — no UI in the diff (CLI/build-script backend only)
 
+### `refreshHookRuntime`'s JSDoc still describes Claude-only delivery
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/update.ts:1283-1295`
+- **Problem:** the JSDoc said the function "merges its registration into the consumer's `.claude/settings.json`" and grounded the whole reason-for-existing in `templates/install/.claude/settings.json` alone. As of this PR the function merges two registrations from two templates, and on a `hosts: ["codex"]` consumer the Claude half never runs at all — the same stale-predicate class Briar caught on `checkHookRegistration`'s JSDoc and Clove fixed earlier on this branch, one function away in this same PR.
+- **Fixed in:** rewrote both paragraphs to name `.claude/settings.json` and `.codex/hooks.json`, and both templates under `templates/install/`, with no behavior change.
+
+### Dead-registration warning no longer names the file to repair
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/doctor.ts:905`
+- **Problem:** `main`'s message named the file (".claude/settings.json registers a hook command pointing at X"); generalizing the loop over both hosts dropped the attribution instead of widening it. A dual-host consumer got "A hook registration points at X" with two candidate files to hunt through.
+- **Fixed in:** derived the source file(s) from the existing `claudeRegisteredPaths`/`codexRegisteredPaths` sets and named them in the message — `.claude/settings.json`, `.codex/hooks.json`, or both when the same dead path is registered on each.
+
+### `emitAllow` has no shape assertion — `emitDeny` gained one in the same commit
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `scripts/ai-skills/hooks/harnesses.mjs:221` (test added in `scripts/ai-skills/hook-gate.test.ts`)
+- **Problem:** nothing in `scripts/ai-skills/` asserted an `emitAllow` envelope for any harness — a typo in `hookEventName` or `permissionDecisionReason` would fail nothing and silently drop the git-gates fail-open announcement.
+- **Fixed in:** added `HARNESSES.claude.emitAllow` and `HARNESSES.codex.emitAllow` deep-equal tests to `hook-gate.test.ts`, mirroring the shape of the existing `emitDeny` test.
+
+### PR body does not follow `pr-description.md` § Structure
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** not file-anchored — the PR #487 body.
+- **Problem:** carried over from the 2026-09-02 review round — content was accurate but the body skipped the required headings (`## Summary`, `## What did you do?`, `## Why did you do it?`, `## How did you achieve it?`, `## Ticket`, `## Type of Change` + checklist).
+- **Fixed in:** restructured the body onto the canonical template via `gh api ... -X PATCH -F body=@file.md`, preserving all existing content (problem statement, the merge-with-main summary, and the PR-2 stack note) under the correct headings.
+
 ---
 
 ## Cleanup Items
@@ -430,8 +464,8 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — two new tests reproduce both repro scenarios from Briar pass 3's finding
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-08 (Briar pass 4, fresh worktree: `pnpm install --frozen-lockfile` then `pnpm prism:check` end to end — types, 918 tests (916 pass, 2 skipped), `prism:verify-manifest`, `prism:crossref-lint`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-pack` all green)
-- [ ] PR description up to date
+- [x] Build passes — last run: 2026-09-08 (Clove, fresh worktree: `pnpm install --frozen-lockfile` then `pnpm prism:check` end to end — types over both tsconfig arms, 920 tests (918 pass, 2 skipped), `prism:verify-manifest`, `prism:crossref-lint`, `prism:spec-scope-lint`, `prism:ship-closure`, `prism:verify-pack` all green)
+- [x] PR description up to date — restructured onto `pr-description.md`'s canonical template
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close, after PR 2 and task 8's probe
 
-**Last updated:** 2026-09-08 [huntermcgrew/codex-hook-delivery] — Briar self-review pass 4 found zero new issues; `## Review Issues` carries zero `open` entries. AC-9/AC-10 remain `deferred` to PR 2, unchanged by this pass. PR CI: ubuntu green, Windows red only on the known pre-existing `git-gates.test.ts` failure inherited from `main` (PR #491 fixes it), not a regression.
+**Last updated:** 2026-09-08 [huntermcgrew/codex-hook-delivery] — Clove fixed Eric's PR-review pass 1 (1 Major, 2 Minors, plus the carried-over PR-body Minor); `## Review Issues` carries zero `open` entries. AC-9/AC-10 remain `deferred` to PR 2, unchanged by this pass. PR CI: ubuntu green, Windows red only on the known pre-existing `git-gates.test.ts` failure inherited from `main` (PR #491 fixes it), not a regression.
