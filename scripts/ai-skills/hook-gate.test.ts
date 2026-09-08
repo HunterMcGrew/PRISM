@@ -579,6 +579,44 @@ async function assertAdoptedConsumerState(consumerRoot: string): Promise<void> {
 	assert.ok(gitGates, "git-gates PreToolUse registration delivered");
 	assert.equal(gitGates.matcher, "Bash");
 
+	// The adopt config carries no `hosts` key, so `resolveHosts` returns
+	// every host and `mergeHookCodexRegistration` writes this file in the
+	// same run — Codex's own registration is asserted with the same rigor
+	// as Claude's above, not just checked for existence.
+	const codexHooks = JSON.parse(
+		await fs.readFile(path.join(consumerRoot, ".codex", "hooks.json"), "utf8")
+	);
+	assert.ok(codexHooks.hooks.PreToolUse, "Codex PreToolUse registration delivered");
+	assert.ok(codexHooks.hooks.PostToolUse, "Codex PostToolUse registration delivered");
+	assert.ok(codexHooks.hooks.PostCompact, "Codex PostCompact registration delivered");
+
+	const codexPreToolUse = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("hook.mjs")
+	);
+	assert.ok(codexPreToolUse, "Codex's write-tool PreToolUse entry delivered");
+	for (const toolName of ["apply_patch", "Edit", "Write", "Bash"]) {
+		assert.match(
+			toolName,
+			new RegExp(codexPreToolUse.matcher),
+			`the Codex PreToolUse matcher selects ${toolName}`
+		);
+	}
+	assert.ok(
+		codexPreToolUse.hooks[0].command.includes("--event=PreToolUse"),
+		"the Codex PreToolUse registration dispatches the deny arm, not the announce arm"
+	);
+
+	const codexGitGates = codexHooks.hooks.PreToolUse.find((entry: { hooks: Array<{ command: string }> }) =>
+		entry.hooks[0].command.includes("git-gates.mjs")
+	);
+	assert.ok(codexGitGates, "Codex git-gates PreToolUse registration delivered in its own group");
+	assert.equal(codexGitGates.matcher, "^Bash$");
+	assert.notEqual(
+		codexGitGates,
+		codexPreToolUse,
+		"the git-gates entry is a separate matcher group from the write-tool entry"
+	);
+
 	// Every glob asserted as a whole line. A `match` on a bare pattern also
 	// matches its `.tmp` sibling as a substring, so neither line would be
 	// distinctly proven.
@@ -717,6 +755,15 @@ test(
 					);
 					await fs.writeFile(settingsPath, deliveredSettings, "utf8");
 
+					const codexHooksPath = path.join(consumerRoot, ".codex", "hooks.json");
+					const deliveredCodexHooks = await fs.readFile(codexHooksPath, "utf8");
+					await fs.writeFile(codexHooksPath, JSON.stringify({ hooks: {} }), "utf8");
+					await assert.rejects(
+						assertAdoptedConsumerState(consumerRoot),
+						"dropping the delivered Codex registrations must fail this leg"
+					);
+					await fs.writeFile(codexHooksPath, deliveredCodexHooks, "utf8");
+
 					await assertAdoptedConsumerState(consumerRoot);
 				});
 			});
@@ -742,6 +789,51 @@ test("resolveToolKind: an unlisted or absent tool name falls back to write", () 
 	assert.equal(resolveToolKind(HARNESSES.cursor, "StrReplace"), "write");
 	assert.equal(resolveToolKind(HARNESSES.claude, "SomeToolNobodyMapped"), "write");
 	assert.equal(resolveToolKind(HARNESSES.claude, undefined), "write");
+});
+
+test("resolveListedToolKind: Codex's apply_patch, Edit, and Write all resolve to write", () => {
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "apply_patch"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "Edit"), "write");
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "Write"), "write");
+});
+
+test("resolveListedToolKind: an unlisted Codex tool name resolves to null, not to the write default", () => {
+	// The deny arm keys on `resolveListedToolKind`, never on the
+	// `resolveToolKind` fallback — an unmapped Codex tool must reach `write`
+	// only through the fallback used for announce, not through the table the
+	// deny arm consults.
+	assert.equal(resolveListedToolKind(HARNESSES.codex, "SomeToolCodexNeverShipped"), null);
+	assert.equal(resolveToolKind(HARNESSES.codex, "SomeToolCodexNeverShipped"), "write");
+});
+
+test("HARNESSES.codex.emitDeny returns the envelope OpenAI documents for PreToolUse", () => {
+	assert.deepEqual(HARNESSES.codex.emitDeny("Read the doc first."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "deny",
+			permissionDecisionReason: "Read the doc first.",
+		},
+	});
+});
+
+test("HARNESSES.claude.emitAllow returns the documented allow envelope", () => {
+	assert.deepEqual(HARNESSES.claude.emitAllow("Lint timed out; allowing the push."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "allow",
+			permissionDecisionReason: "Lint timed out; allowing the push.",
+		},
+	});
+});
+
+test("HARNESSES.codex.emitAllow returns the same documented allow envelope", () => {
+	assert.deepEqual(HARNESSES.codex.emitAllow("Lint timed out; allowing the push."), {
+		hookSpecificOutput: {
+			hookEventName: "PreToolUse",
+			permissionDecision: "allow",
+			permissionDecisionReason: "Lint timed out; allowing the push.",
+		},
+	});
 });
 
 // --- Standalone process spawn (runs on every platform, including Windows) ---
@@ -1477,6 +1569,45 @@ test("runPreToolUseArm: a shell write named on a later line of a multi-line comm
 			null,
 			"the cat on the second line is a read, and the sed on the first writes elsewhere"
 		);
+	});
+});
+
+test("the spawned entry point denies a Codex apply_patch on an unread routed path, and exits 0", async () => {
+	// The exit-0 half is the fail-open property the plan's "ship ahead of the
+	// probe" decision rests on: every exit path in hook.mjs sets
+	// `process.exitCode = 0`, so a deny travels in stdout JSON alone and an
+	// envelope Codex does not recognize fails open rather than crashing the
+	// tool call.
+	await withTempRepo(async (temporaryRoot) => {
+		const { target } = await seedGateRepo(temporaryRoot);
+		const entryPoint = path.join(scriptDirectory, "hooks", "hook.mjs");
+		const patchCommand = `*** Update File: ${toShellPath(target)}\n@@\n-old\n+new\n`;
+
+		const denied = spawnSync(
+			"node",
+			[entryPoint, "--tool=codex", "--event=PreToolUse"],
+			{
+				input: JSON.stringify({
+					session_id: "session-1",
+					cwd: temporaryRoot,
+					tool_name: "apply_patch",
+					tool_input: { command: patchCommand },
+				}),
+				encoding: "utf8",
+			}
+		);
+
+		assert.equal(denied.status, 0, denied.stderr);
+		const parsed = JSON.parse(denied.stdout);
+		assert.deepEqual(parsed, {
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "deny",
+				permissionDecisionReason:
+					"You're working on `src/index.ts`. Read its governing docs in full first, then retry:\n" +
+					`cat .prism/architect/${GATE_DOC}`,
+			},
+		});
 	});
 });
 

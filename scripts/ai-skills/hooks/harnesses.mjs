@@ -31,11 +31,15 @@
  * harness-specific field name, so a fourth host needs only one more row here,
  * not a change anywhere else in `hooks/`.
  *
- * `emitDeny` returns `null` on a host whose deny envelope nobody has observed.
- * A deny is the one output shape that changes what the user's tool does, so a
- * guessed envelope either fails silently or blocks a write with a message the
- * host never renders. Returning `null` makes "the gate reaches Claude Code
- * only" a property of the code rather than a sentence in a doc (ADR-0072).
+ * `emitDeny` returns `null` on a host whose deny envelope is neither
+ * documented nor observed. A documented envelope clears the bar even without
+ * a live probe (the Codex row below) — the asymmetry is that an unrecognized
+ * envelope fails open, so shipping one ahead of a probe cannot make things
+ * worse. A deny is the one output shape that changes what the user's tool
+ * does, so a genuinely guessed envelope either fails silently or blocks a
+ * write with a message the host never renders. Returning `null` makes "the
+ * gate does not reach Cursor" a property of the code rather than a sentence
+ * in a doc (ADR-0072).
  *
  * @typedef {Object} HarnessSpec
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
@@ -176,10 +180,16 @@ export const HARNESSES = {
 		emitAllow: () => null,
 	},
 	codex: {
-		// Codex's read tool is unmapped until a live probe observes its name,
-		// so every tool that isn't Bash or apply_patch takes the "write"
-		// default — over-nagging rather than under-gating.
-		toolKinds: { Bash: "shell", apply_patch: "write" },
+		// Codex has no separate read tool — reads run through `Bash` — so
+		// `Edit` and `Write` are listed explicitly for the same reason the
+		// Claude row lists them: the deny arm fires only on an explicitly
+		// listed name, never on the unlisted-name "write" default.
+		toolKinds: {
+			Bash: "shell",
+			apply_patch: "write",
+			Edit: "write",
+			Write: "write",
+		},
 		scopeId: (payload) => payload.session_id ?? null,
 		filePaths: (payload) =>
 			payload.tool_name === "apply_patch"
@@ -192,11 +202,33 @@ export const HARNESSES = {
 			},
 		}),
 		emitNone: () => null,
-		// Codex supports `PreToolUse`, but as with Cursor nothing delivers it a
-		// registration and no probe has observed its deny envelope.
-		emitDeny: () => null,
-		// Same reasoning as `emitDeny` — no observed envelope to answer in.
-		emitAllow: () => null,
+		// The envelope OpenAI documents for Codex `PreToolUse` at
+		// https://learn.chatgpt.com/docs/hooks, read 2026-09-02 — identical to
+		// Claude's. Documentation-verified, not live-probed: unlike the Claude
+		// row above, no measured session has shown the reason reaching the model.
+		// Answering ahead of that probe is safe in one direction only — every
+		// exit path in `hook.mjs` sets `exitCode = 0` and a deny travels in
+		// stdout alone, so an envelope Codex does not recognize fails open,
+		// which is what Codex does today.
+		emitDeny: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "deny",
+				permissionDecisionReason: reason,
+			},
+		}),
+		// Same documented envelope as `emitDeny`, in the allow direction — the
+		// git gates' fail-open path uses it so a lint that timed out is
+		// announced rather than silently waved through. An envelope Codex does
+		// not recognize just drops the reason text; the push proceeds either
+		// way because this is the allow branch, not the deny branch.
+		emitAllow: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "allow",
+				permissionDecisionReason: reason,
+			},
+		}),
 	},
 };
 

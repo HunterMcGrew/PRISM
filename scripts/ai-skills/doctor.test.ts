@@ -1042,12 +1042,17 @@ async function seedGitGatesConsumer(
 	await writeFile(
 		consumerRepoRoot,
 		".ai-skills/config.json",
-		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, ...configExtras }, null, "\t")}\n`
+		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"], ...configExtras }, null, "\t")}\n`
 	);
 }
 
 test("runDoctor reports a git-gates runtime on disk that settings.json never registers", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
 		await writeFile(
@@ -1131,6 +1136,11 @@ test("runDoctor warns when push verification is on with no command to run", asyn
 
 test("runDoctor reports a hook runtime on disk that settings.json never registers", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
 
@@ -1143,6 +1153,29 @@ test("runDoctor reports a hook runtime on disk that settings.json never register
 		const messages = hookFindings(report.findings);
 		assert.equal(messages.length, 1);
 		assert.match(messages[0], /registers no hook command/);
+	});
+});
+
+test("runDoctor reports a hook runtime on disk that .codex/hooks.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".codex/hooks.json", `${JSON.stringify({}, null, "\t")}\n`);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /registers no hook command/);
+		assert.match(messages[0], /Codex/);
 	});
 });
 
@@ -1210,6 +1243,11 @@ test("runDoctor keeps Windows path separators in a dead hook registration it rep
 
 test("runDoctor reports a settings.json that is not valid JSON", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
 
@@ -1225,8 +1263,67 @@ test("runDoctor reports a settings.json that is not valid JSON", async () => {
 	});
 });
 
+test("runDoctor reports a .codex/hooks.json that is not valid JSON", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".codex/hooks.json", "{ not json\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /\.codex\/hooks\.json is not valid JSON/);
+	});
+});
+
+test("runDoctor's settings.json parse failure does not suppress Codex's own findings", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude", "codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const parseError = hookFindingsList.find((f) => /\.claude\/settings\.json is not valid JSON/.test(f.message));
+		const codexReach = hookFindingsList.find((f) => /installed and registered for Codex/.test(f.message));
+		assert.ok(parseError, "the unreadable Claude file still reports its own parse error");
+		assert.ok(
+			codexReach,
+			"Codex's own, readable registration is unaffected by Claude's file failing to parse"
+		);
+	});
+});
+
 test("runDoctor reports hook reach, not a problem, when the runtime and its registration agree", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(
 			consumerRepoRoot,
@@ -1242,13 +1339,45 @@ test("runDoctor reports hook reach, not a problem, when the runtime and its regi
 
 		const messages = hookFindings(report.findings);
 		assert.equal(messages.length, 1);
-		assert.match(messages[0], /Claude Code only/);
+		assert.match(messages[0], /installed and registered for Claude Code/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
+	});
+});
+
+test("runDoctor reports codex hook reach, not a problem, when the runtime and its registration agree", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /installed and registered for Codex/);
 		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
 	});
 });
 
 test("runDoctor omits the hook reach line when the runtime is present but unregistered", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
 		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
 
@@ -1265,12 +1394,12 @@ test("runDoctor omits the hook reach line when the runtime is present but unregi
 	});
 });
 
-test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts exclude Claude Code", async () => {
+test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts have no hook host", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeFile(
 			consumerRepoRoot,
 			".ai-skills/config.json",
-			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["cursor"] }, null, "\t")}\n`
 		);
 
 		const report = await runDoctor({
@@ -1282,7 +1411,7 @@ test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts
 		const messages = hookFindings(report.findings);
 		assert.equal(messages.length, 1);
 		assert.match(messages[0], /not delivered on this repo's hosts/);
-		assert.match(messages[0], /codex/);
+		assert.match(messages[0], /cursor/);
 		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
 	});
 });
@@ -1332,10 +1461,17 @@ test("runDoctor warns when hosts exclude Claude Code but PRISM's registration is
 			npmVersionFetcher: NEVER_FETCH,
 		});
 
+		// No runtime file is on disk, so the registration is both stale (claude
+		// is no longer in hosts) and dead (the command it names does not exist)
+		// — the dead-registration check runs unconditionally alongside the
+		// stale-registration one, so both are real, independent findings here.
 		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
-		assert.equal(hookFindingsList.length, 1);
-		assert.equal(hookFindingsList[0].severity, "warning");
-		assert.match(hookFindingsList[0].message, /registration in \.claude\/settings\.json is/);
+		const staleRegistration = hookFindingsList.find((f) => /registration in \.claude\/settings\.json is/.test(f.message));
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(staleRegistration, "the stale claude registration is reported");
+		assert.equal(staleRegistration!.severity, "warning");
+		assert.ok(deadRegistration, "the same registration is also dead — nothing on disk backs it");
+		assert.equal(hookFindingsList.length, 2, "exactly these two findings, nothing else");
 	});
 });
 
@@ -1425,14 +1561,37 @@ test("runDoctor warns on a dead registration even when hosts excludes Claude Cod
 	});
 });
 
-test("runDoctor treats an unreadable config as declaring every host", async () => {
+test("runDoctor reports a dead registration and an inert runtime together — neither suppresses the other", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
-		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// The runtime is on disk but not registered anywhere — this should
+		// warn on its own. A second, unrelated registration entry names a
+		// hook.mjs path that is not on disk — a dead registration unrelated to
+		// the inert runtime. Both are real, independent findings.
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		const unrelatedStaleRegistration = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: "node .claude/hooks/old-hook.mjs --tool=claude",
+							},
+						],
+					},
+				],
+			},
+		};
 		await writeFile(
 			consumerRepoRoot,
 			".claude/settings.json",
-			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+			`${JSON.stringify(unrelatedStaleRegistration, null, "\t")}\n`
 		);
 
 		const report = await runDoctor({
@@ -1442,9 +1601,310 @@ test("runDoctor treats an unreadable config as declaring every host", async () =
 		});
 
 		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
-		const reach = hookFindingsList.find((f) => f.severity === "info");
-		assert.ok(reach, "the reach info fires — an unreadable config resolves to every host");
-		assert.match(reach!.message, /Claude Code only/);
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		const inertRuntime = hookFindingsList.find((f) => /registers no hook command/.test(f.message));
+		assert.ok(deadRegistration, "the dead registration on old-hook.mjs is reported");
+		assert.ok(
+			inertRuntime,
+			"the inert runtime is also reported — the dead-registration finding must not suppress it"
+		);
+		assert.equal(hookFindingsList.length, 2, "exactly these two findings, nothing else");
+	});
+});
+
+test("runDoctor reports a stale registration for one host and a healthy reach for another — neither suppresses the other", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// A healthy, fully-registered Claude delivery — this host's own
+		// findings should always run unconditionally, regardless of what the
+		// per-host stale-registration checks push for the other host.
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+		// A leftover Codex registration from before `codex` was dropped from
+		// `hosts` — this is what used to short-circuit the whole function.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const codexStale = hookFindingsList.find((f) => /hosts does not list "codex"/.test(f.message));
+		const claudeReach = hookFindingsList.find((f) => /installed and registered for Claude Code/.test(f.message));
+		assert.ok(codexStale, "the leftover Codex registration is reported");
+		assert.ok(
+			claudeReach,
+			"Claude's own healthy-reach finding must still run — the Codex stale-registration finding must not suppress it"
+		);
+	});
+});
+
+test("runDoctor reports a stale registration for one host and a dead registration for the other — neither suppresses the other", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// Claude is registered, but the runtime it points at is not on disk —
+		// a genuinely broken Claude hook, independent of the Codex host below.
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+		// A leftover Codex registration from before `codex` was dropped from
+		// `hosts` — this is what used to short-circuit the whole function
+		// before the dead-registration loop below ever ran.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const codexStale = hookFindingsList.find((f) => /hosts does not list "codex"/.test(f.message));
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(codexStale, "the leftover Codex registration is reported");
+		assert.ok(
+			deadRegistration,
+			"the dead Claude registration is also reported — a consumer with a genuinely broken Claude hook must not be told only about the unrelated Codex message"
+		);
+	});
+});
+
+test("runDoctor does not credit Claude Code with a hook.mjs registration that only Codex's file carries", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude", "codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+		// Claude's own file registers only git-gates.mjs — hook.mjs is not
+		// registered for Claude at all, even though the shared pattern also
+		// matches git-gates.mjs commands and the merged cross-host set carries
+		// hook.mjs from Codex's file below.
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						PreToolUse: [
+							{
+								matcher: "Bash",
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node "$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs" --tool=claude --event=PreToolUse',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		// Codex also registers git-gates.mjs of its own, so the reach
+		// assertion below tests only the cross-host leak this test is named
+		// for — an unregistered Codex git-gates.mjs would separately withhold
+		// the reach line per the "runDoctor withholds the Codex reach line
+		// when Codex's git gates are inert" test.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						PreToolUse: [
+							{
+								matcher: "^(Bash|apply_patch|Edit|Write)$",
+								hooks: [
+									{
+										type: "command",
+										command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse',
+									},
+								],
+							},
+							{
+								matcher: "^Bash$",
+								hooks: [
+									{
+										type: "command",
+										command: 'node ".claude/hooks/git-gates.mjs" --tool=codex --event=PreToolUse',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const falseClaudeReach = hookFindingsList.find((f) =>
+			/installed and registered for Claude Code/.test(f.message)
+		);
+		const claudeHookInert = hookFindingsList.find((f) =>
+			/hook\.mjs is present but \.claude\/settings\.json registers no hook command/.test(f.message)
+		);
+		const codexReach = hookFindingsList.find((f) => /installed and registered for Codex/.test(f.message));
+		assert.equal(
+			falseClaudeReach,
+			undefined,
+			"Claude's own file never names hook.mjs, so the write gate does not actually fire for Claude"
+		);
+		assert.ok(claudeHookInert, "hook.mjs is inert for Claude even though git-gates.mjs is registered");
+		assert.ok(codexReach, "Codex's own file does register hook.mjs, so its reach line still fires");
+	});
+});
+
+test("runDoctor does not credit Codex with a hook.mjs registration when its own file names only git-gates.mjs", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify(
+				{
+					hooks: {
+						PreToolUse: [
+							{
+								matcher: "^(Bash|apply_patch|Edit|Write)$",
+								hooks: [
+									{
+										type: "command",
+										command:
+											'node ".claude/hooks/git-gates.mjs" --tool=codex --event=PreToolUse',
+									},
+								],
+							},
+						],
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const falseCodexReach = hookFindingsList.find((f) => /installed and registered for Codex/.test(f.message));
+		const codexHookInert = hookFindingsList.find((f) =>
+			/hook\.mjs is present but \.codex\/hooks\.json registers no hook command/.test(f.message)
+		);
+		assert.equal(
+			falseCodexReach,
+			undefined,
+			"Codex's own file names git-gates.mjs, not hook.mjs, so the write gate does not actually fire"
+		);
+		assert.ok(codexHookInert, "hook.mjs is inert for Codex even though git-gates.mjs is registered");
+	});
+});
+
+test("runDoctor withholds the Codex reach line when Codex's git gates are inert", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+		// Codex's own file registers only hook.mjs — git-gates.mjs is present
+		// on disk but never named, so the reach line's clean-bill claim would
+		// be wrong exactly the way it already was for the Claude arm.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(
+			messages.length,
+			0,
+			"no Codex git-gates message exists yet (issue-488 B4), so withholding the reach line leaves nothing to report"
+		);
+	});
+});
+
+test("runDoctor treats an unreadable config as declaring every host", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(
+			hookFindingsList.filter((f) => f.severity === "info").length,
+			2,
+			"an unreadable config resolves to every host, so both claude and codex reach fire"
+		);
 		assert.equal(
 			hookFindingsList.filter((f) => f.severity === "warning").length,
 			0,

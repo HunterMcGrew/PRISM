@@ -1,0 +1,45 @@
+{
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "^(Bash|apply_patch|Edit|Write)$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/hook.mjs\" --tool=codex --event=PreToolUse"
+					}
+				]
+			},
+			{
+				"matcher": "^Bash$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/git-gates.mjs\" --tool=codex --event=PreToolUse"
+					}
+				]
+			}
+		],
+		"PostToolUse": [
+			{
+				"matcher": "^(Bash|apply_patch|Edit|Write)$",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/hook.mjs\" --tool=codex"
+					}
+				]
+			}
+		],
+		"PostCompact": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/hook.mjs\" --tool=codex --event=PostCompact"
+					}
+				]
+			}
+		]
+	}
+}
