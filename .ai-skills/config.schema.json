@@ -126,7 +126,7 @@
 				},
 				"format": {
 					"type": "string",
-					"description": "Command that runs the formatter in check mode (Prettier --check, or equivalent). Empty string when the team has no standalone formatter step.",
+					"description": "Command that runs the formatter in check mode (Prettier --check, or equivalent). Empty string when the team has no standalone formatter step. Read by the push gate when hooks.pushVerification is on.",
 					"examples": ["pnpm run format:check", "npx prettier --check ."]
 				},
 				"build": {
@@ -198,6 +198,26 @@
 				"conductorMayMerge": {
 					"type": "boolean",
 					"description": "When true, Sol (the Conductor) may merge PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
+				}
+			}
+		},
+		"hooks": {
+			"type": "object",
+			"description": "Opt-in git gates run by the hook runtime on the hosts that receive it. Absent means every gate is off. Not surfaced during init or onboarding — set by hand, like features.",
+			"properties": {
+				"commitCleanupPass": {
+					"type": "boolean",
+					"description": "Hold the first `git commit` on each HEAD until .prism/references/cleanup-pass.md has been read this session; the retry goes through."
+				},
+				"pushVerification": {
+					"type": "boolean",
+					"description": "Run commands.lint and commands.format before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so."
+				},
+				"pushVerificationTimeoutMs": {
+					"type": "integer",
+					"minimum": 1000,
+					"default": 120000,
+					"description": "Per-command budget for pushVerification. Keep it below the host's own hook timeout (Claude Code: 600 s by default) so the script, not the host, decides the outcome."
 				}
 			}
 		},

@@ -1080,13 +1080,15 @@ async function refreshPlatformDirs(
  */
 const HOOK_RUNTIME_FILES = [
 	"hook.mjs",
+	"git-gates.mjs",
 	"architect-route.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
+	"lib/shell.mjs",
 ];
 
 /** Entry-point files under the copied hook runtime that need the executable bit. */
-const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs"];
+const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs", "git-gates.mjs"];
 
 /**
  * The line every delivered runtime file carries near its top, identifying the
@@ -1270,10 +1272,12 @@ async function removeDeliveredHookRuntimeFiles(
 	return outcomes;
 }
 
-/** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the two hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
+/** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
 const HOOK_STATE_GITIGNORE_LINES = [
 	".prism/architect-route-state.*.json",
 	".prism/architect-route-state.*.json.tmp",
+	".prism/git-gates-state.*.json",
+	".prism/git-gates-state.*.json.tmp",
 ];
 
 /**
@@ -1347,8 +1351,9 @@ export async function refreshHookRuntime(
 
 /**
  * Matches a command string that *is* one of PRISM's own hook invocations,
- * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` followed by
- * PRISM's `--flag=value` arguments and nothing else.
+ * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` (or
+ * `git-gates.mjs`, the second entry point) followed by PRISM's `--flag=value`
+ * arguments and nothing else.
  *
  * Anchored at both ends on purpose. A substring test for the entry-point path
  * also claims a command that merely mentions it — a consumer's wrapper
@@ -1362,7 +1367,7 @@ export async function refreshHookRuntime(
  * own replacement.
  */
 export const PRISM_HOOK_COMMAND_PATTERN =
-	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/hook\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
 
 /**
  * Reports whether a `hooks[eventName]` array entry is one of PRISM's own

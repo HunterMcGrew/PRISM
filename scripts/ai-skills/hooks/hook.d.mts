@@ -44,3 +44,9 @@ export function runPostCompactArm(rawStdin: string): Promise<void>;
 export function resolveHarnessFromArgv(
 	argv: string[]
 ): { tool: string; spec: HarnessSpec } | null;
+
+export function isForeignPayload(tool: string, payload: HookPayload): boolean;
+
+export function parseEventFlag(argv: string[]): string | undefined;
+
+export function readStdin(): Promise<string>;

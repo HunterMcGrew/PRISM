@@ -999,6 +999,136 @@ const SETTINGS_WITH_HOOK = {
 	},
 };
 
+const SETTINGS_WITH_BOTH_HOOKS = {
+	hooks: {
+		PreToolUse: [
+			{
+				matcher: "Write|Edit|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+			{
+				matcher: "Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+		],
+		...SETTINGS_WITH_HOOK.hooks,
+	},
+};
+
+/** Seeds both runtime entry points on disk, registered together, over a config carrying the given extra fields. */
+async function seedGitGatesConsumer(
+	consumerRepoRoot: string,
+	configExtras: Record<string, unknown>
+): Promise<void> {
+	await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+	await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+	await writeFile(
+		consumerRepoRoot,
+		".claude/settings.json",
+		`${JSON.stringify(SETTINGS_WITH_BOTH_HOOKS, null, "\t")}\n`
+	);
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, ...configExtras }, null, "\t")}\n`
+	);
+}
+
+test("runDoctor reports a git-gates runtime on disk that settings.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /git-gates\.mjs is present but .claude\/settings\.json registers no hook command/);
+	});
+});
+
+test("runDoctor says the git gates are delivered and off when the config has no hooks block", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 2, "the reach line and the git-gates line");
+		assert.match(messages[1], /Git gates are delivered and off/);
+		assert.ok(
+			report.findings
+				.filter((f) => f.check === "hook-registration")
+				.every((f) => f.severity === "info")
+		);
+	});
+});
+
+test("runDoctor reports each git gate's state and the commands the push gate will run", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, {
+			hooks: { commitCleanupPass: true, pushVerification: true },
+			commands: { lint: "pnpm lint" },
+		});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 2);
+		assert.match(
+			messages[1],
+			/Git gates: commit cleanup pass on, push verification on \(lint: pnpm lint, format: unset\)/
+		);
+	});
+});
+
+test("runDoctor warns when push verification is on with no command to run", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, { hooks: { pushVerification: true } });
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const warning = report.findings.find(
+			(f) => f.check === "hook-registration" && f.severity === "warning"
+		);
+		assert.ok(warning, "the empty push gate is a warning, not an info line");
+		assert.match(warning!.message, /can never deny/);
+	});
+});
+
 test("runDoctor reports a hook runtime on disk that settings.json never registers", async () => {
 	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
 		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");

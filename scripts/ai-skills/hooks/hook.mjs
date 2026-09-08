@@ -54,6 +54,7 @@ import {
 	resolveListedToolKind,
 	resolveToolKind,
 } from "./harnesses.mjs";
+import { splitShellSegments, unquote } from "./lib/shell.mjs";
 
 /**
  * The characters a whole command may contain and still be considered for read
@@ -132,17 +133,6 @@ const SHELL_READ_COMMANDS = new Set(["cat", "head", "tail", "sed", "less", "more
  */
 function normalizeShellSeparators(command) {
 	return command.replace(/\\(?=[\w.@~+-])/g, "/");
-}
-
-/**
- * Strips one layer of matching surrounding quotes from a token.
- *
- * @param {string} token
- * @returns {string}
- */
-function unquote(token) {
-	const quoted = /^(["'])(.*)\1$/.exec(token);
-	return quoted ? quoted[2] : token;
 }
 
 /**
@@ -242,232 +232,6 @@ function parseSegmentReadTargets(tokens) {
 	const credit = name === "cat" && !args.some((arg) => arg.startsWith("-"));
 
 	return operands.map((filePath) => ({ filePath, credit }));
-}
-
-/**
- * Splits a raw command into one token array per command segment, cutting at
- * every unquoted `;`, `&&`, `||`, `|`, `&`, and line break.
- *
- * Both callers run on this rather than tokenizing the raw command
- * themselves. `resolveProvenSafePaths` needs the cuts so one segment's
- * read-only head token cannot vouch for the next command's operands; the read
- * detector needs them so a remedy pasted as several lines into one call
- * credits each line. A shared splitter is what keeps those two answers from
- * drifting.
- *
- * This scans characters rather than splitting on whitespace and comparing
- * whole tokens against a separator set. The token form could only see a
- * separator that had space on both sides, so `a;b` and `a&&b` never cut — the
- * write arm resumed claiming operands past the separator and named a path the
- * command only read. Two things make the character form worth its length over
- * a regex split on the separators:
- *
- * - **Quotes.** `sed -i 's/a/b/;s/c/d/' out.md` carries a `;` that is part of
- *   the script, not a separator. Cutting there loses `out.md` — a real write
- *   the gate then never sees.
- * - **Heredocs.** A `<<DELIM` introducer makes every line up to `DELIM` data
- *   rather than commands, so the body is skipped whole. Otherwise a PR body
- *   written through `tee <<'E'` would have its own text parsed as commands.
- *
- * Only some of that is live. Every caller tests the whole command against
- * `SHELL_READ_SAFE_CHARACTERS` first, and that class excludes `<`, `&`, `|`,
- * and `\` — so the heredoc branches, the `&`/`|` cut, and the backslash
- * escape inside a double quote cannot be reached today, and no test fails if
- * they are deleted. They are kept deliberately, not by oversight. The class
- * test is a single point of failure for all three: widen it by one character,
- * or add a caller that does not pre-filter, and each branch is the difference
- * between an over-refusal and a silent miss. Deleting protection whose only
- * guard is one regex, in a gate whose whole premise is failing toward the
- * over-refusal, is the trade this arm exists to refuse. The `;` cut, the
- * quote tracking, the whitespace split, and the line-break cut are reachable
- * and carry the live behavior.
- *
- * Two things it still does not model:
- *
- * - **Substitution containing a separator** — `$(a; b)` and its backtick
- *   twin. This produces an *extra* cut the shell would not make, stranding
- *   the token after it in a segment whose head is not a command. Unreachable
- *   in practice: `$` and `` ` `` sit outside `SHELL_READ_SAFE_CHARACTERS`,
- *   and every caller tests the whole command against that class first.
- * - **A separator inside an unterminated quote**, which is swallowed rather
- *   than cut. Quotes are in the class, so this one is reachable — and it
- *   matches what the shell itself does with an unterminated quote, which is
- *   to treat the rest of the line as one quoted word rather than as further
- *   commands.
- *
- * @param {string} command
- * @returns {string[][]}
- */
-function splitShellSegments(command) {
-	/** @type {string[][]} */
-	const segments = [];
-	/** @type {string[]} */
-	const pendingHeredocs = [];
-	/** @type {string[]} */
-	let tokens = [];
-	let token = "";
-	let started = false;
-	/** @type {string | null} */
-	let quote = null;
-
-	const endToken = () => {
-		if (started) {
-			tokens.push(token);
-			token = "";
-			started = false;
-		}
-	};
-
-	const endSegment = () => {
-		endToken();
-		if (tokens.length > 0) {
-			segments.push(tokens);
-			tokens = [];
-		}
-	};
-
-	for (let index = 0; index < command.length; index++) {
-		const char = command[index];
-
-		if (quote !== null) {
-			token += char;
-			if (char === "\\" && quote === '"' && index + 1 < command.length) {
-				token += command[index + 1];
-				index++;
-			} else if (char === quote) {
-				quote = null;
-			}
-			continue;
-		}
-
-		if (char === "\n" || char === "\r") {
-			endSegment();
-			if (pendingHeredocs.length > 0) {
-				index = skipHeredocBodies(command, index, pendingHeredocs);
-			}
-			continue;
-		}
-
-		if (char === " " || char === "\t") {
-			endToken();
-			continue;
-		}
-
-		if (char === ";" || char === "&" || char === "|") {
-			if (char !== ";" && command[index + 1] === char) {
-				index++;
-			}
-			endSegment();
-			continue;
-		}
-
-		if (char === "<" && command[index + 1] === "<" && command[index + 2] !== "<") {
-			endToken();
-			index = readHeredocDelimiter(command, index, pendingHeredocs);
-			continue;
-		}
-
-		if (char === "'" || char === '"') {
-			quote = char;
-			token += char;
-			started = true;
-			continue;
-		}
-
-		if (char === "\\" && index + 1 < command.length) {
-			token += command[index + 1];
-			index++;
-			started = true;
-			continue;
-		}
-
-		token += char;
-		started = true;
-	}
-
-	endSegment();
-
-	return segments;
-}
-
-/**
- * Records the delimiter word of the heredoc introduced at `index` and returns
- * the index of its last consumed character.
- *
- * The introducer and its delimiter are dropped rather than kept as tokens —
- * neither is an operand of the command, and `tee out.md <<'E'` previously
- * yielded `<<'E'` as a write target alongside the real one.
- *
- * @param {string} command
- * @param {number} index index of the first `<` of the `<<`
- * @param {string[]} pendingHeredocs delimiters awaiting their body, in order
- * @returns {number}
- */
-function readHeredocDelimiter(command, index, pendingHeredocs) {
-	let cursor = index + 2;
-	if (command[cursor] === "-") {
-		cursor++;
-	}
-
-	while (command[cursor] === " " || command[cursor] === "\t") {
-		cursor++;
-	}
-
-	let delimiter = "";
-	while (cursor < command.length && !/[\s;&|<>]/.test(command[cursor])) {
-		if (command[cursor] !== "'" && command[cursor] !== '"') {
-			delimiter += command[cursor];
-		}
-		cursor++;
-	}
-
-	if (delimiter.length > 0) {
-		pendingHeredocs.push(delimiter);
-	}
-
-	return cursor - 1;
-}
-
-/**
- * Skips the bodies of every heredoc awaiting one, starting from the line break
- * at `index`, and returns the index of the last consumed character.
- *
- * A body line is data the command writes, not a command. An unterminated
- * heredoc consumes the rest of the input, which is what the shell does too.
- *
- * @param {string} command
- * @param {number} index
- * @param {string[]} pendingHeredocs
- * @returns {number}
- */
-function skipHeredocBodies(command, index, pendingHeredocs) {
-	let cursor = index;
-
-	while (pendingHeredocs.length > 0 && cursor < command.length) {
-		while (
-			cursor < command.length &&
-			(command[cursor] === "\n" || command[cursor] === "\r")
-		) {
-			cursor++;
-		}
-
-		let lineEnd = cursor;
-		while (
-			lineEnd < command.length &&
-			command[lineEnd] !== "\n" &&
-			command[lineEnd] !== "\r"
-		) {
-			lineEnd++;
-		}
-
-		if (command.slice(cursor, lineEnd).trim() === pendingHeredocs[0]) {
-			pendingHeredocs.shift();
-		}
-
-		cursor = lineEnd;
-	}
-
-	return cursor - 1;
 }
 
 /**
@@ -1043,7 +807,7 @@ const CURSOR_EVENT_NAMES = new Set([
  * @param {import("./harnesses.mjs").HookPayload} payload
  * @returns {boolean}
  */
-function isForeignPayload(tool, payload) {
+export function isForeignPayload(tool, payload) {
 	return (
 		tool === "claude" &&
 		typeof payload.hook_event_name === "string" &&
@@ -1458,7 +1222,7 @@ async function main() {
  * @param {string[]} argv
  * @returns {string | undefined}
  */
-function parseEventFlag(argv) {
+export function parseEventFlag(argv) {
 	for (const arg of argv) {
 		const match = /^--event=(.+)$/.exec(arg);
 		if (match) {
@@ -1468,7 +1232,10 @@ function parseEventFlag(argv) {
 	return undefined;
 }
 
-function readStdin() {
+/** Reads the whole of `process.stdin` as UTF-8 text.
+ * @returns {Promise<string>}
+ */
+export function readStdin() {
 	return new Promise((resolve, reject) => {
 		let data = "";
 		process.stdin.setEncoding("utf8");

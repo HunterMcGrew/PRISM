@@ -48,6 +48,11 @@ export function saveRouteState(
 	state: ArchitectRouteState
 ): Promise<void>;
 
+export function pruneStaleRouteState(
+	repoRoot: string,
+	filePrefix?: string
+): Promise<void>;
+
 export function resolveUnreadDocs(
 	repoRoot: string,
 	filePath: string,

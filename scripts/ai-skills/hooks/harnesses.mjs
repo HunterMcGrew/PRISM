@@ -44,6 +44,7 @@
  * @property {(text: string) => unknown} emitNag
  * @property {() => unknown} emitNone
  * @property {(reason: string) => unknown} emitDeny
+ * @property {(reason: string) => unknown} emitAllow
  */
 
 /**
@@ -147,6 +148,16 @@ export const HARNESSES = {
 				permissionDecisionReason: reason,
 			},
 		}),
+		// An explicit allow carrying a reason — the git gates' fail-open path
+		// uses it so a lint that timed out is announced rather than silently
+		// waved through (a silent allow is indistinguishable from a pass).
+		emitAllow: (reason) => ({
+			hookSpecificOutput: {
+				hookEventName: "PreToolUse",
+				permissionDecision: "allow",
+				permissionDecisionReason: reason,
+			},
+		}),
 	},
 	cursor: {
 		// StrReplace (Cursor's edit tool) is deliberately unlisted here — the
@@ -161,6 +172,8 @@ export const HARNESSES = {
 		// observed Cursor's deny envelope — so there is nothing to answer and
 		// no verified shape to answer in.
 		emitDeny: () => null,
+		// Same reasoning as `emitDeny` — no observed envelope to answer in.
+		emitAllow: () => null,
 	},
 	codex: {
 		// Codex's read tool is unmapped until a live probe observes its name,
@@ -182,6 +195,8 @@ export const HARNESSES = {
 		// Codex supports `PreToolUse`, but as with Cursor nothing delivers it a
 		// registration and no probe has observed its deny envelope.
 		emitDeny: () => null,
+		// Same reasoning as `emitDeny` — no observed envelope to answer in.
+		emitAllow: () => null,
 	},
 };
 
