@@ -850,20 +850,23 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 
 	// Runtime delivery gates on `claude` OR `codex` — see the plan Decision
 	// "Runtime delivery gates on claude OR codex" — so the runtime itself is
-	// stale only when the consumer's hosts name neither.
+	// stale only when the consumer's hosts name neither. This push is
+	// additive, not a short-circuit — a dropped-both-hosts consumer can also
+	// carry a stale per-host registration or an unrelated dead registration,
+	// and every one of those is a separate, real finding.
 	if (!hosts.includes("claude") && !hosts.includes("codex") && runtimeIsPrisms) {
 		findings.push({
 			check: "hook-registration",
 			severity: "warning",
 			message: `hosts does not list "claude" or "codex", but PRISM's hook runtime is still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
 		});
-
-		return findings;
 	}
 
 	// Each registration gates on its own host, independent of the runtime and
 	// of the other registration — dropping one host takes only that host's
-	// registration back out.
+	// registration back out. These pushes are additive too: a stale
+	// registration for one host must not suppress the dead-registration loop
+	// or the other, still-declared host's own reachability findings below.
 	if (!hosts.includes("claude") && claudeIsRegistered) {
 		findings.push({
 			check: "hook-registration",
@@ -880,17 +883,14 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 		});
 	}
 
-	if (findings.length > 0) {
-		return findings;
-	}
-
 	// A registered command pointing at a file that is not on disk is wrong on
 	// every host mix — a hand-edited registration whose command no longer
 	// matches PRISM_HOOK_COMMAND_PATTERN or PRISM_CODEX_HOOK_COMMAND_PATTERN
 	// survives the removal branch in update.ts (it is not claimed as PRISM's
 	// own), so this has to run here too, not only inside the per-host
-	// branches below. It is skipped only on the stale-delivery early returns
-	// above, where the "run update" remedy already covers it.
+	// branches below. It runs unconditionally, alongside whatever the
+	// stale-delivery checks above already pushed — those checks and this one
+	// name different registered paths and neither should suppress the other.
 	for (const registered of [...registeredPaths].sort()) {
 		if (!(await pathExists(registered))) {
 			findings.push({

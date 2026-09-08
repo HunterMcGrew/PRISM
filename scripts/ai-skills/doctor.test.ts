@@ -1402,10 +1402,17 @@ test("runDoctor warns when hosts exclude Claude Code but PRISM's registration is
 			npmVersionFetcher: NEVER_FETCH,
 		});
 
+		// No runtime file is on disk, so the registration is both stale (claude
+		// is no longer in hosts) and dead (the command it names does not exist)
+		// — the dead-registration check runs unconditionally alongside the
+		// stale-registration one, so both are real, independent findings here.
 		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
-		assert.equal(hookFindingsList.length, 1);
-		assert.equal(hookFindingsList[0].severity, "warning");
-		assert.match(hookFindingsList[0].message, /registration in \.claude\/settings\.json is/);
+		const staleRegistration = hookFindingsList.find((f) => /registration in \.claude\/settings\.json is/.test(f.message));
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(staleRegistration, "the stale claude registration is reported");
+		assert.equal(staleRegistration!.severity, "warning");
+		assert.ok(deadRegistration, "the same registration is also dead — nothing on disk backs it");
+		assert.equal(hookFindingsList.length, 2, "exactly these two findings, nothing else");
 	});
 });
 
@@ -1543,6 +1550,87 @@ test("runDoctor reports a dead registration and an inert runtime together — ne
 			"the inert runtime is also reported — the dead-registration finding must not suppress it"
 		);
 		assert.equal(hookFindingsList.length, 2, "exactly these two findings, nothing else");
+	});
+});
+
+test("runDoctor reports a stale registration for one host and a healthy reach for another — neither suppresses the other", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// A healthy, fully-registered Claude delivery — this host's own
+		// findings should always run unconditionally, regardless of what the
+		// per-host stale-registration checks push for the other host.
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+		// A leftover Codex registration from before `codex` was dropped from
+		// `hosts` — this is what used to short-circuit the whole function.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const codexStale = hookFindingsList.find((f) => /hosts does not list "codex"/.test(f.message));
+		const claudeReach = hookFindingsList.find((f) => /installed and registered for Claude Code/.test(f.message));
+		assert.ok(codexStale, "the leftover Codex registration is reported");
+		assert.ok(
+			claudeReach,
+			"Claude's own healthy-reach finding must still run — the Codex stale-registration finding must not suppress it"
+		);
+	});
+});
+
+test("runDoctor reports a stale registration for one host and a dead registration for the other — neither suppresses the other", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+		// Claude is registered, but the runtime it points at is not on disk —
+		// a genuinely broken Claude hook, independent of the Codex host below.
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+		// A leftover Codex registration from before `codex` was dropped from
+		// `hosts` — this is what used to short-circuit the whole function
+		// before the dead-registration loop below ever ran.
+		await writeFile(
+			consumerRepoRoot,
+			".codex/hooks.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [{ matcher: "^(Bash|apply_patch|Edit|Write)$", hooks: [{ type: "command", command: 'node ".claude/hooks/hook.mjs" --tool=codex --event=PreToolUse' }] }] } }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const codexStale = hookFindingsList.find((f) => /hosts does not list "codex"/.test(f.message));
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(codexStale, "the leftover Codex registration is reported");
+		assert.ok(
+			deadRegistration,
+			"the dead Claude registration is also reported — a consumer with a genuinely broken Claude hook must not be told only about the unrelated Codex message"
+		);
 	});
 });
 
