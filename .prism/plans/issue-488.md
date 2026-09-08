@@ -332,6 +332,7 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 ## Sessions
 
 - 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — ship Phase A (A1–A17) as one reviewable draft PR; Bounds — done is `prism:check` green plus a draft PR, Phase B untouched, the six pre-existing untracked files left out of every commit; Approach — plan order A1→A17 with the runtime smoke-tested in a scratch repo before the delivery wiring · close: scope held — every write is under a Phase A task, the one addition (D9's `unquote` move) came from the cleanup pass on this diff
+- 2026-09-07 [huntermcgrew/issue-488-git-gates] open: Intent — Briar self-review pass 1 of the review loop over the full Phase A diff (`origin/main...a00829d5`); Bounds — done is Review Issues/Cleanup Items/PR Readiness written to this plan plus a chat quick-scan checklist, no code changes, the six pre-existing untracked files never staged; Approach — read the diff by file group (runtime, delivery, tests, prose/ADR), re-derive the `detectGitSegments` table by hand, re-run `pnpm prism:build`/`pnpm prism:check` · close: scope held — one Minor finding filed (commit-gate HEAD tracking under `git -C <dir>`), all nine review angles swept or n/a, no code touched
 
 ---
 
@@ -357,7 +358,62 @@ Both hosts document a shell-precondition hook with a deny envelope (fetched 2026
 
 ## Review Issues
 
-None yet.
+### Commit-gate HEAD tracking is scoped to `configRoot`, not to a `git -C <dir>` target
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `scripts/ai-skills/hooks/git-gates.mjs:276-289,312-331`
+- **Problem:** `detectGitSegments` correctly recognizes `git -C <dir> commit ...` as a commit segment (per the A17 test table), but `runCommitGate` always calls `resolveHeadKey(configRoot)` — the repo root found by walking up from `payload.cwd`, never the `-C` target directory. When `<dir>` is a genuinely separate git repository (a nested repo, not just a subdirectory of the same repo — the common `-C packages/foo` case is unaffected because it shares `configRoot`'s `.git`), the hold is recorded against `configRoot`'s HEAD, which never changes when the commit lands in `<dir>`. After the first hold on that unrelated HEAD, the state file marks it "seen," so every subsequent `-C <dir>` commit to that separate repo in the same session silently skips the cleanup-pass hold. Fails open (no security impact) and the trigger is narrow — PRISM's own repo has no nested git repos — but it's a real gap the three documented gaps in ADR-0076 § Consequences (a command built from a variable, a `cd` into a subrepo, the heredoc-quote edge case) don't cover.
+- **Suggested fix:** Either resolve the `-C` target directory from the command tokens and use it for `resolveHeadKey`/the state-file scope, or document the gap explicitly in ADR-0076 § Consequences and `install-layout.md` § Git gates alongside the other three. Given how narrow the trigger is, documenting it is likely the better cost/benefit — Clove's call.
+
+### Angle Coverage
+
+- Runtime behavior — swept — 14 items enumerated, 14 verdicts
+  - `resolveGitInvocation` (env/`-C`/`-c`/`--git-dir`/`--work-tree` skip loop) — correct against every A17 table row I traced by hand, including the flags-only case (`git --version`) returning `null`
+  - `detectGitSegments` (commit/push recognition, `--delete`/`-d` exclusion) — correct
+  - `runCommitGate` HEAD-scoping under `git -C <dir>` — incorrect for a genuinely separate nested repo (see Review Issues above); correct for the common same-repo `-C` idiom
+  - `runGitGatesArm` short-circuit order (commit deny returned before push is evaluated) — correct, and the one-liner test (`git commit && git push`) confirms it
+  - `saveGateState`/`loadGateState` atomic tmp-then-rename — mirrors `architect-route.mjs`'s established pattern; correct
+  - `runPushGate` sequential lint-then-format, `shell: true` for Windows `.cmd` shims — correct
+  - `formatOutputTail` byte-boundary tail cut — can in principle split a multi-byte UTF-8 char at the cut point, but the following `firstLineBreak` discard removes the corrupted partial line in every case except a single unbroken line longer than `MAX_EMISSION_BYTES`; too narrow to file separately
+  - POSIX/`cmd.exe` "command not found" detection (`POSIX_COMMAND_NOT_FOUND_STATUS`, `CMD_EXE_COMMAND_NOT_FOUND`) — correct per D8, ran the reasoning against both shell families
+  - `pruneStaleRouteState(configRoot, filePrefix)` new parameter, default preserved — verified the one existing caller (`architect-route.mjs:419`) still passes no second argument
+  - `harnesses.mjs` `emitAllow` (claude real envelope; cursor/codex stubs return `null`) — correct, mirrors `emitDeny`'s existing shape
+  - `hook.mjs` → `lib/shell.mjs` extraction (`splitShellSegments`, `unquote`, `readHeredocDelimiter`, `skipHeredocBodies`) — moved verbatim, `hook.mjs` re-imports; confirmed via diff
+  - `update.ts` `PRISM_HOOK_COMMAND_PATTERN`, `HOOK_RUNTIME_FILES`, `HOOK_RUNTIME_ENTRY_POINTS`, `HOOK_STATE_GITIGNORE_LINES` — all four additions correct and idempotent per the new tests
+  - `doctor.ts` `checkHookRegistration`/`describeGitGates` — info/warning lines gated on `registeredPaths.has(gitGatesRuntimePath)` rather than unconditionally inside the `hosts.includes("claude")` branch as the plan's task A9(b) literally reads; a deliberate, reasonable narrowing (avoids an "off" message when the runtime was never even delivered) rather than a bug — not filed as a finding
+  - Subcommand-token quoting (`git 'commit' -m x` would not match, since only the head token is `unquote()`-ed) — mirrors an existing, accepted pattern in `hook.mjs:571`'s own git-subcommand check, which has the same gap; not a regression introduced here
+- Test efficacy — swept — 9 items enumerated, 9 verdicts
+  - `detectGitSegments` table (13 rows) — each row would fail if the corresponding branch in `resolveGitInvocation`/`detectGitSegments` regressed; confirmed by re-deriving the expected output for the trickier rows (`-C sub`, the HEREDOC form, `MSYS_NO_PATHCONV=1`) by hand
+  - Commit-gate hold/retry/amend/new-HEAD sequence — asserts on the actual state file contents, not just the return value; would fail if `saveGateState` or `resolveHeadKey` regressed
+  - Unborn-repo gating — would fail if the `"unborn"` sentinel path changed
+  - Commit-and-push one-liner ordering — would fail if the short-circuit in `runGitGatesArm` were reordered
+  - Push-gate deny/allow/timeout/not-found paths — each asserts the specific envelope shape and reason substring, not just null-vs-non-null
+  - Push-gate tail-length bound — would fail if `formatOutputTail` stopped bounding
+  - Inert-path matrix (no config, no hooks block, both flags off, foreign tool, non-shell tool, either kill switch, malformed config) — each a distinct assertion, would fail if any early-exit branch were removed
+  - Spawned entry point argv dispatch (`--event=PreToolUse` only) — would fail if `main()`'s event check regressed
+  - `update.test.ts`/`hook-gate.test.ts`/`doctor.test.ts` additions (idempotent registration, older-PRISM upgrade path, wrapper-not-claimed, gitignore lines, doctor info/warning lines) — each asserts a specific, falsifiable shape
+  - No test exercises the `-C <dir>` cross-repo HEAD-tracking gap from the Review Issues finding above — a real gap in coverage, consistent with the implementation gap it would have caught
+- Spec and doc consistency — swept — 4 items enumerated, 4 verdicts
+  - AC-1 through AC-13 — each traced against the actual `git-gates.mjs` behavior and the `git-gates.test.ts`/`doctor.test.ts` coverage; all hold as written
+  - `cleanup-pass.md`, `shipping-flow.md` step 2/7, `verification-commands.md` § Git gates, and its curated twin under `templates/install/` — all four describe the identical hold-once-per-HEAD and push-verification rules (AC-13); confirmed by diffing the curated twin against the canonical section
+  - `shipping-flow.md` step renumbering (1–6 → 1–7, steps 2–8 → 3–9, all four "step 4 returned" → "step 5 returned" cross-references, "step 7" → "step 8") — every occurrence updated correctly, no dangling reference
+  - `install-layout.md` § Git gates and § Hook runtime additions — checked claim-by-claim against `git-gates.mjs`, `update.ts`, and `.gitignore`; all verified (see Doc-Class Triage below)
+- Citation integrity — swept — 6 items enumerated, 6 verdicts
+  - ADR-0076's citations to ADR-0069, ADR-0072, ADR-0074, and `epic-floor-revert.md` — each cited claim (report-back channel closed, habituation measurement, Claude-only reach with prose fallback, "separate, smaller opt-in") matches what those documents actually say per prior review context
+  - `install-layout.md` § Git gates's pointer to ADR-0076 — resolves
+  - The plan's task A1 line-number citations (`hook.mjs:301`, `:406`, `:443`) — pre-diff line numbers, unverifiable against the current tree post-move; not a diff defect, just noting the citation is now historical
+  - `.prism/rules/code-standards.md` § Refactor scope citation in `cleanup-pass.md` — resolves, section exists
+  - `.prism/rules/code-comments.md` Delete Test citation in `cleanup-pass.md` — resolves
+  - `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage citation in `shipping-flow.md`'s new table column — resolves
+- External-system claims — swept — 3 items enumerated, 3 verdicts
+  - Claude Code's `PreToolUse` command-hook default timeout (600s) cited in A6/the config schema description — this is a host-platform claim I could not independently verify against Claude Code's own docs from inside this repo; treated as inherited from the pre-existing write-gate's identical claim in `install-layout.md`, not newly asserted by this diff
+  - `spawnSync`'s `shell: true` Windows `.cmd`-shim behavior — verified directly: `pnpm prism:check` passed on this Windows machine with the push-gate tests exercising real `pnpm`/`node` invocations under `shell: true`
+  - POSIX exit 127 / `cmd.exe`'s "is not recognized" message for a missing binary — the D8 Decision states this was "measured 2026-09-07"; I did not re-measure it independently, but the `push gate: a command that does not exist allows with an announcement` test passed on this Windows machine, which is a real (if not cross-platform) confirmation of the `cmd.exe` half
+- Repo writing rules — swept — verdict-only — JSDoc, inline-comment, and naming conventions in `git-gates.mjs` and `lib/shell.mjs` follow `.prism/rules/code-comments.md` (what+why, no ALL CAPS, no tags); no drive-by refactors outside the diff's local frame
+- Security — n/a — the diff adds a local opt-in gate around the agent's own shell tool calls; no new trust boundary, network surface, secret handling, or permission change
+- Docs impact — swept — 4 items enumerated, 4 verdicts — `docs/ai-skills/compatibility.md`, `docs/parameterization.md`, `docs/what-prism-writes.md`, `docs/adopting-into-existing-repos.md` all updated to name the new `git-gates.mjs` entry point and the `hooks` config block; checked each against the corresponding code change
+- Accessibility — n/a — no UI in the reviewed range
 
 ---
 
@@ -408,18 +464,18 @@ None yet.
 
 ## Cleanup Items
 
-- `scripts/ai-skills/hooks/git-gates.mjs` `saveGateState` and `architect-route.mjs` `saveRouteState` — the same tmp-then-rename atomic write at two sites (A5-C asked for the copy). A shared `writeJsonAtomically` in `lib/` would remove it; outside this ticket's frame, Briar's call.
+- `scripts/ai-skills/hooks/git-gates.mjs` `saveGateState` and `architect-route.mjs` `saveRouteState` — the same tmp-then-rename atomic write at two sites (A5-C asked for the copy). A shared `writeJsonAtomically` in `lib/` would remove it; outside this ticket's frame, Briar's call. Deferring — the duplication is small (a handful of lines) and the two call sites have slightly different failure-handling needs (the commit gate falls open on a save failure; the route-state save does not), so extracting now would need a parameter or two to cover both, which is its own small design call rather than a pure copy-paste removal.
 
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues
+- [x] No critical or major issues — one Minor finding open (see Review Issues)
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
-- [x] Tests written for new logic and edge cases
+- [x] Tests written for new logic and edge cases (one narrow gap noted: no test exercises the `-C <dir>` cross-repo HEAD-tracking finding)
 - [x] All debugged issues resolved (no `open` entries)
-- [x] Build passes — last run: 2026-09-07 (`pnpm prism:check`, Windows, no new failures)
+- [x] Build passes — last run: 2026-09-07 (`pnpm prism:build` and `pnpm prism:check`, Windows, 897 pass / 0 fail / 1 skipped, no new failures; re-ran during this review)
 - [x] PR description up to date
 - [x] Lasting decisions promoted to architect context (ADR-0076; `install-layout.md` § Git gates)
 
