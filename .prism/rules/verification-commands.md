@@ -100,6 +100,12 @@ Step 4 is owned by Briar (self-review) and runs conditionally based on the diff.
 
 ---
 
+## Git gates (`.ai-skills/config.json#hooks`)
+
+Two opt-in gates ride the hook runtime. `hooks.commitCleanupPass` holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read; `hooks.pushVerification` runs `{{commands.lint}}` and `{{commands.format}}` before every `git push` and denies on a non-zero exit. `format` is the check-mode command for exactly this reason — the gate must never rewrite files. Both are off until set; `PRISM_HOOK_DISABLE=1` turns every hook off for a session.
+
+---
+
 ## Retro evidence sources (`.ai-skills/config.json#retroEvidence`)
 
 A sibling block to `commands.*` — Iris's retro charter (`prism-retro` step-02) reads it to know which execution-record sources exist for this team, so the retro's charter-coverage table degrades honestly instead of assuming GitHub + CI everywhere.

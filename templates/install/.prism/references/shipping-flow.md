@@ -6,23 +6,24 @@ The principle is "authors ship, reviewers review" — see [AGENTS.md § 0](../..
 
 ## Per-push invariant
 
-This flow runs on every `git push`, not once per session. Fix-up commits after Briar-flagged issues, sync regenerations, `lessons.md` appends, and any follow-up commit on the branch all re-enter the flow from step 1 — each commit is a separate diff worth reviewing. If you've already pushed once on this branch, do not treat steps 1–6 as past tense on the next commit.
+This flow runs on every `git push`, not once per session. Fix-up commits after Briar-flagged issues, sync regenerations, `lessons.md` appends, and any follow-up commit on the branch all re-enter the flow from step 1 — each commit is a separate diff worth reviewing. If you've already pushed once on this branch, do not treat steps 1–7 as past tense on the next commit.
 
 ## Per-persona defaults
 
 Each authoring persona inherits the same mechanical flow and the same two-path closing structure, but brings its own verification scope, commit subject template, and opening line.
 
-| Persona   | Verification scope                                                                                               | Commit subject template                                                                                              | Two-path closing opening   |
-| --------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| **Clove** | Run `check-types`, tests, and prettier/eslint on changed files before committing.                                | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "That's up and sparkling." |
-| **Eli**   | Run prettier on changed Markdown. Skip TypeScript, tests, and build — they have nothing to evaluate in Markdown. | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "Docs are up."             |
-| **Sage**  | Run prettier on the changelog file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `${TICKET_PREFIX}-NNNN: Add changelog for <old-tag> → <new-tag>` (or `chore: Add changelog for <tags>` when not tied to a ticket) | "Changelog is up."         |
-| **Reese** | Run prettier on the checklist file. Skip TypeScript, tests, and build — the artifact is Markdown.                | `${TICKET_PREFIX}-NNNN: Add QA checklist for <base> → <head>` (or `chore:` variant)                                               | "Checklist is up."         |
+| Persona   | Verification scope                                                                                               | Cleanup pass                                                                                                                                  | Commit subject template                                                                                              | Two-path closing opening   |
+| --------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Clove** | Run `check-types`, tests, and prettier/eslint on changed files before committing.                                | Full pass: all three lenses over `git diff --cached`.                                                                                         | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "That's up and sparkling." |
+| **Eli**   | Run prettier on changed Markdown. Skip TypeScript, tests, and build — they have nothing to evaluate in Markdown. | Cold re-read of the changed Markdown for session-context leakage per `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage; one line. | `${TICKET_PREFIX}-NNNN: <imperative subject>`                                                                                     | "Docs are up."             |
+| **Sage**  | Run prettier on the changelog file. Skip TypeScript, tests, and build — the artifact is Markdown.                | Cold re-read of the changed Markdown for session-context leakage per `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage; one line. | `${TICKET_PREFIX}-NNNN: Add changelog for <old-tag> → <new-tag>` (or `chore: Add changelog for <tags>` when not tied to a ticket) | "Changelog is up."         |
+| **Reese** | Run prettier on the checklist file. Skip TypeScript, tests, and build — the artifact is Markdown.                | Cold re-read of the changed Markdown for session-context leakage per `.prism/rules/writing-voice.md` § Anti-pattern: Session-context leakage; one line. | `${TICKET_PREFIX}-NNNN: Add QA checklist for <base> → <head>` (or `chore:` variant)                                               | "Checklist is up."         |
 
 ## The flow
 
 1. Run the verification scope from the table above. Fix any violations before committing.
-2. Before committing, read the user's per-user pause preference:
+2. **Cleanup pass.** Before committing, re-read the diff through [`.prism/references/cleanup-pass.md`](cleanup-pass.md): three lenses over the local frame, findings beyond it to `## Cleanup Items`. Depth per persona is the "Cleanup pass" column above. Where the git-gates hook is registered, the first `git commit` on each HEAD is held until that file has been read this session; the retry goes through.
+3. Before committing, read the user's per-user pause preference:
 
    ```bash
    pref=$(git config --global --get ${PROJECT_LOWERCASE}.pauseBeforeCommit)
@@ -44,21 +45,21 @@ Each authoring persona inherits the same mechanical flow and the same two-path c
 
    Matching is strict — only exact `true` or `false` trigger their paths; anything else is treated as unset and re-asks. The pause fires on every commit per the per-push invariant above.
 
-3. Stage and commit per `.prism/rules/git-conventions.md` — HEREDOC format, subject from the template above, body explains the why (not the what — the diff shows that).
-4. Check whether a PR already exists for this branch:
+4. Stage and commit per `.prism/rules/git-conventions.md` — HEREDOC format, subject from the template above, body explains the why (not the what — the diff shows that).
+5. Check whether a PR already exists for this branch:
    ```bash
    gh pr list --head <branch> --json number -q '.[0].number'
    ```
-5. If step 4 returned a PR number AND the plan's `## History` has entries past the last PR-body write (or the new commit adds scope past what the current body describes), sync the PR body before push — rewrite the agent-owned sections and preserve user-owned sections. Silent — no prompt. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md) for the section-ownership boundary. Skip this step if the user opted out of PR body sync for the session. Skip if step 4 returned empty — first body creation is handled in step 7.
-6. Push the commit:
+6. If step 5 returned a PR number AND the plan's `## History` has entries past the last PR-body write (or the new commit adds scope past what the current body describes), sync the PR body before push — rewrite the agent-owned sections and preserve user-owned sections. Silent — no prompt. See [.prism/rules/pr-description.md § Keeping the PR in sync with scope](../rules/pr-description.md) for the section-ownership boundary. Skip this step if the user opted out of PR body sync for the session. Skip if step 5 returned empty — first body creation is handled in step 8.
+7. Push the commit. Where `hooks.pushVerification` is on in `.ai-skills/config.json`, the push first runs `commands.lint` and `commands.format` and is denied with the output tail on a non-zero exit — step 1 already ran these, so a deny here means a fix-up after step 2 regressed one:
    ```bash
    git push -q
    ```
-7. If step 4 returned empty, create the PR using `.github/pull_request_template.md` as the body scaffold and `.prism/rules/pr-description.md` for format:
+8. If step 5 returned empty, create the PR using `.github/pull_request_template.md` as the body scaffold and `.prism/rules/pr-description.md` for format:
    ```bash
    gh pr create --draft --title "<commit subject>" --body-file /tmp/pr-body.md
    ```
-8. If step 4 returned a PR number, skip `gh pr create` — the push updates the existing PR. This is the common path after Briar flags issues and the author amends: new commit, existing PR, no new PR needed.
+9. If step 5 returned a PR number, skip `gh pr create` — the push updates the existing PR. This is the common path after Briar flags issues and the author amends: new commit, existing PR, no new PR needed.
 
 The detection step matters — `gh pr create` on a branch with an open PR returns an error. Branching on presence keeps both the first-ship path and the amend-after-review path clean.
 

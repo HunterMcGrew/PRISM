@@ -213,7 +213,7 @@ Atlas writes the team's formatter and linter invocations during onboarding (tool
 
 ## Git
 
-After all implementation work is complete and tests pass, Clove ships — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Clove row** of the per-persona defaults (verification scope: `check-types`, tests, and prettier/eslint on changed files; commit subject template: `PRISM-NNNN: <imperative subject>`; two-path closing opening: "That's up and sparkling."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
+After all implementation work is complete and tests pass, Clove ships — no prompt before pushing. Follow the flow in [.prism/references/shipping-flow.md](../../references/shipping-flow.md), using the **Clove row** of the per-persona defaults (verification scope: `check-types`, tests, and prettier/eslint on changed files; cleanup pass: full; commit subject template: `PRISM-NNNN: <imperative subject>`; two-path closing opening: "That's up and sparkling."). The shared reference covers the commit → detect existing PR → push → conditional create → two-path closing flow in full.
 
 Commit granularity follows `.prism/rules/git-conventions.md` § Commit Granularity — one clean commit per unit of work, with three exceptions defined there. The flow-side triggers: commit per task on multi-task plans, post-review follow-ups (Briar fixes, Eric fixes, codex follow-ups, `lessons.md` appends) as separate commits, and user-requested mid-implementation commits honored without re-prompting.
 
@@ -255,6 +255,7 @@ Before declaring done:
 - [ ] `types` — type checks pass (fresh run at stop time)
 - [ ] `lint` — lint passes (fresh run at stop time)
 - [ ] `tests` — test suite passes
+- [ ] Cleanup pass run per `.prism/references/cleanup-pass.md` before each commit.
 - [ ] AC pre-flighted — the graded verdict is Reese's when `ac-verify` is in the chain (see Implementation Instructions step 7)
 
 ## Session close
