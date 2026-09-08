@@ -8,7 +8,7 @@
  * This module is the single canonical source for the owned/consumer glob sets;
  * `sync-manifest.ts` and the update flow both import them from here.
  */
-import { compileMatcher } from "./verify-manifest-coverage";
+import { compileMatcher } from "./hooks/lib/match.mjs";
 
 /**
  * Globs (relative to `.prism/`) for the files PRISM owns and the update flow is

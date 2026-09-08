@@ -14,7 +14,13 @@ Atlas runs in one of these modes. Mode selection happens once at session start, 
 | **init-bootstrapped** | present | absent | First-install step set, with `init`-collected fields pre-seeded and skipped. |
 | **reconfigure** | present | present | Surface prior values; change only the fields the user names. |
 | **dogfood-self** | (flag) | — | Same flow as first-install; no interactive STOP. Exists so the smoke-test harness can run end to end. |
-| **first-contact** | absent | absent + established-asset signals, no `.sync-manifest.json` | Superset of first-install: adds an asset-path survey, a discovery sweep, and a seed-and-sync handoff via `pnpm prism:adopt`. |
+| **first-contact** | absent | absent + established-asset signals, no `.sync-manifest.json` | Superset of first-install: adds an asset-path survey, a discovery sweep, and a seed-and-sync handoff. |
+
+## Install context
+
+Install context is a second axis, not a sixth mode. The discriminator is whether `<repo-root>/scripts/ai-skills/` exists — present means toolkit context (a PRISM clone or vendored checkout), absent means consumer context (PRISM installed from npm, reachable only through the `prism` CLI). It multiplies against every mode in the taxonomy above rather than joining it: a `first-install` run in consumer context asks the same questions and writes the same config as one in toolkit context, and only the commands each step names differ (detection, config validation, output regeneration, seed-and-sync). The ordered mode walk below is unaffected — install context decides *how* a step runs, never *which* mode Atlas is in.
+
+Two alternatives were considered and rejected: a root `package.json` carrying a `prism:build` script (a consumer's own `package.json` is a false positive, and confirming the script needs a second read), and the sync manifest's `prismVersion` field (a vendored toolkit checkout has one too). The `scripts/ai-skills/` probe is one read and is the literal cause of every failure the npm-consumer bug report described. A vendored PRISM checkout inside a consumer repo classifies as consumer context, which is correct — `npx @huntermcgrew/prism <cmd>` works there, and consumer-context instructions are safe to run in a toolkit checkout while the reverse is not.
 
 ## Detection fingerprints — the routing walk
 
@@ -30,11 +36,11 @@ The mode walk is an **ordered** list, and the order is the contract. Each branch
 
 ## The init-bootstrapped seeding rule
 
-When `prism init` has bootstrapped a config, Atlas runs the **first-install step set** — survey → remaining questions → rule generation → anchor substitution → config write → build — with a seed-and-skip overlay on the question order:
+When `prism init` has bootstrapped a config, Atlas runs the **first-install step set** — survey → remaining questions → rule generation → config write → output regeneration (anchor content renders as part of this step, per ADR-0075) — with a seed-and-skip overlay on the question order:
 
 - **Seed `init`-collected fields; skip the prompt when present and non-empty.** `init` writes `project`, `ticketPrefix`, `ticketSystem.kind` (plus `teamKey`/`workspace` when present), `github.owner`, `github.repo`, and `slackChannel` when provided. For each of these, treat the on-disk value as the answer and do not re-prompt. Surface the seeded values in the survey so the user can correct one before continuing — seeding is not silent.
 - **Re-detect `techStack`; never seed it from config.** `init` writes `techStack` from `detectStack`, but Atlas always re-runs `detectStack` (Batch 1 probe 4) rather than carrying the stored value — consistent with first-install, and correct if the repo's stack changed between `init` and onboarding.
-- **Collect only what `init` leaves empty.** `init` writes `productDomain: ""`, `existingStandards: []`, and no `documentation` block. Atlas still prompts for product domain, existing engineering standards, and documentation setup, then runs the generators (`runRuleGenerators`) and anchor substitution (`runAnchorSubstitution`).
+- **Collect only what `init` leaves empty.** `init` writes `productDomain: ""`, `existingStandards: []`, and no `documentation` block. Atlas still prompts for product domain, existing engineering standards, and documentation setup, then runs the generators (`runRuleGenerators`). Anchor content renders from the written config at output regeneration — Atlas runs no separate anchor step.
 - **Respect the ticket-system gate from Q4 on Q5.** The Linear team-key prompt (Q5) only fires for Linear users. A `github-issues` repo has an empty `linearTeam` and skips Q5 entirely — the seeding overlay does not change this gate; it inherits first-install's behavior.
 - **Pass seeded fields through unchanged on write.** `writeOnboardingConfig` writes the assembled config (seeded + newly collected); a seeded field is never reset to a default. Skip-if-exists still governs generated rule files.
 

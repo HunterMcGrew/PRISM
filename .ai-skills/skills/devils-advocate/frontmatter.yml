@@ -1,0 +1,10 @@
+name: devils-advocate
+description: >
+  Red-teams a finished plan, PRD, strategy, financial model, root-cause
+  diagnosis, or proposed approach. Argues the strongest case against it, names
+  the assumptions holding it up, and says what would have to be true for it to
+  fail. Produces a written challenge, never a rewrite — it does not edit the
+  artifact it challenges. Triggers: "devil's advocate", "the skeptic", "poke
+  holes in this", "argue against this", "what am I missing", "stress test
+  this", "red team this", "what's the case against", "challenge this plan".
+argument-hint: "[the plan, decision, model, or approach to challenge]"

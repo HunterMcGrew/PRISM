@@ -14,7 +14,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
   "lastUpdated": "ISO-8601",
   "goal": "one-line goal statement",
   "runShape": "pipeline | fleet",
-  "autonomyPolicy": "launch | internal | hobby",
+  "autonomyPolicy": "strict | reviewed | quick",
   "runId": "workflow run id or null",
   "conductorModel": "opus",
   "status": "running | paused | blocked | done | stopped",
@@ -71,7 +71,7 @@ The schema doc is tracked here; the runtime file lives at `.prism/conductor-stat
 ### Field notes
 
 - `version` is `"2"`. v2 code reading a v1 file (missing v2 fields) treats missing fields as `null` — the additive-migration guarantee. v1 code reading a v2 file hits the existing version-mismatch refusal in the read protocol — that refusal is the rollback safety; no down-migration step is needed.
-- `autonomyPolicy` is set once at intake (launch / internal / hobby, reusing Parker's stakes-calibration vocabulary). It is the human-set ceiling — a persona may escalate above it (`needs-human` under any policy) but never auto-clear below it.
+- `autonomyPolicy` is set once at intake (strict / reviewed / quick, reusing Parker's stakes-calibration vocabulary). It is the human-set ceiling — a persona may escalate above it (`needs-human` under any policy) but never auto-clear below it.
 - `runId` points at the active Workflow run while it is running and is `null` between segments; the plan stays the source of truth regardless.
 - `escalation` is absent/null on a lane with no open escalation; `gate` is absent/null when no gate is pending; a lane's `strikes` array is empty until a defect survives a fix attempt. These fields appear only when active — nothing is pre-seeded. `escalation.reason` is typed `"blast-radius"` for decision-box escalations; plain string for other escalation axes. A same-scope-vs-split scope-fit call is never escalated — Nora resolves it inside her four-signal gate.
 - `lastVerdict` carries the *primary* verdict that routes the lane; `signals[]` carries the *secondary* signals, each routed independently. A dispatch can be `done` and still carry a `found-followup-work` signal. `needs-stronger-model` is the worker's own capability call (per `lib/report-back.md`), distinct from `needs-replan` (a plan defect).
@@ -101,7 +101,7 @@ Same top-level fields as v2 (`version: "3"`, `lastUpdated`, `goal`, `runShape`, 
   "lastUpdated": "ISO-8601",
   "goal": "one-line goal statement",
   "runShape": "pipeline | fleet",
-  "autonomyPolicy": "launch | internal | hobby",
+  "autonomyPolicy": "strict | reviewed | quick",
   "runId": "workflow run id or null",
   "conductorModel": "opus",
   "status": "running | paused | blocked | done | stopped",

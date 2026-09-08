@@ -3,7 +3,7 @@
  *
  * `runBomGuard` scans the `.ai-skills` tree (`.md`, `.mjs`, `.json`) for files containing
  * a UTF-8 BOM (0xEF 0xBB 0xBF) at any byte offset. BOM-bearing canonical sources break the
- * `<!-- atlas:specializes-in -->` anchor substitution and corrupt `.mjs` shebangs
+ * `<!-- atlas:domain-context -->` anchor substitution and corrupt `.mjs` shebangs
  * on Unix. The guard converts this recurring manual Eric catch into a build-time failure.
  */
 import fs from "node:fs/promises";

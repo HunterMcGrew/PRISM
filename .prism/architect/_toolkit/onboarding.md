@@ -45,7 +45,7 @@ Atlas runs each step in fixed order so reconfigure and resume behave predictably
 3. Ask the user the questions detection can't answer (project name, ticket prefix, GitHub org/repo, ticket-system workspace, product domain).
 4. Write config (`writeOnboardingConfig`).
 5. Run rule generators in declaration order (`code-standards` → `security` → `framework-guidelines`).
-6. Run anchor substitution across canonical persona sources (`substituteAnchorsAcrossSkills`).
+6. Anchor content renders at output regeneration time, not as a step Atlas runs — see ADR-0075. Atlas performs no anchor-substitution step of its own.
 7. Emit closing summary listing every file's `written` / `skipped` status.
 
 Step completion is tracked in `.ai-skills/registry/onboarding-state.json` for resume-from-interruption.
@@ -56,6 +56,6 @@ The Atlas STOP marker landed in wave 2 PR 5 (post-detection survey, before quest
 
 - **minimal:** no STOPs; mirrors today's `dogfood-self` behavior at the user's discretion.
 - **standard (default):** today's behavior — STOP after detection.
-- **aggressive:** add STOPs after rule generation and after anchor substitution, so the user can sanity-check intermediate artifacts before they land on disk.
+- **aggressive:** add STOPs after rule generation and after the config write, so the user can sanity-check each intermediate artifact before the next one lands. Anchor content is not a checkpoint candidate — it renders during output regeneration, not as a step Atlas runs (ADR-0075).
 
 This is documentation only — no code change. The shape lets future contributors propose the feature without re-deriving the rationale.

@@ -10,7 +10,12 @@ import os from "node:os";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { checkSeedDrift, writeSeedMirror, type SeedCuration } from "./build";
+import {
+	assertSeedCurationBucketsAreDisjoint,
+	checkSeedDrift,
+	writeSeedMirror,
+	type SeedCuration,
+} from "./build";
 
 async function withTempRoots(
 	build: (contentRoot: string, seedRoot: string) => Promise<void>,
@@ -432,5 +437,186 @@ test("writeSeedMirror — raw bytes: token literals are not substituted in the s
 				"seed bytes match canonical verbatim — no token substitution applied"
 			);
 		}
+	);
+});
+
+test("mirrored — seed twin differs from canonical; changedPaths reports the divergence", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "architect", "guides"), { recursive: true });
+			await fs.mkdir(path.join(seedRoot, "architect", "guides"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "architect", "guides", "writing-a-plan.md"),
+				"# Writing a plan\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "architect", "guides", "writing-a-plan.md"),
+				"# Writing a plan — stale consumer copy\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				mirrored: ["architect/guides/writing-a-plan.md"],
+			};
+			const changedPaths: string[] = [];
+			await checkSeedDrift(contentRoot, seedRoot, curation, changedPaths);
+			assert.ok(
+				changedPaths.some((p) =>
+					p.includes("architect/guides/writing-a-plan.md (mirrored twin")
+				),
+				`expected mirrored drift, got: ${JSON.stringify(changedPaths)}`
+			);
+		}
+	);
+});
+
+test("mirrored — identical twin passes; an intentionally-divergent rename is not flagged", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "architect", "guides"), { recursive: true });
+			await fs.mkdir(path.join(seedRoot, "architect", "guides"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "architect", "guides", "writing-a-rule.md"),
+				"# Writing a rule\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "architect", "guides", "writing-a-rule.md"),
+				"# Writing a rule\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(contentRoot, "architect", "manifest.json"),
+				'{"routes": ["canonical"]}\n',
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "architect", "manifest.stub.json"),
+				'{"routes": []}\n',
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				mirrored: ["architect/guides/writing-a-rule.md"],
+				renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+			};
+			const changedPaths: string[] = [];
+			await checkSeedDrift(contentRoot, seedRoot, curation, changedPaths);
+			assert.equal(
+				changedPaths.length,
+				0,
+				`stub rename must stay exempt from content compare, got: ${JSON.stringify(changedPaths)}`
+			);
+		}
+	);
+});
+
+test("mirrored rename — the renamed twin is content-compared under its seed name", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.writeFile(path.join(contentRoot, "SPEC.md"), "# SPEC\n", "utf8");
+			await fs.writeFile(path.join(seedRoot, "SPEC.md.tmpl"), "# SPEC — drifted\n", "utf8");
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				mirrored: ["SPEC.md"],
+				renames: { "SPEC.md": "SPEC.md.tmpl" },
+			};
+			const changedPaths: string[] = [];
+			await checkSeedDrift(contentRoot, seedRoot, curation, changedPaths);
+			assert.ok(
+				changedPaths.some((p) => p.includes("SPEC.md (mirrored twin SPEC.md.tmpl differs)")),
+				`expected renamed mirrored drift, got: ${JSON.stringify(changedPaths)}`
+			);
+		}
+	);
+});
+
+test("writeSeedMirror — a mirrored file overwrites its stale twin and is not reported as unclassified", async () => {
+	await withTempRoots(
+		async (contentRoot, seedRoot) => {
+			await fs.mkdir(path.join(contentRoot, "architect", "guides"), { recursive: true });
+			await fs.mkdir(path.join(seedRoot, "architect", "guides"), { recursive: true });
+			await fs.writeFile(
+				path.join(contentRoot, "architect", "guides", "writing-a-skill.md"),
+				"# Writing a skill — updated\n",
+				"utf8"
+			);
+			await fs.writeFile(
+				path.join(seedRoot, "architect", "guides", "writing-a-skill.md"),
+				"# Writing a skill — stale\n",
+				"utf8"
+			);
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				mirrored: ["architect/guides/writing-a-skill.md"],
+			};
+			const changedPaths: string[] = [];
+			const unclassified: string[] = [];
+			await writeSeedMirror(contentRoot, seedRoot, curation, false, changedPaths, unclassified);
+			const seedContent = await fs.readFile(
+				path.join(seedRoot, "architect", "guides", "writing-a-skill.md"),
+				"utf8"
+			);
+			assert.equal(
+				seedContent,
+				"# Writing a skill — updated\n",
+				"twin refreshed from canonical"
+			);
+			assert.equal(unclassified.length, 0, "a mirrored file is classified, not unclassified");
+		}
+	);
+});
+
+test("writeSeedMirror — a mirrored rename is written under its seed name only", async () => {
+	await withTempRoots(
+		async (contentRoot, _seedRoot) => {
+			await fs.writeFile(path.join(contentRoot, "SPEC.md"), "# SPEC\n", "utf8");
+		},
+		async (contentRoot, seedRoot) => {
+			const curation: SeedCuration = {
+				...emptyCuration,
+				mirrored: ["SPEC.md"],
+				renames: { "SPEC.md": "SPEC.md.tmpl" },
+			};
+			await writeSeedMirror(contentRoot, seedRoot, curation, false, [], []);
+			assert.equal(
+				await fs.readFile(path.join(seedRoot, "SPEC.md.tmpl"), "utf8"),
+				"# SPEC\n"
+			);
+			const canonicalNameExists = await fs
+				.access(path.join(seedRoot, "SPEC.md"))
+				.then(() => true)
+				.catch(() => false);
+			assert.equal(canonicalNameExists, false, "canonical name must not appear in the seed");
+		}
+	);
+});
+
+test("assertSeedCurationBucketsAreDisjoint — a path in two buckets throws", () => {
+	assert.throws(
+		() =>
+			assertSeedCurationBucketsAreDisjoint({
+				...emptyCuration,
+				curated: ["rules/alpha.md"],
+				mirrored: ["rules/alpha.md"],
+			}),
+		/listed in both "curated" and "mirrored"/
+	);
+
+	assert.doesNotThrow(() =>
+		assertSeedCurationBucketsAreDisjoint({
+			...emptyCuration,
+			mirrored: ["SPEC.md"],
+			renames: { "SPEC.md": "SPEC.md.tmpl" },
+		})
 	);
 });

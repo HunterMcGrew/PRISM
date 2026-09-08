@@ -21,12 +21,15 @@ import assert from "node:assert/strict";
 
 import { AGENTS_MD_BLOCK_BEGIN, AGENTS_MD_BLOCK_END } from "./agents-md-block";
 import {
+	appendHookStateGitignoreLines,
 	applyFilePass,
 	assertSourceIsPlausible,
+	mergeHookSettingsRegistration,
+	refreshHookRuntime,
 	resolvePrismContentRoot,
 	runUpdate,
 } from "./update";
-import { hashContent } from "./utils";
+import { hashContent, pathExists } from "./utils";
 import {
 	SYNC_MANIFEST_FILENAME,
 	type SyncManifest,
@@ -561,6 +564,14 @@ async function withTempRepoRoots(
 		path.join(prismRepoRoot, ".ai-skills", "config.schema.json")
 	);
 
+	// `runUpdate` loads this to invert the install-direction rename; empty
+	// `renames` here since no test fixture uses a renamed seed file.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
+	);
+
 	// Consumer config + paths.json so the platform refresh resolves.
 	await writeFile(
 		consumerRepoRoot,
@@ -658,6 +669,536 @@ test("runUpdate copies content and projects the persona roster", async () => {
 				/\$\{[A-Z][A-Z0-9_]*\}/.test(skillBody),
 				false,
 				"no leftover token survives in the projected roster"
+			);
+		}
+	);
+});
+
+// --- hosts gating tests (PRISM-477 followup) ---
+
+/** Overrides `CONSUMER_CONFIG_JSON` with a declared `hosts` array for one test run. */
+async function writeHostsConfig(
+	consumerRepoRoot: string,
+	hosts: string[]
+): Promise<void> {
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts }, null, "\t")}\n`
+	);
+}
+
+test("runUpdate projects the roster to every host when the config declares none", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			for (const skillPath of [
+				".claude/skills/prism-sample/SKILL.md",
+				".agents/skills/prism-sample/SKILL.md",
+				".cursor/skills/prism-sample/SKILL.md",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, skillPath),
+					true,
+					`${skillPath} should exist when the config declares no hosts`
+				);
+			}
+		}
+	);
+});
+
+test("runUpdate projects the roster only to the hosts the config declares", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".agents/skills/prism-sample/SKILL.md"),
+				true,
+				"Codex's roster is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				false,
+				"Claude's roster is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample/SKILL.md"),
+				false,
+				"Cursor's roster is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate writes agent definitions and the Codex config only for their own host", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/agents/prism-sample.md"),
+				true,
+				"Claude's agent definition is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/agents/prism-sample.toml"),
+				false,
+				"Codex's agent adapter is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				false,
+				"the Codex config file is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate copies platform content only to the hosts the config declares", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["cursor"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			await writeFile(consumerContentRoot, "rules/local.md", "# Local rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/rules/local.mdc"),
+				true,
+				"Cursor's rule copy is written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/rules"),
+				false,
+				"Claude's platform content dir is not written"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/rules"),
+				false,
+				"Codex's platform content dir is not written"
+			);
+		}
+	);
+});
+
+test("runUpdate scans only the roots it wrote for unresolved token literals", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+			// A stale Claude skill left over from before `hosts` narrowed to Codex —
+			// this run never touches `.claude/skills`, so an unresolved token there
+			// must not fail the update.
+			await writeFile(
+				consumerRepoRoot,
+				".claude/skills/stale-skill/SKILL.md",
+				"Stale ${LEFTOVER_TOKEN} literal.\n"
+			);
+
+			await assert.doesNotReject(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				"a leftover token in a root this pass did not write must not fail the update"
+			);
+		}
+	);
+});
+
+test("runUpdate takes back a dropped host's roster, agent files, and content copies", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			// Every host received output on the first pass, matching the schema's
+			// absent-`hosts`-means-all default.
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/prism-sample/SKILL.md"),
+				true,
+				"Claude's roster exists before the drop"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			for (const droppedPath of [
+				".claude/skills/prism-sample",
+				".cursor/skills/prism-sample",
+				".claude/agents/prism-sample.md",
+				".claude/rules",
+				".cursor/rules",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, droppedPath),
+					false,
+					`${droppedPath} is taken back out once codex is the only declared host`
+				);
+			}
+			for (const keptPath of [
+				".agents/skills/prism-sample/SKILL.md",
+				".codex/rules/shipped.md",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, keptPath),
+					true,
+					`${keptPath} survives the drop — codex is still declared`
+				);
+			}
+		}
+	);
+});
+
+test("a consumer's own file under a dropped host's directory survives the sweep", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// A hand-authored skill (no managed marker) and a loose note, both under
+			// the Claude root that is about to be dropped.
+			await writeFile(
+				consumerRepoRoot,
+				".claude/skills/my-own-skill/SKILL.md",
+				"# My own skill\n"
+			);
+			await writeFile(consumerRepoRoot, ".claude/notes.md", "# Notes\n");
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/skills/my-own-skill/SKILL.md"),
+				true,
+				"the unmarked skill directory survives the sweep"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".claude/notes.md"),
+				true,
+				"the unmarked loose file survives the sweep"
+			);
+		}
+	);
+});
+
+test("the Cursor skills sweep removes a marked skill and leaves an unmarked one, the same as Claude's", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample/SKILL.md"),
+				true,
+				"Cursor's roster exists before the drop"
+			);
+
+			// A hand-authored skill (no managed marker) under the Cursor root that
+			// is about to be dropped — Cursor's skill output is git-committed, so a
+			// regression here lands in a consumer's history, not just their tree.
+			await writeFile(
+				consumerRepoRoot,
+				".cursor/skills/my-own-skill/SKILL.md",
+				"# My own skill\n"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/prism-sample"),
+				false,
+				"the marker-bearing Cursor skill is removed once cursor is dropped"
+			);
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".cursor/skills/my-own-skill/SKILL.md"),
+				true,
+				"the unmarked Cursor skill directory survives the sweep"
+			);
+		}
+	);
+});
+
+test("the Codex config is removed only when it still carries PRISM's generated header", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				true,
+				"the Codex config exists before the drop"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await fileExists(consumerRepoRoot, ".codex/codex-config.toml"),
+				false,
+				"a Codex config still carrying PRISM's header is removed when codex is dropped"
+			);
+		}
+	);
+
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			// The consumer replaced the generated file's contents entirely.
+			await writeFile(
+				consumerRepoRoot,
+				".codex/codex-config.toml",
+				"# hand-written by the consumer\n"
+			);
+
+			await writeHostsConfig(consumerRepoRoot, ["claude"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+			assert.equal(
+				await readFile(consumerRepoRoot, ".codex/codex-config.toml"),
+				"# hand-written by the consumer\n",
+				"a Codex config without PRISM's header is left alone when codex is dropped"
+			);
+		}
+	);
+});
+
+test("runUpdate --dry-run previews a dropped host's removals without performing them", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			await writeHostsConfig(consumerRepoRoot, ["codex"]);
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+				dryRun: true,
+			});
+
+			for (const survivingPath of [
+				".claude/skills/prism-sample/SKILL.md",
+				".claude/agents/prism-sample.md",
+				".claude/rules",
+			]) {
+				assert.equal(
+					await fileExists(consumerRepoRoot, survivingPath),
+					true,
+					`${survivingPath} is still on disk after a dry-run that only previews the drop`
+				);
+			}
+		}
+	);
+});
+
+test("runUpdate applies a renamed seed file under its consumer name and records it in the manifest that way", async () => {
+	await withTempRepoRoots(
+		async ({
+			prismRepoRoot,
+			consumerRepoRoot,
+			prismContentRoot,
+			consumerContentRoot,
+		}) => {
+			await writeFile(prismContentRoot, "SPEC.md.tmpl", "# Seed SPEC\n");
+			await writeFile(
+				prismRepoRoot,
+				".ai-skills/definitions/seed-curation.json",
+				`${JSON.stringify(
+					{ excluded: [], curated: [], seedOnly: [], renames: { "SPEC.md": "SPEC.md.tmpl" } },
+					null,
+					"\t"
+				)}\n`
+			);
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			assert.equal(
+				await readFile(consumerContentRoot, "SPEC.md"),
+				"# Seed SPEC\n",
+				"the seed's SPEC.md.tmpl bytes land at the consumer's SPEC.md"
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "SPEC.md.tmpl"),
+				false,
+				"the seed name is never written to the consumer"
+			);
+
+			const raw = await readFile(consumerContentRoot, SYNC_MANIFEST_FILENAME);
+			const manifest = JSON.parse(raw) as SyncManifest;
+			assert.ok(
+				manifest.files["SPEC.md"],
+				"the manifest records the renamed file under its consumer name"
+			);
+			assert.equal(
+				"SPEC.md.tmpl" in manifest.files,
+				false,
+				"the manifest never records the file under its seed name"
+			);
+		}
+	);
+});
+
+// --- anchor content renders at update time, and the PRISM source is never mutated ---
+
+test("runUpdate renders the consumer's productDomain into the roster and leaves the PRISM source untouched", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			// assertSourceIsPlausible needs at least one PRISM-owned file under
+			// .prism/ — unrelated to the anchor content this test exercises.
+			await writeFile(prismContentRoot, "rules/shipped.md", "# Shipped rule\n");
+
+			// Override the base fixture's config with a non-empty productDomain, and
+			// give the persona source a `domain-context` anchor to substitute into.
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, productDomain: "home-service scheduling" }, null, "\t")}\n`
+			);
+			const sharedPath = ".ai-skills/skills/prism-sample/shared.md";
+			await writeFile(
+				prismRepoRoot,
+				sharedPath,
+				[
+					"You build ${PROJECT} for ${TICKET_PREFIX}.",
+					"",
+					"<!-- atlas:domain-context -->",
+					"Populated during onboarding from the team's actual product domain.",
+					"<!-- atlas:end -->",
+					"",
+				].join("\n")
+			);
+			const beforeBytes = await readFile(prismRepoRoot, sharedPath);
+
+			await runUpdate({
+				prismRepoRoot,
+				consumerRepoRoot,
+				prismContentRoot,
+				consumerContentRoot,
+			});
+
+			const skillBody = await readFile(
+				consumerRepoRoot,
+				".claude/skills/prism-sample/SKILL.md"
+			);
+			assert.match(
+				skillBody,
+				/home-service scheduling/,
+				"the rendered persona carries the consumer's product domain"
+			);
+			assert.doesNotMatch(
+				skillBody,
+				/Populated during onboarding from the team's actual product domain\./,
+				"the generic anchor default is replaced, not left in place"
+			);
+
+			// Nothing under the PRISM source's own .ai-skills/skills/ tree changed —
+			// anchor substitution runs in memory against the rendered output only.
+			const afterBytes = await readFile(prismRepoRoot, sharedPath);
+			assert.equal(
+				afterBytes,
+				beforeBytes,
+				"the canonical persona source is byte-identical after the update"
 			);
 		}
 	);
@@ -1298,6 +1839,42 @@ test("runUpdate refuses a config.json missing a required field", async () => {
 	);
 });
 
+test("runUpdate refuses a config.json whose hosts array names an unrecognized host", async () => {
+	await withTempRepoRoots(
+		async ({ prismRepoRoot, consumerRepoRoot, prismContentRoot, consumerContentRoot }) => {
+			await writeFile(prismContentRoot, "rules/rule.md", "# Rule\n");
+			await writeFile(
+				consumerRepoRoot,
+				".ai-skills/config.json",
+				`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude", "windsurf"] }, null, "\t")}\n`
+			);
+
+			await assert.rejects(
+				() =>
+					runUpdate({
+						prismRepoRoot,
+						consumerRepoRoot,
+						prismContentRoot,
+						consumerContentRoot,
+					}),
+				(err: unknown) => {
+					assert.ok(err instanceof Error);
+					assert.ok(
+						err.message.includes("/hosts/1"),
+						`expected the offending array element named in the message, got: ${err.message}`
+					);
+					return true;
+				}
+			);
+			assert.equal(
+				await fileExists(consumerContentRoot, "rules/rule.md"),
+				false,
+				"a schema-invalid config must fail before any file is written"
+			);
+		}
+	);
+});
+
 // --- git-repo check tests (issue #376) ---
 
 test("runUpdate fails fast when the consumer directory is not inside a git repository", async () => {
@@ -1350,4 +1927,783 @@ test("runUpdate fails fast when the consumer directory is not inside a git repos
 	} finally {
 		await fs.rm(tempRoot, { force: true, recursive: true });
 	}
+});
+
+// --- mergeHookSettingsRegistration: consumer-hook preservation ---
+
+/**
+ * PRISM's own hook registration block, mirroring
+ * `templates/install/.claude/settings.json` closely enough to exercise the
+ * merge without depending on that file's exact content.
+ */
+const PRISM_HOOK_SETTINGS = {
+	hooks: {
+		PreToolUse: [
+			{
+				matcher: "Write|Edit|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+			{
+				matcher: "Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+		],
+		PostToolUse: [
+			{
+				matcher: "Read|Grep|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+					},
+				],
+			},
+		],
+		PostCompact: [
+			{
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PostCompact',
+					},
+				],
+			},
+		],
+	},
+};
+
+async function withHookMergeRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "prism-hook-merge-"));
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.claude/settings.json",
+		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	try {
+		await body({ prismRepoRoot, consumerRepoRoot });
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+async function readConsumerSettings(
+	consumerRepoRoot: string
+): Promise<{ hooks?: Record<string, unknown[]> }> {
+	return JSON.parse(
+		await fs.readFile(
+			path.join(consumerRepoRoot, ".claude", "settings.json"),
+			"utf8"
+		)
+	) as { hooks?: Record<string, unknown[]> };
+}
+
+test("mergeHookSettingsRegistration: a consumer's own hook on an event PRISM also registers survives, and PRISM's is added", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		const postToolUse = settings.hooks?.PostToolUse ?? [];
+		assert.deepEqual(
+			postToolUse[0],
+			consumerOwnHook,
+			"the consumer's own PostToolUse entry must survive the merge"
+		);
+		assert.equal(
+			postToolUse.length,
+			2,
+			"PRISM's PostToolUse entry must be added alongside the consumer's"
+		);
+		assert.ok(
+			JSON.stringify(postToolUse[1]).includes(".claude/hooks/hook.mjs"),
+			"the second entry must be PRISM's own registration"
+		);
+		assert.ok(
+			settings.hooks?.PostCompact,
+			"PostCompact is added outright since the consumer never registered it"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: running twice does not duplicate PRISM's entry or drift the consumer's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const firstPass = await readConsumerSettings(consumerRepoRoot);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		const secondPass = await readConsumerSettings(consumerRepoRoot);
+
+		assert.deepEqual(
+			secondPass,
+			firstPass,
+			"a repeat merge must be a no-op byte-for-byte, not just entry-count-stable"
+		);
+		assert.equal(
+			secondPass.hooks?.PostToolUse?.length,
+			2,
+			"the consumer entry plus exactly one PRISM entry — no duplicate PRISM registration"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer with no prior settings file receives PRISM's registration untouched", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(settings.hooks?.PostToolUse?.length, 1);
+		assert.equal(settings.hooks?.PostCompact?.length, 1);
+	});
+});
+
+const HOOK_RUNTIME_RELATIVE_PATHS = [
+	"hook.mjs",
+	"git-gates.mjs",
+	"architect-route.mjs",
+	"harnesses.mjs",
+	"lib/match.mjs",
+	"lib/shell.mjs",
+];
+
+/** The state-file globs `refreshHookRuntime` appends — one pair per hook entry point. */
+const HOOK_STATE_GITIGNORE_GLOBS = [
+	".prism/architect-route-state.*.json",
+	".prism/architect-route-state.*.json.tmp",
+	".prism/git-gates-state.*.json",
+	".prism/git-gates-state.*.json.tmp",
+];
+
+/** The `PreToolUse` entries whose command names `git-gates.mjs`. */
+function gitGatesEntries(settings: { hooks?: Record<string, unknown[]> }): unknown[] {
+	return (settings.hooks?.PreToolUse ?? []).filter((entry) =>
+		JSON.stringify(entry).includes("git-gates.mjs")
+	);
+}
+
+/** Stand-in for a delivered runtime file — carries the ownership marker `refreshHookRuntime` classifies on. */
+function prismRuntimeSource(label: string): string {
+	return `// @prism-hook-runtime\nexport const label = "${label}";\n`;
+}
+
+/**
+ * Seeds a PRISM source tree carrying both halves `refreshHookRuntime` reads —
+ * the hook runtime files and the settings block it merges — beside an empty
+ * consumer root.
+ */
+async function withHookRuntimeRoots(
+	body: (roots: {
+		prismRepoRoot: string;
+		consumerRepoRoot: string;
+	}) => Promise<void>
+): Promise<void> {
+	const tempRoot = await fs.mkdtemp(
+		path.join(os.tmpdir(), "prism-hook-runtime-")
+	);
+	const prismRepoRoot = path.join(tempRoot, "prism");
+	const consumerRepoRoot = path.join(tempRoot, "consumer");
+	// The real consumer root is always an existing git repo — `runUpdate` fails
+	// fast otherwise — so the fixture creates it rather than leaving the seam to
+	// tolerate a root that cannot occur.
+	await fs.mkdir(consumerRepoRoot, { recursive: true });
+	await writeFile(
+		prismRepoRoot,
+		"templates/install/.claude/settings.json",
+		`${JSON.stringify(PRISM_HOOK_SETTINGS, null, "\t")}\n`
+	);
+	for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+		await writeFile(
+			prismRepoRoot,
+			`scripts/ai-skills/hooks/${relativePath}`,
+			prismRuntimeSource(relativePath)
+		);
+	}
+	await writeFile(
+		prismRepoRoot,
+		"scripts/ai-skills/hooks/hook.d.mts",
+		"export declare const label: string;\n"
+	);
+	try {
+		await body({ prismRepoRoot, consumerRepoRoot });
+	} finally {
+		await fs.rm(tempRoot, { force: true, recursive: true });
+	}
+}
+
+test("refreshHookRuntime: a consumer's own file at a runtime path is backed up, never silently overwritten", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false,
+			["claude"]
+		);
+
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs.bak"),
+			consumerOwnBody,
+			"the consumer's bytes survive at the .bak path"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			prismRuntimeSource("hook.mjs")
+		);
+
+		const hookOutcome = outcomes.find(
+			(outcome) => outcome.relativePath === ".claude/hooks/hook.mjs"
+		);
+		assert.equal(
+			hookOutcome?.action,
+			"backed-up",
+			"the run summary reports the backup rather than writing silently"
+		);
+		assert.ok(hookOutcome?.backupPath);
+	});
+});
+
+test("refreshHookRuntime: an earlier PRISM copy is replaced in place with no backup", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/hook.mjs",
+			"// @prism-hook-runtime\nexport const label = \"an older version\";\n"
+		);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false,
+			["claude"]
+		);
+
+		assert.equal(
+			outcomes.find((o) => o.relativePath === ".claude/hooks/hook.mjs")?.action,
+			"overwritten",
+			"a marked file is PRISM's own at any version, so a version bump is not a divergence"
+		);
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs.bak")
+			),
+			false,
+			"replacing PRISM's own copy leaves no .bak behind"
+		);
+	});
+});
+
+test("refreshHookRuntime: an already-current file is a no-op", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false,
+			["claude"]
+		);
+
+		assert.deepEqual(
+			outcomes.map((outcome) => outcome.action),
+			HOOK_RUNTIME_RELATIVE_PATHS.map(() => "no-op"),
+			"a repeat run rewrites nothing"
+		);
+	});
+});
+
+test("refreshHookRuntime: dryRun reports the same outcomes without touching the filesystem", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			true,
+			["claude"]
+		);
+
+		assert.equal(
+			outcomes.find((o) => o.relativePath === ".claude/hooks/hook.mjs")?.action,
+			"backed-up",
+			"the preview names what a real run would do"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			consumerOwnBody,
+			"the consumer's file is left exactly as it was"
+		);
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "architect-route.mjs")
+			),
+			false,
+			"no runtime file is written"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".gitignore")),
+			false,
+			"no .gitignore is created"
+		);
+	});
+});
+
+test("refreshHookRuntime: delivers the runtime modules only, not the type sidecars beside them", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is delivered`
+			);
+		}
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "hook.d.mts")
+			),
+			false,
+			"declaration sidecars exist for PRISM's own type-check and are inert in a consumer"
+		);
+	});
+});
+
+test("refreshHookRuntime: prunes a marked file it no longer ships, backs it up first, and leaves the consumer's own alongside it", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const staleContents = prismRuntimeSource("a runtime file from a past version");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/claude-post-read.mjs",
+			staleContents
+		);
+		const consumerScript = "#!/usr/bin/env node\nconsole.log('mine');\n";
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/consumer-audit.mjs",
+			consumerScript
+		);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			false,
+			["claude"]
+		);
+
+		const pruned = outcomes.find(
+			(o) => o.relativePath === ".claude/hooks/claude-post-read.mjs"
+		);
+		assert.equal(pruned?.action, "removed-with-backup");
+		assert.equal(
+			await pathExists(
+				path.join(consumerRepoRoot, ".claude", "hooks", "claude-post-read.mjs")
+			),
+			false,
+			"a renamed runtime file does not stay resident forever"
+		);
+		assert.ok(pruned?.backupPath, "the outcome names the backup path");
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/claude-post-read.mjs.bak"),
+			staleContents,
+			"a marked file carried at a path PRISM no longer ships is recoverable, not silently lost — it may be a consumer's own adaptation"
+		);
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/consumer-audit.mjs"),
+			consumerScript,
+			"an unmarked file sharing the directory is the consumer's and is never removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: the backup of a pruned file is not itself pruned on the next run", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const adapted = prismRuntimeSource("a consumer's adaptation of a delivered file");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/my-adapted-hook.mjs",
+			adapted
+		);
+
+		const backupNamesPerRun: string[][] = [];
+		const prunedPerRun: number[] = [];
+		for (let run = 0; run < 4; run += 1) {
+			const outcomes = await refreshHookRuntime(
+				prismRepoRoot,
+				consumerRepoRoot,
+				false,
+				["claude"]
+			);
+			prunedPerRun.push(
+				outcomes.filter((o) => o.action === "removed-with-backup").length
+			);
+			const names = await fs.readdir(
+				path.join(consumerRepoRoot, ".claude", "hooks")
+			);
+			backupNamesPerRun.push(
+				names.filter((name) => name.startsWith("my-adapted-hook")).sort()
+			);
+		}
+
+		assert.deepEqual(
+			prunedPerRun,
+			[1, 0, 0, 0],
+			"the adaptation is pruned once; the backup PRISM wrote is never a later run's prune target"
+		);
+		for (const names of backupNamesPerRun) {
+			assert.deepEqual(
+				names,
+				["my-adapted-hook.mjs.bak"],
+				"the backup name is stable across runs — a growing `.bak.bak.bak` chain means prune is re-selecting its own output"
+			);
+		}
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/my-adapted-hook.mjs.bak"),
+			adapted,
+			"the recovery guarantee holds past the first update cycle"
+		);
+	});
+});
+
+test("refreshHookRuntime: a repo that does not run Claude Code receives no runtime, no registration, and no gitignore lines", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex", "cursor"]);
+
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs")),
+			false,
+			"no runtime file is delivered"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".claude", "settings.json")),
+			false,
+			"no settings registration is written"
+		);
+		assert.equal(
+			await pathExists(path.join(consumerRepoRoot, ".gitignore")),
+			false,
+			"no gitignore lines are appended"
+		);
+	});
+});
+
+test("refreshHookRuntime: dropping Claude Code from hosts takes back the delivered runtime and PRISM's registration", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.equal(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				false,
+				`${relativePath} is removed`
+			);
+		}
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.ok(
+			!JSON.stringify(settings).includes(".claude/hooks/hook.mjs"),
+			"PRISM's registration no longer names the runtime path"
+		);
+	});
+});
+
+test("refreshHookRuntime: a consumer's own hook on an event PRISM registered survives the removal", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnHook = {
+			matcher: "Write",
+			hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [consumerOwnHook] } }, null, "\t")}\n`
+		);
+
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.deepEqual(
+			settings.hooks?.PostToolUse,
+			[consumerOwnHook],
+			"the consumer's PostToolUse entry is the only one left"
+		);
+		assert.ok(
+			!settings.hooks || !("PostCompact" in settings.hooks),
+			"PostCompact, which only PRISM registered, is dropped entirely rather than left as an empty array"
+		);
+	});
+});
+
+test("refreshHookRuntime: an unmarked file at a runtime path survives the removal", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const consumerOwnBody = "// the consumer's own hook, unrelated to PRISM\n";
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", consumerOwnBody);
+
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		assert.equal(
+			await readFile(consumerRepoRoot, ".claude/hooks/hook.mjs"),
+			consumerOwnBody,
+			"a file without the ownership marker is never removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: the state-file gitignore lines are left in place when Claude Code is dropped", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["codex"]);
+
+		const gitignore = await readFile(consumerRepoRoot, ".gitignore");
+		assert.ok(
+			gitignore.includes(".prism/architect-route-state.*.json"),
+			"the state-file glob is not removed"
+		);
+		assert.ok(
+			gitignore.includes(".prism/architect-route-state.*.json.tmp"),
+			"the tmp-sidecar glob is not removed"
+		);
+	});
+});
+
+test("refreshHookRuntime: dryRun previews a removal without performing it", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		const outcomes = await refreshHookRuntime(
+			prismRepoRoot,
+			consumerRepoRoot,
+			true,
+			["codex"]
+		);
+
+		const removedPaths = outcomes
+			.filter((o) => o.action === "removed")
+			.map((o) => o.relativePath);
+		assert.ok(
+			HOOK_RUNTIME_RELATIVE_PATHS.every((relativePath) =>
+				removedPaths.includes(`.claude/hooks/${relativePath}`)
+			),
+			"the preview names every runtime path it would remove"
+		);
+
+		for (const relativePath of HOOK_RUNTIME_RELATIVE_PATHS) {
+			assert.ok(
+				await pathExists(
+					path.join(consumerRepoRoot, ".claude", "hooks", ...relativePath.split("/"))
+				),
+				`${relativePath} is still on disk — dryRun performs nothing`
+			);
+		}
+	});
+});
+
+test("refreshHookRuntime: running twice leaves exactly one git-gates registration", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(gitGatesEntries(settings).length, 1);
+		const entry = gitGatesEntries(settings)[0] as { matcher: string };
+		assert.equal(entry.matcher, "Bash", "the git gates fire on the shell tool only");
+	});
+});
+
+test("mergeHookSettingsRegistration: a settings file from an older PRISM with hook.mjs entries only gains the git-gates entry", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const olderPrism = {
+			hooks: {
+				PreToolUse: [
+					{
+						matcher: "Write|Edit|Bash",
+						hooks: [
+							{
+								type: "command",
+								command:
+									'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+							},
+						],
+					},
+				],
+				PostToolUse: [
+					{
+						matcher: "Read|Grep|Bash",
+						hooks: [
+							{
+								type: "command",
+								command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(olderPrism, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(gitGatesEntries(settings).length, 1, "the new entry point is registered");
+		assert.equal(
+			settings.hooks?.PreToolUse?.length,
+			2,
+			"the older hook.mjs entry is replaced, not kept alongside its successor"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer wrapper around git-gates.mjs is not claimed", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const wrapper = {
+			matcher: "Bash",
+			hooks: [
+				{
+					type: "command",
+					command: "bash -c 'my-lint && node .claude/hooks/git-gates.mjs --tool=claude'",
+				},
+			],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [wrapper] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const preToolUse = (await readConsumerSettings(consumerRepoRoot)).hooks?.PreToolUse ?? [];
+		assert.deepEqual(preToolUse[0], wrapper, "the wrapper survives at the front");
+		assert.equal(gitGatesEntries({ hooks: { PreToolUse: preToolUse } }).length, 2, "the wrapper plus PRISM's own entry");
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer command that merely mentions the entry point is not treated as PRISM's", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const wrapper = {
+			matcher: "Read",
+			hooks: [
+				{
+					type: "command",
+					command:
+						"bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'",
+				},
+			],
+		};
+		const backupTwin = {
+			matcher: "Read",
+			hooks: [
+				{
+					type: "command",
+					command:
+						'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs.bak" --tool=claude',
+				},
+			],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PostToolUse: [wrapper, backupTwin] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const postToolUse =
+			(await readConsumerSettings(consumerRepoRoot)).hooks?.PostToolUse ?? [];
+		assert.deepEqual(
+			postToolUse.slice(0, 2),
+			[wrapper, backupTwin],
+			"a wrapper command and a .bak-twin registration are the consumer's, not PRISM's"
+		);
+		assert.equal(postToolUse.length, 3, "PRISM's own entry is appended alongside");
+	});
+});
+
+test("appendHookStateGitignoreLines: writes every state-file glob as an exact line", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		for (const expected of HOOK_STATE_GITIGNORE_GLOBS) {
+			assert.ok(lines.includes(expected), `${expected} is written`);
+		}
+	});
+});
+
+test("appendHookStateGitignoreLines: appends after a file with no trailing newline without joining lines", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".gitignore", "node_modules");
+
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		assert.ok(lines.includes("node_modules"), "the existing entry stays its own line");
+		assert.ok(lines.includes(".prism/architect-route-state.*.json"));
+	});
+});
+
+test("appendHookStateGitignoreLines: running twice leaves exactly one copy of each line", async () => {
+	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+		await appendHookStateGitignoreLines(consumerRepoRoot, false);
+
+		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
+		for (const expected of HOOK_STATE_GITIGNORE_GLOBS) {
+			assert.equal(
+				lines.filter((line) => line === expected).length,
+				1,
+				`${expected} appears exactly once after a repeat run`
+			);
+		}
+	});
 });

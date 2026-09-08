@@ -95,6 +95,16 @@
 			"uniqueItems": true,
 			"examples": [["nextjs", "react", "typescript", "tailwind"]]
 		},
+		"hosts": {
+			"type": "array",
+			"description": "AI coding hosts this repo actually runs. Absent means all of them, so an existing install keeps its current behavior and needs no migration. This gates every host-specific delivery: the hook runtime and its registration (writes .claude/hooks/, merges the registration into .claude/settings.json, and appends the hook state-file globs to .gitignore only when `claude` is listed); the persona skill roster and agent definitions for each host; and the platform content copies of rules, architect docs, and templates. Removing a host from a repo that previously received its output makes the next `prism update` take that output back out.",
+			"items": {
+				"type": "string",
+				"enum": ["claude", "codex", "cursor"]
+			},
+			"uniqueItems": true,
+			"examples": [["claude"], ["codex", "cursor"]]
+		},
 		"commands": {
 			"type": "object",
 			"description": "Canonical verification commands for this team. Atlas populates this map during onboarding from the detected tech stack; skill prose and verification-commands.md reference these values as {{commands.*}} tokens so command strings live in one place. Each value is the full shell command to run from the repo root.",
@@ -116,7 +126,7 @@
 				},
 				"format": {
 					"type": "string",
-					"description": "Command that runs the formatter in check mode (Prettier --check, or equivalent). Empty string when the team has no standalone formatter step.",
+					"description": "Command that runs the formatter in check mode (Prettier --check, or equivalent). Empty string when the team has no standalone formatter step. Read by the push gate when hooks.pushVerification is on.",
 					"examples": ["pnpm run format:check", "npx prettier --check ."]
 				},
 				"build": {
@@ -151,6 +161,11 @@
 			"description": "Optional Slack channel for Lilac standup posting.",
 			"examples": ["#tractru-dev"]
 		},
+		"productDomain": {
+			"type": "string",
+			"description": "One-sentence description of what the product does, collected during onboarding. Rendered into the `domain-context` anchor across the persona roster at output-regeneration time (scripts/ai-skills/generate-skills.ts) in place of the generic canonical default. Absent or empty means every persona body keeps its shipped default anchor content.",
+			"examples": ["A multi-tenant SaaS platform for scheduling home service appointments."]
+		},
 		"documentation": {
 			"type": "object",
 			"description": "Documentation configuration. Populated by Atlas during onboarding (Phase 2). Eli reads these values to write guides shaped for the team's actual doc system — the format field in particular drives which patterns Eli uses. format is an open string, never a closed union: a new consumer adds their value here without a schema migration.",
@@ -183,6 +198,26 @@
 				"conductorMayMerge": {
 					"type": "boolean",
 					"description": "When true, Sol (the Conductor) may merge PRs when the Briar→Eric review loop is clean. Absent or false by default — merge remains a human responsibility. Read only by Sol; never mentioned in init or onboarding output."
+				}
+			}
+		},
+		"hooks": {
+			"type": "object",
+			"description": "Opt-in git gates run by the hook runtime on the hosts that receive it. Absent means every gate is off. Not surfaced during init or onboarding — set by hand, like features.",
+			"properties": {
+				"commitCleanupPass": {
+					"type": "boolean",
+					"description": "Hold the first `git commit` on each HEAD until .prism/references/cleanup-pass.md has been read this session; the retry goes through."
+				},
+				"pushVerification": {
+					"type": "boolean",
+					"description": "Run commands.lint and commands.format before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so."
+				},
+				"pushVerificationTimeoutMs": {
+					"type": "integer",
+					"minimum": 1000,
+					"default": 120000,
+					"description": "Per-command budget for pushVerification. Keep it below the host's own hook timeout (Claude Code: 600 s by default) so the script, not the host, decides the outcome."
 				}
 			}
 		},

@@ -4,11 +4,11 @@ step: greenfield-step-05-decision-log
 
 # Greenfield Step 05 — Decision log
 
-Conditional. Skip entirely for `stakes: hobby`.
+Conditional. Skip entirely for `stakes: quick`.
 
 ## Actions
 
-1. **Check stakes.** If `stakes: hobby` → skip; advance to step-06-review.
+1. **Check stakes.** If `stakes: quick` → skip; advance to step-06-review.
 2. **Create the decision log file** at `.prism/prds/<slug>.decision-log.md`. Seed content:
 
    ```markdown
@@ -38,4 +38,4 @@ Conditional. Skip entirely for `stakes: hobby`.
 
 ## Exit condition
 
-Decision log file exists at `.prism/prds/<slug>.decision-log.md` (or skipped for hobby stakes). PRD links to it (or the link section is empty for hobby). Advance to step-06-review.
+Decision log file exists at `.prism/prds/<slug>.decision-log.md` (or skipped for quick stakes). PRD links to it (or the link section is empty for quick). Advance to step-06-review.

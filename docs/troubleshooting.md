@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Fixes for the most common prism adopt, update, and build failures — start with prism doctor."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-07-02"
+last_updated: "2026-09-02"
 ---
 
 # Troubleshooting
@@ -42,6 +42,14 @@ For the full walkthrough — including how to preview which files would get a `.
 1. Run `prism doctor` — it validates your `.ai-skills/config.json` against its schema and, if the config itself is invalid, names the offending field directly (for example, `/ticketSystem/kind: must be one of [...]`) rather than leaving you to trace the failure back from generated output.
 2. If `doctor` reports the config as valid but you still see a leftover-token failure, check that every field the failing token depends on is actually populated — a structurally valid config can still be missing a value a specific token needs.
 3. Both `prism adopt` and `prism update` also validate your config against the schema *before* writing anything — so a structurally invalid config is caught upfront as a hard refusal, not mid-write. Run either command with `--dry-run` first if you want to see this validation happen without risking a partial write.
+
+## Atlas names a path or command your install doesn't have
+
+**Symptom:** Atlas's onboarding session stalls or errors out naming `scripts/ai-skills/lib`, a `config.schema.json` it expects at your repo root, or a `pnpm prism:build` command that doesn't exist in your `package.json`.
+
+**Cause:** these are toolkit-checkout paths — they exist in a cloned PRISM repo, not in an npm install, where PRISM's code lives inside `node_modules` and is reachable only through the `prism` CLI. Your install predates the fix that taught Atlas to branch its procedure on install context, so it's still running the toolkit-only script.
+
+**Resolution:** run `npx @huntermcgrew/prism@latest update` to pull the fixed onboarding content into your repo, then run `npx @huntermcgrew/prism doctor` and check the reported version to confirm you're current before re-running Atlas.
 
 ## Pre-manifest install fallback
 

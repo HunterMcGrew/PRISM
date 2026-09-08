@@ -3,7 +3,7 @@ title: "Sol — the Conductor"
 description: "How Sol drives a goal across the lifecycle by dispatching the existing personas, pausing at every human gate, and routing each report-back verdict."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-27"
+last_updated: "2026-09-02"
 ---
 
 ## What Sol does
@@ -59,7 +59,7 @@ A plan-readiness failure means *re-plan harder* — Winston is already on the st
 
 ## Autonomy between gates, never through them
 
-The invariant that keeps Sol from eroding PRISM's human-gated correctness model: **Sol drives autonomously between gates and stops at them, but never clears a gate itself.** Each gate is owned by a persona — Winston for plan / A-P-C, Nora for the Definition of Ready — that judges its own gate against a human-set autonomy policy (`launch` / `internal` / `hobby`) and returns one of three dispositions: `auto-cleared`, `needs-human`, or `blocked`. Sol routes the disposition; it never judges one.
+The invariant that keeps Sol from eroding PRISM's human-gated correctness model: **Sol drives autonomously between gates and stops at them, but never clears a gate itself.** Each gate is owned by a persona — Winston for plan / A-P-C, Nora for the Definition of Ready — that judges its own gate against a human-set autonomy policy (`strict` / `reviewed` / `quick`) and returns one of three dispositions: `auto-cleared`, `needs-human`, or `blocked`. Sol routes the disposition; it never judges one.
 
 The rule is one-directional — a persona can always escalate up (`needs-human` under any policy) but never auto-clear below the policy ceiling the human set. Every `auto-cleared` gate records the owner's stakes reasoning in the plan and surfaces in the end-of-run report, so autonomy moves you from in-the-loop to on-the-loop without going dark. Merge is a human gate by default — Sol parks every lane there unless `features.conductorMayMerge: true` is set in `.ai-skills/config.json` (see [Configuration — Feature flags](../parameterization.md#feature-flags)). The full decision, with the alternatives weighed, is in [ADR-0048](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0048-conductor-autonomy-between-gates.md).
 
@@ -125,7 +125,7 @@ A same-scope-vs-split borderline call is **not** escalated — Nora resolves it 
 
 A run interrupted mid-decision resumes from the last recorded step deterministically — no double-commit, no lost draft. `pendingTicketCommit: true` on resume means the ticket was drafted but not committed; Sol surfaces it to the human.
 
-The autonomy ceiling governs when ticket commits fire. Under `hobby` policy Nora may finalize autonomously; under `internal` or `launch` a ticket commit above trivial returns `needs-human` and batches into the end-of-segment human gate — zero auto-commits above trivial at those stakes levels.
+The autonomy ceiling governs when ticket commits fire. Under `quick` policy Nora may finalize autonomously; under `reviewed` or `strict` a ticket commit above trivial returns `needs-human` and batches into the end-of-segment human gate — zero auto-commits above trivial at those stakes levels.
 
 ## The convergence governor
 
@@ -181,14 +181,14 @@ After the chain completes, Sol surfaces the generated tree to the operator befor
 
 Gate behavior depends on the autonomy policy:
 
-- **`internal` or `launch` stakes:** the gate is `needs-human`. Sol batches the ratification artifact into `pendingHumanReport` and dispatches nothing until the operator approves.
-- **`hobby` stakes:** the tree auto-dispatches without a ratification pause.
+- **`reviewed` or `strict` stakes:** the gate is `needs-human`. Sol batches the ratification artifact into `pendingHumanReport` and dispatches nothing until the operator approves.
+- **`quick` stakes:** the tree auto-dispatches without a ratification pause.
 
 The operator may adjust `scope` statements or drop lanes before approving. Sol re-invokes the reconcile primitive over the edited tree before dispatching.
 
-**The breadth gate and ratification are complementary, not redundant.** The breadth gate (brake 3 in the convergence governor) exists to surface a large single-reconcile expansion to a human before auto-dispatch. A ratified planned tree already received that human review, so it is excluded from the breadth gate — applying it again would be a second gate on work the operator already approved. The loophole closes at `hobby` stakes: when there is no ratification gate, the breadth gate applies to the planned tree as the backstop, so a very large tree can never bypass human review under any policy. Under every policy, a large planned tree faces exactly one human gate — ratification at `internal`/`launch`, the breadth gate at `hobby`. Unplanned discovery always hits the breadth gate regardless of policy, as it did in Phase A.
+**The breadth gate and ratification are complementary, not redundant.** The breadth gate (brake 3 in the convergence governor) exists to surface a large single-reconcile expansion to a human before auto-dispatch. A ratified planned tree already received that human review, so it is excluded from the breadth gate — applying it again would be a second gate on work the operator already approved. The loophole closes at `quick` stakes: when there is no ratification gate, the breadth gate applies to the planned tree as the backstop, so a very large tree can never bypass human review under any policy. Under every policy, a large planned tree faces exactly one human gate — ratification at `reviewed`/`strict`, the breadth gate at `quick`. Unplanned discovery always hits the breadth gate regardless of policy, as it did in Phase A.
 
-Once the tree is approved (or auto-dispatches at `hobby`), the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence.
+Once the tree is approved (or auto-dispatches at `quick`), the leaf-ticket lanes hand off to the normal step-04 dispatch flow with tree-aware convergence.
 
 The full procedure is in [`lib/greenfield-decompose.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/lib/greenfield-decompose.md). The design decisions behind the chain structure and the ratification-gate/breadth-gate interaction are in [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0052-conductor-greenfield-decompose-and-ratification-gate.md).
 
@@ -245,7 +245,7 @@ An integration lane is a lane with `type: "integration"` whose `dependsOn` edges
 
 Two conditions are both required to trigger the gate: `type: "integration"` on the lane, and at least one cross-team `dependsOn` edge. A same-team lane with multiple `dependsOn` edges does not trigger it. A `type: "integration"` lane whose dependencies are all same-team does not trigger it.
 
-The gate is `needs-human` at every autonomy level, including `hobby`. It is not a stakes gate that confidence can satisfy — it is a categorical checkpoint, a sibling of the merge gate in that it never auto-clears regardless of policy. The design decision is in [ADR-0054](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md). The gate is also distinct from the conflict gate, which serializes lanes that share a file — the integration gate is about cross-team work convergence, independent of file overlap.
+The gate is `needs-human` at every autonomy level, including `quick`. It is not a stakes gate that confidence can satisfy — it is a categorical checkpoint, a sibling of the merge gate in that it never auto-clears regardless of policy. The design decision is in [ADR-0054](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md). The gate is also distinct from the conflict gate, which serializes lanes that share a file — the integration gate is about cross-team work convergence, independent of file overlap.
 
 The integration lane's persona comes from its `scope` statement, not from a default mapping. A scope describing a review-and-test pass names Briar; a seam-architecture check names Winston. This keeps the gate general-purpose: the operator or the decompose chain sets the scope, and the persona follows from it.
 
@@ -356,9 +356,9 @@ Phase D supports runs at ~100 lanes. Runs trending past that size are expected t
 - [ADR-0049 — Conductor: Teams Are Lane-Groups, Not Sub-Conductors](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0049-conductor-teams-are-lane-groups.md) — why the flat lane list holds and sub-conductors are permanently rejected
 - [ADR-0050 — Conductor: Growth via Between-Segment Reconcile, Governed by a Two-Axis Convergence Brake](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0050-conductor-growth-loop-and-convergence-governor.md) — the design decision behind the reconcile primitive and the three-brake governor
 - [ADR-0051 — Conductor: Tree Dispatch Semantics](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0051-conductor-tree-dispatch-semantics.md) — container lanes are non-dispatchable rollup nodes; child-first dispatch; tree depth ≠ generation depth
-- [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; hobby backstop
+- [ADR-0052 — Conductor: Greenfield Decompose and Ratification Gate](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0052-conductor-greenfield-decompose-and-ratification-gate.md) — the chain reuses the reconcile primitive additively; ratification gate is the human review the breadth gate would otherwise force; quick backstop
 - [ADR-0053 — Conductor: Integration Lane Type Marker](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0053-conductor-integration-lane-type-marker.md) — `type: "integration"` as the marker; no default integration persona; `null` is ordinary
-- [ADR-0054 — Conductor: Integration Gate Always Human](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md) — the gate is `needs-human` at every autonomy level, including `hobby`; categorical, not confidence-gated
+- [ADR-0054 — Conductor: Integration Gate Always Human](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0054-conductor-integration-gate-always-human.md) — the gate is `needs-human` at every autonomy level, including `quick`; categorical, not confidence-gated
 - [ADR-0055 — Conductor: Run-Control State Partitions by Epic-Subtree Root, Not by Team](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0055-conductor-partitions-run-control-by-epic-subtree.md) — why epic-subtree beats team-partition; the sharding-by-right-key argument
 - [ADR-0056 — Conductor: Governor Brakes Evaluated Run-Wide, Never Per-Partition](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/spec/adrs/_toolkit/0056-conductor-governor-brakes-evaluated-run-wide.md) — the invariant that keeps Phase D from quietly weakening the convergence governor
 - The conductor loop, step by step: [`step-01-init.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-01-init.md) … [`step-09-reconcile.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-09-reconcile.md) → [`step-10-report.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.prism/skills/prism-conductor/step-10-report.md)

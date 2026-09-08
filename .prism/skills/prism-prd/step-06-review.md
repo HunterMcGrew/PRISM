@@ -6,15 +6,15 @@ step: step-06-review
 
 Dispatch the three rubric subagents (in parallel on Claude; sequential on Codex/Cursor) and synthesize findings into a triage table.
 
-## Auto-skip for hobby stakes
+## Auto-skip for quick stakes
 
-If PRD frontmatter `stakes: hobby`, skip the rubric entirely:
+If PRD frontmatter `stakes: quick`, skip the rubric entirely:
 
-> "Hobby stakes — skipping the reviewer rubric. Proceed to finalize?"
+> "Quick stakes — skipping the reviewer rubric. Proceed to finalize?"
 
-Update PRD frontmatter: append `step-06-review` to `stepsCompleted` with note `skipped: hobby stakes`. Advance to step-07-finalize.
+Update PRD frontmatter: append `step-06-review` to `stepsCompleted` with note `skipped: quick stakes`. Advance to step-07-finalize.
 
-## Dispatch (internal / launch stakes)
+## Dispatch (reviewed / strict stakes)
 
 Three subagents read the PRD and apply one rubric each:
 
@@ -51,11 +51,11 @@ After presenting findings, prompt:
 
 Apply user decisions. Each `fix` writes back to the PRD via `Edit`; each `accept` appends to `## Open questions`; each `override` records in the decision log (greenfield) or in `## Open questions` (brownfield).
 
-## Escalation for launch stakes
+## Escalation for strict stakes
 
-For `stakes: launch`, after rubric findings are resolved, ask:
+For `stakes: strict`, after rubric findings are resolved, ask:
 
-> "Launch stakes — recommend escalating any remaining major findings to a second reviewer (Winston for technical framing, Pixel for product-fit UX angle, or a teammate). Want to route any of these?"
+> "Strict stakes — recommend escalating any remaining major findings to a second reviewer (Winston for technical framing, Pixel for product-fit UX angle, or a teammate). Want to route any of these?"
 
 User can route or decline.
 

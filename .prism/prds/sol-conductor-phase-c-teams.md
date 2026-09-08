@@ -2,7 +2,7 @@
 slug: sol-conductor-phase-c-teams
 title: "Sol conductor Phase C: teams as lane-groups + cross-team seam + integration gate"
 mode: greenfield
-stakes: internal
+stakes: reviewed
 status: finalized
 created: 2026-06-14T00:00:00Z
 lastEdited: 2026-06-14T00:00:00Z

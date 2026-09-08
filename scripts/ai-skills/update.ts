@@ -31,13 +31,17 @@ import {
 import {
 	resolvePrismVersion,
 	resolveSourceCommit,
+	removeManagedContentAreas,
 	syncAllPlatformContentCopies,
 } from "./build";
 import {
 	buildRoleMap,
 	generatePlatformSkills,
+	GENERATED_MARKDOWN_HEADER_LINE,
+	removeDeletedManagedAgentFiles,
 	type RolesDefinitions,
 } from "./generate-skills";
+import { buildContentByAnchor } from "./lib/onboarding-run";
 import {
 	assertInsideGitRepo,
 	resolveConsumerRoot,
@@ -46,7 +50,9 @@ import {
 } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
-import { deriveTokenMap, loadConfig } from "./lib/tokens";
+import { deriveOptedIn, resolveHosts, type HostName } from "./lib/hosts";
+import { invertRenames, loadSeedCurationRenames } from "./lib/seed-curation";
+import { deriveTokenMap, loadConfig, type PrismConfig } from "./lib/tokens";
 import { runLeftoverTokenGuard } from "./literal-guard";
 import { classifyPath } from "./ownership";
 import {
@@ -58,10 +64,12 @@ import {
 } from "./sync-manifest";
 import {
 	buildPlatformDirs,
+	GENERATED_HEADER_LINE,
 	hashFile,
 	type PathDefinitions,
 	pathExists,
 	readFileIfExists,
+	removeDeletedManagedSkills,
 	resolveRunPathDefinitions,
 } from "./utils";
 
@@ -244,16 +252,21 @@ async function writeIncoming(
  * regardless of whether a manifest exists. This is a documented decision point,
  * not a license to skip `.bak` — a genuinely diverged file (consumer bytes that
  * differ from incoming) is still backed up.
+ *
+ * `consumerRelativePath` and `sourceRelativePath` differ only for a renamed
+ * seed file (e.g. source `SPEC.md.tmpl`, consumer `SPEC.md`) — every other
+ * caller passes the same value for both.
  */
 async function applyIncomingFile(
-	relativePath: string,
+	consumerRelativePath: string,
+	sourceRelativePath: string,
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	recordedHash: string | null,
 	dryRun: boolean
 ): Promise<FileOutcome> {
-	const incomingAbsolute = path.join(prismContentRoot, relativePath);
-	const consumerAbsolute = path.join(consumerContentRoot, relativePath);
+	const incomingAbsolute = path.join(prismContentRoot, sourceRelativePath);
+	const consumerAbsolute = path.join(consumerContentRoot, consumerRelativePath);
 
 	const incomingHash = await hashFile(incomingAbsolute);
 	const consumerHash = await hashFileIfExists(consumerAbsolute);
@@ -261,23 +274,23 @@ async function applyIncomingFile(
 	if (consumerHash === null) {
 		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-		return { relativePath, action: "written" };
+		return { relativePath: consumerRelativePath, action: "written" };
 	}
 
 	if (consumerHash === incomingHash) {
-		return { relativePath, action: "no-op" };
+		return { relativePath: consumerRelativePath, action: "no-op" };
 	}
 
 	if (recordedHash !== null && consumerHash === recordedHash) {
 		await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-		return { relativePath, action: "overwritten" };
+		return { relativePath: consumerRelativePath, action: "overwritten" };
 	}
 
 	const backupPath = await backupConsumerFile(consumerAbsolute, dryRun);
 	await writeIncoming(incomingAbsolute, consumerAbsolute, dryRun);
 
-	return { relativePath, action: "backed-up", backupPath };
+	return { relativePath: consumerRelativePath, action: "backed-up", backupPath };
 }
 
 /**
@@ -340,17 +353,24 @@ export async function applyDeletedFile(
  * via `previewVersionDelta`, a read-only counterpart, so `--dry-run` reports
  * the same delta a real run would record). The returned `UpdateSummary` is
  * identical in shape to a real run, so callers print the same report either way.
+ *
+ * `seedToConsumerRenames` (seed path → consumer path, from
+ * `lib/seed-curation.ts`) is threaded into `listPrismOwnedRelativePaths` and
+ * `rewriteConsumerManifest` so a renamed seed file — `SPEC.md.tmpl` on disk,
+ * `SPEC.md` in the consumer and the manifest — is classified, applied, and
+ * recorded under its consumer name throughout the pass. Defaults to `{}` so
+ * a caller with no rename map behaves as if no renames exist.
  */
 export async function applyFilePass(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	preloadedManifest?: SyncManifest | null,
 	dryRun = false,
-	versionMetadata?: VersionMetadata
+	versionMetadata?: VersionMetadata,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<UpdateSummary> {
-	const incomingRelativePaths =
-		await listPrismOwnedRelativePaths(prismContentRoot);
-	const incomingSet = new Set(incomingRelativePaths);
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
+	const incomingSet = new Set(ownedPaths.map((owned) => owned.consumerPath));
 
 	const consumerManifest =
 		preloadedManifest !== undefined
@@ -367,17 +387,18 @@ export async function applyFilePass(
 
 	const outcomes: FileOutcome[] = [];
 
-	for (const relativePath of incomingRelativePaths) {
-		if (classifyPath(relativePath) !== "prism") {
+	for (const { consumerPath, sourcePath } of ownedPaths) {
+		if (classifyPath(consumerPath) !== "prism") {
 			continue;
 		}
 
 		outcomes.push(
 			await applyIncomingFile(
-				relativePath,
+				consumerPath,
+				sourcePath,
 				prismContentRoot,
 				consumerContentRoot,
-				recordedHashes.get(relativePath) ?? null,
+				recordedHashes.get(consumerPath) ?? null,
 				dryRun
 			)
 		);
@@ -403,7 +424,8 @@ export async function applyFilePass(
 				prismContentRoot,
 				consumerContentRoot,
 				consumerManifest,
-				versionMetadata
+				versionMetadata,
+				seedToConsumerRenames
 			);
 
 	const backups = outcomes
@@ -470,15 +492,23 @@ export async function runUpdate(
 	// Resolve and validate everything the platform refresh needs before the file
 	// pass mutates .prism/. A bad consumer config or paths.json then fails fast
 	// with nothing written.
-	const tokenMap = deriveTokenMap(loadConfig(consumerRepoRoot));
+	const consumerConfig = loadConfig(consumerRepoRoot);
+	const hosts = resolveHosts(consumerConfig);
+	const tokenMap = deriveTokenMap(consumerConfig);
 	const consumerPathDefinitions = await resolveRunPathDefinitions(
 		prismRepoRoot,
 		consumerRepoRoot,
 		dryRun
 	);
-	const platformDirs = buildPlatformDirs(
+	const allPlatformDirs = buildPlatformDirs(
 		consumerRepoRoot,
 		consumerPathDefinitions
+	);
+	const platformDirs = allPlatformDirs.filter((entry) =>
+		hosts.includes(entry.host)
+	);
+	const droppedPlatformDirs = allPlatformDirs.filter(
+		(entry) => !hosts.includes(entry.host)
 	);
 	const overlayContentRoot = path.join(consumerContentRoot, OVERLAY_SUBPATH);
 
@@ -494,7 +524,9 @@ export async function runUpdate(
 			).length
 		: 0;
 
-	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount);
+	const seedToConsumerRenames = invertRenames(await loadSeedCurationRenames(prismRepoRoot));
+
+	await assertSourceIsPlausible(prismContentRoot, pendingDeletionCount, seedToConsumerRenames);
 
 	const versionMetadata: VersionMetadata = {
 		prismVersion: await resolvePrismVersion(prismRepoRoot),
@@ -506,15 +538,24 @@ export async function runUpdate(
 		consumerContentRoot,
 		consumerManifest,
 		dryRun,
-		versionMetadata
+		versionMetadata,
+		seedToConsumerRenames
 	);
 
 	await refreshPlatformDirs(
 		consumerContentRoot,
 		overlayContentRoot,
 		platformDirs,
+		droppedPlatformDirs,
 		tokenMap,
 		dryRun
+	);
+
+	const hookOutcomes = await refreshHookRuntime(
+		prismRepoRoot,
+		consumerRepoRoot,
+		dryRun,
+		hosts
 	);
 
 	const ruleLoadScan = await scanConsumerRuleLoad(
@@ -536,8 +577,10 @@ export async function runUpdate(
 		prismRepoRoot,
 		consumerRepoRoot,
 		consumerPathDefinitions,
+		consumerConfig,
 		tokenMap,
-		dryRun
+		dryRun,
+		hosts
 	);
 
 	const { refreshed } = await refreshConsumerAgentsMdBlock(
@@ -548,7 +591,22 @@ export async function runUpdate(
 
 	const agentsMdRefresh: AgentsMdRefreshOutcome = { refreshed };
 
-	return { ...summary, agentsMdRefresh, ruleLoadWarnings: ruleLoadScan.warnings };
+	// The hook runtime lands outside the content root the file pass walks, so
+	// its outcomes are folded in here rather than returned by `applyFilePass`.
+	// Without this the seam would write into a consumer's tree without
+	// appearing in the run summary or the `--dry-run` preview at all.
+	return {
+		...summary,
+		outcomes: [...summary.outcomes, ...hookOutcomes],
+		backups: [
+			...summary.backups,
+			...hookOutcomes
+				.filter((outcome) => outcome.backupPath !== undefined)
+				.map((outcome) => outcome.backupPath as string),
+		],
+		agentsMdRefresh,
+		ruleLoadWarnings: ruleLoadScan.warnings,
+	};
 }
 
 /** Rules and per-file `load:` warnings collected by `scanConsumerRuleLoad`. */
@@ -700,17 +758,22 @@ async function rewriteConsumerManifest(
 	prismContentRoot: string,
 	consumerContentRoot: string,
 	previousConsumerManifest: SyncManifest | null,
-	versionMetadata?: VersionMetadata
+	versionMetadata?: VersionMetadata,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<VersionDelta> {
 	const metadata =
 		versionMetadata ?? (await deriveMetadataFromSourceManifest(prismContentRoot));
 	const versionDelta = computeVersionDelta(metadata.prismVersion, previousConsumerManifest);
 
-	const generated = await generateSyncManifest(prismContentRoot, {
-		prismVersion: versionDelta.current,
-		sourceCommit: metadata.sourceCommit,
-		generatedAt: new Date().toISOString(),
-	});
+	const generated = await generateSyncManifest(
+		prismContentRoot,
+		{
+			prismVersion: versionDelta.current,
+			sourceCommit: metadata.sourceCommit,
+			generatedAt: new Date().toISOString(),
+		},
+		seedToConsumerRenames
+	);
 
 	const manifestPath = path.join(consumerContentRoot, SYNC_MANIFEST_FILENAME);
 	const serialized = `${JSON.stringify(generated, null, "\t")}\n`;
@@ -786,14 +849,24 @@ export function resolveConsumerSkillTargetRoots(
  * Thrive-literal guard is deliberately not run here — a consumer's output
  * legitimately contains "Thrive"-flavored words, so only the leftover-token
  * guard applies (see plan prism-242 Decision "Two guards, not one").
+ *
+ * `consumerConfig` supplies the anchor content (currently just
+ * productDomain) substituted into the roster ahead of token substitution.
+ * Anchor population happens here, in memory, on every regeneration — see
+ * ADR-0075.
  */
 async function refreshPlatformSkills(
 	prismRepoRoot: string,
 	consumerRepoRoot: string,
 	consumerPathDefinitions: PathDefinitions,
+	consumerConfig: PrismConfig,
 	tokenMap: Map<string, string>,
-	dryRun: boolean
+	dryRun: boolean,
+	hosts: HostName[]
 ): Promise<void> {
+	const anchorContent = buildContentByAnchor({
+		productDomain: consumerConfig.productDomain ?? "",
+	});
 	const sourceSkillsRoot = path.join(prismRepoRoot, ".ai-skills", "skills");
 	if (!(await pathExists(sourceSkillsRoot))) {
 		throw new Error(
@@ -827,24 +900,81 @@ async function refreshPlatformSkills(
 		consumerPathDefinitions
 	);
 
+	const optedIn = deriveOptedIn(hosts);
 	const changedPaths: string[] = [];
 	await generatePlatformSkills({
+		anchorContent,
 		sourceSkillsRoot,
 		targetRoots,
 		codexConfigPath,
 		roleMap,
 		tokenMap,
-		optedIn: {
-			claude: true,
-			codex: true,
-			cursor: true,
-			codexAgents: true,
-			claudeAgents: true,
-			codexConfig: true,
-		},
+		optedIn,
 		checkMode: dryRun,
 		changedPaths,
 	});
+
+	// An empty known-id set turns each cleanup helper into a full sweep of its
+	// own root: every marker-bearing directory is now an id PRISM no longer
+	// ships for a host the consumer dropped. Runs even on a dry run so the
+	// preview reports what would be removed — `checkMode: dryRun` on each call
+	// stops it from actually deleting anything.
+	if (!optedIn.claude) {
+		await removeDeletedManagedSkills(
+			targetRoots.claude,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.cursor) {
+		await removeDeletedManagedSkills(
+			targetRoots.cursor,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codex) {
+		await removeDeletedManagedSkills(
+			targetRoots.codex,
+			new Set(),
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.claudeAgents) {
+		await removeDeletedManagedAgentFiles(
+			targetRoots.claudeAgents,
+			new Set(),
+			".md",
+			GENERATED_MARKDOWN_HEADER_LINE,
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codexAgents) {
+		await removeDeletedManagedAgentFiles(
+			targetRoots.codexAgents,
+			new Set(),
+			".toml",
+			GENERATED_HEADER_LINE,
+			dryRun,
+			changedPaths
+		);
+	}
+	if (!optedIn.codexConfig) {
+		const codexConfigContent = await readFileIfExists(codexConfigPath);
+		if (
+			codexConfigContent !== null &&
+			codexConfigContent.startsWith(GENERATED_HEADER_LINE)
+		) {
+			changedPaths.push(codexConfigPath);
+			if (!dryRun) {
+				await fs.rm(codexConfigPath, { force: true });
+			}
+		}
+	}
 
 	if (dryRun) {
 		// A dry-run preview leaves the rendered roster on disk unchanged (stale or
@@ -854,13 +984,18 @@ async function refreshPlatformSkills(
 		return;
 	}
 
-	const leftoverTokenViolations = await runLeftoverTokenGuard(consumerRepoRoot, [
-		targetRoots.claude,
-		targetRoots.claudeAgents,
-		targetRoots.codex,
-		targetRoots.codexAgents,
-		targetRoots.cursor,
-	]);
+	const leftoverTokenRoots = [
+		optedIn.claude ? targetRoots.claude : null,
+		optedIn.claudeAgents ? targetRoots.claudeAgents : null,
+		optedIn.codex ? targetRoots.codex : null,
+		optedIn.codexAgents ? targetRoots.codexAgents : null,
+		optedIn.cursor ? targetRoots.cursor : null,
+	].filter((root): root is string => root !== null);
+
+	const leftoverTokenViolations = await runLeftoverTokenGuard(
+		consumerRepoRoot,
+		leftoverTokenRoots
+	);
 	if (leftoverTokenViolations.length > 0) {
 		const detail = leftoverTokenViolations
 			.map((v) => `  ${v.relativePath}:${v.line}: ${v.match}`)
@@ -903,6 +1038,7 @@ async function refreshPlatformDirs(
 	consumerContentRoot: string,
 	overlayContentRoot: string,
 	platformDirs: ReturnType<typeof buildPlatformDirs>,
+	droppedDirs: ReturnType<typeof buildPlatformDirs>,
 	tokenMap: Map<string, string>,
 	dryRun: boolean
 ): Promise<void> {
@@ -923,6 +1059,472 @@ async function refreshPlatformDirs(
 			tokenMap,
 			OVERLAY_SUBPATH
 		);
+	}
+
+	for (const entry of droppedDirs) {
+		await removeManagedContentAreas(entry.dir, dryRun, []);
+	}
+}
+
+/**
+ * The hook runtime files delivered into a consumer's `.claude/hooks/`, named
+ * relative to `scripts/ai-skills/hooks/`.
+ *
+ * Enumerated rather than copied as a tree. A recursive copy delivers whatever
+ * happens to sit in the source directory — which today includes the `.d.mts`
+ * declaration sidecars that exist for PRISM's own `tsc` run and are inert in a
+ * consumer repo — and it silently overwrites whatever sits at the target path,
+ * consumer-authored or not. An explicit list is also what makes
+ * `pruneStaleHookRuntimeFiles` able to tell a file PRISM still ships from one a
+ * past rename left behind.
+ */
+const HOOK_RUNTIME_FILES = [
+	"hook.mjs",
+	"git-gates.mjs",
+	"architect-route.mjs",
+	"harnesses.mjs",
+	"lib/match.mjs",
+	"lib/shell.mjs",
+];
+
+/** Entry-point files under the copied hook runtime that need the executable bit. */
+const HOOK_RUNTIME_ENTRY_POINTS = ["hook.mjs", "git-gates.mjs"];
+
+/**
+ * The line every delivered runtime file carries near its top, identifying the
+ * file as PRISM's own.
+ *
+ * Ownership here is content-keyed, not the hash-keyed guarantee
+ * `applyIncomingFile` gives every other PRISM-owned path. `applyIncomingFile`
+ * preserves a consumer's in-place *edit* to a PRISM file (the consumer bytes
+ * diverge from the recorded hash, so they survive as `.bak`); the marker
+ * carries no such memory. A marked file is treated as PRISM's content at
+ * whatever version wrote it and is replaced without a backup, whether the
+ * existing bytes are an older PRISM copy or a consumer's hand-edit of one —
+ * `.claude/hooks/` sits outside the sync manifest's content root, so there is
+ * no recorded hash to diff an edit against. A file that does not carry the
+ * marker is the consumer's own and is backed up before being replaced.
+ * Adaptations belong in a separate, unmarked wrapper file that calls into the
+ * delivered runtime rather than in edits to the delivered file itself — an
+ * in-place edit to a marked file does not survive the next update.
+ */
+export const HOOK_RUNTIME_MARKER = "@prism-hook-runtime";
+
+/**
+ * Matches the basenames `backupConsumerFile` produces — `<file>.bak`,
+ * `<file>.bak.1`, `<file>.bak.2`, … — so `pruneStaleHookRuntimeFiles` can
+ * recognize its own recovery copies without reading them.
+ */
+const BACKUP_BASENAME_PATTERN = /\.bak(\.\d+)?$/;
+
+/**
+ * Delivers one runtime file. Absent is a write, byte-identical is a no-op, a
+ * marker-carrying target is an overwrite regardless of its bytes (see
+ * `HOOK_RUNTIME_MARKER`), and anything else is the consumer's and is
+ * preserved as `.bak` before being replaced.
+ */
+async function deliverHookRuntimeFile(
+	sourcePath: string,
+	targetPath: string,
+	relativePath: string,
+	dryRun: boolean
+): Promise<FileOutcome> {
+	const incomingHash = await hashFile(sourcePath);
+	const consumerHash = await hashFileIfExists(targetPath);
+
+	if (consumerHash === null) {
+		await writeIncoming(sourcePath, targetPath, dryRun);
+
+		return { relativePath, action: "written" };
+	}
+
+	if (consumerHash === incomingHash) {
+		return { relativePath, action: "no-op" };
+	}
+
+	const existing = await readFileIfExists(targetPath);
+	if (existing !== null && existing.includes(HOOK_RUNTIME_MARKER)) {
+		await writeIncoming(sourcePath, targetPath, dryRun);
+
+		return { relativePath, action: "overwritten" };
+	}
+
+	const backupPath = await backupConsumerFile(targetPath, dryRun);
+	await writeIncoming(sourcePath, targetPath, dryRun);
+
+	return { relativePath, action: "backed-up", backupPath };
+}
+
+/**
+ * Removes files under the consumer's `.claude/hooks/` that carry
+ * `HOOK_RUNTIME_MARKER` but are no longer in `HOOK_RUNTIME_FILES` — the copy a
+ * rename in an earlier PRISM version left behind. Without this a renamed
+ * runtime file stays resident in every consumer forever.
+ *
+ * Only marked files are removed, so a consumer's own script sharing the
+ * directory is never touched. Backups are skipped by name
+ * (`BACKUP_BASENAME_PATTERN`) rather than by content: `backupConsumerFile`
+ * copies its source byte for byte, so the backup of a marked file carries the
+ * marker too and would re-select here on the next run, each pass backing up
+ * the previous backup one suffix longer. A recovery copy is the consumer's to
+ * read and delete, never PRISM's to reclaim. The marker is a content signal,
+ * not a path signal — a consumer who copies a delivered file elsewhere under
+ * `.claude/hooks/` to adapt it carries the marker along, so this backs up
+ * before removing rather than assuming every marked file at an unrecognized
+ * path is safe to discard outright.
+ */
+async function pruneStaleHookRuntimeFiles(
+	targetDir: string,
+	dryRun: boolean,
+	deliveredPaths: readonly string[] = HOOK_RUNTIME_FILES
+): Promise<FileOutcome[]> {
+	if (!(await pathExists(targetDir))) {
+		return [];
+	}
+
+	const delivered = new Set(deliveredPaths);
+	const entries = await fs.readdir(targetDir, {
+		recursive: true,
+		withFileTypes: true,
+	});
+
+	const outcomes: FileOutcome[] = [];
+	for (const entry of entries) {
+		if (!entry.isFile()) {
+			continue;
+		}
+
+		const absolutePath = path.join(entry.parentPath, entry.name);
+		const relative = path
+			.relative(targetDir, absolutePath)
+			.split(path.sep)
+			.join("/");
+		if (delivered.has(relative)) {
+			continue;
+		}
+
+		if (BACKUP_BASENAME_PATTERN.test(entry.name)) {
+			continue;
+		}
+
+		const contents = await readFileIfExists(absolutePath);
+		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
+			continue;
+		}
+
+		const backupPath = await backupConsumerFile(absolutePath, dryRun);
+		if (!dryRun) {
+			await fs.rm(absolutePath, { force: true });
+		}
+
+		outcomes.push({
+			relativePath: `.claude/hooks/${relative}`,
+			action: "removed-with-backup",
+			backupPath,
+		});
+	}
+
+	return outcomes;
+}
+
+/**
+ * Removes the runtime files PRISM delivers at their canonical paths, for a
+ * consumer who has dropped `claude` from `hosts`. Only a file carrying
+ * `HOOK_RUNTIME_MARKER` is removed; an unmarked file at one of those paths
+ * is the consumer's own and is left where it is.
+ *
+ * No backup, deliberately — the asymmetry mirrors delivery rather than
+ * prune. `deliverHookRuntimeFile` replaces a marked file at a canonical
+ * path without a backup because the marker plus the path together identify
+ * PRISM's own content; the same pair identifies it here. `pruneStaleHookRuntimeFiles`
+ * backs up first because it acts on marked files at *unrecognized* paths,
+ * which are plausibly a consumer's adaptation that carried the marker
+ * along — a different case with a different risk.
+ */
+async function removeDeliveredHookRuntimeFiles(
+	targetDir: string,
+	dryRun: boolean
+): Promise<FileOutcome[]> {
+	const outcomes: FileOutcome[] = [];
+
+	for (const relative of HOOK_RUNTIME_FILES) {
+		const segments = relative.split("/");
+		const absolutePath = path.join(targetDir, ...segments);
+		if (!(await pathExists(absolutePath))) {
+			continue;
+		}
+
+		const contents = await readFileIfExists(absolutePath);
+		if (contents === null || !contents.includes(HOOK_RUNTIME_MARKER)) {
+			continue;
+		}
+
+		if (!dryRun) {
+			await fs.rm(absolutePath, { force: true });
+		}
+
+		outcomes.push({
+			relativePath: `.claude/hooks/${relative}`,
+			action: "removed",
+		});
+	}
+
+	return outcomes;
+}
+
+/** Lines `refreshHookRuntime` appends to the consumer's `.gitignore` — the hook state-file globs, so adopting a consumer never has to git-ignore them by hand. */
+const HOOK_STATE_GITIGNORE_LINES = [
+	".prism/architect-route-state.*.json",
+	".prism/architect-route-state.*.json.tmp",
+	".prism/git-gates-state.*.json",
+	".prism/git-gates-state.*.json.tmp",
+];
+
+/**
+ * Copies the zero-dependency hook runtime into the consumer's `.claude/hooks/`,
+ * merges its registration into the consumer's `.claude/settings.json` (never
+ * overwriting an existing registration block), and appends the two hook
+ * state-file globs to the consumer's `.gitignore`. Shared by `prism:adopt`
+ * and `prism:update` through this one `runUpdate` seam, so both inherit the
+ * same delivery path.
+ *
+ * The registration in `templates/install/.claude/settings.json` names a path
+ * inside the consumer's own repo, so the runtime has to be delivered there
+ * for the registration to point at anything — without this seam the hook is
+ * a silent no-op in every consumer.
+ */
+export async function refreshHookRuntime(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean,
+	hosts: HostName[]
+): Promise<FileOutcome[]> {
+	const sourceDir = path.join(prismRepoRoot, "scripts", "ai-skills", "hooks");
+	if (!(await pathExists(sourceDir))) {
+		return [];
+	}
+
+	const targetDir = path.join(consumerRepoRoot, ".claude", "hooks");
+
+	if (!hosts.includes("claude")) {
+		const outcomes = await removeDeliveredHookRuntimeFiles(targetDir, dryRun);
+		outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun, [])));
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun, false);
+
+		return outcomes;
+	}
+
+	const outcomes: FileOutcome[] = [];
+	for (const relative of HOOK_RUNTIME_FILES) {
+		const segments = relative.split("/");
+		const sourcePath = path.join(sourceDir, ...segments);
+		if (!(await pathExists(sourcePath))) {
+			continue;
+		}
+
+		outcomes.push(
+			await deliverHookRuntimeFile(
+				sourcePath,
+				path.join(targetDir, ...segments),
+				`.claude/hooks/${relative}`,
+				dryRun
+			)
+		);
+	}
+
+	outcomes.push(...(await pruneStaleHookRuntimeFiles(targetDir, dryRun)));
+
+	if (!dryRun) {
+		for (const entryPoint of HOOK_RUNTIME_ENTRY_POINTS) {
+			const entryPointPath = path.join(targetDir, entryPoint);
+			if (await pathExists(entryPointPath)) {
+				await fs.chmod(entryPointPath, 0o755);
+			}
+		}
+	}
+
+	await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, dryRun);
+	await appendHookStateGitignoreLines(consumerRepoRoot, dryRun);
+
+	return outcomes;
+}
+
+/**
+ * Matches a command string that *is* one of PRISM's own hook invocations,
+ * end to end: `node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs"` (or
+ * `git-gates.mjs`, the second entry point) followed by PRISM's `--flag=value`
+ * arguments and nothing else.
+ *
+ * Anchored at both ends on purpose. A substring test for the entry-point path
+ * also claims a command that merely mentions it — a consumer's wrapper
+ * (`bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'`) or a
+ * registration pointed at a `hook.mjs.bak` twin — and `mergeHookEventEntries`
+ * drops every entry it claims, so a loose match deletes consumer-authored
+ * registrations. Matching the invocation's whole shape rather than the exact
+ * current command strings keeps repeat runs idempotent across versions: a
+ * registration written by an older PRISM whose flags have since changed is
+ * still recognized as PRISM's and replaced, instead of surviving alongside its
+ * own replacement.
+ */
+export const PRISM_HOOK_COMMAND_PATTERN =
+	/^node "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/(?:hook|git-gates)\.mjs"(?: --[a-zA-Z]+=[\w.-]+)*$/;
+
+/**
+ * Reports whether a `hooks[eventName]` array entry is one of PRISM's own
+ * registrations, as opposed to a consumer-authored entry on the same event key.
+ */
+function isPrismOwnedHookEntry(entry: unknown): boolean {
+	if (typeof entry !== "object" || entry === null) {
+		return false;
+	}
+
+	const innerHooks = (entry as { hooks?: unknown }).hooks;
+	if (!Array.isArray(innerHooks)) {
+		return false;
+	}
+
+	return innerHooks.some(
+		(innerHook) =>
+			typeof innerHook === "object" &&
+			innerHook !== null &&
+			typeof (innerHook as { command?: unknown }).command === "string" &&
+			PRISM_HOOK_COMMAND_PATTERN.test(
+				(innerHook as { command: string }).command
+			)
+	);
+}
+
+/**
+ * Composes one event key's registration array: the consumer's own entries
+ * (anything that isn't a PRISM-owned entry per `isPrismOwnedHookEntry`),
+ * followed by PRISM's current entries for that event. Dropping the prior
+ * PRISM entries before appending the current ones is what keeps repeat runs
+ * idempotent — a stale PRISM entry never survives alongside its replacement,
+ * and no entry is appended twice.
+ */
+function mergeHookEventEntries(
+	targetEntries: unknown,
+	sourceEntries: unknown[]
+): unknown[] {
+	const consumerEntries = Array.isArray(targetEntries)
+		? targetEntries.filter((entry) => !isPrismOwnedHookEntry(entry))
+		: [];
+
+	return [...consumerEntries, ...sourceEntries];
+}
+
+/**
+ * Merges the hook registration block from `templates/install/.claude/settings.json`
+ * into the consumer's `.claude/settings.json`. The top-level `hooks` key is
+ * additive: an event name the consumer hasn't registered is added outright,
+ * and an event name both sides register (`PreToolUse`, `PostToolUse`, `PostCompact`) is
+ * composed within its array via `mergeHookEventEntries` rather than replaced
+ * — a consumer's own matcher group on that event survives the merge instead
+ * of being overwritten by PRISM's. Re-running this merge is idempotent:
+ * `mergeHookEventEntries` drops PRISM's own prior entries before appending
+ * the current ones, so no entry is ever duplicated.
+ *
+ * `deliver: false` composes each event key from the consumer's own entries
+ * alone — the same `mergeHookEventEntries` call with an empty incoming set —
+ * so removal is the drop half of the merge that already runs on every
+ * update, not a second ownership rule that could disagree with it. When a
+ * consumer never had a settings file and removal leaves nothing to merge
+ * in, no file is written — a repo that never received the hook stays
+ * exactly as it was.
+ */
+export async function mergeHookSettingsRegistration(
+	prismRepoRoot: string,
+	consumerRepoRoot: string,
+	dryRun: boolean,
+	deliver = true
+): Promise<void> {
+	const sourcePath = path.join(
+		prismRepoRoot,
+		"templates",
+		"install",
+		".claude",
+		"settings.json"
+	);
+	const sourceRaw = await readFileIfExists(sourcePath);
+	if (sourceRaw === null) {
+		return;
+	}
+
+	const sourceSettings = JSON.parse(sourceRaw) as {
+		hooks?: Record<string, unknown[]>;
+	};
+	if (!sourceSettings.hooks) {
+		return;
+	}
+
+	const targetPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const targetRaw = await readFileIfExists(targetPath);
+	const targetSettings = (
+		targetRaw === null ? {} : JSON.parse(targetRaw)
+	) as { hooks?: Record<string, unknown> };
+
+	const mergedHooks = { ...targetSettings.hooks };
+	for (const [eventName, sourceEntries] of Object.entries(
+		sourceSettings.hooks
+	)) {
+		mergedHooks[eventName] = mergeHookEventEntries(
+			targetSettings.hooks?.[eventName],
+			deliver ? sourceEntries : []
+		);
+	}
+
+	for (const [eventName, entries] of Object.entries(mergedHooks)) {
+		if (Array.isArray(entries) && entries.length === 0) {
+			delete mergedHooks[eventName];
+		}
+	}
+
+	const merged = { ...targetSettings, hooks: mergedHooks };
+
+	if (targetRaw !== null && JSON.stringify(JSON.parse(targetRaw)) === JSON.stringify(merged)) {
+		return;
+	}
+
+	if (targetRaw === null && Object.keys(mergedHooks).length === 0) {
+		return;
+	}
+
+	if (!dryRun) {
+		await fs.mkdir(path.dirname(targetPath), { recursive: true });
+		await fs.writeFile(targetPath, `${JSON.stringify(merged, null, "\t")}\n`, "utf8");
+	}
+}
+
+/**
+ * Appends `HOOK_STATE_GITIGNORE_LINES` to the consumer's `.gitignore`,
+ * creating the file if absent. Append-only and idempotent — a line already
+ * present is never duplicated, and nothing else in the file is touched.
+ *
+ * This is a narrow, deliberate reversal of the "PRISM does not write your
+ * `.gitignore` for you" policy (`install-layout.md § Consumer overlay`,
+ * corrected in the same PR stack — task C6): the hook's per-session state
+ * files would otherwise dirty every consumer's working tree on first use.
+ */
+export async function appendHookStateGitignoreLines(
+	consumerRepoRoot: string,
+	dryRun: boolean
+): Promise<void> {
+	const gitignorePath = path.join(consumerRepoRoot, ".gitignore");
+	const current = (await readFileIfExists(gitignorePath)) ?? "";
+	const existingLines = new Set(current.split("\n").map((line) => line.trim()));
+
+	const missing = HOOK_STATE_GITIGNORE_LINES.filter(
+		(line) => !existingLines.has(line)
+	);
+	if (missing.length === 0) {
+		return;
+	}
+
+	const separator = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+	const next = `${current}${separator}${missing.join("\n")}\n`;
+
+	if (!dryRun) {
+		await fs.writeFile(gitignorePath, next, "utf8");
 	}
 }
 
@@ -1039,9 +1641,10 @@ export function resolvePrismContentRoot(prismSourceRoot: string): string {
  */
 export async function assertSourceIsPlausible(
 	prismContentRoot: string,
-	pendingDeletionCount: number
+	pendingDeletionCount: number,
+	seedToConsumerRenames: Record<string, string> = {}
 ): Promise<void> {
-	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot);
+	const ownedPaths = await listPrismOwnedRelativePaths(prismContentRoot, seedToConsumerRenames);
 
 	if (ownedPaths.length === 0) {
 		throw new Error(

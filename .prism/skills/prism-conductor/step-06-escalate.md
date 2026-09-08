@@ -9,7 +9,7 @@ Three escalation axes, each with one trigger and one target. Set the lane's `esc
 
 **Disagreement fast-path.** A fixer who believes a finding is *wrong* escalates immediately to Winston (architect) to adjudicate — it does not burn strikes arguing with itself through repeated fix attempts. Winston rules with cold eyes: side with the reviewer (the fixer implements), side with the fixer (the finding is rejected with a one-line reason), or — only when the call genuinely needs you — escalate to the human axis. This matches the prism-review-loop ladder's disagreement fast-path, so Sol's gauntlet and the standalone loop resolve disagreements the same way.
 
-**One-directional autonomy rule.** A persona may always escalate *up* (`needs-human` under any policy, including `hobby`) but may never auto-clear *below* the policy ceiling (no `auto-cleared` when `launch` locked the gate). The human holds the ceiling; the owning persona exercises judgment beneath it.
+**One-directional autonomy rule.** A persona may always escalate *up* (`needs-human` under any policy, including `quick`) but may never auto-clear *below* the policy ceiling (no `auto-cleared` when `strict` locked the gate). The human holds the ceiling; the owning persona exercises judgment beneath it.
 
 ## Exit condition
 

@@ -20,10 +20,12 @@ existing personas — it never reviews, fixes, or writes findings itself, and th
 personas keep their own plan hygiene (Review Issues entries, History appends)
 exactly as if invoked by hand.
 
-**The run, in order:** opening orientation → self-review loop (findings → fixes
+**The run:** opening orientation → self-review loop (findings → fixes
 → re-review until clean) → phase-boundary gate → PR-review loop (findings →
 fixes → re-review until clean, threads resolved) → cleaner-path routing →
 closing re-orientation → scoreboard TLDR.
+
+Step 0: read [`skill-core.md`](../../../.prism/references/skill-core.md) — the shared startup and close contract.
 
 ## Opening Orientation Battery
 
@@ -41,27 +43,27 @@ it, and every pass reviews them at different bars:
   The work the loop was invoked to review. Full bar, every pass.
 - **Repair** — `git diff $loopBase HEAD`. Changes the loop itself authored.
   Regression-only bar (below).
-- **Ledger** — bookkeeping content as `.prism/rules/followup-scope.md` §
-  Bookkeeping findings are recorded, not gated defines it: the plan
-  sections a persona appends findings to rather than the sections an
-  author writes to declare scope, plus `.prism/lessons.md` and the
-  `Evidence` sub-bullets under `## Acceptance Criteria`. Not a review
-  target during the loop at any bar. Everything else in the plan file —
-  `## Implementation Tasks`, `## Decisions`, and the AC **criterion**
-  lines those Evidence sub-bullets hang from — is Subject content when
-  it falls inside the diff being reviewed; Ledger names only
-  bookkeeping, never the whole plan file. `## PR Readiness` is
-  persona-rewritten on every self-review pass
-  (`.prism/rules/branch-plan.md` defines it as "updated every time
-  `code-review-self` runs"), which is the same
-  persona-appends-versus-author-declares test the rest of the set
-  applies — reviewing it at Subject bar would flag the loop's own
-  bookkeeping as a finding on every pass. The loop's disposition is
-  stricter than the rule's, for its own reason: the rule keeps a
-  bookkeeping finding non-gating because it is not worth a round; the
-  loop declines to raise one at all because the loop wrote the text it
-  would be reviewing, and a pass that reviews its own output cannot
-  converge.
+- **Ledger** — a section a persona appends findings to, as opposed to a
+  section an author writes to declare scope: the plan's `## Review Issues`,
+  `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and
+  `## PR Readiness` entries, plus `.prism/lessons.md`, the PR body, and the
+  readiness line the loop itself emits. Not a review target during the loop
+  at any bar. Everything else in the plan file —
+  `## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria` — is
+  Subject content when it falls inside the diff being reviewed; Ledger names
+  only bookkeeping, never the whole plan file. `## PR Readiness` is
+  persona-rewritten on every self-review pass (`.prism/rules/branch-plan.md`
+  defines it as "updated every time `code-review-self` runs"), which is the
+  same persona-appends-vs-author-declares test the rest of this list applies
+  — reviewing it at Subject bar would flag the loop's own bookkeeping as a
+  finding on every pass.
+
+The PR body is exempt *during* the loop, not permanently — a standalone
+review pass checks it once, out of loop, before the human gate. Its
+verification block is what a human reads instead of re-running the probes, so
+the loop can converge clean while that block states counts and hashes an
+earlier round moved. PRISM PR #471 carried exactly that drift twice — outside
+a loop run, caught by a review pass over the body itself.
 
 **Why:** the review target used to be the live branch diff, which resolves at
 pass time — so every fix the loop landed joined the surface the next pass
@@ -71,7 +73,20 @@ one spent consecutive passes finding nothing in the feature under review
 while still producing findings, all of them in text the cycle had written;
 PRISM's own PR #446 (merged as `d28f2aaf`) recorded the same species three
 passes running against its plan file. The ledger for that run is at
-`.prism/plans/response-shape-contract.md` § Review Issues.
+`.prism/plans/response-shape-contract.md` § Review Issues. A third run
+outside this repo spent five of nine passes on meta churn before anyone
+noticed the subject had stopped producing findings.
+
+Two rules meet here and neither replaces the other. Each reviewer's
+§ Plan-file scope shrinks the set of plan observations that are findings at
+all — a plan is a finding only when it contradicts the diff. What survives
+that filter is mostly a contradiction in `## Implementation Tasks`,
+`## Decisions`, or `## Acceptance Criteria`, which the list above already
+calls Subject content — so the loop reviews it at the Subject bar like any
+other finding rather than capping it. The capping belongs to the Ledger row
+under **Disposition** below, and it runs over the bookkeeping sections
+whether or not § Plan-file scope would have called them findings. Two filters
+aimed at different sets, not an upstream filter feeding a downstream cap.
 
 **The repair bar — four anchors, name one or it is not a finding.** A
 repair-surface finding is admissible only when the reviewer names, and the
@@ -156,7 +171,7 @@ removes.
   Architect consultations and user pauses don't count — they're escalations,
   already bounded by their own ladder. Budget exhaustion triggers **Procedure D** —
   stop, report state, hand back.
-- **Subject-clean exit.** A phase closes when two consecutive passes return
+- **Subject-clean exit.** A phase closes when one pass returns
   zero admissible findings on the **subject** surface and every admitted
   repair-surface finding is closed. When it fires, stop the phase and write
   every outstanding non-subject observation into the scoreboard as a
@@ -280,8 +295,6 @@ and the `loopBase` the run froze at. The PR stays draft; tell the user it is
 ready for human testing and review. Merging and flipping ready-for-review
 remain the human's call (`.prism/rules/git-conventions.md` § Who merges).
 
-## Closing Re-Orientation Battery
-
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
 once, immediately before producing the scoreboard TLDR, so scope and
 verification are confirmed before closing.
@@ -298,6 +311,6 @@ Gauntlet-specific framing:
   budget hit on pass 1, all cleaner paths rejected) did this run hit, and did
   I handle each on purpose?
 - **Verification honesty** — for each phase I claim is clean, what is the
-  evidence (two consecutive subject-clean passes, a resolved-thread count,
+  evidence (one subject-clean pass, a resolved-thread count,
   the recorded anchor for each admitted repair-surface finding)? Where am I
   asserting without proof?

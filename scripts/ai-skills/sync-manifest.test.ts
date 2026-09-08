@@ -117,6 +117,32 @@ test("generateSyncManifest normalizes nested relative paths to forward slashes",
 	});
 });
 
+test("generateSyncManifest records a renamed seed file under its consumer name, hashed from the seed bytes", async () => {
+	await withContentRoot(async (contentRoot) => {
+		// The seed ships `SPEC.md.tmpl`, which classifies as neither prism- nor
+		// consumer-owned by name alone — `seedToConsumerRenames` is what makes it
+		// classify (and hash) as `SPEC.md`.
+		await writeContentFile(contentRoot, "SPEC.md.tmpl", "# seed spec\n");
+
+		const manifest = await generateSyncManifest(contentRoot, FIXED_OPTIONS, {
+			"SPEC.md.tmpl": "SPEC.md",
+		});
+
+		assert.deepEqual(Object.keys(manifest.files), ["SPEC.md"]);
+		assert.equal(manifest.files["SPEC.md"].contentHash, hashContent("# seed spec\n"));
+	});
+});
+
+test("generateSyncManifest without a renames table never classifies a seed-named file as PRISM-owned", async () => {
+	await withContentRoot(async (contentRoot) => {
+		await writeContentFile(contentRoot, "SPEC.md.tmpl", "# seed spec\n");
+
+		const manifest = await generateSyncManifest(contentRoot, FIXED_OPTIONS);
+
+		assert.deepEqual(Object.keys(manifest.files), []);
+	});
+});
+
 test("nested relative path round-trips: write, manifest key, re-resolve", async () => {
 	await withContentRoot(async (contentRoot) => {
 		// The full contract `prism:update` relies on: a manifest key is always

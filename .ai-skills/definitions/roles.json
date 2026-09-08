@@ -154,6 +154,16 @@
 			"id": "prism-skill-forge",
 			"type": "utility",
 			"routing": "named-only"
+		},
+		{
+			"id": "tdd",
+			"type": "utility",
+			"routing": "named-only"
+		},
+		{
+			"id": "devils-advocate",
+			"type": "utility",
+			"routing": "named-only"
 		}
 	]
 }

@@ -20,6 +20,7 @@ import {
 	resolveSelfPrismSource,
 	runUpdate,
 } from "./update";
+import { runDetectCli } from "./detect";
 import { runInitCli } from "./init";
 import { hashContent } from "./utils";
 import { SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
@@ -121,6 +122,13 @@ test("runInitCli is exported from init.ts and is a function", () => {
 	assert.equal(typeof runInitCli, "function");
 });
 
+test("runDetectCli is exported from detect.ts and is a function", () => {
+	// The CLI dispatcher routes "detect" to runDetectCli. This test confirms
+	// the export exists and has the right shape — the dispatch case cannot
+	// wire to undefined.
+	assert.equal(typeof runDetectCli, "function");
+});
+
 // --- self-location ---
 
 test("resolveSelfPrismSource returns the PRISM repo root (two dirs up from this file)", () => {
@@ -204,6 +212,13 @@ test("runUpdate refuses an empty PRISM source — the guard now fires through th
 			path.join(process.cwd(), ".ai-skills", "config.schema.json"),
 			"utf8"
 		)
+	);
+	// A real seed always ships this file; an empty renames table still lets the
+	// plausibility guard (not the rename loader) be what fires in this test.
+	await writeFile(
+		prismRepoRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
 	);
 
 	// The consumer records two PRISM-owned files; an empty source would wipe both.

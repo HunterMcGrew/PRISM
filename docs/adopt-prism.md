@@ -3,7 +3,7 @@ title: "Adopt PRISM into your repo"
 description: "How to adopt PRISM into a consumer repo — via npx (recommended), or via a local checkout for air-gapped environments and contributors."
 category: "getting-started"
 audience: "developer-user"
-last_updated: "2026-06-27"
+last_updated: "2026-09-02"
 ---
 
 # Adopt PRISM into your repo
@@ -23,7 +23,7 @@ npx @huntermcgrew/prism init
 
 `init` asks for your project name, ticket prefix, ticket system (`linear` or `github-issues`), and GitHub owner/repo, then writes the config. It detects your tech stack automatically. In CI or scripts, pass the same values as flags (`--project`, `--ticket-prefix`, etc.) instead of answering prompts.
 
-Once the config is written, run `adopt` below. After that, open Claude Code and run Atlas for the richer, AI-assisted onboarding (per-team rules, stack-specific guidance, anchor population).
+Once the config is written, run `adopt` below. After that, open Claude Code and run Atlas for the richer, AI-assisted onboarding (per-team rules, stack-specific guidance, and writing the config `update` renders into your persona roster).
 
 ## Recommended: npx
 
@@ -166,11 +166,26 @@ npx @huntermcgrew/prism doctor
 - **Config validity.** Same schema validation `adopt`/`update` run — the offending field is named directly.
 - **Git repo.** Confirms the target is inside a git repository.
 - **Sync state.** Reads `.prism/.sync-manifest.json` and reports how many recorded files are PRISM-owned vs. consumer-owned, which PRISM-owned files have diverged from their recorded base (paired with any `.bak` siblings already on disk), and which recorded files are missing entirely. A repo that hasn't run `adopt` yet reports no manifest as informational, not an error.
+- **Seed delivery.** For an already-adopted repo, confirms `.prism/architect/manifest.json` and `.prism/SPEC.md` are actually on disk under those names rather than their seed names (`manifest.stub.json`, `SPEC.md.tmpl`). A repo that adopted before this check existed gets an error with the exact `mv` command to fix it; a repo that hasn't adopted yet is skipped, since it was never delivered a renamed file to be missing.
 - **Version.** Compares the installed PRISM version against the latest published on npm. When the network is unavailable or the package hasn't been published yet, this check degrades to "unavailable" rather than failing the whole command.
 
 Unlike `adopt`/`update`, `doctor` doesn't stop at the first problem — every check runs regardless of what the others found, so you see everything wrong in one pass. It exits `0` when healthy and non-zero with the findings list printed when it isn't, which makes it a natural fit for a CI health-check step.
 
+If you adopted before the seed-delivery check above existed, expect `doctor` to flip red the first time you run it after updating — that's the check surfacing a gap this release closes, not a new problem with your repo. Run the `mv` it prints and re-run `doctor` to clear it.
+
 `pnpm prism:doctor` runs the same command from a local checkout.
+
+### `prism detect`
+
+`prism detect` reports your detected tech stack and doc layout as JSON:
+
+```bash
+npx @huntermcgrew/prism detect
+```
+
+It's read-only — it writes no file — so it's safe to run as many times as you like. The output has two keys: `stack` (languages, frameworks, and the evidence paths that led to each) and `docLayout` (the doc tool it found, and where your docs live).
+
+Atlas calls `detect` itself during onboarding to answer the same questions it would otherwise need you to answer by hand, so you'll rarely need to run this directly — it's here mainly for scripting a stack check outside of an Atlas session, or for sanity-checking what Atlas is about to see.
 
 ## Ejecting PRISM
 

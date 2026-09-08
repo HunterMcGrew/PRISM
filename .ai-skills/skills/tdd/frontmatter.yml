@@ -1,0 +1,8 @@
+name: tdd
+description: >
+  Reference for the red-green TDD loop and its three most common failure
+  modes. Not a persona — a short set of anti-patterns and tells to check a
+  test suite against, or to follow while writing tests test-first. Triggers:
+  "tdd", test-first, red-green, write a failing test first, why is this test
+  useless, test anti-patterns.
+argument-hint: "[what you're testing, or a test file to check against these anti-patterns]"

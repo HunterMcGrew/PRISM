@@ -1,4 +1,4 @@
-# PRISM Spec
+# Spec Tiers
 
 This document defines the tier hierarchy for the PRISM ecosystem — what counts as spec, what binds whom, and how changes get proposed and promoted. If you're not sure whether something is "the spec" or "my branch," this is where to check.
 
@@ -13,7 +13,7 @@ See also: [`.prism/spec/adrs/`](./spec/adrs/) — the canonical decision log for
 | 1    | Constitution          | `AGENTS.md`                       | Cross-model, cross-skill principles. Routing, accountability, compaction, core behavioral expectations |
 | 2    | Durable Rules         | `.prism/rules/`                  | Engineering standards that apply across all tickets — code standards, accessibility, comments, plans   |
 | 3    | Architectural Context | `.prism/architect/`              | Pattern guides loaded via `manifest.json` when agents touch matching paths                             |
-| 4    | Skill Behavior        | `.claude/skills/<skill>/SKILL.md` | Per-persona workflow, intro, role, handoffs, output format                                             |
+| 4    | Skill Behavior        | the host's skill directory        | Per-persona workflow, intro, role, handoffs, output format                                             |
 | 5    | Ticket-Scoped Plans   | `.prism/plans/<ticket-id>.md`    | Ephemeral per-ticket working memory — goal, decisions, tasks, history, review findings                 |
 
 Each tier binds a different scope, changes at a different cadence, and is owned by a different set of actors. SPEC.md itself — the meta-doc defining these tiers — changes at the same cadence and approval model as Tier 1 (`AGENTS.md`). Agents propose edits; humans accept.
@@ -52,13 +52,15 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **Change cadence:** Moderate. Architect files evolve with the codebase — new patterns emerge, old ones retire.
 
-### Tier 4 — Skill Behavior (`.claude/skills/<skill>/SKILL.md`)
+### Tier 4 — Skill Behavior (the host's skill directory)
 
 **What binds:** The skill itself. Other skills reference the role/routing table in AGENTS.md, not each other's internals.
 
+**Where it lives:** each host reads skills from its own directory, and every one of them is rendered from the same canonical source under `.ai-skills/skills/<skill>/`. Edit the canonical source — a rendered skill body is regenerated on the next update, and an edit made there disappears with it.
+
 **Who can change:** Humans approve skill edits. Agents propose.
 
-**How changes are proposed:** PR editing the SKILL.md file. Cross-skill framework changes (e.g. the "authors ship" pattern that affects Clove, Eli, Sage, Reese, and Briar together) are documented in an ADR first, then applied across all affected skills in the same PR.
+**How changes are proposed:** PR editing the canonical skill source. Cross-skill framework changes (e.g. the "authors ship" pattern that affects Clove, Eli, Sage, Reese, and Briar together) are documented in an ADR first, then applied across all affected skills in the same PR.
 
 **Change cadence:** Moderate. Per-skill workflow tweaks are common; cross-skill framework changes are rarer.
 
@@ -66,7 +68,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **What binds:** The ticket the plan is scoped to. A plan's `## Decisions` section is load-bearing for _that_ ticket — do not remove a documented decision without updating the section.
 
-**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/_toolkit/skills-ecosystem.md`.
+**Who can change:** Any skill working on the ticket, per the Plan Section Ownership table in `.prism/architect/_toolkit/plan-authoring.md`.
 
 **How changes are proposed:** Directly. Plans are ephemeral working memory; they do not need an ADR to edit.
 
@@ -93,16 +95,16 @@ Knowledge flows up the tiers as it earns durability.
 
 ## What Is NOT Spec
 
-These are in the `.claude/` tree but are not part of the spec hierarchy:
+These live alongside the spec but are not part of the hierarchy:
 
-- **Worktrees** (`.claude/worktrees/`) — local filesystem convenience. Temporary, not shared, not spec.
+- **Worktrees** — local filesystem convenience, wherever your host puts them. Temporary, not shared, not spec.
 - **Individual commits** — implementation details on a branch. The decision is spec (in the plan or ADR); the commit that carries it is not.
 - **In-progress plan edits** — a plan with `Status: proposed` AC or an open debugged issue is working state, not binding spec, until resolved.
 - **Ad-hoc conversation** — any reasoning or clarification that lives only in chat history. If it matters, it goes in the plan or lessons.
 - **Agent internal reasoning** — the "thinking" traces agents produce during a task. Not persisted, not spec.
 - **`.prism/design/mocks/`** — per-ticket Pixel deliverables. Scoped to the ticket they were produced for, not ecosystem guidance.
-- **`.claude/changelogs/`** — per-release Sage artifacts. Historical record, not binding.
-- **`.claude/docs/qa/`** — per-release Reese artifacts. Same shape as changelogs.
+- **Per-release changelog artifacts** — Sage output. Historical record, not binding.
+- **Per-release QA artifacts** — Reese output. Same shape as changelogs.
 
 If it's not in Tiers 1–5 and not an ADR, it's not part of the spec.
 

@@ -9,7 +9,7 @@ Two kinds of content sit in a PRISM install:
 - **Platform-agnostic canonical content** — rules, ADRs, architect docs, templates, references, plans, lessons. One copy lives at `.prism/<area>/`. This is the source.
 - **Platform-specific outputs** — Claude skills, Codex agents/skills, Cursor skills, native config files. These live under `.claude/`, `.codex/`, `.cursor/`, and `.agents/` per platform.
 
-`pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root.
+`pnpm prism:build` copies the read-only canonical areas into each platform dir so that each platform's auto-load mechanism surfaces the rules and architect docs without the agent having to Read them at session start. Every copied area carries a managed marker (`.ai-skill-generated`) at its root. In your own repo, `prism update` copies the same areas into the platform dirs for the hosts your `hosts` config key declares — all three when the key is absent, and a dropped host's copies taken back out on the next update (§ Steady-state persona-skill distribution below).
 
 Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style rule. `pnpm prism:build` writes byte-identical copies to `.claude/rules/code-comments.md`, `.codex/rules/code-comments.md`, and `.cursor/rules/code-comments.md`. Editing the canonical and rebuilding refreshes all three. Editing a platform copy directly is drift — `pnpm prism:check` flags it.
 
@@ -60,16 +60,16 @@ The committed-vs-ignored split inside each tool namespace is the consumer instal
 
 - `.cursor/skills/` is **committed** — Cursor consumers get skills via `git pull`, no install step.
 - `.codex/codex-config.toml` is **ignored** — per-user file (personality, projects, marketplaces) that would clobber consumer customization if committed.
-- `.agents/skills/` is **populated directly, not auto-gitignored** — every `prism adopt`/`prism update` renders the persona roster there directly (see § Steady-state persona-skill distribution below), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM does not write your `.gitignore` for you, and the render regenerates on every `prism update`.
+- `.agents/skills/` is **populated directly, not auto-gitignored** — every `prism adopt`/`prism update` renders the persona roster there directly (see § Steady-state persona-skill distribution below), the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It belongs in your `.gitignore` as machine-local output, not because population is unshipped. PRISM writes nothing into your `.gitignore` except the two hook state-file globs described under § Steady-state persona-skill distribution below, and the render regenerates on every `prism update`.
 - Per-tool `worktrees/` directories are **ignored** — operational state, not generated output.
 
 The rule for future tool integrations: in-repo destinations get sync; outside-repo destinations get install scripts. See PRISM's internal `.ai-skills/docs/compatibility.md` § Install-Script Scope for the full reasoning (monorepo-only, not shipped to consumers).
 
 ## The templates/install seed surface
 
-`templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. The PRISM build keeps it in parity automatically: non-curated canonical files (anything not classified `excluded`, `curated`, or `renamed` in `seed-curation.json`) are mirrored to the seed as raw bytes at build time. Curated files — those that intentionally ship a simplified consumer-facing version — stay author-maintained, and any new file must be classified in `seed-curation.json` before it ships.
+`templates/install/.prism/` is the consumer install seed — what a consumer repo receives at install time. The PRISM build keeps it in parity automatically: non-curated canonical files (anything not classified `excluded`, `curated`, or `renamed` in `seed-curation.json`) and files classified `mirrored` are written to the seed as raw bytes at build time. Curated files — those that intentionally ship a simplified consumer-facing version — stay author-maintained, and any new file must be classified in `seed-curation.json` before it ships.
 
-**Enforcement:** Seed drift is enforced by PRISM's drift check; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
+**Enforcement:** Seed drift is enforced by PRISM's drift check; `pnpm prism:check` remains the CI backstop — it fails if a non-curated canonical file diverges from the seed, catching any case the build-time mirror missed (e.g. a hand-edited seed file). The classification of every canonical file — which are excluded (not shipped), curated (intentionally different), mirrored (kept byte-identical to canonical), or renamed in the seed — is declared in `.ai-skills/definitions/seed-curation.json`. A `curated` file ships but is never refreshed, so a file the consumer must read the same words from belongs in `mirrored` instead. That manifest is the source of truth: any new canonical file must be classified and the manifest updated, or `prism:check` will fail. CI runs `pnpm prism:check` on every PR and main push, so forgotten seed writes are caught on a fresh checkout before merge.
 
 ## First-contact adoption: `prism init` then `prism adopt`
 
@@ -100,7 +100,7 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
 
-**What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with the consumer's own token map — `${PROJECT}` becomes the consumer's project name, `${TICKET_PREFIX}` becomes their ticket prefix, and so on — and writes the rendered output to each opted-in platform directory:
+**What you receive.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
 
 - `.claude/skills/<id>/SKILL.md` (Claude Code)
 - `.agents/skills/<id>/SKILL.md` (Codex)
@@ -110,11 +110,44 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard runs over the consumer's skill output roots immediately after the render and fails the update if any are found.
 
-**Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target.
+**Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target. The same cleanup fires a second way: drop a host from `hosts` and the next `prism update` sweeps that host's entire skill root, agent-definition root, Codex config, and platform content dir the same way — still gated on the marker, so your own files under those roots are never a delete target either — and a `codex-config.toml` you have replaced with your own content is left alone, since PRISM removes one only while it still carries the generated header it wrote. A persona leaving the roster and a host leaving `hosts` are the same cleanup at different granularity.
 
 **Consumer-authored skills are untouched.** The render writes only to roster-member IDs, and cleanup deletes only marker-bearing directories that are no longer in the roster. A consumer's own skills — whether they use a non-`prism-*` prefix or a custom-prefixed name — are never written or deleted by `prism update`.
 
 **Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism update` run on a repo already at the current PRISM version is a no-op across the roster.
+
+**The hook runtime rides the same update, when your `hosts` includes `claude`.** Alongside the skill roster, `prism update` copies PRISM's zero-dependency hook runtime into your `.claude/hooks/` and merges its `PreToolUse`, `PostToolUse`, and `PostCompact` registrations into your own `.claude/settings.json`. The merge composes within each event's array and replaces only PRISM's own prior entries, so hooks you registered yourself on the same event survive the update. The two hook state-file globs are appended to your `.gitignore` so you never have to add them by hand. `hosts` is optional in `.ai-skills/config.json` — leaving it out means every host, so an existing install keeps receiving the runtime with nothing to change. Drop `claude` from `hosts` and the next `prism update` takes the runtime and PRISM's registration entries back out, leaving your `.gitignore` lines in place.
+
+The hook announces; it never blocks. On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code only: no install path writes a Cursor or Codex settings file today.
+
+## Hook runtime
+
+**Delivery path.** `prism update` copies the hook runtime into your `.claude/hooks/` and merges its registrations into your `.claude/settings.json` — only when `hosts` in `.ai-skills/config.json` includes `claude` (absent means every host). Drop `claude` from `hosts` and the next update removes the runtime and PRISM's own registration entries instead of delivering them. Independent of that, Claude Code is the only host with a delivery path at all today — no install path writes a Cursor or Codex settings file.
+
+**How PRISM decides which hook entries in your settings are its own.** PRISM claims a `.claude/settings.json` hook entry only when its command matches the exact shape PRISM writes. If you wrapped or edited that command, the entry is yours — PRISM neither refreshes it nor removes it when you drop `claude` from `hosts`, which means it can be left pointing at a runtime file the update took away. Keeping the match strict is deliberate: a looser one would let a removal delete a wrapper you wrote. `prism doctor` covers the gap instead — it reports a registration whose command points at a missing file on every host mix, and names `prism update` as the fix.
+
+**State file.** The hook tracks which routed docs a session has read in `.prism/architect-route-state.<session-id>.json`, with a `.tmp` sibling while it writes. Both globs are appended to your `.gitignore` on adopt, so the files stay out of your commits. Those two lines are the only thing PRISM writes into your `.gitignore`; nothing else in it is touched. If the file is missing or unreadable the hook treats it as empty, which costs you a repeated announcement and nothing worse.
+
+**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` switches off the write gate specifically, leaving announcements on.
+
+## Write gate
+
+Touching a file your manifest routes to an architect doc is blocked until you have read that doc. Like the rest of the hook runtime, this reaches Claude Code only.
+
+**What triggers it.** A `Write`, an `Edit`, or a `Bash` command naming a path one of your manifest routes matches, where at least one doc that route names has not been read in this scope. One rule covers all three, so deleting or moving a routed file asks for the same read a write does. A subagent is its own scope and reads for itself, so a doc its parent read still gates the child. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
+
+**What clears it.** Read each doc the message names, in full. The message spells out the exact command — `cat <doc>`, one line per doc — because only a whole-file read counts. A `Read` with a line range, a `head`, or a `grep` that merely names the doc does not clear it. Read it, then retry the same call.
+
+The message never tells you which tool to use, and that is deliberate: a flagless `cat` is exempt from the gate, and a `Read` with no line range is not the kind of call it checks, so whichever tool you are already in can perform the read.
+
+**Shell commands are exempt only where the command is provably a read.** Nothing short of a real shell can say what an arbitrary command does to a path it names, so the gate never tries to guess. It treats every path-shaped word in the command as a possible target, and only lets one go when the entire command is a set of commands known to read and never write — `cat`, `grep`, `ls`, a read-only `git` subcommand and their kin — carrying only flags those commands cannot write through. Any remaining word that matches one of your routes is treated exactly like a write, and reading the doc clears it. The exemption exists because the remedy is a read: blocking a plain `cat` would block the very command the message asks for.
+
+That means a command that only reads sometimes asks for a doc read anyway: a pipeline, a `$VAR`, a `find`, or any binary the gate does not recognize cannot be proven read-only. The bias is deliberate — an unnecessary read costs you a minute once, while a missed write defeats the gate silently. Unlike a message you can retry past, the read clears that route for the rest of the scope.
+
+**Turning it off.** Set `PRISM_HOOK_DENY_DISABLE=1`, remove the `PreToolUse` entry from your `.claude/settings.json`, or delete `.claude/hooks/hook.mjs`. Any of the three works, and none of them is prevented — the gate is friction meant to be worth keeping, not a lock. `prism doctor` reports a removed or unregistered hook so the change is visible rather than silent, reports the Claude-only reach when the gate is installed and working, and warns if your `hosts` no longer names `claude` but a delivery is still on disk.
+
+**How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours and is never written or removed. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.
+
 
 ## Cross-reference convention
 

@@ -47,6 +47,24 @@ const CONSUMER_CONFIG_JSON = {
 	ticketSystem: { kind: "github-issues" },
 };
 
+/** `checkHostOutput` reads this via `loadPathDefinitions` to resolve each host's skills, agents, and content roots. */
+const CONSUMER_PATHS_JSON = {
+	canonical: {
+		skillsRoot: ".ai-skills/skills",
+		contentRoot: ".prism",
+		templatesContentRoot: "templates/install/.prism",
+	},
+	generated: {
+		claudeSkillsRoot: ".claude/skills",
+		claudeAgentsRoot: ".claude/agents",
+		codexSkillsRoot: ".agents/skills",
+		codexAgentsRoot: ".codex/agents",
+		codexConfigFile: ".codex/codex-config.toml",
+		cursorSkillsRoot: ".cursor/skills",
+		platformContentCopies: { claude: ".claude", codex: ".codex", cursor: ".cursor" },
+	},
+};
+
 /** A fetcher stub that always reports the lookup as unavailable — no test hits the network. */
 const NEVER_FETCH: NpmVersionFetcher = async () => null;
 
@@ -103,6 +121,14 @@ async function withTempRoots(
 		prismSourceRoot,
 		"package.json",
 		`${JSON.stringify({ name: "@huntermcgrew/prism", version: "9.9.9" }, null, "\t")}\n`
+	);
+	// `checkSeedDelivery` loads this; empty `renames` here since no default
+	// fixture uses a renamed seed file — tests exercising the rename write
+	// their own `renames` table over this.
+	await writeFile(
+		prismSourceRoot,
+		".ai-skills/definitions/seed-curation.json",
+		`${JSON.stringify({ excluded: [], curated: [], seedOnly: [], renames: {} }, null, "\t")}\n`
 	);
 
 	await writeFile(
@@ -330,6 +356,190 @@ test("runDoctor reports diverged files with their .bak siblings and missing file
 	});
 });
 
+// --- seed-delivery (renamed seed files never inverted before the fix) ---
+
+test("runDoctor stays healthy for a fresh, never-adopted repo even with a real (non-empty) renames table", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		// A production-shaped renames table, not the default empty-`{}` fixture —
+		// every other test in this file inherits the empty table, so only this
+		// one exercises checkSeedDelivery against a table with real entries.
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: {
+						"architect/manifest.json": "architect/manifest.stub.json",
+						"SPEC.md": "SPEC.md.tmpl",
+					},
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		// No sync manifest, no renamed files — this consumer has never run
+		// `prism adopt`, so there is nothing for `checkSeedDelivery` to report yet.
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, true, "a fresh repo that hasn't adopted yet is still a healthy adopt target");
+		assert.equal(
+			report.findings.some((f) => f.check === "seed-delivery"),
+			false,
+			"seed-delivery should not run before a sync manifest exists"
+		);
+	});
+});
+
+test("runDoctor flags a missing manifest.json with an mv remedy when the stale manifest.stub.json copy is still on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		// Simulates a repo that adopted before the fix — the seed's own name
+		// landed on disk, and the consumer-facing manifest.json never did.
+		await writeFile(consumerContentRoot, "architect/manifest.stub.json", "{}\n");
+		await writeConsumerManifest(consumerContentRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, false);
+		const finding = report.findings.find(
+			(f) => f.check === "seed-delivery" && f.message.includes("manifest.json")
+		);
+		assert.ok(finding, "expected a seed-delivery finding for the missing manifest.json");
+		assert.equal(finding?.severity, "error");
+		assert.ok(
+			finding?.message.includes("mv .prism/architect/manifest.stub.json .prism/architect/manifest.json"),
+			`expected an mv remedy, got: ${finding?.message}`
+		);
+	});
+});
+
+test("runDoctor reports no seed-delivery finding once manifest.json is present", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		await writeFile(consumerContentRoot, "architect/manifest.json", "{}\n");
+		await writeConsumerManifest(consumerContentRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(
+			report.findings.some((f) => f.check === "seed-delivery"),
+			false
+		);
+	});
+});
+
+test("runDoctor points at the install seed when an adopted consumer has neither the canonical file nor a stale seed-named copy", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await writeFile(
+			prismSourceRoot,
+			".ai-skills/definitions/seed-curation.json",
+			`${JSON.stringify(
+				{
+					excluded: [],
+					curated: [],
+					seedOnly: [],
+					renames: { "architect/manifest.json": "architect/manifest.stub.json" },
+				},
+				null,
+				"\t"
+			)}\n`
+		);
+		// Adopted (sync manifest present) but the .prism/ tree is corrupted —
+		// neither the canonical file nor the stale seed-named copy exists.
+		await writeConsumerManifest(consumerContentRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.equal(report.healthy, false);
+		const finding = report.findings.find(
+			(f) => f.check === "seed-delivery" && f.message.includes("manifest.json")
+		);
+		assert.ok(finding, "expected a seed-delivery finding for the missing manifest.json");
+		assert.equal(finding?.severity, "error");
+		assert.ok(
+			finding?.message.includes(
+				path.join(prismSourceRoot, "templates", "install", ".prism", "architect", "manifest.stub.json")
+			) && finding?.message.includes("as .prism/architect/manifest.json"),
+			`expected a copy-from-seed remedy, got: ${finding?.message}`
+		);
+		assert.ok(
+			finding?.message.includes("npx @huntermcgrew/prism update"),
+			`expected the npx remedy command, got: ${finding?.message}`
+		);
+	});
+});
+
+test("runDoctor degrades to a warning instead of throwing when seed-curation.json is missing", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const consumerContentRoot = path.join(consumerRepoRoot, ".prism");
+		await fs.rm(path.join(prismSourceRoot, ".ai-skills/definitions/seed-curation.json"));
+		await writeConsumerManifest(consumerContentRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const finding = report.findings.find((f) => f.check === "seed-delivery");
+		assert.ok(finding, "expected a seed-delivery finding for the missing seed-curation.json");
+		assert.equal(finding?.severity, "warning");
+		assert.ok(
+			finding?.message.includes("Could not check renamed seed files"),
+			`expected the degrade-to-warning message, got: ${finding?.message}`
+		);
+	});
+});
+
 // --- rule-load declarations (PRISM-417) ---
 
 test("runDoctor warns on a consumer rule missing load: with the file name and remedy, but stays healthy", async () => {
@@ -516,6 +726,869 @@ test("runDoctor reports no version finding when installed matches latest", async
 		assert.equal(
 			report.findings.some((f) => f.check === "version"),
 			false
+		);
+	});
+});
+
+test("runDoctor reports no out-of-date warning when the installed version is ahead of latest", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const fetchOlder: NpmVersionFetcher = async () => "8.0.0";
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: fetchOlder,
+		});
+
+		assert.equal(report.version.outOfDate, false);
+		assert.equal(
+			report.findings.some((f) => f.check === "version"),
+			false
+		);
+	});
+});
+
+test("runDoctor orders version fields numerically, not as text", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			prismSourceRoot,
+			"package.json",
+			`${JSON.stringify({ name: "@huntermcgrew/prism", version: "0.10.0" }, null, "\t")}\n`
+		);
+		const fetchNineSeries: NpmVersionFetcher = async () => "0.9.0";
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: fetchNineSeries,
+		});
+
+		assert.equal(report.version.installed, "0.10.0");
+		assert.equal(report.version.outOfDate, false);
+		assert.equal(
+			report.findings.some((f) => f.check === "version"),
+			false
+		);
+	});
+});
+
+// --- architect route integrity ---
+
+/** Writes an architect tree: a routing manifest plus the docs listed in `docs`. */
+async function writeArchitectFixture(
+	consumerRepoRoot: string,
+	manifest: Record<string, string | string[]>,
+	docs: string[]
+): Promise<void> {
+	const contentRoot = path.join(consumerRepoRoot, ".prism");
+	await writeFile(
+		contentRoot,
+		"architect/manifest.json",
+		`${JSON.stringify(manifest, null, "\t")}\n`
+	);
+
+	for (const doc of docs) {
+		await writeFile(contentRoot, `architect/${doc}`, `# ${doc}\n`);
+	}
+}
+
+function architectMessages(findings: Array<{ check: string; message: string }>): string[] {
+	return findings.filter((f) => f.check === "architect-route").map((f) => f.message);
+}
+
+test("runDoctor reports an architect doc on disk that no manifest route names", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": "_toolkit/routed.md" },
+			["_toolkit/routed.md", "_toolkit/orphan.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /_toolkit\/orphan\.md/);
+		assert.doesNotMatch(messages[0], /_toolkit\/routed\.md/);
+	});
+});
+
+test("runDoctor reports no architect finding when every doc on disk is routed", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": ["_toolkit/routed.md", "guides/writing.md"] },
+			["_toolkit/routed.md", "guides/writing.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
+	});
+});
+
+test("runDoctor reports a consumer manifest route anchored to nothing", async () => {
+	// The catch-all rejection in `pnpm prism:check` is a development gate and
+	// never runs in a consumer's repo, where `manifest.json` is the
+	// consumer's own file. Without this check a consumer or Atlas can author
+	// `**` and every edit in their tree denies unconditionally.
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "**": "_toolkit/routed.md" },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const catchAll = report.findings.filter(
+			(f) => f.check === "architect-route" && f.severity === "error"
+		);
+		assert.equal(catchAll.length, 1);
+		assert.match(catchAll[0].message, /matches every path/);
+		assert.equal(report.healthy, false);
+	});
+});
+
+test("runDoctor reports a consumer manifest route written as a brace glob", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ "src/**/*.{ts,tsx}": "_toolkit/routed.md" },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const braces = report.findings.filter(
+			(f) => f.check === "architect-route" && f.severity === "error"
+		);
+		assert.equal(braces.length, 1);
+		assert.match(braces[0].message, /brace glob/);
+		assert.equal(report.healthy, false);
+	});
+});
+
+test("runDoctor reports a manifest route naming a doc that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(
+			consumerRepoRoot,
+			{ ".prism/rules/**": ["_toolkit/routed.md", "_toolkit/gone.md"] },
+			["_toolkit/routed.md"]
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not on disk/);
+		assert.match(messages[0], /_toolkit\/gone\.md/);
+	});
+});
+
+test("runDoctor skips non-Markdown files in the architect tree, so a routing table is not an orphan", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			"{}\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(architectMessages(report.findings), []);
+	});
+});
+
+test("runDoctor treats a doc routed only by the toolkit base table as reached, not an orphan", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+			"_toolkit/base-only.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			`${JSON.stringify({ ".prism/templates/**": "_toolkit/base-only.md" })}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			architectMessages(report.findings),
+			[],
+			"the base table's route counts as routed"
+		);
+	});
+});
+
+test("runDoctor reports a base-table route naming a doc that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeArchitectFixture(consumerRepoRoot, { ".prism/rules/**": "_toolkit/routed.md" }, [
+			"_toolkit/routed.md",
+		]);
+		await writeFile(
+			path.join(consumerRepoRoot, ".prism"),
+			"architect/_toolkit/manifest.base.json",
+			`${JSON.stringify({ ".prism/templates/**": "_toolkit/base-gone.md" })}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = architectMessages(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not on disk/);
+		assert.match(messages[0], /_toolkit\/base-gone\.md/);
+	});
+});
+
+// --- hook registration ---
+
+function hookFindings(findings: Array<{ check: string; message: string }>): string[] {
+	return findings.filter((f) => f.check === "hook-registration").map((f) => f.message);
+}
+
+const SETTINGS_WITH_HOOK = {
+	hooks: {
+		PostToolUse: [
+			{
+				matcher: "Read",
+				hooks: [
+					{
+						type: "command",
+						command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+					},
+				],
+			},
+		],
+	},
+};
+
+const SETTINGS_WITH_BOTH_HOOKS = {
+	hooks: {
+		PreToolUse: [
+			{
+				matcher: "Write|Edit|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+			{
+				matcher: "Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+		],
+		...SETTINGS_WITH_HOOK.hooks,
+	},
+};
+
+/** Seeds both runtime entry points on disk, registered together, over a config carrying the given extra fields. */
+async function seedGitGatesConsumer(
+	consumerRepoRoot: string,
+	configExtras: Record<string, unknown>
+): Promise<void> {
+	await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+	await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+	await writeFile(
+		consumerRepoRoot,
+		".claude/settings.json",
+		`${JSON.stringify(SETTINGS_WITH_BOTH_HOOKS, null, "\t")}\n`
+	);
+	await writeFile(
+		consumerRepoRoot,
+		".ai-skills/config.json",
+		`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, ...configExtras }, null, "\t")}\n`
+	);
+}
+
+test("runDoctor reports a git-gates runtime on disk that settings.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/hooks/git-gates.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /git-gates\.mjs is present but .claude\/settings\.json registers no hook command/);
+	});
+});
+
+test("runDoctor says the git gates are delivered and off when the config has no hooks block", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, {});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 2, "the reach line and the git-gates line");
+		assert.match(messages[1], /Git gates are delivered and off/);
+		assert.ok(
+			report.findings
+				.filter((f) => f.check === "hook-registration")
+				.every((f) => f.severity === "info")
+		);
+	});
+});
+
+test("runDoctor reports each git gate's state and the commands the push gate will run", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, {
+			hooks: { commitCleanupPass: true, pushVerification: true },
+			commands: { lint: "pnpm lint" },
+		});
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 2);
+		assert.match(
+			messages[1],
+			/Git gates: commit cleanup pass on, push verification on \(lint: pnpm lint, format: unset\)/
+		);
+	});
+});
+
+test("runDoctor warns when push verification is on with no command to run", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await seedGitGatesConsumer(consumerRepoRoot, { hooks: { pushVerification: true } });
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const warning = report.findings.find(
+			(f) => f.check === "hook-registration" && f.severity === "warning"
+		);
+		assert.ok(warning, "the empty push gate is a warning, not an info line");
+		assert.match(warning!.message, /can never deny/);
+	});
+});
+
+test("runDoctor reports a hook runtime on disk that settings.json never registers", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /registers no hook command/);
+	});
+});
+
+test("runDoctor reports a hook registration pointing at a file that is not on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /which is not on disk/);
+	});
+});
+
+test("runDoctor keeps Windows path separators in a dead hook registration it reports", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		const windowsSettings = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: 'node "$CLAUDE_PROJECT_DIR\\.claude\\hooks\\hook.mjs" --tool=claude',
+							},
+						],
+					},
+				],
+			},
+		};
+
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(windowsSettings, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /\.claude/);
+		assert.doesNotMatch(messages[0], /claudehooks/);
+		assert.doesNotMatch(
+			messages[0],
+			/\\\\/,
+			"the path is reported as the consumer typed it, not with the JSON escapes still in"
+		);
+	});
+});
+
+test("runDoctor reports a settings.json that is not valid JSON", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", "{ not json\n");
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not valid JSON/);
+	});
+});
+
+test("runDoctor reports hook reach, not a problem, when the runtime and its registration agree", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /Claude Code only/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
+	});
+});
+
+test("runDoctor omits the hook reach line when the runtime is present but unregistered", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(consumerRepoRoot, ".claude/settings.json", `${JSON.stringify({}, null, "\t")}\n`);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(hookFindingsList.length, 1);
+		assert.equal(hookFindingsList[0].severity, "warning");
+		assert.equal(hookFindingsList.filter((f) => f.severity === "info").length, 0);
+	});
+});
+
+test("runDoctor reports the prose fallback, not a problem, on a repo whose hosts exclude Claude Code", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /not delivered on this repo's hosts/);
+		assert.match(messages[0], /codex/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "info");
+	});
+});
+
+test("runDoctor warns when hosts exclude Claude Code but PRISM's runtime is still on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/hooks/hook.mjs",
+			"// @prism-hook-runtime\nexport const label = \"delivered\";\n"
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const messages = hookFindings(report.findings);
+		assert.equal(messages.length, 1);
+		assert.match(messages[0], /run npx @huntermcgrew\/prism update/);
+		assert.equal(report.findings.find((f) => f.check === "hook-registration")?.severity, "warning");
+	});
+});
+
+test("runDoctor warns when hosts exclude Claude Code but PRISM's registration is still in settings", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(hookFindingsList.length, 1);
+		assert.equal(hookFindingsList[0].severity, "warning");
+		assert.match(hookFindingsList[0].message, /registration in \.claude\/settings\.json is/);
+	});
+});
+
+test("runDoctor ignores a consumer's own hook entry when deciding whether PRISM's registration is stale", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		const consumerOwnSettings = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Write",
+						hooks: [{ type: "command", command: "./scripts/consumer-audit.sh" }],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(consumerOwnSettings, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		assert.equal(
+			hookFindingsList.filter((f) => f.severity === "warning").length,
+			0,
+			"a consumer's own hook entry is not PRISM's, so it does not read as a stale delivery"
+		);
+	});
+});
+
+test("runDoctor warns on a dead registration even when hosts excludes Claude Code", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		// A hand-edited command that mentions the runtime path but no longer
+		// matches PRISM_HOOK_COMMAND_PATTERN — update.ts's removal branch does
+		// not claim it, so it survives dropping claude from hosts while the
+		// runtime file it points at is gone.
+		const handEditedRegistration = {
+			hooks: {
+				PostToolUse: [
+					{
+						matcher: "Read",
+						hooks: [
+							{
+								type: "command",
+								command: "bash -c 'my-lint && node .claude/hooks/hook.mjs --tool=claude'",
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(handEditedRegistration, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const deadRegistration = hookFindingsList.find((f) => /which is not on disk/.test(f.message));
+		assert.ok(
+			deadRegistration,
+			"a registration pointing at a missing file is wrong on every host mix, not only when claude is in hosts"
+		);
+		assert.equal(deadRegistration!.severity, "warning");
+	});
+});
+
+test("runDoctor treats an unreadable config as declaring every host", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await fs.rm(path.join(consumerRepoRoot, ".ai-skills", "config.json"), { force: true });
+		await writeFile(consumerRepoRoot, ".claude/hooks/hook.mjs", "// runtime\n");
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(SETTINGS_WITH_HOOK, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hookFindingsList = report.findings.filter((f) => f.check === "hook-registration");
+		const reach = hookFindingsList.find((f) => f.severity === "info");
+		assert.ok(reach, "the reach info fires — an unreadable config resolves to every host");
+		assert.match(reach!.message, /Claude Code only/);
+		assert.equal(
+			hookFindingsList.filter((f) => f.severity === "warning").length,
+			0,
+			"the stale-delivery warning does not fire when the config could not be read"
+		);
+	});
+});
+
+test("formatDoctorReport still prints No issues found. alongside an info-only finding", async () => {
+	const report = {
+		findings: [
+			{
+				check: "hook-registration" as const,
+				severity: "info" as const,
+				message: "The hook runtime is installed and registered.",
+			},
+		],
+		syncState: { manifest: null },
+		version: { installed: "1.0.0", latest: null, outOfDate: false },
+		healthy: true,
+	};
+
+	const rendered = formatDoctorReport(report);
+	assert.match(rendered, /No issues found\./);
+	assert.match(rendered, /\[INFO\] hook-registration:/);
+});
+
+test("runDoctor stays silent when a repo has neither a hook runtime nor a registration — the check reports each half against the other, so their joint absence is outside what it can see", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["claude"] }, null, "\t")}\n`
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(hookFindings(report.findings), []);
+	});
+});
+
+// --- host-output check ---
+
+test("runDoctor warns when a host the config excludes still has PRISM's output on disk", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/skills/prism-sample/SKILL.md",
+			"# Sample\n"
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".claude/skills/prism-sample/.ai-skill-generated",
+			""
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		const hostOutputFindings = report.findings.filter((f) => f.check === "host-output");
+		assert.equal(hostOutputFindings.length, 1);
+		assert.equal(hostOutputFindings[0].severity, "warning");
+		assert.match(hostOutputFindings[0].message, /"claude"/);
+	});
+});
+
+test("runDoctor reports no host-output finding when the tree matches the declared hosts", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/config.json",
+			`${JSON.stringify({ ...CONSUMER_CONFIG_JSON, hosts: ["codex"] }, null, "\t")}\n`
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		// No output under .claude/ or .cursor/ — only the declared host, codex,
+		// has anything on disk.
+		await writeFile(
+			consumerRepoRoot,
+			".agents/skills/prism-sample/SKILL.md",
+			"# Sample\n"
+		);
+		await writeFile(
+			consumerRepoRoot,
+			".agents/skills/prism-sample/.ai-skill-generated",
+			""
+		);
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			report.findings.filter((f) => f.check === "host-output"),
+			[]
+		);
+	});
+});
+
+test("runDoctor reports no host-output finding when the config declares no hosts", async () => {
+	await withTempRoots(async ({ prismSourceRoot, consumerRepoRoot }) => {
+		await writeFile(
+			consumerRepoRoot,
+			".ai-skills/definitions/paths.json",
+			`${JSON.stringify(CONSUMER_PATHS_JSON, null, "\t")}\n`
+		);
+		// Output under every host's root — legitimate when hosts is absent, since
+		// the resolver's default is every host.
+		for (const skillsRoot of [".claude/skills", ".agents/skills", ".cursor/skills"]) {
+			await writeFile(consumerRepoRoot, `${skillsRoot}/prism-sample/SKILL.md`, "# Sample\n");
+			await writeFile(consumerRepoRoot, `${skillsRoot}/prism-sample/.ai-skill-generated`, "");
+		}
+
+		const report = await runDoctor({
+			consumerRepoRoot,
+			prismSourceRoot,
+			npmVersionFetcher: NEVER_FETCH,
+		});
+
+		assert.deepEqual(
+			report.findings.filter((f) => f.check === "host-output"),
+			[]
 		);
 	});
 });

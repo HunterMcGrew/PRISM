@@ -324,7 +324,7 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 
 **Why:** 2026-07-21 (Sol backlog run) — Sol dispatched Winston to author six plans with an explicit "do not commit" bound, then dispatched worktree-isolated implementation lanes that branch from `origin/main`. The plan files sat untracked in the shared checkout, invisible to a fresh worktree. One Clove lane copied its plan in as a workaround; the next correctly returned `needs-replan` ("the plan file does not exist anywhere in this worktree"). The `needs-replan` was Sol's dispatch error, not a plan defect — cost a repair segment (chore-commit the five plans to main, then re-dispatch the stalled lane).
 
-**How to apply:** Any artifact a worktree-isolated lane must read — a plan, a fixture, a config — has to exist on `origin/main` (or the lane's base ref) at dispatch time. When a decompose segment writes plans and an implementation segment consumes them, commit-and-push the plans between the two segments; don't dispatch the consumer against uncommitted state. The `isolation: 'worktree'` base is `origin/main`, not the shared working tree, so uncommitted-but-present is the same as absent from the lane's view. Exclude any plan already committed on a separate open-PR branch from the between-segment chore-commit, or it conflicts at that PR's merge.
+**How to apply:** Any artifact a worktree-isolated lane must read — a plan, a fixture, a config — has to exist on `origin/main` (or the lane's base ref) at dispatch time. When a decompose segment writes plans and an implementation segment consumes them, commit-and-push the plans between the two segments; don't dispatch the consumer against uncommitted state. The `isolation: 'worktree'` base is `origin/main`, not the shared working tree, so uncommitted-but-present is the same as absent from the lane's view. Exclude any plan already committed on a separate open-PR branch from the between-segment chore-commit, or it conflicts at that PR's merge. Absence is not always how the lane experiences it: on 2026-08-18 (opus5-port PR 2A) a lane read the uncommitted amendment through an absolute path that resolved into the shared main checkout, got real content, and built a full PR against it before noticing its own worktree carried the superseded version — so the consuming lane should resolve plan paths relative to its own root and treat a plan absent from `git ls-files` as absent, however a read outside the tree happens to succeed.
 
 ## Sol routes framework-answered calls itself; reserve human questions for genuine gates
 
@@ -409,3 +409,105 @@ PRISM was extracted from a personal install of Thrive's `.claude/` toolkit. The 
 **Why:** 2026-08-13 (PRISM-opus5-port, PR #449) — in one review pass, the reviewer fired both halves of the same failure: it prescribed an exclusion regex anchored on `^\./` that never matches on this repo (`grep -r` emits no `./` prefix — the fixer tested it and found it returned 47 lines while reading as verified), and it asserted that ADR-0006 ships to consumers without checking (`templates/install/.prism/spec/` holds only `TEMPLATE.md` and `README.md`), which would have relocated a dangling pointer rather than fixed it. A third prescription — "these two carve-outs are duplicates, drop one" — was adopted without testing and deleted a live carve-out, producing a Major in the next review pass.
 
 **How to apply:** when a review names a specific remedy, execute the remedy before writing it down; if it can't be executed, treat the finding as real and the remedy as unverified. This is the reviewer-side twin of the existing unmeasured-remedy lesson (§ A review finding that prescribes a performance fix benchmarks the fix, not just the fault).
+
+## A gate that already exists for a bug class is forgotten more quietly than a gate that never existed
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — `verify-pack-parity.ts` exists precisely to catch "new runtime-read file missing from the tarball," cites the 0.7.1 `config.schema.json` incident in its own header, and `install-layout.md` § Packaging-parity gate repeats the instruction. A new hard runtime read (`.ai-skills/definitions/seed-curation.json`) shipped anyway without being registered, because forgetting produces no local symptom — `pnpm prism:check` stayed green through the whole branch, and Eric's PR review was the only thing between it and a broken published package.
+
+**How to apply:** Treat "does this change add a file the CLI reads from `prismSourceRoot` at runtime?" as a question the change answers, not a question a gate asks. Register the path in `RUNTIME_READ_PATHS` in the same commit as the `import`, and prove the gate now catches its deletion (remove the `files` entry, run `pnpm run prism:verify-pack`, expect exit 1) rather than trusting a green run — a green run is what the un-updated gate produces too.
+
+## A test suite where every fixture shares one simplified default is blind to whatever that default hides
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460, Briar Major) — every fixture in `doctor.test.ts` seeded `seed-curation.json` with `renames: {}`, so `checkSeedDelivery`'s loop ran zero iterations in every test — including the test whose stated contract is "a fresh repo that hasn't run `prism adopt` is still a healthy target for it." Against the real production table the check reported a never-adopted consumer as unhealthy and prescribed the wrong command. No individual test looked wrong; the suite was testing a shape of the world that does not exist.
+
+**How to apply:** When a suite's shared setup supplies a config value, at least one fixture carries the production-shaped version of it, not the empty or minimal one. The tell to watch for: a shared default that makes a loop, branch, or lookup a no-op — that default silences every test in the suite at once, and the shared setup is the last place anyone looks.
+
+## Skipping the architect pass silently skips whatever the architect would have written into the plan
+
+**Why:** 2026-08-18 (prism-consumer-delivery-fixes, PR #460) — Sol dispatched the lane straight to Clove. `branch-plan.md`'s template puts `## Acceptance Criteria` under Winston's authorship, so the plan shipped with none, Eric's Spec axis ran partial with nothing to grade against, and the PR carries `confidence:needs-judgment` instead of `high`. The gap surfaced five review rounds in, at close, where backfilling AC against a finished diff would have been theater.
+
+**How to apply:** When a dispatch skips a lifecycle persona, name at dispatch time what that persona would have produced and whether the lane proceeds without it — the cost of the omission is cheapest to weigh before the work starts, and invisible after it ships. If the gap is only noticed at close, record it rather than backfilling: an artifact written against an already-reviewed diff cannot fail, so it hides the gap instead of closing it.
+
+## A safety net that writes into the directory it scans will re-select its own output
+
+**Why:** 2026-08-18 (opus5-port PR 2A, PR #461) — a `.bak`-before-delete step was added to `pruneStaleHookRuntimeFiles` to make a marker-keyed deletion recoverable. `backupConsumerFile` copies bytes verbatim, so the backup inherited the marker and landed inside the directory prune enumerates: the next run pruned the backup, backed *it* up, and the name grew one `.bak` per run forever. The fix's own docstring still carried the sentence that had justified the missing filter — "a backup is only ever taken of a file that lacked the marker" — restated intact while the fix invalidated it.
+
+**How to apply:** When a fix writes an artifact into a set that some scan selects from, walk the scan against the artifact before writing the fix — the second iteration is where the loop shows, and one iteration always looks correct. Where a comment states the invariant that makes a missing check safe, that sentence is part of the change: if the code no longer holds it, rewrite it in the same commit rather than leaving a restated invariant the code has stopped honoring.
+
+## A contract that spans two steps is invisible to a review that reads each step alone
+
+**Why:** 2026-08-18 (opus5-port PR 2A, PR #461) — announce-once marked a doc "announced" from the set the resolver *named*, while `formatNag` then truncated the emission to a byte ceiling. Each function is correct read on its own; together they silenced every truncated doc for the rest of the session without ever emitting its name. Measured on a wide fan-out: 382 named, 500 marked, 118 silenced, and a later read of a silenced doc returned nothing. Self-review, the doc-staleness sweep, and ratification all passed over it — the defect lives in the seam, so no single-function read shows it.
+
+**How to apply:** where one step's full output feeds a second step that caps, filters, or truncates it, read the producing step and the consuming step side by side and name the invariant that ties them ("marked only if emitted"). Then test the boundary, not just the happy path — a fan-out large enough to trigger the cap is the case that separates the two steps' behavior, and every smaller case passes either way.
+
+---
+
+## A defect class enumerated against one list is tested on one axis only
+
+**Why:** 2026-08-19 (opus5-port PR 2C, PR #463) — a self-review found a stale `**Verify:**` line, then swept the plan's other verify lines by walking `seed-curation.json`'s `curated` list and concluded it was the last survivor. PR review found two more the sweep could not see: one named a superseded directory that never got created (the files were not curated at all), and one had the wrong grep scope. The list was a proxy for one axis — canonical measured while a curated twin goes unmeasured — and the real class was broader: the verify line was not re-derived when the task changed underneath it. Re-deriving against the class rather than the list turned up two further instances nobody had reported.
+
+**How to apply:** when a finding suggests a class, name the class in words before enumerating, then check each candidate against the words. If the sweep's method is "grep a list," ask what the list is a proxy for and what a defect on a different axis would look like. And run each verify command literally — a command that errors on a nonexistent path is indistinguishable from one that passes, until you run it.
+
+---
+
+## A comment that justifies a rule by listing the shapes it governs will be wrong
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — one JSDoc paragraph defending a whole-command credit rule named two positions the rule governs; self-review probed eight. The rewrite named two more and self-review found six others. An inline comment two functions away justified a token-recovery change by naming the two tokens it dropped; measurement over 22 shapes found ten, three of them routed. The reviewer's own suggested replacement ("every lost token is a drive-qualified spelling") failed the same way against a seventeen-shape harness. Four enumerations, four too narrow, in one range — while the sibling paragraph that stated its property without enumerating needed no correction across the whole PR.
+
+**How to apply:** when a comment explains why a rule is written the way it is, write the property and one example, not the set. If you catch yourself listing the cases a rule covers, the list is the draft and the sentence that covers all of them is the comment. Where the property has a real bound, state the bound — "every dropped token keeps a `:` inside it" is checkable and closed; "the ones we lose are all X" is a sample.
+
+---
+
+## A measurement over this repo's fixtures cannot bound a claim about code that ships elsewhere
+
+**Why:** 2026-08-21 (opus5-port PR 2D, PR #470) — three independent measurements of a token-recovery loss reported zero routed losses: a seventeen-shape harness, a twenty-two-shape harness, and the safety closure they supported. All three scored routedness against PRISM's own manifest, whose patterns are exact, directory-prefix, or prefix-`**` — the shapes where the first colon-piece always rescues the route. The hook ships into consumer repos, where a manifest pattern is whatever the consumer wrote, and a suffix-anchored glob matches a colon-named file the gate then never fires on. Enumerating harder would not have found it, because every enumeration was scored against the same manifest; it was found by reading the matcher's compiled form, where `*` becomes `[^/]*` and admits `:`.
+
+**How to apply:** when the code under test ships somewhere else, this repo's fixtures are one deployment, not the domain — vary the fixture as well as the input, or state the bound as "against this repo's manifest" and stop there. Better still, when a predicate decides the outcome, read the predicate: a claim about what a route can match is answered by the six characters the pattern compiles to, not by a corpus of inputs run through it.
+
+---
+
+## A refactor that moves an existing check under a new condition narrows its reach silently
+
+**Why:** 2026-09-02 (prism-477-followup-hook-optin, PR #480) — a plan Decision stated that a hand-edited hook registration surviving a removal is reported by doctor's existing dead-registration warning, and used that as the reason the removal's match could stay strict. The same PR then restructured `checkHookRegistration` around the new `hosts` gate and moved that pre-existing check inside `if (hosts.includes("claude"))`, so it stopped running on exactly the host mix the Decision was about. Every test still passed — the check was correct on the paths the suite covered — and self-review passed over it; Eric's PR review caught it.
+
+**How to apply:** when a refactor moves an existing check under a new branch, treat the check's reach as changed until proven otherwise, and re-read every prose claim about what that check covers — the plan's own Decisions included. The tell is a check that was unconditional before the change and is not after it; add the test for the combination the new branch excludes, since the existing tests were written when no branch existed to exclude anything.
+
+---
+
+## A site with no opt-in object cannot be found by grepping the name of the site that has one
+
+**Why:** 2026-09-02 (prism-477-followup-skills-hosts, PR #482) — PR #480 gated hook delivery on `hosts` and recorded the skill roster as the one remaining ungated fanout, having searched for the `optedIn` object that identifies it. The consumer path had a second ungated fanout: `refreshPlatformDirs`, which copies rules, architect docs, and templates into all three platform dirs through `buildPlatformDirs`. It carried no `optedIn` object at all, so no widening of that search would ever have reached it — the token the search keyed on was exactly what the missed site lacked. It surfaced by walking every write reachable from `runUpdate`, the one seam the consumer path goes through.
+
+**How to apply:** when completing an opt-in or feature gate, enumerate the sites from the call graph of the entry point, not from a search for the marker the known sites carry. A grep finds sites that already participate in the mechanism; the ones that need adding are, by definition, the ones with nothing to match. Name the single seam every write passes through, list what it reaches, and gate from that list. Same completeness family as the grep-narrower-than-the-defect-class lesson above, with the opposite remedy: there is no pattern to widen, so the enumeration has to come from structure.
+
+---
+
+## A bug report's inventory is a snapshot of where the reporter looked, not a boundary on the defect
+
+**Why:** 2026-09-02 (PRISM-481, PRs #483/#484) — issue #481 listed the consumer-unreachable commands Atlas names and proposed three CLI subcommands as the fix. Two of the three already had consumer-reachable equivalents (`prism doctor` already exposes config validation standalone), and the defect that actually broke every npm install was absent from the report: anchor substitution rewrote `.ai-skills/skills/**` in place, which in a consumer install sits inside `node_modules`, so no anchor had ever reached an npm consumer. It surfaced by tracing the render pipeline out from `runUpdate`, not by working the report's list.
+
+**How to apply:** treat a report's inventory as evidence a defect exists, not as its edge. Check each proposed remedy against what already ships — a subcommand duplicating an existing one is a permanent public surface bought for nothing — and walk the pipeline the symptom implicates end to end before adopting the proposed shape.
+
+---
+
+## Prose naming who performs a step goes stale when a refactor moves the step, and no symbol search finds it
+
+**Why:** 2026-09-02 (PRISM-481, PR #484) — moving anchor substitution out of Atlas and into the render pass left three sentences still crediting Atlas with running it: `anchor-substitution.md` § Anchor schema, `shared.md`'s Procedure D, and `shared.md`'s opening persona description. AC-9's grep passed over all three, because it searched the deleted function names and each stale sentence names only an actor. Plan close found a fourth in `_toolkit/onboarding.md`'s checkpoint-density section. Third occurrence of the class in one session — see the PRISM-477 entry above, where a refactor moved a check under a new branch and the plan's own Decision still described its old reach.
+
+**How to apply:** the removal-and-rename-completeness section of the always-on code standards already owns this; it reads as being about a changed *predicate*, and this is a changed *actor*. When a change moves a step from one component to another, run a prose search for the old performer's name across every doc describing the step, alongside the symbol grep rather than instead of it — a grep for deleted symbols cannot see a sentence whose only stale token is a persona's name.
+
+---
+
+## Under `shell: true`, a missing command is never `ENOENT` — the shell reports it as its own exit status
+
+**Why:** 2026-09-07 (issue #488) — the push gate's fail-open path was specified on `result.error` carrying `ENOENT`, and the test row for a nonexistent lint command expected an allow. Under `spawnSync(cmd, { shell: true })` the shell starts fine and the miss is the shell's own exit: `127` on every POSIX shell, `1` plus `is not recognized as an internal or external command` on `cmd.exe` — not `9009`, which is only what `%ERRORLEVEL%` shows interactively. The first smoke run denied instead of allowing.
+
+**How to apply:** when a spec says "spawn error" for a `shell: true` command, read it as "the shell's not-found report" and detect that on `status` and `stderr`; keep the `result.error` branch for `ETIMEDOUT`, which `spawnSync` does report.
+
+---
+
+## A `spawnSync` child killed on timeout can hold its cwd open on Windows past the call's return
+
+**Why:** 2026-09-07 (issue #488) — the git-gates test fixture removed its temp repo right after the timeout case and hit `EBUSY: resource busy or locked, rmdir` about one run in three on Windows; the killed `node -e "setTimeout(…)"` child had not released the directory yet.
+
+**How to apply:** a fixture that spawns a process with `timeout` and then removes the directory it ran in passes `maxRetries`/`retryDelay` to `fs.rm`; a bare `fs.rm` is a flake waiting for the CI Windows leg.

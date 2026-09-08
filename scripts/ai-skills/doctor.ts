@@ -24,21 +24,52 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { COPIED_CONTENT_AREAS } from "./build";
+import { GENERATED_MARKDOWN_HEADER_LINE } from "./generate-skills";
 import { validateConsumerConfigAgainstSchema } from "./lib/config-schema-validate";
+import { resolveHosts, type HostName } from "./lib/hosts";
+import { findBraceGlobKeys, findCatchAllKeys } from "./lib/manifest-routes";
 import { assertInsideGitRepo, parseConsumerFlag, resolveConsumerRoot } from "./lib/consumer-root";
 import { isDirectCliEntry } from "./lib/cli-entry";
 import { classifyPath } from "./ownership";
 import { parseRuleLoad } from "./rule-load";
-import { OVERLAY_SUBPATH, resolvePrismSource, resolveSelfPrismSource } from "./update";
+import { loadSeedCurationRenames } from "./lib/seed-curation";
+import {
+	HOOK_RUNTIME_MARKER,
+	OVERLAY_SUBPATH,
+	PRISM_HOOK_COMMAND_PATTERN,
+	resolveConsumerSkillTargetRoots,
+	resolvePrismSource,
+	resolveSelfPrismSource,
+} from "./update";
 import { loadSyncManifest, SYNC_MANIFEST_FILENAME, type SyncManifest } from "./sync-manifest";
-import { hashFile, pathExists, readFileIfExists } from "./utils";
+import {
+	buildPlatformDirs,
+	GENERATED_HEADER_LINE,
+	hashFile,
+	listDirectories,
+	loadPathDefinitions,
+	MANAGED_MARKER,
+	type PathDefinitions,
+	pathExists,
+	readFileIfExists,
+} from "./utils";
 
 const NPM_REGISTRY_URL = "https://registry.npmjs.org/@huntermcgrew/prism";
 const NPM_FETCH_TIMEOUT_MS = 3000;
 
 /** A single named health finding. `check` identifies which section produced it. */
 export interface DoctorFinding {
-	check: "config" | "git-repo" | "sync-manifest" | "version" | "rule-load";
+	check:
+		| "config"
+		| "git-repo"
+		| "sync-manifest"
+		| "seed-delivery"
+		| "version"
+		| "rule-load"
+		| "architect-route"
+		| "hook-registration"
+		| "host-output";
 	severity: "error" | "warning" | "info";
 	message: string;
 }
@@ -57,7 +88,7 @@ export interface VersionReport {
 	installed: string;
 	/** `null` when the npm lookup could not complete — network, timeout, 404, or unpublished. */
 	latest: string | null;
-	/** True when both versions are known and differ. */
+	/** True when both versions parse and the installed one is genuinely older. */
 	outOfDate: boolean;
 }
 
@@ -164,6 +195,75 @@ function checkGitRepo(consumerRepoRoot: string): DoctorFinding[] {
 			},
 		];
 	}
+}
+
+/**
+ * Reports a consumer `.prism/` missing a file `seed-curation.json` renames on
+ * the seed side (`architect/manifest.json`, `SPEC.md`). A repo adopted before
+ * `prism adopt`/`prism update` learned to invert that rename copied the seed
+ * file verbatim under its seed name — the consumer has
+ * `architect/manifest.stub.json` or `SPEC.md.tmpl` on disk and never got the
+ * file it was told it had. `prism adopt` refuses to re-run on an established
+ * repo (`assertConsumerIsEstablished`), and `architect/manifest.json` is
+ * consumer-owned so `prism update` never writes it either — this check is the
+ * only path that surfaces the `architect/manifest.json` gap for an
+ * already-adopted repo. `SPEC.md` is prism-owned, so a stale `SPEC.md.tmpl`
+ * self-clears on the next `prism update`; this check still flags it in the
+ * meantime so the gap doesn't sit silent until then.
+ *
+ * Never writes — `doctor` reports, it doesn't repair (see file header). When
+ * the stray seed-named copy is still on disk, the remedy is a plain rename;
+ * when even that's gone, the remedy points at the seed's own copy in the
+ * PRISM source.
+ *
+ * `runDoctor` only calls this once `checkSyncManifest` confirms a sync
+ * manifest exists — a consumer with no manifest has never run `prism adopt`
+ * and has no renamed file to be missing yet, so there is nothing this check
+ * should report for it (mirrors `checkSyncManifest`'s own null-manifest
+ * gate).
+ */
+async function checkSeedDelivery(
+	consumerContentRoot: string,
+	prismSourceRoot: string
+): Promise<DoctorFinding[]> {
+	let renames: Record<string, string>;
+	try {
+		renames = await loadSeedCurationRenames(prismSourceRoot);
+	} catch (error) {
+		return [
+			{
+				check: "seed-delivery",
+				severity: "warning",
+				message: `Could not check renamed seed files: ${error instanceof Error ? error.message : String(error)}`,
+			},
+		];
+	}
+
+	const findings: DoctorFinding[] = [];
+
+	for (const [canonicalPath, seedPath] of Object.entries(renames)) {
+		if (await pathExists(path.join(consumerContentRoot, canonicalPath))) {
+			continue;
+		}
+
+		const staleSeedAbsolute = path.join(consumerContentRoot, seedPath);
+		if (await pathExists(staleSeedAbsolute)) {
+			findings.push({
+				check: "seed-delivery",
+				severity: "error",
+				message: `.prism/${canonicalPath} is missing — this repo adopted before prism:adopt inverted seed renames. Repair: mv .prism/${seedPath} .prism/${canonicalPath}.`,
+			});
+			continue;
+		}
+
+		findings.push({
+			check: "seed-delivery",
+			severity: "error",
+			message: `.prism/${canonicalPath} is missing and no seed copy (.prism/${seedPath}) was found either. Copy it from ${path.join(prismSourceRoot, "templates", "install", ".prism", seedPath)} as .prism/${canonicalPath}, then re-run npx @huntermcgrew/prism update.`,
+		});
+	}
+
+	return findings;
 }
 
 /**
@@ -339,6 +439,588 @@ async function checkRuleLoadDeclarations(
 	];
 }
 
+/**
+ * Lists every `.md` file under `dir`, as paths relative to `dir` with `/`
+ * separators.
+ *
+ * The `.md` filter is also what keeps the routing tables themselves out of the
+ * orphan scan — `manifest.json` and `manifest.base.json` are routing tables,
+ * not routable documents, and neither is Markdown.
+ */
+async function listMarkdownFilesRelative(dir: string): Promise<string[]> {
+	const found: string[] = [];
+
+	async function walk(current: string, prefix: string): Promise<void> {
+		const entries = await fs.readdir(current, { withFileTypes: true });
+
+		for (const entry of entries) {
+			const relative = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+
+			if (entry.isDirectory()) {
+				await walk(path.join(current, entry.name), relative);
+				continue;
+			}
+
+			if (entry.name.endsWith(".md")) {
+				found.push(relative);
+			}
+		}
+	}
+
+	await walk(dir, "");
+
+	return found.sort();
+}
+
+/**
+ * The toolkit's base routing table, relative to `.prism/architect/`.
+ *
+ * An install receives two routing tables, and a doc named by either one is
+ * reachable. Reading only `manifest.json` would report every doc the base
+ * table routes as an orphan, and would also let a dead base route pass — the
+ * same split that made `ship-closure` miss a routing surface.
+ */
+const TOOLKIT_BASE_MANIFEST_RELATIVE = "_toolkit/manifest.base.json";
+
+/** Collects every doc path a manifest routes to, flattening single-string and array values. */
+function collectRoutedDocs(manifest: Record<string, unknown>): Set<string> {
+	const routed = new Set<string>();
+
+	for (const value of Object.values(manifest)) {
+		for (const doc of Array.isArray(value) ? value : [value]) {
+			if (typeof doc === "string") {
+				routed.add(doc);
+			}
+		}
+	}
+
+	return routed;
+}
+
+/**
+ * The structural faults in one manifest's route keys — a route anchored to
+ * nothing, or one written with a brace glob that compiles to a literal.
+ *
+ * `error`, not `warning`, because an unanchored route matches every path in
+ * the repo and so makes the write-time deny gate unconditional rather than
+ * scoped: every edit in the tree is denied until its docs are read.
+ * `pnpm prism:check` rejects both faults, but that gate is a development
+ * script and never runs in a consumer's repo, where the manifest is the
+ * consumer's own file to edit.
+ */
+function findStructuralRouteFaults(
+	relativePath: string,
+	manifest: Record<string, unknown>
+): DoctorFinding[] {
+	return [...findCatchAllKeys(manifest), ...findBraceGlobKeys(manifest)].map(
+		(message) => ({
+			check: "architect-route" as const,
+			severity: "error" as const,
+			message: `${relativePath}: ${message}`,
+		})
+	);
+}
+
+/**
+ * Reports both halves of architect-route integrity: docs on disk that no
+ * manifest route names (orphans), and routes naming a doc that is not on disk
+ * (dead routes).
+ *
+ * The two directions together are what replaces per-doc frontmatter as the
+ * route-integrity mechanism. Without the orphan half, a doc can be authored
+ * and never routed, so nothing ever loads it; without the dead-route half,
+ * adding a route at authoring time is aspirational rather than verifiable —
+ * a typo'd route reads as healthy.
+ *
+ * "Routed" means named by either shipped table — `manifest.json` or the
+ * toolkit's `_toolkit/manifest.base.json` — so both directions agree with
+ * `ship-closure`, which seeds its roots from the same pair.
+ *
+ * Returns no findings when the architect tree or its manifest is absent.
+ * `checkSeedDelivery` already reports a missing `architect/manifest.json`
+ * with the remedy attached, so reporting it here too would double-count one
+ * problem.
+ */
+async function checkArchitectRoutes(consumerContentRoot: string): Promise<DoctorFinding[]> {
+	const architectDir = path.join(consumerContentRoot, "architect");
+	const manifestPath = path.join(architectDir, "manifest.json");
+
+	if (!(await pathExists(architectDir)) || !(await pathExists(manifestPath))) {
+		return [];
+	}
+
+	let manifest: Record<string, unknown>;
+	try {
+		manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as Record<string, unknown>;
+	} catch (error) {
+		return [
+			{
+				check: "architect-route",
+				severity: "error",
+				message: `.prism/architect/manifest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+			},
+		];
+	}
+
+	const routed = collectRoutedDocs(manifest);
+	const structural: DoctorFinding[] = findStructuralRouteFaults(
+		".prism/architect/manifest.json",
+		manifest
+	);
+
+	const baseRaw = await readFileIfExists(path.join(architectDir, TOOLKIT_BASE_MANIFEST_RELATIVE));
+	if (baseRaw !== null) {
+		let base: Record<string, unknown>;
+		try {
+			base = JSON.parse(baseRaw) as Record<string, unknown>;
+		} catch (error) {
+			return [
+				{
+					check: "architect-route",
+					severity: "error",
+					message: `.prism/architect/${TOOLKIT_BASE_MANIFEST_RELATIVE} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			];
+		}
+
+		for (const doc of collectRoutedDocs(base)) {
+			routed.add(doc);
+		}
+
+		structural.push(
+			...findStructuralRouteFaults(
+				`.prism/architect/${TOOLKIT_BASE_MANIFEST_RELATIVE}`,
+				base
+			)
+		);
+	}
+
+	const onDisk = await listMarkdownFilesRelative(architectDir);
+	const onDiskSet = new Set(onDisk);
+
+	const findings: DoctorFinding[] = [...structural];
+
+	const orphans = onDisk.filter((doc) => !routed.has(doc));
+	if (orphans.length > 0) {
+		findings.push({
+			check: "architect-route",
+			severity: "warning",
+			message: `${orphans.length} architect doc(s) on disk are named by no manifest route, so nothing loads them: ${orphans.join(", ")}`,
+		});
+	}
+
+	const deadRoutes = [...routed].filter((doc) => !onDiskSet.has(doc)).sort();
+	if (deadRoutes.length > 0) {
+		findings.push({
+			check: "architect-route",
+			severity: "warning",
+			message: `${deadRoutes.length} manifest route(s) name an architect doc that is not on disk: ${deadRoutes.join(", ")}`,
+		});
+	}
+
+	return findings;
+}
+
+/** Matches any `hook.mjs` or `git-gates.mjs` path inside a parsed hook command string. */
+const HOOK_COMMAND_PATH_RE = /(\S*(?:hook|git-gates)\.mjs)/g;
+
+/**
+ * Resolves one hook path as written in a hook command string to an absolute
+ * path. Strips the `$CLAUDE_PROJECT_DIR` prefix, which expands to the repo
+ * root, and the quotes that wrap a path with spaces.
+ *
+ * The command arrives from `JSON.parse`, so its escapes are already resolved
+ * and only surrounding quotes remain. A bare backslash survives: it is a
+ * Windows path separator, and stripping those collapsed such a registration
+ * into one token that could never match a file on disk.
+ */
+function resolveHookCommandPath(rawPath: string, consumerRepoRoot: string): string {
+	const unquoted = rawPath.replace(/["']/g, "");
+	const withoutProjectDir = unquoted
+		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?\//, "")
+		.replace(/^\$\{?CLAUDE_PROJECT_DIR\}?/, "");
+
+	return path.resolve(consumerRepoRoot, withoutProjectDir);
+}
+
+/**
+ * Collects every `command` string under a parsed `settings.json`'s `hooks`
+ * block, across every event and every matcher group.
+ *
+ * Walking the parsed shape rather than scanning the file text keeps a hook
+ * path that appears in some unrelated string field out of the count, and
+ * leaves the escape handling to the parser.
+ */
+function collectHookCommands(settings: Record<string, unknown>): string[] {
+	const hooks = settings.hooks;
+	if (typeof hooks !== "object" || hooks === null) {
+		return [];
+	}
+
+	const commands: string[] = [];
+
+	for (const matchers of Object.values(hooks as Record<string, unknown>)) {
+		for (const matcher of Array.isArray(matchers) ? matchers : []) {
+			const entries = (matcher as { hooks?: unknown })?.hooks;
+
+			for (const entry of Array.isArray(entries) ? entries : []) {
+				const command = (entry as { command?: unknown })?.command;
+
+				if (typeof command === "string") {
+					commands.push(command);
+				}
+			}
+		}
+	}
+
+	return commands;
+}
+
+/**
+ * Reads the consumer's config for the fields `doctor` branches on, degrading
+ * to `null` on any failure. A config that cannot be read or parsed already
+ * produces its own `config` finding, and `doctor` never throws — so the
+ * host-mix branch falls back to `resolveHosts`'s all-hosts default rather
+ * than turning one bad field into a missing check.
+ */
+async function readConsumerConfigSafely(
+	consumerRepoRoot: string
+): Promise<{ hosts?: unknown; hooks?: unknown; commands?: unknown } | null> {
+	const configPath = path.join(consumerRepoRoot, ".ai-skills", "config.json");
+	const raw = await readFileIfExists(configPath);
+	if (raw === null) {
+		return null;
+	}
+
+	try {
+		return JSON.parse(raw) as { hosts?: unknown; hooks?: unknown; commands?: unknown };
+	} catch {
+		return null;
+	}
+}
+
+/** A config field that is a non-empty string, or `unset` — how the git-gates info line renders a command slot. */
+function describeCommandSlot(commands: unknown, slot: string): string {
+	const value =
+		typeof commands === "object" && commands !== null
+			? (commands as Record<string, unknown>)[slot]
+			: undefined;
+
+	return typeof value === "string" && value.trim().length > 0 ? value : "unset";
+}
+
+/**
+ * The git-gates findings for a consumer whose `hosts` includes `claude`: one
+ * `info` line saying whether the gates are on, and a `warning` when the push
+ * gate is on with nothing to run. The gates ride the same delivery as the
+ * write gate, so their state is worth a line wherever the write gate's is.
+ */
+function describeGitGates(
+	config: { hooks?: unknown; commands?: unknown } | null
+): DoctorFinding[] {
+	const hooks =
+		typeof config?.hooks === "object" && config.hooks !== null
+			? (config.hooks as Record<string, unknown>)
+			: null;
+
+	if (hooks === null) {
+		return [
+			{
+				check: "hook-registration",
+				severity: "info",
+				message:
+					"Git gates are delivered and off — add a hooks block to .ai-skills/config.json (commitCleanupPass, pushVerification) to enable them.",
+			},
+		];
+	}
+
+	const lint = describeCommandSlot(config?.commands, "lint");
+	const format = describeCommandSlot(config?.commands, "format");
+	const findings: DoctorFinding[] = [
+		{
+			check: "hook-registration",
+			severity: "info",
+			message: `Git gates: commit cleanup pass ${hooks.commitCleanupPass === true ? "on" : "off"}, push verification ${hooks.pushVerification === true ? "on" : "off"} (lint: ${lint}, format: ${format}).`,
+		},
+	];
+
+	if (hooks.pushVerification === true && lint === "unset" && format === "unset") {
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message:
+				"hooks.pushVerification is on but commands.lint and commands.format are both unset — the push gate can never deny.",
+		});
+	}
+
+	return findings;
+}
+
+/**
+ * Reports a hook runtime that is present but unregistered, and a registration
+ * that points at a file which is not there — the dead-registration half runs
+ * regardless of the consumer's `hosts`, since a command naming a missing
+ * file is wrong on every host mix, not only on Claude Code.
+ *
+ * The write gate cannot prevent its own removal — deleting the runtime or its
+ * registration disables it, and neither is prevented (ADR-0072). Visibility is
+ * the compensating control the ADR names, and this check delivers the half of
+ * it that is decidable from the consumer tree alone: each side reports the
+ * other's absence.
+ *
+ * Removing both halves is silent for a consumer who runs Claude Code:
+ * nothing on disk distinguishes one who deleted the gate from one who never
+ * received it, so reporting it would fire on installs that are correct as
+ * they stand.
+ *
+ * What is decidable is the host mix. `hosts` in the consumer's config says
+ * which hosts they run, and `refreshHookRuntime` delivers only when
+ * `claude` is among them — so a consumer who does not run Claude Code
+ * should have no runtime and no registration, and finding either means an
+ * update has not run since they changed the key. Both directions are
+ * reported: the absence is informational, the leftover is a warning.
+ */
+async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFinding[]> {
+	const hookRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "hook.mjs");
+	const gitGatesRuntimePath = path.join(consumerRepoRoot, ".claude", "hooks", "git-gates.mjs");
+	const settingsPath = path.join(consumerRepoRoot, ".claude", "settings.json");
+	const settingsRaw = await readFileIfExists(settingsPath);
+
+	const findings: DoctorFinding[] = [];
+	const registeredPaths = new Set<string>();
+	let settings: Record<string, unknown> | null = null;
+
+	if (settingsRaw !== null) {
+		try {
+			settings = JSON.parse(settingsRaw) as Record<string, unknown>;
+		} catch (error) {
+			return [
+				{
+					check: "hook-registration",
+					severity: "error",
+					message: `.claude/settings.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+				},
+			];
+		}
+
+		for (const command of collectHookCommands(settings)) {
+			for (const match of command.matchAll(HOOK_COMMAND_PATH_RE)) {
+				registeredPaths.add(resolveHookCommandPath(match[1], consumerRepoRoot));
+			}
+		}
+	}
+
+	const config = await readConsumerConfigSafely(consumerRepoRoot);
+	const hosts = resolveHosts(config);
+	const runtimeOnDisk = await readFileIfExists(hookRuntimePath);
+	const runtimeIsPrisms =
+		runtimeOnDisk !== null && runtimeOnDisk.includes(HOOK_RUNTIME_MARKER);
+	const prismIsRegistered =
+		settings !== null &&
+		collectHookCommands(settings).some((command) => PRISM_HOOK_COMMAND_PATTERN.test(command));
+
+	if (!hosts.includes("claude") && (runtimeIsPrisms || prismIsRegistered)) {
+		const staleHalves =
+			runtimeIsPrisms && prismIsRegistered
+				? "PRISM's hook runtime and its registration in .claude/settings.json are"
+				: runtimeIsPrisms
+					? "PRISM's hook runtime is"
+					: "PRISM's hook registration in .claude/settings.json is";
+
+		findings.push({
+			check: "hook-registration",
+			severity: "warning",
+			message: `hosts does not list "claude", but ${staleHalves} still present. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove PRISM's hook delivery.`,
+		});
+
+		return findings;
+	}
+
+	// A registered command pointing at a file that is not on disk is wrong on
+	// every host mix — a hand-edited registration whose command no longer
+	// matches PRISM_HOOK_COMMAND_PATTERN survives the removal branch in
+	// update.ts (it is not claimed as PRISM's own), so this has to run here
+	// too, not only inside the claude-in-hosts branch below. It is skipped
+	// only on the stale-delivery early return above, where the "run update"
+	// remedy already covers it — see that branch's own findings.
+	for (const registered of [...registeredPaths].sort()) {
+		if (!(await pathExists(registered))) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message: `.claude/settings.json registers a hook command pointing at ${path.relative(consumerRepoRoot, registered)}, which is not on disk — the registration fails silently on every matching tool call.`,
+			});
+		}
+	}
+
+	if (hosts.includes("claude")) {
+		if ((await pathExists(hookRuntimePath)) && !registeredPaths.has(hookRuntimePath)) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/hook.mjs is present but .claude/settings.json registers no hook command pointing at it — the architect-context hook is inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			});
+		}
+
+		if ((await pathExists(gitGatesRuntimePath)) && !registeredPaths.has(gitGatesRuntimePath)) {
+			findings.push({
+				check: "hook-registration",
+				severity: "warning",
+				message:
+					".claude/hooks/git-gates.mjs is present but .claude/settings.json registers no hook command pointing at it — the git gates are inert. Repair: re-run npx @huntermcgrew/prism update, or restore the hooks block in .claude/settings.json.",
+			});
+		}
+
+		if (findings.length === 0 && registeredPaths.has(hookRuntimePath)) {
+			findings.push({
+				check: "hook-registration",
+				severity: "info",
+				message:
+					"The hook runtime is installed and registered. It fires on Claude Code only — Codex and Cursor receive no registration, so on those hosts read-before-write is a discipline carried by .prism/rules/context-reuse.md and .prism/references/skill-core.md, not an enforced gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.",
+			});
+		}
+
+		if (registeredPaths.has(gitGatesRuntimePath)) {
+			findings.push(...describeGitGates(config));
+		}
+
+		return findings;
+	}
+
+	findings.push({
+		check: "hook-registration",
+		severity: "info",
+		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). PRISM's write gate runs under Claude Code only; on your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.`,
+	});
+
+	return findings;
+}
+
+/**
+ * Reports a dropped host whose marker-bearing output is still on disk — the
+ * mirror image of `checkHookRegistration`'s stale-delivery branch, generalized
+ * past the hook. `refreshPlatformSkills` and `refreshPlatformDirs` in
+ * `update.ts` take a dropped host's output back out on the next
+ * `prism update`, so leftover output here means that update has not run
+ * since `hosts` changed.
+ *
+ * `warning`, not `error` — the leftover bytes sit in a directory the
+ * consumer's host never reads, and `healthy` keys on `error` alone, so this
+ * check must not flip a doctor exit code.
+ */
+async function checkHostOutput(
+	consumerRepoRoot: string,
+	pathDefinitions: PathDefinitions
+): Promise<DoctorFinding[]> {
+	const hosts = resolveHosts(await readConsumerConfigSafely(consumerRepoRoot));
+	const droppedHosts = (["claude", "codex", "cursor"] as const).filter(
+		(host) => !hosts.includes(host)
+	);
+	if (droppedHosts.length === 0) {
+		return [];
+	}
+
+	const { targetRoots } = resolveConsumerSkillTargetRoots(
+		consumerRepoRoot,
+		pathDefinitions
+	);
+	const platformDirs = buildPlatformDirs(consumerRepoRoot, pathDefinitions);
+
+	const findings: DoctorFinding[] = [];
+
+	for (const host of droppedHosts) {
+		const leftoverRoots: string[] = [];
+
+		const skillsRoot =
+			host === "claude"
+				? targetRoots.claude
+				: host === "codex"
+					? targetRoots.codex
+					: targetRoots.cursor;
+		if (await hasMarkedSkillOutput(skillsRoot)) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, skillsRoot));
+		}
+
+		if (host === "claude" && (await hasMarkedAgentOutput(targetRoots.claudeAgents, ".md", GENERATED_MARKDOWN_HEADER_LINE))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, targetRoots.claudeAgents));
+		}
+		if (host === "codex" && (await hasMarkedAgentOutput(targetRoots.codexAgents, ".toml", GENERATED_HEADER_LINE))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, targetRoots.codexAgents));
+		}
+
+		const platformDir = platformDirs.find((entry) => entry.host === host);
+		if (platformDir && (await hasMarkedContentOutput(platformDir.dir))) {
+			leftoverRoots.push(path.relative(consumerRepoRoot, platformDir.dir));
+		}
+
+		if (leftoverRoots.length > 0) {
+			findings.push({
+				check: "host-output",
+				severity: "warning",
+				message: `hosts does not list "${host}", but it still has PRISM-generated output under ${leftoverRoots.join(", ")}. This repo has not been updated since hosts changed — run npx @huntermcgrew/prism update to remove it.`,
+			});
+		}
+	}
+
+	return findings;
+}
+
+/** True when any subdirectory of `root` carries `MANAGED_MARKER` — a marker-confirmed skill dir survives there. */
+async function hasMarkedSkillOutput(root: string): Promise<boolean> {
+	if (!(await pathExists(root))) {
+		return false;
+	}
+
+	for (const name of await listDirectories(root)) {
+		if (await pathExists(path.join(root, name, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/** True when any `extension` file under `root` still carries `headerLine` — the same test `removeDeletedManagedAgentFiles` uses to claim a file as PRISM's own. */
+async function hasMarkedAgentOutput(
+	root: string,
+	extension: string,
+	headerLine: string
+): Promise<boolean> {
+	if (!(await pathExists(root))) {
+		return false;
+	}
+
+	const entries = await fs.readdir(root, { withFileTypes: true });
+	for (const entry of entries) {
+		if (!entry.isFile() || !entry.name.endsWith(extension) || entry.name.startsWith(".")) {
+			continue;
+		}
+
+		const content = (await readFileIfExists(path.join(root, entry.name))) ?? "";
+		if (content.includes(headerLine)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/** True when any `COPIED_CONTENT_AREAS` entry under `platformDir` still carries its area-level `MANAGED_MARKER`. */
+async function hasMarkedContentOutput(platformDir: string): Promise<boolean> {
+	if (!(await pathExists(platformDir))) {
+		return false;
+	}
+
+	for (const area of COPIED_CONTENT_AREAS) {
+		if (await pathExists(path.join(platformDir, area, MANAGED_MARKER))) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /** Fetcher shape `checkVersion` depends on — lets tests inject a stub instead of hitting the network. */
 export type NpmVersionFetcher = (url: string, timeoutMs: number) => Promise<string | null>;
 
@@ -391,6 +1073,45 @@ function readInstalledVersion(pkgRaw: string | null): string {
 }
 
 /**
+ * Compares two `major.minor.patch` strings field-by-field as numbers, returning
+ * a negative number when `a` is older, zero when equal, and a positive number
+ * when `a` is newer. Returns `null` when either string is not three numeric
+ * fields — `"unknown"` from a missing `package.json` lands here, and an
+ * unorderable pair produces no staleness claim at all.
+ *
+ * A text compare would order `0.10.0` before `0.9.0`, so the fields are parsed
+ * to numbers before comparison.
+ */
+function compareVersions(a: string, b: string): number | null {
+	const parse = (value: string): number[] | null => {
+		const fields = value.split(".");
+
+		if (fields.length !== 3) {
+			return null;
+		}
+
+		const numbers = fields.map((field) => (/^\d+$/.test(field) ? Number(field) : Number.NaN));
+
+		return numbers.some(Number.isNaN) ? null : numbers;
+	};
+
+	const left = parse(a);
+	const right = parse(b);
+
+	if (left === null || right === null) {
+		return null;
+	}
+
+	for (let index = 0; index < 3; index += 1) {
+		if (left[index] !== right[index]) {
+			return left[index] - right[index];
+		}
+	}
+
+	return 0;
+}
+
+/**
  * Reads the installed PRISM version from `prismSourceRoot`'s own
  * `package.json`, then compares it against npm's `latest` dist-tag via
  * `fetcher` (defaults to `fetchLatestNpmVersion`, overridable so tests never
@@ -404,7 +1125,8 @@ async function checkVersion(
 	const installed = readInstalledVersion(pkgRaw);
 
 	const latest = await fetcher(NPM_REGISTRY_URL, NPM_FETCH_TIMEOUT_MS);
-	const outOfDate = latest !== null && latest !== installed;
+	const ordering = latest === null ? null : compareVersions(installed, latest);
+	const outOfDate = ordering !== null && ordering < 0;
 
 	const findings: DoctorFinding[] = [];
 	if (latest === null) {
@@ -462,7 +1184,26 @@ export async function runDoctor(options: RunDoctorOptions): Promise<DoctorReport
 	const syncResult = await checkSyncManifest(consumerContentRoot);
 	findings.push(...syncResult.findings);
 
+	// A consumer with no sync manifest has never run `prism adopt`, so it was
+	// never delivered a renamed file in the first place — skip the check
+	// rather than misreport it as unhealthy with a "re-run prism:update"
+	// remedy that doesn't apply pre-adopt.
+	if (syncResult.syncState.manifest !== null) {
+		findings.push(...(await checkSeedDelivery(consumerContentRoot, prismSourceRoot)));
+	}
+
 	findings.push(...(await checkRuleLoadDeclarations(consumerContentRoot)));
+	findings.push(...(await checkArchitectRoutes(consumerContentRoot)));
+	findings.push(...(await checkHookRegistration(consumerRepoRoot)));
+
+	try {
+		const pathDefinitions = await loadPathDefinitions(consumerRepoRoot);
+		findings.push(...(await checkHostOutput(consumerRepoRoot, pathDefinitions)));
+	} catch {
+		// A repo whose paths.json can't be loaded already gets that failure
+		// reported by another check (or has never run prism:adopt) — this check
+		// degrades to silent rather than throwing out of runDoctor.
+	}
 
 	const versionResult = await checkVersion(prismSourceRoot, npmVersionFetcher);
 	findings.push(...versionResult.findings);
@@ -498,12 +1239,12 @@ export function formatDoctorReport(report: DoctorReport): string {
 			: `Version: ${report.version.installed} installed, latest-on-npm unavailable.`
 	);
 
-	if (report.findings.length === 0) {
+	if (!report.findings.some((f) => f.severity !== "info")) {
 		lines.push("No issues found.");
-	} else {
-		for (const finding of report.findings) {
-			lines.push(`[${SEVERITY_LABEL[finding.severity]}] ${finding.check}: ${finding.message}`);
-		}
+	}
+
+	for (const finding of report.findings) {
+		lines.push(`[${SEVERITY_LABEL[finding.severity]}] ${finding.check}: ${finding.message}`);
 	}
 
 	lines.push(report.healthy ? "prism doctor: healthy." : "prism doctor: unhealthy — see findings above.");

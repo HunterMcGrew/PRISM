@@ -3,7 +3,7 @@
 Intake the goal and establish the run. Ask two questions once, up front:
 
 1. **Run shape** — one unit (pipeline) or many (fleet)? A pipeline is a one-lane fleet; the answer sets `runShape`.
-2. **Autonomy policy** — `launch` (gates stay human), `internal` (personas self-clear the clearly-simple cases, escalate on judgment — the balanced default), or `hobby` (maximum autonomy, escalate only on genuine risk). This is the human-set ceiling: a persona may escalate above it but never auto-clear below it.
+2. **Autonomy policy** — `strict` (every gate stays human), `reviewed` (personas self-clear the clearly-simple cases and escalate on judgment — the balanced default), or `quick` (personas escalate only on genuine risk). The lines come from `stakes-calibration.md` § The same words as an autonomy ceiling — quote them rather than restating. This is the human-set ceiling: a persona may escalate above it but never auto-clear below it.
 
 **Detect resume.** Read `.prism/conductor-state.json` per the Read protocol in `.prism/skills/prism-conductor/lib/goal-state.md`:
 

@@ -5,6 +5,8 @@ Status: accepted
 Date: 2026-06-13
 ---
 
+> Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
+
 ## Context
 
 PRISM's output is trustworthy because humans hold the gates: Eric never approves ([ADR-0011](./0011-eric-never-approves-prs.md)), humans merge, Nora enforces the Definition of Ready, Winston runs the A/P/C plan gate. Adding a goal-driven orchestrator — one persona that decomposes a goal and dispatches the existing personas across the whole lifecycle — risks eroding exactly that property if the orchestrator can clear a gate to keep momentum.

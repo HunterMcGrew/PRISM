@@ -116,7 +116,7 @@ One exception: if the fix touches a public API, shared type, or shared utility, 
 
 The `.prism/rules/` and `.prism/architect/` files represent the team's intentional engineering standards — built through iterative testing and real project experience. They are the equivalent of a style guide or code standard: follow them as the default authority for project-specific decisions.
 
-When editing spec content under `.claude/**`, `.prism/architect/_toolkit/spec-editing.md` is the architect-context routing target — manifest routes for spec surfaces (SPEC.md, skills, templates, rules, ADRs, architect, references, plans) load that file alongside `.prism/architect/_toolkit/skills-ecosystem.md`.
+When editing spec content, the manifest routes each surface to the writing guide that governs it, all under `.prism/architect/guides/`: plans and templates to `writing-a-plan.md`, rules and `.prism/SPEC.md` to `writing-a-rule.md`, architect docs and references to `writing-an-architect-doc.md`, ADRs to `writing-an-adr.md`, and skill bodies under `.claude/skills/**` to `writing-a-skill.md`.
 
 - Apply every applicable rule as written — these exist because the team learned the hard way what happens without them
 - If a specific situation genuinely requires deviation, flag the deviation and explain the reasoning rather than silently overriding

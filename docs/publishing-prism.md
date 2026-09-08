@@ -3,7 +3,7 @@ title: "Publishing PRISM to npm"
 description: "The release ritual for PRISM maintainers — version bump, pre-publish gates, leak audit, and npm publish."
 category: "operations"
 audience: "dev"
-last_updated: "2026-06-27"
+last_updated: "2026-09-02"
 ---
 
 # Publishing PRISM to npm
@@ -18,7 +18,25 @@ PRISM is published to npm as `@huntermcgrew/prism`. This guide is for maintainer
 - npm account with access to the `@huntermcgrew` scope
 - npm 2FA configured (required for publishing scoped packages)
 - `pnpm` installed locally
-- Authenticated: `npm whoami` returns your username
+- Authenticated: `npm whoami` returns your username (see § Logging in below)
+
+## Logging in
+
+npm login tokens expire, so a machine that published last month can be logged out today. Check before you start:
+
+```bash
+npm whoami
+```
+
+A username means you are logged in. A `401 Unauthorized` means the token in `~/.npmrc` is missing or expired — log in again:
+
+```bash
+npm login
+```
+
+This opens npmjs.com in your browser. Sign in there, complete 2FA, and the CLI writes a fresh token to `~/.npmrc`. Run `npm whoami` again to confirm. If the browser never opens, `npm login --auth-type=legacy` prompts for username and password in the terminal instead.
+
+Logging in does not skip the publish-time 2FA prompt. `npm publish` still asks for a one-time code, because the `@huntermcgrew` scope requires 2FA for writes. That is the intended setup: a leaked token alone cannot publish.
 
 ## The release ritual
 

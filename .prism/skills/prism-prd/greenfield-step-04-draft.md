@@ -39,7 +39,7 @@ Coaching path produces fewer `[ASSUMPTION]` markers — the questions catch the 
 1. Branch on fast/coaching.
 2. Write all 10 sections.
 3. Update PRD frontmatter: append `greenfield-step-04-draft` to `stepsCompleted`. `lastEdited: <ISO 8601>`.
-4. Confirm to user: "Draft complete with `<N>` assumptions tagged. Decision log next (for internal/launch stakes), then review."
+4. Confirm to user: "Draft complete with `<N>` assumptions tagged. Decision log next (for reviewed/strict stakes), then review."
 
 ## Exit condition
 

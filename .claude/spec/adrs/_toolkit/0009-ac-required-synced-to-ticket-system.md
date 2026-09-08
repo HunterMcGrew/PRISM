@@ -39,6 +39,7 @@ The `ticketSystem.kind` value in `.ai-skills/config.json` selects the integratio
 
 ## References
 
-- `.prism/architect/_toolkit/skills-ecosystem.md` § Plan Section Ownership and § Rules for All Skills item 9
+- `.prism/architect/_toolkit/plan-authoring.md` § Plan Section Ownership
+- `.prism/architect/_toolkit/skills-ecosystem.md` § Rules for All Skills item 9
 - `.prism/templates/acceptance-criteria.md` — canonical format
 - `.prism/rules/acceptance-criteria.md` — writing-style and content rules

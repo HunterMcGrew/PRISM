@@ -6,7 +6,7 @@ How team-specific values flow through PRISM into the consumer's installed skills
 
 PRISM uses both:
 
-- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/install/AGENTS.md.tmpl`, etc.) and are substituted to literal values at sync time. The consumer's installed files have substituted values, no tokens.
+- **Generation-time tokens** — `${TICKET_PREFIX}`, `${ORG}`, `${PROJECT}`, etc. appear in canonical sources (`.ai-skills/skills/<id>/shared.md`, `templates/install/AGENTS.md.tmpl`, etc.) and are substituted to literal values when the platform copies are written (ADR-0030). The consumer's canonical `.prism/` tree keeps the token literals; the platform directories (`.claude/`, `.codex/`, `.cursor/`) have substituted values.
 - **Runtime config (`.ai-skills/config.json`)** — the consumer's repo carries this file with their team's values. Skills branch on `techStack` flags at chat time when behavior depends on the stack. The config is also the source of truth that drives token substitution.
 
 Single source of truth: `.ai-skills/config.json`. Tokens are derived from it.
@@ -29,6 +29,7 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
   "github": { "owner": "acme", "repo": "ktc-frontend" },
   "defaultBranch": "main",
   "techStack": ["nextjs", "react", "typescript", "tailwind"],
+  "hosts": ["claude"],
   "rules": {
     "universal": "all"
   },
@@ -51,6 +52,10 @@ Lives at [`.ai-skills/config.schema.json`](../.ai-skills/config.schema.json) as 
 | `github.repo` | string | yes | GitHub repo name. Substituted as `${GITHUB_REPO}`. |
 | `defaultBranch` | string | optional | Default branch name. Substituted as `${DEFAULT_BRANCH}`. Defaults to `main`. |
 | `techStack` | string[] | optional | Validated against an enum (see schema). Drives onboarding's per-codebase rule generation — e.g. when `typescript` is present, Atlas generates a `code-standards-ts.md` for the team based on patterns in their actual code. |
+| `hosts` | string[] | optional | Which AI coding hosts this repo runs — `claude`, `codex`, `cursor`. Absent means all of them, so an existing install needs no change. Gates every host-specific delivery — the hook runtime and its registration, the persona skill roster and agent definitions, and the platform content copies (rules, architect docs, templates) — writing them only for the hosts you list, and taking a dropped host's output back out on the next `prism update`. |
+| `hooks.commitCleanupPass` | boolean | optional | Holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read this session; the retry goes through. Off when absent. Runs on the hosts that receive the hook runtime. |
+| `hooks.pushVerification` | boolean | optional | Runs `commands.lint` and `commands.format` before every `git push`; a non-zero exit denies the push with the output tail. An unset command is skipped; a timeout allows the push and says so. Off when absent. |
+| `hooks.pushVerificationTimeoutMs` | integer | optional | Per-command budget for `pushVerification`, 120000 by default. Keep it below the host's own hook timeout (Claude Code: 600 s) so the script, not the host, decides the outcome. |
 | `rules.universal` | enum | optional | `"all"` is the only value today. Universal rules always ship. |
 | `rules.optIn` | string[] | optional | Names of opt-in rule files (without `.md`). Atlas proposes these based on `techStack` during onboarding; teams can edit. |
 | `modelTiers` | object | optional | Optional per-persona model selection for Sol's conductor dispatches. Maps abstract tiers (top / worker) to concrete models, plus per-persona `overrides`. See § Model tiering below. |

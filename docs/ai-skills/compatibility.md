@@ -1,6 +1,7 @@
 ---
 title: Compatibility
 description: How PRISM's build outputs land across tool namespaces and what gets committed vs ignored.
+last_updated: "2026-09-02"
 ---
 
 # Compatibility
@@ -13,6 +14,7 @@ The short version, before the prose:
 - **Codex** reads from `.codex/agents/` (tracked) and `.codex/codex-config.toml` (per-user, ignored).
 - **Cursor** reads from `.cursor/skills/` — tracked.
 - **Codex skill bodies** land at `.agents/skills/` — resolved repo-relative, not `~/.agents/skills/` — populated directly by every `prism adopt`/`prism update`. `.agents/` in the repo is ignored but populated.
+- **Hook-based enforcement** reaches Claude Code only — Codex and Cursor rely on a manual read-before-write discipline instead.
 
 ## Persona vs utility skills
 
@@ -63,6 +65,24 @@ There's no `.cursor/codex-config.toml`-equivalent — Cursor doesn't have an in-
 ### `.agents/` — ignored but populated
 
 Codex's skills root, `.agents/skills/`, resolves repo-relative — not `~/.agents/skills/` — and is rendered directly by every `prism adopt`/`prism update`, the same render pass that writes `.claude/skills/` and `.cursor/skills/`. It stays gitignored as machine-local output, not because population is unshipped.
+
+## Hook-based enforcement is Claude Code only
+
+PRISM ships a hook runtime that does two things: it names the architect docs that govern a file you just read, and it blocks an edit to a routed path until those docs are read.
+
+That runtime is delivered to Claude Code only. `prism adopt` and `prism update` write `.claude/hooks/` and merge the registration into `.claude/settings.json`; no equivalent is written for Codex or Cursor, so on those hosts neither behavior fires — and nothing announces its absence.
+
+This is a delivery gap, not a limitation of those tools — both support the hook event the gate uses. Wiring them up is unshipped work, not a setting to flip.
+
+What carries the guarantee on Codex and Cursor is the always-on rule in `.prism/rules/context-reuse.md` and the shared startup contract in `.prism/references/skill-core.md`: match the paths you're about to touch against `.prism/architect/manifest.json` and read every matching doc before you write. On those hosts, that's a discipline, not an enforcement.
+
+`prism doctor` now says which case you are in: it prints the Claude-only reach on an install that has the gate, and says the gate is not delivered on a repo whose `hosts` excludes `claude`.
+
+PRISM only installs the hook when `hosts` includes `claude` — or when `hosts` is absent, which means every host. A Codex-only or Cursor-only repo that lists its own hosts gets no `.claude/hooks/`, no settings merge, and no `.gitignore` lines.
+
+The same runtime carries two opt-in git gates: a commit-time cleanup pass that holds the first `git commit` on each HEAD until `.prism/references/cleanup-pass.md` has been read, and a push-time verification that runs `commands.lint` and `commands.format` and denies a `git push` on a non-zero exit. Both are off until a `hooks` block in `.ai-skills/config.json` turns them on (`commitCleanupPass`, `pushVerification`). Today they reach Claude Code only, on the same delivery as the write gate; the shipping flow carries the cleanup pass as a prose step on every host, and a follow-up delivers the gates to Codex and Cursor, whose hook events and deny envelopes are documented.
+
+`hosts` reaches past the hook, too: a repo that lists its hosts receives the persona skill roster, agent definitions, and rule copies only for those hosts — dropping a host from the list takes its output back out on the next `prism update`, the same way dropping `claude` takes the hook back out. See [`docs/parameterization.md`](../parameterization.md) § Field reference for the key.
 
 ## The install-script rule
 

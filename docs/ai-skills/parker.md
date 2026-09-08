@@ -3,7 +3,7 @@ title: "Parker — the PRD persona"
 description: "How Parker drafts initiative-grain Product Requirements Documents — two modes, stakes-calibrated, with a parallel reviewer rubric."
 category: "ai-skills"
 audience: "dev"
-last_updated: "2026-06-27"
+last_updated: "2026-09-02"
 ---
 
 ## What Parker does
@@ -13,7 +13,7 @@ Parker writes Product Requirements Documents at initiative grain — above Mira 
 - **Greenfield** — new initiative, no code exists yet. Parker runs a brain-dump → stakes calibration → fast or coaching path → draft → reviewer rubric → finalize. Optional Linear initiative handoff at the end.
 - **Brownfield** — feature exists; PRD doesn't. Parker walks the named code area, confirms the module sketch and test scope with you, and synthesizes a PRD using `[INFERRED]` markers for any claim that can't be observed directly from the code.
 
-The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision-log.md` (greenfield + internal/launch stakes).
+The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision-log.md` (greenfield + reviewed/strict stakes).
 
 ## When to use Parker
 
@@ -25,19 +25,19 @@ The output is `.prism/prds/<slug>.md` (always) plus `.prism/prds/<slug>.decision
 
 Multi-phase, resumable. State lives in the PRD's YAML frontmatter — no separate state file. Each phase is its own step file at `.prism/skills/prism-prd/step-*.md` so phases are individually replaceable.
 
-**Greenfield flow:** init → stakes calibration → fast/coaching mode → draft → decision log (if stakes ≥ internal) → review → finalize → optional Linear handoff.
+**Greenfield flow:** init → stakes calibration → fast/coaching mode → draft → decision log (if stakes ≥ reviewed) → review → finalize → optional Linear handoff.
 
 **Brownfield flow:** init → explore → sketch confirmation → test scope → draft → review → finalize → optional Linear handoff.
 
 ## Stakes calibration
 
-| Level | Review rubric | Open questions | Decision log | Linear handoff |
-| --- | --- | --- | --- | --- |
-| **hobby** | Skip | None required | Skip | Skip |
-| **internal** | Run | Encouraged | Optional | Offered |
-| **launch** | Run + escalate | Required | Mandatory | Encouraged |
+| Level | What it changes | Review rubric | Open questions | Decision log | Linear handoff |
+| --- | --- | --- | --- | --- | --- |
+| **quick** | No reviewer rubric, no decision log, no ticket handoff — open questions may stay open. | Skip | None required | Skip | Skip |
+| **reviewed** | Reviewer rubric runs; decision log optional; open questions expected to resolve before merge. | Run | Encouraged | Optional | Offered |
+| **strict** | Reviewer rubric runs and escalates; decision log required; every open question resolved before finalize. | Run + escalate | Required | Mandatory | Encouraged |
 
-Parker asks the calibration interview once at the top of every greenfield run. Brownfield infers stakes from the named code area (production code = internal/launch; sandbox/experiment = hobby).
+Parker asks the calibration interview once at the top of every greenfield run. Brownfield infers stakes from the named code area (production code = reviewed/strict; sandbox/experiment = quick).
 
 ## The reviewer rubric
 

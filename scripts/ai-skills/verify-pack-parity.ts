@@ -30,8 +30,11 @@ const RUNTIME_READ_PATHS: RuntimeReadPath[] = [
 	{ path: ".ai-skills/config.schema.json", reader: "config-schema-validate.ts loadConfigSchema", kind: "file" },
 	{ path: ".ai-skills/definitions/paths.json", reader: "utils.ts ensureConsumerPathDefinitions / resolveRunPathDefinitions", kind: "file" },
 	{ path: ".ai-skills/definitions/roles.json", reader: "update.ts refreshPlatformSkills", kind: "file" },
+	{ path: ".ai-skills/definitions/seed-curation.json", reader: "lib/seed-curation.ts loadSeedCurationRenames (adopt/update/doctor)", kind: "file" },
 	{ path: "templates/install/.prism", reader: "adopt/update consumer content root (resolvePrismContentRoot)", kind: "prefix" },
 	{ path: ".ai-skills/skills", reader: "update.ts refreshPlatformSkills sourceSkillsRoot", kind: "prefix" },
+	{ path: "scripts/ai-skills/hooks", reader: "update.ts runUpdate — hook runtime copied into the consumer's .claude/hooks/", kind: "prefix" },
+	{ path: "templates/install/.claude", reader: "update.ts mergeHookSettingsRegistration — hook registration merge source", kind: "prefix" },
 ];
 
 /**

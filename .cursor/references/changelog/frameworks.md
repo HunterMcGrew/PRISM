@@ -12,10 +12,10 @@ Different readers scan changelogs for different things. Sage writes for all of t
 
 | Audience               | What they scan for                                      | What matters                                                                |
 | ---------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Stakeholders / PMs** | Features, high-impact fixes, release themes             | Business impact, user-facing changes, what to communicate to dealers        |
+| **Stakeholders / PMs** | Features, high-impact fixes, release themes             | Business impact, user-facing changes, what to communicate to customers      |
 | **Developers**         | Technical changes, breaking changes, dependency updates | PR links, specifics of what changed, migration notes                        |
-| **QA / Support**       | Bug fixes, behavioral changes, regression risk          | What was broken, what's fixed, what to retest, what dealers might ask about |
-| **Dealer support**     | Dealer-facing changes, known issues resolved            | What dealers will notice, what to tell dealers who ask "what changed"       |
+| **QA / Support**       | Bug fixes, behavioral changes, regression risk          | What was broken, what's fixed, what to retest, what users might ask about   |
+| **Customer support**   | Customer-facing changes, known issues resolved          | What customers will notice, what to tell customers who ask "what changed"   |
 
 The structure (New Features → Bug Fixes → Improvements → Other) serves all audiences because it answers the four questions they each care about in a predictable order.
 
@@ -23,8 +23,8 @@ The structure (New Features → Bug Fixes → Improvements → Other) serves all
 
 Every changelog entry has three layers. Good entries nail all three:
 
-1. **What changed** — the observable difference. "Equipment detail pages now show the dealer's business hours" not "Added business hours component to equipment detail resolver."
-2. **Who it affects** — implied or stated. "All dealer sites" vs "admin users only" vs "sites with Advanced Search enabled."
+1. **What changed** — the observable difference. "Detail pages now show the vendor's business hours" not "Added business hours component to the detail-page resolver."
+2. **Who it affects** — implied or stated. "All customer sites" vs "admin users only" vs "sites with Advanced Search enabled."
 3. **Traceability** — the PR link and ticket ID that let someone dig deeper if they need to.
 
 Every entry needs Layer 1. Layer 2 is needed when the scope isn't obvious. Layer 3 is always needed — no entry without a PR link.

@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-05-22
 
+> Amended by [ADR-0073](./0073-stakes-levels-name-their-behavior.md): the level names below were renamed — read `hobby` as `quick`, `internal` as `reviewed`, `launch` as `strict`.
+
 ## Context
 
 PRISM has personas across the ticket-flow lifecycle: Nora starts tickets, Mira writes user stories, Winston plans implementation, Clove builds, Briar/Eric review, Sage logs releases. The lifecycle has one structural gap: nothing sits **above** Mira on grain.

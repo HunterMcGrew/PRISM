@@ -7,10 +7,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-	compileMatcher,
+	collectRoutedDocs,
+	findBraceGlobKeys,
+	findCatchAllKeys,
 	findMissingCoverage,
+	findShipRoutingGaps,
 	loadedDocsForScope,
 } from "./verify-manifest-coverage";
+import { compileMatcher } from "./hooks/lib/match.mjs";
+import { checkRouteIsAnchored } from "./lib/manifest-routes";
 
 test("compileMatcher: exact path", () => {
 	const matcher = compileMatcher(".prism/SPEC.md");
@@ -58,6 +63,27 @@ test("compileMatcher: regex metacharacters in the pattern are escaped", () => {
 	assert.equal(matcher(".prism/architect/manifest.json"), true);
 	// The dots in the pattern would otherwise act as regex wildcards.
 	assert.equal(matcher("xprismxarchitectxmanifestxjson"), false);
+});
+
+test("compileMatcher: `?` is a literal, so a route carrying one still constrains", () => {
+	const matcher = compileMatcher("a?**");
+	assert.equal(matcher("a?/b/c.md"), true);
+	// Unescaped, `?` would make the preceding `a` optional and `/^a?.*$/`
+	// would match every path in the repo.
+	assert.equal(matcher("README.md"), false);
+	assert.equal(matcher("src/index.ts"), false);
+});
+
+test("compileMatcher: a route opening `?*` compiles rather than throwing", () => {
+	const matcher = compileMatcher("?*/**");
+	assert.equal(matcher("?anything/b.md"), true);
+	assert.equal(matcher("src/index.ts"), false);
+});
+
+test("checkRouteIsAnchored: a leading `?` counts as the anchor it compiles to", () => {
+	assert.equal(checkRouteIsAnchored("a?**"), true);
+	assert.equal(checkRouteIsAnchored("**"), false);
+	assert.equal(checkRouteIsAnchored("*/**"), false);
 });
 
 test("loadedDocsForScope: collects matches from every key per file", () => {
@@ -140,6 +166,52 @@ test("loadedDocsForScope: mixed string and array values across keys", () => {
 	]);
 });
 
+test("findCatchAllKeys: every wildcard-only opening segment is flagged, not just the two that match the empty string", () => {
+	// `**` and `*` accept the empty string, so an empty-string probe catches
+	// them. The other three compile to a regex requiring a separator, reject
+	// the empty string, and still match every nested path — which is why the
+	// check is a leading-literal-segment requirement rather than a probe.
+	for (const spelling of ["**", "*", "**/*", "*/**", "**/**"]) {
+		const failures = findCatchAllKeys({ [spelling]: "skills-ecosystem.md" });
+		assert.equal(
+			failures.length,
+			1,
+			`"${spelling}" opens with a wildcard-only segment and must be flagged`
+		);
+	}
+
+	assert.equal(compileMatcher("**/*")(""), false);
+	assert.equal(
+		compileMatcher("**/*")("scripts/ai-skills/build.ts"),
+		true,
+		"the spelling an empty-string probe accepts still matches every nested path"
+	);
+});
+
+test("findCatchAllKeys: empty when every route opens with a literal segment", () => {
+	const failures = findCatchAllKeys({
+		".prism/**": "install-layout.md",
+		".prism/SPEC.md": "spec-editing.md",
+		"scripts/**/*.ts": "spec-editing.md",
+	});
+	assert.deepEqual(failures, []);
+});
+
+test("findBraceGlobKeys: a brace-glob key is flagged", () => {
+	const failures = findBraceGlobKeys({
+		"scripts/ai-skills/**/*.{ts,tsx}": "spec-editing.md",
+	});
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /brace glob/);
+});
+
+test("findBraceGlobKeys: empty when no key contains braces", () => {
+	const failures = findBraceGlobKeys({
+		".prism/**": "install-layout.md",
+	});
+	assert.deepEqual(failures, []);
+});
+
 test("findMissingCoverage: empty when every expected positive has skills-ecosystem.md", () => {
 	const result = {
 		nora: ["_toolkit/skills-ecosystem.md", "_toolkit/spec-editing.md"],
@@ -165,4 +237,67 @@ test("findMissingCoverage: reports each expected positive that is missing the do
 	assert.equal(failures.length, 2);
 	assert.ok(failures.some((message) => message.startsWith("zoe ")));
 	assert.ok(failures.some((message) => message.startsWith("eric ")));
+});
+
+test("collectRoutedDocs: flattens the single-doc and multi-doc route forms", () => {
+	const routed = collectRoutedDocs({
+		"docs/": "_toolkit/documentation.md",
+		".claude/skills/**": ["_toolkit/skills-ecosystem.md", "_toolkit/closing-messages.md"],
+	});
+
+	assert.deepEqual(
+		[...routed].sort(),
+		[
+			"_toolkit/closing-messages.md",
+			"_toolkit/documentation.md",
+			"_toolkit/skills-ecosystem.md",
+		]
+	);
+});
+
+test("findShipRoutingGaps: silent when every shipped doc is routed on both sides", () => {
+	const shipped = new Set(["_toolkit/spec-editing.md", "guides/writing-a-rule.md"]);
+
+	assert.deepEqual(findShipRoutingGaps(shipped, shipped, shipped), []);
+});
+
+test("findShipRoutingGaps: reports a doc the stub routes that PRISM's own tables do not", () => {
+	const shipped = new Set(["_toolkit/closing-messages.md"]);
+	const failures = findShipRoutingGaps(shipped, shipped, new Set<string>());
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /^_toolkit\/closing-messages\.md ships to consumers/);
+});
+
+test("findShipRoutingGaps: reports a shipped doc the consumer stub does not route", () => {
+	const shipped = new Set(["_toolkit/spec-editing.md"]);
+	const failures = findShipRoutingGaps(shipped, new Set<string>(), shipped);
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /ships in the install seed but no route/);
+});
+
+test("findShipRoutingGaps: reports a stub route naming a doc the seed does not carry", () => {
+	const failures = findShipRoutingGaps(
+		new Set<string>(),
+		new Set(["_toolkit/absent.md"]),
+		new Set<string>()
+	);
+
+	assert.equal(failures.length, 1);
+	assert.match(failures[0], /that doc is not in the install seed/);
+});
+
+test("findShipRoutingGaps: a doc routed only in PRISM's tables and never shipped is not a gap", () => {
+	const failures = findShipRoutingGaps(
+		new Set<string>(),
+		new Set<string>(),
+		new Set(["_toolkit/output-guards.md"])
+	);
+
+	assert.deepEqual(
+		failures,
+		[],
+		"a PRISM-dev-only doc satisfies the invariant without an exception list"
+	);
 });
