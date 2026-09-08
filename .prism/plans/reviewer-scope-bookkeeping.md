@@ -136,7 +136,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 ### Behavioral
 
 - [x] **AC-1** Given a reviewer has only findings about a plan's own history, session, or readiness prose, When they finish the pass, Then the pull request is not held open for those findings alone.
-  - *Evidence (machine):* `grep -o 'bookkeeping-only' .ai-skills/skills/prism-code-review-pr/shared.md | wc -l` → `≥ 3` (baseline today: `0`; task 2 lands one occurrence in state #2 and one in state #3, task 3 lands a third in the verdict paragraph of the same file). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches. · UNMET looks like: `0`, meaning the decision gate never learned the exemption. **Observed:** `3` (positive control `3`) — MET.
+  - *Evidence (machine):* `grep -o 'bookkeeping-only' .ai-skills/skills/prism-code-review-pr/shared.md | wc -l` → `≥ 3` (baseline today: `0`; task 2 lands one occurrence in state #2 and one in state #3, task 3 lands a third in the verdict paragraph of the same file). Positive control: the same probe against `.prism/rules/followup-scope.md` returns `≥ 1`, proving the pattern matches. · UNMET looks like: `0`, meaning the decision gate never learned the exemption. **Observed:** `4` (positive control `3`) — MET; the fourth occurrence is the precedence clause the pass-1 review-fix added to the same paragraph.
   - *Evidence (human):* read § Decision gate — three states and confirm a pass holding only bookkeeping-only minors routes to state #3, which applies `effort + confidence` and flips the PR out of draft. · UNMET looks like: the reader still lands in state #2. **Observed:** state #3 now reads "every remaining minor is addressed, acknowledged, or bookkeeping-only" — MET.
 
 - [x] **AC-2** Given a finding about how a criterion is to be verified, When the reviewer classifies it, Then it is treated as bookkeeping; and given a finding about the criterion itself, Then it is not.
@@ -158,7 +158,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
   - *Evidence (machine):* `grep -o 'Spec content never rides an unrelated ticket' .prism/rules/followup-scope.md | wc -l` → `≥ 3`. **Baseline is `2`, not `0`** — the heading itself and the existing `## Who runs this rule` reference already match, so a threshold of `≥ 2` would pass without any change to the file. · UNMET looks like: `2`, meaning the new section restated the list instead of citing it. **Observed:** `3` — MET.
 
 - [x] **AC-7** Every generated mirror matches its canonical source and the full check suite passes.
-  - *Evidence (machine):* `pnpm prism:check` → exit `0`. · UNMET looks like: non-zero exit, most likely `build --check` reporting seed or platform drift because task 5's `pnpm prism:build` was skipped, or `crossref-lint` failing on a section anchor that does not resolve. **Observed:** exit `0` (668/668 tests pass, crossref-lint/spec-scope-lint/verify-pack-parity all pass) — MET.
+  - *Evidence (machine):* `pnpm prism:check` → exit `0`. · UNMET looks like: non-zero exit, most likely `build --check` reporting seed or platform drift because task 5's `pnpm prism:build` was skipped, or `crossref-lint` failing on a section anchor that does not resolve. **Observed:** exit `0` (901 tests, 900 pass, 0 fail, 1 skipped; crossref-lint/spec-scope-lint/verify-pack-parity all pass) — MET.
 
 - [x] **AC-8** The conductor is unchanged — the label's meaning moved, its consumer did not.
   - *Evidence (machine):* `git diff --name-only origin/main...HEAD -- .ai-skills/skills/prism-conductor/ .prism/skills/prism-conductor/ | wc -l` → `0`. Positive control: `git diff --name-only origin/main...HEAD -- .ai-skills/skills/ | wc -l` → `≥ 3`, proving the pathspec form finds changes when they exist. · UNMET looks like: any non-zero count under the conductor paths. **Observed:** `0` (positive control `3`) — MET.
@@ -183,6 +183,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix the one open Review Issue (PR #459's broken GitHub description) within the local frame; Bounds — the PR metadata field plus the plan's bookkeeping entries, no source or mirror edits; Approach — `gh pr edit --body-file` the scratchpad file Briar already verified as correct, confirm via a direct API read, mark the finding fixed. · close: scope held
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — self-review PR #459 pass 2 at full bar against `git diff origin/main...HEAD`, re-sweeping the same source diff pass 1 covered (unchanged since — the intervening commit touched only this plan) plus confirming the merge-conflict resolution held; Bounds — review only, no source edits, write findings to the plan and land a plan-only commit; Approach — re-read the full diff fresh, re-run `pnpm prism:build && pnpm prism:check` from a clean tree, re-verify AC-2/AC-3/AC-5/AC-8 independently, sweep all nine review angles. · close: scope held — zero new findings; pass 1's one Major was already fixed and stayed fixed
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix Eric's three PR-review pass-1 Minor findings (decision-gate confidence label, plan task 4's invariant wording, the QA report's AC-4 coverage claim) within the local frame; Bounds — the three named files plus this plan's bookkeeping entries, no other source edits; Approach — apply each finding's prescribed fix, re-verify the underlying facts independently, then `pnpm prism:build && pnpm prism:check`. · close: scope held
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule] open: Intent — fix Eric's three PR-review pass-2 Minor findings (the decision gate's pass-bounded vs. bookkeeping-only ready-flip contradiction, `followup-scope.md`'s stale "same scope" claim, two stale AC Observed values) within the local frame; Bounds — the two named source files plus this plan's bookkeeping entries, no other source edits; Approach — verify each finding's underlying facts independently (re-run the grep probe, re-run the test suite, re-read the merged Ledger bullet) before applying the prescribed fix, then `pnpm prism:build && pnpm prism:check`. · close: scope held
 
 ---
 
@@ -196,6 +197,7 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Clove fixed the one open Review Issue — `gh pr edit 459 --body-file` replaced the broken PR description with the real summary, re-verified against a direct API read; no source edits needed. `pnpm prism:check` re-run clean.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Briar ran self-review pass 2 over the same source diff (unchanged since pass 1) — full diff re-read, `pnpm prism:build` (900/901, 1 skipped, 0 fail, no drift) and `pnpm prism:check` re-run clean, AC-2/AC-3/AC-5/AC-8 independently re-verified. Zero new findings.
 - 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Eric PR-reviewed #459 (pass 1) and filed three bookkeeping-only Minors, gating normally under this PR's own new rule; Clove fixed all three — capped Eric's decision-gate confidence label for the bookkeeping-minor path, narrowed task 4's "must not survive" invariant to the restated list, and corrected the QA report's AC-4 coverage claim. `pnpm prism:build` (900/901, 1 skipped) and `pnpm prism:check` both exit 0.
+- 2026-09-08 [huntermcgrew/reviewer-scope-bookkeeping-rule]: Eric PR-reviewed #459 (pass 2) and filed three Minors, two gating (the decision gate's pass-bounded/bookkeeping-only ready-flip contradiction; `followup-scope.md`'s stale "same scope" claim) and one bookkeeping-only (two stale AC Observed values); Clove fixed all three, adding a precedence clause rather than a fourth case per Eric's suggested fix. `pnpm prism:build` (901 tests, 900 pass, 0 fail, 1 skipped) and `pnpm prism:check` both exit 0.
 
 ---
 
@@ -239,6 +241,33 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 - **Suggested fix:** state what actually ran — five names return `0`; `## PR Readiness` returns `1` by design, as a reference mention rather than the restated list.
 - **Fixed in:** reworded the sentence to state the five-of-six probe accurately and explain the `## PR Readiness` exception. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955257946
 
+### Eric's pass-bounded and bookkeeping-only caps give opposite ready-flip answers where they overlap (PR-review pass 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-code-review-pr/shared.md:274,276`
+- **Problem:** Line 274 says the ready-flip does not fire while any angle is pass-bounded; line 276 says the ready-flip still fires when state #3 is reached only via bookkeeping-only minors. Both antecedents can hold at once — a pass-bounded angle is an unfinished check, not a finding, so it doesn't change which state a pass lands in — and the two lines then disagree on the same PR.
+- **Suggested fix:** state the precedence on line 276 rather than adding a fourth case: the ready-flip still fires for the bookkeeping-only path unless a pass-bounded angle also stands, in which case the cap above governs.
+- **Fixed in:** added the precedence clause to line 276 — the ready-flip still fires "provided no angle remains pass-bounded," and a trailing sentence states that when one does, the pass-bounded cap takes precedence and the flip does not fire. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955465884
+
+### `followup-scope.md`'s review-loop citation claims "the same scope" the PR #489 merge made false (PR-review pass 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/followup-scope.md:101`
+- **Problem:** The bullet said the loop "carries a stricter disposition on the same scope" as this rule's bookkeeping-content set — true at `3f37e651`, before the merge folded in main's two loop-local Ledger additions (the PR body and the readiness line the loop emits). The loop's own Ledger is now this rule's set plus two, so the scope-equality claim is stale.
+- **Suggested fix:** drop the scope-equality claim, keep the disposition contrast, and name the two loop-local additions.
+- **Fixed in:** reworded the bullet to state the disposition without claiming equal scope, and to name the PR body and the readiness line as the loop's two additions. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955465907
+
+### Two AC `Observed` values no longer reproduce (bookkeeping-only — recorded, does not gate) (PR-review pass 2)
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/reviewer-scope-bookkeeping.md:139,161`
+- **Problem:** AC-7's Observed value read `668/668 tests pass`; `pnpm prism:build`'s `prism:test` leg now reports `901 tests, 900 pass, 0 fail, 1 skipped` (the exit code the criterion actually grades is still `0`, so the verdict is unaffected). AC-1's Observed value read `3`; the probe now returns `4`, because this same PR's pass-1 review fix added a fourth `bookkeeping-only` occurrence to the file being grepped. Both cited lines are AC `Evidence` sub-bullets, which this PR's own new rule places in bookkeeping content — recorded, not gating.
+- **Suggested fix:** update both Observed values to the reproducing numbers; neither criterion's verdict changes.
+- **Fixed in:** AC-7's Observed now reads `901 tests, 900 pass, 0 fail, 1 skipped`; AC-1's Observed now reads `4` with a note that the fourth occurrence is the pass-1 precedence-clause fix. Both re-verified independently by re-running the cited commands against the current tree. https://github.com/HunterMcGrew/PRISM/pull/459#discussion_r3955465924
+
 ---
 
 ## Cleanup Items
@@ -247,8 +276,8 @@ Baselines measured on `main` at `93434232`, 2026-08-14. Each probe counts occurr
 
 ## PR Readiness
 
-- [x] No critical or major issues — the one open major (PR #459 description) is fixed; Eric's PR-review pass 1 found three bookkeeping-only Minors, all fixed, see `## Review Issues`
-- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-run by Clove after fixing Eric's three findings, from a clean tree after `pnpm prism:build`, 900/901 with 1 skipped, exit 0)
+- [x] No critical or major issues — the one open major (PR #459 description) is fixed; Eric's PR-review passes 1 and 2 found six Minors total, all fixed, see `## Review Issues`
+- [x] `pnpm prism:check` passes — last run: 2026-09-08 (re-run by Clove after fixing Eric's pass-2 findings, from a clean tree after `pnpm prism:build`, 901 tests/900 pass/0 fail/1 skipped, exit 0)
 - [x] All eight AC evidence commands executed with observed values recorded — all 8 independently re-run across pass 1 and pass 2 by Briar and confirmed matching (AC-1, AC-4, AC-6, AC-8 in pass 1; AC-2, AC-3, AC-5, AC-8 again in pass 2)
 - [x] PR description up to date — fixed via `gh pr edit`, see `## Review Issues`
 - [ ] Lasting decisions promoted to architect context (if applicable) — deferred to plan close per `branch-plan.md § Before Closing`; this plan is unfiled and not yet closed

@@ -1050,7 +1050,7 @@ A **Minor** finding whose every cited line falls in bookkeeping content is recor
 - **Briar** (`prism-code-review-self`) and **Eric** (`prism-code-review-pr`) — when surfacing a follow-up item during review, the default answer is "follow-up PR." A recommended ticket arrives with the scope-fit elements already filled in so Nora can act on it without round-tripping.
 - **Sasha** (`prism-debugger`) — when investigation surfaces an adjacent fix or refinement, applies the same table.
 - **`pnpm prism:spec-scope-lint`** — the mechanical half of § Spec content never rides an unrelated ticket. Runs on every `pnpm prism:check` invocation; no persona invokes it directly.
-- **`prism-review-loop`** — carries a stricter disposition on the same scope: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. See its § Review surfaces.
+- **`prism-review-loop`** — carries a stricter disposition: the loop declines to raise a bookkeeping finding at all, because the loop authored the text it would be reviewing. Its own Ledger set is this section's set plus two loop-local additions — the PR body and the readiness line the loop itself emits. See its § Review surfaces.
 
 ## Worker emit pre-filter (Sol-run-time)
 
