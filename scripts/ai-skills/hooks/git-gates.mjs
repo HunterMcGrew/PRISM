@@ -27,6 +27,7 @@
  * write gate — because no harness exposes a pre-commit event of its own.
  */
 import { spawnSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -175,10 +176,37 @@ export function detectGitSegments(command) {
 }
 
 /**
+ * The real, canonical spelling of `dir` — on Windows this expands an 8.3
+ * short name and resolves a junction; on POSIX it resolves a symlink — or
+ * `path.resolve(dir)` when the directory cannot be inspected.
+ *
+ * The fallback is required, not defensive: `findConfigRoot`'s own unit test
+ * walks a directory that is never created, and `realpathSync.native` throws
+ * `ENOENT` on a path that does not exist.
+ *
+ * @param {string} dir
+ * @returns {string}
+ */
+function resolveCanonicalDir(dir) {
+	try {
+		return realpathSync.native(dir);
+	} catch {
+		return path.resolve(dir);
+	}
+}
+
+/**
  * Walks upward from `startDir` to the first directory containing
  * `.ai-skills/config.json`, or `null` when the walk reaches `stopDir` (or
  * the filesystem root) without finding one. `stopDir` is inclusive: it is
  * checked, and the walk ends there.
+ *
+ * Both bounds are canonicalized before the walk starts, because a caller's
+ * `stopDir` — typically `git rev-parse --show-toplevel`, which always
+ * answers in the canonical long form — can spell the same directory
+ * differently than `startDir` does. Comparing the two spellings as plain
+ * text would make the stop check never fire, and the walk would climb past
+ * the intended boundary into an enclosing repo's config.
  *
  * Deliberately not `findRepoRoot` from `architect-route.mjs`: that keys on
  * `.prism/architect/manifest.json`, a different feature's file, and a consumer
@@ -189,7 +217,8 @@ export function detectGitSegments(command) {
  * @returns {Promise<string | null>}
  */
 export async function findConfigRoot(startDir, stopDir = null) {
-	let dir = path.resolve(startDir);
+	let dir = resolveCanonicalDir(startDir);
+	const canonicalStopDir = stopDir === null ? null : resolveCanonicalDir(stopDir);
 
 	while (true) {
 		try {
@@ -199,7 +228,7 @@ export async function findConfigRoot(startDir, stopDir = null) {
 			// Not here — keep walking up.
 		}
 
-		if (stopDir !== null && path.relative(stopDir, dir) === "") {
+		if (canonicalStopDir !== null && path.relative(canonicalStopDir, dir) === "") {
 			return null;
 		}
 
