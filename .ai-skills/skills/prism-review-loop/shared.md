@@ -26,20 +26,28 @@ it, and every pass reviews them at different bars:
   The work the loop was invoked to review. Full bar, every pass.
 - **Repair** — `git diff $loopBase HEAD`. Changes the loop itself authored.
   Regression-only bar (below).
-- **Ledger** — a section a persona appends findings to, as opposed to a
-  section an author writes to declare scope: the plan's `## Review Issues`,
-  `## History`, `## Sessions`, `## Debugged Issues`, `## Cleanup Items`, and
-  `## PR Readiness` entries, plus `.prism/lessons.md`, the PR body, and the
-  readiness line the loop itself emits. Not a review target during the loop
-  at any bar. Everything else in the plan file —
-  `## Implementation Tasks`, `## Decisions`, `## Acceptance Criteria` — is
-  Subject content when it falls inside the diff being reviewed; Ledger names
-  only bookkeeping, never the whole plan file. `## PR Readiness` is
-  persona-rewritten on every self-review pass (`.prism/rules/branch-plan.md`
-  defines it as "updated every time `code-review-self` runs"), which is the
-  same persona-appends-vs-author-declares test the rest of this list applies
-  — reviewing it at Subject bar would flag the loop's own bookkeeping as a
-  finding on every pass.
+- **Ledger** — bookkeeping content as `.prism/rules/followup-scope.md` §
+  Bookkeeping findings are recorded, not gated defines it: the plan
+  sections a persona appends findings to rather than the sections an
+  author writes to declare scope, plus `.prism/lessons.md` and the
+  `Evidence` sub-bullets under `## Acceptance Criteria` — and, loop-local,
+  the PR body and the readiness line the loop itself emits. Not a review
+  target during the loop at any bar. Everything else in the plan file —
+  `## Implementation Tasks`, `## Decisions`, and the AC **criterion**
+  lines those Evidence sub-bullets hang from — is Subject content when
+  it falls inside the diff being reviewed; Ledger names only
+  bookkeeping, never the whole plan file. `## PR Readiness` is
+  persona-rewritten on every self-review pass
+  (`.prism/rules/branch-plan.md` defines it as "updated every time
+  `code-review-self` runs"), which is the same
+  persona-appends-versus-author-declares test the rest of the set
+  applies — reviewing it at Subject bar would flag the loop's own
+  bookkeeping as a finding on every pass. The loop's disposition is
+  stricter than the rule's, for its own reason: the rule keeps a
+  bookkeeping finding non-gating because it is not worth a round; the
+  loop declines to raise one at all because the loop wrote the text it
+  would be reviewing, and a pass that reviews its own output cannot
+  converge.
 
 The PR body is exempt *during* the loop, not permanently — a standalone
 review pass checks it once, out of loop, before the human gate. Its
@@ -64,7 +72,7 @@ Two rules meet here and neither replaces the other. Each reviewer's
 § Plan-file scope shrinks the set of plan observations that are findings at
 all — a plan is a finding only when it contradicts the diff. What survives
 that filter is mostly a contradiction in `## Implementation Tasks`,
-`## Decisions`, or `## Acceptance Criteria`, which the list above already
+`## Decisions`, or an AC **criterion** line, which the list above already
 calls Subject content — so the loop reviews it at the Subject bar like any
 other finding rather than capping it. The capping belongs to the Ledger row
 under **Disposition** below, and it runs over the bookkeeping sections
