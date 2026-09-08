@@ -913,9 +913,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	}
 
 	// Each host that is in `hosts` either produces its own finding or stays
-	// silent — mirroring the pre-Codex shape, where the per-host block ran
-	// unconditionally rather than being gated on the dead-registration loop
-	// above. The two report different things (an inert or reachable runtime
+	// silent. The two report different things (an inert or reachable runtime
 	// vs. a registration pointing at nothing) and neither should suppress
 	// the other — a dead registration for one host and an inert runtime for
 	// the other, or an unrelated dead registration, are both real findings.

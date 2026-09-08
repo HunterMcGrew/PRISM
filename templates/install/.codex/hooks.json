@@ -30,6 +30,16 @@
 					}
 				]
 			}
+		],
+		"PostCompact": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \".claude/hooks/hook.mjs\" --tool=codex --event=PostCompact"
+					}
+				]
+			}
 		]
 	}
 }
