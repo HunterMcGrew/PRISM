@@ -1938,6 +1938,28 @@ test("runUpdate fails fast when the consumer directory is not inside a git repos
  */
 const PRISM_HOOK_SETTINGS = {
 	hooks: {
+		PreToolUse: [
+			{
+				matcher: "Write|Edit|Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+			{
+				matcher: "Bash",
+				hooks: [
+					{
+						type: "command",
+						command:
+							'node "$CLAUDE_PROJECT_DIR/.claude/hooks/git-gates.mjs" --tool=claude --event=PreToolUse',
+					},
+				],
+			},
+		],
 		PostToolUse: [
 			{
 				matcher: "Read|Grep|Bash",
@@ -2076,10 +2098,27 @@ test("mergeHookSettingsRegistration: a consumer with no prior settings file rece
 
 const HOOK_RUNTIME_RELATIVE_PATHS = [
 	"hook.mjs",
+	"git-gates.mjs",
 	"architect-route.mjs",
 	"harnesses.mjs",
 	"lib/match.mjs",
+	"lib/shell.mjs",
 ];
+
+/** The state-file globs `refreshHookRuntime` appends — one pair per hook entry point. */
+const HOOK_STATE_GITIGNORE_GLOBS = [
+	".prism/architect-route-state.*.json",
+	".prism/architect-route-state.*.json.tmp",
+	".prism/git-gates-state.*.json",
+	".prism/git-gates-state.*.json.tmp",
+];
+
+/** The `PreToolUse` entries whose command names `git-gates.mjs`. */
+function gitGatesEntries(settings: { hooks?: Record<string, unknown[]> }): unknown[] {
+	return (settings.hooks?.PreToolUse ?? []).filter((entry) =>
+		JSON.stringify(entry).includes("git-gates.mjs")
+	);
+}
 
 /** Stand-in for a delivered runtime file — carries the ownership marker `refreshHookRuntime` classifies on. */
 function prismRuntimeSource(label: string): string {
@@ -2504,6 +2543,91 @@ test("refreshHookRuntime: dryRun previews a removal without performing it", asyn
 	});
 });
 
+test("refreshHookRuntime: running twice leaves exactly one git-gates registration", async () => {
+	await withHookRuntimeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+		await refreshHookRuntime(prismRepoRoot, consumerRepoRoot, false, ["claude"]);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(gitGatesEntries(settings).length, 1);
+		const entry = gitGatesEntries(settings)[0] as { matcher: string };
+		assert.equal(entry.matcher, "Bash", "the git gates fire on the shell tool only");
+	});
+});
+
+test("mergeHookSettingsRegistration: a settings file from an older PRISM with hook.mjs entries only gains the git-gates entry", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const olderPrism = {
+			hooks: {
+				PreToolUse: [
+					{
+						matcher: "Write|Edit|Bash",
+						hooks: [
+							{
+								type: "command",
+								command:
+									'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude --event=PreToolUse',
+							},
+						],
+					},
+				],
+				PostToolUse: [
+					{
+						matcher: "Read|Grep|Bash",
+						hooks: [
+							{
+								type: "command",
+								command: 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/hook.mjs" --tool=claude',
+							},
+						],
+					},
+				],
+			},
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify(olderPrism, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const settings = await readConsumerSettings(consumerRepoRoot);
+		assert.equal(gitGatesEntries(settings).length, 1, "the new entry point is registered");
+		assert.equal(
+			settings.hooks?.PreToolUse?.length,
+			2,
+			"the older hook.mjs entry is replaced, not kept alongside its successor"
+		);
+	});
+});
+
+test("mergeHookSettingsRegistration: a consumer wrapper around git-gates.mjs is not claimed", async () => {
+	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
+		const wrapper = {
+			matcher: "Bash",
+			hooks: [
+				{
+					type: "command",
+					command: "bash -c 'my-lint && node .claude/hooks/git-gates.mjs --tool=claude'",
+				},
+			],
+		};
+		await writeFile(
+			consumerRepoRoot,
+			".claude/settings.json",
+			`${JSON.stringify({ hooks: { PreToolUse: [wrapper] } }, null, "\t")}\n`
+		);
+
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+		await mergeHookSettingsRegistration(prismRepoRoot, consumerRepoRoot, false);
+
+		const preToolUse = (await readConsumerSettings(consumerRepoRoot)).hooks?.PreToolUse ?? [];
+		assert.deepEqual(preToolUse[0], wrapper, "the wrapper survives at the front");
+		assert.equal(gitGatesEntries({ hooks: { PreToolUse: preToolUse } }).length, 2, "the wrapper plus PRISM's own entry");
+	});
+});
+
 test("mergeHookSettingsRegistration: a consumer command that merely mentions the entry point is not treated as PRISM's", async () => {
 	await withHookMergeRoots(async ({ prismRepoRoot, consumerRepoRoot }) => {
 		const wrapper = {
@@ -2545,13 +2669,14 @@ test("mergeHookSettingsRegistration: a consumer command that merely mentions the
 	});
 });
 
-test("appendHookStateGitignoreLines: writes both state-file globs as exact lines", async () => {
+test("appendHookStateGitignoreLines: writes every state-file glob as an exact line", async () => {
 	await withHookRuntimeRoots(async ({ consumerRepoRoot }) => {
 		await appendHookStateGitignoreLines(consumerRepoRoot, false);
 
 		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
-		assert.ok(lines.includes(".prism/architect-route-state.*.json"));
-		assert.ok(lines.includes(".prism/architect-route-state.*.json.tmp"));
+		for (const expected of HOOK_STATE_GITIGNORE_GLOBS) {
+			assert.ok(lines.includes(expected), `${expected} is written`);
+		}
 	});
 });
 
@@ -2573,10 +2698,7 @@ test("appendHookStateGitignoreLines: running twice leaves exactly one copy of ea
 		await appendHookStateGitignoreLines(consumerRepoRoot, false);
 
 		const lines = (await readFile(consumerRepoRoot, ".gitignore")).split("\n");
-		for (const expected of [
-			".prism/architect-route-state.*.json",
-			".prism/architect-route-state.*.json.tmp",
-		]) {
+		for (const expected of HOOK_STATE_GITIGNORE_GLOBS) {
 			assert.equal(
 				lines.filter((line) => line === expected).length,
 				1,
