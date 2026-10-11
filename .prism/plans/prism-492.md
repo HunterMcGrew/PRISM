@@ -131,6 +131,22 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - **Problem:** `applyFilePass` in `scripts/ai-skills/update.ts` writes the files in PRISM's source and removes files recorded in the consumer manifest, so a team's new file under `_toolkit/` is left alone, while an edit to a shipped file is overwritten. The directive (don't write there) holds, but the stated consequence is broader than the code.
 - **Suggested fix:** reword to "`prism update` overwrites the files PRISM ships there, and PRISM may ship a file at any path under it" in the guide, and match the Decision at `prism-492.md:58`.
 
+No issues found — 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement] (pass 3; `pnpm prism:check` exits 0, all seven earlier findings verified fixed at `8cb2dd56`).
+
+### Angle Coverage (pass 3)
+
+Subject surface frozen at `2d2d81f2`, repair diff `2d2d81f2..8cb2dd56` at regression bar.
+
+- Runtime behavior — swept — 1 item enumerated (guide `_toolkit/` claim against `applyFilePass`), 1 verdict: matches the code.
+- Test efficacy — swept — no items (no code changed since pass 2).
+- Spec and doc consistency — swept — 5 items enumerated (two consumer docs, guide, two Decisions), 5 verdicts, all agree with `ownership.ts` and `update.ts`.
+- Citation integrity — swept — 2 items enumerated (`ownership.ts` glob list in both docs, `update.ts` first-update `.bak` behavior), 2 verdicts, both resolve.
+- External-system claims — swept — 1 item enumerated (first update writes `.bak` for unrecorded differing guides), 1 verdict: confirmed in `applyIncomingFile`.
+- Repo writing rules — swept — verdict-only.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — 2 items enumerated (`docs/adopting-into-existing-repos.md`, `docs/what-prism-writes.md`), 2 verdicts, both now list the guides.
+- Accessibility — n/a — no UI in the diff.
+
 ### Angle Coverage (pass 2)
 
 Subject surface at full bar, repair diff `2d2d81f2..db108c3c` at regression bar. `pnpm prism:check` exits 0; `ownership.test.ts` 16 of 16 pass. All five pass-1 findings verified closed.
@@ -165,7 +181,7 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [ ] All review issues resolved (2 minor open)
+- [x] All review issues resolved
 
 **Last updated:** 2026-10-11
 
