@@ -55,9 +55,9 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
   - **Alternatives considered:** a pointer in `CLAUDE.md` and `AGENTS.md`, which is what thrive #2673 shipped. Routing the guide on `.prism/plans/**`.
   - **Chosen approach:** `branch-plan.md` is always-on and the build ships it to every host, so the pointer fires at the exact step where the target is chosen. A `CLAUDE.md` pointer only reaches Claude. A plan route would load the full guide on every plan edit, when only the close step needs it.
   - **Implementation guidance:** edit both the source and the curated seed twin by hand. The seed twin has no drift check.
-- **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` replaces `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's content written there is overwritten on the next update, surviving only as a `.bak` copy.
+- **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` overwrites the files PRISM ships under `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's edit to one survives only as a `.bak` copy, and PRISM may ship a file at any path there later.
 
-- **`prism update` owns `.prism/architect/guides/**`.** `PRISM_OWNED_GLOBS` had no entry for the writing guides, so `classifyPath` returned `unknown` and an existing consumer never received a guide update. Fixed in PR 1 because PR 1's close-step pointer cites a guide section those consumers would otherwise lack. Considered: a separate PR ahead of the stack. Rejected: PR 1 is the change that depends on it. A consumer who edited a guide gets the usual owned-file treatment, a `.bak` copy and then PRISM's version.
+- **`prism update` owns `.prism/architect/guides/**`.** `PRISM_OWNED_GLOBS` had no entry for the writing guides, so `classifyPath` returned `unknown` and an existing consumer never received a guide update. Fixed in PR 1 because PR 1's close-step pointer cites a guide section those consumers would otherwise lack. Considered: a separate PR ahead of the stack. Rejected: PR 1 is the change that depends on it. A consumer who edited a guide gets the usual owned-file treatment, a `.bak` copy and then PRISM's version. Guides were never in a consumer's sync manifest, so the first update after this ships writes a `.bak` for every guide that differs from the incoming copy, edited or not.
 
 ---
 
@@ -118,7 +118,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### PRISM-owned path lists in consumer docs omit `architect/guides/**`
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `docs/adopting-into-existing-repos.md:100`
 - **Problem:** the list of PRISM-owned globs (and the "PRISM only manages the `_toolkit/` subdirectory" sentence at `:103`) and the owned-paths table in `docs/what-prism-writes.md:27-35` contradict the Decision "`prism update` owns `.prism/architect/guides/**`", so a consumer reading them is told guide edits are safe. `documentation.md` § Cross-Reference Map already pairs `ownership.ts` with the first of these.
 - **Suggested fix:** add `architect/guides/**` to both lists and reword the `:103` sentence to cover the guides. Eli's lane; fold into PR 1 per the Decision's own reasoning.
@@ -126,7 +126,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### Guide says `prism update` "replaces" `_toolkit/`, but only files PRISM ships there are touched
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/guides/writing-an-architect-doc.md:84`
 - **Problem:** `applyFilePass` in `scripts/ai-skills/update.ts` writes the files in PRISM's source and removes files recorded in the consumer manifest, so a team's new file under `_toolkit/` is left alone, while an edit to a shipped file is overwritten. The directive (don't write there) holds, but the stated consequence is broader than the code.
 - **Suggested fix:** reword to "`prism update` overwrites the files PRISM ships there, and PRISM may ship a file at any path under it" in the guide, and match the Decision at `prism-492.md:58`.

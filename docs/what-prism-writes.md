@@ -27,7 +27,8 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 | Path | What's there |
 |---|---|
 | `.prism/rules/**` | Cross-cutting rules loaded into every AI agent session — code standards, git conventions, the branch-plan protocol, and so on |
-| `.prism/architect/_toolkit/**` | PRISM's own architect-context files (the `_toolkit` subdirectory only — flat files directly under `architect/` are yours, see below) |
+| `.prism/architect/_toolkit/**` | PRISM's own architect-context files (the `_toolkit` subdirectory, and `guides/` below — flat files directly under `architect/` are yours, see below) |
+| `.prism/architect/guides/**` | The writing guides for plans, rules, skills, ADRs, and architect docs, which agents read before editing those files |
 | `.prism/spec/adrs/_toolkit/**` | PRISM's own architectural decision records (again, only the `_toolkit` subdirectory — flat ADR files are yours) |
 | `.prism/spec/**` | The tier hierarchy and spec-ownership model, excluding the consumer carve-outs listed below |
 | `.prism/templates/**` | PR description, acceptance-criteria, and bug-report templates |
