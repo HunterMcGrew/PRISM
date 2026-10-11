@@ -17,14 +17,14 @@ The convention does not apply to:
 
 ## Build-time path guard
 
-`scripts/ai-skills/path-guard.ts` runs as part of `pnpm prism:build` and `pnpm prism:check`. It scans every `.md` file under the copied areas of `.prism/` and `templates/install/.prism/`, plus the loose `SPEC.md` on each surface, and fails the build when it finds a reference matching `(\.claude|\.codex|\.cursor)/(rules|architect|spec|templates|references|plans)/`. Both surfaces share the same allowlist — keys are relative to the surface's content root.
+`scripts/ai-skills/path-guard.ts` runs as part of `pnpm prism:build` and `pnpm prism:check`. It scans every `.md` file under the copied areas of `.prism/` and `templates/install/.prism/`, plus the canonical `.prism/SPEC.md`, and fails the build when it finds a reference matching `(\.claude|\.codex|\.cursor)/(rules|architect|spec|templates|references|plans)/`. The seed ships its SPEC as `SPEC.md.tmpl`, and the guard looks only for `SPEC.md`, so the seed copy is not scanned. Both surfaces share the same allowlist — keys are relative to the surface's content root.
 
 Two exclusions:
 
 - Matches inside fenced code blocks pass — code blocks may legitimately quote prior layouts without triggering the guard.
 - A filename allowlist for files whose job is to name platform paths: the ADR on the bifurcated layout, `install-layout.md` (its walkthrough of canonical vs. copy), and this doc (its convention examples). New allowlist entries need a comment explaining why.
 
-When the guard fires, it prints `path-guard: <surface-root>/<relative-path>:<line>: <text>` for each violation, then a count line, and exits non-zero.
+When the guard fires, it prints `path-guard: <surface-root>/<relative-path>:<line>: <text>` for each violation, then a count line for that surface, and exits non-zero.
 
 ## Cross-reference lint
 

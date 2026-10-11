@@ -66,7 +66,10 @@
 	],
 	".prism/audits/**": "_toolkit/audit-workflow.md",
 	".prism/custom/**": "_toolkit/install-layout.md",
-	"scripts/ai-skills/build.ts": "_toolkit/install-layout.md",
+	"scripts/ai-skills/build.ts": [
+		"_toolkit/install-layout.md",
+		"_toolkit/token-substitution.md"
+	],
 	"scripts/ai-skills/update.ts": [
 		"_toolkit/install-layout.md",
 		"_toolkit/consumer-sync-flow.md",
@@ -77,6 +80,7 @@
 	"scripts/ai-skills/path-guard.ts": "_toolkit/cross-reference-checks.md",
 	"scripts/ai-skills/crossref-lint.ts": "_toolkit/cross-reference-checks.md",
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",
+	".ai-skills/definitions/literal-allowlist.json": "_toolkit/output-guards.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": [
 		"_toolkit/documentation.md",
@@ -103,7 +107,9 @@
 	"package.json": "_toolkit/npm-packaging.md",
 	"scripts/ai-skills/verify-pack-parity.ts": "_toolkit/npm-packaging.md",
 	"scripts/ai-skills/lib/cli-entry.ts": "_toolkit/npm-packaging.md",
+	"scripts/ai-skills/bundle.ts": "_toolkit/npm-packaging.md",
 	"scripts/ai-skills/worktree-classify.ts": "_toolkit/worktree-hygiene.md",
+	".ai-skills/skills/prism-surface-audit/**": "_toolkit/worktree-hygiene.md",
 	".prism/architect/manifest.json": "_toolkit/hook-runtime.md",
 	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md"
 }

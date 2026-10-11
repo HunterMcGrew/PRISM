@@ -20,20 +20,22 @@ The split is intentional: `init` is the repeatable, CI-safe bootstrap; Atlas is 
 
 The install seed ([`install-layout.md`](./install-layout.md) § The templates/install seed surface) is what a consumer repo *receives*; `prism adopt` is what *lays it down* the first time. It is the install entry for a repo that has never had PRISM — an established team adopting PRISM into a codebase that already has its own setup.
 
-`runAdopt` runs two steps in sequence:
+`prism adopt` runs two steps in sequence:
 
-1. **Seed `.prism/` from `templates/install/.prism/`.** `seedConsumerContentRoot` recursively copies the install seed into the consumer's `.prism/`, writing only paths the consumer does **not** already have and skipping any that exist. It never overwrites an existing consumer file — it mirrors the `consumerHash === null → written` posture from `applyIncomingFile`.
-2. **Run the first sync.** `runAdopt` then delegates to `runUpdate`, which applies PRISM-owned files and writes the steady-state baseline manifest via `rewriteConsumerManifest`. The no-op-before-`.bak` ordering means byte-identical consumer files are left untouched and only genuinely diverged files are preserved as `.bak` — so the first sync into an established repo with no baseline manifest is safe.
+1. **Seed `.prism/` from `templates/install/.prism/`.** Adopt recursively copies the install seed into the consumer's `.prism/`, writing only paths the consumer does **not** already have and skipping any that exist. It never overwrites an existing consumer file.
+2. **Run the first sync.** Adopt then runs the same sync `prism update` runs, which applies PRISM-owned files and writes the steady-state baseline manifest. The no-op-before-`.bak` ordering means byte-identical consumer files are left untouched and only genuinely diverged files are preserved as `.bak` — so the first sync into an established repo with no baseline manifest is safe.
+
+Around those two steps it provisions `paths.json` first and, with `--seed-agents-md`, writes an absent `AGENTS.md` last.
 
 After this one run, `.prism/.sync-manifest.json` exists and the repo is in steady-state: `prism update` handles all future syncs.
 
-**The manifest-exists refusal is the install-vs-steady-state guard.** `runAdopt` calls `assertConsumerIsEstablished` before seeding; if a `.sync-manifest.json` is already present, it throws `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` The guard lives inside `runAdopt`, not only in the CLI `main()`, so every caller of `runAdopt` inherits the invariant. This mirrors `update.ts`'s source==consumer refusal: each entry point refuses the other's job so the two flows' preconditions stay clean. `--dry-run` previews the whole sequence with nothing written. First-contact's real safety is still recover-after-`.bak`: the seed never overwrites, and the sync no-ops byte-identical files and `.bak`-snapshots divergence.
+**The manifest-exists refusal is the install-vs-steady-state guard.** Adopt checks for a `.sync-manifest.json` before seeding. If one is already present, it stops with `"prism:adopt: this repo already has a PRISM baseline — run pnpm prism:update for steady-state."` This mirrors `prism update`'s refusal to run when its source is the consumer itself: each entry point refuses the other's job so the two flows' preconditions stay clean. `--dry-run` previews the whole sequence with nothing written. First-contact's real safety is still recover-after-`.bak`: the seed never overwrites, and the sync no-ops byte-identical files and `.bak`-snapshots divergence.
 
 ## Steady-state persona-skill distribution
 
 After the first `prism adopt` run, every subsequent `prism update` (and every future `prism adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. Both entry points reach the same render step without duplication.
 
-**What you receive.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
+**What you receive.** For each `prism-*` skill in the PRISM source roster, the update renders the skill body with your own token map — `${PROJECT}` becomes your project name, `${TICKET_PREFIX}` becomes your ticket prefix, and so on — and writes the rendered output to the platform directory for each host your `hosts` config key declares, all three when the key is absent:
 
 - `.claude/skills/<id>/SKILL.md` (Claude Code)
 - `.agents/skills/<id>/SKILL.md` (Codex)
@@ -41,7 +43,7 @@ After the first `prism adopt` run, every subsequent `prism update` (and every fu
 
 Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into their respective output roots using the same token map. Every written skill directory carries the managed marker (`.ai-skill-generated`) so orphan cleanup knows what to remove — see [`install-layout.md`](./install-layout.md) § Skill namespace ownership.
 
-**The consumer's tokens, not PRISM's.** The render uses `deriveTokenMap(loadConfig(consumerRepoRoot))` from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard runs over the consumer's skill output roots immediately after the render and fails the update if any are found.
+**The consumer's tokens, not PRISM's.** The render reads its token values from the consumer's own `.ai-skills/config.json`, not any PRISM-side values. A skill body that says "Create an issue in ${PROJECT}" lands as "Create an issue in Acme" in an Acme consumer. No unresolved token literals survive in any rendered output — the leftover-token guard runs over the consumer's skill output roots immediately after the render and fails the update if any are found.
 
 **Orphan cleanup.** When a persona is removed from the PRISM roster, the next `prism update` removes its skill directories from the consumer's platform dirs. Cleanup is gated on the managed marker, not on the `prism-*` prefix: a consumer-authored `prism-*`-named skill directory without the marker is never a delete target. The same cleanup fires a second way: drop a host from `hosts` and the next `prism update` sweeps that host's entire skill root, agent-definition root, Codex config, and platform content dir the same way — skill directories gated on the managed marker and agent files on the generated header line they carry, so your own files under those roots are never a delete target either — and a `codex-config.toml` you have replaced with your own content is left alone, since PRISM removes one only while it still carries the generated header it wrote. A persona leaving the roster and a host leaving `hosts` are the same cleanup at different granularity.
 
@@ -49,6 +51,4 @@ Codex agent adapters (`.toml`) and Claude agent definitions (`.md`) render into 
 
 **The hook runtime rides the same update.** See [`hook-runtime.md`](./hook-runtime.md) for what it delivers, to which hosts, and how a consumer turns it off.
 
-**Idempotency.** `generatePlatformSkills` uses `writeFileIfChanged` for every output: if the rendered content matches the file already on disk, no write occurs. A `prism update` run on a repo already at the current PRISM version is a no-op across the roster.
-
-The hook announces unread architect docs on a read and blocks a write to a routed path until they are read. See [`hook-runtime.md`](./hook-runtime.md). On a read that matches an architect-context route, it names each still-unread doc by path once per session — see [`.prism/rules/context-reuse.md`](../../rules/context-reuse.md). Delivery reaches Claude Code and Codex. Cursor has no delivery path today.
+**Idempotency.** The render writes a file only when its content changed: if the rendered content matches the file already on disk, no write occurs. A `prism update` run on a repo already at the current PRISM version is a no-op across the roster.

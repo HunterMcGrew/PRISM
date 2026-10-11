@@ -47,6 +47,7 @@
 		"_toolkit/closing-messages.md"
 	],
 	".ai-skills/skills/prism-code-review-pr/**": "_toolkit/eric-review-modes.md",
+	".ai-skills/skills/prism-surface-audit/**": "_toolkit/worktree-hygiene.md",
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md"
