@@ -472,15 +472,31 @@ Cleaner path (non-blocking): `references/session-close.md` § Lesson promotion t
 
 Cleaner path — implemented. `references/session-close.md` § Lesson promotion taxonomy and its seed twin now cite `lesson-promotion.md` and keep only who promotes and when.
 
+No issues found — 2026-10-11 [huntermcgrew/prism-492-split-umbrellas] (PR 4 pass 2; `pnpm prism:check` exits 0 at `af332835`, pass-1 findings verified closed).
+
+### Angle Coverage (PR 4 pass 2)
+
+Subject frozen at loopBase `8a7b84e6`; repair `8a7b84e6..af332835` at regression bar. Findings 8 (ADR-0076:87 left for the ADR-0074 supersede follow-up) and 12 (rejected, no new argument) are not re-raised.
+
+- Runtime behavior — swept — 2 items enumerated (`eric-review-modes.md` leaving `curated`, trimmed `cross-reference-checks.md` twin staying `curated`), 2 verdicts: the Eric twin is byte-identical and now auto-mirrors under the drift gate; the cross-reference twin differs from canonical, so `curated` is correct.
+- Test efficacy — swept — no items (no code changed since pass 1; the `prism:check` gates run clean).
+- Spec and doc consistency — swept — 11 items enumerated (findings 1–7, 9–11, 13), 11 verdicts, all closed; Task 1 no longer lists drift, AC-4 evidence names the manual walk.
+- Citation integrity — swept — 6 items enumerated (`CONTEXT.md` x4, ADR-0059, `anchor-substitution.md`), 6 verdicts, all resolve; a repeat tree-wide sweep for the moved section names returns nothing.
+- External-system claims — swept — 1 item enumerated (the Codex `PostToolUse` wording in `context-reuse.md`, `AGENTS.md`, and the seed twin), 1 verdict: matches the Codex matcher and the harness table (no read tool).
+- Repo writing rules — swept — verdict-only.
+- Security — n/a — no trust boundary in the repair.
+- Docs impact — swept — 1 item enumerated (`CONTEXT.md` glossary), 1 verdict: repointed.
+- Accessibility — n/a — no UI in the repair.
+
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues — 2 major open (PR 4 pass 1)
+- [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [ ] All review issues resolved — 13 open (PR 4 pass 1)
+- [x] All review issues resolved — findings 8 (partial, ADR-0076:87) and 12 are deferred or rejected by the coordinator
 
-**Last updated:** 2026-10-11 (PR 4 pass 1)
+**Last updated:** 2026-10-11 (PR 4 pass 2)
 
 ---
 
