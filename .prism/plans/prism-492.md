@@ -55,7 +55,9 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
   - **Alternatives considered:** a pointer in `CLAUDE.md` and `AGENTS.md`, which is what thrive #2673 shipped. Routing the guide on `.prism/plans/**`.
   - **Chosen approach:** `branch-plan.md` is always-on and the build ships it to every host, so the pointer fires at the exact step where the target is chosen. A `CLAUDE.md` pointer only reaches Claude. A plan route would load the full guide on every plan edit, when only the close step needs it.
   - **Implementation guidance:** edit both the source and the curated seed twin by hand. The seed twin has no drift check.
-- **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` replaces `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's content written there is lost on the next update.
+- **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` replaces `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's content written there is overwritten on the next update, surviving only as a `.bak` copy.
+
+- **`prism update` owns `.prism/architect/guides/**`.** `PRISM_OWNED_GLOBS` had no entry for the writing guides, so `classifyPath` returned `unknown` and an existing consumer never received a guide update. Fixed in PR 1 because PR 1's close-step pointer cites a guide section those consumers would otherwise lack. Considered: a separate PR ahead of the stack. Rejected: PR 1 is the change that depends on it. A consumer who edited a guide gets the usual owned-file treatment, a `.bak` copy and then PRISM's version.
 
 ---
 
@@ -76,7 +78,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### Existing consumers never receive the guide section that the new close-step pointer cites
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `templates/install/.prism/rules/branch-plan.md:188`
 - **Problem:** `scripts/ai-skills/ownership.ts` classifies `architect/guides/**` as `unknown` (checked with `classifyPath`), and `prism update` only writes `prism`-owned paths, while `rules/**` is owned and gets the new pointer, so an existing install is told to read § Where new content goes in a guide copy that lacks it.
 - **Suggested fix:** record a `## Decisions` entry and either add `architect/guides/**` to `PRISM_OWNED_GLOBS` (shared utility, so stop and confirm first) or ship the ownership fix as its own PR in this stack before PR 1 merges; `install-layout.md:78` already claims the guides are mirrored so a stale consumer copy can't hand out outdated instructions.
@@ -84,7 +86,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### "In a sister repo" cites an incident no reader can check
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/guides/writing-an-architect-doc.md:67`
 - **Problem:** the guide ships to consumers, and "a sister repo" names nothing they can open, so the example's claim is unverifiable.
 - **Suggested fix:** state the example as a plain scenario ("a rule about event dates once went into an umbrella routed only by backend paths") without the repo reference.
@@ -92,7 +94,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### Close-step sentence runs past two clauses and uses "umbrella" unglossed
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/rules/branch-plan.md:204` (seed twin `templates/install/.prism/rules/branch-plan.md:188`)
 - **Problem:** the added sentence chains a colon, a "so", and an "and" (writing-voice allows two clauses), and the always-on rule uses "umbrella doc" without defining it.
 - **Suggested fix:** split after the guide pointer ("Read ... before writing the `→ promoted to` verdict. The plan edit does not route that guide, so the target is otherwise chosen before the placement order is in context.") and drop the trailing umbrella clause or gloss it. Edit both twins by hand.
@@ -100,7 +102,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### Decision says consumer `_toolkit/` content is "lost" on update
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-492.md:58`
 - **Problem:** `prism update` overwrites a diverged owned file only after saving it as `<file>.bak` (`scripts/ai-skills/update.ts` header), so the content is displaced, not lost. The guide's own wording ("replaces it") is accurate.
 - **Suggested fix:** reword the Decision to "overwritten on the next update (a diverged file is kept as `.bak`)".
@@ -108,7 +110,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ### British spelling in the guide
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/architect/guides/writing-an-architect-doc.md:63`
 - **Problem:** "licence" where the rest of `.prism/rules/` writes "license".
 - **Suggested fix:** use "license".

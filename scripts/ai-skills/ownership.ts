@@ -23,6 +23,7 @@ import { compileMatcher } from "./hooks/lib/match.mjs";
  */
 export const PRISM_OWNED_GLOBS = [
   "architect/_toolkit/**",
+  "architect/guides/**",
   "spec/adrs/_toolkit/**",
   "rules/**",
   "templates/**",
