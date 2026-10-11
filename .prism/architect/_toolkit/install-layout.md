@@ -19,9 +19,10 @@ The Cursor translation is mechanical and lossless: `paths:` becomes `globs:` wit
 
 `pnpm prism:update` (ADR-0057) pulls PRISM's latest content into an already-onboarded consumer repo. For that to be safe, "what is PRISM allowed to overwrite" has to be answerable from the path alone — a sync that has to guess ownership per file will eventually guess wrong and clobber a consumer's product doc.
 
-PRISM-owned content lives under `_toolkit/` subdirs so ownership is a glob, not a guess:
+PRISM-owned content lives under `_toolkit/` subdirs, plus the writing guides under `.prism/architect/guides/`, so ownership is a glob, not a guess:
 
 - `.prism/architect/_toolkit/**` — PRISM's architect docs. Flat `.prism/architect/*.md` is reserved for consumer product docs.
+- `.prism/architect/guides/**` — the writing guides for plans, rules, skills, ADRs, and architect docs.
 - `.prism/spec/adrs/_toolkit/**` — PRISM's ADRs. Flat `.prism/spec/adrs/*.md` is reserved for consumer product ADRs, which sidesteps numbering collisions between PRISM and consumer ADRs.
 
 The leading underscore keeps the recursive walker working unchanged and sorts the reserved flat dir first. `scripts/ai-skills/ownership.ts` is the single source of truth for the classification: `PRISM_OWNED_GLOBS` lists `architect/_toolkit/**`, `architect/guides/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `spec/**`, and `SPEC.md`; `CONSUMER_OWNED_GLOBS` lists flat `architect/*.md`, flat `spec/adrs/*.md`, the live `architect/manifest.json`, `custom/**`, `plans/**`, and `lessons.md`. `classifyPath(relativePath)` returns `prism` | `consumer` | `unknown`, and the sync writes only `prism`-classified files.

@@ -17,9 +17,10 @@ Concrete example: `.prism/rules/code-comments.md` is the canonical comment-style
 
 `pnpm prism:update` pulls PRISM's latest content into an already-onboarded consumer repo. For that to be safe, "what is PRISM allowed to overwrite" has to be answerable from the path alone.
 
-PRISM-owned content lives under `_toolkit/` subdirs so ownership is a glob, not a guess:
+PRISM-owned content lives under `_toolkit/` subdirs, plus the writing guides under `.prism/architect/guides/`, so ownership is a glob, not a guess:
 
 - `.prism/architect/_toolkit/**` — PRISM's architect docs. Flat `.prism/architect/*.md` is reserved for consumer product docs.
+- `.prism/architect/guides/**` — the writing guides for plans, rules, skills, ADRs, and architect docs.
 - `.prism/spec/adrs/_toolkit/**` — PRISM's ADRs. Flat `.prism/spec/adrs/*.md` is reserved for consumer product ADRs, which sidesteps numbering collisions between PRISM and consumer ADRs.
 
 `manifest.json` is split-ownership: `.prism/architect/_toolkit/manifest.base.json` holds the toolkit routes (PRISM-owned), while the live `.prism/architect/manifest.json` is consumer-owned.

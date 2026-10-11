@@ -71,6 +71,8 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 
 - **PR 4 edits two always-on spec files outside the docs it splits.** `.prism/rules/context-reuse.md` (plus its seed twin) linked `install-layout.md` § Write gate and said the hooks reach Claude Code only. `.ai-skills/skills/prism-surface-audit/shared.md` linked `audit-workflow.md` § Worktree hygiene. Both sections moved, so the links had to follow them. The Claude-only claims were corrected against Codex hook delivery (#487) in the same pass, because the moved hook text was under source verification. Both are reference repoints within this ticket's split, not new spec content.
 
+- **PR 4 also corrects two sentences the review loop surfaced.** `.prism/references/skill-core.md` (plus its twin) said the hook runtime reaches Claude Code only, which went stale with Codex delivery (#487). `install-layout.md`'s ownership lead said PRISM-owned content lives only under `_toolkit/`, which went stale when PR 1 made `architect/guides/**` PRISM-owned. Both are same-thread corrections to claims this stack already touches.
+
 ---
 
 ## Sessions
