@@ -512,7 +512,11 @@ Subject frozen at loopBase `8a7b84e6`; repair `8a7b84e6..af332835` at regression
   - Evidence (machine): `grep -rn "relevant architect" .prism/references .prism/rules .prism/SPEC.md templates/install/.prism/references templates/install/.prism/rules` returns nothing.
 - [ ] AC-3: No consumer-facing writer instruction targets `.prism/architect/_toolkit/`.
   - Evidence (human): read `after-writing.md` and Theo's step files. Every write target is a flat `.prism/architect/*.md` or is scoped to PRISM's own repo.
-- [ ] AC-4: `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` each state one concern in their scope statement, and every split-out doc is routed.
+- [ ] AC-4: `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` each state one concern in their opening sentence, and every split-out doc is routed.
   - Evidence (human): `pnpm prism:check` passes and a manual walk of all three manifests finds no dead routes or unrouted shipped docs (`prism doctor` refuses to run inside the PRISM checkout).
 - [ ] AC-5: `pnpm prism:check` passes on every PR in the stack.
   - Evidence (machine): CI green on each PR.
+
+### AC Adjustments
+
+- **AC-4, proposed (2026-10-11).** Change "each state one concern in their opening sentence" to "each state one concern in their scope statement". `skills-ecosystem.md` and `audit-workflow.md` open with a sentence that names the doc's job and then list neighbours, so the literal opening-sentence reading fails on wording, not on scope. **Status:** `proposed`, needs Hunter to accept or reject.

@@ -4,9 +4,9 @@ How `prism init`, `prism adopt`, and `prism update` put PRISM's content into a c
 
 ---
 
-## Consumer content sources through one seam
+## Consumer content comes from one function
 
-Both `prism:adopt`'s canonical pass and every `prism:update` pull PRISM-owned content from the genericized install seed at `templates/install/.prism`, never PRISM's own raw `.prism/` dogfooding tree. The single seam is `resolvePrismContentRoot(prismSourceRoot)` in `scripts/ai-skills/update.ts`. `runAdopt` calls `resolvePrismContentRoot` before delegating to `runUpdate`, and `runUpdateCli` calls it directly. Adopt's phase-A seed builds the same path inline. Two call sites that must resolve identically is what makes this a real seam rather than an inlined constant — centralizing it prevents the two entry points from drifting apart.
+Both `prism:adopt`'s canonical pass and every `prism:update` pull PRISM-owned content from the genericized install seed at `templates/install/.prism`, never PRISM's own raw `.prism/` dogfooding tree. The single source is `resolvePrismContentRoot(prismSourceRoot)` in `scripts/ai-skills/update.ts`. `runAdopt` calls `resolvePrismContentRoot` before delegating to `runUpdate`, and `runUpdateCli` calls it directly. Adopt's phase-A seed builds the same path inline. Two call sites that must resolve identically is why this is a shared function rather than an inlined constant — centralizing it prevents the two entry points from drifting apart.
 
 The invariant exists because the raw `.prism/` tree carries PRISM-internal literals — de-thriving references, `THR-`/`PRISM-NNN` ticket citations, dogfooding plans — that must never reach a consumer. Token substitution can't strip them (it rewrites only configured template tokens like `PRISM`, not prose ticket refs), so the seed — already curated and build-verified — is the only correct source. The class of bug this closes: a prior split where `update.ts` sourced from raw `.prism/` while adopt seeded from the install seed let adopt phase B overwrite the correct seed content with dogfooding literals on every consumer adopt (plan `bug-adopt-missing-schema`, bug #2).
 
@@ -46,7 +46,7 @@ After this one run, `.prism/.sync-manifest.json` exists and the repo is in stead
 
 ## Steady-state persona-skill distribution
 
-After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and every future `prism:adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. The mechanism lives in `runUpdate` (`scripts/ai-skills/update.ts`) — the shared seam both `prism:update`'s `main()` and `prism:adopt`'s `runAdopt` call — so both entry points reach the same render step without duplication (see plan prism-242 Decision "Adopt-path seam").
+After the first `prism:adopt` run, every subsequent `pnpm prism:update` (and every future `prism:adopt` on a fresh repo) automatically renders the full `prism-*` persona roster into the consumer's configured skill directories. The mechanism lives in `runUpdate` (`scripts/ai-skills/update.ts`) — the shared function both `prism:update`'s `main()` and `prism:adopt`'s `runAdopt` call — so both entry points reach the same render step without duplication (see plan prism-242 Decision "Adopt-path seam").
 
 **What the consumer receives.** For each `prism-*` skill in the PRISM source roster, `generatePlatformSkills` (`scripts/ai-skills/generate-skills.ts`) renders the skill body with the consumer's own token map — `PRISM` becomes the consumer's project name, `PRISM` becomes their ticket prefix, and so on — and writes the rendered output to the platform directory for each host the consumer's `hosts` config key declares, all three when the key is absent (`deriveOptedIn` in `scripts/ai-skills/lib/hosts.ts` derives the per-output flags from `hosts`):
 
