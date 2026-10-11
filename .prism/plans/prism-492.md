@@ -317,15 +317,31 @@ Subject `git diff huntermcgrew/prism-492-promotion-wording 63d0e0c7` at full bar
 - Docs impact — swept — 3 items enumerated (map readers: Briar, Eli startup, Eli after-writing), 3 verdicts, all read the consumer doc; the human docs pages were not scanned this pass.
 - Accessibility — n/a — no UI in the diff.
 
+No issues found — 2026-10-11 [huntermcgrew/prism-492-doc-writers] (PR 3 pass 2; `pnpm prism:check` exits 0, all eight pass-1 findings verified fixed at `8e1e8048`).
+
+### Angle Coverage (PR 3 pass 2)
+
+Subject frozen at loopBase `63d0e0c7`; repair `63d0e0c7..8e1e8048` at regression bar.
+
+- Runtime behavior — swept — 2 items enumerated (`grilling` resume across `lib/state.md`, `lib/state-test.md`, step-05, and Claude's `claude.md` override; `codex.md` and `cursor.md` carry no resume routing), 2 verdicts: resume now reruns step-05 actions 1 to 4 before step-06 on every platform.
+- Test efficacy — swept — no items (no code changed since pass 1).
+- Spec and doc consistency — swept — 8 items enumerated (the eight pass-1 findings), 8 verdicts, all closed, seed twins match their sources.
+- Citation integrity — swept — 2 items enumerated (`lib/state.md` § Resume detection from `claude.md`, `after-writing.md` reference from the DoD), 2 verdicts, both resolve.
+- External-system claims — swept — 1 item enumerated (`_toolkit/` overwrite wording in `after-writing.md`), 1 verdict: matches `applyFilePass`.
+- Repo writing rules — swept — verdict-only.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — verdict-only: no further pages affected.
+- Accessibility — n/a — no UI in the diff.
+
 ---
 
 ## PR Readiness
 
-- [ ] No critical or major issues (PR 3 pass 1: 2 major open)
+- [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [ ] All review issues resolved (PR 3 pass 1: 2 major, 5 minor open)
+- [x] All review issues resolved
 
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-11 (PR 3 pass 2)
 
 ---
 
