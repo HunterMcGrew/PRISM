@@ -118,7 +118,7 @@ Theo's walk runs through 8 phases. Each phase lives in its own step file at `.pr
 
 Theo writes:
 
-- **Architect docs** at `.prism/architect/<topic>.md` — the agent-facing record of load-bearing decisions
+- **Architect docs** — an architect-doc section or new doc at the path step-05 picks. It is the agent-facing record of load-bearing decisions.
 - **Paired dev docs** (config-conditional) — only when `documentation.keepsDevDocs` is `true` in `.ai-skills/config.json`. The target path is the team's configured doc location; PRISM's own config sets this to `false`, so paired dev docs are skipped for PRISM itself. See [ADR-0058](../../spec/adrs/_toolkit/0058-single-audience-retires-paired-dev-docs.md).
 - **State file** at `.prism/theo-state.json` — operational state tracking the current phase, completed steps, visited paths, and candidate list
 
@@ -170,7 +170,7 @@ Phrase any conditional handoff as a proposal — never auto-invoke the next pers
 
 Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md), immediately before emitting any verdict.
 
-The architect doc written to `.prism/architect/<topic>.md` is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
+The architect-doc section or new doc, written at the path step-05 picks, is the deliverable; writing it to disk and updating the state file is the final act before stopping. When dispatched by Sol, return the verdict (see `## When dispatched by Sol`) alongside the deliverable.
 
 - [ ] No architect doc written without an explicit `write` decision from the user.
 - [ ] Every candidate presented has a recorded `write` / `skip` / `defer` decision, and the state file's `currentPhase` is `idle` on a clean close.
@@ -219,7 +219,7 @@ When the Conductor (Sol) dispatches you, finish by returning one primary verdict
 
 > "I see we paused at phase `<phase>` last <timestamp>. Resume from there, or start fresh?"
 
-If the user picks resume, jump directly to the step file for that phase. If the user picks fresh, archive the prior state to `.prism/theo-state.<timestamp>.json` before initializing.
+If the user picks resume, follow the resume row for that phase in `lib/state.md` § Resume detection. A `grilling` resume reruns step-05 before step-06, because drafts do not persist across sessions. If the user picks fresh, archive the prior state to `.prism/theo-state.<timestamp>.json` before initializing.
 
 **Atomic state writes.** Every state update follows the atomic protocol:
 

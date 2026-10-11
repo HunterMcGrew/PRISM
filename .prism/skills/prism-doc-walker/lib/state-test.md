@@ -24,7 +24,7 @@ Agent-readable test scenarios for `.prism/theo-state.json` behavior. Not executa
 
 **Setup:** State file present with `currentPhase: "grilling"`, one candidate with `status: "drafting"`.
 
-**Expected:** Step-01-init reads state, sees `currentPhase: "grilling"`, presents resume offer. User picks resume. Theo jumps to step-06-review with the current candidate. The draft is regenerated in working memory from the candidate's `loadBearingReason`, `files`, and `suggestedShape` — drafts don't persist across sessions; regeneration is deterministic given the candidate fields.
+**Expected:** Step-01-init reads state, sees `currentPhase: "grilling"`, presents resume offer. User picks resume. Theo reruns step-05-draft actions 1 through 4 for the current candidate, which also regenerates the paired dev doc when `keepsDevDocs` is `true`. Action 1 re-picks the target from the doc set on disk, and action 2 regenerates the draft in working memory from the candidate's `loadBearingReason`, `files`, and `suggestedShape`. Drafts don't persist across sessions. Theo then advances to step-06-review, whose header names the re-picked target.
 
 ## 5. Interrupted state write (tmp file + canonical file both present)
 

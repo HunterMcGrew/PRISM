@@ -2,7 +2,7 @@
 
 Read this after the doc content is written, before the closing. `prism-documentation` pins the trigger; this file carries the post-write procedure — the conditional sub-flows (new-template breadcrumbs, doc-collection handoffs) and the always-run steps (sidebar nav, landing index, cross-reference map, plan update, review prompt).
 
-**Where your team's doc-convention entries go.** Template entries and cross-reference map rows belong in the architect doc that owns the team's doc conventions. In PRISM's own repo that is `.prism/architect/_toolkit/documentation.md`. In a consumer repo, `prism update` replaces everything under `_toolkit/`, so team entries go in `.prism/architect/documentation-conventions.md` instead. Create it the first time it's needed, routed on `${documentation.location}` per `.prism/architect/guides/writing-an-architect-doc.md` § Route-add is part of authoring. The rest of this file calls it the doc-conventions doc.
+**Where your team's doc-convention entries go.** Template entries and cross-reference map rows belong in the architect doc that owns the team's doc conventions. In PRISM's own repo that is `.prism/architect/_toolkit/documentation.md`. In a consumer repo, `prism update` overwrites the files PRISM ships under `_toolkit/`, and `documentation.md` is one of them. Team entries go in `.prism/architect/documentation-conventions.md` instead. Create it the first time it's needed, routed on `${documentation.location}` per `.prism/architect/guides/writing-an-architect-doc.md` § Route-add is part of authoring. The rest of this file calls it the doc-conventions doc.
 
 ## Conditional sub-flows (fire only when their trigger fires)
 

@@ -11,12 +11,14 @@ Compose the architect doc (and optional paired dev doc). Drafts live in working 
 
 ## Actions
 
-1. **Pick the home before drafting.** Read [`writing-an-architect-doc.md`](../../architect/guides/writing-an-architect-doc.md) in full, then walk § Where new content goes against the existing doc set. Match the candidate's `files` against `manifest.json` and read each routed doc's scope statement.
+1. **Pick the home before drafting.** Read [`writing-an-architect-doc.md`](../../architect/guides/writing-an-architect-doc.md) in full, then walk § Where new content goes against the existing doc set. Match the candidate's `files` against `manifest.json` and read each routed doc's scope statement. Then make a second pass. List the doc names the manifest routes, and read the scope statement of any whose name matches the candidate's `topic`, even when the candidate's own files don't route to it. A doc for the same subject can be routed on other paths.
+
+   In a consumer repo a doc under `_toolkit/` is never an owner, because `prism update` overwrites the files PRISM ships there. The pick falls to a flat doc or a new one.
    - **An existing topic doc owns the subject** → the draft is a new section for that doc. The target is that doc's path.
    - **An umbrella's routes reach the files and the content applies to every file they reach** → the draft is a new section for the umbrella.
-   - **Neither** → the draft is a new doc. The target is `.prism/architect/<topic>.md`, where `<topic>` is a descriptive kebab-case name for the concern per the guide's filename rule. In a consumer repo the target is never under `_toolkit/`.
+   - **Neither** → the draft is a new doc. The target is `.prism/architect/<topic>.md`, where `<topic>` is a descriptive kebab-case name for the concern per the guide's filename rule.
 
-   A doc that already exists for the topic is the common miss, and a second doc on the same subject splits the record. The check runs from files on disk, so a resumed session that regenerates the draft repeats it and lands on the same target.
+   A doc that already exists for the topic is the common miss, and a second doc on the same subject splits the record. A resumed session reruns this action through action 4 before step-06 (see `lib/state.md` § Resume detection). The pick reads scope statements, so it is a judgment call, and the target can differ from the one the earlier session chose.
 
 2. **Draft the content.** Follow the guide: carry what the code cannot say for itself, and open a new doc with its scope statement. A section for an existing doc fits under that doc's scope without widening it. Use the candidate's `topic`, `files`, and `loadBearingReason` as the seed material.
 

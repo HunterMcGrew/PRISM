@@ -19,7 +19,7 @@ Also read the `documentation` block in `<repo-root>/.ai-skills/config.json`. The
 - **`documentation.keepsDevDocs`** — whether the team maintains a separate dev doc tree alongside user-facing docs
 - **`documentation.format`** — the doc format (`flat-markdown-guides`, `nextra-blocks`, or a team-defined value)
 
-These values answer "where do docs go?" and "who reads them?" before you write a single word. The category and cross-reference map in `documentation.md` are the authoritative index of what already exists.
+These values answer "where do docs go?" and "who reads them?" before you write a single word. The authoritative index of what already exists is the category list and cross-reference map in `documentation.md`, plus the team's rows in `.prism/architect/documentation-conventions.md` when it exists.
 
 ## Step 2 — Determine what to document
 
