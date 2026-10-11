@@ -45,6 +45,52 @@ link to the neighbour that owns the rest. A reader who lands here from search
 should be able to tell in one sentence whether they are in the right file, and
 a doc without that sentence quietly grows into a second copy of its neighbour.
 
+## Where new content goes
+
+New content, such as a plan Decision promoted at close, goes to the first home
+that fits, in this order:
+
+1. **The topic doc that already owns the subject.** Its scope statement covers
+   the content without widening. Widening a scope to claim content is how a doc
+   picks up a second concern.
+2. **An umbrella doc, used sparingly.** An umbrella is one doc routed over a
+   wide area, such as every file under `src/components/`. Content belongs there
+   only when it applies to every file the umbrella's routes reach. Content
+   about one subsystem inside that area is its own topic, and filing it in the
+   umbrella makes every session in the area load it.
+3. **A new doc with its own route.** When neither fits, write one doc for the
+   topic and route it per § Route-add is part of authoring. When no doc covers
+   the content without widening, a doc is missing. That is not a licence to
+   widen one.
+
+**Why:** the umbrella always looks related, so it is where promoted content
+lands by default. In a sister repo, an event-date rule went into a PHP-class
+umbrella routed only by backend paths, so the frontend half of the subject
+never loaded it. A section in the wrong umbrella can cost twice: sessions that
+need it miss it, and sessions that don't need it load it anyway.
+
+**One concern per doc.** You should be able to say what the doc explains in one
+sentence with no "and" or "or". A conjunction joining two unrelated concerns
+means two docs, because a route that delivers the doc for one half also
+delivers the other. The sharper test: every section serves the same reader on
+the same trigger.
+
+**Rules are a partial exception.** A rule that loads every session costs the
+same whatever it holds, so splitting it saves no context. It can cover a wider
+concern than an architect doc, but it still states one rule.
+[`writing-a-rule.md`](./writing-a-rule.md) decides whether content is a rule at
+all.
+
+**In a consumer repo, write to your own docs.** `.prism/architect/_toolkit/`
+belongs to PRISM, and `prism update` replaces it. Team content goes in flat
+`.prism/architect/<topic>.md` files, routed in your `manifest.json`.
+
+**Name the file for its concern.** Descriptive beats short:
+`headless-ui-dialog.md` over `dialog.md`, `backend-editor-components.md` over
+`components.md`. Never name a doc for a ticket, a date, or the state it was
+written in. The filename is how a reader listing the directory decides whether
+this is the home they want.
+
 ## Route-add is part of authoring
 
 **A new doc under `.prism/architect/` is not done until a route in
@@ -55,9 +101,10 @@ unrouted doc is a file nobody will ever be told to read.
 
 So, in the same commit as the doc:
 
-1. Pick the path pattern that identifies the work this doc governs. Anchor it
-   to a real leading path segment — a pattern starting with a wildcard matches
-   everything and stops constraining anything.
+1. Pick the narrowest path pattern that holds the files this doc governs.
+   Anchor it to a real leading path segment — a pattern starting with a
+   wildcard matches everything and stops constraining anything. A pattern
+   wider than the concern loads the doc into sessions that never needed it.
 2. Add the route, pointing at the doc's path relative to `.prism/architect/`.
    A path may match several routes; every matched doc is named, so adding one
    does not displace another.
