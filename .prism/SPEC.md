@@ -74,7 +74,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 **Change cadence:** Fast. Plans update constantly during implementation.
 
-**Promotion:** When a plan decision describes how the system works going forward (not just how this ticket was implemented), promote it at ticket close to the Tier 2 or Tier 3 file that owns its subject, picked per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes. The plan is then marked closed and preserved in `.prism/plans/` — plans are never deleted (ADR-0047).
+**Promotion:** When a plan decision describes how the system works going forward (not just how this ticket was implemented), promote it at ticket close to the Tier 3 doc that owns its subject, picked per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes, or to a Tier 2 rule per the placement test in `.prism/architect/guides/writing-a-rule.md`. The plan is then marked closed and preserved in `.prism/plans/` — plans are never deleted (ADR-0047).
 
 ---
 

@@ -14,7 +14,7 @@ Before running these steps, you need:
 
 2. **Match files against the manifest — programmatically, not by intuition.** Do not eyeball the file list and guess which patterns apply. Instead, iterate the full file list and check each path against every key in `manifest.json`. For each file, walk every manifest key and collect all matches.
 
-   A single file can match multiple patterns. This is expected and intentional — for example, a test file might match both a feature-area glob (e.g. `frontend/cart/`) and a test-directory glob (e.g. `frontend/cart/__tests__/`), loading both architect docs. Every route anchors to a real leading path segment; the manifest rejects a pattern that opens with a wildcard. A team adds a route with each architect doc it writes.
+   A single file can match multiple patterns. This is expected and intentional — for example, a test file might match both a feature-area glob (e.g. `frontend/cart/`) and a test-directory glob (e.g. `frontend/cart/__tests__/`), loading both architect docs. Every route needs a literal first path segment. `prism doctor` rejects a route whose first segment is only wildcards, such as `**/*.test.*`. A team adds a route with each architect doc it writes.
 
    Collect **all** matched doc filenames — not just the ones that seem most relevant to the current task.
 
