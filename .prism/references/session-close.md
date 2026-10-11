@@ -1,6 +1,6 @@
 # Session Close
 
-The shared close procedure skills run before ending a session. A skill triggers this with a one-line pointer near the end of its body, then keeps its own persona-specific lesson signals and reflex bullets inline next to that pointer — those are tuned per skill, so they stay where they're authored. This file carries only the parts that are identical across skills: the cross-skill context-reuse tiers, the lessons-check mechanic, and the lesson-promotion taxonomy.
+The shared close procedure skills run before ending a session. A skill triggers this with a one-line pointer near the end of its body, then keeps its own persona-specific lesson signals and reflex bullets inline next to that pointer — those are tuned per skill, so they stay where they're authored. This file carries only the parts that are identical across skills: the cross-skill context-reuse tiers, the lessons-check mechanic, and a pointer to the lesson-promotion taxonomy.
 
 Keeping them in one place means a change to the loading model or the promotion routing lands once, not in fourteen skill bodies that would otherwise drift apart.
 
@@ -14,4 +14,4 @@ Before closing the session, ask: did anything happen that warrants a new entry i
 
 ## Lesson promotion taxonomy
 
-When promoting a lesson from `.prism/lessons.md` to a durable surface, classify the lesson by type and route accordingly: (a) Process lessons → `.prism/rules/`; (b) Architectural lessons → the `.prism/architect/` doc that owns the subject, per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes; (c) Decision-class lessons → new ADR in `.prism/spec/adrs/`; (d) Ephemeral lessons (one-time gotchas) → stay in `lessons.md` until they trip a second incident. Promotion happens via Winston during plan close; routine personas surface the candidate via lessons.md append.
+When promoting a lesson from `.prism/lessons.md` to a durable surface, route it by type per `.prism/architect/_toolkit/lesson-promotion.md` § Lesson promotion taxonomy. Winston promotes at plan close. Routine personas append candidates to `lessons.md`.

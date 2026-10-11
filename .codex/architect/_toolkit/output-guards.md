@@ -7,7 +7,7 @@ on, why the asymmetry between them is deliberate, and the allowlist they share.
 This is build-internal, maintainer-facing content. It describes PRISM's own
 build pipeline, not anything a consumer of PRISM configures or runs, which is
 why it is excluded from the install seed. Consumer-facing install and update
-behavior lives in [`install-layout.md`](./install-layout.md).
+behavior lives in [`consumer-sync-flow.md`](./consumer-sync-flow.md).
 
 ---
 

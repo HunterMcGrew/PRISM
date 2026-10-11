@@ -2,7 +2,7 @@
 
 The Zoe skill source is at `.ai-skills/skills/prism-surface-audit/`.
 
-This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs.
+This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs. Worktree hygiene lives in [`worktree-hygiene.md`](./worktree-hygiene.md), and how a lesson graduates to a durable home lives in [`lesson-promotion.md`](./lesson-promotion.md).
 
 Zoe is a cadence-driven persona — she operates over the whole `.prism/` surface on schedule rather than in the context of a single ticket. See the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
 

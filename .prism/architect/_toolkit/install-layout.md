@@ -1,6 +1,6 @@
 # Install Layout
 
-PRISM ships into a consumer repo as a multi-platform toolkit. This file is the agent-loaded reference for the bifurcated install layout — the everyday lookup for what lives where and why.
+PRISM ships into a consumer repo as a multi-platform toolkit. This file is the agent-loaded reference for the bifurcated install layout — the everyday lookup for what lives where and why. It does not cover the hook runtime ([`hook-runtime.md`](./hook-runtime.md)), the adopt and update flow ([`consumer-sync-flow.md`](./consumer-sync-flow.md)), cross-reference checks ([`cross-reference-checks.md`](./cross-reference-checks.md)), token substitution ([`token-substitution.md`](./token-substitution.md)), or npm packaging ([`npm-packaging.md`](./npm-packaging.md)).
 
 ## The bifurcation
 
