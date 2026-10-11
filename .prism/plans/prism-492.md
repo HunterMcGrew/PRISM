@@ -68,6 +68,8 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
   - **Chosen approach:** `install-layout.md` keeps the layout, ownership, overlay, seed surface, drift detection, and curated-twin boundary. New `_toolkit/` docs: `hook-runtime.md` (Hook runtime, Write gate, Git gates, hook ownership), `consumer-sync-flow.md` (content-source seam, first-contact adoption, steady-state distribution), `cross-reference-checks.md` (cross-reference convention, path guard, crossref lint), `token-substitution.md` (two substitution passes, optional-token defaults), `npm-packaging.md` (skills-ecosystem's npm distribution, packaging-parity gate, bundle-safe entry detection), `eric-review-modes.md` (skills-ecosystem's session-cost economics), `worktree-hygiene.md` and `lesson-promotion.md` (from `audit-workflow.md`).
   - **Implementation guidance:** a shipped section's new doc gets a curated twin split from the existing twin and a stub route. `token-substitution.md` and `npm-packaging.md` are `excluded`, matching their sections' absence from the current twin. `worktree-hygiene.md` and `lesson-promotion.md` auto-mirror, like `audit-workflow.md`.
 
+- **PR 4 edits two always-on spec files outside the docs it splits.** `.prism/rules/context-reuse.md` (plus its seed twin) linked `install-layout.md` § Write gate and said the hooks reach Claude Code only. `.ai-skills/skills/prism-surface-audit/shared.md` linked `audit-workflow.md` § Worktree hygiene. Both sections moved, so the links had to follow them. The Claude-only claims were corrected against Codex hook delivery (#487) in the same pass, because the moved hook text was under source verification. Both are reference repoints within this ticket's split, not new spec content.
+
 ---
 
 ## Sessions
