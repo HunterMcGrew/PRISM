@@ -6,7 +6,7 @@ After completing the review analysis, check whether the diff touches areas that 
 
 1. **Code → docs staleness:** scan changed files for blocks, components, or features that have a matching `docs/` file. Use the naming convention from [`documentation.md`](../architect/_toolkit/documentation.md) (e.g. `frontend/blocks/{name}/` → `docs/<name>.md`).
 
-2. **Agent spec → human docs staleness:** scan changed files for `.prism/rules/` or `.prism/architect/` files that have a corresponding `docs/` file. Check the cross-reference map in [`documentation.md`](../architect/_toolkit/documentation.md).
+2. **Agent spec → human docs staleness:** scan changed files for `.prism/rules/` or `.prism/architect/` files that have a corresponding `docs/` file. Check the cross-reference map in [`documentation.md`](../architect/_toolkit/documentation.md) and, in a consumer repo, `.prism/architect/documentation-conventions.md` when it exists.
 
 3. **If a match exists and the change is substantive** (not just formatting), add a **Docs Impact** section to the review output:
 

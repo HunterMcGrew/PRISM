@@ -8,7 +8,7 @@ Read `<repo-root>/.prism/architect/_toolkit/documentation.md`. This is the sourc
 
 - Naming conventions (topic-based, kebab-case)
 - Frontmatter schema (title, description, category, audience, last_updated)
-- Category list and the cross-reference map
+- Category list and the cross-reference map. In a consumer repo, the team's own rows live in `.prism/architect/documentation-conventions.md` when it exists, so read that too
 - Writing guidelines
 - Docs-to-code mapping convention
 
@@ -96,7 +96,7 @@ Before writing anything new:
 **Existing doc check:**
 
 1. Check the relevant directory under `documentation.location` for an existing doc on this topic
-2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md`, check the counterpart file
+2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md` or `.prism/architect/documentation-conventions.md`, check the counterpart file
 3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
 4. If no existing doc: determine the output path using the naming convention from `documentation.md`
 

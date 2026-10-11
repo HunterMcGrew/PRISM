@@ -6,11 +6,11 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 - Accepted architect doc draft from step-06
 - Optional accepted paired dev doc draft
-- Candidate `topic` for filename derivation
+- The target chosen in step-05: an existing doc path, or a new `.prism/architect/<topic>.md`
 
 ## Actions
 
-1. **Write the architect doc.** Use the `Write` tool against `.prism/architect/<topic>.md`. The `<topic>` is a kebab-case derivation of the candidate's `topic` field. When a paired dev doc was drafted (`keepsDevDocs: true`), append a closing line:
+1. **Write the architect doc.** For a new doc, use the `Write` tool against the new path. For a section in an existing doc, use the `Edit` tool to insert it into that doc; never create a second doc for a subject an existing doc owns. When a paired dev doc was drafted (`keepsDevDocs: true`), append a closing line:
 
    > `Paired dev doc: <target path>`
 
@@ -18,9 +18,9 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 2. **Write the paired dev doc** (if drafted — `keepsDevDocs: true` only). Use the `Write` tool against the team's configured doc location. Append a closing line:
 
-   > `Agent-facing spec: .prism/architect/<topic>.md`
+   > `Agent-facing spec: <architect doc path>`
 
-3. **Update the manifest.** Open `.prism/architect/manifest.json`, add a new entry routing the architect doc to the candidate's `files` field's path patterns. Example structure:
+3. **Update the manifest.** For a new doc, open `.prism/architect/manifest.json` and add an entry routing it to the candidate's `files` field's path patterns. For a section added to an existing doc, add a route only when some of the candidate's `files` are not already reached by that doc's routes. Example structure:
 
    ```json
    {
@@ -28,14 +28,14 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
    }
    ```
 
-   The starting pattern set is the candidate's `files`; expand to broader globs (e.g. `<dir>/**`) when the topic clearly governs an entire directory.
+   Use the narrowest pattern that holds the governed files, per the guide's § Route-add is part of authoring. Widen to a directory glob only when every file under it is governed by this doc. A route wider than the concern loads the doc into sessions that never needed it.
 
 4. **Update state.** Set candidate `status: "committed"`. Record `decidedAt: "<ISO timestamp>"` and `committedAt: "<ISO timestamp>"`. Set `currentPhase: "presenting"` (back to step-03 for next candidate, or step-08 if none remain). Append `step-07-commit` to `stepsCompleted`. Atomic write — tmp + rename.
 
 5. **Confirm to user.** One-line summary:
 
-   > "Wrote `.prism/architect/<topic>.md`<and paired dev doc if applicable>. Manifest updated. State committed."
+   > "Wrote `<target path>`<as a new doc | as a new section><and paired dev doc if applicable>. Manifest <updated | unchanged>. State committed."
 
 ## Exit condition
 
-Both files exist on disk (architect doc plus optional paired dev doc). Manifest contains the new routing entry. Candidate `status: "committed"`. Advance to step-03 (next pending) or step-08 (continue/finish).
+The architect content exists on disk at the target (plus the optional paired dev doc). Every file in the candidate's `files` is reached by a route to the target. Candidate `status: "committed"`. Advance to step-03 (next pending) or step-08 (continue/finish).

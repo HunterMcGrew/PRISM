@@ -36,7 +36,9 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 1. Theo: in `.prism/skills/prism-doc-walker/step-05-draft.md`, before drafting, check the manifest and existing docs for one that already owns the candidate's topic, and offer to extend it instead. Have the drafter read the writing guide at that step.
 2. `.prism/skills/prism-doc-walker/step-07-commit.md:31`: replace the broad-glob advice with the guide's narrowest-pattern rule.
 3. Eli: `_toolkit/documentation.md:109` (the cross-reference map "lives at the bottom of this file", which `prism update` replaces in consumer repos) and `.prism/references/documentation/after-writing.md:10,43` and its seed twin: in a consumer repo, these rows go to the team's own flat architect doc, not `_toolkit/documentation.md`. `:15`: if the paired topic doc doesn't exist, create and route it per the guide.
-4. Verify: `pnpm prism:check` passes.
+4. Readers of the map follow the same split: `documentation/startup.md`, `review-docs-impact.md` (plus twins), and `prism-documentation/shared.md` DoD read `.prism/architect/documentation-conventions.md` in consumer repos.
+5. `scripts/ai-skills/crossref-lint.ts` `isLazyOrHistoricalTarget`: treat `.prism/architect/documentation-conventions.md` as a lazy consumer artifact, with a test in `crossref-lint.test.ts`.
+6. Verify: `pnpm prism:check` passes.
 
 **PR 4 — split PRISM's own umbrellas**
 
@@ -55,6 +57,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
   - **Alternatives considered:** a pointer in `CLAUDE.md` and `AGENTS.md`, which is what thrive #2673 shipped. Routing the guide on `.prism/plans/**`.
   - **Chosen approach:** `branch-plan.md` is always-on and the build ships it to every host, so the pointer fires at the exact step where the target is chosen. A `CLAUDE.md` pointer only reaches Claude. A plan route would load the full guide on every plan edit, when only the close step needs it.
   - **Implementation guidance:** edit both the source and the curated seed twin by hand. The seed twin has no drift check.
+- **A consumer team's doc-convention entries live in a flat `.prism/architect/documentation-conventions.md`.** Eli used to append template entries and cross-reference map rows to `_toolkit/documentation.md`, which `prism update` replaces. Considered: the consumer overlay under `custom/`. Rejected: the overlay is emitted into each platform's `custom/` subdir and the manifest never routes it, so manifest-loading agents would never see the rows. PRISM's own repo keeps its rows in `_toolkit/documentation.md`.
 - **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` replaces `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's content written there is lost on the next update.
 
 ---
@@ -69,6 +72,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 
 - 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement]: Plan created from the architect-doc write-path audit; stack approved with all four PRs.
 - 2026-10-11 [huntermcgrew/prism-492-promotion-wording]: PR 2 points every promotion instruction at the placement order and removes stale manifest claims; `documentation.md:109` moved to PR 3 because it is the same `_toolkit/` write-target problem as Eli's appends.
+- 2026-10-11 [huntermcgrew/prism-492-doc-writers]: PR 3 gives Theo an owning-doc check before drafting and narrow-route guidance, and moves consumer doc-convention writes out of `_toolkit/`; see Decision: doc-conventions doc.
 
 ---
 
