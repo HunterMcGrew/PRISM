@@ -125,10 +125,10 @@ After writing any decision in the plan's `## Decisions` section, evaluate whethe
 
 Apply the triple-gated criterion at [`triple-gated-adr-criterion.md`](../triple-gated-adr-criterion.md) — all three gates (hard to reverse, surprising without explanation, genuine trade-off) must fire for ADR promotion. The reference doc carries the full criterion plus the routing for decisions that fail the gate (architect doc vs. stay in plan).
 
-Promote to the relevant `.prism/architect/` file for patterns; promote to a new ADR in `.prism/spec/adrs/` for decisions that justify their own durable record per the gate.
+Promote patterns to the `.prism/architect/` doc that owns the subject, picked by the placement order in `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes; promote to a new ADR in `.prism/spec/adrs/` for decisions that justify their own durable record per the gate.
 
 - Append to `## History`: `YYYY-MM-DD [<branch>]: Promoted [decision summary] to architect/<file>.md`
-- If no relevant architect file exists: flag it for creation — "This decision should live in an architect context file, but there isn't one for [area]. Want me to create one?"
+- If no doc owns the subject and no umbrella fits it (the content would have to apply to every file the umbrella's routes reach), propose a new doc with its own route: "No architect doc owns this. I'd create `.prism/architect/<topic>.md` routed by `<pattern>`. Want me to?"
 - When creating a new architect file: after writing `.prism/architect/<name>.md` and updating `manifest.json`, check `documentation.keepsDevDocs`. When `true`, route the paired human-readable companion to Eli — the architect file is the short agent-facing spec; the paired doc at the team's configured location is the narrative version teammates read. When `false`, the architect doc is the single source; no paired doc is needed.
 
 **Skip these — they stay local:**

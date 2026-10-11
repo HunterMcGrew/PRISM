@@ -28,14 +28,14 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 1. `.prism/references/architect/plan-mode.md:131-134` and its seed twin: "the relevant `.prism/architect/` file" cites the placement order. A new doc is step 3 of the order, not a fallback offer.
 2. `.prism/SPEC.md:77` and `templates/install/.prism/SPEC.md.tmpl:77`: same citation. `SPEC.md:47` and the `.tmpl` copy: drop the catch-all `**` claim and the "Phase 3" manifest-population claim.
 3. `.prism/references/session-close.md:17`, `.prism/architect/_toolkit/audit-workflow.md:192`, and `.prism/references/triple-gated-adr-criterion.md:29` (plus seed twins): cite the placement order. Fix the wrong § Immediate Decision Promotion location at `triple-gated-adr-criterion.md:36` (it lives in `plan-mode.md`).
-4. `_toolkit/documentation.md:109`: drop the "Phase 3" onboarding claim.
+4. `.prism/references/architect-context.md:17` and its seed twin: replace the `**/*.test.*` example (a wildcard-led glob the manifest rejects) and drop the "Phase 3" claim. `.ai-skills/skills/prism-architect/shared.md` § Architect Context Updates: name the target doc per the placement order.
 5. Verify: `pnpm prism:check` passes, and `grep -rn "relevant architect" .prism templates` returns nothing.
 
 **PR 3 — writers**
 
 1. Theo: in `.prism/skills/prism-doc-walker/step-05-draft.md`, before drafting, check the manifest and existing docs for one that already owns the candidate's topic, and offer to extend it instead. Have the drafter read the writing guide at that step.
 2. `.prism/skills/prism-doc-walker/step-07-commit.md:31`: replace the broad-glob advice with the guide's narrowest-pattern rule.
-3. Eli: `.prism/references/documentation/after-writing.md:10,43` and its seed twin: in a consumer repo, these rows go to the team's own flat architect doc, not `_toolkit/documentation.md`. `:15`: if the paired topic doc doesn't exist, create and route it per the guide.
+3. Eli: `_toolkit/documentation.md:109` (the cross-reference map "lives at the bottom of this file", which `prism update` replaces in consumer repos) and `.prism/references/documentation/after-writing.md:10,43` and its seed twin: in a consumer repo, these rows go to the team's own flat architect doc, not `_toolkit/documentation.md`. `:15`: if the paired topic doc doesn't exist, create and route it per the guide.
 4. Verify: `pnpm prism:check` passes.
 
 **PR 4 — split PRISM's own umbrellas**
@@ -68,6 +68,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 ## History
 
 - 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement]: Plan created from the architect-doc write-path audit; stack approved with all four PRs.
+- 2026-10-11 [huntermcgrew/prism-492-promotion-wording]: PR 2 points every promotion instruction at the placement order and removes stale manifest claims; `documentation.md:109` moved to PR 3 because it is the same `_toolkit/` write-target problem as Eli's appends.
 
 ---
 

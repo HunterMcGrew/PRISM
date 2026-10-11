@@ -189,7 +189,7 @@ Skills surface lessons during a session by appending to `.prism/lessons.md`. The
 When a lesson moves from `.prism/lessons.md` to a durable home, it routes by type:
 
 - **Process lessons** → `.prism/rules/<name>.md`. Operational patterns, workflow constraints, how-to-do-things-right. Loaded by every relevant skill that triggers on the rule's `paths:` frontmatter.
-- **Architectural lessons** → `.prism/architect/<topic>.md`. Coupling, data flow, abstraction decisions, codebase shape. Loaded via manifest routing into the skills that work on the topic.
+- **Architectural lessons** → the `.prism/architect/` doc that owns the subject, picked per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes. Coupling, data flow, abstraction decisions, codebase shape. Loaded via manifest routing into the skills that work on the topic.
 - **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
 - **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
 

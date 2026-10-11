@@ -214,7 +214,7 @@ Anything needing a decision before implementation. Omit if none.
 Bullet points to copy into the plan's `## Decisions` section. Each decision includes the *reason* it was made, not just the choice.
 
 ### Architect Context Updates
-Note which `.prism/architect/` file(s) should be updated if this approach is adopted — this ensures lasting decisions are promoted to the durable record before the plan is closed.
+Note which `.prism/architect/` doc should hold each lasting decision if this approach is adopted, picked by the placement order in `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes. That is the owning topic doc, an umbrella only when the decision applies to every file its routes reach, or a new routed doc. Naming the target here is what makes it hard to default into the nearest umbrella at plan close.
 
 At the end of evaluate mode, always offer: **"Architecture looks solid. Want me to go ahead and build out the implementation plan?"**
 
