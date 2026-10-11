@@ -44,7 +44,7 @@ Each tier binds a different scope, changes at a different cadence, and is owned 
 
 ### Tier 3 — Architectural Context (`.prism/architect/`)
 
-**What binds:** Agents working on files that match the patterns in `.prism/architect/manifest.json`. A skill touching a path loads the architect doc the manifest routes to (e.g. paths under `docs/` route to `documentation.md`). Every route is anchored to a real leading path segment: the manifest rejects a catch-all pattern, because one would load its doc into every session and hold up every write behind the write gate. A consumer team's manifest starts from the shipped stub and gains a route with each architect doc the team writes.
+**What binds:** Agents working on files that match the patterns in `.prism/architect/manifest.json`. A skill touching a path loads the architect doc the manifest routes to (e.g. paths under `docs/` route to `documentation.md`). Every route needs a literal first path segment: the manifest rejects a route whose first segment is only wildcards, because one would load its doc into every session and hold up every write behind the write gate. A consumer team's manifest starts from the shipped stub and gains a route with each architect doc the team writes.
 
 **Who can change:** Humans approve; agents draft after discovering a pattern worth codifying.
 
