@@ -174,6 +174,22 @@ Subject surface `git diff huntermcgrew/prism-492-architect-doc-placement 5d25d8d
 - Docs impact — swept — 1 item enumerated (remaining promotion wording across `.prism/rules`, `.ai-skills`, `.prism/references`), 1 verdict: only PR 3 writers remain.
 - Accessibility — n/a — no UI in the diff.
 
+No issues found — 2026-10-11 [huntermcgrew/prism-492-promotion-wording] (PR 2 pass 2; `pnpm prism:check` exits 0, all three pass-1 findings verified fixed at `b008cdf2`).
+
+### Angle Coverage (PR 2 pass 2)
+
+Subject frozen at `5d25d8df`; repair `5d25d8df..b008cdf2` at regression bar.
+
+- Runtime behavior — swept — 1 item enumerated (new wording against `checkRouteIsAnchored`), 1 verdict: "literal first path segment" and "first segment only wildcards" match the code.
+- Test efficacy — swept — no items (doc-only change).
+- Spec and doc consistency — swept — 3 items enumerated (`architect-context.md` and twin, `SPEC.md` and `.tmpl`, Task 5 and AC-2 evidence), 3 verdicts, all agree.
+- Citation integrity — swept — 2 items enumerated (`writing-a-rule.md` path in both SPEC copies, narrowed grep), 2 verdicts: the guide ships in the seed and the grep exits 1 with no matches.
+- External-system claims — swept — 1 item enumerated (`prism doctor` rejects the anchor failure), 1 verdict: confirmed at `manifest-routes.ts`.
+- Repo writing rules — swept — verdict-only: no new violations.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — verdict-only: no further docs affected.
+- Accessibility — n/a — no UI in the diff.
+
 ### Angle Coverage (pass 3)
 
 Subject surface frozen at `2d2d81f2`, repair diff `2d2d81f2..8cb2dd56` at regression bar.
@@ -222,7 +238,7 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [ ] All review issues resolved — PR 2 pass 1 has three open minors
+- [x] All review issues resolved
 
 **Last updated:** 2026-10-11
 
