@@ -27,7 +27,8 @@ These live under `.prism/` and are kept current by `prism update`. If you edit o
 | Path | What's there |
 |---|---|
 | `.prism/rules/**` | Cross-cutting rules loaded into every AI agent session — code standards, git conventions, the branch-plan protocol, and so on |
-| `.prism/architect/_toolkit/**` | PRISM's own architect-context files (the `_toolkit` subdirectory only — flat files directly under `architect/` are yours, see below) |
+| `.prism/architect/_toolkit/**` | PRISM's own architect-context files (the `_toolkit` subdirectory, and `guides/` below — flat files directly under `architect/` are yours, see below) |
+| `.prism/architect/guides/**` | The writing guides for plans, rules, skills, ADRs, and architect docs, which agents read before editing those files |
 | `.prism/spec/adrs/_toolkit/**` | PRISM's own architectural decision records (again, only the `_toolkit` subdirectory — flat ADR files are yours) |
 | `.prism/spec/**` | The tier hierarchy and spec-ownership model, excluding the consumer carve-outs listed below |
 | `.prism/templates/**` | PR description, acceptance-criteria, and bug-report templates |
@@ -55,7 +56,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 
 | Path | What's there |
 |---|---|
-| `.prism/architect/*.md` (flat files, not inside `_toolkit/`) | Your own architect-context docs — PRISM only manages the `_toolkit/` subdirectory inside `architect/` |
+| `.prism/architect/*.md` (flat files, not inside `_toolkit/`) | Your own architect-context docs — PRISM only manages the `_toolkit/` and `guides/` subdirectories inside `architect/` |
 | `.prism/spec/adrs/*.md` (flat files, not inside `_toolkit/`) | Your own ADRs |
 | `.prism/architect/manifest.json` | Your own architect-doc manifest |
 | `.prism/custom/**` | Anything you put here — PRISM's sync never looks inside this directory |
@@ -63,7 +64,7 @@ PRISM's sync passes never write to these paths once they exist — not on `adopt
 | `.prism/lessons.md` | The running log of corrections and patterns your team has taught the AI agents |
 
 > [!NOTE]
-> `.prism/architect/**` and `.prism/spec/**` overlap on purpose: the broad PRISM-owned glob claims the whole tree, and the narrower consumer-owned glob for flat files carves your own docs back out of it. A file directly under `architect/` (like `architect/my-feature.md`) is yours; a file under `architect/_toolkit/` is PRISM's.
+> `.prism/spec/**` overlaps on purpose: the broad PRISM-owned glob claims the whole tree, and the narrower consumer-owned glob for flat ADR files carves your own ADRs back out of it. Under `architect/`, PRISM owns only `_toolkit/` and `guides/`. A file directly under `architect/` (like `architect/my-feature.md`) is yours.
 
 ## Seed-once paths (written once, then left alone)
 
