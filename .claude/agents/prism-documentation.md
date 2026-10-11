@@ -238,7 +238,7 @@ The written doc file under `docs/` is the deliverable; shipping it — through t
 
 Fire these only when the session triggered one of the conditions. Skip otherwise — the common single-doc path is already covered by the base checklist above.
 
-- [ ] **If a new template was created at `.prism/references/`:** parent base template (`user-doc-template.md` or `dev-doc-template.md`) has a Category-specific rules bullet pointing to it; `documentation.md § Doc Templates § Category-specific rules` lists it; `SKILL.md § Doc templates § Category-specific templates` mentions it.
+- [ ] **If a new template was created at `.prism/references/`:** parent base template (`user-doc-template.md` or `dev-doc-template.md`) has a Category-specific rules bullet pointing to it; the doc-conventions doc (per `after-writing.md`) lists it; `SKILL.md § Doc templates § Category-specific templates` mentions it.
 - [ ] **If a doc collection (N ≥ 3 docs sharing a topic) was created:** the architect doc that owns the collection's subject advertises it in a `## Per-Block Documentation` section so manifest-loading agents know it exists; the doc-conventions doc (per `after-writing.md`) has a cross-reference map row per audience (user and dev where both exist); `docs/content/index.mdx` has audience-parallel intro sentences — not just one side.
 - [ ] **If a new category was introduced** (e.g. a new subdirectory under `docs/content/{user,dev}/`): `_meta.js` exists inside the new directory; the parent `_meta.js` lists the new category; `index.mdx` has a section for the new category with at least one link.
 

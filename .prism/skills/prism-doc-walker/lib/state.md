@@ -69,7 +69,7 @@ When Theo starts, step-01-init checks for the state file and routes:
 | Present | `idle` | Fresh start; archive prior state to `.prism/theo-state.<timestamp>.json`. |
 | Present | `exploring` | Resume offer; jump to step-02-scan on accept. |
 | Present | `presenting` | Resume offer; jump to step-03-present on accept. |
-| Present | `grilling` | Resume offer; jump to step-06-review with the current candidate. |
+| Present | `grilling` | Resume offer; on accept, rerun step-05-draft actions 1 through 4 for the current candidate (re-pick the target, regenerate the draft, and regenerate the paired dev doc when `keepsDevDocs` is `true`), then advance to step-06-review. |
 
 The resume offer is always presented — the user can override with `fresh` even when the state file is resumable.
 

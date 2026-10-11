@@ -61,6 +61,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` overwrites the files PRISM ships under `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's edit to one survives only as a `.bak` copy, and PRISM may ship a file at any path there later.
 
 - **`prism update` owns `.prism/architect/guides/**`.** `PRISM_OWNED_GLOBS` had no entry for the writing guides, so `classifyPath` returned `unknown` and an existing consumer never received a guide update. Fixed in PR 1 because PR 1's close-step pointer cites a guide section those consumers would otherwise lack. Considered: a separate PR ahead of the stack. Rejected: PR 1 is the change that depends on it. A consumer who edited a guide gets the usual owned-file treatment, a `.bak` copy and then PRISM's version. Guides were never in a consumer's sync manifest, so the first update after this ships writes a `.bak` for every guide that differs from the incoming copy, edited or not.
+- **Theo's architect-doc draft follows `writing-an-architect-doc.md`, not the four-beat arc.** The draft opens with a scope statement and carries only what passes the Deletion Test. The four-beat arc in `architecture-doc-shape.md` governs only the paired dev doc in the doc root, because that file's own scope line limits it to architecture docs in `docs/`.
 
 - **PR 4 cut lines.**
   - **Root cause:** `install-layout.md` grew to cover hooks, cross-reference checks, the adopt/update flow, token substitution, and npm packaging, so every hook or build edit loaded all of it. `skills-ecosystem.md` and `audit-workflow.md` each carried sections for a different reader.
@@ -245,6 +246,102 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 - Docs impact — swept — 2 items enumerated (guide, branch-plan close step; no feature doc is paired), 2 verdicts.
 - Accessibility — n/a — no UI in the diff.
 
+### PR 3 pass 1 (`huntermcgrew/prism-492-doc-writers`)
+
+#### Theo's resume at `grilling` skips the owner check that picks the target
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-doc-walker/step-05-draft.md:19` (also `lib/state.md:72`, `lib/state-test.md:27`, `step-06-review.md:7`)
+- **Problem:** step-05 says a resumed session "regenerates the draft" and "repeats" the owner check, but the resume table routes `grilling` straight to step-06, so step-05 never reruns; step-06 then renders a header naming "the target from step-05", which existed only in the lost session's memory, and a session that regenerates the draft without the check can default to a new `<topic>.md` beside the doc that owns the subject.
+- **Suggested fix:** no schema change needed. Change the `grilling` row in `lib/state.md` and scenario 4 in `lib/state-test.md` to resume at step-05 actions 1 and 2 (re-pick the target, regenerate the draft), then advance to step-06; reword step-05:19 to match and drop "lands on the same target" (the pick reads scope statements, so it is a judgment, and a target the user redirected during `iterate` is not recoverable).
+
+#### Eli's definition of done and the startup note still send template entries to `_toolkit/documentation.md`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-documentation/shared.md:216` (also `.prism/references/documentation/startup.md:22` and its seed twin)
+- **Problem:** `after-writing.md` step 2 now sends template entries to the doc-conventions doc, but the new-template DoD item still checks `documentation.md § Doc Templates § Category-specific rules` (a section that does not exist in that file) and `startup.md:22` still calls `documentation.md` the authoritative index, so a consumer following the DoD verbatim writes into a file `prism update` overwrites, which is what AC-3 and the Decision forbid.
+- **Suggested fix:** in `shared.md:216` replace the `documentation.md § ...` clause with "the doc-conventions doc (per `after-writing.md`) lists it"; in `startup.md:22` (source and seed twin) say "the category list and cross-reference map in `documentation.md`, plus the team's rows in `documentation-conventions.md` when it exists".
+
+#### Theo's `_toolkit/` exclusion covers only the new-doc branch
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-doc-walker/step-05-draft.md:15-17`
+- **Problem:** "In a consumer repo the target is never under `_toolkit/`" sits on the "Neither" branch only, so the "existing topic doc owns it" and "umbrella" branches can still pick a PRISM-shipped `_toolkit/` doc that `prism update` overwrites, against the Decision "Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`".
+- **Suggested fix:** move the clause above the three branches: in a consumer repo a `_toolkit/` doc is not an owner, so the pick falls to a flat doc or a new one.
+
+#### Owner check only finds docs routed by the candidate's own files
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-doc-walker/step-05-draft.md:14`
+- **Problem:** the check matches the candidate's `files` against `manifest.json` and reads only those routed docs, so a topic doc routed on other paths (a dialog doc routed on `src/dialog/**` for a candidate in `src/forms/`) is never read and the "second doc on the same subject" the step warns about still gets drafted.
+- **Suggested fix:** add a second pass: list the manifest's doc names and read the scope statement of any whose name matches the candidate's `topic`.
+
+#### Eli's after-writing note says `prism update` replaces everything under `_toolkit/`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/references/documentation/after-writing.md:5` (seed twin `templates/install/.prism/references/documentation/after-writing.md:5`)
+- **Problem:** `applyFilePass` overwrites only files PRISM ships and leaves a team's own `_toolkit/` file alone, so "replaces everything" is the overstatement PR 1 pass 3 already corrected in the guide and the Decision.
+- **Suggested fix:** "`prism update` overwrites the files PRISM ships under `_toolkit/`, and `documentation.md` is one of them". Edit both twins.
+
+#### Cross-reference map location stated as "the bottom of this file"
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/documentation.md:109` (seed twin `templates/install/.prism/architect/_toolkit/documentation.md:109`)
+- **Problem:** the rewritten sentence keeps "lives at the bottom of this file", but PRISM's rows are the table directly below it and `## File naming` follows, so the location claim diverges from the doc (`architect-doc-verification.md` sets a Major floor for diverged architect-doc claims; applied here as minor because the claim describes the doc's own layout and the table sits in the same section).
+- **Suggested fix:** "In PRISM's own repo the rows are the table below." Edit both twins.
+
+#### Theo's shared output and deliverable still name only `.prism/architect/<topic>.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/skills/prism-doc-walker/shared.md:95` (also `:147`)
+- **Problem:** the persona body that ships to consumers says Theo writes architect docs at `<topic>.md` and that the deliverable is the doc "written to" that path, which contradicts the step files now that a section in an existing doc is a first-class result.
+- **Suggested fix:** "an architect doc section or new doc at the path step-05 picks" in both places.
+
+#### Four-beat arc dropped from the architect-doc draft without a Decision
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/skills/prism-doc-walker/step-05-draft.md:10`
+- **Problem:** step-05 used to compose the architect doc against the four-beat arc and now applies it to the paired dev doc only; that matches the scope line of `architecture-doc-shape.md` (docs in the doc root) but is a behavior change the plan's `## Decisions` never records, so a later reader sees an unexplained removal.
+- **Suggested fix:** add a one-bullet Decision: the arc governs doc-root architecture docs per `architecture-doc-shape.md`, and the architect doc follows the guide's scope-statement rule.
+
+### Angle Coverage (PR 3 pass 1)
+
+Subject `git diff huntermcgrew/prism-492-promotion-wording 63d0e0c7` at full bar; mirrors reviewed through their canonical sources. `pnpm prism:check` exits 0; `crossref-lint.test.ts` 89 of 89 pass.
+
+- Runtime behavior — swept — 4 items enumerated (resume routing to step-06, step-06/07 header and write mode for both targets, `isLazyOrHistoricalTarget` exact-match shape, narrowest-route exit condition), 4 verdicts: finding 1; step-06/07 consistent; exemption matches the existing lazy-path entries and is exact-match only.
+- Test efficacy — swept — 1 item enumerated (new `isLazyOrHistoricalTarget` test), 1 verdict: asserts the exempt path and a sibling flat doc that stays unexempt.
+- Spec and doc consistency — swept — 9 items enumerated (after-writing, startup, review-docs-impact, DoD, `documentation.md`, Theo shared output, seed twins x4), 9 verdicts: findings 2, 5, 6, 7; seed twins carry the same edits.
+- Citation integrity — swept — 4 items enumerated (guide anchors in step-05 and after-writing, `documentation.md § Doc Templates`, `lib/state.md` resume table), 4 verdicts: the Doc Templates section does not exist (finding 2).
+- External-system claims — swept — 2 items enumerated (`prism update` reach over `_toolkit/`, lazy-path exemption vs. install gates), 2 verdicts: finding 5; install gates pass.
+- Repo writing rules — swept — verdict-only: no mandate voice, counts, or session leakage in the added text.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — 3 items enumerated (map readers: Briar, Eli startup, Eli after-writing), 3 verdicts, all read the consumer doc; the human docs pages were not scanned this pass.
+- Accessibility — n/a — no UI in the diff.
+
+No issues found — 2026-10-11 [huntermcgrew/prism-492-doc-writers] (PR 3 pass 2; `pnpm prism:check` exits 0, all eight pass-1 findings verified fixed at `8e1e8048`).
+
+### Angle Coverage (PR 3 pass 2)
+
+Subject frozen at loopBase `63d0e0c7`; repair `63d0e0c7..8e1e8048` at regression bar.
+
+- Runtime behavior — swept — 2 items enumerated (`grilling` resume across `lib/state.md`, `lib/state-test.md`, step-05, and Claude's `claude.md` override; `codex.md` and `cursor.md` carry no resume routing), 2 verdicts: resume now reruns step-05 actions 1 to 4 before step-06 on every platform.
+- Test efficacy — swept — no items (no code changed since pass 1).
+- Spec and doc consistency — swept — 8 items enumerated (the eight pass-1 findings), 8 verdicts, all closed, seed twins match their sources.
+- Citation integrity — swept — 2 items enumerated (`lib/state.md` § Resume detection from `claude.md`, `after-writing.md` reference from the DoD), 2 verdicts, both resolve.
+- External-system claims — swept — 1 item enumerated (`_toolkit/` overwrite wording in `after-writing.md`), 1 verdict: matches `applyFilePass`.
+- Repo writing rules — swept — verdict-only.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — verdict-only: no further pages affected.
+- Accessibility — n/a — no UI in the diff.
+
 ---
 
 ## PR Readiness
@@ -253,7 +350,7 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
 - [x] All review issues resolved
 
-**Last updated:** 2026-10-11
+**Last updated:** 2026-10-11 (PR 3 pass 2)
 
 ---
 

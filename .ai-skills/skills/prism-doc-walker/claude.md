@@ -14,7 +14,7 @@
 
 > "I see we paused at phase `<phase>` last <timestamp>. Resume from there, or start fresh?"
 
-If the user picks resume, jump directly to the step file for that phase. If the user picks fresh, archive the prior state to `.prism/theo-state.<timestamp>.json` before initializing.
+If the user picks resume, follow the resume row for that phase in `lib/state.md` § Resume detection. A `grilling` resume reruns step-05 before step-06, because drafts do not persist across sessions. If the user picks fresh, archive the prior state to `.prism/theo-state.<timestamp>.json` before initializing.
 
 **Atomic state writes.** Every state update follows the atomic protocol:
 
