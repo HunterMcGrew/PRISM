@@ -134,6 +134,46 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 
 No issues found — 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement] (pass 3; `pnpm prism:check` exits 0, all seven earlier findings verified fixed at `8cb2dd56`).
 
+### PR 2 pass 1 (`huntermcgrew/prism-492-promotion-wording`)
+
+#### Manifest rejection described more broadly than the validator enforces
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/references/architect-context.md:17` (seed twin `templates/install/.prism/references/architect-context.md:17`)
+- **Problem:** "the manifest rejects a pattern that opens with a wildcard" diverges from `checkRouteIsAnchored` (`scripts/ai-skills/lib/manifest-routes.ts`), which rejects only a pattern whose first path segment is made entirely of wildcards, so `*.test.ts` or `*-widget/**` pass. The check runs in `pnpm prism:check` and `prism doctor`, not at manifest load.
+- **Suggested fix:** "`prism doctor` rejects a route whose first path segment is only wildcards, such as `**/*.test.*`." Edit both twins.
+
+#### Promotion line sends Tier 2 picks to an architect-doc section
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/SPEC.md:77` (seed twin `templates/install/.prism/SPEC.md.tmpl:77`)
+- **Problem:** "the Tier 2 or Tier 3 file that owns its subject, picked per `writing-an-architect-doc.md` § Where new content goes" applies that section to Tier 2 rules, but the section covers architect docs and defers rule placement to `writing-a-rule.md`.
+- **Suggested fix:** "to the Tier 3 doc that owns its subject, picked per `writing-an-architect-doc.md` § Where new content goes, or to a Tier 2 rule per the placement test in `writing-a-rule.md`." Edit both twins.
+
+#### PR 2 verification grep cannot return nothing
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-492.md:32` (also the AC-2 evidence at `:198`)
+- **Problem:** `grep -rn "relevant architect" .prism templates` still matches `.prism/architect/_toolkit/skills-ecosystem.md:162` and its seed twin ("loads relevant architect docs", a load instruction, not a promotion one) and `.prism/research/opus5-port-evidence.md:88`, so Task 5 as written fails on a correct tree.
+- **Suggested fix:** narrow Task 5 to `grep -rn "relevant architect" .prism/references .prism/rules .prism/SPEC.md templates/install/.prism/references templates/install/.prism/rules` and point the AC-2 evidence at the same paths.
+
+### Angle Coverage (PR 2 pass 1)
+
+Subject surface `git diff huntermcgrew/prism-492-architect-doc-placement 5d25d8df` at full bar; mirrors reviewed through their canonical sources. `pnpm prism:check` exits 0.
+
+- Runtime behavior — swept — 3 items enumerated (stub becomes `manifest.json` on install via `seedConsumerContentRoot`, `findCatchAllKeys` rule, write-gate claim in `install-layout.md`), 3 verdicts: "starts from the shipped stub" and the gate claim hold; the rejection scope is narrower than stated (finding 1).
+- Test efficacy — swept — no items (doc-only change; `pnpm prism:check` exits 0).
+- Spec and doc consistency — swept — 9 items enumerated (SPEC Tier 3, SPEC promotion, plan-mode, session-close, audit-workflow, triple-gated, architect-context, shared.md § Architect Context Updates, the new-doc proposal vs. guide step 3), 9 verdicts: findings 1 and 2.
+- Citation integrity — swept — 4 items enumerated (Winston bullet now cites `plan-mode.md` § Immediate Decision Promotion, the guide anchor in six files, `docs/` to `documentation.md` in the stub, ADR-0058 link), 4 verdicts, all resolve.
+- External-system claims — swept — 2 items enumerated (`manifest.stub.json` becomes `architect/manifest.json`, `prism doctor` imports the anchor check), 2 verdicts, both confirmed at source.
+- Repo writing rules — swept — verdict-only: no mandate voice or counts; finding 3 on the PR 2 verification command.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — 1 item enumerated (remaining promotion wording across `.prism/rules`, `.ai-skills`, `.prism/references`), 1 verdict: only PR 3 writers remain.
+- Accessibility — n/a — no UI in the diff.
+
 ### Angle Coverage (pass 3)
 
 Subject surface frozen at `2d2d81f2`, repair diff `2d2d81f2..8cb2dd56` at regression bar.
@@ -182,7 +222,7 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [x] All review issues resolved
+- [ ] All review issues resolved — PR 2 pass 1 has three open minors
 
 **Last updated:** 2026-10-11
 
