@@ -115,7 +115,37 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - **Problem:** "licence" where the rest of `.prism/rules/` writes "license".
 - **Suggested fix:** use "license".
 
-### Angle Coverage
+### PRISM-owned path lists in consumer docs omit `architect/guides/**`
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `docs/adopting-into-existing-repos.md:100`
+- **Problem:** the list of PRISM-owned globs (and the "PRISM only manages the `_toolkit/` subdirectory" sentence at `:103`) and the owned-paths table in `docs/what-prism-writes.md:27-35` contradict the Decision "`prism update` owns `.prism/architect/guides/**`", so a consumer reading them is told guide edits are safe. `documentation.md` § Cross-Reference Map already pairs `ownership.ts` with the first of these.
+- **Suggested fix:** add `architect/guides/**` to both lists and reword the `:103` sentence to cover the guides. Eli's lane; fold into PR 1 per the Decision's own reasoning.
+
+### Guide says `prism update` "replaces" `_toolkit/`, but only files PRISM ships there are touched
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/guides/writing-an-architect-doc.md:84`
+- **Problem:** `applyFilePass` in `scripts/ai-skills/update.ts` writes the files in PRISM's source and removes files recorded in the consumer manifest, so a team's new file under `_toolkit/` is left alone, while an edit to a shipped file is overwritten. The directive (don't write there) holds, but the stated consequence is broader than the code.
+- **Suggested fix:** reword to "`prism update` overwrites the files PRISM ships there, and PRISM may ship a file at any path under it" in the guide, and match the Decision at `prism-492.md:58`.
+
+### Angle Coverage (pass 2)
+
+Subject surface at full bar, repair diff `2d2d81f2..db108c3c` at regression bar. `pnpm prism:check` exits 0; `ownership.test.ts` 16 of 16 pass. All five pass-1 findings verified closed.
+
+- Runtime behavior — swept — 2 items enumerated (`classifyPath` for `architect/guides/**`, `applyFilePass` on a guide), 2 verdicts, both correct.
+- Test efficacy — swept — 1 item enumerated (the `architect writing guides are PRISM-owned` test), 1 verdict: fails if the glob is removed.
+- Spec and doc consistency — swept — 6 items enumerated (new Decision, `install-layout.md` glob list, two consumer docs, guide, branch-plan twins), 6 verdicts: finding on the consumer docs.
+- Citation integrity — swept — 3 items enumerated (`ownership.ts` glob, `update.ts` branches, `install-layout.md` list), 3 verdicts, all resolve.
+- External-system claims — swept — 2 items enumerated (`prism update` file pass, `.bak` on divergence), 2 verdicts: `_toolkit/` reach is narrower than the guide says.
+- Repo writing rules — swept — verdict-only: the reworded sentences meet the two-clause bar.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — 3 items enumerated (`docs/adopting-into-existing-repos.md`, `docs/what-prism-writes.md`, `install-layout.md`), 3 verdicts: two stale.
+- Accessibility — n/a — no UI in the diff.
+
+### Angle Coverage (pass 1)
 
 Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). Briar sweeps all nine in one pass.
 
@@ -133,9 +163,9 @@ Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). B
 
 ## PR Readiness
 
-- [ ] No critical or major issues (1 major open)
+- [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [ ] All review issues resolved
+- [ ] All review issues resolved (2 minor open)
 
 **Last updated:** 2026-10-11
 
