@@ -10,6 +10,7 @@
 		"_toolkit/closing-messages.md"
 	],
 	".claude/skills/prism-qa-test-plan/**": "_toolkit/qa-test-planning.md",
+	".claude/skills/prism-code-review-pr/**": "_toolkit/eric-review-modes.md",
 	".prism/templates/**": [
 		"guides/writing-a-plan.md",
 		"_toolkit/plan-authoring.md"
@@ -23,6 +24,7 @@
 		"guides/writing-an-architect-doc.md",
 		"_toolkit/spec-editing.md"
 	],
+	".prism/architect/manifest.json": "_toolkit/hook-runtime.md",
 	".prism/references/**": [
 		"guides/writing-an-architect-doc.md",
 		"_toolkit/spec-editing.md"
@@ -32,12 +34,22 @@
 		"_toolkit/plan-authoring.md"
 	],
 	".prism/business/**": "_toolkit/business-layer.md",
-	".prism/lessons.md": "_toolkit/audit-workflow.md",
+	".prism/lessons.md": [
+		"_toolkit/audit-workflow.md",
+		"_toolkit/lesson-promotion.md"
+	],
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
-	".prism/audit-state.json": "_toolkit/audit-workflow.md",
+	".prism/audit-state.json": [
+		"_toolkit/audit-workflow.md",
+		"_toolkit/worktree-hygiene.md"
+	],
 	".prism/audits/**": "_toolkit/audit-workflow.md",
-	".prism/custom/**": "_toolkit/install-layout.md",
+	".prism/custom/**": [
+		"_toolkit/install-layout.md",
+		"_toolkit/cross-reference-checks.md"
+	],
+	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md",
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	"docs/": "_toolkit/documentation.md",
 	"docs/content/dev/architecture/": "_toolkit/architecture-doc-shape.md",

@@ -46,18 +46,28 @@
 		"_toolkit/ticket-workflows.md",
 		"_toolkit/closing-messages.md"
 	],
+	".ai-skills/skills/prism-code-review-pr/**": "_toolkit/eric-review-modes.md",
 	"scripts/ai-skills/**": [
 		"_toolkit/spec-editing.md",
 		"_toolkit/skills-ecosystem.md"
 	],
-	".prism/lessons.md": "_toolkit/audit-workflow.md",
+	".prism/lessons.md": [
+		"_toolkit/audit-workflow.md",
+		"_toolkit/lesson-promotion.md"
+	],
 	".prism/archived/lessons-archive.md": "_toolkit/audit-workflow.md",
 	".prism/archived/plans/**": "_toolkit/audit-workflow.md",
-	".prism/audit-state.json": "_toolkit/audit-workflow.md",
+	".prism/audit-state.json": [
+		"_toolkit/audit-workflow.md",
+		"_toolkit/worktree-hygiene.md"
+	],
 	".prism/audits/**": "_toolkit/audit-workflow.md",
 	".prism/custom/**": "_toolkit/install-layout.md",
+	".prism/.sync-manifest.json": "_toolkit/consumer-sync-flow.md",
 	"scripts/ai-skills/build.ts": "_toolkit/install-layout.md",
-	"scripts/ai-skills/path-guard.ts": "_toolkit/install-layout.md",
+	"scripts/ai-skills/path-guard.ts": "_toolkit/cross-reference-checks.md",
+	"scripts/ai-skills/crossref-lint.ts": "_toolkit/cross-reference-checks.md",
+	"scripts/ai-skills/hooks/**": "_toolkit/hook-runtime.md",
 	".ai-skills/definitions/**": "_toolkit/install-layout.md",
 	".ai-skills/docs/**": "_toolkit/install-layout.md",
 	"docs/": [

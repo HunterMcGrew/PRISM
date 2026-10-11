@@ -1,0 +1,33 @@
+# Hook Runtime
+
+The hook runtime PRISM installs into a consumer's agent hosts: how `prism update` delivers it, the state it keeps, and the gates it enforces. Where the rest of an install lives and who owns it is [`install-layout.md`](./install-layout.md). How `prism adopt` and `prism update` run is [`consumer-sync-flow.md`](./consumer-sync-flow.md).
+
+---
+
+## Hook runtime
+
+**Delivery path.** `prism update` copies the hook runtime into your `.claude/hooks/` when `hosts` in `.ai-skills/config.json` includes `claude` or `codex` (absent means every host). It merges each host's registration (`.claude/settings.json`, `.codex/hooks.json`) only for that host. Dropping one host removes only its registration on the next update. The runtime goes away only when both are dropped. Cursor is the only host with no delivery path today.
+
+**How PRISM decides which hook entries in your settings are its own.** PRISM claims a hook entry in `.claude/settings.json` or `.codex/hooks.json` only when its command matches the exact shape PRISM writes. If you wrapped or edited that command, the entry is yours — PRISM neither refreshes it nor removes it when you drop its host from `hosts`, which means it can be left pointing at a runtime file the update took away. Keeping the match strict is deliberate: a looser one would let a removal delete a wrapper you wrote. `prism doctor` covers the gap instead. It reports, on every host mix, a registration whose command points at a missing file.
+
+**State file.** The hook tracks which routed docs each scope has read in `.prism/architect-route-state.<scope-id>.json`, with a `.tmp` sibling while it writes. The read-tracking and git-gates state-file globs, with their `.tmp` siblings, are appended to your `.gitignore`, so the files stay out of your commits. Those four lines are the only thing PRISM writes there. Nothing else in your `.gitignore` is touched. If the file is missing or unreadable the hook treats it as empty, which costs you a repeated announcement and nothing worse.
+
+**Switches.** Set `PRISM_HOOK_DISABLE=1` to make the hook inert without unregistering it — useful when you want to keep the setup and turn the behavior off for a session. `PRISM_HOOK_DENY_DISABLE=1` switches off the write gate and the git gates, leaving announcements on.
+
+## Write gate
+
+Touching a file your manifest routes to an architect doc is blocked until you have read that doc. Like the rest of the hook runtime, this reaches Claude Code and Codex.
+
+**What triggers it.** A `Write`, an `Edit`, or a `Bash` command naming a path one of your manifest routes matches, where at least one doc that route names has not been read in this scope. One rule covers all three, so deleting or moving a routed file asks for the same read a write does. A subagent is its own scope and reads for itself, so a doc its parent read still gates the child. A path no route matches is never blocked — routing a path is how you opt it in, so a fresh install blocks nothing in your own application code.
+
+**What clears it.** Read each doc the message names, in full. The message spells out the exact command — `cat <doc>`, one line per doc — because only a whole-file read counts. A `Read` with a line range, a `head`, or a `grep` that merely names the doc does not clear it. Read it, then retry the same call.
+
+The message never tells you which tool to use, and that is deliberate: a flagless `cat` is exempt from the gate, and a `Read` with no line range is not the kind of call it checks, so whichever tool you are already in can perform the read.
+
+**Shell commands are exempt only where the command is provably a read.** Nothing short of a real shell can say what an arbitrary command does to a path it names, so the gate never tries to guess. It treats every path-shaped word in the command as a possible target, and only lets one go when the entire command is a set of commands known to read and never write — `cat`, `grep`, `ls`, a read-only `git` subcommand and their kin — carrying only flags those commands cannot write through. Any remaining word that matches one of your routes is treated exactly like a write, and reading the doc clears it. The exemption exists because the remedy is a read: blocking a plain `cat` would block the very command the message asks for.
+
+That means a command that only reads sometimes asks for a doc read anyway: a pipeline, a `$VAR`, a `find`, or any binary the gate does not recognize cannot be proven read-only. The bias is deliberate — an unnecessary read costs you a minute once, while a missed write defeats the gate silently. Unlike a message you can retry past, the read clears that route for the rest of the scope.
+
+**Turning it off.** Set `PRISM_HOOK_DENY_DISABLE=1`, remove the `PreToolUse` entry from your `.claude/settings.json`, or delete `.claude/hooks/hook.mjs`. Any of the three works, and none of them is prevented — the gate is friction meant to be worth keeping, not a lock. `prism doctor` reports a hook missing one half, says per host whether the gate is installed and registered, and warns when a dropped host's delivery is still on disk.
+
+**How PRISM decides what in `.claude/hooks/` is yours.** Every file PRISM delivers there carries a marker line. A marked file belongs to PRISM and is replaced on each update, edits and all — there is no stored checksum that could tell your edit apart from an older PRISM version, so to adapt the runtime, copy it under a new name and strip the marker line. A file without the marker is yours. At a path PRISM delivers to, it is saved as `.bak` before PRISM's copy replaces it. Anywhere else it is never touched. If a marked file turns up at a path PRISM no longer ships, the update writes a `.bak` copy beside it before removing it, and that `.bak` is then left alone on every later run — deleting it is your call, not PRISM's.

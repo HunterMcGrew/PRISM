@@ -213,16 +213,16 @@
 			"reason": "platform-copy mirror of branch-plan (Cursor .mdc dialect)"
 		},
 		{
-			"path": ".claude/architect/_toolkit/skills-ecosystem.md",
-			"reason": "roster doc names the Thrive-literal guard when explaining which provenance strings ship legitimately"
+			"path": ".claude/architect/_toolkit/npm-packaging.md",
+			"reason": "npm packaging doc names the Thrive-literal guard when explaining which provenance strings ship legitimately"
 		},
 		{
-			"path": ".codex/architect/_toolkit/skills-ecosystem.md",
-			"reason": "platform-copy mirror of skills-ecosystem"
+			"path": ".codex/architect/_toolkit/npm-packaging.md",
+			"reason": "platform-copy mirror of npm-packaging"
 		},
 		{
-			"path": ".cursor/architect/_toolkit/skills-ecosystem.md",
-			"reason": "platform-copy mirror of skills-ecosystem"
+			"path": ".cursor/architect/_toolkit/npm-packaging.md",
+			"reason": "platform-copy mirror of npm-packaging"
 		},
 		{
 			"path": ".claude/spec/adrs/_toolkit/0063-npm-publish-packaging-invariants.md",

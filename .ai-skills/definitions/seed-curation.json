@@ -76,10 +76,16 @@
 		"spec/adrs/_toolkit/0073-stakes-levels-name-their-behavior.md",
 		"spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md",
 		"spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md",
-		"spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md"
+		"spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md",
+		"architect/_toolkit/npm-packaging.md",
+		"architect/_toolkit/token-substitution.md"
 	],
 	"curated": [
+		"architect/_toolkit/consumer-sync-flow.md",
+		"architect/_toolkit/cross-reference-checks.md",
 		"architect/_toolkit/documentation.md",
+		"architect/_toolkit/eric-review-modes.md",
+		"architect/_toolkit/hook-runtime.md",
 		"architect/_toolkit/install-layout.md",
 		"architect/_toolkit/plan-authoring.md",
 		"architect/_toolkit/qa-test-planning.md",

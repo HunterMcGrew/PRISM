@@ -43,9 +43,9 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 **PR 4 — split PRISM's own umbrellas**
 
 1. `_toolkit/install-layout.md`: keep install layout and ownership. Move hook runtime and write gate, the build-time checks (path guard, drift, crossref lint, pack parity, bundle-safe entry), and substitution passes into one-concern docs, each routed by the files that control it. Repoint the manifest, `manifest.base.json`, the consumer stub, `seed-curation.json`, and every reference found by grep.
-2. `_toolkit/skills-ecosystem.md`: move npm packaging invariants and Eric session-cost notes out. Narrow the `scripts/ai-skills/**` route.
+2. `_toolkit/skills-ecosystem.md`: move npm packaging invariants and Eric session-cost notes out. Narrow `output-guards.md` from `scripts/ai-skills/**` to `scripts/ai-skills/literal-guard.ts`. `skills-ecosystem.md` stays on `scripts/ai-skills/**`, because the roster-generating scripts need the roster.
 3. `_toolkit/audit-workflow.md`: move worktree hygiene and the lesson-promotion taxonomy to their own routed docs.
-4. Each split doc is decomposed after reading the source doc in full at PR 4 start. The exact cut lines get recorded in `## Decisions` before editing.
+4. Cut lines: see Decision "PR 4 cut lines". Moved sections keep their wording except where a claim fails source verification (`.prism/rules/architect-doc-verification.md`).
 5. Verify: `pnpm prism:check` passes. `prism doctor` reports no orphan docs or dead routes.
 
 ---
@@ -60,6 +60,12 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - **A consumer team's doc-convention entries live in a flat `.prism/architect/documentation-conventions.md`.** Eli used to append template entries and cross-reference map rows to `_toolkit/documentation.md`, which `prism update` replaces. Considered: the consumer overlay under `custom/`. Rejected: the overlay is emitted into each platform's `custom/` subdir and the manifest never routes it, so manifest-loading agents would never see the rows. PRISM's own repo keeps its rows in `_toolkit/documentation.md`.
 - **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` replaces `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's content written there is lost on the next update.
 
+- **PR 4 cut lines.**
+  - **Root cause:** `install-layout.md` grew to cover hooks, cross-reference checks, the adopt/update flow, token substitution, and npm packaging, so every hook or build edit loaded all of it. `skills-ecosystem.md` and `audit-workflow.md` each carried sections for a different reader.
+  - **Alternatives considered:** one doc per H2 (too fine; several H2s share a reader); leaving the adopt/update flow in `install-layout.md` (it answers "how content gets there", a different trigger from "what lives where").
+  - **Chosen approach:** `install-layout.md` keeps the layout, ownership, overlay, seed surface, drift detection, and curated-twin boundary. New `_toolkit/` docs: `hook-runtime.md` (Hook runtime, Write gate, Git gates, hook ownership), `consumer-sync-flow.md` (content-source seam, first-contact adoption, steady-state distribution), `cross-reference-checks.md` (cross-reference convention, path guard, crossref lint), `token-substitution.md` (two substitution passes, optional-token defaults), `npm-packaging.md` (skills-ecosystem's npm distribution, packaging-parity gate, bundle-safe entry detection), `eric-review-modes.md` (skills-ecosystem's session-cost economics), `worktree-hygiene.md` and `lesson-promotion.md` (from `audit-workflow.md`).
+  - **Implementation guidance:** a shipped section's new doc gets a curated twin split from the existing twin and a stub route. `token-substitution.md` and `npm-packaging.md` are `excluded`, matching their sections' absence from the current twin. `worktree-hygiene.md` and `lesson-promotion.md` auto-mirror, like `audit-workflow.md`.
+
 ---
 
 ## Sessions
@@ -73,6 +79,7 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement]: Plan created from the architect-doc write-path audit; stack approved with all four PRs.
 - 2026-10-11 [huntermcgrew/prism-492-promotion-wording]: PR 2 points every promotion instruction at the placement order and removes stale manifest claims; `documentation.md:109` moved to PR 3 because it is the same `_toolkit/` write-target problem as Eli's appends.
 - 2026-10-11 [huntermcgrew/prism-492-doc-writers]: PR 3 gives Theo an owning-doc check before drafting and narrow-route guidance, and moves consumer doc-convention writes out of `_toolkit/`; see Decision: doc-conventions doc.
+- 2026-10-11 [huntermcgrew/prism-492-split-umbrellas]: PR 4 splits `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` into one-concern docs with their own routes and twins; see Decision: PR 4 cut lines.
 
 ---
 

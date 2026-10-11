@@ -43,6 +43,9 @@ export const PATH_GUARD_FILE_ALLOWLIST: ReadonlySet<string> = new Set([
 	// distinction with concrete platform-dir paths in the example block — that
 	// is the doc's job, not a violation.
 	"architect/_toolkit/install-layout.md",
+	// Architect doc for the cross-reference convention. Its examples name the
+	// platform-dir paths the convention forbids, to show what not to write.
+	"architect/_toolkit/cross-reference-checks.md",
 ]);
 
 const PATH_GUARD_PATTERN =

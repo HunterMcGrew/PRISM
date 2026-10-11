@@ -213,7 +213,7 @@ Closed plans accumulate in `.prism/plans/` after tickets ship. Per ADR-0047, pla
 
 ## Worktree hygiene lane
 
-Explicit-only — this lane never runs under a bare invocation or `all`. It's the only lane that removes something outside `.prism/`, so folding it into a routine content-audit pass would silently widen the blast radius of every default invocation. The predicate it implements, and the reasoning behind the single batch confirmation, live in [`.prism/rules/worktree-git.md`](../../../.prism/rules/worktree-git.md) and [`audit-workflow.md`](../../../.prism/architect/_toolkit/audit-workflow.md) § Worktree hygiene.
+Explicit-only — this lane never runs under a bare invocation or `all`. It's the only lane that removes something outside `.prism/`, so folding it into a routine content-audit pass would silently widen the blast radius of every default invocation. The predicate it implements, and the reasoning behind the single batch confirmation, live in [`.prism/rules/worktree-git.md`](../../../.prism/rules/worktree-git.md) and [`worktree-hygiene.md`](../../../.prism/architect/_toolkit/worktree-hygiene.md).
 
 1. List every worktree via `git worktree list --porcelain` from the repo root. Exclude the first block (always the main working tree) and exclude the worktree this session is running from.
 2. Classify each remaining entry with `pnpm prism:worktree-classify <path>`. A non-zero exit means the directory is gone while git still lists it — bucket it as `unreadable`, and offer `git worktree prune` as a one-line cleanup (pure git bookkeeping, zero data-loss risk since the directory is already gone).
