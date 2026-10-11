@@ -10,7 +10,7 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
 ## Actions
 
-1. **Write the architect doc.** For a new doc, use the `Write` tool against the new path. For a section in an existing doc, use the `Edit` tool to insert it into that doc; never create a second doc for a subject an existing doc owns. When a paired dev doc was drafted (`keepsDevDocs: true`), append a closing line:
+1. **Write the architect doc.** For a new doc, use the `Write` tool against the new path. For a section in an existing doc, use the `Edit` tool to insert it into that doc; never create a second doc for a subject an existing doc owns. When a paired dev doc was drafted (`keepsDevDocs: true`), add a closing line at the end of the new doc, or at the end of the new section in an existing doc:
 
    > `Paired dev doc: <target path>`
 
@@ -24,7 +24,7 @@ Write the accepted draft to disk. Update manifest. Atomic state write.
 
    ```json
    {
-     "<file pattern from candidate.files>": "<topic>.md"
+     "<file pattern from candidate.files>": "<target path relative to .prism/architect/>"
    }
    ```
 
