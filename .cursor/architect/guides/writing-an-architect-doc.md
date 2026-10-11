@@ -60,13 +60,13 @@ that fits, in this order:
    umbrella makes every session in the area load it.
 3. **A new doc with its own route.** When neither fits, write one doc for the
    topic and route it per § Route-add is part of authoring. When no doc covers
-   the content without widening, a doc is missing. That is not a licence to
+   the content without widening, a doc is missing. That is not a license to
    widen one.
 
 **Why:** the umbrella always looks related, so it is where promoted content
-lands by default. In a sister repo, an event-date rule went into a PHP-class
-umbrella routed only by backend paths, so the frontend half of the subject
-never loaded it. A section in the wrong umbrella can cost twice: sessions that
+lands by default. Picture a date-handling rule filed in an umbrella for backend
+classes, routed only by backend paths: the frontend code that shares the rule
+never loads it. A section in the wrong umbrella can cost twice: sessions that
 need it miss it, and sessions that don't need it load it anyway.
 
 **One concern per doc.** You should be able to say what the doc explains in one
@@ -82,7 +82,8 @@ concern than an architect doc, but it still states one rule.
 all.
 
 **In a consumer repo, write to your own docs.** `.prism/architect/_toolkit/`
-belongs to PRISM, and `prism update` replaces it. Team content goes in flat
+belongs to PRISM. `prism update` overwrites the files PRISM ships there, and
+PRISM may ship a new file at any path under it. Team content goes in flat
 `.prism/architect/<topic>.md` files, routed in your `manifest.json`.
 
 **Name the file for its concern.** Descriptive beats short:

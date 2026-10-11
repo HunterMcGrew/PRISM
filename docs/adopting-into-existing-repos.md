@@ -97,10 +97,10 @@ If your existing setup has its own routing conventions — a different skill tha
 
 `scripts/ai-skills/ownership.ts` decides this with a glob match, not a guess:
 
-- **PRISM-owned** (subject to `.bak` backup on divergence): `architect/_toolkit/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `spec/**`, `SPEC.md`.
+- **PRISM-owned** (subject to `.bak` backup on divergence): `architect/_toolkit/**`, `architect/guides/**`, `spec/adrs/_toolkit/**`, `rules/**`, `templates/**`, `references/**`, `spec/**`, `SPEC.md`.
 - **Consumer-owned** (never touched by sync, never backed up): flat `architect/*.md` files, flat `spec/adrs/*.md` files, `architect/manifest.json`, `custom/**`, `plans/**`, `lessons.md`.
 
-The flat-file carve-out matters: `.prism/architect/my-feature.md` is yours — PRISM only manages the `_toolkit/` subdirectory inside `architect/`. Same idea for `spec/adrs/` — your own ADRs at the top level are untouched; only `spec/adrs/_toolkit/` is PRISM's.
+The flat-file carve-out matters: `.prism/architect/my-feature.md` is yours — PRISM only manages the `_toolkit/` and `guides/` subdirectories inside `architect/`. Same idea for `spec/adrs/` — your own ADRs at the top level are untouched; only `spec/adrs/_toolkit/` is PRISM's.
 
 ### When a `.bak` appears
 
