@@ -61,13 +61,81 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 
 ## Sessions
 
-- 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement] open: Intent — port thrive's umbrella-placement fix to PRISM and split PRISM's own umbrellas; Bounds — architect-doc placement guidance, promotion paths, Theo/Eli writers, the three named umbrella docs; Approach — four-PR stack, rule first
+- 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement] open: Intent — port thrive's umbrella-placement fix to PRISM and split PRISM's own umbrellas; Bounds — architect-doc placement guidance, promotion paths, Theo/Eli writers, the three named umbrella docs; Approach — four-PR stack, rule first · close: scope held
 
 ---
 
 ## History
 
 - 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement]: Plan created from the architect-doc write-path audit; stack approved with all four PRs.
+
+---
+
+## Review Issues
+
+### Existing consumers never receive the guide section that the new close-step pointer cites
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `templates/install/.prism/rules/branch-plan.md:188`
+- **Problem:** `scripts/ai-skills/ownership.ts` classifies `architect/guides/**` as `unknown` (checked with `classifyPath`), and `prism update` only writes `prism`-owned paths, while `rules/**` is owned and gets the new pointer, so an existing install is told to read § Where new content goes in a guide copy that lacks it.
+- **Suggested fix:** record a `## Decisions` entry and either add `architect/guides/**` to `PRISM_OWNED_GLOBS` (shared utility, so stop and confirm first) or ship the ownership fix as its own PR in this stack before PR 1 merges; `install-layout.md:78` already claims the guides are mirrored so a stale consumer copy can't hand out outdated instructions.
+
+### "In a sister repo" cites an incident no reader can check
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/guides/writing-an-architect-doc.md:67`
+- **Problem:** the guide ships to consumers, and "a sister repo" names nothing they can open, so the example's claim is unverifiable.
+- **Suggested fix:** state the example as a plain scenario ("a rule about event dates once went into an umbrella routed only by backend paths") without the repo reference.
+
+### Close-step sentence runs past two clauses and uses "umbrella" unglossed
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/rules/branch-plan.md:204` (seed twin `templates/install/.prism/rules/branch-plan.md:188`)
+- **Problem:** the added sentence chains a colon, a "so", and an "and" (writing-voice allows two clauses), and the always-on rule uses "umbrella doc" without defining it.
+- **Suggested fix:** split after the guide pointer ("Read ... before writing the `→ promoted to` verdict. The plan edit does not route that guide, so the target is otherwise chosen before the placement order is in context.") and drop the trailing umbrella clause or gloss it. Edit both twins by hand.
+
+### Decision says consumer `_toolkit/` content is "lost" on update
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-492.md:58`
+- **Problem:** `prism update` overwrites a diverged owned file only after saving it as `<file>.bak` (`scripts/ai-skills/update.ts` header), so the content is displaced, not lost. The guide's own wording ("replaces it") is accurate.
+- **Suggested fix:** reword the Decision to "overwritten on the next update (a diverged file is kept as `.bak`)".
+
+### British spelling in the guide
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/architect/guides/writing-an-architect-doc.md:63`
+- **Problem:** "licence" where the rest of `.prism/rules/` writes "license".
+- **Suggested fix:** use "license".
+
+### Angle Coverage
+
+Pass 1, whole subject surface (guide, branch-plan source and seed twin, plan). Briar sweeps all nine in one pass.
+
+- Runtime behavior — swept — 2 items enumerated (close-step pointer, Route-add narrowest-pattern step), 2 verdicts: pointer fine in-repo, finding 1 for existing consumers.
+- Test efficacy — swept — no items (doc-only change; `pnpm prism:check` exits 0).
+- Spec and doc consistency — swept — 9 items enumerated (AC-1 holds, AC-2 to AC-5 belong to later PRs or the whole stack, guide, branch-plan source, seed twin, plan Decisions, `install-layout.md:78`, manifest `.prism/plans/**` route), 9 verdicts: findings 1 and 4.
+- Citation integrity — swept — 5 items enumerated (`writing-a-rule.md` link, § Route-add anchor, `ownership.ts` claim, manifest plan route, `install-layout.md:78`), 5 verdicts, all resolve.
+- External-system claims — swept — 3 items enumerated (`prism update` replaces `_toolkit/`, `prism doctor` exists, manifest rejects catch-all), 3 verdicts, all verified at source.
+- Repo writing rules — swept — verdict-only: findings 2, 3, 5.
+- Security — n/a — no trust boundary in the diff.
+- Docs impact — swept — 2 items enumerated (guide, branch-plan close step; no feature doc is paired), 2 verdicts.
+- Accessibility — n/a — no UI in the diff.
+
+---
+
+## PR Readiness
+
+- [ ] No critical or major issues (1 major open)
+- [x] `pnpm prism:check` passes — last run: 2026-10-11
+- [ ] All review issues resolved
+
+**Last updated:** 2026-10-11
 
 ---
 
