@@ -33,6 +33,7 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
 
 - **Command string: `node ".claude/hooks/hook.mjs" --tool=codex --event=<Event>`, relative to the session cwd.**
   - **Root cause:** Codex sets no project-directory environment variable, and its documentation states commands run with the session `cwd` as their working directory. There is no `$CLAUDE_PROJECT_DIR` twin to use.
+  - **Corrected (2026-10-12):** Codex *documents* no project-directory variable for repo-local hooks. Its only documented variables are plugin-scoped, and its examples resolve paths from the git root. ADR-0077 § Consequences carries the corrected wording, and § Decision records the git-root spelling as a rejected alternative.
   - **Alternatives considered:** an absolute path baked in at update time; `node "$(git rev-parse --show-toplevel)/.claude/hooks/hook.mjs"`.
   - **Chosen approach:** the relative path. An absolute path cannot ride a committed file — every machine resolves it differently. The `$(…)` spelling depends on Codex passing `command` through a shell, which the documentation neither states nor denies; if it does not, the string is taken literally, node cannot find the file, and the hook silently never fires. That is the "an unregistered config file is worse than none" failure that removed `.cursor/hooks.json` in `opus5-port.md` task A8. Only *locating the script* depends on cwd — `hook.mjs` resolves the repo root itself from `payload.cwd` — so a session started at the repo root is correct.
   - **Implementation guidance:** this is the highest-risk item in the ticket, and task 8's live probe settles it. If the probe shows Codex starting sessions below the repo root, the contingency is the shell-substitution spelling, adopted only after the probe also confirms `command` is shell-interpreted. Do not adopt it speculatively.
@@ -334,6 +335,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Closed task 9 and the ADR-0076:87 site from the AC-9 Review Issues entry by appending a dated-by-reference note ("Codex delivery has since shipped (PRISM #487, ADR-0077)") to each bullet, the shape ADR-0071:37 already uses, rather than rewriting the decision-time text in place.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 5 (1 Major, 5 Minors): ADR-0077 now says it relaxes ADR-0074's live-probe bar rather than clearing it, hedges the unprobed Codex announce and `PostCompact` claims, scopes the fail-open argument to an unrecognized envelope, carries forward ADR-0074's notice placement, and drops "seam" and "surface". Tasks 9 and 10 and the `PostCompact` Decision now match the diff.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 6 (2 Minors): the emitDeny Decision gains a framing reversal matching ADR-0077, and ADR-0077 now says Codex documents no project-directory variable and records the git-root command spelling as a rejected alternative. Also corrected ADR-0077's description of the `skill-core.md` notice, which now names the receiving hosts.
+- 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 7 (2 Minors): ADR-0077's subagent bullet now cites OpenAI's documented subagent payloads, and the plan's command-string Decision gains a "documents no" correction. `hook-runtime.md` now cites ADR-0077 § Decision for the rejected alternatives instead of re-listing them, since the list had drifted once already.
 
 ---
 
@@ -627,7 +629,7 @@ Pass 5's six findings are all closed in HEAD `ed1a37aa` (re-read ADR-0077 in ful
 ### ADR-0077 says Codex subagents are unprobed, but OpenAI documents them
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:133-135` (surface: subject)
 - **Problem:** the bullet says "If Codex runs subagents, they share their parent's read credit. Whether Codex runs them is unprobed." OpenAI's hooks page (fetched 2026-10-12) documents subagent hooks: payloads carry `agent_id` and `agent_type`, a `SubagentStop` event exists, and "Subagent hooks use the parent session id." So the "if" is answered by the docs, and the sharing follows from `HARNESSES.codex.scopeId` ignoring `agent_id`; what stays unprobed is whether a deny reason crosses into the subagent (task 8's fourth observation).
 - **Suggested fix:** reword to "OpenAI documents Codex subagents, whose hook payloads use the parent's `session_id` and add an `agent_id`; Codex's scope id ignores `agent_id`, so a subagent shares its parent's read credit. Whether a deny reason reaches the subagent is unprobed."
@@ -635,7 +637,7 @@ Pass 5's six findings are all closed in HEAD `ed1a37aa` (re-read ADR-0077 in ful
 ### Plan Decision "Command string" still says Codex sets no project-directory variable
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-477-followup-codex-hooks.md:35` (surface: repair; anchor: pass 6's second finding, quoted: "Codex sets no project-directory variable", still true in the plan after cf903f68 corrected it in ADR-0077:127)
 - **Problem:** the ADR now says Codex "documents no project-directory variable", because the docs only fail to document one. The Decision's Root cause line still states "Codex sets no project-directory environment variable" as fact, so the plan and the ADR disagree on the strength of the same claim, and the Decision also omits that OpenAI's examples resolve from the git root.
 - **Suggested fix:** add a one-line "Corrected (2026-10-12)" sub-bullet to that Decision, in the shape of the `emitDeny` Decision's reversal line, saying "documents no" and pointing at ADR-0077.

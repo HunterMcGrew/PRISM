@@ -125,14 +125,16 @@ reasons.
   nothing on screen to say so. The probe is the only control that closes this.
 - The Codex command is a path relative to the session's working directory,
   `node ".claude/hooks/hook.mjs"`, because Codex documents no
-  project-directory variable to anchor it. A Codex session started below the repo root will not
-  find the runtime, and the hook will not run. What Codex actually sends as
+  project-directory variable to anchor it. A Codex session started below the
+  repo root will not find the runtime, and the hook will not run. What Codex actually sends as
   `cwd` is one of the things the probe has to settle.
 - A Codex-only consumer still gets a `.claude/hooks/` directory. That is the
   price of one shared runtime.
 - Codex's scope id is `session_id` with no agent suffix, where Claude Code
-  appends the agent id. If Codex runs subagents, they share their parent's
-  read credit. Whether Codex runs them is unprobed.
+  appends the agent id. OpenAI documents Codex subagents, whose hook payloads
+  carry the parent's `session_id` plus an `agent_id`. The scope id ignores
+  `agent_id`, so a Codex subagent shares its parent's read credit. Whether a
+  deny reason reaches a subagent is unprobed.
 - Doctor's git-gates info and warning lines run in the Claude arm only. A
   Codex-only consumer's git-gates registration is covered by the generic
   dead-registration check, but doctor never says whether its git gates are on,
