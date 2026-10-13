@@ -17,6 +17,10 @@ test("toolkit architect docs are PRISM-owned", () => {
   assert.equal(classifyPath("architect/_toolkit/install-layout.md"), "prism");
 });
 
+test("architect writing guides are PRISM-owned", () => {
+  assert.equal(classifyPath("architect/guides/writing-an-architect-doc.md"), "prism");
+});
+
 test("toolkit ADRs are PRISM-owned", () => {
   assert.equal(classifyPath("spec/adrs/_toolkit/0001-x.md"), "prism");
 });
