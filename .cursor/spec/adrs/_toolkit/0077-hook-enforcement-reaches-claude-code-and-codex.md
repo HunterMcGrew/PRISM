@@ -131,10 +131,12 @@ reasons.
 - A Codex-only consumer still gets a `.claude/hooks/` directory. That is the
   price of one shared runtime.
 - Codex's scope id is `session_id` with no agent suffix, where Claude Code
-  appends the agent id. OpenAI documents Codex subagents, whose hook payloads
-  carry the parent's `session_id` plus an `agent_id`. The scope id ignores
-  `agent_id`, so a Codex subagent shares its parent's read credit. Whether a
-  deny reason reaches a subagent is unprobed.
+  appends the agent id. OpenAI documents Codex subagents and says their hooks
+  use the parent's `session_id`. It lists `agent_id` on `SubagentStart` and
+  `SubagentStop` only, not on `PreToolUse` or `PostToolUse`. So a Codex
+  subagent most likely shares its parent's read credit, because the scope id
+  reads `session_id` alone. Whether tool events inside a subagent carry an
+  `agent_id`, and whether a deny reason reaches a subagent, are unprobed.
 - Doctor's git-gates info and warning lines run in the Claude arm only. A
   Codex-only consumer's git-gates registration is covered by the generic
   dead-registration check, but doctor never says whether its git gates are on,
