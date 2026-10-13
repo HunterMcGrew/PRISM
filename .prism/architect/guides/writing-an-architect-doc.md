@@ -82,8 +82,8 @@ concern than an architect doc, but it still states one rule.
 all.
 
 **In a consumer repo, write to your own docs.** `.prism/architect/_toolkit/`
-belongs to PRISM. `prism update` overwrites the files PRISM ships there, and
-PRISM may ship a new file at any path under it. Team content goes in flat
+and `.prism/architect/guides/` belong to PRISM. `prism update` overwrites the
+files PRISM ships there, and PRISM may ship a new file at any path under them. Team content goes in flat
 `.prism/architect/<topic>.md` files, routed in your `manifest.json`.
 
 **Name the file for its concern.** Descriptive beats short:

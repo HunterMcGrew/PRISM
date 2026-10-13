@@ -286,7 +286,8 @@ export async function resolveGitignored(
 /**
  * Returns true for repo-root-absolute targets that are intentionally absent —
  * persona state files created on first write (per lazy-artifacts.md), the
- * onboarding registry, lazy archive files, and historical plan citations.
+ * onboarding registry, lazy archive files, a consumer team's doc-conventions
+ * architect doc, and historical plan citations.
  * These are skipped before the existence check.
  */
 export function isLazyOrHistoricalTarget(cleaned: string): boolean {
@@ -303,6 +304,13 @@ export function isLazyOrHistoricalTarget(cleaned: string): boolean {
 	}
 
 	if (cleaned.startsWith(".prism/plans/")) {
+		return true;
+	}
+
+	// A consumer team's doc-convention rows go here instead of the
+	// PRISM-owned _toolkit/documentation.md, which `prism update` replaces.
+	// Eli creates it on first write, so it never exists in this repo.
+	if (cleaned === ".prism/architect/documentation-conventions.md") {
 		return true;
 	}
 

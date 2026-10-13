@@ -9,7 +9,7 @@ Present the draft to the user. Iterate on feedback until accept or discard.
 
 ## Actions
 
-1. **Present the draft.** Render the architect doc inline in chat with a clear `Architect doc: .prism/architect/<topic>.md` header. If a paired dev doc was drafted (`keepsDevDocs: true`), render it below with `Paired dev doc: <target path>`. If the paired doc was skipped because `keepsDevDocs: false`, surface the config verdict instead ("Paired dev doc skipped — `documentation.keepsDevDocs` is `false` for this team").
+1. **Present the draft.** Render the architect doc inline in chat under a header naming the target from step-05: `Architect doc: .prism/architect/<topic>.md (new)` or `Architect doc: <existing path> (new section)`. If a paired dev doc was drafted (`keepsDevDocs: true`), render it below with `Paired dev doc: <target path>`. If the paired doc was skipped because `keepsDevDocs: false`, surface the config verdict instead ("Paired dev doc skipped — `documentation.keepsDevDocs` is `false` for this team").
 
 2. **Prompt for choice:**
 

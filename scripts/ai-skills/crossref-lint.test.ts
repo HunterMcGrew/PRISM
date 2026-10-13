@@ -469,6 +469,14 @@ test("isLazyOrHistoricalTarget: lessons-archive matches", () => {
 	);
 });
 
+test("isLazyOrHistoricalTarget: the consumer doc-conventions doc matches, other flat architect docs do not", () => {
+	assert.equal(
+		isLazyOrHistoricalTarget(".prism/architect/documentation-conventions.md"),
+		true
+	);
+	assert.equal(isLazyOrHistoricalTarget(".prism/architect/onboarding.md"), false);
+});
+
 test("isLazyOrHistoricalTarget: prism/plans/ matches", () => {
 	assert.equal(
 		isLazyOrHistoricalTarget(".prism/plans/old-plan.md"),

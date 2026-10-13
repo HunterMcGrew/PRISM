@@ -8,7 +8,7 @@ Read `<repo-root>/.prism/architect/_toolkit/documentation.md`. This is the sourc
 
 - Naming conventions (topic-based, kebab-case)
 - Frontmatter schema (title, description, category, audience, last_updated)
-- Category list and the cross-reference map
+- Category list and the cross-reference map. In a consumer repo, the team's own rows live in `.prism/architect/documentation-conventions.md` when it exists, so read that too
 - Writing guidelines
 - Docs-to-code mapping convention
 
@@ -19,7 +19,7 @@ Also read the `documentation` block in `<repo-root>/.ai-skills/config.json`. The
 - **`documentation.keepsDevDocs`** — whether the team maintains a separate dev doc tree alongside user-facing docs
 - **`documentation.format`** — the doc format (`flat-markdown-guides`, `nextra-blocks`, or a team-defined value)
 
-These values answer "where do docs go?" and "who reads them?" before you write a single word. The category and cross-reference map in `documentation.md` are the authoritative index of what already exists.
+These values answer "where do docs go?" and "who reads them?" before you write a single word. The authoritative index of what already exists is the category list and cross-reference map in `documentation.md`, plus the team's rows in `.prism/architect/documentation-conventions.md` when it exists.
 
 ## Step 2 — Determine what to document
 
@@ -96,7 +96,7 @@ Before writing anything new:
 **Existing doc check:**
 
 1. Check the relevant directory under `documentation.location` for an existing doc on this topic
-2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md`, check the counterpart file
+2. If a cross-reference map entry exists in `.prism/architect/_toolkit/documentation.md` or `.prism/architect/documentation-conventions.md`, check the counterpart file
 3. If an existing doc is found: **update it** rather than creating a new file. Note what sections need updating vs. what's still current.
 4. If no existing doc: determine the output path using the naming convention from `documentation.md`
 

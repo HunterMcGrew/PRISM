@@ -106,7 +106,7 @@ Teams that use a `dev/` doc tree often organize architecture docs under an `arch
 
 A team-specific table mapping `.prism/` agent files to their human-readable doc counterparts. Briar uses this for staleness detection: when a file on either side changes, the corresponding file on the other side may need updating.
 
-The map is per-team and lives at the bottom of this file once your team's docs are populated (during onboarding, Phase 3). Paths on the right use the team's configured `documentation.location`. Format:
+The map is per-team. In PRISM's own repo the rows are the table below. In a consumer repo, `prism update` replaces this file, so the team's rows live in `.prism/architect/documentation-conventions.md` instead. Paths on the right use the team's configured `documentation.location`. Format:
 
 | Agent File | Docs Counterpart | Relationship |
 |------------|------------------|--------------|

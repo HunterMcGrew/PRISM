@@ -2,18 +2,20 @@
 
 Read this after the doc content is written, before the closing. `prism-documentation` pins the trigger; this file carries the post-write procedure — the conditional sub-flows (new-template breadcrumbs, doc-collection handoffs) and the always-run steps (sidebar nav, landing index, cross-reference map, plan update, review prompt).
 
+**Where your team's doc-convention entries go.** Template entries and cross-reference map rows belong in the architect doc that owns the team's doc conventions. In PRISM's own repo that is `.prism/architect/_toolkit/documentation.md`. In a consumer repo, `prism update` overwrites the files PRISM ships under `_toolkit/`, and `documentation.md` is one of them. Team entries go in `.prism/architect/documentation-conventions.md` instead. Create it the first time it's needed, routed on `${documentation.location}` per `.prism/architect/guides/writing-an-architect-doc.md` § Route-add is part of authoring. The rest of this file calls it the doc-conventions doc.
+
 ## Conditional sub-flows (fire only when their trigger fires)
 
 **When creating a new template at `.prism/references/*-template.md`:**
 
 1. Add a **Category-specific rules** bullet to the parent base template (`user-doc-template.md` or `dev-doc-template.md`) pointing down to the new specialization — this is the breadcrumb that routes future Eli sessions to the right template.
-2. Add an entry to `.prism/architect/_toolkit/documentation.md § Doc Templates § Category-specific rules` describing when the new template applies.
+2. Add an entry to the doc-conventions doc describing when the new template applies.
 3. Mention the new template in `SKILL.md § Doc templates § Category-specific templates` so the skill itself knows it exists.
 
 **When creating a doc collection (N ≥ 3 docs sharing a topic, not a single standalone page):**
 
-1. Add a `## Per-Block Documentation` section to the paired `.prism/architect/<topic>.md` file listing the collection — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
-2. Add a Cross-Reference Map row in `documentation.md` per audience — if both user and dev per-block docs exist, add both rows.
+1. Add a `## Per-Block Documentation` section to the architect doc that owns the collection's subject, listing the collection. When no doc owns it, create one per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes, routed by the collection's source files — this is the handoff signal so agents loading the architect file via manifest know the collection exists and should be updated when source changes.
+2. Add a cross-reference map row in the doc-conventions doc per audience — if both user and dev per-block docs exist, add both rows.
 3. Add audience-parallel intros to the team's doc landing page (at `${documentation.location}` root — e.g. `docs/index.md` or `docs/index.mdx`) — if both user and dev sides have a section for the category, both need a drill-down intro sentence, not just one.
 
 ## 1. Update sidebar navigation
@@ -40,7 +42,7 @@ If the doc is new and the landing page at `${documentation.location}` doesn't ha
 
 ## 3. Update the cross-reference map
 
-If the new doc covers the same topic as an existing `.claude/` file, add a row to the cross-reference map in `.prism/architect/_toolkit/documentation.md`.
+If the new doc covers the same topic as an existing `.prism/` file, add a row to the cross-reference map in the doc-conventions doc.
 
 ## 4. Update the branch plan
 
