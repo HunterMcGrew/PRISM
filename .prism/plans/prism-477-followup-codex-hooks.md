@@ -590,6 +590,38 @@ Subject range `huntermcgrew/prism-492-split-umbrellas...6b0674f7` (merge-base fo
 - Docs impact — swept — 3 items enumerated, 3 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` and `context-reuse.md` are plan tasks 13-14, out of this PR's scope)
 - Accessibility — n/a — no UI in the reviewed range
 
+### Plan Decisions still say ADR-0074's bar is cleared and the fail-open argument is unbounded
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-477-followup-codex-hooks.md:42-43` (also `:58`)
+- **Problem:** the Decision "`HARNESSES.codex.emitDeny` adopts the documented envelope" still says "Shipping cannot be worse than not shipping" and "this case clears [ADR-0074's rule] rather than repealing it", but ADR-0077:57 says the deny "relaxes ADR-0074's bar rather than meeting it" and its alternatives bullet bounds the fail-open argument to an unrecognized envelope. The reversal sub-bullet at `:58` also says the ADR-0072 half "is unchanged", while Task 9 records it was implemented as an appended note, not the in-place correction `:57` describes.
+- **Suggested fix:** add a one-line "Reversed (2026-10-12)" sub-bullet to that Decision pointing at ADR-0077's wording, and change `:58` to "the ADR-0072 half (task 9) landed as an appended note".
+
+### ADR-0077 states a Codex fact the docs do not support and omits the documented command spelling
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:118-122`
+- **Problem:** the cwd bullet says "Codex sets no project-directory variable to anchor it", but OpenAI's hooks page (fetched 2026-10-12) only fails to document one for repo-local hooks, and its examples resolve paths with `$(git rev-parse --show-toplevel)`; the ADR records that spelling neither as an alternative nor as the reason a below-root session is a cost the team accepted.
+- **Suggested fix:** reword to "documents no project-directory variable", and add one alternatives bullet: the docs' git-root spelling, rejected until the probe shows Codex runs `command` through a shell (the plan's command-string Decision has the reasoning).
+
+### Pass 6 (ADR-0077 follow-up PR, loop pass 2): not subject-clean
+
+Pass 5's six findings are all closed in HEAD `ed1a37aa` (re-read ADR-0077 in full, the ADR-0072, ADR-0076 and ADR-0074 edits, README rows, `hook-runtime.md`, `seed-curation.json`). Source-verified against `update.ts`, `harnesses.mjs`, `hook.mjs`, `git-gates.mjs`, `templates/install/.codex/hooks.json`, `doctor.ts`, `hook-gate.test.ts`, and ADR-0064/0071/0072/0074/0076; OpenAI's hooks page was re-fetched this pass for the envelope, `PostCompact`, cwd and fail-open claims. `pnpm prism:check`: mirrors in sync, types, 926 tests, verify-manifest, crossref-lint, install gates, `prism:ship-closure` and `prism:verify-pack` pass; `spec-scope-lint` fails only on paths outside this PR (unmerged #496).
+
+#### Angle Coverage
+
+- Runtime behavior — n/a — no code in the reviewed range
+- Test efficacy — n/a — no code or tests in the reviewed range
+- Spec and doc consistency — swept — 9 items enumerated, 9 verdicts (ADR-0077, ADR-0074 status flip, ADR-0072 note, ADR-0076 note, README 0074 and 0077 rows, `hook-runtime.md` edit, `seed-curation.json` entry, plan Decisions `:41-58`; plan Decisions diverge)
+- Citation integrity — swept — 12 items enumerated, 12 verdicts (ADR-0074 "as scope, not as direction" and live-probe quotes, ADR-0064 no-ship rule and `excluded[]` placement, `update.ts` `refreshHookRuntime`/`mergeHookCodexRegistration`/`PRISM_CODEX_HOOK_COMMAND_PATTERN`, `harnesses.mjs` codex row, `hook.mjs` exit paths, `hook-gate.test.ts` spawned Codex deny, `doctor.ts` per-host arms, `.codex/hooks.json` events, ADR-0071:37 note shape, `skill-core.md` § Reading before writing)
+- External-system claims — swept — 5 items enumerated, 5 verdicts (deny envelope, `PostCompact`, `apply_patch` `Edit`/`Write` aliases, fail-open on unsupported fields, project-directory variable; last diverges)
+- Repo writing rules — swept — verdict-only
+- Security — n/a — no auth, input, secrets or trust boundary touched
+- Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` is plan task 13, out of this PR's scope)
+- Accessibility — n/a — no UI in the reviewed range
+
 ---
 
 ## Cleanup Items
@@ -598,7 +630,7 @@ Subject range `huntermcgrew/prism-492-split-umbrellas...6b0674f7` (merge-base fo
 
 ## PR Readiness
 
-- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): 1 major and 5 minors open in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
+- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2 (2026-10-12) opened 2 minors, both in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — three new `doctor.test.ts` cases cover pass 3's two Minors, plus the cold-start leg's `assertAdoptedConsumerState` now guards the real Codex template
