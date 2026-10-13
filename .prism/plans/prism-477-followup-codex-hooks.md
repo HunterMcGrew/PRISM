@@ -624,6 +624,40 @@ Pass 5's six findings are all closed in HEAD `ed1a37aa` (re-read ADR-0077 in ful
 - Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` is plan task 13, out of this PR's scope)
 - Accessibility — n/a — no UI in the reviewed range
 
+### ADR-0077 says Codex subagents are unprobed, but OpenAI documents them
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:133-135` (surface: subject)
+- **Problem:** the bullet says "If Codex runs subagents, they share their parent's read credit. Whether Codex runs them is unprobed." OpenAI's hooks page (fetched 2026-10-12) documents subagent hooks: payloads carry `agent_id` and `agent_type`, a `SubagentStop` event exists, and "Subagent hooks use the parent session id." So the "if" is answered by the docs, and the sharing follows from `HARNESSES.codex.scopeId` ignoring `agent_id`; what stays unprobed is whether a deny reason crosses into the subagent (task 8's fourth observation).
+- **Suggested fix:** reword to "OpenAI documents Codex subagents, whose hook payloads use the parent's `session_id` and add an `agent_id`; Codex's scope id ignores `agent_id`, so a subagent shares its parent's read credit. Whether a deny reason reaches the subagent is unprobed."
+
+### Plan Decision "Command string" still says Codex sets no project-directory variable
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-477-followup-codex-hooks.md:35` (surface: repair; anchor: pass 6's second finding, quoted: "Codex sets no project-directory variable", still true in the plan after cf903f68 corrected it in ADR-0077:127)
+- **Problem:** the ADR now says Codex "documents no project-directory variable", because the docs only fail to document one. The Decision's Root cause line still states "Codex sets no project-directory environment variable" as fact, so the plan and the ADR disagree on the strength of the same claim, and the Decision also omits that OpenAI's examples resolve from the git root.
+- **Suggested fix:** add a one-line "Corrected (2026-10-12)" sub-bullet to that Decision, in the shape of the `emitDeny` Decision's reversal line, saying "documents no" and pointing at ADR-0077.
+
+### Pass 7 (ADR-0077 follow-up PR, loop pass 3): not subject-clean
+
+Pass 6's two Minors are closed in HEAD `cf903f68`: the `emitDeny` Decision carries a "Reversed (2026-10-12)" sub-bullet matching ADR-0077:57, and ADR-0077:127 says "documents no" with the git-root spelling recorded as a rejected alternative. Cf903f68's `skill-core.md` description matches `.prism/references/skill-core.md` § Reading before writing. Source-verified against `update.ts` (`refreshHookRuntime`, `mergeHookCodexRegistration`, `PRISM_CODEX_HOOK_COMMAND_PATTERN`), `harnesses.mjs` (codex row, `scopeId`), `hook.mjs` (`main`, `runPostCompactArm`: every path sets `exitCode = 0`, PostCompact removes the whole state file), `templates/install/.codex/hooks.json`, `doctor.ts` (Codex arm, git-gates lines Claude-only), `hook-gate.test.ts` (spawned Codex deny asserts `status === 0`), ADR-0064/0071/0072/0074/0076. OpenAI's hooks page was re-fetched: envelope, `PostCompact`, working directory and no-project-variable claims hold; the subagent claim does not. `pnpm prism:check`: mirrors, types, 926 tests, verify-manifest, crossref-lint and install gates pass; `spec-scope-lint` fails only on the unmerged #496 paths; `prism:ship-closure` and `prism:verify-pack` pass.
+
+Follow-up observations (not findings): `hook-runtime.md` § asymmetry lists four of ADR-0077's five rejected alternatives (the git-root spelling was added after it was written); `harnesses.mjs` `HarnessSpec` JSDoc says a documented envelope "clears the bar" where ADR-0077 says it relaxes it; `HARNESSES.codex.scopeId` ignores the `agent_id` Codex documents, the pooling the Claude row's comment warns about; ADR-0077 says OpenAI's examples use the git-root spelling but not that the docs prefer it over a relative path; ADR-0077:127-128 has one line wrapped at 95 columns.
+
+#### Angle Coverage
+
+- Runtime behavior — n/a — no code in the reviewed range
+- Test efficacy — n/a — no code or tests in the reviewed range
+- Spec and doc consistency — swept — 9 items enumerated, 9 verdicts (ADR-0077, ADR-0074 status flip, ADR-0072 note, ADR-0076 note, README 0074 and 0077 rows, `hook-runtime.md` edit, `seed-curation.json` `excluded[]` entry, plan Decisions `:35` and `:41-59`; `:35` diverges)
+- Citation integrity — swept — 14 items enumerated, 14 verdicts (ADR-0074 quotes and bar, ADR-0064 `excluded[]`, ADR-0071:37 note shape, `refreshHookRuntime`/`mergeHookCodexRegistration`/pattern, codex row `emitDeny` and `scopeId`, `hook.mjs` exit paths, spawned-deny test, doctor Codex arm, `.codex/hooks.json` events, `skill-core.md` notice, compat heading, `Superseded-by` convention; all hold)
+- External-system claims — swept — 5 items enumerated, 5 verdicts (deny envelope, `PostCompact`, working directory, project-directory variable, subagents; the last diverges)
+- Repo writing rules — swept — verdict-only
+- Security — n/a — no auth, input, secrets or trust boundary touched
+- Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` heading already names both hosts)
+- Accessibility — n/a — no UI in the reviewed range
+
 ---
 
 ## Cleanup Items
@@ -632,7 +666,7 @@ Pass 5's six findings are all closed in HEAD `ed1a37aa` (re-read ADR-0077 in ful
 
 ## PR Readiness
 
-- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2 (2026-10-12) opened 2 minors, both in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
+- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2's 2 minors are fixed; loop pass 3 (2026-10-12) opened 2 new minors (ADR-0077 subagent wording, plan `:35` project-directory wording), both `open` in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — three new `doctor.test.ts` cases cover pass 3's two Minors, plus the cold-start leg's `assertAdoptedConsumerState` now guards the real Codex template
