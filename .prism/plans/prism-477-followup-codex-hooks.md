@@ -524,6 +524,70 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 - **Problem:** the comment explaining the git-gates-inert guard sat inside the preceding `if` branch's body, trailing the `findings.push` for the unrelated inert-runtime warning, while the code it actually explained was the `else if` condition one line below — `code-comments.md` § Placement requires a comment on the line directly above the code it explains. The `if`/`else if` chain left no legal line for it to sit on.
 - **Fixed in:** restructured the Codex arm into two independent `if`s over a hoisted `codexHookInert`, mirroring the shape the Claude arm above it already uses — the comment now sits directly above the `if (!codexGitGatesInert && runtimePresent && codexRegisteredPaths.has(hookRuntimePath))` check it describes. Same findings on every input; no behavior change.
 
+### ADR-0077 misdescribes the bar ADR-0074 set for shipping a Codex deny
+
+- **Severity:** `major`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:13` and `:56`
+- **Problem:** the ADR says ADR-0074's bar was "no deny shipped in an unverified envelope" and that shipping on a documented envelope "clears ADR-0074's bar rather than repealing it", but ADR-0074's own Decision names "a live probe of that host's deny envelope" as the precondition for `emitDeny` returning anything, so shipping before the probe relaxes that bar.
+- **Suggested fix:** state the relaxation plainly (ADR-0074 required a live probe; this ADR accepts a published envelope plus the fail-open argument in its place) and keep the unprobed caveat in Consequences.
+
+### ADR-0077 states unprobed Codex behavior as fact
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:98`
+- **Problem:** the sentence after the "provided Codex honors the documented envelope" proviso says the announce layer and `PostCompact` reset "reach Codex too, so a long Codex session no longer keeps read credit", but neither has been observed firing on Codex and both depend on the relative-cwd command the ADR itself flags as unprobed.
+- **Suggested fix:** hedge it ("registered for Codex; firing is unprobed, see the cwd bullet").
+
+### ADR-0077 overstates what the fail-open argument covers
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:77`
+- **Problem:** "shipping first cannot leave Codex worse off than not shipping" holds only for an unrecognized envelope, and the Decision bullet above says "safe in one direction only", so a recognized deny that fires wrongly (path extraction, cwd mismatch) is not covered.
+- **Suggested fix:** scope the sentence to an unrecognized envelope.
+
+### ADR-0077 says superseding loses nothing but drops ADR-0074's notice-placement decision
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:73` and `:90`
+- **Problem:** ADR-0074's static `skill-core.md` notice and its two rejected placements (per-host skill notice, runtime host detection) still govern Cursor, but ADR-0077 neither carries them forward nor lists them among the rejections that "stand unchanged", and ADR-0074 is now superseded.
+- **Suggested fix:** add one sentence to the "stand unchanged" paragraph naming the notice placement and its two rejected alternatives.
+
+### ADR-0077 uses "seam" and "surface" as metaphor
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:12`, `:13`, `:38`, `:52`, `:84`
+- **Problem:** `writing-voice.md` § Plain language cuts "seam" and "surface area"; PRISM-492 removed the same metaphor in commit 4af76831.
+- **Suggested fix:** "delivery path" for lines 12, 13, 38; "merge function" for line 52; "deliver, prune, and backup work" for line 84.
+
+### Plan Tasks 9 and 10 contradict the diff
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/plans/prism-477-followup-codex-hooks.md:199` and `:202` (also `:48`)
+- **Problem:** Task 10 still says "Amend ADR-0074 ... Keep `Status: accepted`" and the `PostCompact` Decision still points at "the ADR-0074 amendment (task 10)", though the diff supersedes ADR-0074; Task 9 says "Rewrite" the ADR-0072 bullet while the diff appends a note (recorded only in `## History`).
+- **Suggested fix:** mark Task 10 "Replaced by ADR-0077" inline, repoint `:48` to ADR-0077, and add "implemented as an appended note, ADR-0071:37 shape" to Task 9.
+
+### Pass 5 (ADR-0077 follow-up PR): not a clean pass
+
+Subject range `huntermcgrew/prism-492-split-umbrellas...6b0674f7` (merge-base form; the two-dot diff against the unmerged #496 tip also shows close-out reversals in `prism-492.md` that are not this PR's). `pnpm prism:check`: mirrors in sync, crossref-lint, install-adr-gate, install-relative-link-gate and the test suite pass; `spec-scope-lint` fails only on paths outside this PR (`prism-architect`, `prism-doc-walker`, `prism-documentation` and `prism-surface-audit` skill bodies, `review-docs-impact.md`, `branch-plan.md` and twins), because #496 has not merged.
+
+#### Angle Coverage
+
+- Runtime behavior — n/a — no code in the reviewed range
+- Test efficacy — n/a — no code or tests in the reviewed range
+- Spec and doc consistency — swept — 9 items enumerated, 9 verdicts (ADR-0077, ADR-0074 status flip, ADR-0072 note, ADR-0076 note, README rows, `hook-runtime.md` edit, `seed-curation.json` entry, curated `hook-runtime.md` twin, plan reversal sub-bullet; findings 1-4 and 6)
+- Citation integrity — swept — 14 items enumerated, 14 verdicts (ADR-0074 quotes and bar, ADR-0071/0072/0076/0064 refs, PRISM #487 merged 2026-09-08, plan path, `hook-runtime.md` § Hook runtime heading, `update.ts`/`harnesses.mjs`/`doctor.ts` symbols, `.codex/hooks.json` not git-ignored; finding 1 diverges)
+- External-system claims — swept — 3 items enumerated, 3 verdicts (Codex deny envelope, `PostCompact` event, no project-directory variable: taken from repo source comments and the plan, OpenAI docs not re-fetched this pass; findings 2 and 3 cover the unhedged consequences)
+- Repo writing rules — swept — verdict-only
+- Security — n/a — no auth, input, secrets or trust boundary touched
+- Docs impact — swept — 3 items enumerated, 3 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` and `context-reuse.md` are plan tasks 13-14, out of this PR's scope)
+- Accessibility — n/a — no UI in the reviewed range
+
 ---
 
 ## Cleanup Items
@@ -532,7 +596,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 
 ## PR Readiness
 
-- [x] No critical or major issues — the two `deferred` PR-2 items (AC-9, AC-10) are correctly out of PR #487's scope per the two-PR-stack Decision.
+- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): 1 major and 5 minors open in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — three new `doctor.test.ts` cases cover pass 3's two Minors, plus the cold-start leg's `assertAdoptedConsumerState` now guards the real Codex template
