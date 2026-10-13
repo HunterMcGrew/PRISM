@@ -660,6 +660,32 @@ Follow-up observations (not findings): `hook-runtime.md` § asymmetry lists four
 - Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` heading already names both hosts)
 - Accessibility — n/a — no UI in the reviewed range
 
+### ADR-0077 says Codex tool-event payloads carry `agent_id`, which OpenAI documents only on subagent lifecycle events
+
+- **Severity:** `minor`
+- **Status:** `open`
+- **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:134-136` (surface: subject)
+- **Problem:** the bullet says Codex subagents' "hook payloads carry the parent's `session_id` plus an `agent_id`" and that "the scope id ignores `agent_id`." OpenAI's hooks page (fetched 2026-10-12) lists `agent_id` and `agent_type` on `SubagentStart` and `SubagentStop` only, lists neither on `PreToolUse` or `PostToolUse` (`turn_id`, `tool_name`, `tool_use_id`, `tool_input`), and says only "Subagent hooks use the parent session id" without saying how a tool event inside a subagent is reported. The read-credit sharing may hold, but the ADR states as documented a payload field the docs do not put on the events the gate reads. A reader who adds `agent_id` to `HARNESSES.codex.scopeId` on the ADR's word would be reading a field that may never arrive.
+- **Suggested fix:** reword to "OpenAI documents Codex subagents and says their hooks use the parent's `session_id`. It lists `agent_id` on `SubagentStart` and `SubagentStop` but not on `PreToolUse` or `PostToolUse`, and does not say how a tool event inside a subagent is reported. If those events carry only the parent's `session_id`, a subagent shares its parent's read credit, because `HARNESSES.codex.scopeId` reads `session_id` alone. Whether tool events carry `agent_id`, and whether a deny reason reaches a subagent, are unprobed."
+
+### Pass 8 (ADR-0077 follow-up PR, loop pass 4): not subject-clean
+
+Pass 7's two Minors are closed in HEAD `d48b27d5`: the subagent bullet now states OpenAI documents Codex subagents (one residual accuracy gap, above), and the "Command string" Decision carries a "Corrected (2026-10-12)" sub-bullet; `hook-runtime.md` cites ADR-0077 § Decision instead of re-listing the rejected alternatives. Source-verified against `update.ts` (`refreshHookRuntime`, `HOOK_RUNTIME_FILES`, `HOOK_RUNTIME_ENTRY_POINTS`, `mergeHookCodexRegistration`, `PRISM_CODEX_HOOK_COMMAND_PATTERN`), `harnesses.mjs` (codex row), `hook.mjs` (`main`: every path sets `exitCode = 0`), `git-gates.mjs`, `templates/install/.codex/hooks.json` and `.claude/settings.json` (same three events), `doctor.ts` (`checkHookRegistration` per-host arms, Codex arm adds no git-gates info or warning), `hook-gate.test.ts` (spawned Codex deny exits 0), `skill-core.md` § Reading before writing, `resolveHosts`, and ADR-0064/0071/0072/0074/0076. OpenAI's hooks page was re-fetched: deny envelope, `PostCompact`, session `cwd`, and no repo-local project-directory variable all match the ADR. `pnpm prism:check` fails only in `spec-scope-lint`, on #496's unmerged files (none in this diff); 926 tests pass, 0 fail; `prism:ship-closure` and `prism:verify-pack` pass separately.
+
+Follow-up observations (not findings): same as pass 7's list, plus the `HARNESSES.codex.scopeId` code follow-up should be conditional on a probe showing tool events carry `agent_id`.
+
+#### Angle Coverage
+
+- Runtime behavior — n/a — no code in the reviewed range
+- Test efficacy — n/a — no code or tests in the reviewed range
+- Spec and doc consistency — swept — 9 items enumerated, 9 verdicts (ADR-0077, ADR-0074 status flip, ADR-0072 note, ADR-0076 note, README 0074 and 0077 rows, `hook-runtime.md` edit, `seed-curation.json` `excluded[]` entry, plan Decisions `:35` and `:41-60`; all hold)
+- Citation integrity — swept — 14 items enumerated, 14 verdicts (ADR-0074 quotes and bar, ADR-0064 `excluded[]`, ADR-0071:37 note shape, `refreshHookRuntime`/`mergeHookCodexRegistration`/pattern, codex row `emitDeny` and `scopeId`, `hook.mjs` exit paths, spawned-deny test, doctor Codex arm, both hook templates' events, `skill-core.md` notice, `Superseded-by` convention; all hold)
+- External-system claims — swept — 6 items enumerated, 6 verdicts (deny envelope, `PostCompact`, working directory, project-directory variable, subagent session id, `agent_id` placement; the last diverges)
+- Repo writing rules — swept — verdict-only
+- Security — n/a — no auth, input, secrets or trust boundary touched
+- Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` is plan task 13, out of this PR's scope)
+- Accessibility — n/a — no UI in the reviewed range
+
 ---
 
 ## Cleanup Items
@@ -668,7 +694,7 @@ Follow-up observations (not findings): `hook-runtime.md` § asymmetry lists four
 
 ## PR Readiness
 
-- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2's 2 minors are fixed; loop pass 3 (2026-10-12) opened 2 new minors (ADR-0077 subagent wording, plan `:35` project-directory wording), both `open` in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
+- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2's 2 minors are fixed; loop pass 3's 2 minors are fixed; loop pass 4 (2026-10-12) opened 1 new minor (ADR-0077 `agent_id` placement), `open` in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — three new `doctor.test.ts` cases cover pass 3's two Minors, plus the cold-start leg's `assertAdoptedConsumerState` now guards the real Codex template
