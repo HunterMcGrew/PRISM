@@ -83,6 +83,13 @@ Alternatives considered:
 - **Register under `[hooks]` in `.codex/codex-config.toml`.** Rejected because
   that file is per-user and gitignored. A registration there is invisible to
   the rest of the team and gone on a fresh clone.
+- **Anchor the command at the git root with
+  `node "$(git rev-parse --show-toplevel)/.claude/hooks/hook.mjs"`**, the
+  spelling OpenAI's hooks examples use. Rejected until the probe shows Codex
+  runs `command` through a shell. The documentation neither states nor denies
+  that, and if Codex takes the string literally, node cannot find the file and
+  the hook never fires, with nothing on screen to say so. It stays the
+  contingency if the probe shows sessions starting below the repo root.
 - **A second runtime copy under `.codex/hooks/`, or one shared copy moved to
   `.prism/hooks/`.** Rejected on cost. The second copy is the same bytes at a
   second path, doubling the deliver, prune, and backup work. The move is the
@@ -96,8 +103,9 @@ still cannot enforce read-before-write, because it fires after the edit is on
 disk. Removing the Claude Code gate to make every host behave alike still
 trades a measured guarantee for symmetry.
 
-The runtime notice also stays where ADR-0074 put it: one static host-neutral
-sentence in `.prism/references/skill-core.md` § "Reading before writing". Both
+The runtime notice also stays where ADR-0074 put it: static prose in
+`.prism/references/skill-core.md` § "Reading before writing", which now names
+Claude Code and Codex as the hosts that receive the runtime. Both
 placements ADR-0074 rejected for it, a per-host notice in each skill's
 platform body and a runtime host-detection check, stay rejected for the same
 reasons.
@@ -116,8 +124,8 @@ reasons.
   that the gate fires. If Codex ignores the envelope, the gate fails open with
   nothing on screen to say so. The probe is the only control that closes this.
 - The Codex command is a path relative to the session's working directory,
-  `node ".claude/hooks/hook.mjs"`, because Codex sets no project-directory
-  variable to anchor it. A Codex session started below the repo root will not
+  `node ".claude/hooks/hook.mjs"`, because Codex documents no
+  project-directory variable to anchor it. A Codex session started below the repo root will not
   find the runtime, and the hook will not run. What Codex actually sends as
   `cwd` is one of the things the probe has to settle.
 - A Codex-only consumer still gets a `.claude/hooks/` directory. That is the

@@ -41,6 +41,7 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
   - **Root cause:** ADR-0074 rejected shipping a deny "in an unverified envelope" because it "either fails open silently or blocks with an unperformable remedy." That reasoning was about a guessed shape. OpenAI now publishes the shape: `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "…"}}`, with exit code 2 plus a stderr reason as the documented alternative.
   - **Chosen approach:** ship the documented envelope ahead of the live probe. The two failure directions are not symmetric: every exit path in `hook.mjs` sets `process.exitCode = 0` (lines 1421–1500) and a denial travels in stdout JSON alone, so an envelope Codex does not recognize fails **open** — which is exactly Codex's behavior today. Shipping cannot be worse than not shipping, and it is the only way the probe can happen at all.
   - **Implementation guidance:** the code comment records this as documentation-verified, not live-probed, and names task 8 as what upgrades it — the same distinction the Claude row's comment already draws ("Measured against a live Claude Code host on 2026-08-19"). Do not delete ADR-0074's sentence about unverified envelopes; it is still the right rule, and this case clears it rather than repealing it.
+  - **Reversed (2026-10-12) on framing only:** ADR-0074's bar was a live probe of the envelope, so shipping ahead of the probe relaxes that bar rather than clearing it, and the fail-open argument covers only an envelope Codex does not recognize, not a recognized deny that fires on the wrong path. The shipped code is unchanged. ADR-0077 § Decision carries the corrected wording.
 
 - **Codex also registers `PostCompact`, delivering all three events Claude gets.**
   - **Correction (2026-09-08):** this entry originally read "Two events only: `PreToolUse` and `PostToolUse`. No `PostCompact`," reasoning that "Codex documents no `PostCompact` event." That was wrong — OpenAI's hooks documentation (`https://learn.chatgpt.com/docs/hooks`, verified again on this date) lists `PostCompact` and describes it as running "after Codex compacts the chat," with `session_id`, `cwd`, `turn_id`, and a `manual`/`auto` `trigger` in its payload. Without the third registration, a Codex session's announce-once state never reset after a compaction, so the write gate could let a write through on a doc the model could no longer see — the exact failure this PR exists to close, recurring on every compaction in a long session.
@@ -55,7 +56,7 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
 - **Amend ADR-0074 and correct ADR-0072's Consequences bullet; do not write a new ADR.**
   - **Root cause:** what changes is one rejected alternative inside ADR-0074, which already calls itself "open follow-up work," plus one factual bullet in ADR-0072 (line 65) that says `HARNESSES.codex.emitDeny` returns `null`. A new ADR would fork the reasoning across three files and leave both existing ADRs asserting a Claude-only reach that is no longer true.
   - **Chosen approach:** ADR-0074 stays `accepted` — its decision still holds for Cursor — and gains an amendment section. ADR-0072's bullet is corrected in place to name Cursor as the remaining gap. Neither is superseded.
-  - **Reversed (2026-10-12) for ADR-0074 only:** ADR-0077 supersedes ADR-0074, and ADR-0074 is now `superseded`. The amendment never landed because it was sequenced behind the probe, so `main` carried an accepted ADR whose title and Decision sentence said Claude Code only while the code delivered to Codex. An amendment under that headline would still mislead a reader who stops at it. The Cursor half this entry wanted to keep is carried forward in ADR-0077, so nothing is lost. Task 10 is replaced by ADR-0077: the probe's findings go into ADR-0077 rather than an ADR-0074 amendment. The ADR-0072 half (task 9) is unchanged.
+  - **Reversed (2026-10-12) for ADR-0074 only:** ADR-0077 supersedes ADR-0074, and ADR-0074 is now `superseded`. The amendment never landed because it was sequenced behind the probe, so `main` carried an accepted ADR whose title and Decision sentence said Claude Code only while the code delivered to Codex. An amendment under that headline would still mislead a reader who stops at it. The Cursor half this entry wanted to keep is carried forward in ADR-0077, so nothing is lost. Task 10 is replaced by ADR-0077: the probe's findings go into ADR-0077 rather than an ADR-0074 amendment. The ADR-0072 half (task 9) still stands, and it landed as an appended note rather than an in-place correction.
 
 - **Ship as a two-PR stack.**
   - **Root cause:** the change touches roughly fifteen canonical files, past the ten-file threshold for a single review.
@@ -332,6 +333,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Wrote ADR-0077 superseding ADR-0074 and repointed `hook-runtime.md` § Hook runtime at it; see Decision "Amend ADR-0074 and correct ADR-0072's Consequences bullet", reversed for ADR-0074.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Closed task 9 and the ADR-0076:87 site from the AC-9 Review Issues entry by appending a dated-by-reference note ("Codex delivery has since shipped (PRISM #487, ADR-0077)") to each bullet, the shape ADR-0071:37 already uses, rather than rewriting the decision-time text in place.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 5 (1 Major, 5 Minors): ADR-0077 now says it relaxes ADR-0074's live-probe bar rather than clearing it, hedges the unprobed Codex announce and `PostCompact` claims, scopes the fail-open argument to an unrecognized envelope, carries forward ADR-0074's notice placement, and drops "seam" and "surface". Tasks 9 and 10 and the `PostCompact` Decision now match the diff.
+- 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 6 (2 Minors): the emitDeny Decision gains a framing reversal matching ADR-0077, and ADR-0077 now says Codex documents no project-directory variable and records the git-root command spelling as a rejected alternative. Also corrected ADR-0077's description of the `skill-core.md` notice, which now names the receiving hosts.
 
 ---
 
@@ -593,7 +595,7 @@ Subject range `huntermcgrew/prism-492-split-umbrellas...6b0674f7` (merge-base fo
 ### Plan Decisions still say ADR-0074's bar is cleared and the fail-open argument is unbounded
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-477-followup-codex-hooks.md:42-43` (also `:58`)
 - **Problem:** the Decision "`HARNESSES.codex.emitDeny` adopts the documented envelope" still says "Shipping cannot be worse than not shipping" and "this case clears [ADR-0074's rule] rather than repealing it", but ADR-0077:57 says the deny "relaxes ADR-0074's bar rather than meeting it" and its alternatives bullet bounds the fail-open argument to an unrecognized envelope. The reversal sub-bullet at `:58` also says the ADR-0072 half "is unchanged", while Task 9 records it was implemented as an appended note, not the in-place correction `:57` describes.
 - **Suggested fix:** add a one-line "Reversed (2026-10-12)" sub-bullet to that Decision pointing at ADR-0077's wording, and change `:58` to "the ADR-0072 half (task 9) landed as an appended note".
@@ -601,7 +603,7 @@ Subject range `huntermcgrew/prism-492-split-umbrellas...6b0674f7` (merge-base fo
 ### ADR-0077 states a Codex fact the docs do not support and omits the documented command spelling
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:118-122`
 - **Problem:** the cwd bullet says "Codex sets no project-directory variable to anchor it", but OpenAI's hooks page (fetched 2026-10-12) only fails to document one for repo-local hooks, and its examples resolve paths with `$(git rev-parse --show-toplevel)`; the ADR records that spelling neither as an alternative nor as the reason a below-root session is a cost the team accepted.
 - **Suggested fix:** reword to "documents no project-directory variable", and add one alternatives bullet: the docs' git-root spelling, rejected until the probe shows Codex runs `command` through a shell (the plan's command-string Decision has the reasoning).
