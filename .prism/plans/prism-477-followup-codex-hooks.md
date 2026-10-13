@@ -19,6 +19,7 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
   - **Alternatives considered:** `[hooks]` in `codex-config.toml`; the user-level `~/.codex/hooks.json`.
   - **Chosen approach:** `<consumer>/.codex/hooks.json`. Past the git-ignore argument, Codex's `hooks.json` schema is structurally identical to Claude's `settings.json` `hooks` block — the same `{hooks: {Event: [{matcher, hooks: [{type, command}]}]}}` shape — so `mergeHookEventEntries` and `collectHookCommands` carry over with no new parser. The TOML route would need a merge writer that does not exist, and `~/.codex/` is outside the repo PRISM installs into.
   - **Verified 2026-09-02** against OpenAI's hooks documentation at `https://learn.chatgpt.com/docs/hooks` and against `git check-ignore` in this worktree.
+  - **Corrected (2026-10-12):** every clone inherits the *registration*, not a running gate. OpenAI's hooks documentation says project-local hooks load only once the project's `.codex/` layer is trusted and each hook definition is reviewed. ADR-0077 § Consequences records the gap and the probe step that should observe it.
 
 - **One runtime, two registrations. The runtime stays at `.claude/hooks/`.**
   - **Root cause:** `hook.mjs` is host-neutral already — it dispatches on the `--tool=` flag and resolves the repo root itself from `payload.cwd`. A second copy under `.codex/hooks/` would be the same bytes at a second path, doubling the deliver, prune, and backup surface for no behavior change.
@@ -338,6 +339,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 7 (2 Minors): ADR-0077's subagent bullet now cites OpenAI's documented subagent payloads, and the plan's command-string Decision gains a "documents no" correction. `hook-runtime.md` now cites ADR-0077 § Decision for the rejected alternatives instead of re-listing them, since the list had drifted once already.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 8 (1 Minor): ADR-0077's subagent bullet no longer claims tool events carry `agent_id`, which OpenAI lists on `SubagentStart`/`SubagentStop` only. Also repointed the PR 2 preamble's task-10 reference at ADR-0077.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 9 (1 Minor): task 11's "asymmetry is a decision" clause now records the paragraph as done against ADR-0077. Also added the git-root command spelling to the ADR README's 0077 row, which listed four of the five rejected alternatives.
+- 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Eric's PR-review pass 1 on #497 (1 Major, 1 Minor): ADR-0077 and `hook-runtime.md` now say Codex runs project hooks only after the user trusts the `.codex/` layer and reviews the hook, and the TOML rejection now covers the committed `<repo>/.codex/config.toml` on merge-writer cost. Also softened ADR-0076's note to "registered for Codex" and corrected the `.codex/hooks.json` Decision's "every clone inherits the gate".
 
 ---
 

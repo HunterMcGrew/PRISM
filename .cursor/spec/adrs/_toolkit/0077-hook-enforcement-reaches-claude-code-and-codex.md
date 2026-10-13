@@ -43,7 +43,9 @@ the write gate (ADR-0072), the `PostCompact` reset of read-tracking state, and
 the git gates (ADR-0076). The shape of the Codex half:
 
 - **The registration lives in `.codex/hooks.json`.** That file is committed, so
-  every clone inherits the gate. `templates/install/.codex/hooks.json` registers
+  every clone inherits the registration. Codex runs it only once the user
+  trusts the project's `.codex/` layer and reviews the hook, per the
+  Consequences below. `templates/install/.codex/hooks.json` registers
   `PreToolUse`, `PostToolUse`, and `PostCompact`, the same three events Claude
   Code gets, plus the git-gates `Bash` matcher group.
 - **One runtime, two registrations.** Both hosts' registrations point at
@@ -80,9 +82,13 @@ Alternatives considered:
   fail-open asymmetry above means an envelope Codex does not recognize leaves
   Codex where it was before #487. That argument does not cover a recognized
   deny that fires on the wrong path, which only the probe can rule out.
-- **Register under `[hooks]` in `.codex/codex-config.toml`.** Rejected because
-  that file is per-user and gitignored. A registration there is invisible to
-  the rest of the team and gone on a fresh clone.
+- **Register under `[hooks]` in a TOML config.** PRISM's
+  `.codex/codex-config.toml` is per-user and gitignored, so a registration
+  there is invisible to the rest of the team and gone on a fresh clone. Codex
+  also reads inline `[hooks]` from a committed `<repo>/.codex/config.toml`,
+  and that file is rejected on cost: no TOML merge writer exists, while the
+  `hooks.json` shape matches Claude's `hooks` block, so `mergeHookEventEntries`
+  and doctor's `collectHookCommands` carry over with no new parser.
 - **Anchor the command at the git root with
   `node "$(git rev-parse --show-toplevel)/.claude/hooks/hook.mjs"`**, the
   spelling OpenAI's hooks examples use. Rejected until the probe shows Codex
@@ -118,6 +124,15 @@ reasons.
   session should drop read credit for a doc it lost to compaction. Neither has
   been observed firing on Codex, and the relative-path bullet below is one
   reason either might not.
+- On Codex, a committed registration is not a running gate. OpenAI's hooks
+  documentation says project-local hooks load only when the project's
+  `.codex/` layer is trusted, and that each hook definition must be reviewed
+  and trusted before it runs. Trust is recorded against the definition's hash,
+  so a PRISM update that changes the command string puts the hook back under
+  review. A teammate who has not trusted the project gets no gate, and
+  `prism doctor` still reports the registration, because it reads the file
+  and cannot see Codex's trust state. Whether an untrusted clone says anything
+  on screen is one more thing for the probe to observe.
 - The Codex deny is documentation-verified, not live-probed. No measured
   session has shown a Codex deny reason reaching the model. Until one does, a
   clean `prism doctor` run on Codex proves the registration is present, not
@@ -126,8 +141,8 @@ reasons.
 - The Codex command is a path relative to the session's working directory,
   `node ".claude/hooks/hook.mjs"`, because Codex documents no
   project-directory variable to anchor it. A Codex session started below the
-  repo root will not find the runtime, and the hook will not run. What Codex actually sends as
-  `cwd` is one of the things the probe has to settle.
+  repo root will not find the runtime, and the hook will not run. What Codex
+  actually sends as `cwd` is one of the things the probe has to settle.
 - A Codex-only consumer still gets a `.claude/hooks/` directory. That is the
   price of one shared runtime.
 - Codex's scope id is `session_id` with no agent suffix, where Claude Code
