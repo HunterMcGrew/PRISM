@@ -26,14 +26,14 @@ The gate has teeth because absent gates are the failure mode. A "hard to reverse
 
 A decision that fails the triple-gate still goes somewhere — just not into an ADR:
 
-- **Promote to architect doc** (`.prism/architect/<file>.md`) — patterns and constraints other personas need to know about, without the rejected-alternatives history. Architect docs explain *how the system works*; ADRs explain *why we chose this path*.
+- **Promote to architect doc** — the `.prism/architect/` doc that owns the subject, picked per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes. Patterns and constraints other personas need to know about, without the rejected-alternatives history. Architect docs explain *how the system works*; ADRs explain *why we chose this path*.
 - **Stay in plan `## Decisions`** — implementation tactics specific to this ticket, bug workarounds self-evident from the code, temporary scaffolding decisions. The closed plan preserves these — plans are never deleted (ADR-0047).
 
 ## When to apply
 
 Apply the gate at decision-promotion time — typically Winston during plan close, sometimes Theo when surfacing a walking candidate that might warrant an ADR rather than (or in addition to) an architect doc.
 
-- **Winston** — `.ai-skills/skills/prism-architect/shared.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
+- **Winston** — `.prism/references/architect/plan-mode.md` § Immediate Decision Promotion cites this reference and applies the gate after each `## Decisions` entry.
 - **Theo** — `.ai-skills/skills/prism-doc-walker/shared.md` § "When to write an ADR vs architect doc" cites this reference; Theo flags ADR candidates during walks and hands off to Winston, who applies the gate and writes the ADR.
 
 ## Who cites this pattern
