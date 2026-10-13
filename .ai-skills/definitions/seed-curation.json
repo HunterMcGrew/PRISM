@@ -77,6 +77,7 @@
 		"spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md",
 		"spec/adrs/_toolkit/0075-anchors-substitute-at-projection-time.md",
 		"spec/adrs/_toolkit/0076-commit-and-push-gates-are-harness-hooks.md",
+		"spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md",
 		"architect/_toolkit/npm-packaging.md",
 		"architect/_toolkit/token-substitution.md"
 	],

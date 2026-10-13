@@ -1,8 +1,9 @@
 ---
 Number: 0074
 Title: Hook-Dependent Enforcement Reaches Claude Code Only; the Fallback Everywhere Else Is Always-On Prose
-Status: accepted
+Status: superseded
 Date: 2026-09-02
+Superseded-by: 0077
 ---
 
 ## Context
