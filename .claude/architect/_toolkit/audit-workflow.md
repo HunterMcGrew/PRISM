@@ -2,7 +2,7 @@
 
 The Zoe skill source is at `.ai-skills/skills/prism-surface-audit/`.
 
-This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs.
+This document describes Zoe's audit workflow over the `.prism/` surface — what she scans, how she classifies, what she writes, and the schema of the operational state file she reads and writes between runs. Worktree hygiene lives in [`worktree-hygiene.md`](./worktree-hygiene.md), and how a lesson graduates to a durable home lives in [`lesson-promotion.md`](./lesson-promotion.md).
 
 Zoe is a cadence-driven persona — she operates over the whole `.prism/` surface on schedule rather than in the context of a single ticket. See the canonical Zoe skill source at `.ai-skills/skills/prism-surface-audit/` for her invocation prompts and run-time procedure.
 
@@ -67,18 +67,6 @@ Closed plans accumulate in `.prism/plans/` after tickets ship. Plans are never d
 **Destination** — `.prism/archived/plans/<plan-file-name>`. Zoe creates the directory on first move if it doesn't exist — per `.prism/rules/lazy-artifacts.md`, the directory is not pre-seeded.
 
 **State tracking** — each confirmed move is recorded in `archived.plans[]` in `.prism/audit-state.json`.
-
-## Worktree hygiene
-
-Zoe carries an explicit-only lane that classifies every entry in `git worktree list` GREEN/RED/YELLOW against the removal-safety predicate and proposes the GREEN set for removal. It is the only lane that removes something outside `.prism/`, so it never runs under a bare invocation or `all` — folding it into a routine content-audit pass would silently widen the blast radius of every default invocation. The procedure the lane follows lives in the skill body (`.ai-skills/skills/prism-surface-audit/shared.md` § Worktree hygiene lane); this section carries the contract and the reasoning behind it.
-
-**Why one batch confirmation, not per-item.** The surface-first invariant elsewhere in this doc exists because a wrong archive or promotion is destructive against irreplaceable working memory — a plan's `## Decisions`, a lesson's reasoning. A GREEN worktree fails that comparison on both axes: the classification is a deterministic predicate rather than a judgment call, and by definition of GREEN the artifact has no unique content — everything in it already exists durably on `origin` or in a merged PR's shipped commit. Removing ten GREEN worktrees is ten directories going away, not ten pieces of information. Per-item gates would be ten confirmations reducing to the same answer; one batch confirmation for the GREEN set carries the same information at a tenth of the interruption cost.
-
-**What stays a hard no.** RED and YELLOW never get a confirm gate at all, because they were never candidates for removal — the lane lists them with reasons and stops. There is no path from RED or YELLOW to removed in this lane.
-
-**Scope boundary.** The lane removes a worktree's directory only. `git worktree remove` never touches the branch — a removed worktree's branch and commits survive in the repo. Local branch cleanup is a separate, lower-stakes concern this lane does not take on.
-
-**Repo-local for now.** The classifier at `scripts/ai-skills/worktree-classify.ts` is not part of the npm package's published `files` or the `templates/install/.prism/` seed surface — a consumer install has no copy of it. The lane checks for the script's presence and reports itself unavailable when it's missing, rather than falling back to a weaker predicate. Whether to ship the classifier to consumer repos is an open question recorded in `.prism/plans/followup-port-2196-worktree-lifecycle.md` § Decisions.
 
 ## Open-question Decision variant
 
@@ -179,25 +167,3 @@ A future Zoe revision that needs to change the schema increments `schemaVersion`
 Zoe doesn't hand off to ticket-flow personas the way they hand off to each other. She's invoked, she runs, she writes her report and updates her state, she exits. Downstream personas don't need to know Zoe ran — they discover her verdicts when they read the plans she annotated.
 
 The five personas that read plan `## Decisions` sections — Winston, Clove, Briar, Eric, Zoe — carry a reflex bullet: "when reading a plan's `## Decisions`, note any decision with a Zoe-issued verdict sub-bullet (live / archive-candidate / overdue-archive / open-stale) and respect the verdict during current work." That reflex is how Zoe's output becomes load-bearing for the ticket flow without Zoe being in the ticket flow herself.
-
-## Lessons
-
-Skills surface lessons during a session by appending to `.prism/lessons.md`. The append is cheap and unblocking — any persona that hits a moment worth recording writes it there. Promotion is the separate step that converts a lesson into a durable surface.
-
-### Lesson promotion taxonomy
-
-When a lesson moves from `.prism/lessons.md` to a durable home, it routes by type:
-
-- **Process lessons** → `.prism/rules/<name>.md`. Operational patterns, workflow constraints, how-to-do-things-right. Loaded by every relevant skill that triggers on the rule's `paths:` frontmatter.
-- **Architectural lessons** → the `.prism/architect/` doc that owns the subject, picked per `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes. Coupling, data flow, abstraction decisions, codebase shape. Loaded via manifest routing into the skills that work on the topic.
-- **Decision-class lessons** → new ADR in `.prism/spec/adrs/`. When a lesson reflects a one-shot decision the team needs to remember why it made — alternatives considered, what got rejected, why the chosen path won. ADRs explain reasoning; rules and architect docs encode behavior.
-- **Ephemeral lessons** → stay in `.prism/lessons.md` until they trip a second incident. One-time gotchas, environment-specific footguns, situational tactics. Promotion is triggered by recurrence, not by speculation about future value.
-
-Promotion happens via Winston during plan close — the lessons accumulated during a ticket are reviewed and classified before the plan is marked closed; plans are preserved at close, never deleted. Routine personas surface candidates by appending to `lessons.md`; the routing decision is Winston's.
-
----
-
-## Cross-references
-
-- [`.prism/rules/worktree-git.md`](../../rules/worktree-git.md) § Removing a worktree — the removal-safety predicate the worktree hygiene lane implements.
-- `scripts/ai-skills/worktree-classify.ts` — the shared classifier the lane and every persona's end-of-task self-cleanup check both call, so the predicate has exactly one implementation. Referenced by path, not linked — the script is repo-local (see § Worktree hygiene → Repo-local for now) and has no counterpart under `templates/install/`.

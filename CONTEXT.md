@@ -64,7 +64,7 @@ A durable engineering standard under `.prism/rules/`, loaded as agent context to
 - **Avoid:** "guideline" (too soft — rules are the default authority for project-specific decisions), "convention", "policy" (mandate voice; see `writing-voice.md`), "standard" used loosely (a rule encodes a standard, but "standard" alone is ambiguous with code-style).
 - **Relationships:**
   - Many rules; membership is "every durable engineering standard the team has codified" — not a fixed count.
-  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/_toolkit/audit-workflow.md` § Lesson promotion taxonomy).
+  - A [lesson](#lesson) is promoted to a rule when it fires more than once and is process-shaped (`.prism/architect/_toolkit/lesson-promotion.md` § Lesson promotion taxonomy).
   - A rule differs from an [ADR](#adr): the rule encodes behavior; the ADR records the reasoning behind a one-shot decision.
 
 ## Architect doc
@@ -93,16 +93,16 @@ An Architecture Decision Record under `.prism/spec/adrs/NNNN-<slug>.md` — a nu
 - **Avoid:** "decision doc" (ambiguous with a plan's `## Decisions`), "RFC" (an RFC proposes; an ADR records an accepted decision), "spec" used to mean a single ADR.
 - **Relationships:**
   - Many ADRs, numbered sequentially; membership is "every durable cross-cutting decision the team needs to remember the reasoning for."
-  - A [decision](#decision-plan-decision) in a plan that proves durable is promoted to an ADR (decision-class) at close (`audit-workflow.md` § Lesson promotion taxonomy).
+  - A [decision](#decision-plan-decision) in a plan that proves durable is promoted to an ADR (decision-class) at close (`lesson-promotion.md` § Lesson promotion taxonomy).
   - Distinct from a plan's `## Decisions` — see [Decision](#decision-plan-decision) and [Flagged ambiguities](#flagged-ambiguities).
 
 ## Lesson
 
-A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/_toolkit/audit-workflow.md` § Lessons.
+A short, cheap, append-only note in `.prism/lessons.md` capturing a pattern worth remembering — usually after a correction. Lessons are working notes, not durable record; they're exempt from the full writing-voice bar. A lesson earns promotion to a durable home (rule, architect doc, or ADR) when it fires a second time, routed by type per the lesson promotion taxonomy. Owned by `AGENTS.md` § Self-Improvement Loop and `.prism/architect/_toolkit/lesson-promotion.md`. Archiving stale lessons is `.prism/architect/_toolkit/audit-workflow.md` § Archive classification.
 
 - **Avoid:** "note", "gotcha" (a gotcha is one kind of lesson, not the category), "learning", "retro item" (retro actions route to Nora; lessons live in `lessons.md`).
 - **Relationships:**
-  - Promotion is recurrence-triggered, not speculative — see the taxonomy in `audit-workflow.md`.
+  - Promotion is recurrence-triggered, not speculative — see the taxonomy in `lesson-promotion.md`.
   - Process lessons → [rule](#rule); architectural lessons → [architect doc](#architect-doc); decision-class lessons → [ADR](#adr); ephemeral lessons stay in `lessons.md`.
   - Zoe's cadence audit classifies each lesson `live` or `archive-candidate` and moves archive-candidates to `.prism/lessons-archive.md` on confirmation.
 

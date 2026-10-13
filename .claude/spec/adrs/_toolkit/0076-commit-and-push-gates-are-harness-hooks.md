@@ -102,5 +102,5 @@ Alternatives, and why each lost:
 - [ADR-0072](0072-write-gate-on-routed-paths.md) — the write gate this runtime was built for, and the habituation measurement
 - [ADR-0074](0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md) — git hooks rejected as a read-before-write substitute; Claude-only reach with a prose fallback
 - `.prism/plans/epic-floor-revert.md` — the revert that left room for a smaller opt-in
-- `.prism/architect/_toolkit/install-layout.md` § Git gates
+- `.prism/architect/_toolkit/hook-runtime.md` § Git gates
 - `.prism/references/cleanup-pass.md`

@@ -69,7 +69,7 @@ const PERSONA_SCOPES: PersonaScope[] = [
 	},
 	{
 		name: "fallthrough",
-		files: ["package.json"],
+		files: ["LICENSE"],
 	},
 ];
 
@@ -186,7 +186,7 @@ export function collectRoutedDocs(manifest: Manifest): Set<string> {
  * both spellings are correct for their side. Anchoring on the shipped set also
  * keeps PRISM-dev-only docs out of the check on their own merits:
  * `output-guards.md` describes PRISM's build pipeline, is routed live at
- * `scripts/ai-skills/**`, and is deliberately excluded from the seed, so it
+ * `scripts/ai-skills/literal-guard.ts`, and is deliberately excluded from the seed, so it
  * satisfies all three conditions without being named as an exception.
  */
 export function findShipRoutingGaps(

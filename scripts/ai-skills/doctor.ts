@@ -1016,7 +1016,7 @@ async function checkHookRegistration(consumerRepoRoot: string): Promise<DoctorFi
 	findings.push({
 		check: "hook-registration",
 		severity: "info",
-		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). On your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" or "codex" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement is Claude Code only.`,
+		message: `Hook-based enforcement is not delivered on this repo's hosts (${hosts.join(", ")}). On your hosts, read-before-write is carried by the always-on prose in .prism/rules/context-reuse.md and .prism/references/skill-core.md. Add "claude" or "codex" to hosts in .ai-skills/config.json and run prism update if you want the gate. See docs/ai-skills/compatibility.md § Hook-based enforcement reaches Claude Code and Codex.`,
 	});
 
 	return findings;

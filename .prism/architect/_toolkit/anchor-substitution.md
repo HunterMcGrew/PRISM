@@ -2,7 +2,7 @@
 
 The agent-facing reference for how PRISM's stub-anchor mechanism populates team-specific content. Lives at `scripts/ai-skills/lib/anchor-substitute.ts`, with the content-map builder at `scripts/ai-skills/lib/onboarding-run.ts`. Anchors substitute during output regeneration (`generatePlatformSkills` in `scripts/ai-skills/generate-skills.ts`), in memory, on every render — not by a separate Atlas-run step.
 
-Canonical sources stay generic; the render pass writes the team-specific specialization into the rendered output only. The sibling mechanism for identifier substitution (build-time `${...}` tokens) is covered in `.prism/architect/_toolkit/install-layout.md`; this module is the content-shape counterpart.
+Canonical sources stay generic; the render pass writes the team-specific specialization into the rendered output only. The sibling mechanism for identifier substitution (build-time `${...}` tokens) is covered in [`token-substitution.md`](./token-substitution.md); this module is the content-shape counterpart.
 
 ## Public surface
 

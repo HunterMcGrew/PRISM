@@ -31,9 +31,9 @@ architect-context routing is diff-blind to a doc you are about to edit (see
 [`context-reuse.md`](../rules/context-reuse.md) § Architect-context routing is
 diff-blind). Authoring paths are write-gated on hosts that receive the hook
 runtime, where an edit to a routed path is denied until that route's docs are
-read. Claude Code is the only host that receives it today, so on Codex and
-Cursor nothing stops an unread edit — match the manifest and read the docs
-yourself before you write.
+read. Claude Code and Codex receive it today. On Cursor nothing stops an
+unread edit, so match the manifest and read the docs yourself before you
+write.
 
 ## Reporting back
 

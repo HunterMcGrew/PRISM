@@ -46,5 +46,5 @@ Render the `prism-*` persona roster into a consumer repo automatically on every 
 - [ADR-0057](./0057-prism-update-merge-model.md) — the `prism:update` merge model the roster render rides on; the render is part of the same update flow.
 - [ADR-0059](./0059-first-contact-adopts-via-seed-and-sync.md) — first-contact `prism:adopt`; the seam relocation in this ADR is what makes adopt project the roster.
 - `.prism/plans/prism-242.md` — the plan that built this, including the seam-relocation, marker-invariant, and guard-asymmetry decisions in full.
-- `.prism/architect/_toolkit/install-layout.md` § Steady-state persona-skill distribution — the durable architect-context description of what renders, with whose tokens, and how cleanup and idempotency work.
+- `.prism/architect/_toolkit/consumer-sync-flow.md` § Steady-state persona-skill distribution — the durable architect-context description of what renders, with whose tokens, and how cleanup and idempotency work.
 - `.prism/architect/_toolkit/output-guards.md` — the two-guard model and why the asymmetry is deliberate.

@@ -1,5 +1,8 @@
 # Plan: prism-492
 
+> Closed: 2026-10-12
+> Retro: declined — per-ticket light charter check recorded in ## History (AC-1–5 met, each PR's Briar → Eric loop clean, CI green)
+
 ## Ticket
 
 https://github.com/HunterMcGrew/PRISM/issues/492
@@ -42,10 +45,10 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 
 **PR 4 — split PRISM's own umbrellas**
 
-1. `_toolkit/install-layout.md`: keep install layout and ownership. Move hook runtime and write gate, the build-time checks (path guard, drift, crossref lint, pack parity, bundle-safe entry), and substitution passes into one-concern docs, each routed by the files that control it. Repoint the manifest, `manifest.base.json`, the consumer stub, `seed-curation.json`, and every reference found by grep.
-2. `_toolkit/skills-ecosystem.md`: move npm packaging invariants and Eric session-cost notes out. Narrow the `scripts/ai-skills/**` route.
+1. `_toolkit/install-layout.md`: keep install layout and ownership. Move hook runtime and write gate, the build-time checks (path guard, crossref lint, pack parity, bundle-safe entry), and substitution passes into one-concern docs, each routed by the files that control it. Repoint the manifest, `manifest.base.json`, the consumer stub, `seed-curation.json`, and every reference found by grep.
+2. `_toolkit/skills-ecosystem.md`: move npm packaging invariants and Eric session-cost notes out. Narrow `output-guards.md` from `scripts/ai-skills/**` to `scripts/ai-skills/literal-guard.ts`. `skills-ecosystem.md` stays on `scripts/ai-skills/**`, because the roster-generating scripts need the roster.
 3. `_toolkit/audit-workflow.md`: move worktree hygiene and the lesson-promotion taxonomy to their own routed docs.
-4. Each split doc is decomposed after reading the source doc in full at PR 4 start. The exact cut lines get recorded in `## Decisions` before editing.
+4. Cut lines: see Decision "PR 4 cut lines". Moved sections keep their wording except where a claim fails source verification (`.prism/rules/architect-doc-verification.md`).
 5. Verify: `pnpm prism:check` passes. `prism doctor` reports no orphan docs or dead routes.
 
 ---
@@ -57,11 +60,32 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
   - **Alternatives considered:** a pointer in `CLAUDE.md` and `AGENTS.md`, which is what thrive #2673 shipped. Routing the guide on `.prism/plans/**`.
   - **Chosen approach:** `branch-plan.md` is always-on and the build ships it to every host, so the pointer fires at the exact step where the target is chosen. A `CLAUDE.md` pointer only reaches Claude. A plan route would load the full guide on every plan edit, when only the close step needs it.
   - **Implementation guidance:** edit both the source and the curated seed twin by hand. The seed twin has no drift check.
+  - → no promotion needed (codified in `.prism/rules/branch-plan.md` § Before Closing step 1)
 - **A consumer team's doc-convention entries live in a flat `.prism/architect/documentation-conventions.md`.** Eli used to append template entries and cross-reference map rows to `_toolkit/documentation.md`, which `prism update` overwrites. Considered: the consumer overlay under `custom/`. Rejected: the overlay is emitted into each platform's `custom/` subdir and the manifest never routes it, so manifest-loading agents would never see the rows. PRISM's own repo keeps its rows in `_toolkit/documentation.md`.
+  - → no promotion needed (codified in `.prism/references/documentation/after-writing.md` and `_toolkit/documentation.md` § Cross-Reference Map)
 - **Consumer promotions land in flat `.prism/architect/*.md`, never `_toolkit/`.** `prism update` overwrites the files PRISM ships under `_toolkit/**` (`scripts/ai-skills/ownership.ts`), so a team's edit to one survives only as a `.bak` copy, and PRISM may ship a file at any path there later.
+  - → no promotion needed (codified in `.prism/architect/guides/writing-an-architect-doc.md` § Where new content goes)
 
 - **`prism update` owns `.prism/architect/guides/**`.** `PRISM_OWNED_GLOBS` had no entry for the writing guides, so `classifyPath` returned `unknown` and an existing consumer never received a guide update. Fixed in PR 1 because PR 1's close-step pointer cites a guide section those consumers would otherwise lack. Considered: a separate PR ahead of the stack. Rejected: PR 1 is the change that depends on it. A consumer who edited a guide gets the usual owned-file treatment, a `.bak` copy and then PRISM's version. Guides were never in a consumer's sync manifest, so the first update after this ships writes a `.bak` for every guide that differs from the incoming copy, edited or not.
+  - → promoted to .prism/architect/_toolkit/install-layout.md
 - **Theo's architect-doc draft follows `writing-an-architect-doc.md`, not the four-beat arc.** The draft opens with a scope statement and carries only what passes the Deletion Test. The four-beat arc in `architecture-doc-shape.md` governs only the paired dev doc in the doc root, because that file's own scope line limits it to architecture docs in `docs/`.
+  - → no promotion needed (codified in `.prism/skills/prism-doc-walker/step-05-draft.md`)
+
+- **PR 4 cut lines.**
+  - **Root cause:** `install-layout.md` grew to cover hooks, cross-reference checks, the adopt/update flow, token substitution, and npm packaging, so every hook or build edit loaded all of it. `skills-ecosystem.md` and `audit-workflow.md` each carried sections for a different reader.
+  - **Alternatives considered:** one doc per H2 (too fine; several H2s share a reader); leaving the adopt/update flow in `install-layout.md` (it answers "how content gets there", a different trigger from "what lives where").
+  - **Chosen approach:** `install-layout.md` keeps the layout, ownership, overlay, seed surface, drift detection, and curated-twin boundary. New `_toolkit/` docs: `hook-runtime.md` (Hook runtime, Write gate, Git gates, hook ownership), `consumer-sync-flow.md` (content-source seam, first-contact adoption, steady-state distribution), `cross-reference-checks.md` (cross-reference convention, path guard, crossref lint), `token-substitution.md` (two substitution passes, optional-token defaults), `npm-packaging.md` (skills-ecosystem's npm distribution, packaging-parity gate, bundle-safe entry detection), `eric-review-modes.md` (skills-ecosystem's session-cost economics), `worktree-hygiene.md` and `lesson-promotion.md` (from `audit-workflow.md`).
+  - **Implementation guidance:** a shipped section's new doc gets a stub route and either a curated twin or an auto-mirror. `hook-runtime.md` and `consumer-sync-flow.md` are curated twins split from the old install-layout twin. The `cross-reference-checks.md` twin is curated and trimmed to § Cross-reference convention, because the path guard and crossref lint are maintainer-only build checks. `worktree-hygiene.md` is curated too. Its canonical names the classifier script and a PRISM plan that consumers never receive, so the twin keeps the contract and says the lane reports itself unavailable. `eric-review-modes.md` and `lesson-promotion.md` auto-mirror, like `audit-workflow.md`, because a curated twin of either would be byte-identical. `token-substitution.md` and `npm-packaging.md` are `excluded`, matching their sections' absence from the old twin. The `scripts/ai-skills/path-guard.ts` allowlist gains `architect/_toolkit/cross-reference-checks.md`, because its convention examples name the platform paths the guard forbids.
+  - → no promotion needed (ticket-tactical; the resulting doc set and its routes are the record)
+
+- **Existing consumers do not receive the new stub routes.** A consumer's live `.prism/architect/manifest.json` is consumer-owned (`CONSUMER_OWNED_GLOBS` in `scripts/ai-skills/ownership.ts`), so `prism update` never rewrites it. Only a fresh `prism adopt` seeds it from `manifest.stub.json`. Until the merge-at-onboard logic noted in `install-layout.md` § Ownership is path-decidable exists, an existing consumer keeps its old routes. Considered: rewriting the live manifest on update. Rejected: it would overwrite routes the team added. Release note: existing consumers add the new `_toolkit/` routes from the stub by hand.
+  - → no promotion needed (codified in `_toolkit/install-layout.md` § Ownership: the live manifest is hand-maintained until merge-at-onboard exists)
+
+- **PR 4 edits two always-on spec files outside the docs it splits.** `.prism/rules/context-reuse.md` (plus its seed twin) linked `install-layout.md` § Write gate and said the hooks reach Claude Code only. `.ai-skills/skills/prism-surface-audit/shared.md` linked `audit-workflow.md` § Worktree hygiene. Both sections moved, so the links had to follow them. The Claude-only claims were corrected against Codex hook delivery (#487) in the same pass, because the moved hook text was under source verification. Both are reference repoints within this ticket's split, not new spec content.
+  - → no promotion needed (ticket-tactical scope record for spec-scope-lint)
+
+- **PR 4 also corrects two sentences the review loop surfaced.** `.prism/references/skill-core.md` (plus its twin) said the hook runtime reaches Claude Code only, which went stale with Codex delivery (#487). `install-layout.md`'s ownership lead said PRISM-owned content lives only under `_toolkit/`, which went stale when PR 1 made `architect/guides/**` PRISM-owned. Both are same-thread corrections to claims this stack already touches.
+  - → no promotion needed (ticket-tactical; the corrected sentences are the record)
 
 ---
 
@@ -76,6 +100,8 @@ Shipped as a four-PR GitHub stack, each PR based on the one before it.
 - 2026-10-11 [huntermcgrew/prism-492-architect-doc-placement]: Plan created from the architect-doc write-path audit; stack approved with all four PRs.
 - 2026-10-11 [huntermcgrew/prism-492-promotion-wording]: PR 2 points every promotion instruction at the placement order and removes stale manifest claims; `documentation.md:109` moved to PR 3 because it is the same `_toolkit/` write-target problem as Eli's appends.
 - 2026-10-11 [huntermcgrew/prism-492-doc-writers]: PR 3 gives Theo an owning-doc check before drafting and narrow-route guidance, and moves consumer doc-convention writes out of `_toolkit/`; see Decision: doc-conventions doc.
+- 2026-10-11 [huntermcgrew/prism-492-split-umbrellas]: PR 4 splits `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` into one-concern docs with their own routes and twins; see Decision: PR 4 cut lines.
+- 2026-10-12 [huntermcgrew/prism-492-split-umbrellas]: Plan closed on the final PR branch. Light charter check: AC-1 and AC-2 greps pass, AC-3 and AC-4 confirmed by each PR's review loop, AC-5 CI green on #493–#496. One Decision promoted (guide ownership, already in install-layout.md § Ownership); the rest are codified where they act.
 
 ---
 
@@ -333,15 +359,159 @@ Subject frozen at loopBase `63d0e0c7`; repair `63d0e0c7..8e1e8048` at regression
 - Docs impact — swept — verdict-only: no further pages affected.
 - Accessibility — n/a — no UI in the diff.
 
+### PR 4 pass 1 (`huntermcgrew/prism-492-split-umbrellas`)
+
+Subject `git diff huntermcgrew/prism-492-doc-writers 8a7b84e6`, mirrors reviewed through their canonical sources. `pnpm prism:check` exits 0. A tree-wide sweep for the moved section names found the dangling references below, all outside the diff.
+
+#### `CONTEXT.md` still cites sections that moved out of `audit-workflow.md`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `CONTEXT.md:67` (also `:96`, `:101`, `:105`)
+- **Problem:** four glossary lines point at `audit-workflow.md` § Lesson promotion taxonomy, § Lessons, or "the taxonomy in `audit-workflow.md`", and the taxonomy now lives in `lesson-promotion.md` (`audit-workflow.md` no longer has a `## Lessons` heading), so the pointers land on a doc without the section; Task 1 promised every grep hit repointed.
+- **Suggested fix:** repoint all four to `.prism/architect/_toolkit/lesson-promotion.md`. At `:101` keep the `audit-workflow.md` pointer only for archive classification.
+
+#### `anchor-substitution.md` says token substitution is covered in `install-layout.md`
+
+- **Severity:** `major`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/anchor-substitution.md:5`
+- **Problem:** "The sibling mechanism for identifier substitution (build-time `${...}` tokens) is covered in `.prism/architect/_toolkit/install-layout.md`" is now false; that section moved to `token-substitution.md`. A diverged claim in an architect doc is Major under `architect-doc-verification.md`.
+- **Suggested fix:** point the sentence at `./token-substitution.md`.
+
+#### `output-guards.md` sends update behavior to `install-layout.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/output-guards.md:10`
+- **Problem:** "Consumer-facing install and update behavior lives in `install-layout.md`" no longer holds for the adopt/update flow, which moved to `consumer-sync-flow.md`.
+- **Suggested fix:** name both: layout and ownership in `install-layout.md`, the adopt/update flow in `consumer-sync-flow.md`.
+
+#### ADR-0059 still cites `install-layout.md` § First-contact adoption
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/_toolkit/0059-first-contact-adopts-via-seed-and-sync.md:41`
+- **Problem:** the section moved to `consumer-sync-flow.md`; ADR-0062 and ADR-0076 in the same set were repointed, this one was missed.
+- **Suggested fix:** repoint to `.prism/architect/_toolkit/consumer-sync-flow.md` § First-contact adoption.
+
+#### Two curated twins are byte-identical to their canonical docs
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.ai-skills/definitions/seed-curation.json:85` (and `:87`)
+- **Problem:** `cross-reference-checks.md` and `eric-review-modes.md` are listed `curated` but both twins equal canonical byte for byte; `checkSeedDrift` only checks that a curated file exists, so these two lose the drift gate that auto-mirroring gives (the failure `install-layout.md` § Curated seed twins describes).
+- **Suggested fix:** drop both from `curated` and run `pnpm prism:build`, so they auto-mirror like `audit-workflow.md`. Re-add one if a real consumer difference appears.
+
+#### The `cross-reference-checks.md` twin ships maintainer-only build internals
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `templates/install/.prism/architect/_toolkit/cross-reference-checks.md:20` (also `:31`; route at `templates/install/.prism/architect/manifest.stub.json:50`)
+- **Problem:** § Build-time path guard and § Cross-reference lint name `scripts/ai-skills/path-guard.ts`, `crossref-lint.ts`, and `pnpm prism:build`/`prism:check`, which fail Test 2 (unshipped path and command) and Test 3 (build internals). The old twin carried the same text (the #444 class), but this PR adds a stub route so a consumer editing `.prism/custom/**` now loads it.
+- **Suggested fix:** curate the twin down to § Cross-reference convention, the part a consumer can act on, or keep the doc canonical-only (`excluded`) and drop the stub route. The first keeps the convention reachable.
+
+#### "A `PostToolUse` hook on `Read`" is wrong for Codex
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/rules/context-reuse.md:28` (also `AGENTS.md:856`, `templates/install/.prism/rules/context-reuse.md:28`)
+- **Problem:** the edit adds Codex to "hosts that expose the event", but Codex has no read tool and its `PostToolUse` matcher is `^(Bash|apply_patch|Edit|Write)$` (`templates/install/.codex/hooks.json`, `harnesses.mjs` codex row), so the announcement fires on shell reads, not on `Read`.
+- **Suggested fix:** "A `PostToolUse` hook backs this up on Claude Code (on `Read`) and Codex (on shell reads, since Codex has no read tool)", in all three copies.
+
+#### ADR-0071 repoints a pointer but keeps "neither exists today"
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/spec/adrs/_toolkit/0071-architect-context-read-hook.md:37`
+- **Problem:** the edited sentence says a Cursor or Codex delivery seam does not exist, then points at `hook-runtime.md` § Hook-runtime ownership and recovery, which documents Codex delivery (#487). The same stale reach claim sits at `0076-commit-and-push-gates-are-harness-hooks.md:87`.
+- **Suggested fix:** in 0071 say "Cursor delivery does not exist today; Codex delivery landed in #487". Add the same one-clause correction to 0076:87.
+- **Note:** fixed in 0071 only. The 0076:87 correction is deferred to the ADR-0074 supersede follow-up.
+
+#### `install-layout.md` and `audit-workflow.md` give no scope boundary or neighbour links
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/install-layout.md:3` (also `audit-workflow.md:3`; `templates/install/.prism/architect/_toolkit/install-layout.md:3`)
+- **Problem:** the writing guide asks the opener to say what the doc does not cover and link the neighbour that owns it. The six docs split out of `install-layout.md` and `audit-workflow.md` all do, and skills-ecosystem lists its neighbours, but the two parents do not, so a reader of the parent cannot tell the hook, sync, and worktree content moved.
+- **Suggested fix:** add one sentence to each opener linking `hook-runtime.md`, `consumer-sync-flow.md`, `cross-reference-checks.md` (install-layout) and `worktree-hygiene.md`, `lesson-promotion.md` (audit-workflow). Edit the install-layout twin by hand.
+
+#### `hook-runtime.md` states the gitignore line count
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/architect/_toolkit/hook-runtime.md:13` (also the twin at `:13`)
+- **Problem:** "appends four lines" and "Those four lines" restate `HOOK_STATE_GITIGNORE_LINES` as a count, which drifts when a glob is added (`writing-voice.md` § Count rules, not numbers). The next clause already names what the lines are.
+- **Suggested fix:** drop the count: "appends the state-file globs and their `.tmp` siblings", "Those lines are the whole of what PRISM writes there".
+
+#### Plan Task 1 lists drift as moved, but PR 4 keeps it in `install-layout.md`
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-492.md:45`
+- **Problem:** Task 1 says the build-time checks "(path guard, drift, crossref lint, pack parity, bundle-safe entry)" move out; the diff and Decision "PR 4 cut lines" keep `## Drift detection` in `install-layout.md`.
+- **Suggested fix:** drop "drift" from Task 1's list.
+
+#### `.prism/architect/manifest.json` loads all of `hook-runtime.md` on every route-add
+
+- **Severity:** `minor`
+- **Status:** `deferred`
+- **File:** `.prism/architect/manifest.json:107` (also `templates/install/.prism/architect/manifest.stub.json:27`)
+- **Problem:** the writing guide makes a route-add part of authoring every architect doc, so each one now also reads and is gated on `hook-runtime.md` (13 KB canonical; delivery, state files, ownership, recovery), when the editor needs only the gate-semantics paragraph. Confidence: plausible, the route may be intended as the one trigger a consumer has for this doc.
+- **Suggested fix:** record the intent in a Decision, or split the gate semantics (what triggers a deny, what clears it, the opt-in) into the doc the manifest route should load.
+- **Disposition:** rejected — the write gate keys on manifest routes, so a route change changes what gets gated, and the stub has no other path that reaches this doc in a consumer repo.
+
+#### AC-4 evidence cannot run as written
+
+- **Severity:** `minor`
+- **Status:** `fixed`
+- **File:** `.prism/plans/prism-492.md` § Acceptance Criteria, AC-4 (Evidence sub-bullet; bookkeeping, recorded not gated)
+- **Problem:** `prism doctor` refuses to run inside the PRISM checkout (it needs a consumer repo), and `prism:check` has no orphan-doc or dead-route gate for PRISM's own manifest (`verify-manifest-coverage.ts` checks coverage and catch-alls only). A manual walk of all three manifests found no dead route and no orphan outside the maintainer-only docs.
+- **Suggested fix:** state the real evidence: a one-line script walk of route targets against disk, or `prism doctor --consumer <fresh adopt>`.
+
+### Angle Coverage (PR 4 pass 1)
+
+Findings are numbered in the order they appear above (1 `CONTEXT.md` through 13 AC-4 evidence).
+
+- Runtime behavior — swept — 6 items enumerated (canonical, base, and stub manifest routes, `package.json` exact-match route, `path-guard.ts` allowlist entry, seed-curation classifications), 6 verdicts: route targets all exist, patterns anchored, allowlist needed for the doc's examples; findings 5, 12.
+- Test efficacy — swept — 2 items enumerated (path-guard allowlist, route coverage), 2 verdicts: `prism:check` exercises both and exits 0, no new tests were added, and no gate catches dangling section references or an identical curated twin (findings 1–5).
+- Spec and doc consistency — swept — 12 items enumerated (8 new docs, 3 parent docs, AC-4), 12 verdicts: every old section is present exactly once and the new docs carry no duplicates; findings 1–6, 9, 11, 13.
+- Citation integrity — swept — 20 items enumerated (13 section references inside the new docs, 7 repointed references), 20 verdicts: all resolve; the tree-wide sweep for moved names found findings 1–4.
+- External-system claims — swept — 17 items enumerated (hook delivery, removal, prune, marker, gitignore, Codex matcher, Cursor `emitDeny`, scope id, `--dry-run`, `--seed-agents-md`, `--linear-team`, content-root seam, agent-definition header gating, payload list, `applyAnchorsThenTokens`, guard locations, `^`-anchored patterns), 17 verdicts: all match source except the Codex `Read` wording (finding 7). The Codex deny envelope is documentation-verified, not live-probed, per `harnesses.mjs`.
+- Repo writing rules — swept — verdict-only: finding 10.
+- Security — swept — 1 item enumerated (manifest routes feeding the write gate), 1 verdict: no previously gated path lost a gate; `scripts/ai-skills/**` keeps `spec-editing.md` and `skills-ecosystem.md`.
+- Docs impact — swept — 1 item enumerated (human docs citing the split docs), 1 verdict: only `CONTEXT.md` is stale (finding 1).
+- Accessibility — n/a — no UI in the diff.
+
+Cleaner path (non-blocking): `references/session-close.md` § Lesson promotion taxonomy restates the taxonomy that `lesson-promotion.md` now owns. Cite it from `session-close.md` instead of keeping two enumerations.
+
+Cleaner path — implemented. `references/session-close.md` § Lesson promotion taxonomy and its seed twin now cite `lesson-promotion.md` and keep only who promotes and when.
+
+No issues found — 2026-10-11 [huntermcgrew/prism-492-split-umbrellas] (PR 4 pass 2; `pnpm prism:check` exits 0 at `af332835`, pass-1 findings verified closed).
+
+### Angle Coverage (PR 4 pass 2)
+
+Subject frozen at loopBase `8a7b84e6`; repair `8a7b84e6..af332835` at regression bar. Findings 8 (ADR-0076:87 left for the ADR-0074 supersede follow-up) and 12 (rejected, no new argument) are not re-raised.
+
+- Runtime behavior — swept — 2 items enumerated (`eric-review-modes.md` leaving `curated`, trimmed `cross-reference-checks.md` twin staying `curated`), 2 verdicts: the Eric twin is byte-identical and now auto-mirrors under the drift gate; the cross-reference twin differs from canonical, so `curated` is correct.
+- Test efficacy — swept — no items (no code changed since pass 1; the `prism:check` gates run clean).
+- Spec and doc consistency — swept — 11 items enumerated (findings 1–7, 9–11, 13), 11 verdicts, all closed; Task 1 no longer lists drift, AC-4 evidence names the manual walk.
+- Citation integrity — swept — 6 items enumerated (`CONTEXT.md` x4, ADR-0059, `anchor-substitution.md`), 6 verdicts, all resolve; a repeat tree-wide sweep for the moved section names returns nothing.
+- External-system claims — swept — 1 item enumerated (the Codex `PostToolUse` wording in `context-reuse.md`, `AGENTS.md`, and the seed twin), 1 verdict: matches the Codex matcher and the harness table (no read tool).
+- Repo writing rules — swept — verdict-only.
+- Security — n/a — no trust boundary in the repair.
+- Docs impact — swept — 1 item enumerated (`CONTEXT.md` glossary), 1 verdict: repointed.
+- Accessibility — n/a — no UI in the repair.
+
 ---
 
 ## PR Readiness
 
 - [x] No critical or major issues
 - [x] `pnpm prism:check` passes — last run: 2026-10-11
-- [x] All review issues resolved
+- [x] All review issues resolved — findings 8 (partial, ADR-0076:87) and 12 are deferred or rejected by the coordinator
 
-**Last updated:** 2026-10-11 (PR 3 pass 2)
+**Last updated:** 2026-10-11 (PR 4 pass 2)
 
 ---
 
@@ -349,13 +519,17 @@ Subject frozen at loopBase `63d0e0c7`; repair `63d0e0c7..8e1e8048` at regression
 
 ### Non-behavioral
 
-- [ ] AC-1: `guides/writing-an-architect-doc.md` states the topic → umbrella → new-doc placement order and the consumer `_toolkit/` clause.
+- [x] AC-1: `guides/writing-an-architect-doc.md` states the topic → umbrella → new-doc placement order and the consumer `_toolkit/` clause.
   - Evidence (machine): `grep -n "Where new content goes" .prism/architect/guides/writing-an-architect-doc.md templates/install/.prism/architect/guides/writing-an-architect-doc.md` matches in both files.
-- [ ] AC-2: No promotion instruction says "the relevant architect" file without citing the placement order.
+- [x] AC-2: No promotion instruction says "the relevant architect" file without citing the placement order.
   - Evidence (machine): `grep -rn "relevant architect" .prism/references .prism/rules .prism/SPEC.md templates/install/.prism/references templates/install/.prism/rules` returns nothing.
-- [ ] AC-3: No consumer-facing writer instruction targets `.prism/architect/_toolkit/`.
+- [x] AC-3: No consumer-facing writer instruction targets `.prism/architect/_toolkit/`.
   - Evidence (human): read `after-writing.md` and Theo's step files. Every write target is a flat `.prism/architect/*.md` or is scoped to PRISM's own repo.
-- [ ] AC-4: `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` each state one concern in their opening sentence, and every split-out doc is routed.
-  - Evidence (machine): `pnpm prism:check` and `prism doctor` both report no orphan docs or dead routes.
-- [ ] AC-5: `pnpm prism:check` passes on every PR in the stack.
+- [x] AC-4: `install-layout.md`, `skills-ecosystem.md`, and `audit-workflow.md` each state one concern in their scope statement, and every split-out doc is routed.
+  - Evidence (human): `pnpm prism:check` passes and a manual walk of all three manifests finds no dead routes or unrouted shipped docs (`prism doctor` refuses to run inside the PRISM checkout).
+- [x] AC-5: `pnpm prism:check` passes on every PR in the stack.
   - Evidence (machine): CI green on each PR.
+
+### AC Adjustments
+
+- **AC-4, proposed (2026-10-11).** Change "each state one concern in their opening sentence" to "each state one concern in their scope statement". `skills-ecosystem.md` and `audit-workflow.md` open with a sentence that names the doc's job and then list neighbours, so the literal opening-sentence reading fails on wording, not on scope. **Status:** `accepted` by Hunter (2026-10-12).

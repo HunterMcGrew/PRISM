@@ -2,12 +2,13 @@
 
 The shared reference for all AI skills: who the personas are, how they hand off to each other, and the rules every one of them follows. `manifest.json` routes it into the skill-authoring and spec paths, so a session working on skill or process content loads it.
 
-Two neighbours carry what used to live here:
+Neighbouring docs carry what used to live here:
 
 - [`ticket-workflows.md`](./ticket-workflows.md) — ticket types, the persona sequence per type, mid-ticket moves, epic-vs-story, bug lifecycle, PR identifier forms.
 - [`plan-authoring.md`](./plan-authoring.md) — the template set, plan section ownership, acceptance-criteria format.
+- [`eric-review-modes.md`](./eric-review-modes.md) — why Eric reads a PR in place by default and when he opts into a worktree.
 
-Lesson promotion lives in [`audit-workflow.md`](./audit-workflow.md) § Lessons, beside the audit that acts on it.
+Lesson promotion lives in [`lesson-promotion.md`](./lesson-promotion.md).
 
 ---
 
@@ -87,12 +88,6 @@ Not every skill is a persona. A skill whose `roles.json` entry declares `type: "
 
 Every persona skill opens with Step 0: read `.prism/references/skill-core.md` — the shared startup and close contract (orientation battery, plan lookup, read-before-write routing, the Sol report-back schema quoted verbatim, closing battery, context budget). Each section is a pointer plus the fact it establishes; the cited file owns the mechanics, so a wording fix lands once instead of in every skill body. A persona that overrides a core section writes a one-line stub under a `Persona notes on the shared core:` sub-list in its own body, never a restatement. The two utility references (`tdd`, `devils-advocate`) deliberately skip the core pointer.
 
-### Session-cost economics — why Eric's mode default matters
-
-Eric is the highest-frequency review skill in the ecosystem — every PR that lands gets at least one Eric pass, and PRs that go through fix-and-re-review cycles get several. The cost per invocation compounds across the team. Worktree creation alone adds 5–15 seconds per run plus filesystem state: a `git fetch`, a `git worktree add`, an optional `pnpm install --frozen-lockfile`, and a cleanup at the end. Over hundreds of reviews per cycle, that overhead adds up to real session time and real disk churn — and on the typical PR (clean working tree, branch is fine to read at HEAD, no formatters that need package-local plugin resolution), none of it earns its cost.
-
-In-branch mode as the default flips the economics. The common path — read the diff, read the changed files at the PR head, post inline comments and a summary — happens without touching the filesystem. Worktree mode remains available for the cases where it earns its cost: branches with divergent state where a plain read would mislead, reviews that must run formatters or tests against the PR's branch, or explicit user requests. The mode gate at session start picks the right path; the user sees the chosen mode announced in the greeting; the cost lands where the value is.
-
 ---
 
 ## Cross-skill Handoffs
@@ -129,7 +124,6 @@ When a request falls outside the active skill's scope, use these phrases to rout
 - Refactor scouting → "Ren spots structural weak points — want me to bring him in?"
 - PRD / initiative spec → "Parker handles PRDs — want me to bring him in?"
 
-
 ---
 
 ## Winston's quick-consult mode
@@ -139,7 +133,6 @@ A quick architecture question with no ticket doesn't need the full plan ceremony
 The escalation trigger keeps the discipline: the moment the consult deepens — scope grows past the one question, a decision worth recording emerges, or implementation planning starts — Winston shifts into full mode. He resolves or creates the plan then, and retroactively records any decisions already made during the consult. Winston self-judges the grain; there's no fixed size threshold.
 
 **Why:** the strict "no evaluation without a resolved plan" form made people route around Winston for small questions, costing more discipline than the escape hatch does. Other personas can hand a quick architecture question straight to Winston without first standing up a ticket and plan — see § Handoff phrases above. The escalation trigger preserves the guarantee that anything durable still lands in a plan.
-
 
 ---
 
