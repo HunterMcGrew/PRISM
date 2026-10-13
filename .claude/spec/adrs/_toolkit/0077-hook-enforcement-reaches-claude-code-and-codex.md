@@ -9,12 +9,13 @@ Supersedes: 0074
 ## Context
 
 ADR-0074 accepted hook-dependent enforcement as Claude Code only. It rejected
-building the Cursor and Codex delivery seams "as scope, not as direction," and
-it set the bar any later seam would have to clear: no deny shipped in an
-unverified envelope, because a guessed envelope either fails open silently or
-blocks with a remedy the model cannot perform.
+building the Cursor and Codex delivery paths "as scope, not as direction," and
+it set the bar any later delivery path would have to clear: a live probe of
+that host's deny envelope before `emitDeny` returns anything, because a deny in
+an unverified envelope either fails open silently or blocks with a remedy the
+model cannot perform.
 
-Two facts about Codex changed what clearing that bar costs. OpenAI now
+Two facts about Codex lowered the risk that bar guarded against. OpenAI now
 documents the Codex `PreToolUse` deny envelope, and it is the same shape Claude
 Code uses: `hookSpecificOutput` carrying `permissionDecision: "deny"` and a
 `permissionDecisionReason`. That was checked against OpenAI's hooks
@@ -35,7 +36,7 @@ that record.
 
 Hook-dependent enforcement is delivered to Claude Code and Codex from one
 shared runtime. Cursor keeps ADR-0074's always-on prose fallback until it has
-a seam of its own.
+a delivery path of its own.
 
 That covers everything the runtime delivers: the announce layer (ADR-0071),
 the write gate (ADR-0072), the `PostCompact` reset of read-tracking state, and
@@ -49,15 +50,17 @@ the git gates (ADR-0076). The shape of the Codex half:
   `.claude/hooks/`. `refreshHookRuntime` in `scripts/ai-skills/update.ts`
   delivers the runtime when the consumer's `hosts` includes `claude` or
   `codex`, and merges each host's registration only when that host is listed.
-  `mergeHookCodexRegistration` reuses the same merge seam the Claude
-  registration uses, keyed on `PRISM_CODEX_HOOK_COMMAND_PATTERN`.
+  `mergeHookCodexRegistration` calls the same `mergeHookRegistration` function
+  the Claude registration uses, keyed on `PRISM_CODEX_HOOK_COMMAND_PATTERN`.
 - **The Codex deny ships in the documented envelope ahead of a live probe.**
   `HARNESSES.codex.emitDeny` in `scripts/ai-skills/hooks/harnesses.mjs` answers
-  in the documented shape. This clears ADR-0074's bar rather than repealing it:
-  the bar was about guessed envelopes, and this one is published. Shipping
-  before the probe is safe in one direction only. Every exit path in `hook.mjs`
-  exits 0 and a deny travels in stdout alone, so an envelope Codex did not
-  recognize would fail open, which is exactly how Codex behaved before #487.
+  in the documented shape. This relaxes ADR-0074's bar rather than meeting it.
+  ADR-0074 asked for a live probe of the envelope, and this ADR accepts
+  OpenAI's published envelope plus the fail-open argument below in its place.
+  Shipping before the probe is safe in one direction only. Every exit path in
+  `hook.mjs` exits 0 and a deny travels in stdout alone, so an envelope Codex
+  did not recognize would fail open, which is exactly how Codex behaved before
+  #487.
   `hook-gate.test.ts` asserts that exit-0 property on a spawned Codex deny.
 - **`prism doctor` reports per host.** `checkHookRegistration` in
   `scripts/ai-skills/doctor.ts` reads `.codex/hooks.json` beside
@@ -70,34 +73,43 @@ Alternatives considered:
 - **Amend ADR-0074 in place, as the #487 plan intended.** Rejected because the
   amendment would sit under a title and a Decision sentence that both say
   Claude Code only. A reader who stops at the headline gets the opposite of
-  what `main` does. Superseding loses nothing: Cursor's half of ADR-0074 is
-  carried forward here.
+  what `main` does. Superseding keeps Cursor's half of ADR-0074: its prose
+  fallback and the placement of the runtime notice are carried forward below.
 - **Hold the Codex deny until a live probe confirms the envelope.** Rejected
   because the probe needs a delivered registration to run at all, and the
-  fail-open asymmetry above means shipping first cannot leave Codex worse off
-  than not shipping.
+  fail-open asymmetry above means an envelope Codex does not recognize leaves
+  Codex where it was before #487. That argument does not cover a recognized
+  deny that fires on the wrong path, which only the probe can rule out.
 - **Register under `[hooks]` in `.codex/codex-config.toml`.** Rejected because
   that file is per-user and gitignored. A registration there is invisible to
   the rest of the team and gone on a fresh clone.
 - **A second runtime copy under `.codex/hooks/`, or one shared copy moved to
   `.prism/hooks/`.** Rejected on cost. The second copy is the same bytes at a
-  second path, doubling the deliver, prune, and backup surface. The move is the
+  second path, doubling the deliver, prune, and backup work. The move is the
   better long-term home but rewrites the command string every existing consumer
   already has registered, so the ownership pattern would have to match two
   spellings for a release or old registrations would stop being claimed as
   PRISM's.
 
-ADR-0074's other two rejections stand unchanged. A git `pre-commit` floor
+ADR-0074's other rejections stand unchanged. A git `pre-commit` floor
 still cannot enforce read-before-write, because it fires after the edit is on
 disk. Removing the Claude Code gate to make every host behave alike still
 trades a measured guarantee for symmetry.
+
+The runtime notice also stays where ADR-0074 put it: one static host-neutral
+sentence in `.prism/references/skill-core.md` § "Reading before writing". Both
+placements ADR-0074 rejected for it, a per-host notice in each skill's
+platform body and a runtime host-detection check, stay rejected for the same
+reasons.
 
 ## Consequences
 
 - A Codex session that edits a routed path with its governing docs unread is
   denied, provided Codex honors the documented envelope. The announce layer
-  and the `PostCompact` reset reach Codex too, so a long Codex session no
-  longer keeps read credit for a doc it lost to compaction.
+  and the `PostCompact` reset are registered for Codex too, so a long Codex
+  session should drop read credit for a doc it lost to compaction. Neither has
+  been observed firing on Codex, and the relative-path bullet below is one
+  reason either might not.
 - The Codex deny is documentation-verified, not live-probed. No measured
   session has shown a Codex deny reason reaching the model. Until one does, a
   clean `prism doctor` run on Codex proves the registration is present, not

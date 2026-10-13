@@ -45,7 +45,7 @@ Deliver PRISM's hook runtime to Codex — a registration in `.codex/hooks.json`,
 - **Codex also registers `PostCompact`, delivering all three events Claude gets.**
   - **Correction (2026-09-08):** this entry originally read "Two events only: `PreToolUse` and `PostToolUse`. No `PostCompact`," reasoning that "Codex documents no `PostCompact` event." That was wrong — OpenAI's hooks documentation (`https://learn.chatgpt.com/docs/hooks`, verified again on this date) lists `PostCompact` and describes it as running "after Codex compacts the chat," with `session_id`, `cwd`, `turn_id`, and a `manual`/`auto` `trigger` in its payload. Without the third registration, a Codex session's announce-once state never reset after a compaction, so the write gate could let a write through on a doc the model could no longer see — the exact failure this PR exists to close, recurring on every compaction in a long session.
   - **Chosen approach:** register `PostCompact` in `templates/install/.codex/hooks.json` with no `matcher` (Codex's own examples for non-tool events omit it), pointing at `node ".claude/hooks/hook.mjs" --tool=codex --event=PostCompact` — the same command shape Claude's `PostCompact` entry uses. No code change: `runPostCompactArm` already reads `payload.session_id ?? payload.conversation_id` and `payload.cwd` directly with no host branching, `main()` routes `--event=PostCompact` before the harness spec is used, and `PRISM_CODEX_HOOK_COMMAND_PATTERN` already matches the added command string.
-  - **Implementation guidance:** the ADR-0074 amendment (task 10) records `PostCompact` as delivered on Codex, not as a named gap.
+  - **Implementation guidance:** ADR-0077, which replaced the ADR-0074 amendment (task 10), records `PostCompact` as delivered on Codex, not as a named gap.
 
 - **`toolKinds` gains `Edit` and `Write`; the matcher is `^(Bash|apply_patch|Edit|Write)$`.**
   - **Root cause:** the deny arm fires only on a kind the harness's table explicitly lists (`resolveListedToolKind`), never on the unlisted-name fallback — ADR-0072 § Decision, precondition 3. Codex reports edits as `apply_patch`, but its documentation says a matcher spelled `Edit` or `Write` also matches, so those spellings can reach the runtime.
@@ -197,9 +197,10 @@ Every task below touches a routed path, so the write gate will ask for docs befo
 These tasks ship in one PR together with issue-488's B6, after the consolidated probe. Tasks 11, 13, and the ADR-0074 half of task 10 touch the same lines B6 rewrites, so write each of those lines once at its final three-host wording rather than twice — see the Decision "One probe session and one documentation PR cover both plans' tails." Tasks 9, 12, 14, and 15 have no B6 counterpart and are unaffected.
 
 9. **Correct ADR-0072's Claude-only Consequences bullet** — `.prism/spec/adrs/_toolkit/0072-write-gate-on-routed-paths.md:65`. The bullet currently reads "**The gate reaches Claude Code consumers only.** Cursor and Codex both support `PreToolUse` … Until then, `HARNESSES.cursor.emitDeny` and `HARNESSES.codex.emitDeny` return `null`." Rewrite it to name Cursor alone as the undelivered host, keeping the delivery-gap-not-platform-limit framing and the note that each remaining seam needs its own registration format, merge semantics, and end-to-end run. Do not change the ADR's `Status`.
+   - **Implemented as an appended note (2026-10-12):** the decision-time text stays, and a closing sentence records that Codex delivery has since shipped, in the shape ADR-0071:37 uses. ADR-0076:87 got the same note.
    - **Verify:** content-only. `pnpm prism:crossref-lint` catches a broken link if one is introduced.
 
-10. **Amend ADR-0074** — `.prism/spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md`. Keep `Status: accepted` and keep the title; the decision still holds for Cursor. Append an `## Amendment (2026-09-02): the Codex half closed` section covering, in order: which rejected alternative this closes, quoted from the ADR's own § Decision; why the documented envelope clears the unverified-envelope bar — the asymmetric fail-open argument from the Decisions section above, not a claim that anything was measured before the probe; what the probe actually found (task 8's four observations); that Codex's `PostCompact` registration was corrected during PR-review pass 2 (the original spec wrongly assumed Codex documents no such event) and now delivers all three events, matching Claude; and that Cursor remains undelivered. Add, do not rewrite — the original `## Consequences` describes the state the ADR was written in and stays.
+10. **Replaced by ADR-0077 (2026-10-12).** ADR-0074 is superseded rather than amended, per the reversal sub-bullet on the Decision "Amend ADR-0074 and correct ADR-0072's Consequences bullet". The probe's findings go into ADR-0077. The original task text follows for the record. **Amend ADR-0074** — `.prism/spec/adrs/_toolkit/0074-hook-enforcement-is-claude-only-with-a-prose-fallback.md`. Keep `Status: accepted` and keep the title; the decision still holds for Cursor. Append an `## Amendment (2026-09-02): the Codex half closed` section covering, in order: which rejected alternative this closes, quoted from the ADR's own § Decision; why the documented envelope clears the unverified-envelope bar — the asymmetric fail-open argument from the Decisions section above, not a claim that anything was measured before the probe; what the probe actually found (task 8's four observations); that Codex's `PostCompact` registration was corrected during PR-review pass 2 (the original spec wrongly assumed Codex documents no such event) and now delivers all three events, matching Claude; and that Cursor remains undelivered. Add, do not rewrite — the original `## Consequences` describes the state the ADR was written in and stays.
    - **Verify:** content-only.
 
 11. **Update the canonical install-layout doc** — `.prism/architect/_toolkit/install-layout.md`. Edits at: line 145 ("**Delivery is Claude Code only.**" — the heading claim is now wrong); line 149 (§ Hook runtime, "Independent of that opt-in, Claude Code is the only host with a delivery path at all"); line 151 (the "asymmetry is a decision" paragraph — point it at the ADR-0074 amendment); line 159 (§ Write gate, "it reaches Claude Code only — the same delivery gap § Hook runtime states"); line 171 ("reports the Claude-only reach on an install that has the gate"); line 179 (§ Hook-runtime ownership and recovery — the pattern-keyed ownership paragraph now covers two patterns and two files). State plainly that one runtime at `.claude/hooks/` serves both registrations, and that a Codex-only consumer therefore has a `.claude/hooks/` directory.
@@ -330,6 +331,7 @@ These tasks ship in one PR together with issue-488's B6, after the consolidated 
 - 2026-09-08 [huntermcgrew/codex-hook-delivery]: Fixed Eric's PR-review pass 4 (0 Majors, 2 Minors). Added the missing `--event=PreToolUse` assertion to the Codex `PreToolUse` test, mirroring the Claude twin — on Codex that flag alone separates the deny arm from the announce arm; also asserted the git-gates matcher's literal value. Restructured `checkHookRegistration`'s Codex arm into two independent `if`s (mirroring the Claude arm) so the `codexGitGatesInert` comment sits above the code it explains instead of inside the preceding branch. `pnpm prism:check` is green from a fresh `pnpm install --frozen-lockfile` (923 tests, 921 pass, 2 skipped) at HEAD `5b48da13`.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Wrote ADR-0077 superseding ADR-0074 and repointed `hook-runtime.md` § Hook runtime at it; see Decision "Amend ADR-0074 and correct ADR-0072's Consequences bullet", reversed for ADR-0074.
 - 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Closed task 9 and the ADR-0076:87 site from the AC-9 Review Issues entry by appending a dated-by-reference note ("Codex delivery has since shipped (PRISM #487, ADR-0077)") to each bullet, the shape ADR-0071:37 already uses, rather than rewriting the decision-time text in place.
+- 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]: Fixed Briar's self-review pass 5 (1 Major, 5 Minors): ADR-0077 now says it relaxes ADR-0074's live-probe bar rather than clearing it, hedges the unprobed Codex announce and `PostCompact` claims, scopes the fail-open argument to an unrecognized envelope, carries forward ADR-0074's notice placement, and drops "seam" and "surface". Tasks 9 and 10 and the `PostCompact` Decision now match the diff.
 
 ---
 
@@ -527,7 +529,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### ADR-0077 misdescribes the bar ADR-0074 set for shipping a Codex deny
 
 - **Severity:** `major`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:13` and `:56`
 - **Problem:** the ADR says ADR-0074's bar was "no deny shipped in an unverified envelope" and that shipping on a documented envelope "clears ADR-0074's bar rather than repealing it", but ADR-0074's own Decision names "a live probe of that host's deny envelope" as the precondition for `emitDeny` returning anything, so shipping before the probe relaxes that bar.
 - **Suggested fix:** state the relaxation plainly (ADR-0074 required a live probe; this ADR accepts a published envelope plus the fail-open argument in its place) and keep the unprobed caveat in Consequences.
@@ -535,7 +537,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### ADR-0077 states unprobed Codex behavior as fact
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:98`
 - **Problem:** the sentence after the "provided Codex honors the documented envelope" proviso says the announce layer and `PostCompact` reset "reach Codex too, so a long Codex session no longer keeps read credit", but neither has been observed firing on Codex and both depend on the relative-cwd command the ADR itself flags as unprobed.
 - **Suggested fix:** hedge it ("registered for Codex; firing is unprobed, see the cwd bullet").
@@ -543,7 +545,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### ADR-0077 overstates what the fail-open argument covers
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:77`
 - **Problem:** "shipping first cannot leave Codex worse off than not shipping" holds only for an unrecognized envelope, and the Decision bullet above says "safe in one direction only", so a recognized deny that fires wrongly (path extraction, cwd mismatch) is not covered.
 - **Suggested fix:** scope the sentence to an unrecognized envelope.
@@ -551,7 +553,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### ADR-0077 says superseding loses nothing but drops ADR-0074's notice-placement decision
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:73` and `:90`
 - **Problem:** ADR-0074's static `skill-core.md` notice and its two rejected placements (per-host skill notice, runtime host detection) still govern Cursor, but ADR-0077 neither carries them forward nor lists them among the rejections that "stand unchanged", and ADR-0074 is now superseded.
 - **Suggested fix:** add one sentence to the "stand unchanged" paragraph naming the notice placement and its two rejected alternatives.
@@ -559,7 +561,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### ADR-0077 uses "seam" and "surface" as metaphor
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/spec/adrs/_toolkit/0077-hook-enforcement-reaches-claude-code-and-codex.md:12`, `:13`, `:38`, `:52`, `:84`
 - **Problem:** `writing-voice.md` § Plain language cuts "seam" and "surface area"; PRISM-492 removed the same metaphor in commit 4af76831.
 - **Suggested fix:** "delivery path" for lines 12, 13, 38; "merge function" for line 52; "deliver, prune, and backup work" for line 84.
@@ -567,7 +569,7 @@ The two `deferred` entries above (AC-9, AC-10) and their `proposed` AC Adjustmen
 ### Plan Tasks 9 and 10 contradict the diff
 
 - **Severity:** `minor`
-- **Status:** `open`
+- **Status:** `fixed`
 - **File:** `.prism/plans/prism-477-followup-codex-hooks.md:199` and `:202` (also `:48`)
 - **Problem:** Task 10 still says "Amend ADR-0074 ... Keep `Status: accepted`" and the `PostCompact` Decision still points at "the ADR-0074 amendment (task 10)", though the diff supersedes ADR-0074; Task 9 says "Rewrite" the ADR-0072 bullet while the diff appends a note (recorded only in `## History`).
 - **Suggested fix:** mark Task 10 "Replaced by ADR-0077" inline, repoint `:48` to ADR-0077, and add "implemented as an appended note, ADR-0071:37 shape" to Task 9.
