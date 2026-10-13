@@ -714,6 +714,26 @@ Follow-up observations (not findings): same as pass 8's list, plus the README 00
 - Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` is plan task 13, out of this PR's scope)
 - Accessibility — n/a — no UI in the reviewed range
 
+### Pass 10 (ADR-0077 follow-up PR, loop pass 6): subject-clean
+
+No issues found — 2026-10-12 [huntermcgrew/prism-477-followup-codex-hook-adr]
+
+Pass 9's Minor is closed in HEAD `2863b2a0`: task 11 now reads "the 'asymmetry is a decision' paragraph — done in `hook-runtime.md` § Hook runtime (2026-10-12): the paragraph cites ADR-0077, not an ADR-0074 amendment", matching `hook-runtime.md:11`. The README 0077 row now lists the git-root spelling and names five rejected alternatives, matching ADR-0077 § Decision. Re-reviewed the subject in full: ADR-0077, the ADR-0072 and ADR-0076 appended notes, ADR-0074 frontmatter and decision-time text, README rows 0074 and 0077, `hook-runtime.md`, the `seed-curation.json` `excluded[]` entry, and plan Decisions, Tasks 9-11 and the PR 2 preamble. Source-verified against `update.ts` (`refreshHookRuntime` either-host gate and per-host registration gate, `mergeHookCodexRegistration` delegating to `mergeHookRegistration`, `PRISM_CODEX_HOOK_COMMAND_PATTERN`), `harnesses.mjs` (codex `toolKinds`, `scopeId`, `emitDeny`; cursor `emitDeny` returns `null`), `hook.mjs` and `git-gates.mjs` (every path sets `exitCode = 0`), `hook-gate.test.ts` (spawned Codex `apply_patch` deny asserts `status === 0`), `templates/install/.codex/hooks.json` (`PreToolUse`, `PostToolUse`, `PostCompact` plus the `^Bash$` git-gates group), `doctor.ts` (Codex arm adds no git-gates info or warning), `skill-core.md` § Reading before writing, and ADR-0064/0071/0072/0074/0076. OpenAI's hooks page was not re-fetched this pass; the external-system claims were checked against the repo's own recorded fetches (passes 6-9) and no edit since changed them. `pnpm prism:check` fails only in `spec-scope-lint`, on #496's unmerged files (none in this diff); 926 tests pass, 0 fail; `prism:ship-closure` and `prism:verify-pack` pass separately.
+
+Follow-up observations (not findings): same as pass 9's list.
+
+#### Angle Coverage
+
+- Runtime behavior — n/a — no code in the reviewed range
+- Test efficacy — n/a — no code or tests in the reviewed range
+- Spec and doc consistency — swept — 11 items enumerated, 11 verdicts (ADR-0077, ADR-0074 status flip, ADR-0072 note, ADR-0076 note, README 0074 and 0077 rows, `hook-runtime.md` edit, `seed-curation.json` `excluded[]` entry, plan Decisions `:35` and `:41-60`, plan Tasks 9-10, plan Task 11; all hold)
+- Citation integrity — swept — 14 items enumerated, 14 verdicts (ADR-0074 quotes and bar, ADR-0064 `excluded[]`, ADR-0071:37 note shape, `refreshHookRuntime`/`mergeHookCodexRegistration`/pattern, codex row `emitDeny` and `scopeId`, `hook.mjs` and `git-gates.mjs` exit paths, spawned-deny test, doctor Codex arm, both hook templates' events, `skill-core.md` notice, `Superseded-by` convention; all hold)
+- External-system claims — swept — 6 items enumerated, 6 verdicts (deny envelope, `PostCompact`, working directory, project-directory variable, subagent session id, `agent_id` placement; all hold against the recorded fetches, not re-fetched)
+- Repo writing rules — swept — verdict-only
+- Security — n/a — no auth, input, secrets or trust boundary touched
+- Docs impact — swept — 2 items enumerated, 2 verdicts (curated `hook-runtime.md` twin consistent; `compatibility.md` is plan task 13, out of this PR's scope)
+- Accessibility — n/a — no UI in the reviewed range
+
 ---
 
 ## Cleanup Items
@@ -722,7 +742,7 @@ Follow-up observations (not findings): same as pass 8's list, plus the README 00
 
 ## PR Readiness
 
-- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2's 2 minors are fixed; loop pass 3's 2 minors are fixed; loop pass 4's 1 minor (ADR-0077 `agent_id` placement) is fixed; loop pass 5 (2026-10-12) opened 1 new minor (plan task 11 "ADR-0074 amendment" clause), `open` in `## Review Issues`; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
+- [ ] No critical or major issues — ADR-0077 follow-up PR (2026-10-12): pass 5's 1 major and 5 minors are fixed; loop pass 2's 2 minors are fixed; loop pass 3's 2 minors are fixed; loop pass 4's 1 minor (ADR-0077 `agent_id` placement) is fixed; loop pass 5's 1 minor (plan task 11 "ADR-0074 amendment" clause) is fixed; loop pass 6 (2026-10-12) found no new issues; the two `deferred` PR-2 items (AC-9, AC-10) stay deferred.
 - [x] Types correct — no `any`, no unsafe `as`
 - [x] No stray console.logs or debug artifacts
 - [x] Tests written for new logic and edge cases — three new `doctor.test.ts` cases cover pass 3's two Minors, plus the cold-start leg's `assertAdoptedConsumerState` now guards the real Codex template
