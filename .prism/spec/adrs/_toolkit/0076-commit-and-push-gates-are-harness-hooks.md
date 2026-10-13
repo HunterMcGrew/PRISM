@@ -88,7 +88,9 @@ Alternatives, and why each lost:
   write gate. Codex and Cursor both document the shell-precondition event and
   its deny envelope, so their delivery is a follow-up on the same runtime
   rather than a platform limit; until it lands, those hosts have the prose
-  step and nothing else.
+  step and nothing else. Codex delivery has since shipped (PRISM #487,
+  ADR-0077), so the git gates now reach Codex too and Cursor is the remaining
+  gap.
 - Recognizing `commit` and `push` in command text has the same three gaps the
   write gate's shell arm has: a command built from a variable, a `cd` into a
   subrepo, and a `"` inside a heredoc body closing the splitter's quote early
