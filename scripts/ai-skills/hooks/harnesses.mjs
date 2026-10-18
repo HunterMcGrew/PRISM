@@ -22,7 +22,7 @@
  * @property {string} [conversation_id]
  * @property {string} [cwd]
  * @property {string} [tool_name]
- * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number}} [tool_input]
+ * @property {{file_path?: string, path?: string, command?: string, offset?: number, limit?: number, new_string?: string, content?: string, contents?: string}} [tool_input]
  * @property {string} [hook_event_name]
  */
 
@@ -47,6 +47,10 @@
  * @property {Record<string, "read"|"write"|"search"|"shell">} toolKinds
  * @property {(payload: HookPayload) => string | null} scopeId
  * @property {(payload: HookPayload) => string[]} filePaths
+ * @property {(payload: HookPayload, filePath: string) => string} editContent
+ *   The text a write would put into `filePath`, or `""` when the payload
+ *   carries none. Only the umbrella speed bump reads it, to find headings a
+ *   write adds.
  * @property {(text: string) => unknown} emitNag
  * @property {() => unknown} emitNone
  * @property {(reason: string) => unknown} emitDeny
@@ -104,6 +108,55 @@ export function extractPatchFilePaths(command) {
 	return paths;
 }
 
+/**
+ * The proposed text of an `Edit` (`new_string`) or a `Write` (`content`).
+ * Cursor's spelling is a guess from its documented tool shapes, so its row
+ * also tries `contents`. A wrong guess yields `""`, which finds no heading
+ * and lets the edit pass, the same direction every other failure here takes.
+ *
+ * @param {HookPayload} payload
+ * @returns {string}
+ */
+function editTextFromToolInput(payload) {
+	const input = payload.tool_input ?? {};
+	const text = input.new_string ?? input.content ?? input.contents;
+	return typeof text === "string" ? text : "";
+}
+
+/**
+ * The lines a Codex `apply_patch` adds to one file, with their `+` stripped.
+ * Each `*** Add File:` or `*** Update File:` header opens that file's
+ * section, and the next `***` line closes it. Reading per section is what
+ * keeps a heading added to one file in a multi-file patch from being charged
+ * to every other file the patch touches. Removed and context lines are left
+ * out, so deleting a heading never reads as adding one.
+ *
+ * @param {string | undefined} command
+ * @param {string} filePath
+ * @returns {string}
+ */
+export function extractPatchAddedText(command, filePath) {
+	if (typeof command !== "string") {
+		return "";
+	}
+
+	const added = [];
+	let inSection = false;
+	for (const rawLine of command.split("\n")) {
+		const line = rawLine.replace(/\r$/, "");
+		if (line.startsWith("***")) {
+			const match = /^\*\*\* (?:Add File|Update File): (.+)$/.exec(line.trim());
+			inSection = match !== null && match[1].trim() === filePath;
+			continue;
+		}
+		if (inSection && line.startsWith("+")) {
+			added.push(line.slice(1));
+		}
+	}
+
+	return added.join("\n");
+}
+
 /** @type {Record<string, HarnessSpec>} */
 export const HARNESSES = {
 	claude: {
@@ -135,6 +188,7 @@ export const HARNESSES = {
 				? `${payload.session_id ?? "unknown"}.${payload.agent_id}`
 				: (payload.session_id ?? null),
 		filePaths: filePathFromToolInput,
+		editContent: editTextFromToolInput,
 		emitNag: (text) => ({
 			hookSpecificOutput: {
 				hookEventName: "PostToolUse",
@@ -172,6 +226,7 @@ export const HARNESSES = {
 		toolKinds: { Read: "read", Shell: "shell", Grep: "search" },
 		scopeId: (payload) => payload.conversation_id ?? null,
 		filePaths: filePathFromToolInput,
+		editContent: editTextFromToolInput,
 		emitNag: (text) => ({ additional_context: text }),
 		emitNone: () => ({}),
 		// Nothing delivers a Cursor hook registration, and no probe has
@@ -197,6 +252,10 @@ export const HARNESSES = {
 			payload.tool_name === "apply_patch"
 				? extractPatchFilePaths(payload.tool_input?.command)
 				: filePathFromToolInput(payload),
+		editContent: (payload, filePath) =>
+			payload.tool_name === "apply_patch"
+				? extractPatchAddedText(payload.tool_input?.command, filePath)
+				: editTextFromToolInput(payload),
 		emitNag: (text) => ({
 			hookSpecificOutput: {
 				hookEventName: "PostToolUse",

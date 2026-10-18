@@ -10,6 +10,7 @@
  * ships, and imports these from here so both surfaces answer the question the
  * same way.
  */
+import { manifestRoutes } from "../hooks/lib/match.mjs";
 
 /** A manifest maps a route pattern to the doc or docs that govern it. */
 export type Manifest = Record<string, string | string[]>;
@@ -54,7 +55,8 @@ export function checkRouteIsAnchored(pattern: string): boolean {
  * every route constrains something.
  */
 export function findCatchAllKeys(manifest: Record<string, unknown>): string[] {
-	return Object.keys(manifest)
+	return manifestRoutes(manifest)
+		.map(([key]) => key)
 		.filter((key) => !checkRouteIsAnchored(key))
 		.map(
 			(key) =>
@@ -71,7 +73,8 @@ export function findCatchAllKeys(manifest: Record<string, unknown>): string[] {
  * is safe to compile.
  */
 export function findBraceGlobKeys(manifest: Record<string, unknown>): string[] {
-	return Object.keys(manifest)
+	return manifestRoutes(manifest)
+		.map(([key]) => key)
 		.filter((key) => key.includes("{") || key.includes("}"))
 		.map(
 			(key) =>

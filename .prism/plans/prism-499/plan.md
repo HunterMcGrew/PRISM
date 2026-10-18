@@ -201,6 +201,7 @@ Each PR's tasks are written into this section when its branch is cut, so a task 
 
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Recorded the phase-1 baseline and the stack plan.
 - 2026-10-17 [huntermcgrew/prism-499-ai-native-sdlc]: Self-review pass 1 fixes. Rewrote the PR 2 tasks to the shipped design and added the folder tier to `resolveLivePlan`.
+- 2026-10-17 [huntermcgrew/prism-499-umbrella-speed-bump]: Shipped the umbrella speed bump per PR 2 tasks 1–8. The new `hook-runtime.md` section is a `###` under `## Write gate`, since it is part of the write gate.
 
 ---
 

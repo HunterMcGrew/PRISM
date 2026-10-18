@@ -56,5 +56,9 @@
 	".prism/spec/adrs/**": [
 		"guides/writing-an-adr.md",
 		"_toolkit/spec-editing.md"
+	],
+	"umbrellas": [
+		".prism/rules/*.md",
+		".prism/custom/rules/*.md"
 	]
 }

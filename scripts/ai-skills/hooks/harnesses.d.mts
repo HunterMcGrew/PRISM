@@ -10,6 +10,9 @@ export interface HookPayload {
 		command?: string;
 		offset?: number;
 		limit?: number;
+		new_string?: string;
+		content?: string;
+		contents?: string;
 	};
 	hook_event_name?: string;
 }
@@ -18,6 +21,8 @@ export interface HarnessSpec {
 	toolKinds: Record<string, "read" | "write" | "search" | "shell">;
 	scopeId: (payload: HookPayload) => string | null;
 	filePaths: (payload: HookPayload) => string[];
+	/** The text a write would put into `filePath`, or `""` when the payload carries none. */
+	editContent: (payload: HookPayload, filePath: string) => string;
 	emitNag: (text: string) => unknown;
 	emitNone: () => unknown;
 	/** `null` on a host whose deny envelope nobody has observed — see `harnesses.mjs`. */
@@ -27,6 +32,11 @@ export interface HarnessSpec {
 }
 
 export function extractPatchFilePaths(command: string | undefined): string[];
+
+export function extractPatchAddedText(
+	command: string | undefined,
+	filePath: string
+): string;
 
 export const HARNESSES: Record<string, HarnessSpec>;
 

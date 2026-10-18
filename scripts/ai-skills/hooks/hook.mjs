@@ -46,6 +46,7 @@ import {
 	MAX_EMISSION_BYTES,
 	filterRoutedPaths,
 	resolveArchitectNag,
+	resolveUmbrellaSpeedBump,
 	resolveUnreadDocs,
 	toRepoRelativePath,
 } from "./architect-route.mjs";
@@ -968,9 +969,18 @@ export function formatDenyMessage(relativePath, unreadDocs) {
  * 5. A doc that route names is absent from this scope's `read` array and
  *    still exists on disk.
  *
- * Nothing here writes state. A denied call must be able to produce the same
- * message again after the model's remedy fails, and appending to `announced`
- * would silence the very doc the deny is asking for.
+ * A write that clears all five then meets the umbrella speed bump
+ * (`resolveUmbrellaSpeedBump`), which stops it once if it adds a heading to
+ * a doc or rule file on the manifest's `umbrellas` list. The speed bump runs
+ * second so a writer who has not read the placement guide gets that deny
+ * first, and it reads only file-edit tools, because a shell command carries
+ * no edit text to find a heading in.
+ *
+ * The read-credit deny writes no state. A denied call must be able to produce
+ * the same message again after the model's remedy fails, and appending to
+ * `announced` would silence the very doc the deny is asking for. The speed
+ * bump does write: it saves its acknowledgement before it denies, which is
+ * what lets the retry through.
  *
  * @param {string} tool
  * @param {import("./harnesses.mjs").HarnessSpec} spec
@@ -1010,7 +1020,18 @@ export async function runPreToolUseArm(tool, spec, rawStdin) {
 				? await resolveShellCandidatePaths(repoRoot, cwd, payload)
 				: spec.filePaths(payload);
 
-		const reason = await resolveDenyReason(repoRoot, scopeId, candidatePaths);
+		const reason =
+			(await resolveDenyReason(repoRoot, scopeId, candidatePaths)) ??
+			(kind === "write"
+				? await resolveUmbrellaSpeedBump(
+						repoRoot,
+						scopeId,
+						candidatePaths.map((filePath) => ({
+							filePath,
+							editText: spec.editContent(payload, filePath),
+						}))
+					)
+				: null);
 		if (reason === null) {
 			return null;
 		}
