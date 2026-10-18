@@ -131,7 +131,7 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "prism-skill-forge",
+			"id": "prism-forge-skill",
 			"type": "utility",
 			"routing": "named-only"
 		},
@@ -141,7 +141,7 @@
 			"routing": "named-only"
 		},
 		{
-			"id": "devils-advocate",
+			"id": "prism-challenge",
 			"type": "utility",
 			"routing": "named-only"
 		}

@@ -1,190 +1,63 @@
 ---
 name: prism-handoff
 description: >
-  Compact the current session into a scoped handoff document a fresh agent can
-  continue from — same persona or a different one. Flushes plan-worthy state
+  Compacts the current session into a scoped handoff document a fresh agent can
+  continue from, in the same skill or a different one. Flushes plan-worthy state
   into the branch plan first, then writes only the session residue to a unique
   path under the OS temp dir and reports that path back. Explicit
-  /prism-handoff invocation; no persona — runs in the current persona's voice.
-  Triggers: handoff, hand off, continue in a new chat, fresh session, pass this to.
-argument-hint: "[scope and/or target — e.g. 'story 4' or 'clove: implement story 4.1']"
+  /prism-handoff invocation. Triggers: handoff, hand off, continue in a new
+  chat, fresh session, pass this to.
+argument-hint: "[scope and/or target, e.g. 'story 4' or 'prism-implement: story 4.1']"
 ---
 
 <!-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. -->
 <!-- Source: .ai-skills/skills/prism-handoff -->
 <!-- Target: cursor | Regenerate with: pnpm prism:build -->
 
-Compact the current session into a handoff document a fresh agent can continue
-from. The fresh chat is the win: every message in a long session re-pays for
-every tool result and tangent that came before it; the handoff doc replaces the
-conversation, not the working memory. The branch plan stays the working memory.
+Compacts the current session into a handoff document a fresh agent can continue from. A fresh chat is the point: every message in a long session re-pays for every tool result and tangent before it, and the handoff document replaces that conversation. The branch plan stays the working memory. Task: $ARGUMENTS
 
-**The run:** opening orientation → flush plan-worthy state into the
-branch plan → parse arguments (scope filter / target persona) → write the
-handoff document → closing re-orientation → report the path.
+## When to run
 
-## Invocation trigger
+Run it when the user asks to hand off or continue in a new chat. Any skill may offer it at session close when the session is long or its own answers show drift (wrong paths, stale assumptions, re-asking what the user already said). The offer is a judgment call and never an auto-invocation, because a counted proxy such as files read or skills invoked is a number the model cannot measure mid-session. Do not wait for the context limit, since a session at its edge writes a degraded summary exactly when a good one matters.
 
-Invoke when any of these conditions are true:
+## Flush to the plan first
 
-- The user explicitly asks to hand off or continue in a new chat.
-- The session has 20+ messages and continuity across a new chat is expected.
-- You notice drift in your own responses — wrong file paths, stale assumptions,
-  re-asking context the user already provided.
+Before writing, promote anything plan-worthy into the branch plan. A handoff document that holds decisions is a shadow plan the next session will trust over the real one.
 
-Do not wait for 95% context — a session at the edge writes a degraded summary
-exactly when a good one matters most.
+- A decision with its reason goes under `## Decisions`.
+- Changes since the last `## History` line go in one line each, with the branch name.
+- An open bug with a root cause goes under `## Debugged Issues`, and an unrecorded review finding under `## Review Issues`.
 
-**Any active persona may suggest this skill at session close**, not just invoke
-it directly — the same two conditions apply: session length or self-observed
-drift. This is a judgment call the persona makes in the moment, never a
-counted proxy scored against fixed thresholds (skills invoked, files read,
-exchanges) — signals the model can't measure mid-session, which produce either
-theater or silence. The suggestion is always an offer, never an
-auto-invocation.
+The document then carries only what the plan cannot: in-flight reasoning, the user's framing, open threads, and this session's dead ends. The better the plan was kept, the thinner this document is. With no plan found, skip the flush and note "No branch plan found; flush skipped." under `## Artifacts`. This skill reads and updates the plan and never touches source files.
 
-## Step 0 — Opening orientation
+## Arguments
 
-Run the Opening Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
-once, before any other step. Answer all four questions internally, then
-proceed — this is not visible output.
+- **A scope filter** (a topic or story, such as "story 4") keeps only the threads about it. Everything else goes under `## Dropped`.
+- **A target prefix** (a skill ID or persona name and a colon, such as `prism-implement:`) produces a next-action brief for that skill instead of a same-session resume. If the target is not in the routing rule, resume in the same session and note that under `## Focus`.
+- **No arguments** resumes the session's dominant work item.
 
-Handoff-specific framing for two of the four questions:
+For every load-bearing gap, pick a defensible default and state it under `## Focus`. If a gap blocks the document, put the blocker and the default you took in the closing message.
 
-- **Intent** — e.g. "resume this Clove session as Briar for self-review," not
-  "write a handoff."
-- **Bounds** — a complete handoff covers the branch plan (read and may be
-  written); source files are never touched by this skill.
+## Write the document
 
-The rule's no-user calibration applies as written: pick a defensible default
-for each load-bearing gap, state the assumption in the handoff `## Focus`
-section, and proceed. When a gap genuinely blocks, state the blocker and the
-default you took in your closing message rather than asking a question nobody
-is there to answer.
+Write to `<os-temp>/prism-handoffs/<branch-slug>/<UTC-timestamp>-<shortid>.md`, creating directories as needed. Join the segments explicitly, with `"${TMPDIR%/}/..."` so one slash separates them whether or not `$TMPDIR` ends in one. Use a unique path every time, because a fixed shared path collides between concurrent sessions and gets stale reads of dead handoffs. If the temp directory cannot be written, use `.prism/handoffs/<branch-slug>/<UTC-timestamp>-<shortid>.md` in the repo and say so in the report.
 
-## Step 1 — Flush before writing
+Sections:
 
-**Trigger:** runs before Step 3, on every invocation.
+- **`## Continue from`.** One paragraph on what the session was doing and where it stopped. For a target skill, write what to do next and skip how the session got here.
+- **`## Artifacts`.** Plan, ADRs, issues, PRs, and key files, as paths and URLs only. Never copy what an artifact already holds.
+- **`## Open threads`.** One line per unresolved question.
+- **`## Live state`.** What the next session inherits physically: uncommitted files, open worktrees, background processes, an unpushed branch.
+- **`## Dropped`.** One line per thread the scope filter excluded, so dropping is a visible decision.
+- **`## Suggested skills`.** By capability, citing the routing rule. Do not list the roster again.
+- **`## Focus`.** The arguments restated as the next session's brief, plus every default and assumption from above.
 
-Promote any plan-worthy state into the branch plan:
+Write neutral structured prose with no greetings, voice, or puns, since the next reader may be a different model. Redact secrets and PII. Before reporting, check each `## Live state` and `## Open threads` item against this session's tool output, and mark any claim you are asserting from memory "(unverified)" so the next session re-checks it before acting.
 
-- Unrecorded architectural decisions → `## Decisions` (one bullet per decision
-  with a reason — see branch-plan.md § Decisions)
-- Meaningful changes since the last History entry → `## History` (one line per
-  unit of work, branch name included)
-- Open bugs with a root cause → their structured `## Debugged Issues` entry
-- Review findings not yet recorded → `## Review Issues`
+## Report
 
-The handoff doc carries only what the plan structurally cannot: in-flight
-reasoning, the user's framing, open threads, this session's dead ends. A handoff
-doc that grows sections resembling `## Decisions` is a shadow plan; promote the
-content, then reference it. The better the session maintained its plan, the
-thinner this doc — that's the system working.
+Give the user the absolute path, the one-line start for the next session (for example: New chat, then `/prism-plan`, then "continue from `<path>`"), and one line per default they should confirm before opening the new chat.
 
-**Escape (no plan found):** if plan lookup (branch name → `.prism/plans/<id>.md`
-→ `## Ticket` scan) finds no plan, skip this step. Note in the handoff
-`## Artifacts` section: "No branch plan found; flush skipped." Proceed to Step 2.
+## Reading a handoff
 
-## Step 2 — Parse the arguments
-
-**Trigger:** runs after Step 1, using `$ARGUMENTS` or the user's last message.
-
-Resolve the handoff shape:
-
-- **Scope filter** (a topic or story reference, e.g. "story 4") — keep only
-  threads pertaining to the named scope; place everything else in `## Dropped`.
-- **Target prefix** (`clove:`, `briar:`, any persona name followed by a colon)
-  — produce the cross-persona shape instead of the same-persona resume.
-- **No arguments** — same-persona resume, scoped to the session's dominant work
-  item.
-
-**Escape (unrecognized target prefix):** if the named target persona does not
-appear in AGENTS.md skill routing, default to same-persona resume and note in
-`## Focus`: "Target persona `<name>` not recognized; defaulting to same-persona
-resume."
-
-## Step 3 — Write the document
-
-**Trigger:** runs after Steps 1–2; produces the handoff file.
-
-**Path construction:**
-
-Write to `<os-temp>/prism-handoffs/<branch-slug>/<UTC-timestamp>-<shortid>.md`,
-creating directories as needed. Join path segments explicitly — do not assume
-`$TMPDIR` ends with a separator (`"${TMPDIR%/}/..."` guarantees exactly one
-slash either way). Never a fixed shared path — unique paths prevent collisions
-between concurrent sessions and stale reads of dead handoffs.
-
-**Escape (OS temp unavailable):** if the temp directory cannot be written, write
-to `<repo-root>/.prism/handoffs/<branch-slug>/<UTC-timestamp>-<shortid>.md` and
-note the fallback path in Step 4's output.
-
-**Document shapes:** both shapes share these sections; the shape changes emphasis.
-
-- **`## Continue from`** — one paragraph: what this session was doing and where
-  it stopped. Same-persona resume: where the reasoning was mid-flight.
-  Cross-persona route: a next-action brief — what to do, not how we got here.
-- **`## Artifacts`** — plan, ADRs, issues, PRs, key files. Paths and URLs only;
-  never duplicate content the artifact already holds.
-- **`## Open threads`** — questions raised and unresolved, one line each.
-- **`## Live state`** — anything the next session inherits physically:
-  uncommitted files, open worktrees, background processes, an un-pushed branch.
-- **`## Dropped`** — one line per thread the scope filter excluded. Dropping is
-  a visible decision, not silent decay.
-- **`## Suggested skills`** — by capability, citing AGENTS.md routing; do not
-  re-enumerate the roster.
-- **`## Focus`** — the passed args restated as the next session's brief; any
-  defaults or assumptions recorded in Steps 0–2 stated here explicitly.
-
-**Prose discipline:** omit persona flavor — greetings, character voice, puns,
-persona-specific phrasing. The next reader may be a different model or persona,
-and voice is noise to it. Write neutral structured prose: declarative sentences,
-section headers, bullet lists for parallel items. Redact secrets and PII before
-writing. The spoken summary back to the user (Step 4) may stay in the active
-persona's voice.
-
-## Step 3b — Closing re-orientation
-
-Run the Closing Re-Orientation Battery per [session-orientation.md](../../../.prism/rules/session-orientation.md)
-once, after drafting the document but before reporting the path. Check each
-question; update the draft if any answer reveals a gap.
-
-Handoff-specific framing:
-
-- **Scope boundary** — what did the handoff doc include; is any of it outside
-  what was named in the arguments? What did you notice in adjacent open threads
-  and exclude? If adjacent work should be tracked but was left out, flag
-  it as follow-up work per followup-scope.md.
-- **Unasked assumptions** — name each silent decision in `## Focus` so the next
-  session sees them explicitly.
-- **Edge recall** — did the session involve empty states, absent files, missing
-  plans, or malformed arguments? Did the handoff document capture each of those
-  states explicitly, or did it silently resolve them?
-- **Verification honesty** — for each item in `## Live state` and `## Open
-  threads`, is the claim current (verifiable from this session's tool outputs)
-  or asserted from memory? Mark asserted-from-memory items with "(unverified)"
-  so the next session knows to re-check before acting on them.
-
-## Step 4 — Report the path
-
-**Trigger:** after the draft passes the Step 3b check.
-
-Report:
-
-1. The absolute path to the handoff file.
-2. The one-line start for the next session, e.g.:
-   > New chat → `/prism-plan` → "continue from <path>"
-3. Any defaults picked in Steps 0–2 that the user should confirm or redirect
-   before opening the new chat — one line per default.
-
-## Read-side contract
-
-**Trigger:** when a fresh session receives a handoff path.
-
-Open the file at the given path. Never scan the handoffs directory for recent
-files — a stale handoff read as current is worse than no handoff.
-
-Then run normal startup: plan lookup, architect context load. The handoff doc
-supplements the plan, never replaces it. If the handoff's `## Live state`
-conflicts with what the plan's `## History` shows, the plan is authoritative;
-the handoff is the session-residue layer above it.
+Open the file at the path you were given and never scan the handoffs directory for recent files, because a stale handoff read as current is worse than none. Then run normal startup: plan lookup and the routed architect docs. The handoff supplements the plan. When its `## Live state` conflicts with the plan's `## History`, the plan wins.

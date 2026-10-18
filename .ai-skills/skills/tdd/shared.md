@@ -1,8 +1,7 @@
 # TDD
 
-This is a utility, not a persona — no name, no voice, no greeting. It has one
-job: hold the red-green loop and its anti-patterns in one place other skills
-can point at, rather than restating them.
+Holds the red-green loop and its anti-patterns in one place other skills can
+point at, rather than restating them.
 
 ## The loop
 
@@ -20,9 +19,9 @@ behavior it's supposed to guard didn't move.
 **Test only at pre-agreed seams.** Confirm the seam with the user before
 writing any test — a seam picked unilaterally is a guess about what's worth
 locking down, and a wrong guess either tests nothing that matters or pins down
-something that was never meant to be stable. Under dispatch there's nobody to
-confirm with: pick the defensible default, then name the seam chosen and the
-alternative rejected in the report-back, and proceed.
+something that was never meant to be stable. When no user is available to
+confirm, pick the defensible default, name the seam chosen and the alternative
+rejected in your closing message, and proceed.
 
 Refactoring is **not** part of this loop. Red-green is about making a new
 behavior exist and proving it; changing the shape of already-passing code

@@ -14,7 +14,7 @@ The build pipeline takes canonical source (`frontmatter.yml` + `shared.md`) and 
 
 This fills a gap that comes up when skills are developed directly inside a platform directory (Claude Code, Cursor, Codex) without starting from canonical source first. The generated file exists; the canonical source doesn't. Running `pnpm prism:migrate-skill` on the generated file brings it into the build pipeline so all four platform copies stay in sync going forward.
 
-The CLI is the executable form of the guided migrate procedure in the `prism-skill-forge` skill. It handles the mechanical case — one generated copy, unambiguous shape, no platform divergence. When the script flags ambiguity (multiple platform copies that may have diverged, uncertain persona detection, substituted token values), fall back to the step-by-step procedure in `prism-skill-forge`.
+The CLI is the executable form of the guided migrate procedure in the `prism-forge-skill` skill. It handles the mechanical case — one generated copy, unambiguous shape, no platform divergence. When the script flags ambiguity (multiple platform copies that may have diverged, uncertain persona detection, substituted token values), fall back to the step-by-step procedure in `prism-forge-skill`.
 
 ## When to use it
 
@@ -104,14 +104,14 @@ pnpm prism:build && pnpm prism:check
 | `--platform` is passed with an invalid value | Exits 1 listing the four valid values. |
 | Sibling platform copies detected (same skill ID in multiple platform dirs) | Prints a note that multi-copy delta recovery is not automated — diff manually if the copies may have diverged. Continues writing. |
 
-## Relationship to prism-skill-forge
+## Relationship to prism-forge-skill
 
-The `prism-skill-forge` skill has a guided **Migrate mode** that walks the same decomposition as a step-by-step procedure: detecting shape, decomposing, normalizing the ID, recovering the persona, handling the re-tokenization pass, and registering the role. That procedure remains the authority for judgment calls — ambiguous persona detection, per-platform delta recovery when copies have diverged, token mapping.
+The `prism-forge-skill` skill has a guided **Migrate mode** that walks the same decomposition as a step-by-step procedure: detecting shape, decomposing, normalizing the ID, recovering the persona, handling the re-tokenization pass, and registering the role. That procedure remains the authority for judgment calls — ambiguous persona detection, per-platform delta recovery when copies have diverged, token mapping.
 
 `pnpm prism:migrate-skill` automates the unambiguous mechanical path: a single generated copy, clear shape, no divergence. Use the CLI first; fall back to the guided procedure when the CLI prints an advisory or when the situation involves multiple diverged copies.
 
 ## See also
 
 - [`scripts/ai-skills/migrate-skill.ts`](https://github.com/HunterMcGrew/PRISM/blob/main/scripts/ai-skills/migrate-skill.ts) — the CLI source
-- [`.ai-skills/skills/prism-skill-forge/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-skill-forge/shared.md) — the guided migrate procedure and Create mode
+- [`.ai-skills/skills/prism-forge-skill/shared.md`](https://github.com/HunterMcGrew/PRISM/blob/main/.ai-skills/skills/prism-forge-skill/shared.md) — the guided migrate procedure and Create mode
 - [`docs/ai-skills/syncing.md`](./syncing.md) — how `pnpm prism:build` generates the per-platform copies this CLI reverses

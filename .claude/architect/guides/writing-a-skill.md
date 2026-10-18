@@ -56,9 +56,9 @@ through the configuration and anchor points the install exposes, rather than by
 editing the rendered skill body — a rendered body is regenerated on the next
 update, and the edit disappears with it.
 
-## Where `prism-skill-forge` fits
+## Where `prism-forge-skill` fits
 
-`prism-skill-forge` is the utility that scaffolds skills. It runs in two modes:
+`prism-forge-skill` is the utility that scaffolds skills. It runs in two modes:
 
 - **Create** — scaffolds a new skill from scratch with the layout above already
   in place, so a new skill starts consistent with the roster instead of

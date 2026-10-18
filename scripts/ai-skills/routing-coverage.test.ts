@@ -47,11 +47,11 @@ async function loadRoles(): Promise<RoleEntry[]> {
 }
 
 function extractBacktickedSkillIds(text: string): string[] {
-	// Skill ids are not all prism-prefixed — utility references like `tdd` and
-	// `devils-advocate` ship under bare ids (roles.json is the authority), so
-	// the extractor matches any backticked id-shaped token. The auto and
-	// named-only parity loops compare extracted tokens against roles.json ids,
-	// where over-extraction is harmless — but the ghost-route check runs this
+	// Skill ids are not all prism-prefixed — the utility reference `tdd` ships
+	// under a bare id (roles.json is the authority), so the extractor matches
+	// any backticked id-shaped token. The auto and named-only parity loops
+	// compare extracted tokens against roles.json ids, where over-extraction is
+	// harmless — but the ghost-route check runs this
 	// over the whole file and asserts every match has a roles.json entry, so a
 	// backticked id-shaped token that is not a skill id fails that check by
 	// design: backtick only real skill ids in the routing rule, or scope the

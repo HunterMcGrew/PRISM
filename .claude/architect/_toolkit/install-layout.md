@@ -37,7 +37,7 @@ The update flow reads the overlay only during the platform-copy step, emitting e
 
 ## Skill namespace ownership
 
-PRISM owns `prism-*` skill IDs and regenerates only those on update. Consumer-authored skills use a non-`prism-*` prefix — the org token from `config.json` (e.g. `acme-<role>`) or `custom-<role>` — and are consumer-owned, so an update never touches them. `prism-skill-forge` enforces this default in both its create and migrate modes; `prism-skill-forge` itself ships `prism-*` because it is a toolkit-owned skill, the documented carve-out.
+PRISM owns `prism-*` skill IDs and regenerates only those on update. Consumer-authored skills use a non-`prism-*` prefix — the org token from `config.json` (e.g. `acme-<role>`) or `custom-<role>` — and are consumer-owned, so an update never touches them. `prism-forge-skill` enforces this default in both its create and migrate modes; `prism-forge-skill` itself ships `prism-*` because it is a toolkit-owned skill, the documented carve-out.
 
 ## What gets copied; what stays canonical-only
 
